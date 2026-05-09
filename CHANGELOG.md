@@ -26,3 +26,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Reso non bloccante il workflow `Codex PR comments` quando GitHub nega la scrittura dell'inbox/commento automatico.
 - Aggiornata la configurazione Dependabot per monitorare anche le dipendenze npm introdotte dallo scaffold.
 - Allineata la distribuzione Shopify dello scaffold alla fase pilota custom app tramite `AppDistribution.SingleMerchant`.
+- Adattato lo scaffold a SyncBay con dashboard embedded, schema Prisma iniziale, webhook Shopify placeholder, route OAuth eBay placeholder e documentazione runtime aggiornata.

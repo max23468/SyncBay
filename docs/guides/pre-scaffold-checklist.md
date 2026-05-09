@@ -1,6 +1,6 @@
-# Checklist scaffold
+# Checklist scaffold e adattamento SyncBay
 
-Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato minimo dopo la generazione del runtime Shopify CLI React Router.
+Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato minimo dopo la generazione/adattamento del runtime Shopify CLI React Router.
 
 ## 1. Repo e documentazione
 
@@ -22,6 +22,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [ ] Redirect URL locali/provvisori decisi.
 - [x] Scopes Shopify iniziali definiti come bozza MVP.
 - [x] Webhook minimi definiti come bozza MVP: uninstall, orders, products, inventory.
+- [x] Webhook minimi configurati nello scaffold come placeholder tracciati.
 
 ## 3. Account eBay
 
@@ -69,5 +70,14 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] `npm run lint`
 - [x] `npm run build`
 - [x] `npm audit --omit=dev`
+- [x] `npx prisma validate`
 - [ ] Installazione Shopify end-to-end sul dev store.
 - [ ] Primo deploy/preview Vercel.
+
+## 8. Adattamento scaffold a SyncBay
+
+- [x] Dashboard embedded in italiano con stato Shopify/eBay/sync.
+- [x] Modello Prisma iniziale per shop, connessione eBay, job e audit log.
+- [x] Placeholder OAuth eBay: `/auth/ebay/start` e `/auth/ebay/callback`.
+- [x] Placeholder webhook Shopify: ordini pagati, prodotti aggiornati e inventory levels aggiornati.
+- [x] `.env.example` allineato a dev store, eBay sandbox e callback da completare.

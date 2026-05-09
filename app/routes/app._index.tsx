@@ -1,39 +1,101 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import { getDashboardState } from "../services/syncbay.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
 
-  return null;
+  return getDashboardState(session);
 };
 
 export default function Index() {
+  const dashboard = useLoaderData<typeof loader>();
+  const ebayStatus = dashboard.ebay.oauthReady
+    ? "Pronta per OAuth"
+    : "In attesa configurazione";
+  const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
+  const lastJobs = dashboard.sync.lastJobs;
+
   return (
     <s-page heading="SyncBay">
-      <s-section heading="Connessioni">
+      <s-section heading="Stato connessioni">
         <s-paragraph>
-          La base Shopify e pronta. Il prossimo passo e collegare le
-          credenziali runtime e preparare la connessione eBay quando il keyset
-          sara disponibile.
+          Shop collegato: {dashboard.shop.domain}. Fase: custom app pilota.
         </s-paragraph>
-      </s-section>
-
-      <s-section heading="Stato MVP">
         <s-unordered-list>
-          <s-list-item>Shopify embedded app configurata.</s-list-item>
-          <s-list-item>Sessioni persistite con Prisma.</s-list-item>
-          <s-list-item>Sync catalogo non ancora attivo.</s-list-item>
-          <s-list-item>OAuth eBay in attesa di keyset/RuName.</s-list-item>
+          <s-list-item>Shopify: collegato</s-list-item>
+          <s-list-item>
+            eBay {dashboard.ebay.marketplaceId}: {dashboard.ebay.status}
+          </s-list-item>
+          <s-list-item>OAuth eBay: {ebayStatus}</s-list-item>
+          <s-list-item>Sync catalogo: {syncStatus}</s-list-item>
         </s-unordered-list>
       </s-section>
 
-      <s-section slot="aside" heading="Runtime">
+      <s-section heading="Prossime azioni">
         <s-unordered-list>
-          <s-list-item>React Router</s-list-item>
-          <s-list-item>Vercel</s-list-item>
-          <s-list-item>Supabase Postgres</s-list-item>
-          <s-list-item>Prisma</s-list-item>
+          {dashboard.ebay.missingRequirements.length > 0 ? (
+            <s-list-item>
+              Completa: {dashboard.ebay.missingRequirements.join(", ")}.
+            </s-list-item>
+          ) : (
+            <s-list-item>Avvia connessione OAuth eBay.</s-list-item>
+          )}
+          <s-list-item>Conferma location Shopify predefinita.</s-list-item>
+          <s-list-item>Prepara preview import, senza sync automatico.</s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Attivita recenti">
+        {lastJobs.length > 0 ? (
+          <s-unordered-list>
+            {lastJobs.map((job) => (
+              <s-list-item key={`${job.type}-${job.createdAt}`}>
+                {job.type}: {job.status}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun job SyncBay registrato.</s-paragraph>
+        )}
+      </s-section>
+
+      <s-section heading="Audit">
+        {dashboard.audit.length > 0 ? (
+          <s-unordered-list>
+            {dashboard.audit.map((event) => (
+              <s-list-item key={`${event.type}-${event.createdAt}`}>
+                {event.message}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun evento operativo registrato.</s-paragraph>
+        )}
+      </s-section>
+
+      <s-section slot="aside" heading="Base tecnica">
+        <s-unordered-list>
+          <s-list-item>Distribuzione Shopify: custom app pilota</s-list-item>
+          <s-list-item>
+            Target sync: {dashboard.shop.syncTargetSeconds} secondi
+          </s-list-item>
+          <s-list-item>Storage sessioni e dominio: Prisma</s-list-item>
+          <s-list-item>Queue/Cron: placeholder Supabase</s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section slot="aside" heading="Scope Shopify">
+        <s-unordered-list>
+          {dashboard.shopify.scopes.length > 0 ? (
+            dashboard.shopify.scopes.map((scope) => (
+              <s-list-item key={scope}>{scope}</s-list-item>
+            ))
+          ) : (
+            <s-list-item>Scope non ancora letti dalla sessione.</s-list-item>
+          )}
         </s-unordered-list>
       </s-section>
     </s-page>

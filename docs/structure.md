@@ -18,21 +18,20 @@ SyncBay/
   SECURITY.md
   .env.example
   .gitignore
-  .graphqlrc.ts
   .npmrc
   Dockerfile
   package-lock.json
   package.json
   shopify.app.toml
-  shopify.web.toml
   tsconfig.json
   vite.config.ts
   app/
+    services/
     routes/
   extensions/
   prisma/
+    migrations/
     schema.prisma
-  public/
   supabase/
     config.toml
   brand/
@@ -76,4 +75,4 @@ SyncBay/
 
 ## Regola
 
-Non creare ancora worker dedicati, job queue runtime, sync catalogo o cartelle applicative ulteriori fuori dallo scaffold senza decisione esplicita.
+Non creare ancora worker dedicati, consumer Supabase Queues, sync catalogo o cartelle applicative ulteriori fuori dallo scaffold senza decisione esplicita.
