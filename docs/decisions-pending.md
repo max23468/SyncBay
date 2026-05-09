@@ -37,4 +37,4 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | Shopify App Store listing | Aperta | Dopo beta custom | Richiede contenuti, support policy, billing e review. |
 | Support policy | Aperta | Self-service first | Il prodotto non deve dipendere da supporto umano nella prima fase. |
 | Multi-marketplace | Idea | Fuori scope | Rischia di diluire il vantaggio eBay.it-first. |
-| Release/versioning runtime | Aperta | Solo changelog docs finche non esiste runtime | Serve prima di deploy pubblici. |
+| Release/versioning runtime | Aperta | Policy docs-first in ADR 0003; niente release SemVer finche non esiste runtime | Serve prima di deploy pubblici. |

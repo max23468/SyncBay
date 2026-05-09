@@ -7,6 +7,9 @@ SyncBay e ancora in fase di pianificazione e fondazioni: la documentazione e la 
 ## Struttura
 
 ```text
+.github/
+  ISSUE_TEMPLATE/
+  PULL_REQUEST_TEMPLATE.md
 docs/
   README.md
   context.md
@@ -20,6 +23,7 @@ docs/
     template.md
     0001-stack.md
     0002-branding.md
+    0003-git-pubblicazione-versioning.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -53,9 +57,9 @@ docs/
 | Capire dati e entita | `data-model.md` |
 | Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |
 | Capire policy Git/PR/pubblicazione | `guides/git-e-pubblicazione.md` |
+| Capire versioning e release | `guides/versioning-e-release.md` |
 | Usare termini coerenti in UI/docs | `glossario.md` |
 | Capire competitor e differenziazione | `market/shopify-ebay-app-benchmark.md` |
-| Capire versioning/release future | `guides/versioning-e-release.md` |
 
 ## Documentazione fuori da `docs/`
 

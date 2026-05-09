@@ -21,6 +21,13 @@ Closes #
 - [ ] Solo documentazione / processo
 - [ ] Refactor o lavoro tecnico invisibile
 
+## Pubblicazione e versioning
+
+- [ ] Pubblicazione GitHub/main sufficiente
+- [ ] Richiede release SemVer quando esistera runtime
+- [ ] Richiede deploy quando esistera un target deploy
+- [ ] Richiede ADR o decisione maintainer prima del merge
+
 ## Verifiche eseguite
 
 - [ ] `git diff --check`

@@ -31,7 +31,10 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Security policy: `SECURITY.md`
 - Decisioni aperte: `docs/decisions-pending.md`
 - Checklist pre-scaffold: `docs/guides/pre-scaffold-checklist.md`
+- Git, PR e pubblicazione: `docs/guides/git-e-pubblicazione.md`
+- Versioning e release: `docs/guides/versioning-e-release.md`
 - Decisione stack: `docs/decisions/0001-stack.md`
+- Decisione GitHub/pubblicazione/versioning: `docs/decisions/0003-git-pubblicazione-versioning.md`
 - Benchmark Shopify App Store: `docs/market/shopify-ebay-app-benchmark.md`
 - Regole operative Codex: `AGENTS.md`
 

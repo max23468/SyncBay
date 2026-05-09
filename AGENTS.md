@@ -216,22 +216,28 @@ Quando verra creato lo scaffold:
   - `docs:` per sola documentazione;
   - `feat:` per nuove funzionalita osservabili;
   - `fix:` per correzioni osservabili;
+  - `perf:` per miglioramenti prestazionali osservabili;
   - `chore:` per manutenzione interna;
   - `refactor:` solo per ristrutturazioni senza cambio funzionale;
   - `test:` per soli test;
   - `ci:` per workflow/CI.
 - Prima di commit o PR, fai self-review del diff.
-- Non aggiungere workflow GitHub Actions, policy deploy o release flow senza richiesta esplicita.
-- Quando esistera un remote GitHub, usa branch dedicati `codex/<tema>` per lavori non banali, PR verso `main`, e pulizia branch dopo merge.
+- GitHub e la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
+- Non aggiungere workflow GitHub Actions, policy deploy o release flow senza richiesta esplicita e senza ADR.
+- Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR e pronta.
+- Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purche il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
-- Se il maintainer chiede "pubblica", "deploya", "rilascia" o formule simili, interpreta la richiesta secondo le policy aggiornate di questa repo e non secondo Pratix, DocMolder o FiscalBay.
+- Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve piu. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
+- Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
+- "Pubblica" non significa automaticamente deploy, release versionata, billing, App Store o integrazioni produttive.
+- Se il maintainer chiede "deploya", "rilascia", "pubblica e deploy" o formule che implicano runtime, verifica prima se esiste una policy SyncBay attuale. Oggi non esiste deploy/release runtime: dichiaralo e procedi solo dopo decisione esplicita.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
 
 Dettagli: `docs/guides/git-e-pubblicazione.md`.
 
 ## Release, deploy e App Store
 
-Non esiste ancora un flusso di release/deploy per SyncBay.
+Non esiste ancora un flusso di release/deploy runtime per SyncBay.
 
 Fino a decisione esplicita:
 
@@ -241,7 +247,22 @@ Fino a decisione esplicita:
 - non avviare pubblicazione Shopify App Store;
 - non creare integrazioni produttive Shopify/eBay.
 
-Quando questi flussi verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example` e il piano tecnico.
+Finche il progetto resta docs-first:
+
+- usa `CHANGELOG.md` sotto `## [Non rilasciato]` -> `### Non versionato` per modifiche significative a piani, ADR, guide, regole agenti e asset;
+- non creare tag GitHub, GitHub Release o bump SemVer;
+- non inventare file di versione applicativa.
+
+Quando esistera runtime, ogni modifica dovra essere classificata prima della chiusura:
+
+- `MAJOR`: breaking change visibile a negoziante, operatori o contratti API/config;
+- `MINOR`: nuova funzionalita retrocompatibile;
+- `PATCH`: bugfix, hardening o miglioramento operativo compatibile;
+- `Non versionato`: piani, ADR, guide interne, regole agenti e documentazione non esposta al prodotto.
+
+Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime futuri in sezioni versionate, non chiudere senza release oppure senza dichiarare il rilascio come prossimo step operativo.
+
+Quando deploy, release runtime o pubblicazione App Store verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`, `docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e il piano tecnico.
 
 ## Risposte finali e handoff
 

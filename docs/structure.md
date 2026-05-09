@@ -4,6 +4,9 @@ Questa struttura serve solo a tenere ordinata la fase di piano. Non e ancora lo 
 
 ```text
 SyncBay/
+  .github/
+    ISSUE_TEMPLATE/
+    PULL_REQUEST_TEMPLATE.md
   AGENTS.md
   BRAND.md
   README.md
@@ -33,6 +36,7 @@ SyncBay/
       template.md
       0001-stack.md
       0002-branding.md
+      0003-git-pubblicazione-versioning.md
     guides/
       architettura.md
       git-e-pubblicazione.md
