@@ -1,0 +1,66 @@
+name: Proposta funzionalita
+description: Suggerisci un miglioramento o una nuova funzionalita.
+title: "[idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per l'idea. SyncBay e eBay.it-first: descrivi il bisogno del negoziante
+        prima della soluzione, cosi possiamo valutare se resta nel perimetro MVP.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Quale problema risolve
+      description: Cosa sta cercando di fare il negoziante oggi che e scomodo, lento o rischioso?
+      placeholder: Vorrei importare le descrizioni eBay senza portarmi dietro il template HTML pesante.
+    validations:
+      required: true
+
+  - type: textarea
+    id: soluzione
+    attributes:
+      label: Soluzione proposta
+      description: Come immagini la funzionalita.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternative
+    attributes:
+      label: Alternative valutate
+      description: Hai pensato ad altri modi per risolvere lo stesso problema?
+
+  - type: dropdown
+    id: priorita
+    attributes:
+      label: Quanto e urgente
+      options:
+        - "Bloccante: senza, SyncBay non puo essere usato nel pilota"
+        - "Importante: migliora un flusso MVP"
+        - "Nice to have: da valutare dopo MVP"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: asse
+    attributes:
+      label: Asse prodotto
+      options:
+        - Import guidato e sicuro
+        - Sync catalogo/prezzi/immagini/stock
+        - Protezione disponibilita
+        - Pulizia descrizioni eBay
+        - Conflitti Shopify
+        - Diagnostica self-service
+        - Sicurezza/privacy/manutenzione
+        - Fuori perimetro o da discutere
+    validations:
+      required: true
+
+  - type: textarea
+    id: contesto
+    attributes:
+      label: Contesto
+      description: Tipo di negozio, numero listing, frequenza sync o altri dettagli utili.

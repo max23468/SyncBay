@@ -13,3 +13,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Definito il branding iniziale SyncBay con `BRAND.md` e ADR dedicato.
 - Consolidato il logo definitivo Catalog Bridge con asset SVG, PNG, favicon, combinati e manifest in `brand/assets/`.
 - Creato il repository GitHub privato `max23468/SyncBay` e documentato il remote iniziale.
+- Aggiunti issue template, PR template e configurazione GitHub iniziale in linea con le repo operative esistenti.

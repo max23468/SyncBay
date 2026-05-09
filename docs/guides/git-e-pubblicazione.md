@@ -7,6 +7,7 @@ Questa guida definisce la policy provvisoria Git/PR per SyncBay.
 - Repo Git locale inizializzata e collegata a GitHub.
 - Remote GitHub: https://github.com/max23468/SyncBay
 - Branch predefinito: `main`.
+- Issue e PR template configurati in `.github/`.
 - Nessun deploy.
 - Nessuna release runtime.
 - Nessuna CI definita.
@@ -43,6 +44,20 @@ Durante la fase docs-only, il commit naturale sara `docs: bootstrap SyncBay plan
 - includere sintesi, file toccati, rischi, verifiche e prossimi passi;
 - eliminare branch locali/remoti quando il lavoro e mergeato e assorbito;
 - non introdurre deploy/release impliciti con la sola parola "pubblica".
+
+## Impostazioni GitHub iniziali
+
+La configurazione iniziale segue Pratix come riferimento principale:
+
+- repo privata;
+- issue e projects abilitati;
+- wiki e discussions disabilitati;
+- merge commit, squash merge e rebase merge abilitati;
+- auto-merge disabilitato;
+- cancellazione automatica branch dopo merge disabilitata;
+- label `codex`, `autorelease: pending` e `autorelease: tagged` presenti per coerenza con le altre repo operative.
+
+Branch protection e rulesets non sono attivi sulle repo private dell'account corrente senza GitHub Pro o repo pubblica.
 
 ## Docs-only
 

@@ -1,0 +1,69 @@
+name: Segnalazione bug
+description: Qualcosa non funziona come dovrebbe in SyncBay.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. Compila i campi sotto con dettagli concreti.
+        Non includere dati reali di negozianti, clienti, ordini, listing, token o credenziali.
+
+  - type: textarea
+    id: cosa-succede
+    attributes:
+      label: Cosa succede
+      description: Descrivi il problema in una o due frasi.
+      placeholder: Durante la preview import, un listing eBay attivo risulta non importabile senza motivo chiaro.
+    validations:
+      required: true
+
+  - type: textarea
+    id: come-riprodurre
+    attributes:
+      label: Come riprodurlo
+      description: Passi minimi per vedere il problema.
+      placeholder: |
+        1. Collega lo shop Shopify di test
+        2. Collega l'account eBay sandbox
+        3. Avvia preview import
+        4. Il listing risulta fallito
+    validations:
+      required: true
+
+  - type: textarea
+    id: cosa-mi-aspettavo
+    attributes:
+      label: Cosa ti aspettavi
+      placeholder: Il listing dovrebbe apparire tra i prodotti importabili o mostrare un errore azionabile.
+    validations:
+      required: true
+
+  - type: input
+    id: versione
+    attributes:
+      label: Versione o commit
+      description: Indica versione, commit o branch se disponibile.
+      placeholder: main / commit hash / v0.x
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Documentazione
+        - Shopify
+        - eBay
+        - Import
+        - Sync catalogo
+        - Disponibilita
+        - Dashboard
+        - Altro
+    validations:
+      required: true
+
+  - type: textarea
+    id: note
+    attributes:
+      label: Note aggiuntive
+      description: Screenshot, log sintetici o dettagli utili, oscurando dati sensibili.
