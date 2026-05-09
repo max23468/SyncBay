@@ -12,8 +12,8 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 
 | Decisione | Stato | Default provvisorio | Perche conta |
 | --- | --- | --- | --- |
-| Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; env e callback da compilare dopo scaffold | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
-| Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay` e CLI collegati; app URL/redirect da derivare da Vercel | Servono redirect URL e app URL prima dello scaffold/dev runtime. |
+| Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; scaffold presente; env e callback da compilare sul primo runtime utilizzabile | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
+| Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay`, CLI e scaffold collegati; app URL/redirect da derivare da dev tunnel/Vercel | Servono redirect URL e app URL prima della verifica end-to-end. |
 | eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
 
 ## Decisioni da chiudere prima della beta

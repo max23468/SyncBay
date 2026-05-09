@@ -109,7 +109,7 @@ Direzione corrente:
 
 La decisione infrastrutturale MVP e tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
-Nota: non creare scaffold applicativo finche la fase documentale e di fondazione repo non e chiusa.
+Nota: lo scaffold Shopify CLI React Router e stato creato dopo la chiusura delle decisioni tecniche bloccanti. Import, sync, worker e OAuth eBay restano fuori dallo scaffold iniziale.
 
 ## API e integrazioni
 

@@ -1,6 +1,6 @@
-# Struttura documentale iniziale
+# Struttura repository
 
-Questa struttura serve solo a tenere ordinata la fase di piano. Non e ancora lo scaffold applicativo.
+Questa struttura include documentazione di fondazione e scaffold applicativo Shopify CLI React Router.
 
 ```text
 SyncBay/
@@ -18,7 +18,21 @@ SyncBay/
   SECURITY.md
   .env.example
   .gitignore
+  .graphqlrc.ts
+  .npmrc
+  Dockerfile
+  package-lock.json
+  package.json
   shopify.app.toml
+  shopify.web.toml
+  tsconfig.json
+  vite.config.ts
+  app/
+    routes/
+  extensions/
+  prisma/
+    schema.prisma
+  public/
   supabase/
     config.toml
   brand/
@@ -62,6 +76,4 @@ SyncBay/
 
 ## Regola
 
-Finche non parte lo scaffold tecnico, evitare cartelle applicative come `app/`, `src/`, `prisma/`, `workers/` o `package.json`.
-
-Queste verranno create solo quando il piano passa dalla fase documentale alla fase implementativa.
+Non creare ancora worker dedicati, job queue runtime, sync catalogo o cartelle applicative ulteriori fuori dallo scaffold senza decisione esplicita.

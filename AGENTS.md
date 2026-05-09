@@ -76,9 +76,9 @@ Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione
 
 ## Stato attuale del repository
 
-Il repository e in fase di pianificazione e fondazioni.
+Il repository ha completato la fase di pianificazione/fondazioni e contiene lo scaffold Shopify CLI React Router iniziale.
 
-Regola importante: non creare scaffold applicativo, `package.json`, app Shopify CLI, cartelle runtime (`app/`, `src/`, `prisma/`, `workers/`) o codice applicativo senza richiesta esplicita del maintainer.
+Regola importante: non creare worker dedicati, sync catalogo, job queue runtime, integrazioni eBay reali o cartelle applicative ulteriori fuori dallo scaffold senza richiesta esplicita del maintainer.
 
 La struttura documentale attuale e descritta in `docs/structure.md`.
 
@@ -212,9 +212,18 @@ Finche non esiste codice applicativo:
 
 Quando verra creato lo scaffold:
 
-- aggiorna questo file con i comandi reali del repo;
+- mantieni questo file aggiornato con i comandi reali del repo;
 - aggiungi gate per lint, test, build, typecheck, audit e verifiche browser quando pertinenti;
 - mantieni i comandi allineati allo stack effettivamente generato.
+
+Comandi runtime attuali:
+
+- `npm install`
+- `npm run dev`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+- `npm audit --omit=dev`
 
 ## Git, commit e PR
 

@@ -8,7 +8,7 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 
 Provisioning minimo completato il 2026-05-09.
 
-Non esiste ancora codice applicativo, deploy runtime o schema database SyncBay.
+Lo scaffold Shopify CLI React Router esiste. Non esistono ancora deploy runtime, schema database SyncBay oltre alla tabella sessioni prevista da Prisma, import catalogo o sync.
 
 ## Vercel
 
@@ -67,10 +67,6 @@ Estensioni Supabase verificate:
 `pgmq` e `pg_cron` vanno abilitate tramite migration quando verra creato lo schema runtime, cosi restano tracciate in Git.
 
 ## Cosa resta da fare
-
-Prima dello scaffold:
-
-- decidere se procedere anche senza keyset eBay approvato, limitando eBay a env/placeholder.
 
 Durante o subito dopo lo scaffold:
 
