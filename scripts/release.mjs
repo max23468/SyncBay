@@ -164,7 +164,7 @@ function bumpVersion(currentVersion, bump) {
   fail(`Bump non valido: ${bump}`);
 }
 
-function extractUnreleased(changelog) {
+function extractUnreleased(changelog, options = {}) {
   const headerRegex = /^## \[Non rilasciato\]\s*$/m;
   const headerMatch = changelog.match(headerRegex);
 
@@ -178,7 +178,7 @@ function extractUnreleased(changelog) {
   const rawBody = nextHeaderIndex === -1 ? afterHeader : afterHeader.slice(0, nextHeaderIndex);
   const body = rawBody.trim();
 
-  if (!body) {
+  if (!body && !options.allowEmpty) {
     fail("Il blocco [Non rilasciato] è vuoto. Aggiungi almeno una voce prima di rilasciare.");
   }
 
@@ -371,7 +371,14 @@ if (options.version && !/^\d+\.\d+\.\d+$/.test(options.version)) {
 const changelog = readFileSync(changelogPath, "utf8");
 const versionFile = readFileSync(versionPath, "utf8");
 const current = readCurrentVersion(versionFile);
-const unreleased = extractUnreleased(changelog);
+const unreleased = extractUnreleased(changelog, { allowEmpty: options.dryRun });
+
+if (!unreleased.body) {
+  console.log("Blocco [Non rilasciato] vuoto. Nessuna release SemVer da preparare.");
+  console.log("Nessun file aggiornato.");
+  process.exit(0);
+}
+
 validateSections(unreleased.body);
 const bump = options.bump ?? (options.version ? null : inferBump(unreleased.body));
 const nextVersion = options.version ?? bumpVersion(current.version, bump);

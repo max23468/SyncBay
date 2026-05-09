@@ -6,7 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.1.1] — 2026-05-10
+
+### Correzioni
+
+- Normalizzato il topic dei webhook Shopify dal formato enum al formato path e usato l'ID consegna webhook come chiave di idempotenza dei job placeholder.
+
+### Sotto il cofano
 
 - Documentata e attivata la procedura di versioning locale in linea con Pratix.
 - Bonificati accenti e apostrofi nei testi di progetto.
@@ -43,4 +49,5 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.1]: #011--2026-05-10
 [0.1.0]: #010--2026-05-10

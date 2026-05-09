@@ -7,12 +7,13 @@ import {
 } from "../services/syncbay.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { payload, shop, topic } = await authenticate.webhook(request);
+  const { payload, shop, topic, webhookId } = await authenticate.webhook(request);
 
   await recordShopifyWebhookPlaceholder({
     resourceId: extractWebhookResourceId(payload),
     shopDomain: shop,
     topic,
+    webhookId,
   });
 
   return new Response();
