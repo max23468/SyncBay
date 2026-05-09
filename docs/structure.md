@@ -19,6 +19,8 @@ SyncBay/
   .env.example
   .gitignore
   shopify.app.toml
+  supabase/
+    config.toml
   brand/
     README.md
     assets/
@@ -48,6 +50,7 @@ SyncBay/
       git-e-pubblicazione.md
       onboarding-e-import.md
       pre-scaffold-checklist.md
+      provisioning-runtime.md
       prerequisiti-account.md
       service-governance.md
       sicurezza-privacy.md

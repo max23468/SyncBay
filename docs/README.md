@@ -10,6 +10,8 @@ SyncBay e ancora in fase di pianificazione e fondazioni: la documentazione e la 
 .github/
   ISSUE_TEMPLATE/
   PULL_REQUEST_TEMPLATE.md
+supabase/
+  config.toml
 docs/
   README.md
   context.md
@@ -26,12 +28,13 @@ docs/
       0003-git-pubblicazione-versioning.md
       0004-runtime-ci-release-future.md
       0005-runtime-infrastructure.md
-  guides/
-    architettura.md
-    git-e-pubblicazione.md
-    onboarding-e-import.md
-    pre-scaffold-checklist.md
-    prerequisiti-account.md
+    guides/
+      architettura.md
+      git-e-pubblicazione.md
+      onboarding-e-import.md
+      pre-scaffold-checklist.md
+      provisioning-runtime.md
+      prerequisiti-account.md
     service-governance.md
     sicurezza-privacy.md
     sync-engine.md
@@ -55,6 +58,7 @@ docs/
 | Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
+| Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |
 | Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |

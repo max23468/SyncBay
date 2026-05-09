@@ -27,8 +27,8 @@ Finche non vengono forniti URL reali e keyset eBay approvato:
 | Development store | Confermato | `syncbay-dev.myshopify.com` |
 | Nome app custom | Confermato | `SyncBay` |
 | Shopify CLI | Collegata | `shopify.app.toml` collegato all'app `SyncBay`. |
-| App URL locale/provvisoria | Provider deciso | Vercel per URL stabile; valore reale da definire al provisioning. |
-| Redirect URL OAuth | Da derivare | Da derivare dall'app URL Vercel dopo provisioning/scaffold. |
+| App URL locale/provvisoria | Provider creato | Vercel project `syncbay`; URL reale da confermare dopo primo deploy/scaffold. |
+| Redirect URL OAuth | Da derivare | Da derivare dall'app URL Vercel dopo primo deploy/scaffold. |
 | Scopes iniziali | Definiti come bozza MVP | Da validare sul template Shopify/API version al momento dello scaffold. |
 | Webhook minimi | Definiti come bozza MVP | Da registrare via config Shopify CLI dove possibile. |
 
@@ -178,7 +178,7 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 - Development store: `syncbay-dev.myshopify.com`.
 - Nome app custom: `SyncBay`.
 - Shopify CLI: collegata all'app `SyncBay`.
-- App URL provvisorio: da generare con progetto Vercel quando esiste runtime.
+- App URL provvisorio: da confermare con il primo deploy Vercel quando esiste runtime.
 - Preferenza tunnel/hosting dev: Vercel per URL stabile, Shopify CLI tunnel per sviluppo locale Shopify.
 
 ### eBay
@@ -196,8 +196,6 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 
 Anche con questa guida chiusa, prima dello scaffold restano da completare:
 
-- provisioning progetto Vercel;
-- provisioning progetto Supabase;
 - URL reali e redirect;
 - keyset/RuName eBay;
 - secret runtime nei provider, non nel repo.

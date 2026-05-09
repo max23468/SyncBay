@@ -29,6 +29,11 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Supabase Queues e Supabase Cron per job, polling e retry.
 - Supabase Storage privato come staging immagini temporaneo quando serve.
 
+Provisioning minimo creato:
+
+- Vercel project: `matteos-projects-9226d217/syncbay`
+- Supabase project: `SyncBay`, ref `mgjcbuokppfnglsftsmi`, region `eu-west-1`
+
 ## Documenti principali
 
 - Piano prodotto e tecnico: `docs/syncbay-product-technical-plan.md`
@@ -41,6 +46,7 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Decisioni aperte: `docs/decisions-pending.md`
 - Checklist pre-scaffold: `docs/guides/pre-scaffold-checklist.md`
 - Prerequisiti account: `docs/guides/prerequisiti-account.md`
+- Provisioning runtime: `docs/guides/provisioning-runtime.md`
 - Git, PR e pubblicazione: `docs/guides/git-e-pubblicazione.md`
 - Versioning e release: `docs/guides/versioning-e-release.md`
 - Decisione stack: `docs/decisions/0001-stack.md`
@@ -52,6 +58,6 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 
 ## Prossimi passi
 
-1. Creare/collegare progetto Vercel e progetto Supabase quando parte il provisioning.
-2. Completare keyset/RuName eBay quando eBay approva la richiesta.
-3. Solo dopo, creare lo scaffold applicativo.
+1. Decidere se procedere allo scaffold anche prima del keyset eBay, lasciando eBay a placeholder.
+2. Creare lo scaffold Shopify CLI React Router.
+3. Configurare env reali Vercel/Supabase e URL callback dopo il primo runtime utilizzabile.

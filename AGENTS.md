@@ -187,6 +187,7 @@ SyncBay e attualmente guidata dalla documentazione. Aggiornala quando cambia una
 - `docs/glossario.md`: terminologia prodotto e microcopy.
 - `docs/guides/`: guide operative tematiche.
 - `docs/guides/pre-scaffold-checklist.md`: prerequisiti prima di generare codice applicativo.
+- `docs/guides/provisioning-runtime.md`: provisioning Vercel/Supabase e riferimenti non segreti.
 - `docs/guides/service-governance.md`: limiti MVP, retention, error handling e governance servizio.
 - `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
 - `docs/decisions/`: decisioni architetturali o operative stabili.

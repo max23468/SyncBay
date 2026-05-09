@@ -47,6 +47,12 @@ Infrastruttura MVP: Vercel + Supabase.
 
 Vedi ADR `decisions/0005-runtime-infrastructure.md`.
 
+Provisioning minimo:
+
+- Vercel project: `matteos-projects-9226d217/syncbay`.
+- Supabase project ref: `mgjcbuokppfnglsftsmi`.
+- Dettagli: `guides/provisioning-runtime.md`.
+
 ## Documenti principali
 
 - Piano: `syncbay-product-technical-plan.md`
@@ -55,6 +61,7 @@ Vedi ADR `decisions/0005-runtime-infrastructure.md`.
 - Benchmark: `market/shopify-ebay-app-benchmark.md`
 - Stack: `decisions/0001-stack.md`
 - Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`
+- Provisioning runtime: `guides/provisioning-runtime.md`
 - Regole agenti: `../AGENTS.md`
 
 ## Regola di handoff

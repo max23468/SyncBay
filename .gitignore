@@ -17,6 +17,7 @@ build/
 
 # Shopify / local tooling
 .shopify/
+.vercel/
 
 # Logs
 *.log
@@ -27,4 +28,3 @@ pnpm-debug.log*
 
 # Coverage
 coverage/
-

@@ -12,7 +12,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 
 | Decisione | Stato | Default provvisorio | Perche conta |
 | --- | --- | --- | --- |
-| Provisioning Vercel/Supabase | Aperta | Provider decisi in ADR 0005; progetti non ancora creati/collegati | Servono URL reali, database, storage e secret runtime prima di usare lo scaffold. |
+| Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; env e callback da compilare dopo scaffold | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
 | Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay` e CLI collegati; app URL/redirect da derivare da Vercel | Servono redirect URL e app URL prima dello scaffold/dev runtime. |
 | eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
 

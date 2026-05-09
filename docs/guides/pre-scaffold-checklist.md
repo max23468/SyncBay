@@ -35,7 +35,9 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 ## 4. Decisioni tecniche bloccanti
 
 - [x] Hosting scelto o fallback locale chiaro: Vercel.
+- [x] Progetto Vercel creato e collegato: `matteos-projects-9226d217/syncbay`.
 - [x] Database scelto: Supabase Postgres.
+- [x] Progetto Supabase creato e collegato: `mgjcbuokppfnglsftsmi`.
 - [x] ORM scelto: Prisma.
 - [x] Job queue scelta: Supabase Queues.
 - [x] Storage temporaneo immagini deciso: Supabase Storage privato, staging con retention breve.
