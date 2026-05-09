@@ -1,0 +1,75 @@
+# Documentazione di SyncBay
+
+Questa cartella raccoglie la documentazione approfondita del progetto.
+
+SyncBay e ancora in fase di pianificazione e fondazioni: la documentazione e la fonte principale per decidere cosa costruire prima di creare codice applicativo.
+
+## Struttura
+
+```text
+docs/
+  README.md
+  context.md
+  data-model.md
+  decisions-pending.md
+  glossario.md
+  syncbay-product-technical-plan.md
+  structure.md
+  decisions/
+    README.md
+    template.md
+    0001-stack.md
+  guides/
+    architettura.md
+    git-e-pubblicazione.md
+    onboarding-e-import.md
+    pre-scaffold-checklist.md
+    service-governance.md
+    sicurezza-privacy.md
+    sync-engine.md
+    versioning-e-release.md
+  market/
+    shopify-ebay-app-benchmark.md
+```
+
+## Quando consultare cosa
+
+| Vuoi... | Vai a... |
+| --- | --- |
+| Capire in 2 minuti il progetto | `context.md` |
+| Capire perimetro, MVP e fasi | `syncbay-product-technical-plan.md` |
+| Vedere cosa fare ora e dopo | `../ROADMAP.md` |
+| Capire la struttura docs/repo | `structure.md` |
+| Consultare decisioni stabili | `decisions/` |
+| Consultare decisioni ancora aperte | `decisions-pending.md` |
+| Capire lo stack scelto | `decisions/0001-stack.md` |
+| Capire architettura proposta | `guides/architettura.md` |
+| Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
+| Capire import e onboarding | `guides/onboarding-e-import.md` |
+| Capire sync, stock e conflitti | `guides/sync-engine.md` |
+| Capire limiti e governance del servizio | `guides/service-governance.md` |
+| Capire dati e entita | `data-model.md` |
+| Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |
+| Capire policy Git/PR/pubblicazione | `guides/git-e-pubblicazione.md` |
+| Usare termini coerenti in UI/docs | `glossario.md` |
+| Capire competitor e differenziazione | `market/shopify-ebay-app-benchmark.md` |
+| Capire versioning/release future | `guides/versioning-e-release.md` |
+
+## Documentazione fuori da `docs/`
+
+I file nella root sono punti d'ingresso convenzionali:
+
+- `README.md`: orientamento rapido.
+- `AGENTS.md`: regole operative per agenti e Codex.
+- `ROADMAP.md`: priorita e backlog.
+- `CHANGELOG.md`: storico modifiche significative.
+- `SECURITY.md`: policy sicurezza root.
+- `.env.example`: env var previste.
+
+## Regola di manutenzione
+
+Aggiorna la documentazione quando cambia una decisione stabile. Non creare file paralleli per lo stesso tema: integra il piano principale o crea un ADR mirato.
+
+## Regola di handoff
+
+Ogni chiusura di lavoro deve indicare prossimi passi concreti quando esiste un seguito operativo reale. Se il lavoro e chiuso e non c'e una prossima azione utile, dichiararlo esplicitamente.
