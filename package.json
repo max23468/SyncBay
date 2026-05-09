@@ -16,7 +16,9 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "vite": "vite",
-    "typecheck": "react-router typegen && tsc --noEmit"
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "release": "node scripts/release.mjs",
+    "release:dry-run": "node scripts/release.mjs --dry-run"
   },
   "type": "module",
   "engines": {

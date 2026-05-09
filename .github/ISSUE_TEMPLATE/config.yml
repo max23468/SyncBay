@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Domanda generica
     url: https://github.com/max23468/SyncBay
-    about: Per domande non legate a bug o nuove funzionalita, usa una issue solo se serve traccia operativa.
+    about: Per domande non legate a bug o nuove funzionalità, usa una issue solo se serve traccia operativa.

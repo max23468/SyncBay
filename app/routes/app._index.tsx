@@ -2,6 +2,7 @@ import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
+import { APP_VERSION } from "../lib/version";
 import { getDashboardState } from "../services/syncbay.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -48,7 +49,7 @@ export default function Index() {
         </s-unordered-list>
       </s-section>
 
-      <s-section heading="Attivita recenti">
+      <s-section heading="Attività recenti">
         {lastJobs.length > 0 ? (
           <s-unordered-list>
             {lastJobs.map((job) => (
@@ -84,6 +85,7 @@ export default function Index() {
           </s-list-item>
           <s-list-item>Storage sessioni e dominio: Prisma</s-list-item>
           <s-list-item>Queue/Cron: placeholder Supabase</s-list-item>
+          <s-list-item>Versione app: {APP_VERSION}</s-list-item>
         </s-unordered-list>
       </s-section>
 

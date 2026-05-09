@@ -43,7 +43,7 @@ export default function App() {
             Shopify.
           </li>
           <li>
-            <strong>Disponibilita protetta.</strong> Aggiornamento stock e retry
+            <strong>Disponibilità protetta.</strong> Aggiornamento stock e retry
             prioritari.
           </li>
           <li>

@@ -6,27 +6,27 @@ Questa guida descrive il comportamento atteso del motore di sincronizzazione.
 
 SyncBay promette sync entro massimo 5 minuti, non real-time assoluto indiscriminato.
 
-Dove il real-time o quasi real-time e tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilita, va raggiunto. Il polling entro 5 minuti resta obbligatorio come fallback e riconciliazione.
+Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, va raggiunto. Il polling entro 5 minuti resta obbligatorio come fallback e riconciliazione.
 
-## Sorgente di verita
+## Sorgente di verità
 
 - Catalogo: eBay.
 - Prezzo base: eBay.
 - Prezzo Shopify pubblicato: calcolato da SyncBay con regole Shopify-only.
-- Disponibilita: eBay, con eccezione aggiornamento da ordini Shopify per ridurre il rischio di vendere prodotti non disponibili.
-- Campi protetti Shopify: gestiti con modalita mirror controllato.
+- Disponibilità: eBay, con eccezione aggiornamento da ordini Shopify per ridurre il rischio di vendere prodotti non disponibili.
+- Campi protetti Shopify: gestiti con modalità mirror controllato.
 
-## Priorita job
+## Priorità job
 
 1. Stock dopo ordine Shopify.
-2. Quantita/prezzo eBay -> Shopify.
+2. Quantità/prezzo eBay -> Shopify.
 3. Titolo/descrizione/immagini.
 4. Archiviazione prodotti chiusi.
 5. Riconciliazione completa.
 
-## Modalita mirror controllato
+## Modalità mirror controllato
 
-Ogni campo puo essere:
+Ogni campo può essere:
 
 - controllato da eBay;
 - controllato da Shopify;
@@ -35,7 +35,7 @@ Ogni campo puo essere:
 
 Se Shopify cambia manualmente un campo controllato da eBay o SyncBay, aprire conflitto.
 
-## Protezione disponibilita
+## Protezione disponibilità
 
 Default:
 
@@ -44,7 +44,7 @@ Default:
 - retry con backoff;
 - alert critico se fallisce;
 - stock buffer configurabile;
-- modalita prudente se lo stock non e affidabile.
+- modalità prudente se lo stock non è affidabile.
 
 ## Riconciliazione
 
@@ -71,7 +71,7 @@ Ogni job fallito deve conservare:
 
 ## Vincoli runtime
 
-Il runtime MVP e definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.
+Il runtime MVP è definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
 Regole per il motore sync:
 

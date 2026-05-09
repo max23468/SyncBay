@@ -4,7 +4,7 @@ Questa guida definisce il flusso negoziante previsto per il MVP.
 
 ## Obiettivo
 
-Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verra importato e avviare la creazione dei prodotti Shopify senza paura di sporcare il negozio.
+Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e avviare la creazione dei prodotti Shopify senza paura di sporcare il negozio.
 
 ## Flusso MVP
 
@@ -13,7 +13,7 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verra importato e a
 3. Sceglie location Shopify predefinita.
 4. Sceglie stato iniziale prodotti: `draft` consigliato o pubblicato.
 5. Sceglie import immagini: tutte per default.
-6. Sceglie modalita descrizione:
+6. Sceglie modalità descrizione:
    - HTML completo;
    - solo testo;
    - HTML pulito senza template.

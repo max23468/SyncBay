@@ -12,7 +12,7 @@ SyncBay deve essere una Shopify app con dashboard embedded, autenticazione Shopi
 
 Il progetto deve partire come custom app per pilota controllato e poi poter evolvere verso app pubblica Shopify App Store.
 
-La documentazione Shopify corrente indica Shopify CLI come percorso standard per creare app e gestire struttura/configurazione. Le fonti Shopify piu recenti indicano il template React Router come raccomandato per la maggior parte delle nuove app, mentre molta documentazione storica e pacchetti esistenti fanno ancora riferimento a Remix.
+La documentazione Shopify corrente indica Shopify CLI come percorso standard per creare app e gestire struttura/configurazione. Le fonti Shopify più recenti indicano il template React Router come raccomandato per la maggior parte delle nuove app, mentre molta documentazione storica e pacchetti esistenti fanno ancora riferimento a Remix.
 
 ## Decisione
 
@@ -37,7 +37,7 @@ Componenti previsti:
 
 Vantaggio: molta documentazione ed esempi Shopify esistenti usano Remix.
 
-Motivo per non sceglierlo ora: la documentazione Shopify piu recente sulle librerie/template indica React Router come template raccomandato per la maggior parte delle nuove app.
+Motivo per non sceglierlo ora: la documentazione Shopify più recente sulle librerie/template indica React Router come template raccomandato per la maggior parte delle nuove app.
 
 ### Next.js custom
 
@@ -47,11 +47,11 @@ Motivo per non sceglierlo ora: per una Shopify app embedded conviene seguire il 
 
 ## Implicazioni
 
-- Non si crea codice applicativo finche lo scaffold non viene richiesto esplicitamente.
+- Non si crea codice applicativo finché lo scaffold non viene richiesto esplicitamente.
 - I documenti restano framework-aware ma non dipendono ancora da file generati.
 - Prima dello scaffold bisogna verificare versione Shopify CLI, template disponibile, requisiti account Shopify Partner/dev store e provisioning Vercel/Supabase.
 - Il piano tecnico deve evitare riferimenti rigidi a Remix se la scelta corrente e React Router.
-- I job devono essere progettati a batch piccoli, idempotenti e riprendibili; se i limiti serverless diventano stretti, il consumer queue potra essere spostato su worker dedicato senza cambiare database o ORM.
+- I job devono essere progettati a batch piccoli, idempotenti e riprendibili; se i limiti serverless diventano stretti, il consumer queue potrà essere spostato su worker dedicato senza cambiare database o ORM.
 
 ## Fonti
 

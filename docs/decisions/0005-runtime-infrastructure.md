@@ -8,7 +8,7 @@
 
 SyncBay deve diventare una Shopify app embedded con backend HTTP, OAuth Shopify/eBay, webhook pubblici, job asincroni, sync entro massimo 5 minuti, import fino a 2.000 prodotti per shop e token provider cifrati a riposo.
 
-Il repository e ancora in fase documentale: questa decisione chiude i blocchi tecnici prima dello scaffold, ma non crea runtime, deploy, database o CI.
+Il repository è ancora in fase documentale: questa decisione chiude i blocchi tecnici prima dello scaffold, ma non crea runtime, deploy, database o CI.
 
 Vincoli principali:
 
@@ -35,9 +35,9 @@ Per l'MVP/pilota SyncBay usera:
 
 ### Hosting e app URL
 
-Vercel ospitera l'app web e gli endpoint pubblici.
+Vercel ospiterà l'app web e gli endpoint pubblici.
 
-Gli URL reali verranno decisi quando verra creato il progetto Vercel:
+Gli URL reali verranno decisi quando verrà creato il progetto Vercel:
 
 - app URL Shopify;
 - redirect URL Shopify;
@@ -49,11 +49,11 @@ Non usare Vercel Cron come meccanismo primario per il sync entro 5 minuti. Su pi
 
 ### Database e ORM
 
-Supabase Postgres e il database primario.
+Supabase Postgres è il database primario.
 
-Prisma e l'ORM iniziale perche il template Shopify React Router usa gia Prisma per lo storage sessioni e riduce l'attrito dello scaffold.
+Prisma è l'ORM iniziale perché il template Shopify React Router usa già Prisma per lo storage sessioni e riduce l'attrito dello scaffold.
 
-Quando verra creato lo scaffold:
+Quando verrà creato lo scaffold:
 
 - sostituire l'eventuale SQLite iniziale del template con Supabase Postgres;
 - usare env separate per connection pooling runtime e connection diretta migration se necessarie;
@@ -61,7 +61,7 @@ Quando verra creato lo scaffold:
 
 ### Queue e scheduler
 
-Supabase Queues e la coda persistente per:
+Supabase Queues è la coda persistente per:
 
 - import catalogo;
 - sync incrementale;
@@ -123,10 +123,10 @@ Per eBay:
 
 ## Conseguenze
 
-- Il percorso MVP resta snello e vicino allo stack gia familiare GitHub + Vercel + Supabase.
+- Il percorso MVP resta snello e vicino allo stack già familiare GitHub + Vercel + Supabase.
 - Si evita un worker sempre acceso nella prima fase.
 - I job devono essere progettati con batch piccoli; import lunghi o sync pesanti non possono dipendere da una singola funzione lunga.
-- La futura CI/runtime dovra verificare anche migration, queue, cron e storage.
+- La futura CI/runtime dovrà verificare anche migration, queue, cron e storage.
 - La creazione effettiva di progetti Vercel/Supabase resta un passo separato di provisioning.
 
 ## Exit strategy
@@ -143,9 +143,9 @@ Spostare solo il consumer della queue su un worker dedicato Render o Fly.io. Que
 
 ## Alternative considerate
 
-- **Render web + background worker + Supabase Postgres**: piu robusto per worker continui e job lunghi, ma introduce piu gestione operativa gia nel MVP. Tenuto come fallback/exit strategy.
-- **Fly.io app + worker Machines + Supabase Postgres**: flessibile e adatto a processi dedicati, ma piu operativo da gestire per una prima custom app pilota.
-- **Solo Vercel Cron/Functions**: scartato come meccanismo primario di sync perche il polling frequente e i job lunghi dipendono troppo da limiti di piano e durata funzione.
+- **Render web + background worker + Supabase Postgres**: più robusto per worker continui e job lunghi, ma introduce più gestione operativa già nel MVP. Tenuto come fallback/exit strategy.
+- **Fly.io app + worker Machines + Supabase Postgres**: flessibile e adatto a processi dedicati, ma più operativo da gestire per una prima custom app pilota.
+- **Solo Vercel Cron/Functions**: scartato come meccanismo primario di sync perché il polling frequente e i job lunghi dipendono troppo da limiti di piano e durata funzione.
 - **Supabase Edge Functions come worker principale**: utili per endpoint brevi, ma non sono il default per job pesanti o lunghi. Meglio queue + cron + batch piccoli.
 - **Drizzle al posto di Prisma**: valido tecnicamente, ma Prisma riduce attrito con il template Shopify React Router e lo storage sessioni iniziale.
 

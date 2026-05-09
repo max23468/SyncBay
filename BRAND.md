@@ -1,16 +1,16 @@
 # Brand SyncBay
 
-Questo documento definisce l'identita di base di SyncBay. Va aggiornato quando cambiano nome, posizionamento, tono, palette, logo direction o messaggi pubblici.
+Questo documento definisce l'identità di base di SyncBay. Va aggiornato quando cambiano nome, posizionamento, tono, palette, logo direction o messaggi pubblici.
 
 ## Sintesi
 
-SyncBay e una Shopify app per negozianti italiani che vogliono portare il catalogo del proprio negozio eBay.it su Shopify in modo ordinato, sincronizzato e con meno rischio di vendere prodotti non disponibili.
+SyncBay è una Shopify app per negozianti italiani che vogliono portare il catalogo del proprio negozio eBay.it su Shopify in modo ordinato, sincronizzato e con meno rischio di vendere prodotti non disponibili.
 
 La marca deve comunicare:
 
 - controllo;
 - chiarezza;
-- continuita tra canali;
+- continuità tra canali;
 - sicurezza operativa;
 - meno lavoro manuale.
 
@@ -28,9 +28,9 @@ Nome prodotto: **SyncBay**
 
 Razionale:
 
-- `Sync` comunica allineamento, automazione e continuita.
+- `Sync` comunica allineamento, automazione e continuità.
 - `Bay` richiama in modo sottile il punto di partenza eBay senza usare "eBay" nel nome.
-- Il nome e corto, internazionale e SaaS-friendly.
+- Il nome è corto, internazionale e SaaS-friendly.
 
 Nota legale/brand: prima di app pubblica, dominio, marchio o listing Shopify App Store, verificare collisioni e policy di uso marchi eBay/Shopify. Non presentare SyncBay come app ufficiale eBay o Shopify se non esiste approvazione esplicita.
 
@@ -40,7 +40,7 @@ Tagline principale:
 
 > Dal tuo negozio eBay a Shopify, pronto a vendere.
 
-La tagline precedente "Da eBay a Shopify, senza rifare tutto." e scartata.
+La tagline precedente "Da eBay a Shopify, senza rifare tutto." è scartata.
 
 Razionale:
 
@@ -48,7 +48,7 @@ Razionale:
 - usa "negozio eBay" per l'origine;
 - usa "catalogo Shopify" per la destinazione;
 - linguaggio immediato per negozianti italiani;
-- taglio commerciale, con focus su vendibilita e trasformazione del catalogo.
+- taglio commerciale, con focus su vendibilità e trasformazione del catalogo.
 
 Uso:
 
@@ -59,7 +59,7 @@ Uso:
 
 Tagline secondarie:
 
-- Catalogo allineato, schede ordinate, disponibilita sotto controllo.
+- Catalogo allineato, schede ordinate, disponibilità sotto controllo.
 - Meno lavoro manuale tra negozio e catalogo Shopify.
 - Il tuo negozio eBay diventa un catalogo Shopify ordinato.
 
@@ -67,11 +67,11 @@ Tagline secondarie:
 
 Formula breve:
 
-> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilita sincronizzate e meno rischio di vendere prodotti non disponibili.
+> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilità sincronizzate e meno rischio di vendere prodotti non disponibili.
 
 Formula estesa:
 
-> SyncBay aiuta i negozianti che vendono gia su eBay.it a creare o alimentare un catalogo Shopify senza ricreare manualmente schede prodotto, immagini, prezzi e quantita. Il negozio eBay resta il punto di partenza; Shopify riceve un catalogo controllato, con descrizioni pulite, prezzi specifici per canale, conflitti visibili e disponibilita protette.
+> SyncBay aiuta i negozianti che vendono già su eBay.it a creare o alimentare un catalogo Shopify senza ricreare manualmente schede prodotto, immagini, prezzi e quantità. Il negozio eBay resta il punto di partenza; Shopify riceve un catalogo controllato, con descrizioni pulite, prezzi specifici per canale, conflitti visibili e disponibilità protette.
 
 ## Posizionamento
 
@@ -81,9 +81,9 @@ Categoria:
 
 Target iniziale:
 
-- negozianti italiani che vendono gia su eBay.it;
+- negozianti italiani che vendono già su eBay.it;
 - venditori con catalogo fino a 2.000 prodotti nel MVP;
-- negozianti che vogliono aprire Shopify partendo dal negozio eBay gia esistente;
+- negozianti che vogliono aprire Shopify partendo dal negozio eBay già esistente;
 - venditori che non vogliono gestire subito una piattaforma marketplace bidirezionale complessa.
 
 Differenziazione:
@@ -93,9 +93,9 @@ Differenziazione:
 - anteprima e ripristino prima di fare danni;
 - conflitti visibili invece di sovrascritture cieche;
 - diagnostica self-service invece di supporto umano come pilastro;
-- disponibilita protette anche se la sincronizzazione catalogo resta principalmente in una direzione.
+- disponibilità protette anche se la sincronizzazione catalogo resta principalmente in una direzione.
 
-## Personalita
+## Personalità
 
 SyncBay deve sembrare:
 
@@ -117,7 +117,7 @@ Non deve sembrare:
 
 ## Tono di voce
 
-Lingua default: italiano. Il target iniziale e italiano, quindi UI, microcopy, documentazione prodotto e materiali pubblici devono evitare inglesismi quando esiste un'alternativa chiara.
+Lingua default: italiano. Il target iniziale è italiano, quindi UI, microcopy, documentazione prodotto e materiali pubblici devono evitare inglesismi quando esiste un'alternativa chiara.
 
 Registro:
 
@@ -134,19 +134,19 @@ Esempi:
 | Situazione | Buono | Evitare |
 | --- | --- | --- |
 | Sincronizzazione completata | 128 prodotti aggiornati. | Tutto perfetto! |
-| Errore immagine | Questa immagine non e scaricabile da eBay. Puoi riprovare o continuare senza importarla. | Oops, qualcosa e andato storto. |
-| Conflitto | Il prezzo e stato modificato su Shopify dopo l'ultima sincronizzazione. Scegli quale valore mantenere. | Abbiamo trovato un problema. |
-| Disponibilita critica | Non siamo riusciti ad aggiornare la quantita sul marketplace. Il prodotto resta in modalita prudente. | Errore grave di sistema. |
+| Errore immagine | Questa immagine non è scaricabile da eBay. Puoi riprovare o continuare senza importarla. | Oops, qualcosa è andato storto. |
+| Conflitto | Il prezzo è stato modificato su Shopify dopo l'ultima sincronizzazione. Scegli quale valore mantenere. | Abbiamo trovato un problema. |
+| Disponibilità critica | Non siamo riusciti ad aggiornare la quantità sul marketplace. Il prodotto resta in modalità prudente. | Errore grave di sistema. |
 
 ## Messaggi chiave
 
 ### Per landing/App Store
 
 - Importa dal negozio eBay con anteprima prima di scrivere sul catalogo Shopify.
-- Mantieni prezzi, quantita, immagini e descrizioni allineati.
+- Mantieni prezzi, quantità, immagini e descrizioni allineati.
 - Pulisci le descrizioni eBay dai template pesanti.
 - Applica prezzi specifici per Shopify senza modificare il marketplace di partenza.
-- Proteggi le disponibilita per ridurre il rischio di vendere prodotti non disponibili.
+- Proteggi le disponibilità per ridurre il rischio di vendere prodotti non disponibili.
 - Risolvi conflitti ed errori dalla dashboard.
 
 ### Per dashboard
@@ -188,16 +188,16 @@ Esempi:
 
 Regole:
 
-- il blu e il verde richiamano eBay e Shopify senza usare loghi, forme proprietarie o claim di ufficialita;
+- il blu e il verde richiamano eBay e Shopify senza usare loghi, forme proprietarie o claim di ufficialità;
 - `Sync` usa il verde, `Bay` usa il blu;
 - il ponte usa il blu;
 - le stanghette sopra il ponte usano solo verde, giallo e rosso;
-- non aggiungere blu nelle stanghette, perche il blu e gia usato dal ponte;
+- non aggiungere blu nelle stanghette, perché il blu è già usato dal ponte;
 - non usare il logo in modo da far sembrare SyncBay un'app ufficiale eBay o Shopify.
 
 ### Palette direzionale
 
-Questa non e ancora una palette implementata. Serve come direzione per il futuro design system dell'app, distinta dagli asset logo definitivi.
+Questa non è ancora una palette implementata. Serve come direzione per il futuro design system dell'app, distinta dagli asset logo definitivi.
 
 | Ruolo | Nome | Valore |
 | --- | --- | --- |
@@ -218,21 +218,21 @@ Regole:
 - `Harbor` e `Current` sono brand/action, non devono dominare tutta la UI.
 - `Coral` solo per errori e conflitti, mai come colore decorativo principale.
 - Non trasformare i richiami eBay/Shopify del logo in un sistema cromatico dominante per tutta l'app.
-- Il design system dovra restare operativo e leggibile, con il logo come accento di marca.
+- Il design system dovrà restare operativo e leggibile, con il logo come accento di marca.
 
 ### Tipografia
 
 Direzione consigliata:
 
 - sans moderna e leggibile per UI;
-- numeri tabulari per metriche, disponibilita, prezzi e conteggi operativi;
+- numeri tabulari per metriche, disponibilità, prezzi e conteggi operativi;
 - pesi medi, non eccessivamente bold;
 - niente display font ornamentali.
 
 Possibili famiglie future:
 
 - Geist Sans / Geist Mono se lo stack resta Vercel-friendly;
-- Inter / Inter Tight se serve massima compatibilita.
+- Inter / Inter Tight se serve massima compatibilità.
 
 La scelta finale va fissata quando nasce il design system.
 
@@ -269,7 +269,7 @@ Regole:
 - per stampa, deposito marchio o requisiti App Store che richiedano vettoriale puro, creare una versione tracciata in un tool di design partendo dal riferimento approvato;
 - preferire SVG o PNG trasparenti dove possibile, secondo il contesto di utilizzo;
 - usare PNG trasparenti per UI e documenti su sfondi controllati;
-- usare le versioni `png/white/` quando serve uno sfondo bianco gia incorporato;
+- usare le versioni `png/white/` quando serve uno sfondo bianco già incorporato;
 - non alterare proporzioni, ordine cromatico o tagline;
 - non usare loghi ufficiali eBay/Shopify accanto al logo SyncBay senza verifica policy.
 
@@ -277,9 +277,9 @@ Regole:
 
 - Prima schermata app: dashboard o onboarding operativo, non landing marketing.
 - Ogni pagina deve avere scopo chiaro: stato, azione, errore o configurazione.
-- Le card vanno usate per entita ripetute, job, conflitti o pannelli funzionali; evitare card dentro card.
+- Le card vanno usate per entità ripetute, job, conflitti o pannelli funzionali; evitare card dentro card.
 - I conflitti devono essere visivamente distinti dagli errori tecnici.
-- Gli stati di disponibilita critica devono avere priorita visiva maggiore degli aggiornamenti descrizione/immagini.
+- Gli stati di disponibilità critica devono avere priorità visiva maggiore degli aggiornamenti descrizione/immagini.
 - Usare icone solo dove aiutano la scansione, non come decorazione.
 
 ## Naming superfici
@@ -307,15 +307,15 @@ Da evitare nel MVP:
 
 ## Claim da evitare
 
-- "Real-time garantito" se non e tecnicamente garantito.
-- "Zero vendite oltre disponibilita" come promessa assoluta.
+- "Real-time garantito" se non è tecnicamente garantito.
+- "Zero vendite oltre disponibilità" come promessa assoluta.
 - "App ufficiale eBay/Shopify" senza approvazione.
 - "Import illimitato" nel MVP.
 - "Sincronizzazione bidirezionale" per descrivere il prodotto MVP.
 
 ## Asset
 
-Asset gia creati:
+Asset già creati:
 
 - logo SVG;
 - favicon/app icon;

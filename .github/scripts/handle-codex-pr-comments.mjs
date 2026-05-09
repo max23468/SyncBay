@@ -226,7 +226,7 @@ ${codexCommand}
 Ho trovato ${threads.length} thread Codex actionable in questa PR (${prState}):
 ${threadList}
 
-Risolvi i problemi segnalati, controlla anche la issue "${inboxIssueTitle}" per il backlog completo dei commenti Codex e aggiorna la PR o apri un follow-up se questa PR non e piu modificabile.`;
+Risolvi i problemi segnalati, controlla anche la issue "${inboxIssueTitle}" per il backlog completo dei commenti Codex e aggiorna la PR o apri un follow-up se questa PR non è più modificabile.`;
 
   if (dryRun) {
     console.log(`DRY RUN: commento non pubblicato su PR #${pr.number}:\n${body}`);

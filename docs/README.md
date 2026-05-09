@@ -32,6 +32,7 @@ docs/
       0003-git-pubblicazione-versioning.md
       0004-runtime-ci-release-future.md
       0005-runtime-infrastructure.md
+      0006-versioning-runtime-locale.md
     guides/
       architettura.md
       git-e-pubblicazione.md
@@ -54,12 +55,13 @@ docs/
 | Capire in 2 minuti il progetto | `context.md` |
 | Capire perimetro, MVP e fasi | `syncbay-product-technical-plan.md` |
 | Vedere cosa fare ora e dopo | `../ROADMAP.md` |
-| Capire identita, tono e visual direction | `../BRAND.md` |
+| Capire identità, tono e visual direction | `../BRAND.md` |
 | Capire la struttura docs/repo | `structure.md` |
 | Consultare decisioni stabili | `decisions/` |
 | Consultare decisioni ancora aperte | `decisions-pending.md` |
 | Capire lo stack scelto | `decisions/0001-stack.md` |
 | Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
+| Capire versioning runtime locale | `decisions/0006-versioning-runtime-locale.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |
@@ -67,7 +69,7 @@ docs/
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
 | Capire limiti e governance del servizio | `guides/service-governance.md` |
-| Capire dati e entita | `data-model.md` |
+| Capire dati e entità | `data-model.md` |
 | Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |
 | Capire policy Git/PR/pubblicazione | `guides/git-e-pubblicazione.md` |
 | Capire versioning e release | `guides/versioning-e-release.md` |
@@ -81,8 +83,8 @@ I file nella root sono punti d'ingresso convenzionali:
 
 - `README.md`: orientamento rapido.
 - `AGENTS.md`: regole operative per agenti e Codex.
-- `BRAND.md`: identita, tono, tagline e visual direction.
-- `ROADMAP.md`: priorita e backlog.
+- `BRAND.md`: identità, tono, tagline e visual direction.
+- `ROADMAP.md`: priorità e backlog.
 - `CHANGELOG.md`: storico modifiche significative.
 - `SECURITY.md`: policy sicurezza root.
 - `.env.example`: env var previste.
@@ -93,4 +95,4 @@ Aggiorna la documentazione quando cambia una decisione stabile. Non creare file 
 
 ## Regola di handoff
 
-Ogni chiusura di lavoro deve indicare prossimi passi concreti quando esiste un seguito operativo reale. Se il lavoro e chiuso e non c'e una prossima azione utile, dichiararlo esplicitamente.
+Ogni chiusura di lavoro deve indicare prossimi passi concreti quando esiste un seguito operativo reale. Se il lavoro è chiuso e non c'è una prossima azione utile, dichiararlo esplicitamente.

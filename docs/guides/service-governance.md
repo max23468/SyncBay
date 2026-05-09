@@ -1,6 +1,6 @@
 # Guida service governance
 
-Questa guida definisce limiti, comportamento operativo e responsabilita minime di SyncBay.
+Questa guida definisce limiti, comportamento operativo e responsabilità minime di SyncBay.
 
 ## Perimetro MVP
 
@@ -11,7 +11,7 @@ SyncBay MVP e:
 - 1 location Shopify predefinita;
 - fino a 2.000 prodotti per shop;
 - sync negozio eBay -> catalogo Shopify;
-- protezione disponibilita da ordini Shopify verso eBay;
+- protezione disponibilità da ordini Shopify verso eBay;
 - dashboard self-service con diagnostica e retry.
 
 ## Fuori perimetro MVP
@@ -39,11 +39,11 @@ SyncBay MVP e:
 
 Da validare prima della beta:
 
-- conservare mapping e snapshot finche lo shop usa SyncBay;
+- conservare mapping e snapshot finché lo shop usa SyncBay;
 - conservare job e audit log per il tempo necessario a diagnostica, rollback e compliance;
 - eliminare o anonimizzare dati shop su disinstallazione/richiesta dove richiesto;
 - non conservare payload completi sensibili se bastano riferimenti diagnostici;
-- non salvare dati cliente/ordine oltre quanto necessario a proteggere la disponibilita.
+- non salvare dati cliente/ordine oltre quanto necessario a proteggere la disponibilità.
 
 ## Comportamento in caso di errore
 
@@ -55,30 +55,30 @@ Da validare prima della beta:
 - Permettere retry se sicuro.
 - Mantenere ultimo stato Shopify valido.
 
-### Errore disponibilita eBay dopo ordine Shopify
+### Errore disponibilità eBay dopo ordine Shopify
 
 - Trattare come alert critico.
 - Retry prioritario.
 - Mostrare impatto e prodotto coinvolto.
-- Se configurato, attivare modalita prudente sul prodotto Shopify.
+- Se configurato, attivare modalità prudente sul prodotto Shopify.
 - Non nascondere il rischio di vendere prodotti non disponibili.
 
-### Listing eBay non piu attivo
+### Listing eBay non più attivo
 
 - Archiviare prodotto Shopify.
 - Non cancellare automaticamente.
 - Conservare mapping/snapshot per audit e rollback.
 
-## Modalita prudente
+## Modalità prudente
 
-La modalita prudente serve quando SyncBay non e sicuro dello stock.
+La modalità prudente serve quando SyncBay non è sicuro dello stock.
 
 Possibili azioni configurabili:
 
-- ridurre quantita Shopify pubblicata;
+- ridurre quantità Shopify pubblicata;
 - applicare stock buffer;
 - mettere prodotto in draft/archiviato in casi critici;
-- bloccare ulteriori sync su un campo finche il conflitto non viene risolto.
+- bloccare ulteriori sync su un campo finché il conflitto non viene risolto.
 
 ## Requisiti prima della beta
 

@@ -5,34 +5,34 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 ## Regola
 
 - Non trasformare una decisione aperta in codice applicativo senza conferma del maintainer.
-- Se una decisione blocca lo scaffold, deve essere chiusa prima di generare runtime.
-- Se una decisione puo restare differita, indicare chiaramente quale fallback vale nel MVP.
+- Se una decisione blocca una fase runtime, deve essere chiusa prima di implementarla.
+- Se una decisione può restare differita, indicare chiaramente quale fallback vale nel MVP.
 
-## Bloccanti prima dello scaffold
+## Bloccanti prima delle prossime fasi runtime
 
-| Decisione | Stato | Default provvisorio | Perche conta |
+| Decisione | Stato | Default provvisorio | Perché conta |
 | --- | --- | --- | --- |
 | Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; scaffold presente; env e callback da compilare sul primo runtime utilizzabile | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
-| Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay`, CLI e scaffold collegati; app URL/redirect da derivare da dev tunnel/Vercel | Servono redirect URL e app URL prima della verifica end-to-end. |
+| Shopify dev setup | Chiuso per dev store | Account Partner, dev store, app `SyncBay`, CLI, scaffold e preview Admin verificati | Resta da definire il deploy production quando servirà. |
 | eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
 
 ## Decisioni da chiudere prima della beta
 
-| Decisione | Stato | Default provvisorio | Perche conta |
+| Decisione | Stato | Default provvisorio | Perché conta |
 | --- | --- | --- | --- |
 | Billing | Aperta | Fuori dalla custom app pilota | Necessario per app pubblica Shopify App Store. |
 | Piano dati/retention | Aperta | Conservare solo dati utili a sync, rollback, conflitti e compliance | Serve privacy policy reale. |
-| Multi-location avanzato | Aperta | 1 location Shopify predefinita nel MVP | Impatta disponibilita e rischio di vendere prodotti non disponibili. |
+| Multi-location avanzato | Aperta | 1 location Shopify predefinita nel MVP | Impatta disponibilità e rischio di vendere prodotti non disponibili. |
 | Varianti complesse | Aperta | Supporto semplice + log/esclusione guidata | Impatta import completo dei listing. |
-| Matching prodotti esistenti | Aperta | Roadmap prioritaria, non MVP base | Import aggressivo potrebbe sporcare shop gia avviati. |
+| Matching prodotti esistenti | Aperta | Roadmap prioritaria, non MVP base | Import aggressivo potrebbe sporcare shop già avviati. |
 | Quality score | Idea | Da valutare, non MVP | Utile solo se spiega rischi concreti senza metrica opaca. |
 
 ## Decisioni da chiudere prima dell'app pubblica
 
-| Decisione | Stato | Default provvisorio | Perche conta |
+| Decisione | Stato | Default provvisorio | Perché conta |
 | --- | --- | --- | --- |
 | Shopify App Store listing | Aperta | Dopo beta custom | Richiede contenuti, support policy, billing e review. |
 | Support policy | Aperta | Self-service first | Il prodotto non deve dipendere da supporto umano nella prima fase. |
 | Multi-marketplace | Idea | Fuori scope | Rischia di diluire il vantaggio eBay.it-first. |
-| Release/versioning runtime | Aperta | Policy docs-first in ADR 0003; niente release SemVer finche non esiste runtime | Serve prima di deploy pubblici. |
-| CI runtime | Aperta | Policy futura in ADR 0004; nessun workflow Quality finche non esistono scaffold e comandi reali | Serve prima di sviluppo runtime continuativo. |
+| Release production | Aperta | Versioning locale attivo in ADR 0006; niente tag, GitHub Release o Release Please finché non viene deciso il deploy production | Serve prima di deploy pubblici versionati. |
+| CI runtime | Aperta | Policy futura in ADR 0004; nessun workflow Quality finché non vengono decisi comandi e gate reali | Serve prima di sviluppo runtime continuativo. |

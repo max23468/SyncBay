@@ -1,16 +1,16 @@
 # Prerequisiti account Shopify ed eBay
 
-Questa guida chiude il perimetro dei prerequisiti account prima dello scaffold applicativo.
+Questa guida traccia il perimetro dei prerequisiti account per lo scaffold e le prime connessioni.
 
-Non contiene segreti reali. I valori sensibili vanno inseriti solo nei provider/runtime corretti quando esistera lo scaffold.
+Non contiene segreti reali. I valori sensibili vanno inseriti solo nei provider/runtime corretti.
 
 ## Stato
 
 Prerequisiti Shopify confermati e Shopify CLI collegata all'app `SyncBay`.
 
-Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile, nuovo keyset/app SyncBay richiesto a eBay e in attesa di approvazione. Restano da completare RuName, URL OAuth e requisiti account deletion quando il keyset sara disponibile.
+Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile, nuovo keyset/app SyncBay richiesto a eBay e in attesa di approvazione. Restano da completare RuName, URL OAuth e requisiti account deletion quando il keyset sarà disponibile.
 
-Finche non vengono forniti URL reali e keyset eBay approvato:
+Finché non vengono forniti URL reali e keyset eBay approvato:
 
 - non attivare OAuth eBay reale o sync runtime;
 - non riusare keyset di altri progetti senza decisione esplicita;
@@ -27,10 +27,10 @@ Finche non vengono forniti URL reali e keyset eBay approvato:
 | Development store | Confermato | `syncbay-dev.myshopify.com` |
 | Nome app custom | Confermato | `SyncBay` |
 | Shopify CLI | Collegata | `shopify.app.toml` collegato all'app `SyncBay`. |
-| App URL locale/provvisoria | Provider creato | Vercel project `syncbay`; URL reale da confermare dopo primo deploy/scaffold. |
-| Redirect URL OAuth | Da derivare | Da derivare dall'app URL Vercel dopo primo deploy/scaffold. |
-| Scopes iniziali | Definiti come bozza MVP | Da validare sul template Shopify/API version al momento dello scaffold. |
-| Webhook minimi | Definiti come bozza MVP | Da registrare via config Shopify CLI dove possibile. |
+| App URL locale/provvisoria | Provider creato | Vercel project `syncbay`; dev preview verificata via Shopify CLI. |
+| Redirect URL OAuth | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest pilota. |
+| Scopes iniziali | Definiti e ridotti | Nessun `read_orders` finché Shopify protected customer data non viene configurato. |
+| Webhook minimi | Parzialmente configurati | `orders/paid` preparato lato route ma non sottoscritto nel manifest. |
 
 ### App e URL
 
@@ -39,11 +39,11 @@ Default operativo per lo scaffold:
 - usare Shopify CLI;
 - collegare una app `SyncBay` nel Dev Dashboard;
 - usare il development store `syncbay-dev.myshopify.com`;
-- usare Vercel come URL HTTPS stabile per sviluppo condiviso e callback provider quando esiste runtime;
+- usare Vercel come URL HTTPS stabile per sviluppo condiviso e callback provider quando serve un host pubblico;
 - usare Shopify CLI tunnel per sviluppo locale Shopify quando supportato;
 - tenere separati URL locali/provvisori e URL production futura.
 
-URL previsti appena esistera runtime:
+URL previsti per il primo deploy Vercel:
 
 | Uso | Pattern provvisorio |
 | --- | --- |
@@ -51,7 +51,7 @@ URL previsti appena esistera runtime:
 | Shopify OAuth callback | `https://<syncbay-vercel-host>/auth/shopify/callback` |
 | Shopify webhook endpoint | `https://<syncbay-vercel-host>/webhooks/shopify` |
 
-I path sono provvisori: lo scaffold Shopify potrebbe generarne di diversi.
+I path Shopify restano allineati allo scaffold generato.
 
 ### Scopes Shopify MVP
 
@@ -62,14 +62,13 @@ read_products
 write_products
 read_inventory
 write_inventory
-read_orders
 read_locations
 ```
 
-Da verificare in fase scaffold:
+Da verificare durante l'evoluzione runtime:
 
 - eventuali scope media/file se l'upload immagini passa da API che li richiedono;
-- se `read_orders` e sufficiente per il trigger scelto o se servono accessi aggiuntivi;
+- `read_orders` solo dopo configurazione Shopify per protected customer data;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
 Regola: chiedere solo scope necessari al flusso MVP.
@@ -78,17 +77,18 @@ Regola: chiedere solo scope necessari al flusso MVP.
 
 Bozza minima:
 
-| Evento | Perche serve |
+| Evento | Perché serve |
 | --- | --- |
 | App uninstall | Fermare sync, revocare accessi, gestire cleanup. |
-| Order paid o order created | Ridurre disponibilita eBay dopo vendita Shopify. |
+| Inventory level update | Trigger iniziale per rilevare variazioni quantità senza protected customer data. |
+| Order paid o order created | Trigger futuro per ridurre disponibilità eBay dopo vendita Shopify, dopo configurazione protected customer data. |
 | Product update | Rilevare modifiche manuali Shopify e aprire conflitti. |
-| Inventory level update | Rilevare variazioni quantita manuali o esterne. |
 | GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati. |
 
 Default MVP:
 
-- trigger stock principale: ordine pagato;
+- trigger stock principale iniziale: variazione inventario;
+- trigger stock ordine pagato: da attivare dopo configurazione protected customer data;
 - opzione futura/aggressiva: ordine creato;
 - app-specific subscriptions via configurazione Shopify CLI quando supportato;
 - fallback GraphQL Admin API se la subscription deve dipendere dallo shop.
@@ -112,9 +112,9 @@ Default MVP:
 
 ### OAuth
 
-SyncBay dovra usare Authorization Code Grant per token utente venditore eBay.
+SyncBay dovrà usare Authorization Code Grant per token utente venditore eBay.
 
-Nota importante: nel token exchange eBay il parametro `redirect_uri` non e una normale URL applicativa, ma il `RuName` assegnato all'app eBay per l'ambiente Sandbox o Production.
+Nota importante: nel token exchange eBay il parametro `redirect_uri` non è una normale URL applicativa, ma il `RuName` assegnato all'app eBay per l'ambiente Sandbox o Production.
 
 Valori previsti:
 
@@ -178,7 +178,7 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 - Development store: `syncbay-dev.myshopify.com`.
 - Nome app custom: `SyncBay`.
 - Shopify CLI: collegata all'app `SyncBay`.
-- App URL provvisorio: da confermare con il primo deploy Vercel quando esiste runtime.
+- App URL provvisorio: `https://syncbay.vercel.app` nel manifest pilota; dev preview verificata via Shopify CLI.
 - Preferenza tunnel/hosting dev: Vercel per URL stabile, Shopify CLI tunnel per sviluppo locale Shopify.
 
 ### eBay
@@ -189,14 +189,14 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 - Production keyset: in attesa.
 - RuName Sandbox: da compilare quando eBay approva/mostra il keyset.
 - RuName Production: da compilare quando disponibile.
-- Accept URL e Reject URL: da definire dopo provisioning Vercel e keyset eBay.
+- Accept URL e Reject URL: da definire dopo approvazione keyset eBay e conferma callback pubbliche.
 - Preferenza iniziale: test su Sandbox quando disponibile; Production solo dopo decisione esplicita.
 
 ## Cosa resta bloccante
 
-Anche con questa guida chiusa, prima dello scaffold restano da completare:
+Anche con questa guida chiusa, prima delle prossime fasi runtime restano da completare:
 
-- URL reali e redirect;
+- callback provider eBay reali;
 - keyset/RuName eBay;
 - secret runtime nei provider, non nel repo.
 

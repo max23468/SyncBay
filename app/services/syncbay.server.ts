@@ -18,6 +18,7 @@ interface WebhookRecordInput {
   shopDomain: string;
   topic: string;
   resourceId?: string | null;
+  webhookId?: string | null;
 }
 
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
@@ -154,6 +155,7 @@ export async function updateShopifyScopes(shopDomain: string, scopes: string[]) 
 }
 
 export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput) {
+  const normalizedTopic = normalizeShopifyWebhookTopic(input.topic);
   const shop = await prisma.shop.upsert({
     where: { shopDomain: input.shopDomain },
     create: {
@@ -165,16 +167,17 @@ export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput)
       installationStatus: ShopInstallationStatus.INSTALLED,
     },
   });
-  const jobType = getPlaceholderJobType(input.topic);
+  const jobType = getPlaceholderJobType(normalizedTopic);
   const details = {
     provider: "shopify",
     resourceId: input.resourceId ?? null,
-    topic: input.topic,
+    topic: normalizedTopic,
+    webhookId: input.webhookId ?? null,
   } satisfies Prisma.JsonObject;
 
   if (jobType) {
-    const idempotencyKey = input.resourceId
-      ? `shopify:${shop.id}:${input.topic}:${input.resourceId}`
+    const idempotencyKey = input.webhookId
+      ? `shopify:${shop.id}:${normalizedTopic}:${input.webhookId}`
       : null;
     const jobData = {
       idempotencyKey,
@@ -210,6 +213,7 @@ export function getEbayRuntimeReadiness() {
     { envKey: "EBAY_CLIENT_ID", label: "Client ID eBay" },
     { envKey: "EBAY_CLIENT_SECRET", label: "Client secret eBay" },
     { envKey: "EBAY_RU_NAME", label: "RuName eBay" },
+    { envKey: "EBAY_SCOPES", label: "scope OAuth eBay" },
     { envKey: "EBAY_OAUTH_ACCEPT_URL", label: "OAuth accept URL eBay" },
     { envKey: "EBAY_OAUTH_REJECT_URL", label: "OAuth reject URL eBay" },
     { envKey: "TOKEN_ENCRYPTION_KEY", label: "chiave cifratura token" },
@@ -239,6 +243,10 @@ function getPlaceholderJobType(topic: string) {
   if (topic === "inventory_levels/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
+}
+
+function normalizeShopifyWebhookTopic(topic: string) {
+  return topic.toLowerCase().replaceAll("_", "/");
 }
 
 function getEbayMarketplaceId() {
