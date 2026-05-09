@@ -4,10 +4,10 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 
 ## 1. Repo e documentazione
 
-- [ ] Primo commit docs di fondazione creato.
-- [ ] Remote GitHub deciso e configurato.
-- [ ] Branch policy confermata.
-- [ ] `AGENTS.md` riletto e coerente con lo stato reale.
+- [x] Primo commit docs di fondazione creato.
+- [x] Remote GitHub deciso e configurato: https://github.com/max23468/SyncBay
+- [x] Branch policy provvisoria documentata.
+- [x] `AGENTS.md` riletto e coerente con lo stato reale.
 - [ ] `docs/decisions-pending.md` aggiornato.
 - [ ] Decisioni bloccanti spostate in ADR quando chiuse.
 
@@ -58,4 +58,3 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [ ] Non creare deploy production.
 - [ ] Non configurare CI complessa.
 - [ ] Non generare codice runtime prima di aver chiuso le decisioni bloccanti.
-

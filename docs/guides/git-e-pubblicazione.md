@@ -1,11 +1,12 @@
 # Guida Git e pubblicazione
 
-Questa guida definisce la policy provvisoria Git/PR per SyncBay. Va aggiornata quando il repo avra un remote GitHub.
+Questa guida definisce la policy provvisoria Git/PR per SyncBay.
 
 ## Stato corrente
 
-- Repo Git locale inizializzata.
-- Remote GitHub non ancora documentato.
+- Repo Git locale inizializzata e collegata a GitHub.
+- Remote GitHub: https://github.com/max23468/SyncBay
+- Branch predefinito: `main`.
 - Nessun deploy.
 - Nessuna release runtime.
 - Nessuna CI definita.
@@ -34,9 +35,7 @@ Usare Conventional Commit:
 
 Durante la fase docs-only, il commit naturale sara `docs: bootstrap SyncBay planning`.
 
-## Branch e PR dopo collegamento GitHub
-
-Quando esistera un remote:
+## Branch e PR
 
 - usare branch dedicati per lavori non banali: `codex/<tema>`;
 - aprire PR verso `main`;
@@ -62,4 +61,3 @@ Finche SyncBay non ha runtime:
 - "rilascia" richiede prima una policy release/versioning.
 
 Quando questi flussi verranno decisi, creare ADR e aggiornare questa guida.
-

@@ -19,7 +19,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Sistema documentale base | Roadmap, changelog, index, contesto, glossario, guide e data model concettuale |
 | Fatto | Decisioni aperte e checklist pre-scaffold | `docs/decisions-pending.md`, `docs/guides/pre-scaffold-checklist.md` |
 | Fatto | Governance servizio e security policy | `docs/guides/service-governance.md`, `SECURITY.md` |
-| Da fare | Prima issue/branch policy GitHub | Da definire quando il repo verra collegato a GitHub |
+| Fatto | Remote GitHub e branch policy iniziale | Repo privato `max23468/SyncBay`, branch policy provvisoria in `docs/guides/git-e-pubblicazione.md` |
 
 ## 1. Identita prodotto
 
