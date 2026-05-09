@@ -6,12 +6,14 @@ Non contiene segreti reali. I valori sensibili vanno inseriti solo nei provider/
 
 ## Stato
 
-Prerequisiti definiti, valori reali da confermare con il maintainer.
+Prerequisiti Shopify confermati e Shopify CLI collegata all'app `SyncBay`.
 
-Finche non vengono forniti account e URL reali:
+Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile, nuovo keyset/app SyncBay richiesto a eBay e in attesa di approvazione. Restano da completare RuName, URL OAuth e requisiti account deletion quando il keyset sara disponibile.
 
-- non creare app Shopify CLI;
-- non creare app eBay production;
+Finche non vengono forniti URL reali e keyset eBay approvato:
+
+- non creare scaffold/runtime applicativo;
+- non riusare keyset di altri progetti senza decisione esplicita;
 - non salvare token o secret nel repo;
 - non configurare webhook produttivi.
 
@@ -96,15 +98,15 @@ Default MVP:
 
 | Campo | Stato | Note |
 | --- | --- | --- |
-| Account eBay Developer | Da confermare | Necessario per ottenere keyset OAuth. |
-| App eBay | Da creare o confermare | Servono Sandbox e Production se si vuole test completo. |
+| Account eBay Developer | Confermato | Account disponibile. |
+| App/keyset eBay SyncBay | In attesa eBay | Richiesto keyset/app separato per SyncBay; non riusare FiscalBay salvo fallback esplicito. |
 | Marketplace iniziale | Confermato | `EBAY_IT` |
-| OAuth RuName Sandbox | Da confermare | eBay usa `RuName` come `redirect_uri` nel token exchange. |
-| OAuth RuName Production | Da confermare | Separato dal Sandbox. |
-| Accept URL | Da decidere | URL pubblico/callback success OAuth. |
-| Reject URL | Da decidere | URL pubblico/callback rifiuto OAuth. |
+| OAuth RuName Sandbox | In attesa keyset | eBay usa `RuName` come `redirect_uri` nel token exchange. |
+| OAuth RuName Production | In attesa keyset | Separato dal Sandbox. |
+| Accept URL | Da decidere dopo app URL | URL pubblico/callback success OAuth. |
+| Reject URL | Da decidere dopo app URL | URL pubblico/callback rifiuto OAuth. |
 | Scopes eBay | Definiti come bozza MVP | Da validare contro metodi effettivi usati. |
-| Account deletion endpoint | Da decidere | Richiede HTTPS pubblico e challenge response. |
+| Account deletion endpoint | Da decidere dopo app URL | Richiede HTTPS pubblico e challenge response. |
 | Verification token | Da generare fuori repo | 32-80 caratteri, non salvare in Git. |
 
 ### OAuth
@@ -171,22 +173,23 @@ https://<syncbay-dev-host>/webhooks/ebay/account-deletion
 
 ### Shopify
 
-- Conferma account Shopify Partner disponibile: si/no.
-- Development store da usare: `<shop>.myshopify.com`.
-- Nome app custom: confermare `SyncBay` o indicare variante.
-- App URL provvisorio, se gia deciso.
-- Preferenza tunnel/hosting dev, se gia decisa.
+- Account Shopify Partner: confermato.
+- Development store: `syncbay-dev.myshopify.com`.
+- Nome app custom: `SyncBay`.
+- Shopify CLI: collegata all'app `SyncBay`.
+- App URL provvisorio: da decidere.
+- Preferenza tunnel/hosting dev: da decidere.
 
 ### eBay
 
-- Conferma account eBay Developer disponibile: si/no.
-- App eBay gia creata: si/no.
-- Sandbox keyset disponibile: si/no.
-- Production keyset disponibile: si/no.
-- RuName Sandbox.
-- RuName Production, se gia disponibile.
-- Accept URL e Reject URL desiderate, oppure conferma che le definiamo dopo hosting.
-- Preferenza iniziale: solo Sandbox o Sandbox + Production.
+- Account eBay Developer: confermato.
+- App/keyset eBay SyncBay: richiesto a eBay, in attesa di approvazione.
+- Sandbox keyset: in attesa.
+- Production keyset: in attesa.
+- RuName Sandbox: da compilare quando eBay approva/mostra il keyset.
+- RuName Production: da compilare quando disponibile.
+- Accept URL e Reject URL: da definire dopo app URL/hosting.
+- Preferenza iniziale: test su Sandbox quando disponibile; Production solo dopo decisione esplicita.
 
 ## Cosa resta bloccante
 

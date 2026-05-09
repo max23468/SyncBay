@@ -24,10 +24,10 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 
 ## 3. Account eBay
 
-- [ ] Account eBay Developer disponibile.
-- [ ] App eBay creata o pronta da creare.
+- [x] Account eBay Developer disponibile.
+- [ ] App/keyset eBay SyncBay approvato (richiesto a eBay, in attesa).
 - [x] Marketplace iniziale confermato: `EBAY_IT`.
-- [ ] OAuth RuName e accept/reject URL decisi.
+- [ ] OAuth RuName e accept/reject URL decisi (in attesa keyset/app URL).
 - [x] Scope eBay necessari definiti come bozza MVP e verificati su documentazione corrente.
 - [x] Strategia Trading API + Inventory API confermata.
 - [x] Marketplace account deletion notification/opt-out verificato come requisito.

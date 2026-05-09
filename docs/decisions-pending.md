@@ -17,7 +17,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | Job queue | Aperta | Coda persistente obbligatoria, tecnologia non scelta | Import 2.000 prodotti e sync stock non possono dipendere da richieste sincrone. |
 | Storage immagini temporanee | Aperta | Minimizzare persistenza; copiare immagini finali su Shopify | Serve decidere dove gestire download/deduplica/retry prima dell'upload Shopify. |
 | Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay` e CLI collegati; app URL/redirect da decidere | Servono redirect URL e app URL prima dello scaffold/dev runtime. |
-| eBay dev setup | Aperta | Prerequisiti definiti in `docs/guides/prerequisiti-account.md`; `EBAY_IT` confermato | Servono app eBay, OAuth RuName, endpoint account deletion e scope. |
+| eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
 
 ## Decisioni da chiudere prima della beta
 
