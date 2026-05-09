@@ -7,6 +7,7 @@ Lo scaffold applicativo contiene gia `prisma/schema.prisma` e migration per:
 - sessioni Shopify (`Session`);
 - shop installati (`Shop`);
 - connessione eBay per marketplace (`EbayConnection`);
+- state OAuth eBay anti-CSRF (`EbayOAuthState`);
 - job applicativi tracciati a database (`SyncJob`);
 - audit log operativo (`AuditLog`).
 
@@ -51,6 +52,18 @@ Schema iniziale:
 - user/account id eBay;
 - token OAuth cifrati;
 - stato connessione: attivo, scaduto, revocato, da riconnettere.
+
+### State OAuth eBay
+
+Traccia lo `state` temporaneo del flusso OAuth eBay.
+
+Schema iniziale:
+
+- shop collegato;
+- hash dello state, non valore in chiaro;
+- scadenza breve;
+- timestamp consumo;
+- eventuale URL di ritorno futuro.
 
 ### Mapping prodotto
 

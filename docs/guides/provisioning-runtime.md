@@ -10,7 +10,7 @@ Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Non esistono ancora deploy runtime, import catalogo o sync.
 
-Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, job applicativi e audit log. Le migration sono tracciate in `prisma/migrations/`, ma non vanno applicate a Supabase production-like senza decisione esplicita sul primo ambiente runtime verificabile.
+Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi e audit log. Le migration sono tracciate in `prisma/migrations/`.
 
 ## Vercel
 
@@ -25,9 +25,9 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 
 Note:
 
-- Il framework preset e `Other` finche non esiste lo scaffold Shopify React Router.
+- Il framework preset e `Other` finche il deploy React Router non viene verificato su Vercel.
 - Nessun deploy production e stato creato.
-- Gli env Vercel verranno impostati dopo lo scaffold, quando saranno chiari nomi, callback e secret reali.
+- Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 
 ## Supabase
 
@@ -56,6 +56,9 @@ Non salvarla in Git e non stamparla nei log.
 - `supabase projects list`
 - `supabase link --project-ref mgjcbuokppfnglsftsmi`
 - query remota Supabase: database `postgres`, versione `17.6`
+- `npx prisma migrate deploy` iniziale su Supabase tramite pooler
+- migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
+- `shopify app dev --store syncbay-dev.myshopify.com` con preview Admin caricata e sessione installazione registrata
 
 Estensioni Supabase verificate:
 
@@ -72,9 +75,9 @@ Estensioni Supabase verificate:
 
 Durante o subito dopo lo scaffold:
 
-- applicare e verificare le migration Prisma su Supabase Postgres quando viene deciso il primo ambiente runtime;
+- mantenere allineate le migration Prisma su Supabase Postgres;
 - definire `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider, non nel repo;
-- impostare gli env Vercel reali;
+- completare gli env Vercel preview quando viene scelto il branch target o via dashboard;
 - creare bucket Supabase Storage `syncbay-import-staging` via migration o script tracciato;
 - abilitare Supabase Queues/Cron via migration;
 - aggiornare URL Shopify/eBay con il primo URL Vercel utilizzabile.

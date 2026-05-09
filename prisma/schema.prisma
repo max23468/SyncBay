@@ -98,6 +98,7 @@ model Shop {
   updatedAt          DateTime               @updatedAt
 
   ebayConnections EbayConnection[]
+  ebayOAuthStates EbayOAuthState[]
   syncJobs        SyncJob[]
   auditLogs       AuditLog[]
 }
@@ -123,6 +124,20 @@ model EbayConnection {
 
   @@unique([shopId, marketplaceId])
   @@index([status])
+}
+
+model EbayOAuthState {
+  id         String    @id @default(cuid())
+  shopId     String
+  stateHash  String    @unique
+  returnTo   String?
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, expiresAt])
 }
 
 model SyncJob {

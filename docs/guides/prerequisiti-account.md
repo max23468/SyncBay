@@ -62,14 +62,13 @@ read_products
 write_products
 read_inventory
 write_inventory
-read_orders
 read_locations
 ```
 
 Da verificare in fase scaffold:
 
 - eventuali scope media/file se l'upload immagini passa da API che li richiedono;
-- se `read_orders` e sufficiente per il trigger scelto o se servono accessi aggiuntivi;
+- `read_orders` solo dopo configurazione Shopify per protected customer data;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
 Regola: chiedere solo scope necessari al flusso MVP.
@@ -81,14 +80,15 @@ Bozza minima:
 | Evento | Perche serve |
 | --- | --- |
 | App uninstall | Fermare sync, revocare accessi, gestire cleanup. |
-| Order paid o order created | Ridurre disponibilita eBay dopo vendita Shopify. |
+| Inventory level update | Trigger iniziale per rilevare variazioni quantita senza protected customer data. |
+| Order paid o order created | Trigger futuro per ridurre disponibilita eBay dopo vendita Shopify, dopo configurazione protected customer data. |
 | Product update | Rilevare modifiche manuali Shopify e aprire conflitti. |
-| Inventory level update | Rilevare variazioni quantita manuali o esterne. |
 | GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati. |
 
 Default MVP:
 
-- trigger stock principale: ordine pagato;
+- trigger stock principale iniziale: variazione inventario;
+- trigger stock ordine pagato: da attivare dopo configurazione protected customer data;
 - opzione futura/aggressiva: ordine creato;
 - app-specific subscriptions via configurazione Shopify CLI quando supportato;
 - fallback GraphQL Admin API se la subscription deve dipendere dallo shop.

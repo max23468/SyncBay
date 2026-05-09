@@ -27,3 +27,5 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Aggiornata la configurazione Dependabot per monitorare anche le dipendenze npm introdotte dallo scaffold.
 - Allineata la distribuzione Shopify dello scaffold alla fase pilota custom app tramite `AppDistribution.SingleMerchant`.
 - Adattato lo scaffold a SyncBay con dashboard embedded, schema Prisma iniziale, webhook Shopify placeholder, route OAuth eBay placeholder e documentazione runtime aggiornata.
+- Applicate le migration Prisma su Supabase e implementato il flusso OAuth eBay con state temporaneo, token exchange e cifratura token.
+- Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.

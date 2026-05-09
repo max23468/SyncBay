@@ -47,8 +47,8 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 | Stato | Voce | Note |
 | --- | --- | --- |
-| In corso | Connessione Shopify custom app | Scaffold e persistenza shop presenti; da completare env reali, migration Supabase e verifica installazione end-to-end |
-| In corso | Connessione eBay.it OAuth | Placeholder e readiness env presenti; in attesa keyset/RuName per implementare OAuth reale, token e refresh |
+| Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
+| In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; in attesa keyset/RuName per verifica end-to-end |
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
@@ -82,6 +82,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Applicare e verificare migration Prisma su Supabase quando si decide il primo runtime verificabile.
-2. Completare keyset/RuName eBay quando eBay approva la richiesta.
-3. Implementare OAuth eBay reale con cifratura token e stato connessione in dashboard.
+1. Completare keyset/RuName eBay quando eBay approva la richiesta.
+2. Verificare OAuth eBay end-to-end e poi collegare il primo account venditore.
+3. Preparare preview import catalogo eBay -> Shopify senza sync automatico.

@@ -123,16 +123,16 @@ Scope iniziali previsti:
 - `write_products`
 - `read_inventory`
 - `write_inventory`
-- `read_orders`
 - `read_locations`
+- `read_orders` solo quando sara completata la configurazione Shopify per protected customer data.
 - scope necessari per file/media e webhook, da confermare in fase scaffold in base alla versione API Shopify usata.
 
 Webhook Shopify MVP:
 
 - app uninstall, per cleanup e revoca token.
-- order paid o order created, per aggiornare disponibilita eBay.
+- inventory level update come trigger iniziale non-customer-data per aggiornare disponibilita eBay.
+- order paid o order created come trigger futuro, dopo configurazione Shopify protected customer data.
 - product update, per rilevare modifiche manuali e aprire conflitti.
-- inventory level update, se necessario per intercettare modifiche manuali alle quantita.
 
 ### eBay
 

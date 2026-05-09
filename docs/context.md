@@ -33,7 +33,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e route placeholder OAuth eBay. Non esistono ancora import, sync catalogo, job queue runtime o OAuth eBay attivo.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e flusso OAuth eBay lato app. La preview Shopify Admin e stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
 
 ## Runtime deciso
 
@@ -61,6 +61,7 @@ Provisioning minimo:
 - `npm run lint`
 - `npm run build`
 - `DATABASE_URL='postgresql://user:pass@localhost:5432/syncbay' DATABASE_DIRECT_URL='postgresql://user:pass@localhost:5432/syncbay' npx prisma validate`
+- `npx prisma migrate deploy` con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target quando bisogna applicare migration remote
 
 ## Documenti principali
 

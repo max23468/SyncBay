@@ -210,6 +210,7 @@ export function getEbayRuntimeReadiness() {
     { envKey: "EBAY_CLIENT_ID", label: "Client ID eBay" },
     { envKey: "EBAY_CLIENT_SECRET", label: "Client secret eBay" },
     { envKey: "EBAY_RU_NAME", label: "RuName eBay" },
+    { envKey: "EBAY_SCOPES", label: "scope OAuth eBay" },
     { envKey: "EBAY_OAUTH_ACCEPT_URL", label: "OAuth accept URL eBay" },
     { envKey: "EBAY_OAUTH_REJECT_URL", label: "OAuth reject URL eBay" },
     { envKey: "TOKEN_ENCRYPTION_KEY", label: "chiave cifratura token" },

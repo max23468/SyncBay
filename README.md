@@ -6,7 +6,7 @@ SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un nego
 
 Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit e webhook Shopify tracciati come placeholder. Non esistono ancora import, sync catalogo o OAuth eBay attivo.
+Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo.
 
 ## Direzione prodotto
 
@@ -41,14 +41,16 @@ Provisioning minimo creato:
 - Typecheck: `npm run typecheck`
 - Lint: `npm run lint`
 - Build: `npm run build`
-- Prisma/setup runtime: `npm run setup`
+- Prisma/setup runtime locale: `npm run setup`
+- Migration Supabase: `npx prisma migrate deploy` da eseguire esplicitamente con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target
 
 ## Endpoint scaffold SyncBay
 
 - Dashboard embedded: `/app`
-- Avvio placeholder OAuth eBay: `/auth/ebay/start`
-- Callback placeholder OAuth eBay: `/auth/ebay/callback`
-- Webhook Shopify: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/orders/paid`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
+- Avvio OAuth eBay: `/auth/ebay/start`
+- Callback OAuth eBay: `/auth/ebay/callback`
+- Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
+- Webhook Shopify preparato ma non ancora configurato: `/webhooks/orders/paid`, in attesa della configurazione Shopify per protected customer data
 
 ## Documenti principali
 
@@ -74,6 +76,6 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Applicare le migration su Supabase quando si decide il primo ambiente runtime verificabile.
-2. Completare keyset/RuName eBay quando eBay approva la richiesta.
-3. Implementare OAuth eBay reale e cifratura token prima di qualunque sync catalogo.
+1. Completare keyset/RuName eBay quando eBay approva la richiesta e impostare gli env `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `EBAY_RU_NAME`, `EBAY_SCOPES`, `EBAY_OAUTH_ACCEPT_URL`, `EBAY_OAUTH_REJECT_URL`.
+2. Verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
+3. Preparare preview import catalogo eBay -> Shopify senza sync automatico.

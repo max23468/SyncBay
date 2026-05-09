@@ -18,11 +18,11 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] Development store disponibile: `syncbay-dev.myshopify.com`.
 - [x] Nome app custom confermato: `SyncBay`.
 - [x] Shopify CLI collegata all'app `SyncBay`.
-- [ ] App URL provvisorio deciso.
-- [ ] Redirect URL locali/provvisori decisi.
+- [x] App URL provvisorio deciso: `https://syncbay.vercel.app`.
+- [x] Redirect URL Shopify provvisorio deciso: `https://syncbay.vercel.app/auth/callback`.
 - [x] Scopes Shopify iniziali definiti come bozza MVP.
 - [x] Webhook minimi definiti come bozza MVP: uninstall, orders, products, inventory.
-- [x] Webhook minimi configurati nello scaffold come placeholder tracciati.
+- [x] Webhook minimi configurati nello scaffold come placeholder tracciati, escluso `orders/paid` finche Shopify non approva/configura protected customer data.
 
 ## 3. Account eBay
 
@@ -40,6 +40,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] Progetto Vercel creato e collegato: `matteos-projects-9226d217/syncbay`.
 - [x] Database scelto: Supabase Postgres.
 - [x] Progetto Supabase creato e collegato: `mgjcbuokppfnglsftsmi`.
+- [x] Migration Prisma iniziali applicate su Supabase.
 - [x] ORM scelto: Prisma.
 - [x] Job queue scelta: Supabase Queues.
 - [x] Storage temporaneo immagini deciso: Supabase Storage privato, staging con retention breve.
@@ -71,13 +72,13 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] `npm run build`
 - [x] `npm audit --omit=dev`
 - [x] `npx prisma validate`
-- [ ] Installazione Shopify end-to-end sul dev store.
+- [x] Installazione Shopify end-to-end sul dev store.
 - [ ] Primo deploy/preview Vercel.
 
 ## 8. Adattamento scaffold a SyncBay
 
 - [x] Dashboard embedded in italiano con stato Shopify/eBay/sync.
 - [x] Modello Prisma iniziale per shop, connessione eBay, job e audit log.
-- [x] Placeholder OAuth eBay: `/auth/ebay/start` e `/auth/ebay/callback`.
-- [x] Placeholder webhook Shopify: ordini pagati, prodotti aggiornati e inventory levels aggiornati.
+- [x] Flusso OAuth eBay lato app: `/auth/ebay/start` e `/auth/ebay/callback`.
+- [x] Placeholder webhook Shopify: prodotti aggiornati e inventory levels aggiornati configurati; ordini pagati implementato lato route ma non ancora sottoscritto nel manifest.
 - [x] `.env.example` allineato a dev store, eBay sandbox e callback da completare.
