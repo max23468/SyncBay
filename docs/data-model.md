@@ -1,8 +1,8 @@
 # Modello dati concettuale
 
-Questo documento descrive le entita previste per SyncBay e lo stato dello schema Prisma iniziale.
+Questo documento descrive le entità previste per SyncBay e lo stato dello schema Prisma iniziale.
 
-Lo scaffold applicativo contiene gia `prisma/schema.prisma` e migration per:
+Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 
 - sessioni Shopify (`Session`);
 - shop installati (`Shop`);
@@ -15,7 +15,7 @@ Il modello resta iniziale: non include ancora mapping prodotto, snapshot, regole
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
-## Entita principali
+## Entità principali
 
 ### Shop
 
@@ -110,7 +110,7 @@ Tipi:
 
 Definiscono come trasformare descrizioni eBay.
 
-Modalita:
+Modalità:
 
 - HTML completo;
 - solo testo;
@@ -131,7 +131,7 @@ Requisiti:
 
 Rappresenta import, sync, retry, archiviazione, update stock.
 
-Nel runtime MVP i job applicativi sono rappresentati a livello di dominio in `SyncJob`, per diagnostica/dashboard. Supabase Queues resta il meccanismo previsto per consegna e retry persistente quando verra attivato il runtime queue.
+Nel runtime MVP i job applicativi sono rappresentati a livello di dominio in `SyncJob`, per diagnostica/dashboard. Supabase Queues resta il meccanismo previsto per consegna e retry persistente quando verrà attivato il runtime queue.
 
 Stati minimi:
 
@@ -146,7 +146,7 @@ Tipi iniziali:
 
 - import catalogo;
 - sync incrementale;
-- aggiornamento disponibilita eBay dopo ordine Shopify;
+- aggiornamento disponibilità eBay dopo ordine Shopify;
 - rilevazione modifiche Shopify;
 - archiviazione listing inattivi;
 - riconciliazione catalogo;
@@ -173,7 +173,7 @@ Registra eventi rilevanti:
 - refresh token fallito;
 - import avviato/completato;
 - sync critico fallito;
-- aggiornamento disponibilita eBay fallito;
+- aggiornamento disponibilità eBay fallito;
 - rollback;
 - conflitto risolto.
 

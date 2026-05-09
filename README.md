@@ -1,19 +1,19 @@
 # SyncBay
 
-SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un negoziante eBay.it.
+SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un negoziante eBay.it.
 
 ## Stato
 
 Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo.
 
 ## Direzione prodotto
 
 - Shopify riceve un catalogo operativo derivato dal negozio eBay.
-- eBay resta la sorgente di verita per prodotti e disponibilita.
+- eBay resta la sorgente di verità per prodotti e disponibilità.
 - Sync principale: eBay -> Shopify.
-- Eccezione obbligatoria: gli ordini Shopify aggiornano la disponibilita eBay per ridurre il rischio di vendere prodotti non disponibili.
+- Eccezione obbligatoria: gli ordini Shopify aggiornano la disponibilità eBay per ridurre il rischio di vendere prodotti non disponibili.
 - Marketplace iniziale: eBay.it.
 - Distribuzione iniziale: custom app.
 - Obiettivo successivo: app pubblica Shopify App Store.
@@ -43,6 +43,8 @@ Provisioning minimo creato:
 - Build: `npm run build`
 - Prisma/setup runtime locale: `npm run setup`
 - Migration Supabase: `npx prisma migrate deploy` da eseguire esplicitamente con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target
+- Versioning dry-run: `npm run release:dry-run`
+- Preparazione release locale: `npm run release`
 
 ## Endpoint scaffold SyncBay
 
@@ -71,6 +73,7 @@ Provisioning minimo creato:
 - Decisione GitHub/pubblicazione/versioning: `docs/decisions/0003-git-pubblicazione-versioning.md`
 - Decisione runtime/CI/release futuri: `docs/decisions/0004-runtime-ci-release-future.md`
 - Decisione infrastruttura runtime MVP: `docs/decisions/0005-runtime-infrastructure.md`
+- Decisione versioning runtime locale: `docs/decisions/0006-versioning-runtime-locale.md`
 - Benchmark Shopify App Store: `docs/market/shopify-ebay-app-benchmark.md`
 - Regole operative Codex: `AGENTS.md`
 

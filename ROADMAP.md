@@ -1,6 +1,6 @@
 # Roadmap - SyncBay
 
-Documento vivo. Ogni decisione di prodotto, tecnica o operativa che cambia perimetro, priorita o backlog deve confluire qui.
+Documento vivo. Ogni decisione di prodotto, tecnica o operativa che cambia perimetro, priorità o backlog deve confluire qui.
 
 Riferimenti: `AGENTS.md`, `README.md`, `docs/syncbay-product-technical-plan.md`.
 
@@ -23,19 +23,20 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Policy pubblicazione e versioning | ADR `docs/decisions/0003-git-pubblicazione-versioning.md`, guide Git e versioning aggiornate |
 | Fatto | Automazioni GitHub pre-runtime | Dependabot per GitHub Actions e inbox commenti Codex su PR |
 | Fatto | Policy runtime, CI e release futura | ADR `docs/decisions/0004-runtime-ci-release-future.md` |
+| Fatto | Versioning runtime locale | `app/lib/version.ts`, `npm run release`, ADR `docs/decisions/0006-versioning-runtime-locale.md` |
 | Fatto | Prerequisiti account definiti | Shopify/eBay documentati in `docs/guides/prerequisiti-account.md`; valori reali da confermare |
 | Fatto | Decisioni tecniche bloccanti | Vercel + Supabase, Prisma, Supabase Queues/Cron/Storage in ADR `docs/decisions/0005-runtime-infrastructure.md` |
 | Fatto | Provisioning minimo runtime | Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, documentati in `docs/guides/provisioning-runtime.md` |
 | Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
 | Fatto | Adattamento scaffold a SyncBay | Dashboard SyncBay, schema Prisma iniziale, webhook placeholder e stato connessioni Shopify/eBay |
 
-## 1. Identita prodotto
+## 1. Identità prodotto
 
 | Stato | Voce | Note |
 | --- | --- | --- |
 | Fatto | Nome prodotto: SyncBay | Shopify app eBay-first |
 | Fatto | Posizionamento eBay.it-first | Catalogo eBay.it come sorgente, Shopify come copia pulita |
-| Fatto | Formula prodotto | "SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilita sincronizzate e meno rischio di vendere prodotti non disponibili." |
+| Fatto | Formula prodotto | "SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilità sincronizzate e meno rischio di vendere prodotti non disponibili." |
 | Fatto | Tagline principale | "Dal tuo negozio eBay a Shopify, pronto a vendere." |
 | Fatto | Branding iniziale | `BRAND.md`, ADR `docs/decisions/0002-branding.md` |
 | Fatto | Tono UI e microcopy operativo | Prima versione in `BRAND.md`; da raffinare quando esiste la dashboard |
@@ -52,7 +53,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
-| Da fare | Protezione disponibilita | Ordine Shopify pagato -> aggiornamento disponibilita eBay prioritario |
+| Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
 | Da fare | Dashboard operativa | Stato sync, job, errori, conflitti, retry |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
 | Da fare | Pulizia descrizioni eBay | HTML completo, testo pulito, template rimosso con anteprima |
@@ -65,7 +66,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Da fare | Matching prodotti esistenti | Wizard per collegare Shopify esistente a listing eBay |
 | Da fare | Varianti migliorate | Varianti complesse, immagini variante, fallback guidati |
 | Da fare | Multi-location avanzato | Oltre location predefinita MVP |
-| Da fare | Growth tier | Fino a 10.000 prodotti, piu resilienza e diagnostica |
+| Da fare | Growth tier | Fino a 10.000 prodotti, più resilienza e diagnostica |
 | Da fare | Billing e app pubblica | Shopify App Store, privacy, self-service onboarding |
 | Idea | Multi-marketplace | Solo dopo consolidamento eBay.it |
 

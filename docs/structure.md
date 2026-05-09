@@ -22,10 +22,13 @@ SyncBay/
   Dockerfile
   package-lock.json
   package.json
+  scripts/
+    release.mjs
   shopify.app.toml
   tsconfig.json
   vite.config.ts
   app/
+    lib/
     services/
     routes/
   extensions/

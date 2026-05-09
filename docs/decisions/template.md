@@ -10,18 +10,18 @@ Quale problema va risolto? Quali vincoli contano?
 
 ## Decisione
 
-Cosa e stato deciso, in una frase chiara.
+Cosa è stato deciso, in una frase chiara.
 
 ## Conseguenze
 
-- Cosa diventa piu semplice.
-- Cosa diventa piu difficile o vincolato.
-- Cosa andra rivisto se cambiano i presupposti.
+- Cosa diventa più semplice.
+- Cosa diventa più difficile o vincolato.
+- Cosa andrà rivisto se cambiano i presupposti.
 
 ## Alternative considerate
 
-- **Alternativa A**: perche scartata.
-- **Alternativa B**: perche scartata.
+- **Alternativa A**: perché scartata.
+- **Alternativa B**: perché scartata.
 
 ## Riferimenti
 

@@ -7,7 +7,7 @@
 
 <!-- Una/due frasi: cosa cambia dal punto di vista di chi usa o mantiene SyncBay. -->
 
-## Perche
+## Perché
 
 <!-- Problema risolto, link a issue, contesto. -->
 
@@ -16,7 +16,7 @@ Closes #
 ## Tipo di modifica
 
 - [ ] Bugfix (Patch)
-- [ ] Nuova funzionalita retrocompatibile (Minor)
+- [ ] Nuova funzionalità retrocompatibile (Minor)
 - [ ] Breaking change visibile all'utente (Major)
 - [ ] Solo documentazione / processo
 - [ ] Refactor o lavoro tecnico invisibile

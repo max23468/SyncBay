@@ -1,13 +1,13 @@
-name: Proposta funzionalita
-description: Suggerisci un miglioramento o una nuova funzionalita.
+name: Proposta funzionalità
+description: Suggerisci un miglioramento o una nuova funzionalità.
 title: "[idea] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Grazie per l'idea. SyncBay e eBay.it-first: descrivi il bisogno del negoziante
-        prima della soluzione, cosi possiamo valutare se resta nel perimetro MVP.
+        Grazie per l'idea. SyncBay parte da eBay.it: descrivi il bisogno del negoziante
+        prima della soluzione, così possiamo valutare se resta nel perimetro MVP.
 
   - type: textarea
     id: problema
@@ -22,7 +22,7 @@ body:
     id: soluzione
     attributes:
       label: Soluzione proposta
-      description: Come immagini la funzionalita.
+      description: Come immagini la funzionalità.
     validations:
       required: true
 
@@ -35,9 +35,9 @@ body:
   - type: dropdown
     id: priorita
     attributes:
-      label: Quanto e urgente
+      label: Quanto è urgente
       options:
-        - "Bloccante: senza, SyncBay non puo essere usato nel pilota"
+        - "Bloccante: senza, SyncBay non può essere usato nel pilota"
         - "Importante: migliora un flusso MVP"
         - "Nice to have: da valutare dopo MVP"
     validations:
@@ -50,7 +50,7 @@ body:
       options:
         - Import guidato e sicuro
         - Sync catalogo/prezzi/immagini/stock
-        - Protezione disponibilita
+        - Protezione disponibilità
         - Pulizia descrizioni eBay
         - Conflitti Shopify
         - Diagnostica self-service

@@ -25,8 +25,8 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 
 Note:
 
-- Il framework preset e `Other` finche il deploy React Router non viene verificato su Vercel.
-- Nessun deploy production e stato creato.
+- Il framework preset e `Other` finché il deploy React Router non viene verificato su Vercel.
+- Nessun deploy production è stato creato.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 
 ## Supabase
@@ -40,7 +40,7 @@ Note:
 | Postgres | `17.6` |
 | Link locale | `supabase/config.toml` |
 
-La password database generata durante il provisioning e stata salvata nel Keychain macOS:
+La password database generata durante il provisioning è stata salvata nel Keychain macOS:
 
 ```text
 service: syncbay-supabase-db-password
@@ -69,7 +69,7 @@ Estensioni Supabase verificate:
 | `pgmq` | Disponibile, non installata |
 | `pg_cron` | Disponibile, non installata |
 
-`pgmq` e `pg_cron` vanno abilitate tramite migration quando verra creato lo schema runtime, cosi restano tracciate in Git.
+`pgmq` e `pg_cron` vanno abilitate tramite migration quando verrà creato lo schema runtime, così restano tracciate in Git.
 
 ## Cosa resta da fare
 

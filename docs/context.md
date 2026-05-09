@@ -1,21 +1,21 @@
 # Contesto progetto - SyncBay
 
-Questo file e un handoff rapido. Per i dettagli completi vedi `syncbay-product-technical-plan.md`.
+Questo file è un handoff rapido. Per i dettagli completi vedi `syncbay-product-technical-plan.md`.
 
-## Cos'e SyncBay
+## Cos'è SyncBay
 
-SyncBay e una Shopify app per negozianti che vendono gia su eBay.it e vogliono creare o alimentare un catalogo Shopify senza ricreare manualmente schede, immagini, prezzi e disponibilita.
+SyncBay è una Shopify app per negozianti che vendono già su eBay.it e vogliono creare o alimentare un catalogo Shopify senza ricreare manualmente schede, immagini, prezzi e disponibilità.
 
 La sorgente principale resta eBay. Shopify diventa una copia pulita, vendibile e controllata.
 
 ## Direzione confermata
 
 - Sync principale: eBay -> Shopify.
-- Eccezione obbligatoria: ordine Shopify pagato -> aggiornamento disponibilita eBay.
+- Eccezione obbligatoria: ordine Shopify pagato -> aggiornamento disponibilità eBay.
 - Marketplace iniziale: eBay.it.
 - Prima custom app, poi app pubblica Shopify App Store.
 - Target sync: entro 5 minuti.
-- Real-time dove possibile e sostenibile, senza compromettere prestazioni, rate limit, costi o stabilita.
+- Real-time dove possibile e sostenibile, senza compromettere prestazioni, rate limit, costi o stabilità.
 - Scala MVP: 2.000 prodotti per shop.
 - Prodotto self-service: diagnostica, retry e azioni guidate invece di supporto umano.
 
@@ -23,7 +23,7 @@ La sorgente principale resta eBay. Shopify diventa una copia pulita, vendibile e
 
 SyncBay non vuole essere l'ennesima app marketplace bidirezionale. La promessa e:
 
-> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilita sincronizzate e meno rischio di vendere prodotti non disponibili.
+> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilità sincronizzate e meno rischio di vendere prodotti non disponibili.
 
 Tagline principale:
 
@@ -33,7 +33,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e flusso OAuth eBay lato app. La preview Shopify Admin e stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e flusso OAuth eBay lato app. La preview Shopify Admin è stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
 
 ## Runtime deciso
 
@@ -44,6 +44,7 @@ Infrastruttura MVP: Vercel + Supabase.
 - Prisma: ORM iniziale.
 - Supabase Queues/Cron: job persistenti, polling e retry.
 - Supabase Storage: staging privato temporaneo immagini quando serve.
+- Versioning locale: `app/lib/version.ts` + `npm run release`, senza tag o GitHub Release automatici.
 
 Vedi ADR `decisions/0005-runtime-infrastructure.md`.
 
@@ -60,6 +61,7 @@ Provisioning minimo:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
+- `npm run release:dry-run`
 - `DATABASE_URL='postgresql://user:pass@localhost:5432/syncbay' DATABASE_DIRECT_URL='postgresql://user:pass@localhost:5432/syncbay' npx prisma validate`
 - `npx prisma migrate deploy` con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target quando bisogna applicare migration remote
 
@@ -71,9 +73,10 @@ Provisioning minimo:
 - Benchmark: `market/shopify-ebay-app-benchmark.md`
 - Stack: `decisions/0001-stack.md`
 - Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`
+- Versioning runtime locale: `decisions/0006-versioning-runtime-locale.md`
 - Provisioning runtime: `guides/provisioning-runtime.md`
 - Regole agenti: `../AGENTS.md`
 
 ## Regola di handoff
 
-Quando si chiude un lavoro su SyncBay, indicare prossimi passi concreti se c'e un seguito operativo reale. Se non c'e, dirlo chiaramente.
+Quando si chiude un lavoro su SyncBay, indicare prossimi passi concreti se c'è un seguito operativo reale. Se non c'è, dirlo chiaramente.

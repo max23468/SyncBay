@@ -6,47 +6,47 @@ Questo file definisce le linee guida operative per agenti, Codex e collaboratori
 
 Obiettivo: mantenere modifiche coerenti, sicure, documentate e facilmente revisionabili, senza introdurre lavoro collaterale non richiesto.
 
-## Priorita delle istruzioni
+## Priorità delle istruzioni
 
 1. Istruzioni di sistema/developer ricevute nella sessione corrente.
 2. Questo file `AGENTS.md`.
 3. Documentazione di progetto in `docs/` e `README.md`.
 4. Assunzioni dell'agente.
 
-In caso di conflitto, seguire sempre il livello piu alto. Se una decisione nuova arriva dalla chat del maintainer e cambia il perimetro in modo stabile, aggiorna i documenti rilevanti.
+In caso di conflitto, seguire sempre il livello più alto. Se una decisione nuova arriva dalla chat del maintainer e cambia il perimetro in modo stabile, aggiorna i documenti rilevanti.
 
-## Cos'e SyncBay
+## Cos'è SyncBay
 
-SyncBay e una Shopify app per collegare un account eBay.it a Shopify e mantenere Shopify allineato al catalogo eBay.
+SyncBay è una Shopify app per collegare un account eBay.it a Shopify e mantenere Shopify allineato al catalogo eBay.
 
 La direzione confermata:
 
 - sync principale eBay -> Shopify;
-- eBay resta la sorgente di verita del catalogo;
-- eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilita su eBay per ridurre il rischio di vendere prodotti non disponibili;
+- eBay resta la sorgente di verità del catalogo;
+- eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili;
 - marketplace iniziale: eBay.it;
 - prima custom app per pilota controllato, poi app pubblica Shopify App Store;
 - sync target entro massimo 5 minuti;
 - scala MVP fino a 2.000 prodotti per shop;
-- prodotti non piu attivi su eBay archiviati su Shopify, non cancellati;
+- prodotti non più attivi su eBay archiviati su Shopify, non cancellati;
 - modifiche manuali Shopify gestite come conflitti visibili, non sovrascritte silenziosamente;
 - prodotto self-service: diagnostica, retry e azioni guidate devono ridurre la dipendenza da supporto umano.
 
 ### Perimetro e non-obiettivi
 
-SyncBay deve restare, nel MVP, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilita sincronizzate.
+SyncBay deve restare, nel MVP, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilità sincronizzate.
 
-Una nuova funzionalita ha senso quando rafforza almeno uno di questi assi:
+Una nuova funzionalità ha senso quando rafforza almeno uno di questi assi:
 
 - import guidato e sicuro dei listing eBay in Shopify;
 - sincronizzazione catalogo, prezzi, immagini, descrizioni e stock;
-- protezione delle disponibilita e riduzione del rischio di vendere prodotti non disponibili;
+- protezione delle disponibilità e riduzione del rischio di vendere prodotti non disponibili;
 - pulizia delle descrizioni/template eBay per renderle adatte a Shopify;
 - gestione esplicita dei conflitti Shopify;
 - diagnostica self-service, audit log, retry e rollback;
-- affidabilita, sicurezza, privacy e manutenzione dell'app.
+- affidabilità, sicurezza, privacy e manutenzione dell'app.
 
-Per il MVP, SyncBay non e:
+Per il MVP, SyncBay non è:
 
 - una suite marketplace bidirezionale completa;
 - un exporter Shopify -> eBay;
@@ -70,7 +70,8 @@ Prima di modifiche non banali leggi:
 6. `docs/market/shopify-ebay-app-benchmark.md`
 7. `docs/decisions/0001-stack.md`
 8. `docs/decisions/0005-runtime-infrastructure.md`
-9. `README.md`
+9. `docs/decisions/0006-versioning-runtime-locale.md`
+10. `README.md`
 
 Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione App Store o modello dati, aggiorna o crea un ADR in `docs/decisions/`.
 
@@ -78,13 +79,13 @@ Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione
 
 Il repository ha completato la fase di pianificazione/fondazioni e contiene lo scaffold Shopify CLI React Router iniziale.
 
-Regola importante: non creare worker dedicati, sync catalogo, job queue runtime, integrazioni eBay reali o cartelle applicative ulteriori fuori dallo scaffold senza richiesta esplicita del maintainer.
+Regola importante: non creare worker dedicati, sync catalogo, job queue runtime, integrazioni eBay oltre OAuth o cartelle applicative ulteriori fuori dallo scaffold senza richiesta esplicita del maintainer.
 
-La struttura documentale attuale e descritta in `docs/structure.md`.
+La struttura documentale attuale è descritta in `docs/structure.md`.
 
 ## Stack deciso
 
-La decisione stack corrente e documentata in `docs/decisions/0001-stack.md`.
+La decisione stack corrente è documentata in `docs/decisions/0001-stack.md`.
 
 Direzione attuale:
 
@@ -107,7 +108,7 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Se il worktree contiene modifiche non tue o non collegate alla richiesta, non sovrascriverle e non normalizzarle. Ignorale se sono estranee, oppure lavora attorno a esse.
 - Prima di proporre architetture, refactor o integrazioni, leggi documenti, configurazione e stato repo pertinenti.
 - Per informazioni variabili su Shopify, eBay, App Store, API, piani, policy, billing o compliance, verifica fonti ufficiali aggiornate o pagine Shopify App Store correnti.
-- Se la richiesta e ambigua su scope, comportamento atteso, rischio, deploy o pubblicazione, fai domande mirate prima di procedere.
+- Se la richiesta è ambigua su scope, comportamento atteso, rischio, deploy o pubblicazione, fai domande mirate prima di procedere.
 - Procedi con un'assunzione dichiarata solo per dettagli marginali che non cambiano il risultato sostanziale.
 
 ## Disciplina di scope
@@ -116,15 +117,15 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Evita refactor, rinominazioni massive o riformattazioni non collegate.
 - Preferisci patch piccole e coerenti.
 - Non aggiungere nuove dipendenze, servizi o strumenti senza motivazione esplicita e impatto chiaro.
-- Non inventare funzionalita non decise: se qualcosa e interessante ma non MVP, mettilo in roadmap/piano come futuro da valutare.
+- Non inventare funzionalità non decise: se qualcosa è interessante ma non MVP, mettilo in roadmap/piano come futuro da valutare.
 
 ## Errori comuni da evitare
 
 - Non promettere "real-time assoluto" indiscriminato: il target confermato e sync entro 5 minuti.
-- Dove il real-time o quasi real-time e tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilita, preferiscilo e documenta il fallback.
+- Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, preferiscilo e documenta il fallback.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
-- Non assumere che Shopify sia la sorgente di verita: per il catalogo MVP la sorgente e eBay.
-- Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilita derivati da ordini Shopify.
+- Non assumere che Shopify sia la sorgente di verità: per il catalogo MVP la sorgente è eBay.
+- Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilità derivati da ordini Shopify.
 - Non cancellare prodotti Shopify quando un listing eBay sparisce: archiviali.
 - Non sovrascrivere modifiche manuali Shopify senza aprire conflitto.
 - Non dipendere dal supporto umano per errori ordinari: gli errori devono essere comprensibili e azionabili in dashboard.
@@ -138,9 +139,9 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 ### Shopify
 
 - Usa Shopify Admin GraphQL come interfaccia primaria per prodotti, inventario, media e webhook.
-- Mantieni compatibilita con Shopify CLI e app embedded.
+- Mantieni compatibilità con Shopify CLI e app embedded.
 - Prima di fissare scope o webhook, verifica la documentazione Shopify aggiornata.
-- Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilita e vetrina Shopify.
+- Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilità e vetrina Shopify.
 - Per modifiche future alla UI embedded, usa pattern coerenti con Shopify Admin e Polaris/App Bridge quando saranno introdotti.
 
 ### eBay
@@ -163,7 +164,7 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 ## Sicurezza, privacy e dati
 
 - Non committare segreti, token, credenziali, file `.env` reali o dati personali.
-- Token Shopify/eBay devono essere cifrati a riposo quando verra implementato il runtime.
+- Token Shopify/eBay devono essere cifrati a riposo.
 - Non stampare segreti in log, errori o risposte chat. Per verificarne la presenza usa controlli booleani, mai `echo $VAR`.
 - Tratta dati shop, inserzioni, ordini, clienti e immagini come dati del negoziante.
 - Evita leak in log, fixture, screenshot, test o report.
@@ -172,26 +173,27 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 
 ## Documentazione
 
-SyncBay e attualmente guidata dalla documentazione. Aggiornala quando cambia una decisione stabile.
+SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia una decisione stabile.
 
 ### Cosa aggiornare e quando
 
 - `docs/syncbay-product-technical-plan.md`: perimetro prodotto, MVP, fasi, requisiti funzionali e rischi.
 - `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
-- `ROADMAP.md`: priorita, backlog e stato decisioni/prossime fasi.
+- `ROADMAP.md`: priorità, backlog e stato decisioni/prossime fasi.
 - `CHANGELOG.md`: storico modifiche significative.
-- `BRAND.md`: identita, tagline, tono, palette direzionale, logo direction e claim vietati.
+- `BRAND.md`: identità, tagline, tono, palette direzionale, logo direction e claim vietati.
 - `docs/context.md`: handoff rapido per nuove chat o nuovi agenti.
-- `docs/decisions-pending.md`: decisioni aperte e blocchi prima dello scaffold.
-- `docs/data-model.md`: entita e regole dati concettuali.
+- `docs/decisions-pending.md`: decisioni aperte e blocchi prima delle prossime fasi.
+- `docs/data-model.md`: entità e regole dati concettuali.
 - `docs/glossario.md`: terminologia prodotto e microcopy.
 - `docs/guides/`: guide operative tematiche.
-- `docs/guides/pre-scaffold-checklist.md`: prerequisiti prima di generare codice applicativo.
+- `docs/guides/pre-scaffold-checklist.md`: prerequisiti e stato scaffold.
 - `docs/guides/provisioning-runtime.md`: provisioning Vercel/Supabase e riferimenti non segreti.
 - `docs/guides/service-governance.md`: limiti MVP, retention, error handling e governance servizio.
 - `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
 - `docs/decisions/`: decisioni architetturali o operative stabili.
 - `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
+- `docs/decisions/0006-versioning-runtime-locale.md`: versioning SemVer locale.
 - `docs/structure.md`: struttura repo prevista nella fase corrente.
 - `README.md`: stato progetto, documenti principali e prossimo passo operativo.
 - `SECURITY.md`: policy sicurezza root.
@@ -204,13 +206,13 @@ Per modifiche solo documentali, non inventare test applicativi: rileggi i docume
 
 ## Testing e verifica
 
-Finche non esiste codice applicativo:
+Per modifiche docs-only:
 
 - per docs-only, usa almeno review del documento e, quando utile, `git diff --check`;
 - non dichiarare test applicativi non eseguiti;
-- se non esistono ancora test/build/lint, dichiararlo come limite normale della fase corrente.
+- se un controllo non è pertinente, dichiararlo come limite normale della fase corrente.
 
-Quando verra creato lo scaffold:
+Per modifiche runtime:
 
 - mantieni questo file aggiornato con i comandi reali del repo;
 - aggiungi gate per lint, test, build, typecheck, audit e verifiche browser quando pertinenti;
@@ -224,12 +226,13 @@ Comandi runtime attuali:
 - `npm run lint`
 - `npm run build`
 - `npm audit --omit=dev`
+- `npm run release:dry-run`
 
 ## Git, commit e PR
 
 - Usa commit atomici e messaggi Conventional Commit coerenti con l'impatto reale:
   - `docs:` per sola documentazione;
-  - `feat:` per nuove funzionalita osservabili;
+  - `feat:` per nuove funzionalità osservabili;
   - `fix:` per correzioni osservabili;
   - `perf:` per miglioramenti prestazionali osservabili;
   - `chore:` per manutenzione interna;
@@ -237,51 +240,53 @@ Comandi runtime attuali:
   - `test:` per soli test;
   - `ci:` per workflow/CI.
 - Prima di commit o PR, fai self-review del diff.
-- GitHub e la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
+- GitHub è la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
 - Non aggiungere workflow GitHub Actions, policy deploy o release flow senza richiesta esplicita e senza ADR.
-- Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR e pronta.
-- Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purche il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
+- Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR è pronta.
+- Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purché il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
-- Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve piu. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
+- Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
 - Prima di mergiare una PR non banale, controlla se la `Codex feedback inbox` segnala thread actionable collegati alla PR corrente.
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" non significa automaticamente deploy, release versionata, billing, App Store o integrazioni produttive.
-- Se il maintainer chiede "deploya", "rilascia", "pubblica e deploy" o formule che implicano runtime, verifica prima se esiste una policy SyncBay attuale. Oggi non esiste deploy/release runtime: dichiaralo e procedi solo dopo decisione esplicita.
+- Se il maintainer chiede "deploya" o "pubblica e deploy", verifica prima se esiste una policy SyncBay attuale. Oggi non esiste deploy production: dichiaralo e procedi solo dopo decisione esplicita.
+- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md`, salvo richiesta esplicita di tag, GitHub Release o deploy.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
 
 Dettagli: `docs/guides/git-e-pubblicazione.md`.
 
 ## Release, deploy e App Store
 
-Non esiste ancora un flusso di release/deploy runtime per SyncBay.
+SyncBay ha un flusso di versioning locale, ma non ha ancora un flusso di deploy production.
 
 Fino a decisione esplicita:
 
 - non configurare deploy;
-- non creare release versionate;
+- non creare tag GitHub o GitHub Release;
 - non introdurre billing;
 - non avviare pubblicazione Shopify App Store;
 - non creare integrazioni produttive Shopify/eBay.
 
-Finche il progetto resta docs-first:
+Versioning locale:
 
-- usa `CHANGELOG.md` sotto `## [Non rilasciato]` -> `### Non versionato` per modifiche significative a piani, ADR, guide, regole agenti e asset;
-- non creare tag GitHub, GitHub Release o bump SemVer;
-- non inventare file di versione applicativa.
+- `app/lib/version.ts` è la single source of truth per `APP_VERSION` e `BUILD_DATE`;
+- `npm run release` prepara una release aggiornando `CHANGELOG.md` e `app/lib/version.ts`;
+- `npm run release:dry-run` verifica la categoria senza modificare file;
+- il comando non crea deploy, tag o GitHub Release.
 
-Quando esistera runtime, ogni modifica dovra essere classificata prima della chiusura:
+Ogni modifica deve essere classificata prima della chiusura:
 
 - `MAJOR`: breaking change visibile a negoziante, operatori o contratti API/config;
-- `MINOR`: nuova funzionalita retrocompatibile;
+- `MINOR`: nuova funzionalità retrocompatibile;
 - `PATCH`: bugfix, hardening o miglioramento operativo compatibile;
 - `Non versionato`: piani, ADR, guide interne, regole agenti e documentazione non esposta al prodotto.
 
 Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime futuri in sezioni versionate, non chiudere senza release oppure senza dichiarare il rilascio come prossimo step operativo.
 
-Quando deploy, release runtime o pubblicazione App Store verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`, `docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e il piano tecnico.
+Quando deploy production o pubblicazione App Store verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`, `docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e il piano tecnico.
 
-Dettagli sulla policy futura per runtime, CI e release: `docs/decisions/0004-runtime-ci-release-future.md`.
+Dettagli: `docs/guides/versioning-e-release.md`, ADR `docs/decisions/0006-versioning-runtime-locale.md` e policy futura CI/deploy in `docs/decisions/0004-runtime-ci-release-future.md`.
 
 ## Risposte finali e handoff
 
@@ -293,17 +298,17 @@ Nelle risposte finali:
 - dichiara rischi residui concreti;
 - includi sempre i prossimi passi consigliati quando esiste un seguito operativo reale;
 - i prossimi passi devono essere concreti, ordinati e proporzionati al lavoro appena concluso;
-- se non c'e un prossimo passo utile, dichiaralo esplicitamente invece di forzare una lista generica.
+- se non c'è un prossimo passo utile, dichiaralo esplicitamente invece di forzare una lista generica.
 
 Evita footer rituali sui test. Non inventare risultati.
 
 ## Definizione di completamento
 
-Una modifica e pronta se:
+Una modifica è pronta se:
 
 - risolve la richiesta senza allargare inutilmente lo scope;
 - resta coerente con perimetro e documenti di SyncBay;
-- non introduce scaffold o runtime senza approvazione;
+- non introduce worker, sync o integrazioni produttive senza approvazione;
 - non sovrascrive modifiche non tue;
 - aggiorna documenti/ADR quando una decisione cambia davvero;
 - non lascia segreti, dati personali, file temporanei o modifiche non correlate;
@@ -313,4 +318,4 @@ Una modifica e pronta se:
 
 Per regole specifiche di sotto-moduli, aggiungere `AGENTS.md` nelle relative sottocartelle.
 
-Le istruzioni piu profonde prevalgono sui livelli superiori.
+Le istruzioni più profonde prevalgono sui livelli superiori.

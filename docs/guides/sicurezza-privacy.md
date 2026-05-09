@@ -4,14 +4,14 @@ Questa guida fissa i requisiti minimi di sicurezza e privacy per SyncBay.
 
 ## Dati trattati
 
-SyncBay potra trattare:
+SyncBay potrà trattare:
 
 - dati shop Shopify;
 - token Shopify;
 - dati account eBay;
 - token eBay;
-- listing, immagini, SKU, prezzi e quantita;
-- ordini Shopify minimi necessari a proteggere la disponibilita;
+- listing, immagini, SKU, prezzi e quantità;
+- ordini Shopify minimi necessari a proteggere la disponibilità;
 - log tecnici e audit.
 
 ## Regole segreti
@@ -20,7 +20,7 @@ SyncBay potra trattare:
 - Non loggare token o payload sensibili.
 - Token Shopify/eBay cifrati a riposo.
 - Chiavi di cifratura fuori repo.
-- Rotazione token documentata quando il runtime esistera.
+- Rotazione token da documentare prima della beta reale.
 
 Runtime deciso:
 
@@ -52,13 +52,13 @@ Conservare solo dati utili a:
 - diagnostica;
 - compliance.
 
-Non salvare dati cliente o ordine oltre quanto serve a proteggere la disponibilita e agli obblighi provider.
+Non salvare dati cliente o ordine oltre quanto serve a proteggere la disponibilità e agli obblighi provider.
 
 ## Incident response minima
 
 1. Identificare provider coinvolto: Shopify, eBay, database, job queue o hosting.
-2. Mettere in pausa sync se c'e rischio di modifica errata.
-3. Proteggere stock con modalita prudente se necessario.
-4. Ruotare segreti se c'e rischio esposizione.
+2. Mettere in pausa sync se c'è rischio di modifica errata.
+3. Proteggere stock con modalità prudente se necessario.
+4. Ruotare segreti se c'è rischio esposizione.
 5. Ripristinare da snapshot/rollback dove possibile.
 6. Annotare incidente e correzione nella documentazione o changelog.

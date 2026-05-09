@@ -16,9 +16,9 @@ Questo glossario guida UI, documentazione e microcopy.
 | Import | Prima creazione/collegamento dei prodotti Shopify da eBay. |
 | Anteprima import | Anteprima prima di scrivere su Shopify. |
 | Ripristino | Azione per annullare o archiviare modifiche fatte da SyncBay. |
-| Conflitto | Divergenza tra eBay, ultimo valore SyncBay e valore Shopify modificato manualmente. |
-| Modalita prudente | Stato di protezione quando disponibilita o sincronizzazione non sono affidabili. |
-| Riserva disponibilita | Quantita non pubblicata su Shopify per ridurre il rischio di vendere prodotti non disponibili. |
+| Conflitto | Divergenza tra eBay, ultimo valore SyncBay è valore Shopify modificato manualmente. |
+| Modalità prudente | Stato di protezione quando disponibilità o sincronizzazione non sono affidabili. |
+| Riserva disponibilità | Quantità non pubblicata su Shopify per ridurre il rischio di vendere prodotti non disponibili. |
 | Regole prezzo | Regole specifiche per Shopify che non modificano eBay. |
 
 ## Termini da usare con cautela
@@ -26,10 +26,10 @@ Questo glossario guida UI, documentazione e microcopy.
 | Termine | Nota |
 | --- | --- |
 | Real-time | Evitare come promessa assoluta. Usare "entro 5 minuti" come garanzia base; usare real-time/quasi real-time solo dove tecnicamente possibile e sostenibile. |
-| Bidirezionale | Non usarlo per il MVP, salvo spiegare l'eccezione sulla disponibilita dopo ordini Shopify. |
+| Bidirezionale | Non usarlo per il MVP, salvo spiegare l'eccezione sulla disponibilità dopo ordini Shopify. |
 | Marketplace globale | Fuori dal MVP. |
 | Supporto umano | Non deve essere pilastro prodotto nella prima fase. Preferire "diagnostica self-service". |
-| Overselling | Evitare in UI e materiali per negozianti. Preferire "vendere prodotti non disponibili", "disponibilita non aggiornata" o "vendite oltre disponibilita". |
+| Overselling | Evitare in UI e materiali per negozianti. Preferire "vendere prodotti non disponibili", "disponibilità non aggiornata" o "vendite oltre disponibilità". |
 
 ## Regole microcopy
 

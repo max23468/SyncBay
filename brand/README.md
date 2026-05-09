@@ -14,9 +14,9 @@ Tagline:
 - SVG principale: `assets/svg/syncbay-logo-horizontal-tagline.svg`
 - Manifest asset: `assets/manifest.json`
 
-Nota importante: gli SVG sono wrapper raster costruiti dal PNG approvato per preservare fedelmente forme, proporzioni e colori. Non sono ancora tracciati vettoriali puri modificabili punto per punto. Se servira un vettoriale puro per stampa, trademark o App Store, va rifatto in un tool di design usando il riferimento approvato come source of truth.
+Nota importante: gli SVG sono wrapper raster costruiti dal PNG approvato per preservare fedelmente forme, proporzioni e colori. Non sono ancora tracciati vettoriali puri modificabili punto per punto. Se servirà un vettoriale puro per stampa, trademark o App Store, va rifatto in un tool di design usando il riferimento approvato come source of truth.
 
-Gli export attuali sono stati normalizzati sui colori pieni della palette approvata, cosi i PNG trasparenti non sbiadiscono i componenti piu chiari quando vengono usati su sfondi diversi.
+Gli export attuali sono stati normalizzati sui colori pieni della palette approvata, così i PNG trasparenti non sbiadiscono i componenti più chiari quando vengono usati su sfondi diversi.
 
 ## Versioni SVG
 
@@ -53,4 +53,4 @@ La cartella `assets/png/transparent/` contiene PNG con sfondo trasparente. La ca
 - Rosso stanghette: `#E53238`
 - Testo secondario/tagline: `#51615F`
 
-Questi colori richiamano eBay e Shopify in modo controllato. Non usare loghi ufficiali, forme proprietarie, claim di ufficialita o combinazioni che facciano sembrare SyncBay un'app eBay/Shopify ufficiale.
+Questi colori richiamano eBay e Shopify in modo controllato. Non usare loghi ufficiali, forme proprietarie, claim di ufficialità o combinazioni che facciano sembrare SyncBay un'app eBay/Shopify ufficiale.

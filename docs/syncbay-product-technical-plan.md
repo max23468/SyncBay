@@ -4,14 +4,14 @@ Data: 2026-05-09
 
 ## Obiettivo
 
-SyncBay e una Shopify app, prima custom e poi pubblica su Shopify App Store, che consente a un negoziante di collegare il proprio negozio eBay.it a Shopify e creare un catalogo Shopify operativo e allineato.
+SyncBay è una Shopify app, prima custom e poi pubblica su Shopify App Store, che consente a un negoziante di collegare il proprio negozio eBay.it a Shopify e creare un catalogo Shopify operativo e allineato.
 
-La sorgente di verita del catalogo resta eBay. SyncBay importa e mantiene aggiornati prodotti, titoli, descrizioni, prezzi, quantita, immagini e attributi principali verso Shopify. Shopify puo applicare regole commerciali proprie, come sconti, markup, arrotondamenti e pulizia del template descrizione, senza modificare eBay.
+La sorgente di verità del catalogo resta eBay. SyncBay importa e mantiene aggiornati prodotti, titoli, descrizioni, prezzi, quantità, immagini e attributi principali verso Shopify. Shopify può applicare regole commerciali proprie, come sconti, markup, arrotondamenti e pulizia del template descrizione, senza modificare eBay.
 
 ## Direzione confermata
 
 - Sync principale: eBay -> Shopify.
-- Eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilita su eBay per ridurre il rischio di vendere prodotti non disponibili.
+- Eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili.
 - Marketplace iniziale: eBay.it.
 - Prima distribuzione: custom app per pilota controllato.
 - Obiettivo successivo: app pubblica Shopify App Store.
@@ -25,21 +25,21 @@ La sorgente di verita del catalogo resta eBay. SyncBay importa e mantiene aggior
 
 Benchmark di riferimento: `docs/market/shopify-ebay-app-benchmark.md`.
 
-Le app Shopify App Store gia pubblicate coprono soprattutto integrazione marketplace generalista, import/export bidirezionale, ordini, inventario, multi-account e supporto umano molto visibile. SyncBay deve differenziarsi con un perimetro piu stretto e un prodotto self-service:
+Le app Shopify App Store già pubblicate coprono soprattutto integrazione marketplace generalista, import/export bidirezionale, ordini, inventario, multi-account e supporto umano molto visibile. SyncBay deve differenziarsi con un perimetro più stretto e un prodotto self-service:
 
 - eBay.it come punto di partenza;
-- eBay come sorgente di verita;
+- eBay come sorgente di verità;
 - Shopify come copia pulita, vendibile e controllata;
 - import con preview e rollback;
 - descrizioni eBay ripulite dai template pesanti;
 - conflitti Shopify visibili;
 - diagnostica comprensibile e azioni guidate senza supporto umano;
-- protezione delle disponibilita anche senza sync bidirezionale completo;
+- protezione delle disponibilità anche senza sync bidirezionale completo;
 - promessa chiara: sync entro 5 minuti, con real-time dove tecnicamente possibile e sostenibile.
 
 Formula prodotto:
 
-> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilita sincronizzate e meno rischio di vendere prodotti non disponibili.
+> SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilità sincronizzate e meno rischio di vendere prodotti non disponibili.
 
 Tagline principale:
 
@@ -54,7 +54,7 @@ Branding: vedi `BRAND.md`.
 - Gestione avanzata ordini, spedizioni, tracking e fulfillment.
 - Multi-marketplace eBay oltre eBay.it.
 - Multi-account eBay per singolo shop.
-- Varianti complesse complete, compatibilita auto/moto e item specifics avanzati.
+- Varianti complesse complete, compatibilità auto/moto e item specifics avanzati.
 - Mapping manuale sofisticato categorie/attributi.
 - AI mapping come requisito di prima versione.
 
@@ -80,7 +80,7 @@ Shopify Admin GraphQL
   -> crea/aggiorna prodotti
   -> crea/aggiorna immagini
   -> aggiorna inventario
-  -> archivia prodotti non piu attivi su eBay
+  -> archivia prodotti non più attivi su eBay
 
 Dashboard SyncBay
   -> stato sync
@@ -109,7 +109,7 @@ Direzione corrente:
 
 La decisione infrastrutturale MVP e tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
-Nota: lo scaffold Shopify CLI React Router e stato creato dopo la chiusura delle decisioni tecniche bloccanti. Import, sync, worker e OAuth eBay restano fuori dallo scaffold iniziale.
+Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura delle decisioni tecniche bloccanti. Import, sync, worker e OAuth eBay restano fuori dallo scaffold iniziale.
 
 ## API e integrazioni
 
@@ -124,13 +124,13 @@ Scope iniziali previsti:
 - `read_inventory`
 - `write_inventory`
 - `read_locations`
-- `read_orders` solo quando sara completata la configurazione Shopify per protected customer data.
+- `read_orders` solo quando sarà completata la configurazione Shopify per protected customer data.
 - scope necessari per file/media e webhook, da confermare in fase scaffold in base alla versione API Shopify usata.
 
 Webhook Shopify MVP:
 
 - app uninstall, per cleanup e revoca token.
-- inventory level update come trigger iniziale non-customer-data per aggiornare disponibilita eBay.
+- inventory level update come trigger iniziale non-customer-data per aggiornare disponibilità eBay.
 - order paid o order created come trigger futuro, dopo configurazione Shopify protected customer data.
 - product update, per rilevare modifiche manuali e aprire conflitti.
 
@@ -141,19 +141,19 @@ Usare una combinazione di:
 - Trading API per leggere tutti i listing attivi, inclusi listing storici creati da Seller Hub/UI eBay.
 - GetSellerList/GetItem/GetSellerEvents per import, dettaglio e polling incrementale.
 - Platform Notifications, dove disponibili, per accelerare revisioni tipo `ItemRevised`.
-- Inventory API dove disponibile per aggiornare quantita/prezzi di listing compatibili e per casi gia migrati al modello inventory.
+- Inventory API dove disponibile per aggiornare quantità/prezzi di listing compatibili e per casi già migrati al modello inventory.
 
 Scope e requisiti eBay da prevedere:
 
 - OAuth venditore.
 - lettura listing e dettagli prodotto.
-- aggiornamento disponibilita su eBay per ridurre il rischio di vendere prodotti non disponibili.
+- aggiornamento disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili.
 - endpoint pubblico HTTPS per notifiche.
 - gestione obbligatoria notifiche eBay di marketplace account deletion o opt-out se applicabile.
 
 ## Modello dati
 
-Entita principali:
+Entità principali:
 
 - `shops`: shop Shopify, stato installazione, piano, preferenze.
 - `shopify_credentials`: token cifrati e scope concessi.
@@ -161,7 +161,7 @@ Entita principali:
 - `sync_mappings`: mapping eBay item ID / SKU / Shopify product ID / Shopify variant ID.
 - `product_snapshots`: ultimo valore letto da eBay e ultimo valore scritto su Shopify.
 - `pricing_rules`: sconti, markup, arrotondamenti, prezzo minimo, compare-at price.
-- `description_rules`: modalita HTML completo, testo pulito, template rimosso.
+- `description_rules`: modalità HTML completo, testo pulito, template rimosso.
 - `media_assets`: immagini importate, hash/deduplica, stato upload Shopify.
 - `sync_jobs`: job import/sync, stato, retry, errori.
 - `conflicts`: campo, valore eBay, valore Shopify, decisione del negoziante.
@@ -175,7 +175,7 @@ Flusso iniziale:
 2. Connessione eBay.it via OAuth.
 3. Scelta location Shopify predefinita.
 4. Scelta stato import iniziale: `draft` o pubblicato.
-5. Scelta modalita descrizione.
+5. Scelta modalità descrizione.
 6. Lettura listing attivi eBay in pagine.
 7. Recupero dettagli completi per listing.
 8. Normalizzazione dati in modello interno.
@@ -196,7 +196,7 @@ Default consigliato:
 
 La promessa MVP deve essere "sync entro 5 minuti", non "real-time assoluto" indiscriminato.
 
-Dove il real-time o quasi real-time e tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilita, SyncBay deve preferirlo. Il polling entro 5 minuti resta la rete di sicurezza obbligatoria per eventi non coperti o notifiche perse.
+Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, SyncBay deve preferirlo. Il polling entro 5 minuti resta la rete di sicurezza obbligatoria per eventi non coperti o notifiche perse.
 
 Strategia:
 
@@ -209,17 +209,17 @@ Strategia:
 - resume automatico se import o sync si interrompe;
 - riconciliazione periodica completa per correggere drift.
 
-Priorita job:
+Priorità job:
 
 1. Aggiornamento stock dopo ordine Shopify.
-2. Aggiornamento quantita/prezzo eBay -> Shopify.
+2. Aggiornamento quantità/prezzo eBay -> Shopify.
 3. Aggiornamento titolo/descrizione/immagini.
 4. Archiviazione prodotti chiusi.
 5. Riconciliazione completa.
 
-## Protezione disponibilita
+## Protezione disponibilità
 
-Anche se il sync catalogo e one-way, SyncBay deve proteggere la disponibilita eBay quando Shopify vende.
+Anche se il sync catalogo è one-way, SyncBay deve proteggere la disponibilità eBay quando Shopify vende.
 
 Default:
 
@@ -228,9 +228,9 @@ Default:
 - aggiornamento eBay tramite API compatibile con il tipo di listing.
 - se update eBay fallisce, creare alert critico in dashboard e retry prioritario.
 - stock buffer configurabile, per mantenere una riserva non pubblicata su Shopify.
-- soglia di sicurezza: se eBay non risponde o il sync stock e incerto, SyncBay puo mettere il prodotto Shopify in stato prudente secondo configurazione.
+- soglia di sicurezza: se eBay non risponde o il sync stock e incerto, SyncBay può mettere il prodotto Shopify in stato prudente secondo configurazione.
 
-Regola: la quantita disponibile da mostrare su Shopify deve rispettare lo stato eBay piu recente noto, salvo conflitti espliciti.
+Regola: la quantità disponibile da mostrare su Shopify deve rispettare lo stato eBay più recente noto, salvo conflitti espliciti.
 
 ## Regole prezzo Shopify-only
 
@@ -258,7 +258,7 @@ Ogni sync deve conservare:
 
 ## Descrizioni e template eBay
 
-Modalita supportate:
+Modalità supportate:
 
 - HTML completo eBay.
 - Solo testo.
@@ -304,7 +304,7 @@ Post-MVP:
 
 - varianti complesse;
 - immagini per variante;
-- compatibilita auto/moto;
+- compatibilità auto/moto;
 - attributi categoria avanzati;
 - mapping assistito.
 
@@ -315,7 +315,7 @@ Scelta MVP: automatico.
 Strategia:
 
 - mappare categorie eBay a product type, tag e metafield Shopify;
-- non bloccare import se la categoria non e mappabile;
+- non bloccare import se la categoria non è mappabile;
 - registrare confidenza e fallback;
 - lasciare il prodotto importabile anche con mapping categoria incompleto.
 
@@ -324,13 +324,13 @@ Strategia:
 MVP:
 
 - import crea nuovi prodotti Shopify con mapping stabile;
-- non tentare matching automatico aggressivo se il negoziante ha gia prodotti Shopify.
+- non tentare matching automatico aggressivo se il negoziante ha già prodotti Shopify.
 
 Roadmap prioritaria:
 
 - wizard per collegare prodotti Shopify esistenti ai listing eBay;
 - suggerimenti di match per SKU, titolo e barcode;
-- conferma manuale prima di attivare sync su prodotti gia esistenti.
+- conferma manuale prima di attivare sync su prodotti già esistenti.
 
 ## Conflitti Shopify
 
@@ -341,7 +341,7 @@ Campi monitorati MVP:
 - titolo;
 - descrizione;
 - prezzo;
-- quantita;
+- quantità;
 - immagini;
 - stato prodotto.
 
@@ -351,7 +351,7 @@ Dashboard conflitti:
 - azioni: "mantieni Shopify", "riallinea da eBay", "ignora questo campo";
 - nessuna sovrascrittura silenziosa per campi in conflitto.
 
-## Modalita mirror controllato
+## Modalità mirror controllato
 
 SyncBay non deve essere un sync cieco. Ogni campo sincronizzato deve avere una regola di controllo esplicita:
 
@@ -375,13 +375,13 @@ Deve mostrare:
 - prodotti falliti;
 - conflitti aperti;
 - job in corso;
-- alert disponibilita critica;
+- alert disponibilità critica;
 - log errori filtrabili;
 - retry manuale per job falliti.
 
 ## Diagnostica self-service
 
-Poiche SyncBay non deve dipendere da supporto umano nella prima fase, ogni errore rilevante deve essere leggibile e azionabile dal negoziante.
+Poiché SyncBay non deve dipendere da supporto umano nella prima fase, ogni errore rilevante deve essere leggibile e azionabile dal negoziante.
 
 Esempi di errori:
 
@@ -391,7 +391,7 @@ Esempi di errori:
 - listing eBay non leggibile;
 - eBay rate limit;
 - token eBay scaduto;
-- disponibilita eBay non aggiornata;
+- disponibilità eBay non aggiornata;
 - prodotto Shopify modificato manualmente.
 
 Ogni errore deve mostrare:
@@ -404,12 +404,12 @@ Ogni errore deve mostrare:
 
 ## Archiviazione prodotti
 
-Se un listing eBay risulta chiuso, rimosso o non piu attivo:
+Se un listing eBay risulta chiuso, rimosso o non più attivo:
 
 - Shopify product status -> archived;
 - conservare mapping e snapshot;
 - loggare motivo e timestamp;
-- non cancellare prodotto ne immagini in automatico.
+- non cancellare prodotto né immagini in automatico.
 
 ## Privacy, compliance e sicurezza
 
@@ -478,23 +478,23 @@ Azioni rollback MVP:
 - Upload immagini.
 - Preview/dry-run.
 - Import default draft.
-- Onboarding guidato con scelta location, stato prodotto, immagini e modalita descrizione.
+- Onboarding guidato con scelta location, stato prodotto, immagini e modalità descrizione.
 
 ### Fase 3 - Sync catalogo
 
 - Polling incrementale <= 5 minuti.
-- Aggiornamento prezzo, quantita, titolo, descrizione, immagini.
-- Archiviazione prodotti non piu attivi.
+- Aggiornamento prezzo, quantità, titolo, descrizione, immagini.
+- Archiviazione prodotti non più attivi.
 - Audit log e retry.
 - Dashboard stato sync, job falliti, conflitti e alert.
 
-### Fase 4 - Protezione disponibilita
+### Fase 4 - Protezione disponibilità
 
 - Webhook ordine Shopify.
-- Aggiornamento disponibilita eBay prioritario.
+- Aggiornamento disponibilità eBay prioritario.
 - Alert e retry critici.
 - Test scenario vendite concorrenti.
-- Stock buffer e modalita prudente.
+- Stock buffer e modalità prudente.
 
 ### Fase 5 - Regole e conflitti
 
@@ -535,8 +535,8 @@ Feature future da valutare:
 - Import 10 prodotti eBay.it di test con immagini.
 - Import 2.000 prodotti con resume dopo errore simulato.
 - Prezzo modificato su eBay aggiornato su Shopify entro 5 minuti.
-- Quantita modificata su eBay aggiornata su Shopify entro 5 minuti.
-- Ordine Shopify pagato riduce disponibilita eBay o genera alert critico con retry.
+- Quantità modificata su eBay aggiornata su Shopify entro 5 minuti.
+- Ordine Shopify pagato riduce disponibilità eBay o genera alert critico con retry.
 - Modifica manuale Shopify apre conflitto.
 - Listing eBay chiuso archivia prodotto Shopify.
 - Regole sconto/markup/arrotondamento applicate senza modificare eBay.
@@ -547,9 +547,9 @@ Feature future da valutare:
 
 - Alcuni listing eBay storici potrebbero richiedere Trading API e non Inventory API.
 - Le notifiche eBay potrebbero non coprire tutti gli eventi necessari: il polling entro 5 minuti resta obbligatorio.
-- Aggiornare la disponibilita eBay da ordini Shopify e il punto piu critico per ridurre vendite di prodotti non disponibili e rispettare i rate limit.
+- Aggiornare la disponibilità eBay da ordini Shopify è il punto più critico per ridurre vendite di prodotti non disponibili e rispettare i rate limit.
 - Le descrizioni eBay possono contenere HTML pesante o template difficili da pulire senza falsi positivi.
-- Le varianti complesse possono aumentare molto la complessita: vanno isolate dal MVP base.
+- Le varianti complesse possono aumentare molto la complessità: vanno isolate dal MVP base.
 
 ## Fonti tecniche iniziali
 
