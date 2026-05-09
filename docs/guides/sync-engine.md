@@ -50,6 +50,13 @@ Default:
 
 Il polling incrementale deve essere affiancato da riconciliazione completa periodica per correggere drift, eventi persi e notifiche non ricevute.
 
+Runtime previsto:
+
+- Supabase Cron come scheduler primario per polling e drenaggio queue;
+- Supabase Queues come coda persistente per job e retry;
+- Vercel per endpoint HTTP, OAuth e webhook;
+- batch piccoli e riprendibili, non funzioni lunghe monolitiche.
+
 ## Diagnostica
 
 Ogni job fallito deve conservare:
@@ -61,3 +68,17 @@ Ogni job fallito deve conservare:
 - impatto;
 - prossima azione consigliata;
 - retry sicuro si/no.
+
+## Vincoli runtime
+
+Il runtime MVP e definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.
+
+Regole per il motore sync:
+
+- non affidare import o riconciliazioni a una singola funzione lunga;
+- spezzare import e sync in batch piccoli;
+- usare lock/idempotency key per evitare doppie scritture provider;
+- rendere ogni job riprendibile dopo timeout, deploy o errore provider;
+- conservare diagnostica e stato avanzamento per shop/prodotto/job.
+
+Se i batch serverless non bastano, mantenere Supabase Queues/Postgres e spostare solo il consumer su worker dedicato.

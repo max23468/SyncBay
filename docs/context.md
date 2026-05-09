@@ -35,6 +35,18 @@ Il repo contiene solo documentazione e fondazioni. Non esiste ancora codice appl
 
 Non creare scaffold, `package.json`, `app/`, `src/`, `prisma/` o worker senza richiesta esplicita.
 
+## Runtime deciso
+
+Infrastruttura MVP: Vercel + Supabase.
+
+- Vercel: app embedded, backend HTTP, OAuth e webhook.
+- Supabase Postgres: database applicativo.
+- Prisma: ORM iniziale.
+- Supabase Queues/Cron: job persistenti, polling e retry.
+- Supabase Storage: staging privato temporaneo immagini quando serve.
+
+Vedi ADR `decisions/0005-runtime-infrastructure.md`.
+
 ## Documenti principali
 
 - Piano: `syncbay-product-technical-plan.md`
@@ -42,6 +54,7 @@ Non creare scaffold, `package.json`, `app/`, `src/`, `prisma/` o worker senza ri
 - Roadmap: `../ROADMAP.md`
 - Benchmark: `market/shopify-ebay-app-benchmark.md`
 - Stack: `decisions/0001-stack.md`
+- Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`
 - Regole agenti: `../AGENTS.md`
 
 ## Regola di handoff

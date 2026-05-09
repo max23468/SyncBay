@@ -20,6 +20,15 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Latenza target: entro 5 minuti.
 - Scala MVP: 2.000 prodotti per shop.
 
+## Stack runtime deciso
+
+- Shopify CLI + template ufficiale React Router.
+- Vercel per app embedded, backend HTTP, OAuth e webhook.
+- Supabase Postgres come database.
+- Prisma come ORM iniziale.
+- Supabase Queues e Supabase Cron per job, polling e retry.
+- Supabase Storage privato come staging immagini temporaneo quando serve.
+
 ## Documenti principali
 
 - Piano prodotto e tecnico: `docs/syncbay-product-technical-plan.md`
@@ -37,11 +46,12 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Decisione stack: `docs/decisions/0001-stack.md`
 - Decisione GitHub/pubblicazione/versioning: `docs/decisions/0003-git-pubblicazione-versioning.md`
 - Decisione runtime/CI/release futuri: `docs/decisions/0004-runtime-ci-release-future.md`
+- Decisione infrastruttura runtime MVP: `docs/decisions/0005-runtime-infrastructure.md`
 - Benchmark Shopify App Store: `docs/market/shopify-ebay-app-benchmark.md`
 - Regole operative Codex: `AGENTS.md`
 
 ## Prossimi passi
 
-1. Preparare checklist account Shopify/eBay e credenziali necessarie.
-2. Confermare prerequisiti Shopify Partner/dev store ed eBay Developer.
+1. Creare/collegare progetto Vercel e progetto Supabase quando parte il provisioning.
+2. Completare keyset/RuName eBay quando eBay approva la richiesta.
 3. Solo dopo, creare lo scaffold applicativo.

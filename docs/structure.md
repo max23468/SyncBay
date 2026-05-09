@@ -42,6 +42,7 @@ SyncBay/
       0002-branding.md
       0003-git-pubblicazione-versioning.md
       0004-runtime-ci-release-future.md
+      0005-runtime-infrastructure.md
     guides/
       architettura.md
       git-e-pubblicazione.md

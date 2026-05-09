@@ -22,6 +22,15 @@ SyncBay potra trattare:
 - Chiavi di cifratura fuori repo.
 - Rotazione token documentata quando il runtime esistera.
 
+Runtime deciso:
+
+- Vercel env secrets per app e backend HTTP.
+- Supabase project secrets solo per funzioni/servizi Supabase che ne avranno bisogno.
+- Supabase Postgres come database, ma la cifratura at-rest del provider non sostituisce la cifratura applicativa dei token OAuth.
+- `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
+
+Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nel MVP.
+
 ## Compliance minima
 
 Da implementare prima di beta reale:

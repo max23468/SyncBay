@@ -12,11 +12,8 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 
 | Decisione | Stato | Default provvisorio | Perche conta |
 | --- | --- | --- | --- |
-| Provider hosting | Aperta | Non deciso | Influenza app URL, webhook, job queue, storage temporaneo e deploy. |
-| ORM | Aperta | Prisma o Drizzle da scegliere dopo template Shopify reale | Deve aderire allo scaffold effettivo e al workflow migration. |
-| Job queue | Aperta | Coda persistente obbligatoria, tecnologia non scelta | Import 2.000 prodotti e sync stock non possono dipendere da richieste sincrone. |
-| Storage immagini temporanee | Aperta | Minimizzare persistenza; copiare immagini finali su Shopify | Serve decidere dove gestire download/deduplica/retry prima dell'upload Shopify. |
-| Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay` e CLI collegati; app URL/redirect da decidere | Servono redirect URL e app URL prima dello scaffold/dev runtime. |
+| Provisioning Vercel/Supabase | Aperta | Provider decisi in ADR 0005; progetti non ancora creati/collegati | Servono URL reali, database, storage e secret runtime prima di usare lo scaffold. |
+| Shopify dev setup | Parziale | Account Partner, dev store, app `SyncBay` e CLI collegati; app URL/redirect da derivare da Vercel | Servono redirect URL e app URL prima dello scaffold/dev runtime. |
 | eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
 
 ## Decisioni da chiudere prima della beta

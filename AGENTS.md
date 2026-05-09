@@ -69,7 +69,8 @@ Prima di modifiche non banali leggi:
 5. `docs/decisions-pending.md`
 6. `docs/market/shopify-ebay-app-benchmark.md`
 7. `docs/decisions/0001-stack.md`
-8. `README.md`
+8. `docs/decisions/0005-runtime-infrastructure.md`
+9. `README.md`
 
 Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione App Store o modello dati, aggiorna o crea un ADR in `docs/decisions/`.
 
@@ -91,9 +92,12 @@ Direzione attuale:
 - template ufficiale React Router al momento dello scaffold;
 - TypeScript/Node;
 - Shopify Admin GraphQL;
-- PostgreSQL;
-- job queue persistente;
-- deployment da decidere dopo la scelta infrastrutturale.
+- Supabase Postgres;
+- Prisma;
+- Supabase Queues;
+- Supabase Cron;
+- Vercel;
+- Supabase Storage per staging immagini temporaneo quando serve.
 
 Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere conferma del maintainer.
 
@@ -186,6 +190,7 @@ SyncBay e attualmente guidata dalla documentazione. Aggiornala quando cambia una
 - `docs/guides/service-governance.md`: limiti MVP, retention, error handling e governance servizio.
 - `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
 - `docs/decisions/`: decisioni architetturali o operative stabili.
+- `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
 - `docs/structure.md`: struttura repo prevista nella fase corrente.
 - `README.md`: stato progetto, documenti principali e prossimo passo operativo.
 - `SECURITY.md`: policy sicurezza root.

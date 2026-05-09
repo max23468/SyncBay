@@ -18,13 +18,14 @@ docs/
   glossario.md
   syncbay-product-technical-plan.md
   structure.md
-  decisions/
-    README.md
-    template.md
-    0001-stack.md
-    0002-branding.md
-    0003-git-pubblicazione-versioning.md
-    0004-runtime-ci-release-future.md
+    decisions/
+      README.md
+      template.md
+      0001-stack.md
+      0002-branding.md
+      0003-git-pubblicazione-versioning.md
+      0004-runtime-ci-release-future.md
+      0005-runtime-infrastructure.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -51,6 +52,7 @@ docs/
 | Consultare decisioni stabili | `decisions/` |
 | Consultare decisioni ancora aperte | `decisions-pending.md` |
 | Capire lo stack scelto | `decisions/0001-stack.md` |
+| Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |

@@ -24,10 +24,12 @@ Componenti previsti:
 - React Router app template ufficiale Shopify.
 - TypeScript.
 - Shopify Admin GraphQL per prodotti, inventario, media e webhook.
-- PostgreSQL come database applicativo.
-- ORM da scegliere in fase scaffold tra Prisma e Drizzle, privilegiando compatibilita col template Shopify effettivamente generato.
-- Job queue persistente per import, sync, retry e stock update.
-- Deployment da decidere dopo la scelta infrastrutturale, evitando lock-in prematuro.
+- Supabase Postgres come database applicativo.
+- Prisma come ORM iniziale, per coerenza con il template Shopify React Router e lo storage sessioni.
+- Supabase Queues come job queue persistente per import, sync, retry e stock update.
+- Supabase Cron come scheduler primario per polling e drenaggio queue.
+- Vercel come hosting dell'app embedded, backend HTTP, OAuth e webhook.
+- Supabase Storage come staging privato e temporaneo per immagini quando serve.
 
 ## Alternative considerate
 
@@ -47,8 +49,9 @@ Motivo per non sceglierlo ora: per una Shopify app embedded conviene seguire il 
 
 - Non si crea codice applicativo finche lo scaffold non viene richiesto esplicitamente.
 - I documenti restano framework-aware ma non dipendono ancora da file generati.
-- Prima dello scaffold bisogna verificare versione Shopify CLI, template disponibile e requisiti account Shopify Partner/dev store.
+- Prima dello scaffold bisogna verificare versione Shopify CLI, template disponibile, requisiti account Shopify Partner/dev store e provisioning Vercel/Supabase.
 - Il piano tecnico deve evitare riferimenti rigidi a Remix se la scelta corrente e React Router.
+- I job devono essere progettati a batch piccoli, idempotenti e riprendibili; se i limiti serverless diventano stretti, il consumer queue potra essere spostato su worker dedicato senza cambiare database o ORM.
 
 ## Fonti
 
@@ -56,4 +59,4 @@ Motivo per non sceglierlo ora: per una Shopify app embedded conviene seguire il 
 - Shopify app templates/libraries: https://shopify.dev/docs/api/libraries-and-templates
 - Shopify app structure: https://shopify.dev/docs/apps/build/cli-for-apps/app-structure
 - Shopify Admin GraphQL `productSet`: https://shopify.dev/docs/api/admin-graphql/latest/mutations/productSet
-
+- Infrastruttura runtime MVP: `docs/decisions/0005-runtime-infrastructure.md`

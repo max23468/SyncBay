@@ -24,6 +24,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Automazioni GitHub pre-runtime | Dependabot per GitHub Actions e inbox commenti Codex su PR |
 | Fatto | Policy runtime, CI e release futura | ADR `docs/decisions/0004-runtime-ci-release-future.md` |
 | Fatto | Prerequisiti account definiti | Shopify/eBay documentati in `docs/guides/prerequisiti-account.md`; valori reali da confermare |
+| Fatto | Decisioni tecniche bloccanti | Vercel + Supabase, Prisma, Supabase Queues/Cron/Storage in ADR `docs/decisions/0005-runtime-infrastructure.md` |
 
 ## 1. Identita prodotto
 
@@ -78,6 +79,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Compilare i valori reali richiesti in `docs/guides/prerequisiti-account.md`.
-2. Chiudere hosting/app URL, database, ORM e job queue.
-3. Solo dopo conferma, passare allo scaffold applicativo.
+1. Provisioning progetto Vercel e progetto Supabase.
+2. Completare keyset/RuName eBay quando eBay approva la richiesta.
+3. Solo dopo, passare allo scaffold applicativo.

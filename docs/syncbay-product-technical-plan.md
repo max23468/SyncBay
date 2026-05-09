@@ -100,9 +100,14 @@ Direzione corrente:
 - template ufficiale React Router al momento dello scaffold;
 - TypeScript/Node;
 - Shopify Admin GraphQL;
-- PostgreSQL;
-- job queue persistente;
-- deployment da decidere dopo la scelta infrastrutturale.
+- Vercel per app embedded, backend HTTP, OAuth e webhook;
+- Supabase Postgres;
+- Prisma;
+- Supabase Queues;
+- Supabase Cron;
+- Supabase Storage come staging privato temporaneo per immagini quando serve.
+
+La decisione infrastrutturale MVP e tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
 Nota: non creare scaffold applicativo finche la fase documentale e di fondazione repo non e chiusa.
 
@@ -198,6 +203,7 @@ Strategia:
 - notifiche eBay dove disponibili per accelerare revisioni;
 - polling incrementale ogni massimo 5 minuti;
 - coda job prioritaria per inventario;
+- scheduler Supabase Cron per creare/drenare job a batch;
 - idempotenza su ogni job;
 - retry con backoff;
 - resume automatico se import o sync si interrompe;

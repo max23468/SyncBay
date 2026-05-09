@@ -9,7 +9,7 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [x] Branch policy provvisoria documentata.
 - [x] `AGENTS.md` riletto e coerente con lo stato reale.
 - [x] `docs/decisions-pending.md` aggiornato.
-- [ ] Decisioni bloccanti spostate in ADR quando chiuse.
+- [x] Decisioni tecniche bloccanti spostate in ADR quando chiuse.
 
 ## 2. Account Shopify
 
@@ -34,13 +34,13 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 
 ## 4. Decisioni tecniche bloccanti
 
-- [ ] Hosting scelto o fallback locale chiaro.
-- [ ] Database scelto.
-- [ ] ORM scelto.
-- [ ] Job queue scelta.
-- [ ] Storage temporaneo immagini deciso.
-- [ ] Strategia segreti/cifratura decisa.
-- [ ] Strategia webhook pubblici locali decisa.
+- [x] Hosting scelto o fallback locale chiaro: Vercel.
+- [x] Database scelto: Supabase Postgres.
+- [x] ORM scelto: Prisma.
+- [x] Job queue scelta: Supabase Queues.
+- [x] Storage temporaneo immagini deciso: Supabase Storage privato, staging con retention breve.
+- [x] Strategia segreti/cifratura decisa: provider secrets + cifratura applicativa token OAuth.
+- [x] Strategia webhook pubblici locali decisa: Shopify CLI tunnel per dev Shopify, Vercel stabile per eBay.
 
 ## 5. Product defaults
 

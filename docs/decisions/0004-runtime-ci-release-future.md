@@ -20,19 +20,19 @@ Lo scaffold dovra restare coerente con ADR 0001:
 - template React Router ufficiale Shopify disponibile al momento dello scaffold;
 - TypeScript/Node;
 - Shopify Admin GraphQL;
-- PostgreSQL;
-- job queue persistente;
-- deploy da decidere con ADR dedicato prima di qualunque ambiente production.
+- Supabase Postgres;
+- Prisma;
+- Supabase Queues;
+- Supabase Cron;
+- Vercel;
+- Supabase Storage per staging immagini temporaneo quando serve.
 
-Prima dello scaffold vanno chiusi almeno:
+Le decisioni tecniche bloccanti sono chiuse da ADR 0005. Prima dello scaffold restano da fare almeno:
 
-- hosting/app URL;
-- database e provider PostgreSQL;
-- ORM;
-- job queue;
-- storage temporaneo immagini;
-- strategia segreti/cifratura;
-- strategia webhook pubblici locali.
+- provisioning dei progetti Vercel/Supabase;
+- definizione degli URL reali;
+- inserimento dei secret nei provider, non nel repo;
+- verifica del keyset eBay quando eBay lo approva.
 
 ## CI futura
 
@@ -96,11 +96,10 @@ Se adottato, andra documentato con ADR o aggiornamento di questa decisione, e do
 
 ## Deploy futuro
 
-Non esiste deploy runtime oggi.
+Non esiste deploy runtime oggi, ma il provider runtime MVP e deciso in ADR 0005.
 
-Quando verra scelto, serve ADR dedicato che chiarisca:
+Quando verra creato lo scaffold, servira aggiornare le guide operative con:
 
-- provider;
 - ambienti preview/staging/production;
 - segreti e variabili ambiente;
 - webhook Shopify/eBay e callback OAuth;
@@ -124,5 +123,6 @@ Quando verra scelto, serve ADR dedicato che chiarisca:
 
 - `docs/decisions/0001-stack.md`
 - `docs/decisions/0003-git-pubblicazione-versioning.md`
+- `docs/decisions/0005-runtime-infrastructure.md`
 - `docs/guides/versioning-e-release.md`
 - `docs/guides/git-e-pubblicazione.md`

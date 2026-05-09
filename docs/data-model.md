@@ -4,6 +4,8 @@ Questo documento descrive le entita previste per SyncBay. Non e ancora uno schem
 
 Quando verra creato lo scaffold applicativo, questo documento dovra essere riallineato a migration, ORM e schema reale.
 
+Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
+
 ## Entita principali
 
 ### Shop
@@ -106,6 +108,8 @@ Requisiti:
 
 Rappresenta import, sync, retry, archiviazione, update stock.
 
+Nel runtime MVP i job applicativi dovranno essere rappresentati sia a livello di dominio, per diagnostica/dashboard, sia su Supabase Queues, per consegna e retry persistente.
+
 Stati minimi:
 
 - pending;
@@ -139,6 +143,18 @@ Registra eventi rilevanti:
 - aggiornamento disponibilita eBay fallito;
 - rollback;
 - conflitto risolto.
+
+### Asset staging
+
+Rappresenta eventuali immagini temporaneamente scaricate da eBay prima del caricamento su Shopify.
+
+Requisiti:
+
+- bucket Supabase Storage privato;
+- retention breve;
+- cleanup automatico;
+- nessun uso come fonte immagine permanente dello shop;
+- nessun dato reale in fixture, screenshot o documenti.
 
 ## Regole dati
 

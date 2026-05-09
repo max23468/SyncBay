@@ -27,8 +27,8 @@ Finche non vengono forniti URL reali e keyset eBay approvato:
 | Development store | Confermato | `syncbay-dev.myshopify.com` |
 | Nome app custom | Confermato | `SyncBay` |
 | Shopify CLI | Collegata | `shopify.app.toml` collegato all'app `SyncBay`. |
-| App URL locale/provvisoria | Da decidere | Deve essere HTTPS quando Shopify/eBay chiamano l'app. |
-| Redirect URL OAuth | Da decidere | Da derivare dall'app URL dopo scelta hosting/tunnel. |
+| App URL locale/provvisoria | Provider deciso | Vercel per URL stabile; valore reale da definire al provisioning. |
+| Redirect URL OAuth | Da derivare | Da derivare dall'app URL Vercel dopo provisioning/scaffold. |
 | Scopes iniziali | Definiti come bozza MVP | Da validare sul template Shopify/API version al momento dello scaffold. |
 | Webhook minimi | Definiti come bozza MVP | Da registrare via config Shopify CLI dove possibile. |
 
@@ -39,16 +39,17 @@ Default operativo per lo scaffold:
 - usare Shopify CLI;
 - collegare una app `SyncBay` nel Dev Dashboard;
 - usare il development store `syncbay-dev.myshopify.com`;
-- usare un URL HTTPS provvisorio per sviluppo, tramite tunnel/hosting deciso;
+- usare Vercel come URL HTTPS stabile per sviluppo condiviso e callback provider quando esiste runtime;
+- usare Shopify CLI tunnel per sviluppo locale Shopify quando supportato;
 - tenere separati URL locali/provvisori e URL production futura.
 
 URL previsti appena esistera runtime:
 
 | Uso | Pattern provvisorio |
 | --- | --- |
-| App URL | `https://<syncbay-dev-host>` |
-| Shopify OAuth callback | `https://<syncbay-dev-host>/auth/shopify/callback` |
-| Shopify webhook endpoint | `https://<syncbay-dev-host>/webhooks/shopify` |
+| App URL | `https://<syncbay-vercel-host>` |
+| Shopify OAuth callback | `https://<syncbay-vercel-host>/auth/shopify/callback` |
+| Shopify webhook endpoint | `https://<syncbay-vercel-host>/webhooks/shopify` |
 
 I path sono provvisori: lo scaffold Shopify potrebbe generarne di diversi.
 
@@ -103,10 +104,10 @@ Default MVP:
 | Marketplace iniziale | Confermato | `EBAY_IT` |
 | OAuth RuName Sandbox | In attesa keyset | eBay usa `RuName` come `redirect_uri` nel token exchange. |
 | OAuth RuName Production | In attesa keyset | Separato dal Sandbox. |
-| Accept URL | Da decidere dopo app URL | URL pubblico/callback success OAuth. |
-| Reject URL | Da decidere dopo app URL | URL pubblico/callback rifiuto OAuth. |
+| Accept URL | Da derivare da Vercel | URL pubblico/callback success OAuth. |
+| Reject URL | Da derivare da Vercel | URL pubblico/callback rifiuto OAuth. |
 | Scopes eBay | Definiti come bozza MVP | Da validare contro metodi effettivi usati. |
-| Account deletion endpoint | Da decidere dopo app URL | Richiede HTTPS pubblico e challenge response. |
+| Account deletion endpoint | Da derivare da Vercel | Richiede HTTPS pubblico e challenge response. |
 | Verification token | Da generare fuori repo | 32-80 caratteri, non salvare in Git. |
 
 ### OAuth
@@ -166,7 +167,7 @@ Requisiti:
 Endpoint provvisorio futuro:
 
 ```text
-https://<syncbay-dev-host>/webhooks/ebay/account-deletion
+https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 ```
 
 ## Dati che il maintainer deve fornire
@@ -177,8 +178,8 @@ https://<syncbay-dev-host>/webhooks/ebay/account-deletion
 - Development store: `syncbay-dev.myshopify.com`.
 - Nome app custom: `SyncBay`.
 - Shopify CLI: collegata all'app `SyncBay`.
-- App URL provvisorio: da decidere.
-- Preferenza tunnel/hosting dev: da decidere.
+- App URL provvisorio: da generare con progetto Vercel quando esiste runtime.
+- Preferenza tunnel/hosting dev: Vercel per URL stabile, Shopify CLI tunnel per sviluppo locale Shopify.
 
 ### eBay
 
@@ -188,20 +189,18 @@ https://<syncbay-dev-host>/webhooks/ebay/account-deletion
 - Production keyset: in attesa.
 - RuName Sandbox: da compilare quando eBay approva/mostra il keyset.
 - RuName Production: da compilare quando disponibile.
-- Accept URL e Reject URL: da definire dopo app URL/hosting.
+- Accept URL e Reject URL: da definire dopo provisioning Vercel e keyset eBay.
 - Preferenza iniziale: test su Sandbox quando disponibile; Production solo dopo decisione esplicita.
 
 ## Cosa resta bloccante
 
-Anche con questa guida chiusa, prima dello scaffold restano da decidere:
+Anche con questa guida chiusa, prima dello scaffold restano da completare:
 
-- hosting/app URL;
-- strategia tunnel/webhook locali;
-- database;
-- ORM;
-- job queue;
-- storage temporaneo immagini;
-- cifratura token a riposo.
+- provisioning progetto Vercel;
+- provisioning progetto Supabase;
+- URL reali e redirect;
+- keyset/RuName eBay;
+- secret runtime nei provider, non nel repo.
 
 ## Fonti
 

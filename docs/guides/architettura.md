@@ -35,6 +35,11 @@ Database
   -> Audit log
 
 Provider esterni
+  -> Vercel
+  -> Supabase Postgres
+  -> Supabase Queues
+  -> Supabase Cron
+  -> Supabase Storage
   -> Shopify Admin GraphQL
   -> eBay Trading API
   -> eBay Inventory API
@@ -50,12 +55,23 @@ Provider esterni
 - Ogni errore deve diventare diagnostica utile.
 - Nessuna cancellazione distruttiva automatica: archiviare e mantenere rollback dove possibile.
 
-## Decisioni aperte
+## Decisioni infrastrutturali MVP
 
-- Provider hosting.
-- ORM.
-- Job queue.
-- Strategia storage immagini temporanee.
+Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
+
+Scelte accettate:
+
+- hosting app/backend HTTP: Vercel;
+- database: Supabase Postgres;
+- ORM: Prisma;
+- queue persistente: Supabase Queues;
+- scheduler: Supabase Cron;
+- storage immagini temporanee: Supabase Storage privato, solo staging con retention breve;
+- token provider: cifrati applicativamente prima del salvataggio su Postgres.
+
+I job devono restare piccoli, idempotenti e riprendibili. Se il consumer queue richiede un processo persistente, spostarlo su worker dedicato Render/Fly mantenendo Vercel per app e Supabase per dati/queue.
+
+## Decisioni ancora aperte
+
 - Billing e distribuzione App Store.
-
-Queste decisioni richiedono ADR dedicati quando verranno chiuse.
+- Ambienti production/staging e smoke test effettivi, da definire quando esiste lo scaffold.
