@@ -1,9 +1,26 @@
-# Dependabot - aggiornamenti settimanali per automazioni GitHub.
-#
-# SyncBay non ha ancora package applicativi. Quando verra creato lo scaffold,
-# aggiungere qui anche l'ecosistema npm allineato al package manager scelto.
+# Dependabot - aggiornamenti settimanali per dipendenze runtime e automazioni GitHub.
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:10"
+      timezone: Europe/Rome
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

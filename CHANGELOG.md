@@ -24,3 +24,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Creato lo scaffold Shopify CLI React Router TypeScript con Prisma session storage, dashboard embedded minima e webhook base.
 - Rimossi gli alert Dependabot su `lodash` e `minimatch` aggiornando il tooling ESLint e rimuovendo il codegen GraphQL Shopify non ancora usato.
 - Reso non bloccante il workflow `Codex PR comments` quando GitHub nega la scrittura dell'inbox/commento automatico.
+- Aggiornata la configurazione Dependabot per monitorare anche le dipendenze npm introdotte dallo scaffold.
