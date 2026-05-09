@@ -4,9 +4,9 @@ SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un nego
 
 ## Stato
 
-Fase corrente: pianificazione e fondazioni repo.
+Fase corrente: scaffold applicativo iniziale.
 
-Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno consolidati piano, stack, struttura documentale e regole operative.
+Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, webhook uninstall/scopes update e una dashboard embedded minima. Non esistono ancora import, sync catalogo o OAuth eBay attivo.
 
 ## Direzione prodotto
 
@@ -34,6 +34,15 @@ Provisioning minimo creato:
 - Vercel project: `matteos-projects-9226d217/syncbay`
 - Supabase project: `SyncBay`, ref `mgjcbuokppfnglsftsmi`, region `eu-west-1`
 
+## Comandi locali
+
+- Installazione: `npm install`
+- Sviluppo Shopify: `npm run dev`
+- Typecheck: `npm run typecheck`
+- Lint: `npm run lint`
+- Build: `npm run build`
+- Prisma/setup runtime: `npm run setup`
+
 ## Documenti principali
 
 - Piano prodotto e tecnico: `docs/syncbay-product-technical-plan.md`
@@ -58,6 +67,6 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Decidere se procedere allo scaffold anche prima del keyset eBay, lasciando eBay a placeholder.
-2. Creare lo scaffold Shopify CLI React Router.
-3. Configurare env reali Vercel/Supabase e URL callback dopo il primo runtime utilizzabile.
+1. Configurare env reali Vercel/Supabase e URL callback dopo il primo runtime utilizzabile.
+2. Preparare la prima fase codice: connessione Shopify persistita e struttura OAuth eBay a placeholder.
+3. Completare keyset/RuName eBay quando eBay approva la richiesta.

@@ -26,6 +26,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Prerequisiti account definiti | Shopify/eBay documentati in `docs/guides/prerequisiti-account.md`; valori reali da confermare |
 | Fatto | Decisioni tecniche bloccanti | Vercel + Supabase, Prisma, Supabase Queues/Cron/Storage in ADR `docs/decisions/0005-runtime-infrastructure.md` |
 | Fatto | Provisioning minimo runtime | Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, documentati in `docs/guides/provisioning-runtime.md` |
+| Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
 
 ## 1. Identita prodotto
 
@@ -45,7 +46,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 | Stato | Voce | Note |
 | --- | --- | --- |
-| Da fare | Connessione Shopify custom app | Installazione, scope, token, webhook base |
+| In corso | Connessione Shopify custom app | Scaffold presente; da completare env reali, Supabase Postgres e verifica installazione end-to-end |
 | Da fare | Connessione eBay.it OAuth | Account venditore, token, refresh, marketplace `EBAY_IT` |
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
@@ -80,6 +81,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Decidere se procedere allo scaffold anche con keyset eBay ancora in attesa.
-2. Creare scaffold Shopify CLI React Router.
-3. Configurare env/URL reali Vercel, Supabase, Shopify ed eBay dopo il primo runtime utilizzabile.
+1. Configurare env/URL reali Vercel, Supabase e Shopify per il runtime scaffold.
+2. Preparare prima fase codice: persistenza shop/sessioni e struttura OAuth eBay a placeholder.
+3. Completare keyset/RuName eBay quando eBay approva la richiesta.

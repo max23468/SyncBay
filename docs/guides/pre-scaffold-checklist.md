@@ -1,6 +1,6 @@
-# Checklist pre-scaffold
+# Checklist scaffold
 
-Questa checklist va chiusa prima di generare codice applicativo, `package.json`, Shopify CLI app o cartelle runtime.
+Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato minimo dopo la generazione del runtime Shopify CLI React Router.
 
 ## 1. Repo e documentazione
 
@@ -10,6 +10,7 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [x] `AGENTS.md` riletto e coerente con lo stato reale.
 - [x] `docs/decisions-pending.md` aggiornato.
 - [x] Decisioni tecniche bloccanti spostate in ADR quando chiuse.
+- [x] Scaffold Shopify CLI React Router creato.
 
 ## 2. Account Shopify
 
@@ -60,4 +61,13 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [ ] Non introdurre billing.
 - [ ] Non creare deploy production.
 - [ ] Non configurare CI complessa.
-- [ ] Non generare codice runtime prima di aver chiuso le decisioni bloccanti.
+- [x] Non generare codice runtime prima di aver chiuso le decisioni bloccanti.
+
+## 7. Verifiche scaffold
+
+- [x] `npm run typecheck`
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `npm audit --omit=dev`
+- [ ] Installazione Shopify end-to-end sul dev store.
+- [ ] Primo deploy/preview Vercel.

@@ -12,7 +12,7 @@ Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile, n
 
 Finche non vengono forniti URL reali e keyset eBay approvato:
 
-- non creare scaffold/runtime applicativo;
+- non attivare OAuth eBay reale o sync runtime;
 - non riusare keyset di altri progetti senza decisione esplicita;
 - non salvare token o secret nel repo;
 - non configurare webhook produttivi.

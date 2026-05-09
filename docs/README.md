@@ -2,7 +2,7 @@
 
 Questa cartella raccoglie la documentazione approfondita del progetto.
 
-SyncBay e ancora in fase di pianificazione e fondazioni: la documentazione e la fonte principale per decidere cosa costruire prima di creare codice applicativo.
+SyncBay ha lo scaffold Shopify CLI React Router iniziale. La documentazione resta la fonte principale per decidere cosa costruire prima di aggiungere sync, worker o integrazioni eBay reali.
 
 ## Struttura
 
@@ -10,6 +10,10 @@ SyncBay e ancora in fase di pianificazione e fondazioni: la documentazione e la 
 .github/
   ISSUE_TEMPLATE/
   PULL_REQUEST_TEMPLATE.md
+app/
+  routes/
+prisma/
+  schema.prisma
 supabase/
   config.toml
 docs/
@@ -35,10 +39,10 @@ docs/
       pre-scaffold-checklist.md
       provisioning-runtime.md
       prerequisiti-account.md
-    service-governance.md
-    sicurezza-privacy.md
-    sync-engine.md
-    versioning-e-release.md
+      service-governance.md
+      sicurezza-privacy.md
+      sync-engine.md
+      versioning-e-release.md
   market/
     shopify-ebay-app-benchmark.md
 ```

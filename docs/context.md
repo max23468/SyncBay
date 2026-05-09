@@ -31,9 +31,9 @@ Tagline principale:
 
 ## Stato repo
 
-Il repo contiene solo documentazione e fondazioni. Non esiste ancora codice applicativo.
+Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router.
 
-Non creare scaffold, `package.json`, `app/`, `src/`, `prisma/` o worker senza richiesta esplicita.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `public/`, `extensions/` e session storage Prisma. Non esistono ancora import, sync catalogo, job queue runtime o OAuth eBay attivo.
 
 ## Runtime deciso
 
@@ -52,6 +52,14 @@ Provisioning minimo:
 - Vercel project: `matteos-projects-9226d217/syncbay`.
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
 - Dettagli: `guides/provisioning-runtime.md`.
+
+## Comandi runtime
+
+- `npm install`
+- `npm run dev`
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
 
 ## Documenti principali
 

@@ -17,6 +17,15 @@ redirect_urls = [ ]
 [webhooks]
 api_version = "2026-04"
 
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
 [build]
+include_config_on_deploy = true
 automatically_update_urls_on_dev = true
 dev_store_url = "syncbay-dev.myshopify.com"
