@@ -228,6 +228,8 @@ Quando verra creato lo scaffold:
 - Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purche il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve piu. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
+- I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
+- Prima di mergiare una PR non banale, controlla se la `Codex feedback inbox` segnala thread actionable collegati alla PR corrente.
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" non significa automaticamente deploy, release versionata, billing, App Store o integrazioni produttive.
 - Se il maintainer chiede "deploya", "rilascia", "pubblica e deploy" o formule che implicano runtime, verifica prima se esiste una policy SyncBay attuale. Oggi non esiste deploy/release runtime: dichiaralo e procedi solo dopo decisione esplicita.
@@ -263,6 +265,8 @@ Quando esistera runtime, ogni modifica dovra essere classificata prima della chi
 Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime futuri in sezioni versionate, non chiudere senza release oppure senza dichiarare il rilascio come prossimo step operativo.
 
 Quando deploy, release runtime o pubblicazione App Store verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`, `docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e il piano tecnico.
+
+Dettagli sulla policy futura per runtime, CI e release: `docs/decisions/0004-runtime-ci-release-future.md`.
 
 ## Risposte finali e handoff
 

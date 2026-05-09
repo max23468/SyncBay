@@ -35,6 +35,7 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Versioning e release: `docs/guides/versioning-e-release.md`
 - Decisione stack: `docs/decisions/0001-stack.md`
 - Decisione GitHub/pubblicazione/versioning: `docs/decisions/0003-git-pubblicazione-versioning.md`
+- Decisione runtime/CI/release futuri: `docs/decisions/0004-runtime-ci-release-future.md`
 - Benchmark Shopify App Store: `docs/market/shopify-ebay-app-benchmark.md`
 - Regole operative Codex: `AGENTS.md`
 

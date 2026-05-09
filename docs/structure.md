@@ -7,6 +7,9 @@ SyncBay/
   .github/
     ISSUE_TEMPLATE/
     PULL_REQUEST_TEMPLATE.md
+    dependabot.yml
+    scripts/
+    workflows/
   AGENTS.md
   BRAND.md
   README.md
@@ -37,6 +40,7 @@ SyncBay/
       0001-stack.md
       0002-branding.md
       0003-git-pubblicazione-versioning.md
+      0004-runtime-ci-release-future.md
     guides/
       architettura.md
       git-e-pubblicazione.md

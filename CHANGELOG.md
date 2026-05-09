@@ -15,3 +15,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Creato il repository GitHub privato `max23468/SyncBay` e documentato il remote iniziale.
 - Aggiunti issue template, PR template e configurazione GitHub iniziale in linea con le repo operative esistenti.
 - Formalizzata la policy di pubblicazione GitHub, PR, commit, changelog e versioning futuro con ADR dedicato.
+- Configurati Dependabot per GitHub Actions e workflow `Codex PR comments`, e definita la policy futura per runtime, CI e release.

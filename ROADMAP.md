@@ -21,6 +21,8 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Governance servizio e security policy | `docs/guides/service-governance.md`, `SECURITY.md` |
 | Fatto | Remote GitHub e branch policy iniziale | Repo privato `max23468/SyncBay`, branch policy provvisoria in `docs/guides/git-e-pubblicazione.md` |
 | Fatto | Policy pubblicazione e versioning | ADR `docs/decisions/0003-git-pubblicazione-versioning.md`, guide Git e versioning aggiornate |
+| Fatto | Automazioni GitHub pre-runtime | Dependabot per GitHub Actions e inbox commenti Codex su PR |
+| Fatto | Policy runtime, CI e release futura | ADR `docs/decisions/0004-runtime-ci-release-future.md` |
 
 ## 1. Identita prodotto
 

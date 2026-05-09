@@ -24,6 +24,7 @@ docs/
     0001-stack.md
     0002-branding.md
     0003-git-pubblicazione-versioning.md
+    0004-runtime-ci-release-future.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -58,6 +59,7 @@ docs/
 | Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |
 | Capire policy Git/PR/pubblicazione | `guides/git-e-pubblicazione.md` |
 | Capire versioning e release | `guides/versioning-e-release.md` |
+| Capire runtime/CI/release futuri | `decisions/0004-runtime-ci-release-future.md` |
 | Usare termini coerenti in UI/docs | `glossario.md` |
 | Capire competitor e differenziazione | `market/shopify-ebay-app-benchmark.md` |
 

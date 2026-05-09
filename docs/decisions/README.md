@@ -15,6 +15,7 @@ Usa un ADR quando una scelta:
 - `0001-stack.md`: stack iniziale SyncBay.
 - `0002-branding.md`: branding iniziale SyncBay.
 - `0003-git-pubblicazione-versioning.md`: policy GitHub, pubblicazione e versioning.
+- `0004-runtime-ci-release-future.md`: policy futura per runtime, CI e release dopo lo scaffold.
 
 ## Convenzioni
 

@@ -6,6 +6,8 @@ Questa guida definisce la policy provvisoria e cosa aggiornare quando il progett
 
 Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 
+Policy futura runtime/CI/release: `docs/decisions/0004-runtime-ci-release-future.md`.
+
 ## Stato corrente
 
 - Documentazione e fondazioni repo: nessuna versione applicativa.
@@ -137,3 +139,19 @@ La scelta tra script locale, Release Please o altro strumento resta aperta fino 
 - come vengono create eventuali GitHub Release;
 - quali check bloccano release e deploy;
 - come si verifica una pubblicazione completa.
+
+## CI futura
+
+La CI runtime non e attiva finche non esistono scaffold e comandi reali.
+
+Quando esistera `package.json`, il workflow Quality dovra coprire almeno:
+
+- installazione dipendenze;
+- typecheck;
+- lint;
+- test;
+- build;
+- format/check;
+- audit dipendenze quando cambiano manifest o lockfile.
+
+Non creare workflow che passano senza validare un runtime reale.

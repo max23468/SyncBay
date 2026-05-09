@@ -10,9 +10,11 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Remote GitHub: https://github.com/max23468/SyncBay
 - Branch predefinito: `main`.
 - Issue e PR template configurati in `.github/`.
+- Workflow `Codex PR comments` configurato per mantenere la issue `Codex feedback inbox`.
+- Dependabot configurato per GitHub Actions; package ecosystem applicativo da aggiungere dopo lo scaffold.
 - Nessun deploy.
 - Nessuna release runtime.
-- Nessuna CI definita.
+- Nessuna CI runtime definita.
 
 ## Regola base
 
@@ -102,6 +104,20 @@ La configurazione iniziale segue Pratix come riferimento principale:
 
 Branch protection e rulesets non sono attivi sulle repo private dell'account corrente senza GitHub Pro o repo pubblica.
 
+## Commenti Codex sulle PR
+
+Il workflow `.github/workflows/codex-pr-comments.yml` mantiene una issue operativa chiamata `Codex feedback inbox`.
+
+Il workflow:
+
+- analizza PR aperte e recenti;
+- cerca review thread scritti da account che matchano `codex`;
+- distingue thread actionable da thread risolti o outdated;
+- aggiorna la inbox;
+- quando trova thread actionable non ancora richiesti, commenta la PR con `@codex address that feedback`.
+
+Prima di mergiare una PR non banale, controllare la inbox e la PR corrente. Se ci sono thread actionable, risolverli o dichiarare esplicitamente perche restano fuori scope.
+
 ## Docs-only
 
 Per modifiche puramente documentali:
@@ -129,6 +145,6 @@ Finche SyncBay non ha runtime:
 - non creare GitHub Release;
 - non creare tag SemVer;
 - non introdurre Release Please o script di release senza ADR;
-- non aggiungere workflow GitHub Actions senza richiesta esplicita.
+- non aggiungere CI runtime senza scaffold e comandi reali.
 
-Quando questi flussi verranno decisi, creare ADR e aggiornare questa guida.
+La policy futura di runtime, CI e release e definita in `docs/decisions/0004-runtime-ci-release-future.md`. Quando questi flussi verranno implementati, creare o aggiornare ADR e aggiornare questa guida.
