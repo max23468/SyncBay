@@ -252,21 +252,39 @@ async function upsertInboxIssue(entries) {
   }
 
   if (existingIssue) {
-    return githubJson(
-      `/repos/${owner}/${repo}/issues/${existingIssue.number}`,
-      {
-        body,
-        state: "open",
-        title: inboxIssueTitle,
-      },
-      "PATCH",
-    );
+    try {
+      return await githubJson(
+        `/repos/${owner}/${repo}/issues/${existingIssue.number}`,
+        {
+          body,
+          state: "open",
+          title: inboxIssueTitle,
+        },
+        "PATCH",
+      );
+    } catch (error) {
+      if (isNonCriticalWriteError(error)) {
+        console.warn(`Impossibile aggiornare la issue inbox: ${error.message}`);
+        return existingIssue;
+      }
+
+      throw error;
+    }
   }
 
-  return githubJson(`/repos/${owner}/${repo}/issues`, {
-    body,
-    title: inboxIssueTitle,
-  });
+  try {
+    return await githubJson(`/repos/${owner}/${repo}/issues`, {
+      body,
+      title: inboxIssueTitle,
+    });
+  } catch (error) {
+    if (isNonCriticalWriteError(error)) {
+      console.warn(`Impossibile creare la issue inbox: ${error.message}`);
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function findInboxIssue() {
@@ -392,10 +410,14 @@ async function parseGitHubResponse(response) {
   const json = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    fail(`${response.status} ${response.statusText}: ${text}`);
+    throw new GitHubApiError(response.status, response.statusText, text);
   }
 
   return json;
+}
+
+function isNonCriticalWriteError(error) {
+  return error instanceof GitHubApiError && [403, 404, 410].includes(error.status);
 }
 
 async function readGitHubEventPayload() {
@@ -422,4 +444,12 @@ function parsePositiveInteger(value, fallback) {
 function fail(message) {
   console.error(message);
   process.exit(1);
+}
+
+class GitHubApiError extends Error {
+  constructor(status, statusText, body) {
+    super(`${status} ${statusText}: ${body}`);
+    this.name = "GitHubApiError";
+    this.status = status;
+  }
 }
