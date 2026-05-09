@@ -1,6 +1,6 @@
 # SyncBay
 
-SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un merchant eBay.it.
+SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un negoziante eBay.it.
 
 ## Stato
 
@@ -10,10 +10,10 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 
 ## Direzione prodotto
 
-- Shopify diventa una copia operativa del catalogo eBay.
+- Shopify riceve un catalogo operativo derivato dal negozio eBay.
 - eBay resta la sorgente di verita per prodotti e disponibilita.
 - Sync principale: eBay -> Shopify.
-- Eccezione obbligatoria: gli ordini Shopify aggiornano lo stock eBay per evitare overselling.
+- Eccezione obbligatoria: gli ordini Shopify aggiornano la disponibilita eBay per ridurre il rischio di vendere prodotti non disponibili.
 - Marketplace iniziale: eBay.it.
 - Distribuzione iniziale: custom app.
 - Obiettivo successivo: app pubblica Shopify App Store.
@@ -27,6 +27,7 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Indice documentazione: `docs/README.md`
 - Roadmap: `ROADMAP.md`
 - Changelog: `CHANGELOG.md`
+- Brand: `BRAND.md`
 - Security policy: `SECURITY.md`
 - Decisioni aperte: `docs/decisions-pending.md`
 - Checklist pre-scaffold: `docs/guides/pre-scaffold-checklist.md`
@@ -36,7 +37,6 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 
 ## Prossimi passi
 
-1. Consolidare documentazione e roadmap.
-2. Preparare checklist account Shopify/eBay e credenziali necessarie.
-3. Confermare prerequisiti Shopify Partner/dev store ed eBay Developer.
-4. Solo dopo, creare lo scaffold applicativo.
+1. Preparare checklist account Shopify/eBay e credenziali necessarie.
+2. Confermare prerequisiti Shopify Partner/dev store ed eBay Developer.
+3. Solo dopo, creare lo scaffold applicativo.

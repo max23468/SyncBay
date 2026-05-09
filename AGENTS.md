@@ -23,7 +23,7 @@ La direzione confermata:
 
 - sync principale eBay -> Shopify;
 - eBay resta la sorgente di verita del catalogo;
-- eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilita su eBay per evitare overselling;
+- eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilita su eBay per ridurre il rischio di vendere prodotti non disponibili;
 - marketplace iniziale: eBay.it;
 - prima custom app per pilota controllato, poi app pubblica Shopify App Store;
 - sync target entro massimo 5 minuti;
@@ -34,13 +34,13 @@ La direzione confermata:
 
 ### Perimetro e non-obiettivi
 
-SyncBay deve restare, nel MVP, una soluzione eBay-first per trasformare un catalogo eBay.it in uno shop Shopify pulito, sincronizzato e protetto dall'overselling.
+SyncBay deve restare, nel MVP, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilita sincronizzate.
 
 Una nuova funzionalita ha senso quando rafforza almeno uno di questi assi:
 
 - import guidato e sicuro dei listing eBay in Shopify;
 - sincronizzazione catalogo, prezzi, immagini, descrizioni e stock;
-- prevenzione overselling;
+- protezione delle disponibilita e riduzione del rischio di vendere prodotti non disponibili;
 - pulizia delle descrizioni/template eBay per renderle adatte a Shopify;
 - gestione esplicita dei conflitti Shopify;
 - diagnostica self-service, audit log, retry e rollback;
@@ -64,11 +64,12 @@ Prima di modifiche non banali leggi:
 
 1. `docs/syncbay-product-technical-plan.md`
 2. `docs/context.md`
-3. `ROADMAP.md`
-4. `docs/decisions-pending.md`
-5. `docs/market/shopify-ebay-app-benchmark.md`
-6. `docs/decisions/0001-stack.md`
-7. `README.md`
+3. `BRAND.md`
+4. `ROADMAP.md`
+5. `docs/decisions-pending.md`
+6. `docs/market/shopify-ebay-app-benchmark.md`
+7. `docs/decisions/0001-stack.md`
+8. `README.md`
 
 Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione App Store o modello dati, aggiorna o crea un ADR in `docs/decisions/`.
 
@@ -119,12 +120,13 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Dove il real-time o quasi real-time e tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilita, preferiscilo e documenta il fallback.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
 - Non assumere che Shopify sia la sorgente di verita: per il catalogo MVP la sorgente e eBay.
-- Non aggiornare eBay con modifiche Shopify, salvo stock anti-overselling da ordini Shopify.
+- Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilita derivati da ordini Shopify.
 - Non cancellare prodotti Shopify quando un listing eBay sparisce: archiviali.
 - Non sovrascrivere modifiche manuali Shopify senza aprire conflitto.
 - Non dipendere dal supporto umano per errori ordinari: gli errori devono essere comprensibili e azionabili in dashboard.
 - Non dedurre dati eBay non restituiti dalle API. Se un campo non arriva, dichiaralo come assente o non supportato.
-- Non usare dati reali di merchant, ordini, clienti o listing in fixture, screenshot, log o documentazione.
+- Non usare dati reali di negoziante, ordini, clienti o listing in fixture, screenshot, log o documentazione.
+- Quando scrivi UI, microcopy o materiali prodotto, considera che target e lingua sono italiani: evita inglesismi non necessari come "merchant", "seller" o "overselling" se puoi usare "negoziante", "venditore" o "vendere prodotti non disponibili".
 - I file `.DS_Store` non fanno parte del repository: ignorali sempre e rimuovili se vengono tracciati per errore.
 
 ## Shopify ed eBay
@@ -134,7 +136,7 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Usa Shopify Admin GraphQL come interfaccia primaria per prodotti, inventario, media e webhook.
 - Mantieni compatibilita con Shopify CLI e app embedded.
 - Prima di fissare scope o webhook, verifica la documentazione Shopify aggiornata.
-- Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente overselling e storefront.
+- Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilita e vetrina Shopify.
 - Per modifiche future alla UI embedded, usa pattern coerenti con Shopify Admin e Polaris/App Bridge quando saranno introdotti.
 
 ### eBay
@@ -142,22 +144,24 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Per leggere tutti i listing attivi, prevedi Trading API dove serve, per coprire listing storici creati da Seller Hub/UI eBay.
 - Usa Inventory API dove disponibile, soprattutto per casi compatibili con inventory/offer e aggiornamenti stock.
 - Verifica sempre la documentazione eBay corrente per notifiche, OAuth, rate limit, marketplace account deletion e requisiti compliance.
-- Non assumere che Inventory API copra tutti i listing di un merchant.
+- Non assumere che Inventory API copra tutte le inserzioni di un negoziante.
 
 ## Lingua, tono e prodotto
 
 - Usa italiano come lingua predefinita con il maintainer.
-- La UI merchant di SyncBay deve essere in italiano nella fase eBay.it-first, salvo integrazioni o termini tecnici Shopify/eBay che richiedano label originali.
-- Tono UI: professionale, concreto, calmo. Frasi brevi, stato del sistema, azione successiva chiara.
+- La UI negoziante di SyncBay deve essere in italiano nella fase eBay.it-first, salvo integrazioni o termini tecnici Shopify/eBay che richiedano label originali.
+- Tono UI: professionale, concreto, calmo. Frasi brevi, stato del sistema, azione successiva chiara. Vedi `BRAND.md`.
 - Evita emoji nella UI, esclamativi multipli, "oops" o messaggi vaghi.
 - Mantieni identificatori nel codice in inglese quando coerente con librerie e framework.
+- Non usare colori, loghi o claim che facciano sembrare SyncBay un'app ufficiale eBay o Shopify senza approvazione esplicita.
+- Il richiamo a eBay e Shopify deve esserci, ma restare sottile nel branding: chiaro nel contesto funzionale, non urlato in tagline, palette o logo.
 
 ## Sicurezza, privacy e dati
 
 - Non committare segreti, token, credenziali, file `.env` reali o dati personali.
 - Token Shopify/eBay devono essere cifrati a riposo quando verra implementato il runtime.
 - Non stampare segreti in log, errori o risposte chat. Per verificarne la presenza usa controlli booleani, mai `echo $VAR`.
-- Tratta dati shop, listing, ordini, clienti e immagini come dati merchant.
+- Tratta dati shop, inserzioni, ordini, clienti e immagini come dati del negoziante.
 - Evita leak in log, fixture, screenshot, test o report.
 - Per webhook pubblici e callback OAuth, valida sempre firma/HMAC/stato/nonce secondo il provider.
 - Shopify GDPR webhook, disinstallazione app, revoca token e eBay marketplace account deletion devono restare requisiti di primo piano.
@@ -172,6 +176,7 @@ SyncBay e attualmente guidata dalla documentazione. Aggiornala quando cambia una
 - `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
 - `ROADMAP.md`: priorita, backlog e stato decisioni/prossime fasi.
 - `CHANGELOG.md`: storico modifiche significative.
+- `BRAND.md`: identita, tagline, tono, palette direzionale, logo direction e claim vietati.
 - `docs/context.md`: handoff rapido per nuove chat o nuovi agenti.
 - `docs/decisions-pending.md`: decisioni aperte e blocchi prima dello scaffold.
 - `docs/data-model.md`: entita e regole dati concettuali.

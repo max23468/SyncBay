@@ -25,7 +25,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | --- | --- | --- | --- |
 | Billing | Aperta | Fuori dalla custom app pilota | Necessario per app pubblica Shopify App Store. |
 | Piano dati/retention | Aperta | Conservare solo dati utili a sync, rollback, conflitti e compliance | Serve privacy policy reale. |
-| Multi-location avanzato | Aperta | 1 location Shopify predefinita nel MVP | Impatta stock e overselling. |
+| Multi-location avanzato | Aperta | 1 location Shopify predefinita nel MVP | Impatta disponibilita e rischio di vendere prodotti non disponibili. |
 | Varianti complesse | Aperta | Supporto semplice + log/esclusione guidata | Impatta import completo dei listing. |
 | Matching prodotti esistenti | Aperta | Roadmap prioritaria, non MVP base | Import aggressivo potrebbe sporcare shop gia avviati. |
 | Quality score | Idea | Da valutare, non MVP | Utile solo se spiega rischi concreti senza metrica opaca. |
@@ -38,4 +38,3 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | Support policy | Aperta | Self-service first | Il prodotto non deve dipendere da supporto umano nella prima fase. |
 | Multi-marketplace | Idea | Fuori scope | Rischia di diluire il vantaggio eBay.it-first. |
 | Release/versioning runtime | Aperta | Solo changelog docs finche non esiste runtime | Serve prima di deploy pubblici. |
-

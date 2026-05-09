@@ -10,3 +10,5 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 
 - Avviata la documentazione di fondazione: piano prodotto/tecnico, benchmark competitivo, ADR stack, roadmap, AGENTS, README e struttura docs.
 - Aggiunte decisioni aperte, checklist pre-scaffold, governance servizio, guida Git/pubblicazione e security policy.
+- Definito il branding iniziale SyncBay con `BRAND.md` e ADR dedicato.
+- Consolidato il logo definitivo Catalog Bridge con asset SVG, PNG, favicon, combinati e manifest in `brand/assets/`.

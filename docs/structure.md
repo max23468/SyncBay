@@ -5,12 +5,21 @@ Questa struttura serve solo a tenere ordinata la fase di piano. Non e ancora lo 
 ```text
 SyncBay/
   AGENTS.md
+  BRAND.md
   README.md
   ROADMAP.md
   CHANGELOG.md
   SECURITY.md
   .env.example
   .gitignore
+  brand/
+    README.md
+    assets/
+      favicon/
+      manifest.json
+      png/
+      source/
+      svg/
   docs/
     README.md
     context.md
@@ -23,6 +32,7 @@ SyncBay/
       README.md
       template.md
       0001-stack.md
+      0002-branding.md
     guides/
       architettura.md
       git-e-pubblicazione.md

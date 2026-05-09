@@ -1,0 +1,383 @@
+{
+  "brand": "SyncBay",
+  "logo": "Catalog Bridge",
+  "tagline": "Dal tuo negozio eBay a Shopify, pronto a vendere.",
+  "source_reference": "brand/assets/source/syncbay-logo-approved-reference.png",
+  "original_composition_reference": "brand/assets/source/syncbay-logo-original-composition-reference.png",
+  "colors": {
+    "blue": "#0064D2",
+    "green": "#95BF47",
+    "yellow": "#F5AF02",
+    "red": "#E53238",
+    "slate": "#51615F",
+    "white": "#FFFFFF"
+  },
+  "quality_note": "Composizione originale preservata; asset normalizzati su colori pieni con bordi antialiasati morbidi, senza macchie, gradienti, sbiadimenti o contorni sgranati.",
+  "note": "Gli SVG sono wrapper raster per preservare fedelmente il master approvato; un tracciato vettoriale puro va rifatto in un tool di design a partire da questo riferimento.",
+  "files": [
+    {
+      "path": "brand/assets/favicon/favicon.ico",
+      "bytes": 514
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal/syncbay-logo-horizontal-1200.png",
+      "bytes": 83027,
+      "width": 1200,
+      "height": 318,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal/syncbay-logo-horizontal-2400.png",
+      "bytes": 244666,
+      "width": 2400,
+      "height": 636,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal/syncbay-logo-horizontal-3200.png",
+      "bytes": 389229,
+      "width": 3200,
+      "height": 849,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal-tagline/syncbay-logo-horizontal-tagline-1600.png",
+      "bytes": 203947,
+      "width": 1600,
+      "height": 574,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal-tagline/syncbay-logo-horizontal-tagline-2400.png",
+      "bytes": 399127,
+      "width": 2400,
+      "height": 862,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/horizontal-tagline/syncbay-logo-horizontal-tagline-3200.png",
+      "bytes": 635351,
+      "width": 3200,
+      "height": 1149,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-1024.png",
+      "bytes": 68398,
+      "width": 1024,
+      "height": 1024,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-128.png",
+      "bytes": 5312,
+      "width": 128,
+      "height": 128,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-16.png",
+      "bytes": 492,
+      "width": 16,
+      "height": 16,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-180.png",
+      "bytes": 7756,
+      "width": 180,
+      "height": 180,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-192.png",
+      "bytes": 8409,
+      "width": 192,
+      "height": 192,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-2048.png",
+      "bytes": 202180,
+      "width": 2048,
+      "height": 2048,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-256.png",
+      "bytes": 11458,
+      "width": 256,
+      "height": 256,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-32.png",
+      "bytes": 1148,
+      "width": 32,
+      "height": 32,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-48.png",
+      "bytes": 1873,
+      "width": 48,
+      "height": 48,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-512.png",
+      "bytes": 25081,
+      "width": 512,
+      "height": 512,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-64.png",
+      "bytes": 2527,
+      "width": 64,
+      "height": 64,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/social/syncbay-app-listing-1200x900.png",
+      "bytes": 111027,
+      "width": 1200,
+      "height": 900,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/social/syncbay-open-graph-1200x630.png",
+      "bytes": 113812,
+      "width": 1200,
+      "height": 630,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/stacked/syncbay-logo-stacked-tagline-1024.png",
+      "bytes": 112909,
+      "width": 1024,
+      "height": 368,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/stacked/syncbay-logo-stacked-tagline-2048.png",
+      "bytes": 309035,
+      "width": 2048,
+      "height": 735,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/wordmark/syncbay-wordmark-1024.png",
+      "bytes": 85556,
+      "width": 1024,
+      "height": 308,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/transparent/wordmark/syncbay-wordmark-2048.png",
+      "bytes": 274324,
+      "width": 2048,
+      "height": 617,
+      "background": "transparent"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal/syncbay-logo-horizontal-1200-white.png",
+      "bytes": 64689,
+      "width": 1200,
+      "height": 318,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal/syncbay-logo-horizontal-2400-white.png",
+      "bytes": 184419,
+      "width": 2400,
+      "height": 636,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal/syncbay-logo-horizontal-3200-white.png",
+      "bytes": 288868,
+      "width": 3200,
+      "height": 849,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal-tagline/syncbay-logo-horizontal-tagline-1600-white.png",
+      "bytes": 157023,
+      "width": 1600,
+      "height": 574,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal-tagline/syncbay-logo-horizontal-tagline-2400-white.png",
+      "bytes": 299912,
+      "width": 2400,
+      "height": 862,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/horizontal-tagline/syncbay-logo-horizontal-tagline-3200-white.png",
+      "bytes": 468956,
+      "width": 3200,
+      "height": 1149,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-1024-white.png",
+      "bytes": 54148,
+      "width": 1024,
+      "height": 1024,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-128-white.png",
+      "bytes": 4378,
+      "width": 128,
+      "height": 128,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-16-white.png",
+      "bytes": 418,
+      "width": 16,
+      "height": 16,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-180-white.png",
+      "bytes": 6375,
+      "width": 180,
+      "height": 180,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-192-white.png",
+      "bytes": 6878,
+      "width": 192,
+      "height": 192,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-2048-white.png",
+      "bytes": 158053,
+      "width": 2048,
+      "height": 2048,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-256-white.png",
+      "bytes": 9343,
+      "width": 256,
+      "height": 256,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-32-white.png",
+      "bytes": 948,
+      "width": 32,
+      "height": 32,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-48-white.png",
+      "bytes": 1521,
+      "width": 48,
+      "height": 48,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-512-white.png",
+      "bytes": 20241,
+      "width": 512,
+      "height": 512,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-64-white.png",
+      "bytes": 2109,
+      "width": 64,
+      "height": 64,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/social/syncbay-app-listing-1200x900-white.png",
+      "bytes": 86686,
+      "width": 1200,
+      "height": 900,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/social/syncbay-open-graph-1200x630-white.png",
+      "bytes": 89285,
+      "width": 1200,
+      "height": 630,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/stacked/syncbay-logo-stacked-tagline-1024-white.png",
+      "bytes": 89258,
+      "width": 1024,
+      "height": 368,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/stacked/syncbay-logo-stacked-tagline-2048-white.png",
+      "bytes": 234297,
+      "width": 2048,
+      "height": 735,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/wordmark/syncbay-wordmark-1024-white.png",
+      "bytes": 64803,
+      "width": 1024,
+      "height": 308,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/wordmark/syncbay-wordmark-2048-white.png",
+      "bytes": 201138,
+      "width": 2048,
+      "height": 617,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/source/syncbay-logo-approved-reference.png",
+      "bytes": 61417,
+      "width": 1619,
+      "height": 972,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/source/syncbay-logo-original-composition-reference.png",
+      "bytes": 822484,
+      "width": 1619,
+      "height": 972,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/svg/syncbay-icon-square.svg",
+      "bytes": 269903
+    },
+    {
+      "path": "brand/assets/svg/syncbay-icon.svg",
+      "bytes": 91498
+    },
+    {
+      "path": "brand/assets/svg/syncbay-logo-horizontal-tagline.svg",
+      "bytes": 847519
+    },
+    {
+      "path": "brand/assets/svg/syncbay-logo-horizontal.svg",
+      "bytes": 519299
+    },
+    {
+      "path": "brand/assets/svg/syncbay-logo-stacked-tagline.svg",
+      "bytes": 412391
+    },
+    {
+      "path": "brand/assets/svg/syncbay-wordmark.svg",
+      "bytes": 366101
+    }
+  ]
+}

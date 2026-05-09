@@ -4,13 +4,13 @@ Questa guida descrive l'architettura prevista. Non sostituisce l'ADR stack e non
 
 ## Obiettivo architetturale
 
-SyncBay deve importare e mantenere allineato un catalogo eBay.it dentro Shopify, con dashboard embedded, job asincroni, diagnostica self-service e protezione overselling.
+SyncBay deve importare e mantenere allineato un catalogo eBay.it dentro Shopify, con dashboard embedded, job asincroni, diagnostica self-service e protezione delle disponibilita.
 
 ## Componenti previsti
 
 ```text
 Shopify embedded app
-  -> Dashboard merchant
+  -> Dashboard negoziante
   -> Onboarding
   -> Conflitti
   -> Log e retry
@@ -45,7 +45,7 @@ Provider esterni
 
 - eBay e la sorgente di verita del catalogo.
 - Shopify e la copia pulita e vendibile.
-- L'eccezione al one-way sync e lo stock anti-overselling da ordini Shopify.
+- L'eccezione al one-way sync e l'aggiornamento disponibilita da ordini Shopify.
 - Ogni job deve essere idempotente.
 - Ogni errore deve diventare diagnostica utile.
 - Nessuna cancellazione distruttiva automatica: archiviare e mantenere rollback dove possibile.
@@ -59,4 +59,3 @@ Provider esterni
 - Billing e distribuzione App Store.
 
 Queste decisioni richiedono ADR dedicati quando verranno chiuse.
-

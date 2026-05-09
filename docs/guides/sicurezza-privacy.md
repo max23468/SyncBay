@@ -11,7 +11,7 @@ SyncBay potra trattare:
 - dati account eBay;
 - token eBay;
 - listing, immagini, SKU, prezzi e quantita;
-- ordini Shopify minimi necessari allo stock anti-overselling;
+- ordini Shopify minimi necessari a proteggere la disponibilita;
 - log tecnici e audit.
 
 ## Regole segreti
@@ -43,7 +43,7 @@ Conservare solo dati utili a:
 - diagnostica;
 - compliance.
 
-Non salvare dati cliente o ordine oltre quanto serve allo stock anti-overselling e agli obblighi provider.
+Non salvare dati cliente o ordine oltre quanto serve a proteggere la disponibilita e agli obblighi provider.
 
 ## Incident response minima
 
@@ -53,4 +53,3 @@ Non salvare dati cliente o ordine oltre quanto serve allo stock anti-overselling
 4. Ruotare segreti se c'e rischio esposizione.
 5. Ripristinare da snapshot/rollback dove possibile.
 6. Annotare incidente e correzione nella documentazione o changelog.
-

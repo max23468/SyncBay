@@ -27,8 +27,12 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | --- | --- | --- |
 | Fatto | Nome prodotto: SyncBay | Shopify app eBay-first |
 | Fatto | Posizionamento eBay.it-first | Catalogo eBay.it come sorgente, Shopify come copia pulita |
-| Fatto | Formula prodotto | "SyncBay trasforma il tuo catalogo eBay.it in uno shop Shopify pulito, sincronizzato e protetto dall'overselling." |
-| Da fare | Tono UI e microcopy operativo | Da consolidare quando esiste la dashboard |
+| Fatto | Formula prodotto | "SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilita sincronizzate e meno rischio di vendere prodotti non disponibili." |
+| Fatto | Tagline principale | "Dal tuo negozio eBay a Shopify, pronto a vendere." |
+| Fatto | Branding iniziale | `BRAND.md`, ADR `docs/decisions/0002-branding.md` |
+| Fatto | Tono UI e microcopy operativo | Prima versione in `BRAND.md`; da raffinare quando esiste la dashboard |
+| Fatto | Logo e asset visuali base | PNG trasparenti/white, SVG wrapper raster, favicon/app icon e manifest in `brand/assets/` |
+| Da fare | Screenshot prodotto | Screenshot dashboard/onboarding quando esiste la UI |
 | Idea | Quality score import/listing | Da valutare solo se spiega rischi concreti senza metriche opache |
 
 ## 2. MVP prodotto
@@ -36,11 +40,11 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Stato | Voce | Note |
 | --- | --- | --- |
 | Da fare | Connessione Shopify custom app | Installazione, scope, token, webhook base |
-| Da fare | Connessione eBay.it OAuth | Account seller, token, refresh, marketplace `EBAY_IT` |
+| Da fare | Connessione eBay.it OAuth | Account venditore, token, refresh, marketplace `EBAY_IT` |
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
-| Da fare | Stock anti-overselling | Ordine Shopify pagato -> update stock eBay prioritario |
+| Da fare | Protezione disponibilita | Ordine Shopify pagato -> aggiornamento disponibilita eBay prioritario |
 | Da fare | Dashboard operativa | Stato sync, job, errori, conflitti, retry |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
 | Da fare | Pulizia descrizioni eBay | HTML completo, testo pulito, template rimosso con anteprima |
@@ -70,6 +74,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Chiudere la documentazione base e fare un primo commit docs.
-2. Preparare checklist account Shopify Partner/dev store ed eBay Developer.
+1. Preparare checklist account Shopify Partner/dev store ed eBay Developer.
+2. Confermare prerequisiti e credenziali per Shopify/eBay.
 3. Solo dopo conferma, passare allo scaffold applicativo.

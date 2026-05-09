@@ -13,6 +13,7 @@ Usa un ADR quando una scelta:
 ## Indice
 
 - `0001-stack.md`: stack iniziale SyncBay.
+- `0002-branding.md`: branding iniziale SyncBay.
 
 ## Convenzioni
 
@@ -20,4 +21,3 @@ Usa un ADR quando una scelta:
 - Stato esplicito: Proposto, Accettato, Sostituito, Deprecato.
 - Una decisione per file.
 - Se una decisione cambia, non riscrivere la storia: crea un nuovo ADR o aggiorna lo stato con riferimento.
-

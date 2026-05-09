@@ -19,6 +19,7 @@ docs/
     README.md
     template.md
     0001-stack.md
+    0002-branding.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -39,6 +40,7 @@ docs/
 | Capire in 2 minuti il progetto | `context.md` |
 | Capire perimetro, MVP e fasi | `syncbay-product-technical-plan.md` |
 | Vedere cosa fare ora e dopo | `../ROADMAP.md` |
+| Capire identita, tono e visual direction | `../BRAND.md` |
 | Capire la struttura docs/repo | `structure.md` |
 | Consultare decisioni stabili | `decisions/` |
 | Consultare decisioni ancora aperte | `decisions-pending.md` |
@@ -61,6 +63,7 @@ I file nella root sono punti d'ingresso convenzionali:
 
 - `README.md`: orientamento rapido.
 - `AGENTS.md`: regole operative per agenti e Codex.
+- `BRAND.md`: identita, tono, tagline e visual direction.
 - `ROADMAP.md`: priorita e backlog.
 - `CHANGELOG.md`: storico modifiche significative.
 - `SECURITY.md`: policy sicurezza root.

@@ -1,10 +1,10 @@
 # Guida onboarding e import
 
-Questa guida definisce il flusso merchant previsto per il MVP.
+Questa guida definisce il flusso negoziante previsto per il MVP.
 
 ## Obiettivo
 
-Il merchant deve collegare Shopify ed eBay.it, vedere cosa verra importato e avviare la creazione dei prodotti Shopify senza paura di sporcare il negozio.
+Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verra importato e avviare la creazione dei prodotti Shopify senza paura di sporcare il negozio.
 
 ## Flusso MVP
 

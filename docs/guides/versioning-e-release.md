@@ -32,7 +32,7 @@ Durante la fase documentale, usare:
 
 Quando esistera runtime:
 
-- `Novita` per nuove funzionalita merchant;
+- `Novita` per nuove funzionalita negoziante;
 - `Correzioni` per bugfix;
 - `Sotto il cofano` per refactor, hardening, infra;
 - `Non versionato` per piani, ADR, guide e regole interne.

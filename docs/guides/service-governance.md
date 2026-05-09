@@ -10,8 +10,8 @@ SyncBay MVP e:
 - 1 account eBay per shop;
 - 1 location Shopify predefinita;
 - fino a 2.000 prodotti per shop;
-- sync catalogo eBay -> Shopify;
-- stock anti-overselling da ordini Shopify verso eBay;
+- sync negozio eBay -> catalogo Shopify;
+- protezione disponibilita da ordini Shopify verso eBay;
 - dashboard self-service con diagnostica e retry.
 
 ## Fuori perimetro MVP
@@ -43,7 +43,7 @@ Da validare prima della beta:
 - conservare job e audit log per il tempo necessario a diagnostica, rollback e compliance;
 - eliminare o anonimizzare dati shop su disinstallazione/richiesta dove richiesto;
 - non conservare payload completi sensibili se bastano riferimenti diagnostici;
-- non salvare dati cliente/ordine oltre quanto necessario allo stock anti-overselling.
+- non salvare dati cliente/ordine oltre quanto necessario a proteggere la disponibilita.
 
 ## Comportamento in caso di errore
 
@@ -55,13 +55,13 @@ Da validare prima della beta:
 - Permettere retry se sicuro.
 - Mantenere ultimo stato Shopify valido.
 
-### Errore stock eBay dopo ordine Shopify
+### Errore disponibilita eBay dopo ordine Shopify
 
 - Trattare come alert critico.
 - Retry prioritario.
 - Mostrare impatto e prodotto coinvolto.
 - Se configurato, attivare modalita prudente sul prodotto Shopify.
-- Non nascondere il rischio overselling.
+- Non nascondere il rischio di vendere prodotti non disponibili.
 
 ### Listing eBay non piu attivo
 
@@ -89,4 +89,3 @@ Possibili azioni configurabili:
 - Audit log minimo.
 - Dashboard errori comprensibile.
 - Rollback import.
-

@@ -13,7 +13,7 @@ SyncBay potra trattare:
 - dati account eBay;
 - token eBay;
 - listing, SKU, prezzi, quantita, immagini e descrizioni;
-- dati minimi degli ordini Shopify necessari allo stock anti-overselling;
+- dati minimi degli ordini Shopify necessari a proteggere la disponibilita;
 - log tecnici, job, snapshot, conflitti e audit log.
 
 ## Segreti
@@ -41,7 +41,7 @@ Prima della beta reale servono:
 
 Finche il progetto e privato e senza runtime pubblico, i problemi di sicurezza vanno segnalati direttamente al maintainer del repo.
 
-Non aprire issue pubbliche con segreti, token, payload reali o dati merchant.
+Non aprire issue pubbliche con segreti, token, payload reali o dati del negoziante.
 
 ## Incident response minima
 
@@ -53,4 +53,3 @@ In caso di sospetto problema:
 4. proteggere stock con modalita prudente se necessario;
 5. usare snapshot/rollback dove possibile;
 6. documentare incidente, impatto e correzione.
-

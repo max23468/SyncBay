@@ -13,7 +13,7 @@ Dove il real-time o quasi real-time e tecnicamente possibile senza impatto ecces
 - Catalogo: eBay.
 - Prezzo base: eBay.
 - Prezzo Shopify pubblicato: calcolato da SyncBay con regole Shopify-only.
-- Stock: eBay, con eccezione aggiornamento da ordini Shopify per evitare overselling.
+- Disponibilita: eBay, con eccezione aggiornamento da ordini Shopify per ridurre il rischio di vendere prodotti non disponibili.
 - Campi protetti Shopify: gestiti con modalita mirror controllato.
 
 ## Priorita job
@@ -35,7 +35,7 @@ Ogni campo puo essere:
 
 Se Shopify cambia manualmente un campo controllato da eBay o SyncBay, aprire conflitto.
 
-## Stock anti-overselling
+## Protezione disponibilita
 
 Default:
 

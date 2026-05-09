@@ -31,7 +31,7 @@ Requisiti:
 
 ### Account eBay
 
-Account seller collegato.
+Account venditore collegato.
 
 Campi concettuali:
 
@@ -126,7 +126,7 @@ Campi:
 - valore eBay;
 - ultimo valore scritto da SyncBay;
 - valore Shopify;
-- azione scelta dal merchant.
+- azione scelta dal negoziante.
 
 ### Audit log
 
@@ -136,7 +136,7 @@ Registra eventi rilevanti:
 - refresh token fallito;
 - import avviato/completato;
 - sync critico fallito;
-- update stock eBay fallito;
+- aggiornamento disponibilita eBay fallito;
 - rollback;
 - conflitto risolto.
 
@@ -147,4 +147,3 @@ Registra eventi rilevanti:
 - Nessun dato reale in test, fixture o documenti.
 - Archiviazione Shopify, non cancellazione automatica, quando un listing eBay sparisce.
 - Snapshot e mapping sono necessari per rollback e diagnostica.
-
