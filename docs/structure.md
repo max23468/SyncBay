@@ -18,6 +18,7 @@ SyncBay/
   SECURITY.md
   .env.example
   .gitignore
+  shopify.app.toml
   brand/
     README.md
     assets/

@@ -21,9 +21,10 @@ Finche non vengono forniti account e URL reali:
 
 | Campo | Stato | Note |
 | --- | --- | --- |
-| Account Shopify Partner | Da confermare | Necessario per creare/gestire app e dev store. |
-| Development store | Da confermare | Store di test collegabile a Shopify CLI. |
-| Nome app custom | Proposto | `SyncBay` |
+| Account Shopify Partner | Confermato | Login CLI: `matteofilisina@icloud.com`. |
+| Development store | Confermato | `syncbay-dev.myshopify.com` |
+| Nome app custom | Confermato | `SyncBay` |
+| Shopify CLI | Collegata | `shopify.app.toml` collegato all'app `SyncBay`. |
 | App URL locale/provvisoria | Da decidere | Deve essere HTTPS quando Shopify/eBay chiamano l'app. |
 | Redirect URL OAuth | Da decidere | Da derivare dall'app URL dopo scelta hosting/tunnel. |
 | Scopes iniziali | Definiti come bozza MVP | Da validare sul template Shopify/API version al momento dello scaffold. |
@@ -35,7 +36,7 @@ Default operativo per lo scaffold:
 
 - usare Shopify CLI;
 - collegare una app `SyncBay` nel Dev Dashboard;
-- usare un development store;
+- usare il development store `syncbay-dev.myshopify.com`;
 - usare un URL HTTPS provvisorio per sviluppo, tramite tunnel/hosting deciso;
 - tenere separati URL locali/provvisori e URL production futura.
 

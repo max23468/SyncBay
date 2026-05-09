@@ -17,3 +17,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Formalizzata la policy di pubblicazione GitHub, PR, commit, changelog e versioning futuro con ADR dedicato.
 - Configurati Dependabot per GitHub Actions e workflow `Codex PR comments`, e definita la policy futura per runtime, CI e release.
 - Definiti i prerequisiti account Shopify/eBay, gli scope MVP, i webhook minimi e le env var previste prima dello scaffold.
+- Collegata Shopify CLI all'app `SyncBay` e configurato il development store `syncbay-dev.myshopify.com`.

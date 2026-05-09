@@ -1,0 +1,22 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "aed99bacaebac8f9ffb1f4c9bb0e2380"
+name = "SyncBay"
+application_url = "https://example.com"
+embedded = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_products,read_inventory,write_inventory,read_orders,read_locations"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ ]
+
+[webhooks]
+api_version = "2026-04"
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "syncbay-dev.myshopify.com"

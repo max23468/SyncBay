@@ -13,9 +13,10 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 
 ## 2. Account Shopify
 
-- [ ] Account Shopify Partner disponibile.
-- [ ] Development store disponibile.
-- [ ] Nome app custom confermato.
+- [x] Account Shopify Partner disponibile.
+- [x] Development store disponibile: `syncbay-dev.myshopify.com`.
+- [x] Nome app custom confermato: `SyncBay`.
+- [x] Shopify CLI collegata all'app `SyncBay`.
 - [ ] App URL provvisorio deciso.
 - [ ] Redirect URL locali/provvisori decisi.
 - [x] Scopes Shopify iniziali definiti come bozza MVP.
