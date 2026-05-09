@@ -23,6 +23,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Policy pubblicazione e versioning | ADR `docs/decisions/0003-git-pubblicazione-versioning.md`, guide Git e versioning aggiornate |
 | Fatto | Automazioni GitHub pre-runtime | Dependabot per GitHub Actions e inbox commenti Codex su PR |
 | Fatto | Policy runtime, CI e release futura | ADR `docs/decisions/0004-runtime-ci-release-future.md` |
+| Fatto | Prerequisiti account definiti | Shopify/eBay documentati in `docs/guides/prerequisiti-account.md`; valori reali da confermare |
 
 ## 1. Identita prodotto
 
@@ -77,6 +78,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Preparare checklist account Shopify Partner/dev store ed eBay Developer.
-2. Confermare prerequisiti e credenziali per Shopify/eBay.
+1. Compilare i valori reali richiesti in `docs/guides/prerequisiti-account.md`.
+2. Chiudere hosting/app URL, database, ORM e job queue.
 3. Solo dopo conferma, passare allo scaffold applicativo.

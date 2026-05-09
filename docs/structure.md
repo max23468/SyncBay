@@ -46,6 +46,7 @@ SyncBay/
       git-e-pubblicazione.md
       onboarding-e-import.md
       pre-scaffold-checklist.md
+      prerequisiti-account.md
       service-governance.md
       sicurezza-privacy.md
       sync-engine.md

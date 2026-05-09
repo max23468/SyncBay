@@ -8,7 +8,7 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [x] Remote GitHub deciso e configurato: https://github.com/max23468/SyncBay
 - [x] Branch policy provvisoria documentata.
 - [x] `AGENTS.md` riletto e coerente con lo stato reale.
-- [ ] `docs/decisions-pending.md` aggiornato.
+- [x] `docs/decisions-pending.md` aggiornato.
 - [ ] Decisioni bloccanti spostate in ADR quando chiuse.
 
 ## 2. Account Shopify
@@ -18,18 +18,18 @@ Questa checklist va chiusa prima di generare codice applicativo, `package.json`,
 - [ ] Nome app custom confermato.
 - [ ] App URL provvisorio deciso.
 - [ ] Redirect URL locali/provvisori decisi.
-- [ ] Scopes Shopify iniziali confermati.
-- [ ] Webhook minimi confermati: uninstall, orders, products, inventory.
+- [x] Scopes Shopify iniziali definiti come bozza MVP.
+- [x] Webhook minimi definiti come bozza MVP: uninstall, orders, products, inventory.
 
 ## 3. Account eBay
 
 - [ ] Account eBay Developer disponibile.
 - [ ] App eBay creata o pronta da creare.
-- [ ] Marketplace iniziale confermato: `EBAY_IT`.
-- [ ] OAuth redirect URI deciso.
-- [ ] Scope eBay necessari verificati su documentazione corrente.
-- [ ] Strategia Trading API + Inventory API confermata.
-- [ ] Marketplace account deletion notification/opt-out verificato.
+- [x] Marketplace iniziale confermato: `EBAY_IT`.
+- [ ] OAuth RuName e accept/reject URL decisi.
+- [x] Scope eBay necessari definiti come bozza MVP e verificati su documentazione corrente.
+- [x] Strategia Trading API + Inventory API confermata.
+- [x] Marketplace account deletion notification/opt-out verificato come requisito.
 
 ## 4. Decisioni tecniche bloccanti
 

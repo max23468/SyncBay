@@ -30,6 +30,7 @@ docs/
     git-e-pubblicazione.md
     onboarding-e-import.md
     pre-scaffold-checklist.md
+    prerequisiti-account.md
     service-governance.md
     sicurezza-privacy.md
     sync-engine.md
@@ -52,6 +53,7 @@ docs/
 | Capire lo stack scelto | `decisions/0001-stack.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
+| Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
 | Capire limiti e governance del servizio | `guides/service-governance.md` |

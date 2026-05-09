@@ -31,6 +31,7 @@ Non e ancora presente codice applicativo. Prima dello scaffold tecnico vanno con
 - Security policy: `SECURITY.md`
 - Decisioni aperte: `docs/decisions-pending.md`
 - Checklist pre-scaffold: `docs/guides/pre-scaffold-checklist.md`
+- Prerequisiti account: `docs/guides/prerequisiti-account.md`
 - Git, PR e pubblicazione: `docs/guides/git-e-pubblicazione.md`
 - Versioning e release: `docs/guides/versioning-e-release.md`
 - Decisione stack: `docs/decisions/0001-stack.md`
