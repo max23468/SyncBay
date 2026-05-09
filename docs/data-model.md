@@ -1,8 +1,16 @@
 # Modello dati concettuale
 
-Questo documento descrive le entita previste per SyncBay. Non e ancora uno schema database definitivo.
+Questo documento descrive le entita previste per SyncBay e lo stato dello schema Prisma iniziale.
 
-Quando verra creato lo scaffold applicativo, questo documento dovra essere riallineato a migration, ORM e schema reale.
+Lo scaffold applicativo contiene gia `prisma/schema.prisma` e migration per:
+
+- sessioni Shopify (`Session`);
+- shop installati (`Shop`);
+- connessione eBay per marketplace (`EbayConnection`);
+- job applicativi tracciati a database (`SyncJob`);
+- audit log operativo (`AuditLog`).
+
+Il modello resta iniziale: non include ancora mapping prodotto, snapshot, regole prezzo, regole descrizione, asset media o conflitti.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -12,13 +20,14 @@ Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `doc
 
 Rappresenta un negozio Shopify installato su SyncBay.
 
-Campi concettuali:
+Schema iniziale:
 
 - dominio shop Shopify;
 - stato installazione;
-- piano/profilo prodotto;
-- preferenze sync;
+- scope Shopify concessi;
 - location Shopify predefinita;
+- flag sync abilitato;
+- target sync in secondi;
 - timestamp installazione/disinstallazione.
 
 ### Credenziali Shopify
@@ -35,9 +44,10 @@ Requisiti:
 
 Account venditore collegato.
 
-Campi concettuali:
+Schema iniziale:
 
 - marketplace iniziale `EBAY_IT`;
+- ambiente `sandbox`/produzione;
 - user/account id eBay;
 - token OAuth cifrati;
 - stato connessione: attivo, scaduto, revocato, da riconnettere.
@@ -108,7 +118,7 @@ Requisiti:
 
 Rappresenta import, sync, retry, archiviazione, update stock.
 
-Nel runtime MVP i job applicativi dovranno essere rappresentati sia a livello di dominio, per diagnostica/dashboard, sia su Supabase Queues, per consegna e retry persistente.
+Nel runtime MVP i job applicativi sono rappresentati a livello di dominio in `SyncJob`, per diagnostica/dashboard. Supabase Queues resta il meccanismo previsto per consegna e retry persistente quando verra attivato il runtime queue.
 
 Stati minimi:
 
@@ -118,6 +128,16 @@ Stati minimi:
 - failed;
 - retrying;
 - cancelled.
+
+Tipi iniziali:
+
+- import catalogo;
+- sync incrementale;
+- aggiornamento disponibilita eBay dopo ordine Shopify;
+- rilevazione modifiche Shopify;
+- archiviazione listing inattivi;
+- riconciliazione catalogo;
+- cleanup staging immagini.
 
 ### Conflitti
 
@@ -143,6 +163,8 @@ Registra eventi rilevanti:
 - aggiornamento disponibilita eBay fallito;
 - rollback;
 - conflitto risolto.
+
+Gli eventi iniziali coprono installazione/disinstallazione Shopify, aggiornamento scope, ricezione webhook Shopify, stati connessione eBay e ciclo minimo dei job.
 
 ### Asset staging
 

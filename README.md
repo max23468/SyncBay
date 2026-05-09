@@ -4,9 +4,9 @@ SyncBay e una Shopify app per sincronizzare verso Shopify il catalogo di un nego
 
 ## Stato
 
-Fase corrente: scaffold applicativo iniziale.
+Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, webhook uninstall/scopes update e una dashboard embedded minima. Non esistono ancora import, sync catalogo o OAuth eBay attivo.
+Lo scaffold Shopify CLI React Router e presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit e webhook Shopify tracciati come placeholder. Non esistono ancora import, sync catalogo o OAuth eBay attivo.
 
 ## Direzione prodotto
 
@@ -43,6 +43,13 @@ Provisioning minimo creato:
 - Build: `npm run build`
 - Prisma/setup runtime: `npm run setup`
 
+## Endpoint scaffold SyncBay
+
+- Dashboard embedded: `/app`
+- Avvio placeholder OAuth eBay: `/auth/ebay/start`
+- Callback placeholder OAuth eBay: `/auth/ebay/callback`
+- Webhook Shopify: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/orders/paid`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
+
 ## Documenti principali
 
 - Piano prodotto e tecnico: `docs/syncbay-product-technical-plan.md`
@@ -67,6 +74,6 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Configurare env reali Vercel/Supabase e URL callback dopo il primo runtime utilizzabile.
-2. Preparare la prima fase codice: connessione Shopify persistita e struttura OAuth eBay a placeholder.
-3. Completare keyset/RuName eBay quando eBay approva la richiesta.
+1. Applicare le migration su Supabase quando si decide il primo ambiente runtime verificabile.
+2. Completare keyset/RuName eBay quando eBay approva la richiesta.
+3. Implementare OAuth eBay reale e cifratura token prima di qualunque sync catalogo.

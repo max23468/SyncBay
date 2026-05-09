@@ -27,6 +27,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Decisioni tecniche bloccanti | Vercel + Supabase, Prisma, Supabase Queues/Cron/Storage in ADR `docs/decisions/0005-runtime-infrastructure.md` |
 | Fatto | Provisioning minimo runtime | Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, documentati in `docs/guides/provisioning-runtime.md` |
 | Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
+| Fatto | Adattamento scaffold a SyncBay | Dashboard SyncBay, schema Prisma iniziale, webhook placeholder e stato connessioni Shopify/eBay |
 
 ## 1. Identita prodotto
 
@@ -46,8 +47,8 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 | Stato | Voce | Note |
 | --- | --- | --- |
-| In corso | Connessione Shopify custom app | Scaffold presente; da completare env reali, Supabase Postgres e verifica installazione end-to-end |
-| Da fare | Connessione eBay.it OAuth | Account venditore, token, refresh, marketplace `EBAY_IT` |
+| In corso | Connessione Shopify custom app | Scaffold e persistenza shop presenti; da completare env reali, migration Supabase e verifica installazione end-to-end |
+| In corso | Connessione eBay.it OAuth | Placeholder e readiness env presenti; in attesa keyset/RuName per implementare OAuth reale, token e refresh |
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
@@ -81,6 +82,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Configurare env/URL reali Vercel, Supabase e Shopify per il runtime scaffold.
-2. Preparare prima fase codice: persistenza shop/sessioni e struttura OAuth eBay a placeholder.
-3. Completare keyset/RuName eBay quando eBay approva la richiesta.
+1. Applicare e verificare migration Prisma su Supabase quando si decide il primo runtime verificabile.
+2. Completare keyset/RuName eBay quando eBay approva la richiesta.
+3. Implementare OAuth eBay reale con cifratura token e stato connessione in dashboard.

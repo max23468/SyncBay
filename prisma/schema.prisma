@@ -14,22 +14,152 @@ datasource db {
   directUrl = env("DATABASE_DIRECT_URL")
 }
 
+enum ShopInstallationStatus {
+  INSTALLED
+  UNINSTALLED
+  RECONNECT_REQUIRED
+}
+
+enum EbayConnectionStatus {
+  NOT_CONNECTED
+  CONNECTED
+  EXPIRED
+  REVOKED
+  RECONNECT_REQUIRED
+}
+
+enum SyncJobType {
+  IMPORT_CATALOG
+  SYNC_INCREMENTAL
+  UPDATE_EBAY_STOCK
+  DETECT_SHOPIFY_CHANGES
+  ARCHIVE_INACTIVE_LISTING
+  RECONCILE_CATALOG
+  CLEANUP_STAGING
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
+enum AuditEventType {
+  SHOP_INSTALLED
+  SHOP_UNINSTALLED
+  SHOPIFY_SCOPES_UPDATED
+  SHOPIFY_WEBHOOK_RECEIVED
+  EBAY_CONNECT_STARTED
+  EBAY_CONNECTED
+  EBAY_DISCONNECTED
+  EBAY_REFRESH_FAILED
+  SYNC_JOB_CREATED
+  SYNC_JOB_FAILED
+  SYNC_JOB_SUCCEEDED
+  CONNECTION_CHECK
+}
+
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
+
+  @@index([shop])
+}
+
+model Shop {
+  id                 String                 @id @default(cuid())
+  shopDomain         String                 @unique
+  installationStatus ShopInstallationStatus @default(INSTALLED)
+  shopifyScopes      String?
+  defaultLocationGid String?
+  syncEnabled        Boolean                @default(false)
+  syncTargetSeconds  Int                    @default(300)
+  installedAt        DateTime               @default(now())
+  uninstalledAt      DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  ebayConnections EbayConnection[]
+  syncJobs        SyncJob[]
+  auditLogs       AuditLog[]
+}
+
+model EbayConnection {
+  id                    String               @id @default(cuid())
+  shopId                String
+  marketplaceId         String               @default("EBAY_IT")
+  environment           String               @default("sandbox")
+  status                EbayConnectionStatus @default(NOT_CONNECTED)
+  ebayUserId            String?
+  encryptedAccessToken  String?
+  encryptedRefreshToken String?
+  tokenExpiresAt        DateTime?
+  refreshTokenExpiresAt DateTime?
+  scopes                String?
+  connectedAt           DateTime?
+  lastRefreshAt         DateTime?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, marketplaceId])
+  @@index([status])
+}
+
+model SyncJob {
+  id             String        @id @default(cuid())
+  shopId         String
+  type           SyncJobType
+  status         SyncJobStatus @default(PENDING)
+  providerJobId  String?
+  idempotencyKey String?       @unique
+  payload        Json?
+  result         Json?
+  errorCode      String?
+  errorMessage   String?
+  attempts       Int           @default(0)
+  maxAttempts    Int           @default(5)
+  runAfter       DateTime      @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, status, runAfter])
+  @@index([type, status])
+}
+
+model AuditLog {
+  id        String         @id @default(cuid())
+  shopId    String?
+  type      AuditEventType
+  message   String
+  details   Json?
+  createdAt DateTime       @default(now())
+
+  shop Shop? @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, createdAt])
+  @@index([type, createdAt])
 }

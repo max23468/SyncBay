@@ -1,6 +1,6 @@
 # Provisioning runtime
 
-Questa guida traccia il provisioning minimo Vercel + Supabase prima dello scaffold applicativo.
+Questa guida traccia il provisioning minimo Vercel + Supabase e gli aggiornamenti post-scaffold.
 
 Non contiene segreti reali. Password, token e connection string complete devono restare nei provider runtime o nel Keychain locale.
 
@@ -8,7 +8,9 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 
 Provisioning minimo completato il 2026-05-09.
 
-Lo scaffold Shopify CLI React Router esiste. Non esistono ancora deploy runtime, schema database SyncBay oltre alla tabella sessioni prevista da Prisma, import catalogo o sync.
+Lo scaffold Shopify CLI React Router esiste. Non esistono ancora deploy runtime, import catalogo o sync.
+
+Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, job applicativi e audit log. Le migration sono tracciate in `prisma/migrations/`, ma non vanno applicate a Supabase production-like senza decisione esplicita sul primo ambiente runtime verificabile.
 
 ## Vercel
 
@@ -70,7 +72,7 @@ Estensioni Supabase verificate:
 
 Durante o subito dopo lo scaffold:
 
-- configurare Prisma su Supabase Postgres;
+- applicare e verificare le migration Prisma su Supabase Postgres quando viene deciso il primo ambiente runtime;
 - definire `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider, non nel repo;
 - impostare gli env Vercel reali;
 - creare bucket Supabase Storage `syncbay-import-staging` via migration o script tracciato;
