@@ -25,3 +25,4 @@ Il formato segue Keep a Changelog e il versionamento seguira Semantic Versioning
 - Rimossi gli alert Dependabot su `lodash` e `minimatch` aggiornando il tooling ESLint e rimuovendo il codegen GraphQL Shopify non ancora usato.
 - Reso non bloccante il workflow `Codex PR comments` quando GitHub nega la scrittura dell'inbox/commento automatico.
 - Aggiornata la configurazione Dependabot per monitorare anche le dipendenze npm introdotte dallo scaffold.
+- Allineata la distribuzione Shopify dello scaffold alla fase pilota custom app tramite `AppDistribution.SingleMerchant`.
