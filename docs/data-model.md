@@ -11,7 +11,7 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - job applicativi tracciati a database (`SyncJob`);
 - audit log operativo (`AuditLog`).
 
-Il modello resta iniziale: non include ancora mapping prodotto, snapshot, regole prezzo, regole descrizione, asset media o conflitti.
+Il modello resta iniziale: non include ancora mapping prodotto, snapshot persistenti, regole prezzo, regole descrizione, asset media o conflitti. La preview import ha però già una base runtime non persistente per normalizzare candidati listing e classificare errori MVP prima di qualunque scrittura Shopify.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 

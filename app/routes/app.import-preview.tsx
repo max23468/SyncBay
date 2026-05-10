@@ -35,11 +35,12 @@ interface LocationsQueryResponse {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const locations = await fetchShopifyLocations(admin);
+  const locationResult = await fetchShopifyLocations(admin);
   const wizard = await getImportWizardState(session);
 
   return {
-    locations,
+    locationError: locationResult.errorMessage,
+    locations: locationResult.locations,
     wizard,
   };
 };
@@ -48,15 +49,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   const locationGid = String(formData.get("defaultLocationGid") ?? "");
-  const locations = await fetchShopifyLocations(admin);
+  const locationResult = await fetchShopifyLocations(admin);
 
-  await updateDefaultShopifyLocation(session, locationGid, locations);
+  if (locationResult.errorMessage) {
+    return Response.json(
+      {
+        message: locationResult.errorMessage,
+        status: "blocked",
+      },
+      { status: 409 },
+    );
+  }
+
+  await updateDefaultShopifyLocation(session, locationGid, locationResult.locations);
 
   throw redirect("/app/import-preview?updated=location");
 };
 
 export default function ImportPreview() {
-  const { locations, wizard } = useLoaderData<typeof loader>();
+  const { locationError, locations, wizard } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const selectedLocation = locations.find(
@@ -78,7 +89,9 @@ export default function ImportPreview() {
       </s-section>
 
       <s-section heading="Location Shopify">
-        {locations.length > 0 ? (
+        {locationError ? (
+          <s-paragraph>{locationError}</s-paragraph>
+        ) : locations.length > 0 ? (
           <form method="post">
             <label htmlFor="defaultLocationGid">Location predefinita</label>
             <select
@@ -134,6 +147,33 @@ export default function ImportPreview() {
         )}
       </s-section>
 
+      <s-section heading="Dry-run">
+        <s-unordered-list>
+          <s-list-item>
+            Listing letti: {wizard.previewResult.summary.totalCount}
+          </s-list-item>
+          <s-list-item>
+            Importabili: {wizard.previewResult.summary.importableCount}
+          </s-list-item>
+          <s-list-item>
+            Saltati: {wizard.previewResult.summary.skippedCount}
+          </s-list-item>
+          <s-list-item>
+            Errori: {wizard.previewResult.summary.errorCount}
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Validazioni MVP">
+        <s-unordered-list>
+          {wizard.validationRules.map((rule) => (
+            <s-list-item key={rule.code}>
+              {rule.label}: {rule.severity}
+            </s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+
       <s-section slot="aside" heading="Riepilogo">
         <s-unordered-list>
           <s-list-item>Marketplace: {wizard.previewPlan.limits.marketplace}</s-list-item>
@@ -148,6 +188,16 @@ export default function ImportPreview() {
         <s-unordered-list>
           {wizard.previewPlan.steps.map((step) => (
             <s-list-item key={step}>{step}</s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+
+      <s-section slot="aside" heading="Fasi successive">
+        <s-unordered-list>
+          {wizard.runtimePhases.map((phase) => (
+            <s-list-item key={phase.label}>
+              {phase.label}: {phase.status} - {phase.detail}
+            </s-list-item>
           ))}
         </s-unordered-list>
       </s-section>
@@ -178,8 +228,15 @@ async function fetchShopifyLocations(
   const json = (await response.json()) as LocationsQueryResponse;
 
   if (json.errors) {
-    throw new Response("Location Shopify non leggibili.", { status: 502 });
+    return {
+      errorMessage:
+        "Location Shopify non leggibili. Verifica che l'app sia reinstallata con lo scope read_locations.",
+      locations: [],
+    };
   }
 
-  return json.data?.locations?.nodes ?? [];
+  return {
+    errorMessage: null,
+    locations: json.data?.locations?.nodes ?? [],
+  };
 }

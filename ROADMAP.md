@@ -51,7 +51,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
 | In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay; in attesa keyset dedicato per verifica end-to-end |
-| In corso | Onboarding guidato | Readiness dashboard e wizard import preview iniziale predisposti; scelta location Shopify salvabile, restano lettura listing eBay e conferma import |
+| In corso | Onboarding guidato | Readiness dashboard e wizard import preview iniziale predisposti; scelta location Shopify salvabile, regole dry-run MVP codificate; restano lettura listing eBay e conferma import |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da OAuth eBay e lettura listing |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
 | Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |

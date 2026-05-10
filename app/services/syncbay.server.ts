@@ -8,6 +8,10 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import {
+  getEmptyImportPreview,
+  getImportPreviewValidationRules,
+} from "./import-preview.server";
 
 interface ShopifySessionLike {
   shop: string;
@@ -158,10 +162,16 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     importPreview,
     onboarding: getOnboardingReadiness(),
     previewPlan: getImportPreviewPlan(),
+    previewResult: getEmptyImportPreview(),
+    runtimePhases: getRuntimePhaseReadiness({
+      ebayConnected,
+      hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    }),
     shop: {
       defaultLocationGid: shop.defaultLocationGid,
       domain: shop.shopDomain,
     },
+    validationRules: getImportPreviewValidationRules(),
   };
 }
 
@@ -569,6 +579,54 @@ function getImportPreviewPlan() {
       "Creare bozze Shopify solo dopo conferma",
     ],
   };
+}
+
+function getRuntimePhaseReadiness(input: {
+  ebayConnected: boolean;
+  hasDefaultLocation: boolean;
+}) {
+  return [
+    {
+      detail: input.ebayConnected
+        ? "Account eBay collegato."
+        : "Bloccato dal keyset/OAuth eBay dedicato.",
+      label: "Lettura listing eBay",
+      status: input.ebayConnected ? "preparabile" : "bloccato",
+    },
+    {
+      detail: input.hasDefaultLocation
+        ? "Location Shopify pronta per bozze e inventario."
+        : "Serve una location Shopify attiva e abilitata agli ordini online.",
+      label: "Import Shopify in draft",
+      status: input.hasDefaultLocation ? "preparabile" : "bloccato",
+    },
+    {
+      detail: "Schema job presente; consumer Supabase da implementare quando esiste import reale.",
+      label: "Job queue e retry",
+      status: "da implementare",
+    },
+    {
+      detail: "Polling entro 5 minuti da collegare dopo mapping e snapshot prodotto.",
+      label: "Sync incrementale eBay -> Shopify",
+      status: "da implementare",
+    },
+    {
+      detail: "Webhook Shopify preparati; update eBay stock dipende da OAuth e capability listing.",
+      label: "Protezione disponibilità Shopify -> eBay",
+      status: input.ebayConnected ? "preparabile" : "bloccato",
+    },
+    {
+      detail: "Webhook Shopify product/inventory tracciati; modello conflitti da aggiungere.",
+      label: "Conflitti Shopify",
+      status: "da implementare",
+    },
+    {
+      detail:
+        "Challenge account deletion pronta; POST reale resta disabilitato fino a verifica firma e cancellazione dati.",
+      label: "Compliance eBay/Shopify",
+      status: "bloccato",
+    },
+  ];
 }
 
 function getConfiguredShopifyScopes() {

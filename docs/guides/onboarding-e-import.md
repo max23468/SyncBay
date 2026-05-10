@@ -43,8 +43,19 @@ wizard:
 - legge le location Shopify via Admin GraphQL;
 - permette di salvare una location Shopify predefinita;
 - mostra default import e sequenza di preview prevista;
+- mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
+  successive;
 - mantiene il dry-run bloccato finché mancano account eBay collegato e lettura
   listing eBay.
+
+Validazioni MVP già codificate per la preview:
+
+- SKU mancante;
+- prezzo assente o non valido;
+- disponibilità assente o non leggibile;
+- listing senza immagini;
+- varianti troppo complesse per MVP;
+- descrizione con possibile template eBay da ripulire.
 
 La preview import resta bloccata finché non sono disponibili:
 
