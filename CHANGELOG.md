@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.1.2] — 2026-05-10
+
+### Sotto il cofano
+
+- Aggiunta una pagina privacy pubblica provvisoria per configurare il RuName eBay production di SyncBay.
+
 ## [0.1.1] — 2026-05-10
 
 ### Correzioni
@@ -49,5 +55,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.2]: #012--2026-05-10
 [0.1.1]: #011--2026-05-10
 [0.1.0]: #010--2026-05-10
