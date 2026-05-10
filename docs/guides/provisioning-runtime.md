@@ -8,7 +8,8 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 
 Provisioning minimo completato il 2026-05-09.
 
-Lo scaffold Shopify CLI React Router esiste. Non esistono ancora deploy runtime, import catalogo o sync.
+Lo scaffold Shopify CLI React Router esiste. Esiste un primo deployment Vercel
+production pronto, ma non esistono ancora import catalogo o sync.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi e audit log. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -21,13 +22,19 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 | Project ID | `prj_X9vkqDlE5t4QDUhOxE6m2aMFosiz` |
 | Root directory | `.` |
 | Node.js | `24.x` |
+| Framework | `react-router` |
+| Production domain | `https://syncbay.vercel.app` |
+| Ultimo deployment | `READY` |
 | Link locale | Creato in `.vercel/`, ignorato da Git |
 
 Note:
 
-- Il framework preset e `Other` finché il deploy React Router non viene verificato su Vercel.
-- Nessun deploy production è stato creato.
+- Il framework preset Vercel è `react-router`.
+- Esiste un deployment production Vercel, ma non è ancora una release pubblica Shopify App Store.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
+- Gli env eBay includono un RuName production SyncBay predisposto sul keyset provvisorio FiscalBay, ma OAuth non deve essere abilitato finche non arriva il keyset dedicato SyncBay.
+- Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
+- Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
 ## Supabase
 
@@ -58,6 +65,8 @@ Non salvarla in Git e non stamparla nei log.
 - query remota Supabase: database `postgres`, versione `17.6`
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
+- primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
+- advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - `shopify app dev --store syncbay-dev.myshopify.com` con preview Admin caricata e sessione installazione registrata
 
 Estensioni Supabase verificate:
@@ -66,10 +75,18 @@ Estensioni Supabase verificate:
 | --- | --- |
 | `pgcrypto` | Installata |
 | `uuid-ossp` | Installata |
-| `pgmq` | Disponibile, non installata |
-| `pg_cron` | Disponibile, non installata |
+| `pgmq` | Abilitata via migration Prisma |
+| `pg_cron` | Abilitata via migration Prisma |
 
-`pgmq` e `pg_cron` vanno abilitate tramite migration quando verrà creato lo schema runtime, così restano tracciate in Git.
+Primitive Supabase tracciate:
+
+- estensione `pgmq`;
+- coda `syncbay_jobs`;
+- estensione `pg_cron`;
+- bucket privato `syncbay-import-staging` per staging temporaneo immagini.
+
+Non ci sono ancora schedule cron o consumer queue: verranno aggiunti quando
+esisterà la logica import/sync.
 
 ## Cosa resta da fare
 
@@ -78,6 +95,6 @@ Durante o subito dopo lo scaffold:
 - mantenere allineate le migration Prisma su Supabase Postgres;
 - definire `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider, non nel repo;
 - completare gli env Vercel preview quando viene scelto il branch target o via dashboard;
-- creare bucket Supabase Storage `syncbay-import-staging` via migration o script tracciato;
-- abilitare Supabase Queues/Cron via migration;
+- registrare la migration runtime primitives con `npx prisma migrate deploy` quando le URL database Prisma complete sono disponibili;
+- verificare gli advisor Supabase con `npm run db:verify` quando le credenziali linked sono disponibili;
 - aggiornare URL Shopify/eBay con il primo URL Vercel utilizzabile.

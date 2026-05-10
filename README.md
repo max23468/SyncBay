@@ -28,6 +28,7 @@ Lo scaffold Shopify CLI React Router è presente. La base runtime include autent
 - Prisma come ORM iniziale.
 - Supabase Queues e Supabase Cron per job, polling e retry.
 - Supabase Storage privato come staging immagini temporaneo quando serve.
+- Vercel Web Analytics e Speed Insights come baseline di osservabilità.
 
 Provisioning minimo creato:
 
@@ -42,6 +43,8 @@ Provisioning minimo creato:
 - Lint: `npm run lint`
 - Build: `npm run build`
 - Prisma/setup runtime locale: `npm run setup`
+- Validazione Prisma: `npm run prisma:validate`
+- Verifica advisor Supabase collegato: `npm run db:verify`
 - Migration Supabase: `npx prisma migrate deploy` da eseguire esplicitamente con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target
 - Versioning dry-run: `npm run release:dry-run`
 - Preparazione release locale: `npm run release`
@@ -79,6 +82,6 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Completare keyset/RuName eBay quando eBay approva la richiesta e impostare gli env `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`, `EBAY_RU_NAME`, `EBAY_SCOPES`, `EBAY_OAUTH_ACCEPT_URL`, `EBAY_OAUTH_REJECT_URL`.
-2. Verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
+1. Attendere il keyset eBay dedicato SyncBay. Il RuName production e le callback sono predisposti, ma OAuth resta disabilitato sul keyset provvisorio FiscalBay per non rischiare FiscalBay.
+2. Spostare `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` ed `EBAY_RU_NAME` sul keyset dedicato, poi verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
 3. Preparare preview import catalogo eBay -> Shopify senza sync automatico.

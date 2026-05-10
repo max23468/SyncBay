@@ -29,6 +29,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Provisioning minimo runtime | Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, documentati in `docs/guides/provisioning-runtime.md` |
 | Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
 | Fatto | Adattamento scaffold a SyncBay | Dashboard SyncBay, schema Prisma iniziale, webhook placeholder e stato connessioni Shopify/eBay |
+| Fatto | Baseline osservabilità e primitive Supabase | Vercel Analytics/Speed Insights nel root app; `pgmq`, `pg_cron`, coda `syncbay_jobs` e bucket `syncbay-import-staging` tracciati in migration |
 
 ## 1. Identità prodotto
 
@@ -49,10 +50,11 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Stato | Voce | Note |
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
-| In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; in attesa keyset/RuName per verifica end-to-end |
+| In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay; in attesa keyset dedicato per verifica end-to-end |
 | Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
+| Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
 | Da fare | Dashboard operativa | Stato sync, job, errori, conflitti, retry |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
@@ -83,6 +85,6 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 ## Prossime mosse suggerite
 
-1. Completare keyset/RuName eBay quando eBay approva la richiesta.
-2. Verificare OAuth eBay end-to-end e poi collegare il primo account venditore.
+1. Attendere il keyset eBay dedicato SyncBay e sostituire i valori provvisori FiscalBay negli env.
+2. Abilitare OAuth sul RuName del keyset dedicato, verificare OAuth eBay end-to-end e poi collegare il primo account venditore.
 3. Preparare preview import catalogo eBay -> Shopify senza sync automatico.
