@@ -101,6 +101,7 @@ export default function Index() {
               : "pronta"}
           </s-list-item>
         </s-unordered-list>
+        <s-button href="/app/import-preview">Apri preview import</s-button>
       </s-section>
 
       <s-section heading="Attività recenti">

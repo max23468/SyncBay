@@ -1,0 +1,185 @@
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+} from "react-router";
+import {
+  redirect,
+  useLoaderData,
+  useNavigation,
+  useSearchParams,
+} from "react-router";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+
+import { authenticate } from "../shopify.server";
+import {
+  getImportWizardState,
+  updateDefaultShopifyLocation,
+} from "../services/syncbay.server";
+
+interface ShopifyLocation {
+  fulfillsOnlineOrders: boolean;
+  id: string;
+  isActive: boolean;
+  name: string;
+}
+
+interface LocationsQueryResponse {
+  data?: {
+    locations?: {
+      nodes?: ShopifyLocation[];
+    };
+  };
+  errors?: unknown;
+}
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin, session } = await authenticate.admin(request);
+  const locations = await fetchShopifyLocations(admin);
+  const wizard = await getImportWizardState(session);
+
+  return {
+    locations,
+    wizard,
+  };
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin, session } = await authenticate.admin(request);
+  const formData = await request.formData();
+  const locationGid = String(formData.get("defaultLocationGid") ?? "");
+  const locations = await fetchShopifyLocations(admin);
+
+  await updateDefaultShopifyLocation(session, locationGid, locations);
+
+  throw redirect("/app/import-preview?updated=location");
+};
+
+export default function ImportPreview() {
+  const { locations, wizard } = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
+  const navigation = useNavigation();
+  const selectedLocation = locations.find(
+    (location) => location.id === wizard.shop.defaultLocationGid,
+  );
+  const isSaving = navigation.state !== "idle";
+  const isReadyForPreview = wizard.importPreview.blockers.length === 0;
+
+  return (
+    <s-page heading="Preview import">
+      <s-section heading="Preparazione">
+        <s-paragraph>
+          Negozio: {wizard.shop.domain}. La preview resta in sola lettura finché
+          non sono pronti account eBay, location Shopify e lettura listing.
+        </s-paragraph>
+        {searchParams.get("updated") === "location" ? (
+          <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
+        ) : null}
+      </s-section>
+
+      <s-section heading="Location Shopify">
+        {locations.length > 0 ? (
+          <form method="post">
+            <label htmlFor="defaultLocationGid">Location predefinita</label>
+            <select
+              defaultValue={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
+              id="defaultLocationGid"
+              name="defaultLocationGid"
+            >
+              {locations.map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                  {location.isActive ? "" : " - non attiva"}
+                  {location.fulfillsOnlineOrders ? "" : " - fulfillment online non attivo"}
+                </option>
+              ))}
+            </select>
+            <s-button type="submit" disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva location"}
+            </s-button>
+          </form>
+        ) : (
+          <s-paragraph>
+            Nessuna location Shopify leggibile con gli scope attuali.
+          </s-paragraph>
+        )}
+      </s-section>
+
+      <s-section heading="Default import">
+        <s-unordered-list>
+          <s-list-item>
+            Stato prodotti: {wizard.importPreview.defaults.productStatus}
+          </s-list-item>
+          <s-list-item>
+            Immagini: {wizard.importPreview.defaults.imageImport}
+          </s-list-item>
+          <s-list-item>
+            Descrizioni: {wizard.importPreview.defaults.descriptionMode}
+          </s-list-item>
+          <s-list-item>
+            Limite MVP: {wizard.previewPlan.limits.maxProducts} prodotti per shop
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Stato preview">
+        {isReadyForPreview ? (
+          <s-paragraph>Preview pronta per la prossima implementazione.</s-paragraph>
+        ) : (
+          <s-unordered-list>
+            {wizard.importPreview.blockers.map((blocker) => (
+              <s-list-item key={blocker}>{blocker}</s-list-item>
+            ))}
+          </s-unordered-list>
+        )}
+      </s-section>
+
+      <s-section slot="aside" heading="Riepilogo">
+        <s-unordered-list>
+          <s-list-item>Marketplace: {wizard.previewPlan.limits.marketplace}</s-list-item>
+          <s-list-item>eBay: {wizard.ebay.status}</s-list-item>
+          <s-list-item>
+            Location salvata: {selectedLocation?.name ?? "non confermata"}
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section slot="aside" heading="Sequenza prevista">
+        <s-unordered-list>
+          {wizard.previewPlan.steps.map((step) => (
+            <s-list-item key={step}>{step}</s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+    </s-page>
+  );
+}
+
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
+};
+
+async function fetchShopifyLocations(
+  admin: Awaited<ReturnType<typeof authenticate.admin>>["admin"],
+) {
+  const response = await admin.graphql(`
+    #graphql
+    query SyncBayLocations {
+      locations(first: 50, includeInactive: false) {
+        nodes {
+          fulfillsOnlineOrders
+          id
+          isActive
+          name
+        }
+      }
+    }
+  `);
+  const json = (await response.json()) as LocationsQueryResponse;
+
+  if (json.errors) {
+    throw new Response("Location Shopify non leggibili.", { status: 502 });
+  }
+
+  return json.data?.locations?.nodes ?? [];
+}

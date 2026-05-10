@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.3.0] — 2026-05-10
+
+### Novità
+
+- Aggiunto il wizard iniziale `/app/import-preview` per salvare la location Shopify predefinita e mostrare il dry-run import bloccato in modo esplicito.
+
 ## [0.2.0] — 2026-05-10
 
 ### Novità
@@ -98,6 +104,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.3.0]: #030--2026-05-10
 [0.2.0]: #020--2026-05-10
 [0.1.6]: #016--2026-05-10
 [0.1.5]: #015--2026-05-10
