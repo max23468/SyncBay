@@ -9,9 +9,10 @@ import {
 
 import prisma from "../db.server";
 import {
-  getEmptyImportPreview,
   getImportPreviewValidationRules,
+  getMockImportPreview,
 } from "./import-preview.server";
+import { getDraftImportReadiness } from "./shopify-draft-import.server";
 
 interface ShopifySessionLike {
   shop: string;
@@ -122,9 +123,22 @@ export async function getDashboardState(session: ShopifySessionLike) {
     onboarding: getOnboardingReadiness(),
     importPreview,
     sync: {
+      failedJobs: recentJobs
+        .filter((job) => job.status === SyncJobStatus.FAILED)
+        .map((job) => ({
+          createdAt: job.createdAt.toISOString(),
+          errorCode: job.errorCode,
+          errorMessage: job.errorMessage,
+          type: job.type,
+        })),
+      jobsByStatus: summarizeJobsByStatus(recentJobs),
+      jobsByType: summarizeJobsByType(recentJobs),
       pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
       lastJobs: recentJobs.map((job) => ({
+        attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
+        errorMessage: job.errorMessage,
+        runAfter: job.runAfter.toISOString(),
         status: job.status,
         type: job.type,
       })),
@@ -153,8 +167,13 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: false,
   });
+  const previewResult = getMockImportPreview();
 
   return {
+    draftImport: getDraftImportReadiness({
+      hasDefaultLocation: Boolean(shop.defaultLocationGid),
+      previewResult,
+    }),
     ebay: {
       marketplaceId: getEbayMarketplaceId(),
       status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
@@ -162,7 +181,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     importPreview,
     onboarding: getOnboardingReadiness(),
     previewPlan: getImportPreviewPlan(),
-    previewResult: getEmptyImportPreview(),
+    previewResult,
     runtimePhases: getRuntimePhaseReadiness({
       ebayConnected,
       hasDefaultLocation: Boolean(shop.defaultLocationGid),
@@ -627,6 +646,32 @@ function getRuntimePhaseReadiness(input: {
       status: "bloccato",
     },
   ];
+}
+
+function summarizeJobsByStatus(
+  jobs: Array<{
+    status: SyncJobStatus;
+  }>,
+) {
+  return Object.fromEntries(
+    Object.values(SyncJobStatus).map((status) => [
+      status,
+      jobs.filter((job) => job.status === status).length,
+    ]),
+  );
+}
+
+function summarizeJobsByType(
+  jobs: Array<{
+    type: SyncJobType;
+  }>,
+) {
+  return Object.fromEntries(
+    Object.values(SyncJobType).map((type) => [
+      type,
+      jobs.filter((job) => job.type === type).length,
+    ]),
+  );
 }
 
 function getConfiguredShopifyScopes() {

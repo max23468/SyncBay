@@ -10,8 +10,11 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - state OAuth eBay anti-CSRF (`EbayOAuthState`);
 - job applicativi tracciati a database (`SyncJob`);
 - audit log operativo (`AuditLog`).
+- mapping prodotto eBay -> Shopify (`ProductMapping`);
+- snapshot prodotto (`ProductSnapshot`);
+- conflitti Shopify (`SyncConflict`).
 
-Il modello resta iniziale: non include ancora mapping prodotto, snapshot persistenti, regole prezzo, regole descrizione, asset media o conflitti. La preview import ha però già una base runtime non persistente per normalizzare candidati listing e classificare errori MVP prima di qualunque scrittura Shopify.
+Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import ha già una base runtime non persistente per normalizzare candidati listing e classificare errori MVP prima di qualunque scrittura Shopify.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -69,7 +72,7 @@ Schema iniziale:
 
 Collega listing eBay e prodotto/variante Shopify.
 
-Campi concettuali:
+Schema iniziale:
 
 - eBay item id;
 - SKU;
@@ -89,6 +92,13 @@ Serve per:
 - rollback;
 - audit;
 - evitare sovrascritture cieche.
+
+Schema iniziale:
+
+- fonte snapshot: eBay, Shopify o SyncBay;
+- riferimenti mapping/listing/prodotto/variante;
+- SKU, titolo, prezzo, valuta, quantità, stato prodotto;
+- hash descrizione, conteggio immagini e payload diagnostico.
 
 ### Regole prezzo
 
@@ -164,6 +174,12 @@ Campi:
 - ultimo valore scritto da SyncBay;
 - valore Shopify;
 - azione scelta dal negoziante.
+
+Schema iniziale:
+
+- stato conflitto: aperto, risolto, ignorato;
+- risoluzione scelta: mantieni Shopify, riallinea da eBay, ignora campo;
+- valori eBay, ultimo valore scritto da SyncBay e valore Shopify.
 
 ### Audit log
 

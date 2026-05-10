@@ -148,6 +148,13 @@ export default function ImportPreview() {
       </s-section>
 
       <s-section heading="Dry-run">
+        <s-paragraph>
+          Modalità:{" "}
+          {wizard.previewResult.mode === "mock"
+            ? "dati dimostrativi fittizi"
+            : wizard.previewResult.mode}
+          . Nessun prodotto viene creato su Shopify.
+        </s-paragraph>
         <s-unordered-list>
           <s-list-item>
             Listing letti: {wizard.previewResult.summary.totalCount}
@@ -161,6 +168,41 @@ export default function ImportPreview() {
           <s-list-item>
             Errori: {wizard.previewResult.summary.errorCount}
           </s-list-item>
+          <s-list-item>
+            Warning: {wizard.previewResult.summary.warningCount}
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Esempi preview">
+        {wizard.previewResult.items.length > 0 ? (
+          <s-unordered-list>
+            {wizard.previewResult.items.map((item) => (
+              <s-list-item key={item.itemId}>
+                {item.normalized.title}: {item.status} - SKU{" "}
+                {item.normalized.sku ?? "mancante"} - {item.issues.length} rilievi
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun listing letto.</s-paragraph>
+        )}
+      </s-section>
+
+      <s-section heading="Import Shopify draft">
+        <s-unordered-list>
+          <s-list-item>
+            Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
+          </s-list-item>
+          <s-list-item>
+            Prodotti importabili: {wizard.draftImport.importableCount}
+          </s-list-item>
+          <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
+          {wizard.draftImport.blockers.length > 0 ? (
+            <s-list-item>
+              Blocchi: {wizard.draftImport.blockers.join(", ")}
+            </s-list-item>
+          ) : null}
         </s-unordered-list>
       </s-section>
 

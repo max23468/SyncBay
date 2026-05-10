@@ -111,16 +111,38 @@ export default function Index() {
       </s-section>
 
       <s-section heading="Attività recenti">
+        <s-unordered-list>
+          <s-list-item>Job pending: {dashboard.sync.jobsByStatus.PENDING}</s-list-item>
+          <s-list-item>Job in esecuzione: {dashboard.sync.jobsByStatus.RUNNING}</s-list-item>
+          <s-list-item>Job falliti: {dashboard.sync.jobsByStatus.FAILED}</s-list-item>
+          <s-list-item>Job riusciti: {dashboard.sync.jobsByStatus.SUCCEEDED}</s-list-item>
+        </s-unordered-list>
         {lastJobs.length > 0 ? (
           <s-unordered-list>
             {lastJobs.map((job) => (
               <s-list-item key={`${job.type}-${job.createdAt}`}>
-                {job.type}: {job.status}
+                {job.type}: {job.status}, tentativi {job.attempts}
+                {job.errorMessage ? ` - ${job.errorMessage}` : ""}
               </s-list-item>
             ))}
           </s-unordered-list>
         ) : (
           <s-paragraph>Nessun job SyncBay registrato.</s-paragraph>
+        )}
+      </s-section>
+
+      <s-section heading="Diagnostica job">
+        {dashboard.sync.failedJobs.length > 0 ? (
+          <s-unordered-list>
+            {dashboard.sync.failedJobs.map((job) => (
+              <s-list-item key={`${job.type}-${job.createdAt}`}>
+                {job.type}: {job.errorCode ?? "errore"} -{" "}
+                {job.errorMessage ?? "azione richiesta in dashboard"}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun job fallito negli ultimi eventi.</s-paragraph>
         )}
       </s-section>
 

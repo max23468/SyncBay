@@ -16,6 +16,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | Shopify dev setup | Chiuso per dev store | Account Partner, dev store, app `SyncBay`, CLI, scaffold e preview Admin verificati | Resta da definire il deploy production quando servirà. |
 | eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay | Servono approvazione keyset dedicato, OAuth attivo sul RuName dedicato, endpoint account deletion e verifica end-to-end. Non abilitare OAuth SyncBay sul keyset FiscalBay per non rischiare FiscalBay. |
 | Lettura listing eBay live | Bloccata da eBay dev setup | Validazioni preview e readiness dry-run implementate senza chiamate live | Non va collegata una lettura reale Trading/Inventory API finché OAuth dedicato SyncBay non è verificato end-to-end. |
+| Applicazione migration import reale | Aperta | Schema e migration mapping/snapshot/conflitti pronti localmente | Prima di attivare import draft o mapping persistente in produzione va eseguito `npx prisma migrate deploy` con env Supabase target. |
 
 ## Decisioni da chiudere prima della beta
 

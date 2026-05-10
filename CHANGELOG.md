@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.5.0] — 2026-05-10
+
+### Novità
+
+- Aggiunta preview mock con dati fittizi per testare validazioni e conteggi senza keyset eBay.
+- Aggiunti modelli Prisma e migration per mapping prodotto, snapshot prodotto e conflitti Shopify.
+- Preparata la base di import Shopify in `draft` dietro feature flag `SYNCBAY_DRAFT_IMPORT_ENABLED=false`.
+- Rafforzata la dashboard job con conteggi per stato e diagnostica dei job falliti.
+
 ## [0.4.0] — 2026-05-10
 
 ### Novità
@@ -120,6 +129,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.5.0]: #050--2026-05-10
 [0.4.0]: #040--2026-05-10
 [0.3.0]: #030--2026-05-10
 [0.2.0]: #020--2026-05-10
