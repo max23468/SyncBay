@@ -134,6 +134,33 @@ export default function ImportPreview() {
         )}
       </s-section>
 
+      <s-section heading="Dry-run">
+        <s-unordered-list>
+          <s-list-item>
+            Listing letti: {wizard.previewResult.summary.totalCount}
+          </s-list-item>
+          <s-list-item>
+            Importabili: {wizard.previewResult.summary.importableCount}
+          </s-list-item>
+          <s-list-item>
+            Saltati: {wizard.previewResult.summary.skippedCount}
+          </s-list-item>
+          <s-list-item>
+            Errori: {wizard.previewResult.summary.errorCount}
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Validazioni MVP">
+        <s-unordered-list>
+          {wizard.validationRules.map((rule) => (
+            <s-list-item key={rule.code}>
+              {rule.label}: {rule.severity}
+            </s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+
       <s-section slot="aside" heading="Riepilogo">
         <s-unordered-list>
           <s-list-item>Marketplace: {wizard.previewPlan.limits.marketplace}</s-list-item>
@@ -148,6 +175,16 @@ export default function ImportPreview() {
         <s-unordered-list>
           {wizard.previewPlan.steps.map((step) => (
             <s-list-item key={step}>{step}</s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+
+      <s-section slot="aside" heading="Fasi successive">
+        <s-unordered-list>
+          {wizard.runtimePhases.map((phase) => (
+            <s-list-item key={phase.label}>
+              {phase.label}: {phase.status} - {phase.detail}
+            </s-list-item>
           ))}
         </s-unordered-list>
       </s-section>

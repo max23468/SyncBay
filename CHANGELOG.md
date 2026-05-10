@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.4.0] — 2026-05-10
+
+### Novità
+
+- Aggiunta la base di validazione dry-run per preview import, con conteggi, regole MVP e readiness delle fasi runtime successive.
+
 ## [0.3.0] — 2026-05-10
 
 ### Novità
@@ -109,6 +115,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.4.0]: #040--2026-05-10
 [0.3.0]: #030--2026-05-10
 [0.2.0]: #020--2026-05-10
 [0.1.6]: #016--2026-05-10
