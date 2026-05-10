@@ -77,6 +77,7 @@ Provisioning minimo creato:
 - Decisione runtime/CI/release futuri: `docs/decisions/0004-runtime-ci-release-future.md`
 - Decisione infrastruttura runtime MVP: `docs/decisions/0005-runtime-infrastructure.md`
 - Decisione versioning runtime locale: `docs/decisions/0006-versioning-runtime-locale.md`
+- Decisione privacy provvisoria pilota: `docs/decisions/0007-privacy-provvisoria-pilota.md`
 - Benchmark Shopify App Store: `docs/market/shopify-ebay-app-benchmark.md`
 - Regole operative Codex: `AGENTS.md`
 

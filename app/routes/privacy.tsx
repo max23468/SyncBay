@@ -39,8 +39,8 @@ export default function Privacy() {
       <h2>Sicurezza</h2>
       <p>
         I token e i segreti non devono essere salvati nel repository. I token
-        provider sono trattati lato server e cifrati a riposo quando vengono
-        persistiti nel runtime applicativo.
+        eBay persistiti da SyncBay sono trattati lato server e cifrati a riposo
+        nel runtime applicativo.
       </p>
       <h2>Contatto</h2>
       <p>

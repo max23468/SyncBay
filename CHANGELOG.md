@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.1.5] — 2026-05-10
+
+### Correzioni
+
+- Ristretta la privacy policy provvisoria ai token eBay effettivamente cifrati da SyncBay.
+
+### Sotto il cofano
+
+- Aggiunto ADR 0007 per documentare razionale, limiti e durata della privacy policy provvisoria del pilota.
+
 ## [0.1.4] — 2026-05-10
 
 ### Sotto il cofano
@@ -69,6 +79,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.5]: #015--2026-05-10
 [0.1.4]: #014--2026-05-10
 [0.1.3]: #013--2026-05-10
 [0.1.2]: #012--2026-05-10
