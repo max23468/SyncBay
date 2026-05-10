@@ -10,6 +10,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Aggiunta gestione Shopify della location selezionata nella preview import, con rinomina tramite `write_locations`.
 - Rifinita la preview mock per renderla verificabile senza collegamenti esterni reali e con messaggi più espliciti su validazioni e scritture Shopify.
+- Ripuliti i riferimenti eBay residui dai messaggi dei dati mock della preview, mantenendo sospeso il filone integrazione.
 
 ### Sotto il cofano
 

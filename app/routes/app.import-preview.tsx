@@ -96,6 +96,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "renameLocation") {
     const locationGid = String(formData.get("locationGid") ?? "");
     const locationName = String(formData.get("locationName") ?? "");
+    const wizard = await getImportWizardState(session);
     const locationResult = await fetchShopifyLocations(admin);
     const selectedLocation = locationResult.locations.find(
       (location) => location.id === locationGid,
@@ -105,6 +106,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const params = new URLSearchParams({
         locationRename: "blocked",
         message: locationResult.errorMessage,
+      });
+
+      throw redirect(`/app/import-preview?${params.toString()}`);
+    }
+
+    if (locationGid !== wizard.shop.defaultLocationGid) {
+      const params = new URLSearchParams({
+        locationRename: "blocked",
+        message: "puoi rinominare solo la location Shopify predefinita salvata",
       });
 
       throw redirect(`/app/import-preview?${params.toString()}`);
