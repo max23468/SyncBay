@@ -25,6 +25,8 @@ interface ShopifyProductCreateResponse {
   };
 }
 
+export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
+
 export function getDraftImportReadiness(input: {
   hasDefaultLocation: boolean;
   previewResult: ImportPreviewResult;

@@ -13,6 +13,10 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { authenticate } from "../shopify.server";
 import {
+  createShopifyDraftProductsIfEnabled,
+  type ShopifyDraftImportStatus,
+} from "../services/shopify-draft-import.server";
+import {
   getImportWizardState,
   updateDefaultShopifyLocation,
 } from "../services/syncbay.server";
@@ -48,6 +52,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
+  const intent = String(formData.get("intent") ?? "saveLocation");
+
+  if (intent === "createDraftProducts") {
+    const wizard = await getImportWizardState(session);
+    const result = await createShopifyDraftProductsIfEnabled({
+      admin,
+      hasDefaultLocation: Boolean(wizard.shop.defaultLocationGid),
+      previewResult: wizard.previewResult,
+    });
+
+    const params = new URLSearchParams({
+      draft: result.status,
+    });
+
+    if (result.status === "created") {
+      params.set("count", String(result.createdProducts.length));
+    } else if (result.status === "failed" && result.errorMessage) {
+      params.set("message", result.errorMessage);
+    } else if (result.status === "blocked") {
+      params.set("message", result.readiness.blockers.join(", "));
+    }
+
+    throw redirect(`/app/import-preview?${params.toString()}`);
+  }
+
   const locationGid = String(formData.get("defaultLocationGid") ?? "");
   const locationResult = await fetchShopifyLocations(admin);
 
@@ -75,6 +104,7 @@ export default function ImportPreview() {
   );
   const isSaving = navigation.state !== "idle";
   const isReadyForPreview = wizard.importPreview.blockers.length === 0;
+  const draftStatus = searchParams.get("draft") as ShopifyDraftImportStatus | null;
 
   return (
     <s-page heading="Preview import">
@@ -93,6 +123,7 @@ export default function ImportPreview() {
           <s-paragraph>{locationError}</s-paragraph>
         ) : locations.length > 0 ? (
           <form method="post">
+            <input type="hidden" name="intent" value="saveLocation" />
             <label htmlFor="defaultLocationGid">Location predefinita</label>
             <select
               defaultValue={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
@@ -190,6 +221,19 @@ export default function ImportPreview() {
       </s-section>
 
       <s-section heading="Import Shopify draft">
+        {draftStatus === "created" ? (
+          <s-paragraph>
+            Create {searchParams.get("count") ?? "0"} bozze Shopify da dati mock.
+          </s-paragraph>
+        ) : draftStatus === "blocked" ? (
+          <s-paragraph>
+            Import draft bloccato: {searchParams.get("message") ?? "requisiti incompleti"}.
+          </s-paragraph>
+        ) : draftStatus === "failed" ? (
+          <s-paragraph>
+            Import draft non completato: {searchParams.get("message") ?? "errore Shopify"}.
+          </s-paragraph>
+        ) : null}
         <s-unordered-list>
           <s-list-item>
             Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
@@ -204,6 +248,15 @@ export default function ImportPreview() {
             </s-list-item>
           ) : null}
         </s-unordered-list>
+        <form method="post">
+          <input type="hidden" name="intent" value="createDraftProducts" />
+          <s-button
+            type="submit"
+            disabled={isSaving || wizard.draftImport.blockers.length > 0}
+          >
+            {isSaving ? "Creazione..." : "Crea bozze mock"}
+          </s-button>
+        </form>
       </s-section>
 
       <s-section heading="Validazioni MVP">
