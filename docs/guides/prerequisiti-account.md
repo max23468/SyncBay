@@ -103,9 +103,9 @@ Default MVP:
 | App/keyset eBay SyncBay | In attesa eBay | Richiesto keyset/app separato per SyncBay; non riusare FiscalBay salvo fallback esplicito. |
 | Marketplace iniziale | Confermato | `EBAY_IT` |
 | OAuth RuName Sandbox | In attesa keyset | eBay usa `RuName` come `redirect_uri` nel token exchange. |
-| OAuth RuName Production | In attesa keyset | Separato dal Sandbox. |
-| Accept URL | Da derivare da Vercel | URL pubblico/callback success OAuth. |
-| Reject URL | Da derivare da Vercel | URL pubblico/callback rifiuto OAuth. |
+| OAuth RuName Production | Predisposto, OAuth non abilitato | RuName SyncBay creato sul keyset provvisorio FiscalBay, senza abilitare OAuth per non disattivare FiscalBay. Il valore resta negli env, non nel repo. |
+| Accept URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
+| Reject URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
 | Scopes eBay | Definiti come bozza MVP | Da validare contro metodi effettivi usati. |
 | Account deletion endpoint | Da derivare da Vercel | Richiede HTTPS pubblico e challenge response. |
 | Verification token | Da generare fuori repo | 32-80 caratteri, non salvare in Git. |
@@ -115,6 +115,13 @@ Default MVP:
 SyncBay dovrà usare Authorization Code Grant per token utente venditore eBay.
 
 Nota importante: nel token exchange eBay il parametro `redirect_uri` non è una normale URL applicativa, ma il `RuName` assegnato all'app eBay per l'ambiente Sandbox o Production.
+
+Stato provvisorio 2026-05-10: SyncBay ha un RuName production predisposto su
+keyset FiscalBay, ma OAuth resta disabilitato su quel RuName. eBay consente
+OAuth attivo su un solo RuName per app/keyset: abilitarlo ora su SyncBay
+potrebbe disabilitarlo per FiscalBay. Il login eBay end-to-end resta quindi
+bloccato fino al keyset dedicato SyncBay o a una nuova decisione esplicita del
+maintainer.
 
 Valori previsti:
 
@@ -188,8 +195,8 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 - Sandbox keyset: in attesa.
 - Production keyset: in attesa.
 - RuName Sandbox: da compilare quando eBay approva/mostra il keyset.
-- RuName Production: da compilare quando disponibile.
-- Accept URL e Reject URL: da definire dopo approvazione keyset eBay e conferma callback pubbliche.
+- RuName Production: predisposto senza OAuth su keyset provvisorio FiscalBay; valore custodito negli env.
+- Accept URL e Reject URL: confermate su `https://syncbay.vercel.app/auth/ebay/callback`.
 - Preferenza iniziale: test su Sandbox quando disponibile; Production solo dopo decisione esplicita.
 
 ## Cosa resta bloccante
@@ -197,7 +204,8 @@ https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
 Anche con questa guida chiusa, prima delle prossime fasi runtime restano da completare:
 
 - callback provider eBay reali;
-- keyset/RuName eBay;
+- keyset eBay dedicato SyncBay;
+- OAuth attivo sul RuName del keyset dedicato;
 - secret runtime nei provider, non nel repo.
 
 ## Fonti

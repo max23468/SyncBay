@@ -44,6 +44,7 @@ Infrastruttura MVP: Vercel + Supabase.
 - Prisma: ORM iniziale.
 - Supabase Queues/Cron: job persistenti, polling e retry.
 - Supabase Storage: staging privato temporaneo immagini quando serve.
+- Vercel Web Analytics e Speed Insights: baseline osservabilità.
 - Versioning locale: `app/lib/version.ts` + `npm run release`, senza tag o GitHub Release automatici.
 
 Vedi ADR `decisions/0005-runtime-infrastructure.md`.
@@ -52,6 +53,8 @@ Provisioning minimo:
 
 - Vercel project: `matteos-projects-9226d217/syncbay`.
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
+- Vercel production attuale: `https://syncbay.vercel.app`, ultimo deployment `READY`.
+- eBay production RuName: predisposto negli env senza OAuth sul keyset provvisorio FiscalBay; non abilitarlo finche non arriva il keyset dedicato SyncBay.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Comandi runtime
@@ -61,8 +64,9 @@ Provisioning minimo:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
+- `npm run prisma:validate`
+- `npm run db:verify`
 - `npm run release:dry-run`
-- `DATABASE_URL='postgresql://user:pass@localhost:5432/syncbay' DATABASE_DIRECT_URL='postgresql://user:pass@localhost:5432/syncbay' npx prisma validate`
 - `npx prisma migrate deploy` con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target quando bisogna applicare migration remote
 
 ## Documenti principali

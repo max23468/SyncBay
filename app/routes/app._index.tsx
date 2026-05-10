@@ -84,7 +84,8 @@ export default function Index() {
             Target sync: {dashboard.shop.syncTargetSeconds} secondi
           </s-list-item>
           <s-list-item>Storage sessioni e dominio: Prisma</s-list-item>
-          <s-list-item>Queue/Cron: placeholder Supabase</s-list-item>
+          <s-list-item>Queue/Cron: Supabase predisposto</s-list-item>
+          <s-list-item>Osservabilità: Vercel Analytics e Speed Insights</s-list-item>
           <s-list-item>Versione app: {APP_VERSION}</s-list-item>
         </s-unordered-list>
       </s-section>

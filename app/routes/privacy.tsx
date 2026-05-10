@@ -24,7 +24,7 @@ export default function Privacy() {
       </p>
       <h2>Quali dati tratta</h2>
       <p>
-        L'app può trattare dati tecnici dello shop Shopify, dati del catalogo
+        L&apos;app può trattare dati tecnici dello shop Shopify, dati del catalogo
         eBay, token di accesso dei provider, log operativi, audit log, stato
         delle connessioni e informazioni necessarie a import, sync, retry e
         diagnostica.

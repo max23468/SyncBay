@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.1.4] — 2026-05-10
+
+### Sotto il cofano
+
+- Integrati Vercel Web Analytics e Speed Insights nella root React Router.
+- Aggiunti script di verifica Supabase/Prisma e una migration per abilitare `pgmq`, `pg_cron`, la coda `syncbay_jobs` e il bucket privato `syncbay-import-staging`.
+- Documentato il blocco eBay provvisorio: RuName SyncBay predisposto, OAuth non abilitato sul keyset FiscalBay e verifica end-to-end rinviata al keyset dedicato.
+
 ## [0.1.3] — 2026-05-10
 
 ### Correzioni
@@ -61,6 +69,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.4]: #014--2026-05-10
 [0.1.3]: #013--2026-05-10
 [0.1.2]: #012--2026-05-10
 [0.1.1]: #011--2026-05-10

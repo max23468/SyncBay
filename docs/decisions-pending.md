@@ -14,7 +14,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | --- | --- | --- | --- |
 | Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; scaffold presente; env e callback da compilare sul primo runtime utilizzabile | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
 | Shopify dev setup | Chiuso per dev store | Account Partner, dev store, app `SyncBay`, CLI, scaffold e preview Admin verificati | Resta da definire il deploy production quando servirà. |
-| eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato | Servono approvazione keyset, OAuth RuName, endpoint account deletion e URL OAuth. |
+| eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay | Servono approvazione keyset dedicato, OAuth attivo sul RuName dedicato, endpoint account deletion e verifica end-to-end. Non abilitare OAuth SyncBay sul keyset FiscalBay per non rischiare FiscalBay. |
 
 ## Decisioni da chiudere prima della beta
 

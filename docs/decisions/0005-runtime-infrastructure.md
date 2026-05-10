@@ -24,6 +24,7 @@ Vincoli principali:
 Per l'MVP/pilota SyncBay usera:
 
 - **Vercel** come hosting dell'app Shopify embedded, backend HTTP, endpoint OAuth e webhook;
+- **Vercel Web Analytics e Speed Insights** come baseline di osservabilita e performance;
 - **Supabase Postgres** come database applicativo;
 - **Prisma** come ORM iniziale;
 - **Supabase Queues** come coda persistente per import, sync, retry e update stock;
@@ -46,6 +47,11 @@ Gli URL reali verranno decisi quando verrà creato il progetto Vercel:
 - webhook pubblici.
 
 Non usare Vercel Cron come meccanismo primario per il sync entro 5 minuti. Su piani Vercel non adatti, i cron frequenti possono essere limitati; il polling applicativo resta affidato a Supabase Cron.
+
+Vercel Analytics e Speed Insights sono ammessi per metriche aggregate di pagina
+e performance. Non inviare eventi custom contenenti dati di negoziante,
+inserzioni, ordini, clienti, importi, SKU o payload provider senza una nuova
+decisione privacy/prodotto.
 
 ### Database e ORM
 
@@ -85,6 +91,10 @@ Ogni job deve essere:
 - tracciato su database;
 - dotato di retry/backoff;
 - associato a diagnostica leggibile in dashboard.
+
+La prima baseline tecnica abilita `pgmq`, la coda `syncbay_jobs`, `pg_cron` e
+il bucket privato `syncbay-import-staging`. Le schedule cron e il consumer queue
+restano fuori finche non esiste la logica import/sync da eseguire.
 
 ### Storage immagini
 
