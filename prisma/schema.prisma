@@ -47,6 +47,31 @@ enum SyncJobStatus {
   CANCELLED
 }
 
+enum ProductMappingStatus {
+  ACTIVE
+  ARCHIVED
+  PAUSED
+  ERROR
+}
+
+enum ProductSnapshotSource {
+  EBAY
+  SHOPIFY
+  SYNCBAY
+}
+
+enum SyncConflictStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
+enum SyncConflictResolution {
+  KEEP_SHOPIFY
+  REALIGN_FROM_EBAY
+  IGNORE_FIELD
+}
+
 enum AuditEventType {
   SHOP_INSTALLED
   SHOP_UNINSTALLED
@@ -97,10 +122,13 @@ model Shop {
   createdAt          DateTime               @default(now())
   updatedAt          DateTime               @updatedAt
 
-  ebayConnections EbayConnection[]
-  ebayOAuthStates EbayOAuthState[]
-  syncJobs        SyncJob[]
-  auditLogs       AuditLog[]
+  ebayConnections  EbayConnection[]
+  ebayOAuthStates  EbayOAuthState[]
+  syncJobs         SyncJob[]
+  auditLogs        AuditLog[]
+  productMappings  ProductMapping[]
+  productSnapshots ProductSnapshot[]
+  syncConflicts    SyncConflict[]
 }
 
 model EbayConnection {
@@ -163,6 +191,80 @@ model SyncJob {
 
   @@index([shopId, status, runAfter])
   @@index([type, status])
+}
+
+model ProductMapping {
+  id                String               @id @default(cuid())
+  shopId            String
+  marketplaceId     String               @default("EBAY_IT")
+  ebayItemId        String
+  sku               String?
+  shopifyProductGid String?
+  shopifyVariantGid String?
+  status            ProductMappingStatus @default(ACTIVE)
+  lastSyncedAt      DateTime?
+  lastErrorCode     String?
+  lastErrorMessage  String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  snapshots ProductSnapshot[]
+  conflicts SyncConflict[]
+
+  @@unique([shopId, marketplaceId, ebayItemId])
+  @@index([shopId, status])
+  @@index([shopifyProductGid])
+  @@index([sku])
+}
+
+model ProductSnapshot {
+  id                String                @id @default(cuid())
+  shopId            String
+  mappingId         String?
+  source            ProductSnapshotSource
+  ebayItemId        String?
+  shopifyProductGid String?
+  shopifyVariantGid String?
+  sku               String?
+  title             String?
+  priceAmount       Decimal?              @db.Decimal(12, 2)
+  currency          String?
+  quantity          Int?
+  productStatus     String?
+  descriptionHash   String?
+  imageCount        Int?
+  payload           Json?
+  capturedAt        DateTime              @default(now())
+
+  shop    Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  mapping ProductMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, capturedAt])
+  @@index([mappingId, capturedAt])
+  @@index([source])
+}
+
+model SyncConflict {
+  id               String                  @id @default(cuid())
+  shopId           String
+  mappingId        String?
+  field            String
+  status           SyncConflictStatus      @default(OPEN)
+  resolution       SyncConflictResolution?
+  ebayValue        Json?
+  lastSyncBayValue Json?
+  shopifyValue     Json?
+  detectedAt       DateTime                @default(now())
+  resolvedAt       DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  shop    Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  mapping ProductMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, status, detectedAt])
+  @@index([mappingId, status])
 }
 
 model AuditLog {

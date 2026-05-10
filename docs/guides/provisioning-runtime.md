@@ -11,7 +11,7 @@ Provisioning minimo completato il 2026-05-09.
 Lo scaffold Shopify CLI React Router esiste. Esiste un primo deployment Vercel
 production pronto, ma non esistono ancora import catalogo o sync.
 
-Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi e audit log. Le migration sono tracciate in `prisma/migrations/`.
+Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
 ## Vercel
 
@@ -34,6 +34,7 @@ Note:
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay includono un RuName production SyncBay predisposto sul keyset provvisorio FiscalBay, ma OAuth non deve essere abilitato finché non arriva il keyset dedicato SyncBay.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta `false`.
+- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default: non attivare import draft finché migration mapping/snapshot/conflitti e verifica su shop pilota non sono completate.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 

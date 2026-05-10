@@ -39,22 +39,83 @@ export interface ImportPreviewSummary {
   warningCount: number;
 }
 
+export interface ImportPreviewResult {
+  items: ImportPreviewItem[];
+  mode: "empty" | "mock" | "live";
+  summary: ImportPreviewSummary;
+}
+
 const DEFAULT_PRODUCT_STATUS = "draft";
 const DEFAULT_DESCRIPTION_MODE = "HTML pulito senza template";
 const MAX_SIMPLE_VARIANTS = 1;
 
-export function buildImportPreview(candidates: ImportPreviewListingCandidate[]) {
+export function buildImportPreview(
+  candidates: ImportPreviewListingCandidate[],
+  mode: ImportPreviewResult["mode"] = "live",
+): ImportPreviewResult {
   const items = candidates.map(buildPreviewItem);
   const summary = summarizePreviewItems(items);
 
   return {
     items,
+    mode,
     summary,
   };
 }
 
 export function getEmptyImportPreview() {
-  return buildImportPreview([]);
+  return buildImportPreview([], "empty");
+}
+
+export function getMockImportPreview() {
+  return buildImportPreview(
+    [
+      {
+        descriptionHtml: "<p>Giacca vintage in pelle.</p>",
+        imageUrls: [
+          "https://example.invalid/syncbay/mock/giacca-pelle-1.jpg",
+          "https://example.invalid/syncbay/mock/giacca-pelle-2.jpg",
+        ],
+        itemId: "mock-ebay-it-1001",
+        priceAmount: 89.9,
+        quantity: 3,
+        sku: "MOCK-GIACCA-001",
+        title: "Giacca vintage in pelle",
+        variantCount: 1,
+      },
+      {
+        descriptionHtml: "<table><tr><td>Template eBay storico</td></tr></table>",
+        imageUrls: [],
+        itemId: "mock-ebay-it-1002",
+        priceAmount: 24.5,
+        quantity: 12,
+        sku: "MOCK-LAMPADA-002",
+        title: "Lampada da tavolo",
+        variantCount: 1,
+      },
+      {
+        descriptionHtml: "<p>Set con varianti multiple.</p>",
+        imageUrls: ["https://example.invalid/syncbay/mock/set-tazze-1.jpg"],
+        itemId: "mock-ebay-it-1003",
+        priceAmount: 19.9,
+        quantity: 5,
+        sku: "MOCK-TAZZE-003",
+        title: "Set tazze colorate",
+        variantCount: 3,
+      },
+      {
+        descriptionHtml: "<p>Prodotto senza SKU.</p>",
+        imageUrls: ["https://example.invalid/syncbay/mock/scatola-1.jpg"],
+        itemId: "mock-ebay-it-1004",
+        priceAmount: 12,
+        quantity: 8,
+        sku: "",
+        title: "Scatola in legno",
+        variantCount: 1,
+      },
+    ],
+    "mock",
+  );
 }
 
 export function getImportPreviewValidationRules() {

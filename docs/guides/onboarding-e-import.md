@@ -42,6 +42,7 @@ wizard:
 
 - legge le location Shopify via Admin GraphQL;
 - permette di salvare una location Shopify predefinita;
+- mostra una preview mock con dati fittizi finché manca il keyset eBay;
 - mostra default import e sequenza di preview prevista;
 - mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
   successive;
@@ -56,6 +57,15 @@ Validazioni MVP già codificate per la preview:
 - listing senza immagini;
 - varianti troppo complesse per MVP;
 - descrizione con possibile template eBay da ripulire.
+
+La base di import Shopify in `draft` è preparata dietro feature flag:
+
+- env: `SYNCBAY_DRAFT_IMPORT_ENABLED=false` per default;
+- quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
+- quando sarà attivato, il codice userà solo item importabili della preview e
+  creerà prodotti Shopify in stato `DRAFT`;
+- l'attivazione richiede conferma esplicita, migration remote applicata e
+  verifica manuale su shop pilota.
 
 La preview import resta bloccata finché non sono disponibili:
 
