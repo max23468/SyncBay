@@ -95,7 +95,6 @@ export function getImportPreviewValidationRules() {
 function buildPreviewItem(candidate: ImportPreviewListingCandidate): ImportPreviewItem {
   const issues = getPreviewIssues(candidate);
   const hasErrors = issues.some((issue) => issue.severity === "error");
-  const hasWarnings = issues.some((issue) => issue.severity === "warning");
 
   return {
     itemId: candidate.itemId,
@@ -107,7 +106,7 @@ function buildPreviewItem(candidate: ImportPreviewListingCandidate): ImportPrevi
       sku: normalizeText(candidate.sku),
       title: normalizeText(candidate.title) ?? "Titolo non disponibile",
     },
-    status: hasErrors ? "error" : hasWarnings ? "skipped" : "importable",
+    status: hasErrors ? "error" : "importable",
   };
 }
 

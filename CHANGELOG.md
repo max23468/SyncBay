@@ -15,6 +15,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Correzioni
 
 - La pagina import preview ora mostra un blocco guidato se lo shop non ha ancora concesso `read_locations`, invece di fallire con errore generico.
+- I listing con soli warning restano importabili nella preview dry-run; i warning vengono conteggiati senza bloccare l'import.
 
 ## [0.3.0] — 2026-05-10
 
