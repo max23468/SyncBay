@@ -258,6 +258,30 @@ export async function updateDefaultShopifyLocation(
   return selectedLocation;
 }
 
+export async function recordShopifyLocationRenamed(
+  session: ShopifySessionLike,
+  input: {
+    locationGid: string;
+    locationName: string;
+    previousLocationName: string;
+  },
+) {
+  const shop = await ensureShopForSession(session);
+
+  await prisma.auditLog.create({
+    data: {
+      details: {
+        locationGid: input.locationGid,
+        locationName: input.locationName,
+        previousLocationName: input.previousLocationName,
+      },
+      message: `Location Shopify rinominata: ${input.locationName}.`,
+      shopId: shop.id,
+      type: AuditEventType.CONNECTION_CHECK,
+    },
+  });
+}
+
 export async function markShopUninstalled(shopDomain: string) {
   const shop = await prisma.shop.upsert({
     where: { shopDomain },

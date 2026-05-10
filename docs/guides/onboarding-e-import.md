@@ -42,7 +42,11 @@ wizard:
 
 - legge le location Shopify via Admin GraphQL;
 - permette di salvare una location Shopify predefinita;
+- permette di rinominare la location selezionata quando lo shop ha riapprovato
+  lo scope `write_locations`;
 - mostra una preview mock con dati fittizi finché manca il keyset eBay;
+- rende la preview mock usabile senza collegamenti esterni reali, mantenendo
+  ogni scrittura Shopify dietro conferma;
 - mostra default import e sequenza di preview prevista;
 - mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
   successive;
@@ -66,6 +70,11 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   creerà prodotti Shopify in stato `DRAFT`;
 - l'attivazione richiede conferma esplicita, migration remote applicata e
   verifica manuale su shop pilota.
+
+Smoke UI locale:
+
+- `npm run smoke:ui` verifica che dashboard, preview mock e gestione location
+  restino presenti nelle superfici React Router principali.
 
 La preview import resta bloccata finché non sono disponibili:
 
