@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.2.0] — 2026-05-10
+
+### Novità
+
+- Aggiunta readiness dashboard per Shopify, Supabase, Vercel, eBay, privacy e import preview.
+- Aggiunto endpoint preparatorio `/webhooks/ebay/account-deletion` con challenge response per eBay marketplace account deletion.
+
+### Sotto il cofano
+
+- Documentato che le notifiche account deletion restano disabilitate finché non sono pronte verifica firma e cancellazione dati.
+- Consolidati i default onboarding/import preview e lo stato Shopify/Supabase/Vercel nella dashboard embedded.
+- Corretto `npm run start` per trovare il server entrypoint generato dal preset Vercel/React Router.
+
 ## [0.1.6] — 2026-05-10
 
 ### Sotto il cofano
@@ -85,6 +98,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.2.0]: #020--2026-05-10
 [0.1.6]: #016--2026-05-10
 [0.1.5]: #015--2026-05-10
 [0.1.4]: #014--2026-05-10

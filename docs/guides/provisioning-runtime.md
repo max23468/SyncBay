@@ -33,6 +33,7 @@ Note:
 - Esiste un deployment production Vercel, ma non è ancora una release pubblica Shopify App Store.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay includono un RuName production SyncBay predisposto sul keyset provvisorio FiscalBay, ma OAuth non deve essere abilitato finché non arriva il keyset dedicato SyncBay.
+- Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta `false`.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 

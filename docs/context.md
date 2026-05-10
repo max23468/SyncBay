@@ -55,6 +55,7 @@ Provisioning minimo:
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
 - Vercel production attuale: `https://syncbay.vercel.app`, ultimo deployment `READY`.
 - eBay production RuName: predisposto negli env senza OAuth sul keyset provvisorio FiscalBay; non abilitarlo finché non arriva il keyset dedicato SyncBay.
+- eBay account deletion: endpoint preparatorio `/webhooks/ebay/account-deletion`; challenge GET implementata, POST notifiche disabilitato finché non esiste verifica firma/cancellazione dati.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Comandi runtime

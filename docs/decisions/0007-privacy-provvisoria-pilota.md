@@ -15,6 +15,7 @@ Vincoli:
 - non inserire segreti, token o dati reali nel repository;
 - non promettere cifratura non ancora implementata;
 - non attivare OAuth eBay sul keyset FiscalBay;
+- non abilitare notifiche account deletion reali prima di verifica firma e cancellazione dati;
 - sostituire questa policy prima di una beta pubblica, billing o Shopify App Store.
 
 ## Decisione
@@ -32,6 +33,16 @@ La sezione sicurezza deve restare aderente al runtime corrente:
 - i segreti non vengono salvati nel repository;
 - i token eBay persistiti da SyncBay vengono cifrati applicativamente;
 - i token Shopify gestiti dallo storage sessioni del template Shopify non devono essere descritti come già cifrati applicativamente finché non viene modificato lo storage.
+
+L'endpoint preparatorio per marketplace account deletion è:
+
+```text
+/webhooks/ebay/account-deletion
+```
+
+La challenge `GET ?challenge_code=...` è supportata. Le notifiche `POST` restano
+disabilitate finché non vengono completate verifica firma e cancellazione o
+anonimizzazione dei dati eBay.
 
 ## Conseguenze
 

@@ -134,6 +134,7 @@ Valori previsti:
 | Marketplace | `EBAY_MARKETPLACE_ID=EBAY_IT` |
 | Accept URL | `EBAY_OAUTH_ACCEPT_URL` |
 | Reject URL | `EBAY_OAUTH_REJECT_URL` |
+| Flag abilitazione OAuth | `EBAY_OAUTH_ENABLED=false` finché si usa keyset provvisorio FiscalBay |
 
 Endpoint token:
 
@@ -171,11 +172,17 @@ Requisiti:
 - validazione delle notifiche ricevute;
 - alternativa solo se eBay consente opt-out per il caso specifico.
 
-Endpoint provvisorio futuro:
+Endpoint predisposto:
 
 ```text
-https://<syncbay-vercel-host>/webhooks/ebay/account-deletion
+https://syncbay.vercel.app/webhooks/ebay/account-deletion
 ```
+
+Stato implementazione:
+
+- `GET ?challenge_code=...` calcola la `challengeResponse` richiesta da eBay usando `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` e `EBAY_ACCOUNT_DELETION_ENDPOINT_URL`.
+- `POST` resta disabilitato finché `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` non viene impostato a `true`.
+- Non abilitare notifiche reali prima di verifica firma notifiche e cancellazione/anonimizzazione dati eBay.
 
 ## Dati che il maintainer deve fornire
 

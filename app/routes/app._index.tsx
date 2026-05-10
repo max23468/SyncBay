@@ -14,7 +14,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function Index() {
   const dashboard = useLoaderData<typeof loader>();
   const ebayStatus = dashboard.ebay.oauthReady
-    ? "Pronta per OAuth"
+    ? dashboard.ebay.oauthStatus
     : "In attesa configurazione";
   const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
   const lastJobs = dashboard.sync.lastJobs;
@@ -26,26 +26,80 @@ export default function Index() {
           Shop collegato: {dashboard.shop.domain}. Fase: custom app pilota.
         </s-paragraph>
         <s-unordered-list>
-          <s-list-item>Shopify: collegato</s-list-item>
+          {dashboard.readiness.map((item) => (
+            <s-list-item key={item.label}>
+              {item.label}: {item.status} - {item.detail}
+            </s-list-item>
+          ))}
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="Shopify">
+        <s-unordered-list>
+          <s-list-item>Installazione: collegata</s-list-item>
+          <s-list-item>
+            Scope richiesti: {dashboard.shopify.configuredScopes.join(", ")}
+          </s-list-item>
+          <s-list-item>
+            Scope mancanti:{" "}
+            {dashboard.shopify.missingScopes.length > 0
+              ? dashboard.shopify.missingScopes.join(", ")
+              : "nessuno"}
+          </s-list-item>
+          <s-list-item>
+            Webhook pilota: {dashboard.shopify.webhookTopics.join(", ")}
+          </s-list-item>
+        </s-unordered-list>
+      </s-section>
+
+      <s-section heading="eBay e privacy">
+        <s-unordered-list>
           <s-list-item>
             eBay {dashboard.ebay.marketplaceId}: {dashboard.ebay.status}
           </s-list-item>
           <s-list-item>OAuth eBay: {ebayStatus}</s-list-item>
+          <s-list-item>
+            Account deletion endpoint:{" "}
+            {dashboard.ebay.accountDeletion.endpointConfigured
+              ? "predisposto"
+              : "da configurare"}
+          </s-list-item>
+          <s-list-item>
+            Notifiche account deletion:{" "}
+            {dashboard.ebay.accountDeletion.notificationsEnabled
+              ? "abilitate"
+              : "non abilitate"}
+          </s-list-item>
           <s-list-item>Sync catalogo: {syncStatus}</s-list-item>
         </s-unordered-list>
       </s-section>
 
-      <s-section heading="Prossime azioni">
+      <s-section heading="Onboarding e preview">
         <s-unordered-list>
           {dashboard.ebay.missingRequirements.length > 0 ? (
             <s-list-item>
               Completa: {dashboard.ebay.missingRequirements.join(", ")}.
             </s-list-item>
+          ) : !dashboard.ebay.oauthEnabled ? (
+            <s-list-item>
+              Attendi il keyset eBay dedicato prima di testare OAuth.
+            </s-list-item>
           ) : (
             <s-list-item>Avvia connessione OAuth eBay.</s-list-item>
           )}
           <s-list-item>Conferma location Shopify predefinita.</s-list-item>
-          <s-list-item>Prepara preview import, senza sync automatico.</s-list-item>
+          <s-list-item>
+            Default prodotti: {dashboard.onboarding.defaults.productStatus}
+          </s-list-item>
+          <s-list-item>
+            Default descrizioni: {dashboard.onboarding.defaults.descriptionMode}
+          </s-list-item>
+          <s-list-item>
+            Preview import:{" "}
+            {dashboard.importPreview.blockers.length > 0
+              ? dashboard.importPreview.blockers.join(", ")
+              : "pronta"}
+          </s-list-item>
         </s-unordered-list>
       </s-section>
 
@@ -84,7 +138,17 @@ export default function Index() {
             Target sync: {dashboard.shop.syncTargetSeconds} secondi
           </s-list-item>
           <s-list-item>Storage sessioni e dominio: Prisma</s-list-item>
-          <s-list-item>Queue/Cron: Supabase predisposto</s-list-item>
+          <s-list-item>
+            Queue/Cron:{" "}
+            {dashboard.supabase.queueProviderReady &&
+            dashboard.supabase.schedulerProviderReady
+              ? "Supabase predisposto"
+              : "da allineare"}
+          </s-list-item>
+          <s-list-item>
+            Storage staging: {dashboard.supabase.storageBucket}
+          </s-list-item>
+          <s-list-item>URL pubblico: {dashboard.vercel.publicUrl}</s-list-item>
           <s-list-item>Osservabilità: Vercel Analytics e Speed Insights</s-list-item>
           <s-list-item>Versione app: {APP_VERSION}</s-list-item>
         </s-unordered-list>
