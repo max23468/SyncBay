@@ -37,6 +37,15 @@ La dashboard embedded mostra già una readiness operativa per:
 - endpoint account deletion predisposto ma notifiche reali non abilitate;
 - default import e blocker della preview.
 
+La pagina embedded `/app/import-preview` aggiunge il primo passo operativo del
+wizard:
+
+- legge le location Shopify via Admin GraphQL;
+- permette di salvare una location Shopify predefinita;
+- mostra default import e sequenza di preview prevista;
+- mantiene il dry-run bloccato finché mancano account eBay collegato e lettura
+  listing eBay.
+
 La preview import resta bloccata finché non sono disponibili:
 
 - account eBay collegato via OAuth;

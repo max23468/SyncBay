@@ -21,6 +21,13 @@ interface WebhookRecordInput {
   webhookId?: string | null;
 }
 
+interface ShopifyLocationInput {
+  fulfillsOnlineOrders: boolean;
+  id: string;
+  isActive: boolean;
+  name: string;
+}
+
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
@@ -67,6 +74,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
   const importPreview = getImportPreviewReadiness({
     ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    listingReaderAvailable: false,
   });
   const readiness = [
     shopifyReadiness.summary,
@@ -89,6 +97,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     shopify: {
       connected: true,
       configuredScopes: getConfiguredShopifyScopes(),
+      missingConfiguredScopes: shopifyReadiness.missingConfiguredScopes,
       missingScopes: shopifyReadiness.missingScopes,
       scopes: shopifyScopes,
       webhookTopics: SHOPIFY_WEBHOOK_TOPICS,
@@ -124,6 +133,38 @@ export async function getDashboardState(session: ShopifySessionLike) {
   };
 }
 
+export async function getImportWizardState(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const ebayConnection = await prisma.ebayConnection.findUnique({
+    where: {
+      shopId_marketplaceId: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+      },
+    },
+  });
+  const ebayConnected = ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const importPreview = getImportPreviewReadiness({
+    ebayConnected,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    listingReaderAvailable: false,
+  });
+
+  return {
+    ebay: {
+      marketplaceId: getEbayMarketplaceId(),
+      status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
+    },
+    importPreview,
+    onboarding: getOnboardingReadiness(),
+    previewPlan: getImportPreviewPlan(),
+    shop: {
+      defaultLocationGid: shop.defaultLocationGid,
+      domain: shop.shopDomain,
+    },
+  };
+}
+
 export async function ensureShopForSession(session: ShopifySessionLike) {
   return prisma.shop.upsert({
     where: { shopDomain: session.shop },
@@ -145,6 +186,46 @@ export async function ensureShopForSession(session: ShopifySessionLike) {
       uninstalledAt: null,
     },
   });
+}
+
+export async function updateDefaultShopifyLocation(
+  session: ShopifySessionLike,
+  locationGid: string,
+  availableLocations: ShopifyLocationInput[],
+) {
+  const selectedLocation = availableLocations.find(
+    (location) =>
+      location.id === locationGid &&
+      location.isActive &&
+      location.fulfillsOnlineOrders,
+  );
+
+  if (!selectedLocation) {
+    throw new Response(
+      "Scegli una location Shopify attiva e abilitata agli ordini online.",
+      { status: 400 },
+    );
+  }
+
+  const shop = await ensureShopForSession(session);
+  await prisma.shop.update({
+    data: { defaultLocationGid: selectedLocation.id },
+    where: { id: shop.id },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      details: {
+        locationGid: selectedLocation.id,
+        locationName: selectedLocation.name,
+      },
+      message: `Location Shopify predefinita impostata: ${selectedLocation.name}.`,
+      shopId: shop.id,
+      type: AuditEventType.CONNECTION_CHECK,
+    },
+  });
+
+  return selectedLocation;
 }
 
 export async function markShopUninstalled(shopDomain: string) {
@@ -332,18 +413,23 @@ function getSyncTargetSeconds() {
 function getShopifyReadiness(scopes: string[]) {
   const configuredScopes = getConfiguredShopifyScopes();
   const missingScopes = REQUIRED_SHOPIFY_SCOPES.filter(
-    (scope) => !configuredScopes.includes(scope) && !scopes.includes(scope),
+    (scope) => !scopes.includes(scope),
   );
+  const missingConfiguredScopes = REQUIRED_SHOPIFY_SCOPES.filter(
+    (scope) => !configuredScopes.includes(scope),
+  );
+  const ready = missingScopes.length === 0 && missingConfiguredScopes.length === 0;
 
   return {
+    missingConfiguredScopes,
     missingScopes,
     summary: {
-      detail:
-        missingScopes.length === 0
-          ? "Installazione, scope minimi e webhook pilota predisposti."
-          : `Mancano scope Shopify: ${missingScopes.join(", ")}.`,
+      detail: getShopifyReadinessDetail({
+        missingConfiguredScopes,
+        missingScopes,
+      }),
       label: "Shopify",
-      status: missingScopes.length === 0 ? "pronto" : "da completare",
+      status: ready ? "pronto" : "da completare",
     },
   };
 }
@@ -371,20 +457,34 @@ function getSupabaseReadiness() {
 }
 
 function getVercelReadiness() {
-  const appUrl = process.env.SHOPIFY_APP_URL;
-  const publicUrl = appUrl || "https://syncbay.vercel.app";
-  const ready = publicUrl.startsWith("https://");
+  const publicUrl = process.env.SHOPIFY_APP_URL?.trim() || null;
+  const ready = Boolean(publicUrl?.startsWith("https://"));
 
   return {
     publicUrl,
     summary: {
       detail: ready
         ? "URL HTTPS stabile per app, callback e privacy."
-        : "URL pubblico HTTPS mancante.",
+        : "SHOPIFY_APP_URL HTTPS mancante nel runtime.",
       label: "Vercel",
       status: ready ? "pronto" : "da completare",
     },
   };
+}
+
+function getShopifyReadinessDetail(input: {
+  missingConfiguredScopes: string[];
+  missingScopes: string[];
+}) {
+  if (input.missingScopes.length > 0) {
+    return `Scope non concessi dalla sessione Shopify: ${input.missingScopes.join(", ")}.`;
+  }
+
+  if (input.missingConfiguredScopes.length > 0) {
+    return `Scope mancanti nella configurazione app: ${input.missingConfiguredScopes.join(", ")}.`;
+  }
+
+  return "Installazione, scope minimi concessi e webhook pilota predisposti.";
 }
 
 function getComplianceReadiness() {
@@ -427,10 +527,14 @@ function getOnboardingReadiness() {
 function getImportPreviewReadiness(input: {
   ebayConnected: boolean;
   hasDefaultLocation: boolean;
+  listingReaderAvailable?: boolean;
 }) {
   const blockers = [
     !input.ebayConnected ? "account eBay non collegato" : null,
     !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+    input.listingReaderAvailable === false
+      ? "lettura listing eBay non ancora implementata"
+      : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
   return {
@@ -448,6 +552,22 @@ function getImportPreviewReadiness(input: {
       label: "Import preview",
       status: blockers.length === 0 ? "pronto" : "bloccato",
     },
+  };
+}
+
+function getImportPreviewPlan() {
+  return {
+    limits: {
+      maxProducts: 2000,
+      marketplace: getEbayMarketplaceId(),
+    },
+    steps: [
+      "Leggere listing attivi eBay.it",
+      "Validare SKU, varianti, immagini e disponibilità",
+      "Pulire descrizioni e rimuovere template eBay",
+      "Mostrare prodotti importabili, saltati ed errori",
+      "Creare bozze Shopify solo dopo conferma",
+    ],
   };
 }
 

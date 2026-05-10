@@ -47,6 +47,12 @@ export default function Index() {
               : "nessuno"}
           </s-list-item>
           <s-list-item>
+            Scope mancanti nella configurazione app:{" "}
+            {dashboard.shopify.missingConfiguredScopes.length > 0
+              ? dashboard.shopify.missingConfiguredScopes.join(", ")
+              : "nessuno"}
+          </s-list-item>
+          <s-list-item>
             Webhook pilota: {dashboard.shopify.webhookTopics.join(", ")}
           </s-list-item>
         </s-unordered-list>
@@ -101,6 +107,7 @@ export default function Index() {
               : "pronta"}
           </s-list-item>
         </s-unordered-list>
+        <s-button href="/app/import-preview">Apri preview import</s-button>
       </s-section>
 
       <s-section heading="Attività recenti">
@@ -148,7 +155,9 @@ export default function Index() {
           <s-list-item>
             Storage staging: {dashboard.supabase.storageBucket}
           </s-list-item>
-          <s-list-item>URL pubblico: {dashboard.vercel.publicUrl}</s-list-item>
+          <s-list-item>
+            URL pubblico: {dashboard.vercel.publicUrl ?? "non configurato"}
+          </s-list-item>
           <s-list-item>Osservabilità: Vercel Analytics e Speed Insights</s-list-item>
           <s-list-item>Versione app: {APP_VERSION}</s-list-item>
         </s-unordered-list>

@@ -33,7 +33,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e flusso OAuth eBay lato app. La preview Shopify Admin è stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale, schema iniziale per shop/account eBay/job/audit, webhook Shopify placeholder e flusso OAuth eBay lato app. La preview Shopify Admin è stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
 
 ## Runtime deciso
 

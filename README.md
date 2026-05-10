@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, modello dati iniziale per shop/account eBay/job/audit, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale, modello dati iniziale per shop/account eBay/job/audit, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo.
 
 ## Direzione prodotto
 
@@ -52,6 +52,7 @@ Provisioning minimo creato:
 ## Endpoint scaffold SyncBay
 
 - Dashboard embedded: `/app`
+- Wizard import preview: `/app/import-preview`
 - Avvio OAuth eBay: `/auth/ebay/start`
 - Callback OAuth eBay: `/auth/ebay/callback`
 - Endpoint eBay account deletion: `/webhooks/ebay/account-deletion`
@@ -86,4 +87,4 @@ Provisioning minimo creato:
 
 1. Attendere il keyset eBay dedicato SyncBay. Il RuName production e le callback sono predisposti, ma OAuth resta disabilitato sul keyset provvisorio FiscalBay per non rischiare FiscalBay.
 2. Spostare `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` ed `EBAY_RU_NAME` sul keyset dedicato, poi verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
-3. Preparare preview import catalogo eBay -> Shopify senza sync automatico.
+3. Implementare lettura listing eBay per alimentare la preview import senza sync automatico.
