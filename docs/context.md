@@ -54,7 +54,7 @@ Provisioning minimo:
 - Vercel project: `matteos-projects-9226d217/syncbay`.
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
 - Vercel production attuale: `https://syncbay.vercel.app`, ultimo deployment `READY`.
-- eBay production RuName: predisposto negli env senza OAuth sul keyset provvisorio FiscalBay; non abilitarlo finche non arriva il keyset dedicato SyncBay.
+- eBay production RuName: predisposto negli env senza OAuth sul keyset provvisorio FiscalBay; non abilitarlo finché non arriva il keyset dedicato SyncBay.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Comandi runtime
