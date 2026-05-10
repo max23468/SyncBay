@@ -95,6 +95,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     shopify: {
       connected: true,
       configuredScopes: getConfiguredShopifyScopes(),
+      missingConfiguredScopes: shopifyReadiness.missingConfiguredScopes,
       missingScopes: shopifyReadiness.missingScopes,
       scopes: shopifyScopes,
       webhookTopics: SHOPIFY_WEBHOOK_TOPICS,
@@ -404,18 +405,23 @@ function getSyncTargetSeconds() {
 function getShopifyReadiness(scopes: string[]) {
   const configuredScopes = getConfiguredShopifyScopes();
   const missingScopes = REQUIRED_SHOPIFY_SCOPES.filter(
-    (scope) => !configuredScopes.includes(scope) && !scopes.includes(scope),
+    (scope) => !scopes.includes(scope),
   );
+  const missingConfiguredScopes = REQUIRED_SHOPIFY_SCOPES.filter(
+    (scope) => !configuredScopes.includes(scope),
+  );
+  const ready = missingScopes.length === 0 && missingConfiguredScopes.length === 0;
 
   return {
+    missingConfiguredScopes,
     missingScopes,
     summary: {
-      detail:
-        missingScopes.length === 0
-          ? "Installazione, scope minimi e webhook pilota predisposti."
-          : `Mancano scope Shopify: ${missingScopes.join(", ")}.`,
+      detail: getShopifyReadinessDetail({
+        missingConfiguredScopes,
+        missingScopes,
+      }),
       label: "Shopify",
-      status: missingScopes.length === 0 ? "pronto" : "da completare",
+      status: ready ? "pronto" : "da completare",
     },
   };
 }
@@ -443,20 +449,34 @@ function getSupabaseReadiness() {
 }
 
 function getVercelReadiness() {
-  const appUrl = process.env.SHOPIFY_APP_URL;
-  const publicUrl = appUrl || "https://syncbay.vercel.app";
-  const ready = publicUrl.startsWith("https://");
+  const publicUrl = process.env.SHOPIFY_APP_URL?.trim() || null;
+  const ready = Boolean(publicUrl?.startsWith("https://"));
 
   return {
     publicUrl,
     summary: {
       detail: ready
         ? "URL HTTPS stabile per app, callback e privacy."
-        : "URL pubblico HTTPS mancante.",
+        : "SHOPIFY_APP_URL HTTPS mancante nel runtime.",
       label: "Vercel",
       status: ready ? "pronto" : "da completare",
     },
   };
+}
+
+function getShopifyReadinessDetail(input: {
+  missingConfiguredScopes: string[];
+  missingScopes: string[];
+}) {
+  if (input.missingScopes.length > 0) {
+    return `Scope non concessi dalla sessione Shopify: ${input.missingScopes.join(", ")}.`;
+  }
+
+  if (input.missingConfiguredScopes.length > 0) {
+    return `Scope mancanti nella configurazione app: ${input.missingConfiguredScopes.join(", ")}.`;
+  }
+
+  return "Installazione, scope minimi concessi e webhook pilota predisposti.";
 }
 
 function getComplianceReadiness() {

@@ -12,6 +12,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Aggiunto il wizard iniziale `/app/import-preview` per salvare la location Shopify predefinita e mostrare il dry-run import bloccato in modo esplicito.
 
+### Correzioni
+
+- Rafforzata la readiness dashboard: gli scope Shopify concessi dalla sessione sono verificati separatamente dagli scope configurati, e Vercel non risulta pronto se `SHOPIFY_APP_URL` manca.
+
 ## [0.2.0] — 2026-05-10
 
 ### Novità
