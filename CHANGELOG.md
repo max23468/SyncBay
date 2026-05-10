@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.1.3] — 2026-05-10
+
+### Correzioni
+
+- Configurato il preset ufficiale Vercel per React Router, così le route pubbliche e server-side vengono servite correttamente su Vercel.
+
 ## [0.1.2] — 2026-05-10
 
 ### Sotto il cofano
@@ -55,6 +61,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.3]: #013--2026-05-10
 [0.1.2]: #012--2026-05-10
 [0.1.1]: #011--2026-05-10
 [0.1.0]: #010--2026-05-10
