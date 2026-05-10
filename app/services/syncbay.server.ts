@@ -22,7 +22,9 @@ interface WebhookRecordInput {
 }
 
 interface ShopifyLocationInput {
+  fulfillsOnlineOrders: boolean;
   id: string;
+  isActive: boolean;
   name: string;
 }
 
@@ -197,6 +199,13 @@ export async function updateDefaultShopifyLocation(
 
   if (!selectedLocation) {
     throw new Response("Location Shopify non valida.", { status: 400 });
+  }
+
+  if (!selectedLocation.isActive || !selectedLocation.fulfillsOnlineOrders) {
+    throw new Response(
+      "Scegli una location Shopify attiva e abilitata agli ordini online.",
+      { status: 400 },
+    );
   }
 
   const shop = await ensureShopForSession(session);

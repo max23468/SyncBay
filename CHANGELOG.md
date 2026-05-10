@@ -15,6 +15,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Correzioni
 
 - Rafforzata la readiness dashboard: gli scope Shopify concessi dalla sessione sono verificati separatamente dagli scope configurati, e Vercel non risulta pronto se `SHOPIFY_APP_URL` manca.
+- Impedito il salvataggio di una location Shopify non attiva o non abilitata agli ordini online come location predefinita.
 
 ## [0.2.0] — 2026-05-10
 
