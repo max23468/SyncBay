@@ -34,6 +34,5 @@ api_version = "2026-04"
   topics = [ "inventory_levels/update" ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
 dev_store_url = "syncbay-dev.myshopify.com"

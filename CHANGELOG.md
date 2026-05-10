@@ -9,6 +9,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Sotto il cofano
 
 - Applicate su Supabase le migration remote per primitive runtime e mapping/snapshot/conflitti, mantenendo disabilitato l'import Shopify draft.
+- Rilasciata la configurazione Shopify app `syncbay-2` con URL Vercel e rimossa l'opzione CLI non più supportata `include_config_on_deploy`.
+- Evitato il falso blocco readiness quando Shopify restituisce scope `write_*` che coprono anche la lettura richiesta dalla diagnostica.
 
 ## [0.5.0] — 2026-05-10
 

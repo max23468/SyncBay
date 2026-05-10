@@ -442,10 +442,10 @@ function getSyncTargetSeconds() {
 function getShopifyReadiness(scopes: string[]) {
   const configuredScopes = getConfiguredShopifyScopes();
   const missingScopes = REQUIRED_SHOPIFY_SCOPES.filter(
-    (scope) => !scopes.includes(scope),
+    (scope) => !hasEffectiveShopifyScope(scopes, scope),
   );
   const missingConfiguredScopes = REQUIRED_SHOPIFY_SCOPES.filter(
-    (scope) => !configuredScopes.includes(scope),
+    (scope) => !hasEffectiveShopifyScope(configuredScopes, scope),
   );
   const ready = missingScopes.length === 0 && missingConfiguredScopes.length === 0;
 
@@ -685,6 +685,15 @@ function splitScopes(scopes?: string | null) {
         .map((scope) => scope.trim())
         .filter(Boolean)
     : [];
+}
+
+function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
+  if (scopes.includes(requiredScope)) return true;
+
+  if (requiredScope === "read_products") return scopes.includes("write_products");
+  if (requiredScope === "read_inventory") return scopes.includes("write_inventory");
+
+  return false;
 }
 
 function hasRuntimeValue(value: string | undefined) {
