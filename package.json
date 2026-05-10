@@ -74,6 +74,7 @@
     "@shopify/plugin-cloudflare"
   ],
   "overrides": {
+    "ajv@8.6.3": "8.20.0",
     "p-map": "^4.0.0"
   },
   "author": "Matteo"

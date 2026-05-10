@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.1.6] — 2026-05-10
+
+### Sotto il cofano
+
+- Risolto l'alert Dependabot su `ajv` forzando la dipendenza transitive vulnerabile di `@vercel/static-config` a una versione patchata.
+
 ## [0.1.5] — 2026-05-10
 
 ### Correzioni
@@ -79,6 +85,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.1.6]: #016--2026-05-10
 [0.1.5]: #015--2026-05-10
 [0.1.4]: #014--2026-05-10
 [0.1.3]: #013--2026-05-10
