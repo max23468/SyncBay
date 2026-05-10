@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Aggiunta gestione Shopify della location selezionata nella preview import, con rinomina tramite `write_locations`.
+- Rifinita la preview mock per renderla verificabile senza collegamenti esterni reali e con messaggi più espliciti su validazioni e scritture Shopify.
+
 ### Sotto il cofano
 
 - Applicate su Supabase le migration remote per primitive runtime e mapping/snapshot/conflitti, mantenendo disabilitato l'import Shopify draft.
@@ -13,6 +18,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Evitato il falso blocco readiness quando Shopify restituisce scope `write_*` che coprono anche la lettura richiesta dalla diagnostica.
 - Preparata l'azione controllata per creare bozze Shopify da preview mock, ancora bloccata dal feature flag `SYNCBAY_DRAFT_IMPORT_ENABLED`.
 - Aggiunto `write_locations` agli scope Shopify pilota per consentire future modifiche controllate alle location.
+- Aggiunto `npm run smoke:ui` come smoke test leggero per dashboard, preview mock e gestione location.
 
 ## [0.5.0] — 2026-05-10
 
