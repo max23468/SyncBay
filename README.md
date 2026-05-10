@@ -54,6 +54,7 @@ Provisioning minimo creato:
 - Dashboard embedded: `/app`
 - Avvio OAuth eBay: `/auth/ebay/start`
 - Callback OAuth eBay: `/auth/ebay/callback`
+- Endpoint eBay account deletion: `/webhooks/ebay/account-deletion`
 - Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
 - Webhook Shopify preparato ma non ancora configurato: `/webhooks/orders/paid`, in attesa della configurazione Shopify per protected customer data
 

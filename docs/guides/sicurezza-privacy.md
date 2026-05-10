@@ -18,7 +18,8 @@ SyncBay potrà trattare:
 
 - Non committare segreti o `.env` reali.
 - Non loggare token o payload sensibili.
-- Token Shopify/eBay cifrati a riposo.
+- Token eBay persistiti da SyncBay cifrati a riposo.
+- Token Shopify ancora gestiti dallo storage sessioni del template Shopify; prima della beta reale va deciso se sostituire o cifrare quello storage.
 - Chiavi di cifratura fuori repo.
 - Rotazione token da documentare prima della beta reale.
 
@@ -39,6 +40,8 @@ Da implementare prima di beta reale:
 - Shopify GDPR webhook dove richiesti;
 - cancellazione o anonimizzazione dati shop su richiesta;
 - eBay marketplace account deletion notification oppure opt-out corretto;
+- endpoint eBay account deletion predisposto: `/webhooks/ebay/account-deletion`;
+- verifica firma delle notifiche e cancellazione dati eBay prima di abilitare `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED=true`;
 - privacy policy per custom app e futura app pubblica;
 - audit log connect/disconnect/revoca/refresh fallito.
 

@@ -27,6 +27,22 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e 
 8. Conferma import.
 9. Vede avanzamento job e risultati.
 
+## Stato preparatorio implementato
+
+La dashboard embedded mostra già una readiness operativa per:
+
+- connessione Shopify, scope e webhook pilota;
+- runtime Vercel/Supabase;
+- eBay OAuth predisposto ma bloccato fino al keyset dedicato;
+- endpoint account deletion predisposto ma notifiche reali non abilitate;
+- default import e blocker della preview.
+
+La preview import resta bloccata finché non sono disponibili:
+
+- account eBay collegato via OAuth;
+- location Shopify predefinita;
+- logica di lettura listing eBay.
+
 ## Default consigliati
 
 - Prodotti iniziali in `draft`.
@@ -47,4 +63,3 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e 
 - errore Shopify media/prodotto.
 
 Ogni errore deve avere impatto e prossima azione consigliata.
-

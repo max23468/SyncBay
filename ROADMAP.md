@@ -51,8 +51,8 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
 | In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay; in attesa keyset dedicato per verifica end-to-end |
-| Da fare | Onboarding guidato | Shopify, eBay, location, stato prodotti, immagini, descrizioni |
-| Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify |
+| In corso | Onboarding guidato | Readiness dashboard e default preview predisposti; restano scelta location e flusso wizard dedicato |
+| Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da OAuth eBay e lettura listing |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
 | Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
@@ -78,7 +78,7 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | --- | --- | --- |
 | Da fare | Cifratura token a riposo | Shopify/eBay refresh token |
 | Da fare | Shopify GDPR webhook | Disinstallazione, cancellazione dati shop/customer dove richiesto |
-| Da fare | eBay marketplace account deletion | Subscription o opt-out corretto |
+| In corso | eBay marketplace account deletion | Challenge endpoint predisposto; notifiche POST disabilitate finché mancano verifica firma e cancellazione dati |
 | Da fare | Audit log minimo | Connect, disconnect, refresh fallito, sync critici |
 | Da fare | Rate limit e retry policy | Provider API e job queue |
 | Da fare | Rollback import | Archiviare/ripristinare sessioni import |

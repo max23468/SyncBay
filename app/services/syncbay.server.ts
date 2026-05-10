@@ -24,6 +24,19 @@ interface WebhookRecordInput {
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
+const REQUIRED_SHOPIFY_SCOPES = [
+  "read_products",
+  "write_products",
+  "read_inventory",
+  "write_inventory",
+  "read_locations",
+];
+const SHOPIFY_WEBHOOK_TOPICS = [
+  "app/uninstalled",
+  "app/scopes_update",
+  "products/update",
+  "inventory_levels/update",
+];
 
 export async function getDashboardState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
@@ -46,8 +59,26 @@ export async function getDashboardState(session: ShopifySessionLike) {
     take: 5,
   });
   const ebayRuntime = getEbayRuntimeReadiness();
+  const shopifyScopes = splitScopes(shop.shopifyScopes);
+  const shopifyReadiness = getShopifyReadiness(shopifyScopes);
+  const supabaseReadiness = getSupabaseReadiness();
+  const vercelReadiness = getVercelReadiness();
+  const complianceReadiness = getComplianceReadiness();
+  const importPreview = getImportPreviewReadiness({
+    ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+  });
+  const readiness = [
+    shopifyReadiness.summary,
+    supabaseReadiness.summary,
+    vercelReadiness.summary,
+    ebayRuntime.summary,
+    complianceReadiness.summary,
+    importPreview.summary,
+  ];
 
   return {
+    readiness,
     shop: {
       domain: shop.shopDomain,
       installationStatus: shop.installationStatus,
@@ -57,16 +88,26 @@ export async function getDashboardState(session: ShopifySessionLike) {
     },
     shopify: {
       connected: true,
-      scopes: splitScopes(shop.shopifyScopes),
+      configuredScopes: getConfiguredShopifyScopes(),
+      missingScopes: shopifyReadiness.missingScopes,
+      scopes: shopifyScopes,
+      webhookTopics: SHOPIFY_WEBHOOK_TOPICS,
     },
     ebay: {
+      accountDeletion: complianceReadiness.accountDeletion,
       environment: ebayRuntime.environment,
       marketplaceId: ebayRuntime.marketplaceId,
+      oauthEnabled: ebayRuntime.oauthEnabled,
       oauthReady: ebayRuntime.ready,
+      oauthStatus: ebayRuntime.oauthStatus,
       missingRequirements: ebayRuntime.missingRequirements,
       status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
       connectedAt: ebayConnection?.connectedAt?.toISOString() ?? null,
     },
+    supabase: supabaseReadiness,
+    vercel: vercelReadiness,
+    onboarding: getOnboardingReadiness(),
+    importPreview,
     sync: {
       pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
       lastJobs: recentJobs.map((job) => ({
@@ -222,11 +263,41 @@ export function getEbayRuntimeReadiness() {
     .filter((requirement) => !hasRuntimeValue(process.env[requirement.envKey]))
     .map((requirement) => requirement.label);
 
+  const oauthEnabled = process.env.EBAY_OAUTH_ENABLED === "true";
+
   return {
     environment: process.env.EBAY_ENVIRONMENT ?? DEFAULT_EBAY_ENVIRONMENT,
     marketplaceId: getEbayMarketplaceId(),
     missingRequirements,
+    oauthEnabled,
+    oauthStatus: oauthEnabled
+      ? "Attivabile"
+      : "Predisposto, OAuth non abilitato sul keyset provvisorio",
     ready: missingRequirements.length === 0,
+    summary: {
+      detail:
+        missingRequirements.length === 0
+          ? "Env OAuth presenti; test end-to-end in attesa del keyset dedicato."
+          : `Mancano ${missingRequirements.length} requisiti OAuth.`,
+      label: "eBay",
+      status: missingRequirements.length === 0 ? "bloccato" : "da completare",
+    },
+  };
+}
+
+export function getAccountDeletionChallengeConfig() {
+  const endpoint = process.env.EBAY_ACCOUNT_DELETION_ENDPOINT_URL;
+  const verificationToken = process.env.EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN;
+
+  return {
+    endpoint,
+    missingRequirements: [
+      !hasRuntimeValue(endpoint) ? "endpoint account deletion eBay" : null,
+      !hasRuntimeValue(verificationToken) ? "verification token account deletion eBay" : null,
+    ].filter((requirement): requirement is string => Boolean(requirement)),
+    notificationsEnabled:
+      process.env.EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED === "true",
+    verificationToken,
   };
 }
 
@@ -256,6 +327,132 @@ function getEbayMarketplaceId() {
 function getSyncTargetSeconds() {
   const parsed = Number.parseInt(process.env.SYNC_POLL_INTERVAL_SECONDS ?? "", 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_SYNC_TARGET_SECONDS;
+}
+
+function getShopifyReadiness(scopes: string[]) {
+  const configuredScopes = getConfiguredShopifyScopes();
+  const missingScopes = REQUIRED_SHOPIFY_SCOPES.filter(
+    (scope) => !configuredScopes.includes(scope) && !scopes.includes(scope),
+  );
+
+  return {
+    missingScopes,
+    summary: {
+      detail:
+        missingScopes.length === 0
+          ? "Installazione, scope minimi e webhook pilota predisposti."
+          : `Mancano scope Shopify: ${missingScopes.join(", ")}.`,
+      label: "Shopify",
+      status: missingScopes.length === 0 ? "pronto" : "da completare",
+    },
+  };
+}
+
+function getSupabaseReadiness() {
+  const queueProviderReady = process.env.JOB_QUEUE_PROVIDER === "supabase_queues";
+  const schedulerProviderReady =
+    process.env.JOB_SCHEDULER_PROVIDER === "supabase_cron";
+  const storageBucket =
+    process.env.SUPABASE_STORAGE_BUCKET ?? "syncbay-import-staging";
+
+  return {
+    queueProviderReady,
+    schedulerProviderReady,
+    storageBucket,
+    summary: {
+      detail:
+        queueProviderReady && schedulerProviderReady
+          ? "Database operativo; queue, cron e storage sono predisposti."
+          : "Provider queue/cron da allineare agli env runtime.",
+      label: "Supabase",
+      status: queueProviderReady && schedulerProviderReady ? "pronto" : "da completare",
+    },
+  };
+}
+
+function getVercelReadiness() {
+  const appUrl = process.env.SHOPIFY_APP_URL;
+  const publicUrl = appUrl || "https://syncbay.vercel.app";
+  const ready = publicUrl.startsWith("https://");
+
+  return {
+    publicUrl,
+    summary: {
+      detail: ready
+        ? "URL HTTPS stabile per app, callback e privacy."
+        : "URL pubblico HTTPS mancante.",
+      label: "Vercel",
+      status: ready ? "pronto" : "da completare",
+    },
+  };
+}
+
+function getComplianceReadiness() {
+  const accountDeletion = getAccountDeletionChallengeConfig();
+  const ready = accountDeletion.missingRequirements.length === 0;
+
+  return {
+    accountDeletion: {
+      endpointConfigured: hasRuntimeValue(accountDeletion.endpoint),
+      missingRequirements: accountDeletion.missingRequirements,
+      notificationsEnabled: accountDeletion.notificationsEnabled,
+    },
+    summary: {
+      detail: ready
+        ? "Endpoint account deletion predisposto; notifiche reali non abilitate."
+        : "Endpoint e verification token account deletion da completare.",
+      label: "Privacy",
+      status: ready ? "bloccato" : "da completare",
+    },
+  };
+}
+
+function getOnboardingReadiness() {
+  return {
+    defaults: {
+      descriptionMode: "HTML pulito senza template",
+      imageImport: "Tutte le immagini",
+      productStatus: "draft",
+    },
+    steps: [
+      "Collega Shopify",
+      "Collega eBay.it",
+      "Scegli location Shopify",
+      "Conferma default import",
+      "Genera preview",
+    ],
+  };
+}
+
+function getImportPreviewReadiness(input: {
+  ebayConnected: boolean;
+  hasDefaultLocation: boolean;
+}) {
+  const blockers = [
+    !input.ebayConnected ? "account eBay non collegato" : null,
+    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+  ].filter((blocker): blocker is string => Boolean(blocker));
+
+  return {
+    blockers,
+    defaults: {
+      descriptionMode: "HTML pulito senza template",
+      imageImport: "Tutte le immagini",
+      productStatus: "draft",
+    },
+    summary: {
+      detail:
+        blockers.length === 0
+          ? "Preview import pronta da costruire sui listing eBay."
+          : `Preview bloccata: ${blockers.join(", ")}.`,
+      label: "Import preview",
+      status: blockers.length === 0 ? "pronto" : "bloccato",
+    },
+  };
+}
+
+function getConfiguredShopifyScopes() {
+  return splitScopes(process.env.SHOPIFY_SCOPES ?? process.env.SCOPES);
 }
 
 function splitScopes(scopes?: string | null) {
