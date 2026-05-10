@@ -124,6 +124,7 @@ Scope iniziali previsti:
 - `read_inventory`
 - `write_inventory`
 - `read_locations`
+- `write_locations`
 - `read_orders` solo quando sarà completata la configurazione Shopify per protected customer data.
 - scope necessari per file/media e webhook, da confermare in fase scaffold in base alla versione API Shopify usata.
 
