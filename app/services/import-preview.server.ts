@@ -84,7 +84,7 @@ export function getMockImportPreview() {
         variantCount: 1,
       },
       {
-        descriptionHtml: "<table><tr><td>Template eBay storico</td></tr></table>",
+        descriptionHtml: "<table><tr><td>Template storico</td></tr></table>",
         imageUrls: [],
         itemId: "mock-ebay-it-1002",
         priceAmount: 24.5,
@@ -137,7 +137,7 @@ export function getImportPreviewValidationRules() {
     },
     {
       code: "missing_images",
-      label: "Listing senza immagini",
+      label: "Elemento senza immagini",
       severity: "warning" satisfies ImportPreviewSeverity,
     },
     {
@@ -185,7 +185,7 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if (!isPositiveNumber(candidate.priceAmount)) {
     issues.push({
       code: "invalid_price",
-      message: "Prezzo eBay assente o non valido.",
+      message: "Prezzo assente o non valido.",
       severity: "error",
     });
   }
@@ -193,7 +193,7 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if (!isNonNegativeInteger(candidate.quantity)) {
     issues.push({
       code: "invalid_quantity",
-      message: "Disponibilità eBay assente o non leggibile.",
+      message: "Disponibilità assente o non leggibile.",
       severity: "error",
     });
   }
@@ -201,7 +201,7 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if ((candidate.imageUrls?.length ?? 0) === 0) {
     issues.push({
       code: "missing_images",
-      message: "Nessuna immagine leggibile dal listing eBay.",
+      message: "Nessuna immagine leggibile per questo elemento.",
       severity: "warning",
     });
   }
@@ -217,7 +217,7 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if (candidate.descriptionHtml && looksLikeTemplate(candidate.descriptionHtml)) {
     issues.push({
       code: "description_cleanup",
-      message: "Descrizione con possibile template eBay da ripulire.",
+      message: "Descrizione con possibile template storico da ripulire.",
       severity: "info",
     });
   }

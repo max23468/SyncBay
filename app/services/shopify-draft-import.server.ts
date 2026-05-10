@@ -53,7 +53,7 @@ export function getDraftImportReadiness(input: {
 export function buildShopifyDraftProductInputs(previewResult: ImportPreviewResult) {
   return getImportablePreviewItems(previewResult).map((item) => ({
     status: "DRAFT",
-    tags: ["SyncBay", "Import eBay"],
+    tags: ["SyncBay", "Import mock"],
     title: item.normalized.title,
   }));
 }
