@@ -12,6 +12,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Aggiunta la base di validazione dry-run per preview import, con conteggi, regole MVP e readiness delle fasi runtime successive.
 
+### Correzioni
+
+- La pagina import preview ora mostra un blocco guidato se lo shop non ha ancora concesso `read_locations`, invece di fallire con errore generico.
+
 ## [0.3.0] — 2026-05-10
 
 ### Novità

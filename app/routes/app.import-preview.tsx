@@ -35,11 +35,12 @@ interface LocationsQueryResponse {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const locations = await fetchShopifyLocations(admin);
+  const locationResult = await fetchShopifyLocations(admin);
   const wizard = await getImportWizardState(session);
 
   return {
-    locations,
+    locationError: locationResult.errorMessage,
+    locations: locationResult.locations,
     wizard,
   };
 };
@@ -48,15 +49,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   const locationGid = String(formData.get("defaultLocationGid") ?? "");
-  const locations = await fetchShopifyLocations(admin);
+  const locationResult = await fetchShopifyLocations(admin);
 
-  await updateDefaultShopifyLocation(session, locationGid, locations);
+  if (locationResult.errorMessage) {
+    return Response.json(
+      {
+        message: locationResult.errorMessage,
+        status: "blocked",
+      },
+      { status: 409 },
+    );
+  }
+
+  await updateDefaultShopifyLocation(session, locationGid, locationResult.locations);
 
   throw redirect("/app/import-preview?updated=location");
 };
 
 export default function ImportPreview() {
-  const { locations, wizard } = useLoaderData<typeof loader>();
+  const { locationError, locations, wizard } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const selectedLocation = locations.find(
@@ -78,7 +89,9 @@ export default function ImportPreview() {
       </s-section>
 
       <s-section heading="Location Shopify">
-        {locations.length > 0 ? (
+        {locationError ? (
+          <s-paragraph>{locationError}</s-paragraph>
+        ) : locations.length > 0 ? (
           <form method="post">
             <label htmlFor="defaultLocationGid">Location predefinita</label>
             <select
@@ -215,8 +228,15 @@ async function fetchShopifyLocations(
   const json = (await response.json()) as LocationsQueryResponse;
 
   if (json.errors) {
-    throw new Response("Location Shopify non leggibili.", { status: 502 });
+    return {
+      errorMessage:
+        "Location Shopify non leggibili. Verifica che l'app sia reinstallata con lo scope read_locations.",
+      locations: [],
+    };
   }
 
-  return json.data?.locations?.nodes ?? [];
+  return {
+    errorMessage: null,
+    locations: json.data?.locations?.nodes ?? [],
+  };
 }
