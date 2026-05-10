@@ -194,14 +194,13 @@ export async function updateDefaultShopifyLocation(
   availableLocations: ShopifyLocationInput[],
 ) {
   const selectedLocation = availableLocations.find(
-    (location) => location.id === locationGid,
+    (location) =>
+      location.id === locationGid &&
+      location.isActive &&
+      location.fulfillsOnlineOrders,
   );
 
   if (!selectedLocation) {
-    throw new Response("Location Shopify non valida.", { status: 400 });
-  }
-
-  if (!selectedLocation.isActive || !selectedLocation.fulfillsOnlineOrders) {
     throw new Response(
       "Scegli una location Shopify attiva e abilitata agli ordini online.",
       { status: 400 },
