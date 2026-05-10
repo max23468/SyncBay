@@ -29,8 +29,8 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 | Fatto | Provisioning minimo runtime | Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, documentati in `docs/guides/provisioning-runtime.md` |
 | Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
 | Fatto | Adattamento scaffold a SyncBay | Dashboard SyncBay, schema Prisma iniziale, webhook placeholder e stato connessioni Shopify/eBay |
-| Fatto | Baseline osservabilità e primitive Supabase | Vercel Analytics/Speed Insights nel root app; `pgmq`, `pg_cron`, coda `syncbay_jobs` e bucket `syncbay-import-staging` tracciati in migration |
-| Fatto | Modello mapping/snapshot/conflitti | Schema Prisma e migration pronti; applicazione remote da fare prima dell'import reale |
+| Fatto | Baseline osservabilità e primitive Supabase | Vercel Analytics/Speed Insights nel root app; `pgmq`, `pg_cron`, coda `syncbay_jobs` e bucket `syncbay-import-staging` applicati su Supabase |
+| Fatto | Modello mapping/snapshot/conflitti | Schema Prisma e migration applicati su Supabase; import reale ancora disabilitato |
 
 ## 1. Identità prodotto
 
@@ -88,4 +88,5 @@ Legenda stato: Fatto | In corso | Da fare | Idea
 
 1. Attendere il keyset eBay dedicato SyncBay e sostituire i valori provvisori FiscalBay negli env.
 2. Abilitare OAuth sul RuName del keyset dedicato, verificare OAuth eBay end-to-end e poi collegare il primo account venditore.
-3. Implementare lettura listing eBay per alimentare la preview import catalogo eBay -> Shopify senza sync automatico.
+3. Preparare l'import Shopify draft controllato su dati mock/fixture, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
+4. Implementare lettura listing eBay per alimentare la preview import catalogo eBay -> Shopify senza sync automatico.

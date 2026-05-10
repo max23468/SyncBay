@@ -34,7 +34,7 @@ Note:
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay includono un RuName production SyncBay predisposto sul keyset provvisorio FiscalBay, ma OAuth non deve essere abilitato finché non arriva il keyset dedicato SyncBay.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta `false`.
-- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default: non attivare import draft finché migration mapping/snapshot/conflitti e verifica su shop pilota non sono completate.
+- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default: le migration mapping/snapshot/conflitti sono applicate, ma non attivare import draft finché non viene scelta una verifica su shop pilota.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
@@ -69,6 +69,8 @@ Non salvarla in Git e non stamparla nei log.
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
+- migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
+- verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
 - `shopify app dev --store syncbay-dev.myshopify.com` con preview Admin caricata e sessione installazione registrata
 
 Estensioni Supabase verificate:
@@ -97,6 +99,5 @@ Durante o subito dopo lo scaffold:
 - mantenere allineate le migration Prisma su Supabase Postgres;
 - definire `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider, non nel repo;
 - completare gli env Vercel preview quando viene scelto il branch target o via dashboard;
-- registrare la migration runtime primitives con `npx prisma migrate deploy` quando le URL database Prisma complete sono disponibili;
 - verificare gli advisor Supabase con `npm run db:verify` quando le credenziali linked sono disponibili;
 - aggiornare URL Shopify/eBay con il primo URL Vercel utilizzabile.

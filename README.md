@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run e dati mock fittizi, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo attivi.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run e dati mock fittizi, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti applicato su Supabase, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo attivi.
 
 ## Direzione prodotto
 
@@ -87,5 +87,5 @@ Provisioning minimo creato:
 
 1. Attendere il keyset eBay dedicato SyncBay. Il RuName production e le callback sono predisposti, ma OAuth resta disabilitato sul keyset provvisorio FiscalBay per non rischiare FiscalBay.
 2. Spostare `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` ed `EBAY_RU_NAME` sul keyset dedicato, poi verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
-3. Applicare la migration Prisma dei mapping/snapshot/conflitti su Supabase quando si decide di attivare il flusso import reale.
+3. Preparare l'import Shopify in `draft` con dati mock/fixture, lasciando `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
 4. Quando arriva il keyset dedicato SyncBay, verificare OAuth eBay end-to-end e poi collegare la lettura listing live alla preview import già predisposta.
