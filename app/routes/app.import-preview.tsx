@@ -38,6 +38,10 @@ interface LocationsQueryResponse {
   data?: {
     locations?: {
       nodes?: ShopifyLocation[];
+      pageInfo?: {
+        endCursor?: string | null;
+        hasNextPage: boolean;
+      };
     };
   };
   errors?: unknown;
@@ -453,32 +457,50 @@ export const headers: HeadersFunction = (headersArgs) => {
 async function fetchShopifyLocations(
   admin: Awaited<ReturnType<typeof authenticate.admin>>["admin"],
 ) {
-  const response = await admin.graphql(`
+  const locations: ShopifyLocation[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const response = await admin.graphql(
+      `
     #graphql
-    query SyncBayLocations {
-      locations(first: 50, includeInactive: false) {
+    query SyncBayLocations($cursor: String) {
+      locations(first: 50, after: $cursor, includeInactive: false) {
         nodes {
           fulfillsOnlineOrders
           id
           isActive
           name
         }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
       }
     }
-  `);
-  const json = (await response.json()) as LocationsQueryResponse;
+  `,
+      { variables: { cursor } },
+    );
+    const json = (await response.json()) as LocationsQueryResponse;
 
-  if (json.errors) {
-    return {
-      errorMessage:
-        "Location Shopify non leggibili. Verifica che l'app sia reinstallata con lo scope read_locations.",
-      locations: [],
-    };
-  }
+    if (json.errors) {
+      return {
+        errorMessage:
+          "Location Shopify non leggibili. Verifica che l'app sia reinstallata con lo scope read_locations.",
+        locations: [],
+      };
+    }
+
+    locations.push(...(json.data?.locations?.nodes ?? []));
+    cursor = json.data?.locations?.pageInfo?.hasNextPage
+      ? (json.data.locations.pageInfo.endCursor ?? null)
+      : null;
+  } while (cursor);
+
 
   return {
     errorMessage: null,
-    locations: json.data?.locations?.nodes ?? [],
+    locations,
   };
 }
 
