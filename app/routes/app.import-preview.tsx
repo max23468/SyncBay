@@ -49,8 +49,10 @@ interface LocationsQueryResponse {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  const locationResult = await fetchShopifyLocations(admin);
-  const wizard = await getImportWizardState(session);
+  const [locationResult, wizard] = await Promise.all([
+    fetchShopifyLocations(admin),
+    getImportWizardState(session),
+  ]);
   const selectedLocation = locationResult.locations.find(
     (location) => location.id === wizard.shop.defaultLocationGid,
   );
@@ -70,8 +72,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
-  const formData = await request.formData();
+  const [{ admin, session }, formData] = await Promise.all([
+    authenticate.admin(request),
+    request.formData(),
+  ]);
   const intent = String(formData.get("intent") ?? "saveLocation");
 
   if (intent === "createDraftProducts") {
@@ -100,8 +104,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "renameLocation") {
     const locationGid = String(formData.get("locationGid") ?? "");
     const locationName = String(formData.get("locationName") ?? "");
-    const wizard = await getImportWizardState(session);
-    const locationResult = await fetchShopifyLocations(admin);
+    const [wizard, locationResult] = await Promise.all([
+      getImportWizardState(session),
+      fetchShopifyLocations(admin),
+    ]);
     const selectedLocation = locationResult.locations.find(
       (location) => location.id === locationGid,
     );
@@ -270,6 +276,7 @@ export default function ImportPreview() {
             <input type="hidden" name="locationGid" value={selectedLocation.id} />
             <label htmlFor="locationName">Nome location</label>
             <input
+              aria-label="Nome location Shopify"
               defaultValue={selectedLocation.name}
               disabled={!locationRename.canRename || isSaving}
               id="locationName"

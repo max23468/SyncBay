@@ -27,9 +27,15 @@ export default function App() {
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
-            <label className={styles.label}>
+            <label className={styles.label} htmlFor="shop">
               <span>Dominio shop</span>
-              <input className={styles.input} type="text" name="shop" />
+              <input
+                aria-label="Dominio shop Shopify"
+                className={styles.input}
+                id="shop"
+                name="shop"
+                type="text"
+              />
               <span>e.g: my-shop-domain.myshopify.com</span>
             </label>
             <button className={styles.button} type="submit">

@@ -20,6 +20,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Sotto il cofano
 
+- Portato React Doctor a 100/100 correggendo warning reali di performance, server waterfall e accessibilità senza soppressioni.
 - Ridotti i warning di build Vercel limitando l'engine Node, aggiornando ESLint a flat config e filtrando i chunk vuoti attesi delle resource route server-side.
 - Applicate su Supabase le migration remote per primitive runtime e mapping/snapshot/conflitti, mantenendo disabilitato l'import Shopify draft.
 - Rilasciata la configurazione Shopify app `syncbay-2` con URL Vercel e rimossa l'opzione CLI non più supportata `include_config_on_deploy`.

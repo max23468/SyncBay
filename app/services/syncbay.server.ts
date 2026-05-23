@@ -53,24 +53,26 @@ const SHOPIFY_WEBHOOK_TOPICS = [
 
 export async function getDashboardState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
-  const ebayConnection = await prisma.ebayConnection.findUnique({
-    where: {
-      shopId_marketplaceId: {
-        marketplaceId: getEbayMarketplaceId(),
-        shopId: shop.id,
+  const [ebayConnection, recentJobs, recentAuditLogs] = await Promise.all([
+    prisma.ebayConnection.findUnique({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
       },
-    },
-  });
-  const recentJobs = await prisma.syncJob.findMany({
-    where: { shopId: shop.id },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-  const recentAuditLogs = await prisma.auditLog.findMany({
-    where: { shopId: shop.id },
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
+    }),
+    prisma.syncJob.findMany({
+      where: { shopId: shop.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    prisma.auditLog.findMany({
+      where: { shopId: shop.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+  ]);
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -124,14 +126,18 @@ export async function getDashboardState(session: ShopifySessionLike) {
     onboarding: getOnboardingReadiness(),
     importPreview,
     sync: {
-      failedJobs: recentJobs
-        .filter((job) => job.status === SyncJobStatus.FAILED)
-        .map((job) => ({
-          createdAt: job.createdAt.toISOString(),
-          errorCode: job.errorCode,
-          errorMessage: job.errorMessage,
-          type: job.type,
-        })),
+      failedJobs: recentJobs.flatMap((job) =>
+        job.status === SyncJobStatus.FAILED
+          ? [
+              {
+                createdAt: job.createdAt.toISOString(),
+                errorCode: job.errorCode,
+                errorMessage: job.errorMessage,
+                type: job.type,
+              },
+            ]
+          : [],
+      ),
       jobsByStatus: summarizeJobsByStatus(recentJobs),
       jobsByType: summarizeJobsByType(recentJobs),
       pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
@@ -238,22 +244,23 @@ export async function updateDefaultShopifyLocation(
   }
 
   const shop = await ensureShopForSession(session);
-  await prisma.shop.update({
-    data: { defaultLocationGid: selectedLocation.id },
-    where: { id: shop.id },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      details: {
-        locationGid: selectedLocation.id,
-        locationName: selectedLocation.name,
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: { defaultLocationGid: selectedLocation.id },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          locationGid: selectedLocation.id,
+          locationName: selectedLocation.name,
+        },
+        message: `Location Shopify predefinita impostata: ${selectedLocation.name}.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
       },
-      message: `Location Shopify predefinita impostata: ${selectedLocation.name}.`,
-      shopId: shop.id,
-      type: AuditEventType.CONNECTION_CHECK,
-    },
-  });
+    }),
+  ]);
 
   return selectedLocation;
 }
@@ -363,15 +370,26 @@ export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput)
       type: jobType,
     };
 
-    if (idempotencyKey) {
-      await prisma.syncJob.upsert({
-        where: { idempotencyKey },
-        create: jobData,
-        update: {},
-      });
-    } else {
-      await prisma.syncJob.create({ data: jobData });
-    }
+    const jobOperation = idempotencyKey
+      ? prisma.syncJob.upsert({
+          where: { idempotencyKey },
+          create: jobData,
+          update: {},
+        })
+      : prisma.syncJob.create({ data: jobData });
+
+    await prisma.$transaction([
+      jobOperation,
+      prisma.auditLog.create({
+        data: {
+          details,
+          message: "Webhook Shopify ricevuto e tracciato.",
+          shopId: shop.id,
+          type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
+        },
+      }),
+    ]);
+    return;
   }
 
   await prisma.auditLog.create({
@@ -394,9 +412,9 @@ export function getEbayRuntimeReadiness() {
     { envKey: "EBAY_OAUTH_REJECT_URL", label: "OAuth reject URL eBay" },
     { envKey: "TOKEN_ENCRYPTION_KEY", label: "chiave cifratura token" },
   ];
-  const missingRequirements = requirements
-    .filter((requirement) => !hasRuntimeValue(process.env[requirement.envKey]))
-    .map((requirement) => requirement.label);
+  const missingRequirements = requirements.flatMap((requirement) =>
+    hasRuntimeValue(process.env[requirement.envKey]) ? [] : [requirement.label],
+  );
 
   const oauthEnabled = process.env.EBAY_OAUTH_ENABLED === "true";
 
@@ -707,8 +725,10 @@ function splitScopes(scopes?: string | null) {
   return scopes
     ? scopes
         .split(",")
-        .map((scope) => scope.trim())
-        .filter(Boolean)
+        .flatMap((scope) => {
+          const trimmedScope = scope.trim();
+          return trimmedScope ? [trimmedScope] : [];
+        })
     : [];
 }
 

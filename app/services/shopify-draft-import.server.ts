@@ -30,6 +30,21 @@ interface ShopifyProductCreateResponse {
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
 
+type ShopifyDraftProductInput = ReturnType<typeof buildShopifyDraftProductInputs>[number];
+type ShopifyCreatedProduct = NonNullable<
+  NonNullable<ShopifyProductCreateResponse["data"]>["productCreate"]
+>["product"];
+
+type ShopifyDraftProductResult =
+  | {
+      product: NonNullable<ShopifyCreatedProduct>;
+      status: "created";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    };
+
 export function getDraftImportReadiness(input: {
   hasDefaultLocation: boolean;
   previewResult: ImportPreviewResult;
@@ -79,72 +94,91 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     };
   }
 
-  const createdProducts = [];
-  for (const product of buildShopifyDraftProductInputs(input.previewResult)) {
-    const response = await input.admin.graphql(
-      `#graphql
-      mutation SyncBayCreateDraftProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-          }
-          userErrors {
-            field
-            message
-          }
-        }
-      }`,
-      { variables: { product } },
-    );
-    const json = (await response.json()) as ShopifyProductCreateResponse;
+  const results = await Promise.all(
+    buildShopifyDraftProductInputs(input.previewResult).map((product) =>
+      createShopifyDraftProduct(input.admin, product),
+    ),
+  );
+  const createdProducts = results.flatMap((result) =>
+    result.status === "created" ? [result.product] : [],
+  );
+  const failedResult = results.find(
+    (result): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
+      result.status === "failed",
+  );
 
-    if (!response.ok) {
-      return {
-        createdProducts,
-        errorMessage: `Shopify ha risposto con stato HTTP ${response.status}.`,
-        readiness,
-        status: "failed" as const,
-      };
-    }
-
-    if (json.errors?.length) {
-      return {
-        createdProducts,
-        errorMessage: json.errors.map((error) => error.message).join("; "),
-        readiness,
-        status: "failed" as const,
-      };
-    }
-
-    const userErrors = json.data?.productCreate?.userErrors ?? [];
-
-    if (userErrors.length > 0) {
-      return {
-        createdProducts,
-        errorMessage: userErrors.map((error) => error.message).join("; "),
-        readiness,
-        status: "failed" as const,
-      };
-    }
-
-    const createdProduct = json.data?.productCreate?.product;
-    if (!createdProduct) {
-      return {
-        createdProducts,
-        errorMessage: "Shopify non ha restituito il prodotto draft creato.",
-        readiness,
-        status: "failed" as const,
-      };
-    }
-
-    createdProducts.push(createdProduct);
+  if (failedResult) {
+    return {
+      createdProducts,
+      errorMessage: failedResult.errorMessage,
+      readiness,
+      status: "failed" as const,
+    };
   }
 
   return {
     createdProducts,
     readiness,
     status: "created" as const,
+  };
+}
+
+async function createShopifyDraftProduct(
+  admin: ShopifyAdminGraphqlClient,
+  product: ShopifyDraftProductInput,
+): Promise<ShopifyDraftProductResult> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayCreateDraftProduct($product: ProductCreateInput!) {
+      productCreate(product: $product) {
+        product {
+          id
+          title
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    { variables: { product } },
+  );
+  const json = (await response.json()) as ShopifyProductCreateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: json.errors.map((error) => error.message).join("; "),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productCreate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: userErrors.map((error) => error.message).join("; "),
+      status: "failed",
+    };
+  }
+
+  const createdProduct = json.data?.productCreate?.product;
+  if (!createdProduct) {
+    return {
+      errorMessage: "Shopify non ha restituito il prodotto draft creato.",
+      status: "failed",
+    };
+  }
+
+  return {
+    product: createdProduct,
+    status: "created",
   };
 }
 
