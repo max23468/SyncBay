@@ -88,53 +88,57 @@ export async function completeEbayAuthorization({
     throw new Error("State OAuth eBay non valido o scaduto.");
   }
 
-  await prisma.ebayOAuthState.update({
-    data: { consumedAt: new Date() },
-    where: { id: oauthState.id },
-  });
-
   const token = await exchangeAuthorizationCode(code);
-  await prisma.ebayConnection.upsert({
-    where: {
-      shopId_marketplaceId: {
-        marketplaceId: getEbayMarketplaceId(),
-        shopId: oauthState.shopId,
+  const connectedAt = new Date();
+  const refreshTokenExpiresAt = token.refresh_token_expires_in
+    ? secondsFromNow(token.refresh_token_expires_in)
+    : null;
+  const tokenExpiresAt = token.expires_in ? secondsFromNow(token.expires_in) : null;
+  const scopes = token.scope ?? getEbayScopes().join(" ");
+
+  await prisma.$transaction([
+    prisma.ebayOAuthState.update({
+      data: { consumedAt: connectedAt },
+      where: { id: oauthState.id },
+    }),
+    prisma.ebayConnection.upsert({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: oauthState.shopId,
+        },
       },
-    },
-    create: {
-      connectedAt: new Date(),
-      encryptedAccessToken: encryptSecret(token.access_token),
-      encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
-      environment: getEbayEnvironment(),
-      marketplaceId: getEbayMarketplaceId(),
-      refreshTokenExpiresAt: token.refresh_token_expires_in
-        ? secondsFromNow(token.refresh_token_expires_in)
-        : null,
-      scopes: token.scope ?? getEbayScopes().join(" "),
-      shopId: oauthState.shopId,
-      status: EbayConnectionStatus.CONNECTED,
-      tokenExpiresAt: token.expires_in ? secondsFromNow(token.expires_in) : null,
-    },
-    update: {
-      connectedAt: new Date(),
-      encryptedAccessToken: encryptSecret(token.access_token),
-      encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
-      environment: getEbayEnvironment(),
-      refreshTokenExpiresAt: token.refresh_token_expires_in
-        ? secondsFromNow(token.refresh_token_expires_in)
-        : undefined,
-      scopes: token.scope ?? getEbayScopes().join(" "),
-      status: EbayConnectionStatus.CONNECTED,
-      tokenExpiresAt: token.expires_in ? secondsFromNow(token.expires_in) : null,
-    },
-  });
-  await prisma.auditLog.create({
-    data: {
-      message: "Account eBay collegato.",
-      shopId: oauthState.shopId,
-      type: AuditEventType.EBAY_CONNECTED,
-    },
-  });
+      create: {
+        connectedAt,
+        encryptedAccessToken: encryptSecret(token.access_token),
+        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
+        environment: getEbayEnvironment(),
+        marketplaceId: getEbayMarketplaceId(),
+        refreshTokenExpiresAt,
+        scopes,
+        shopId: oauthState.shopId,
+        status: EbayConnectionStatus.CONNECTED,
+        tokenExpiresAt,
+      },
+      update: {
+        connectedAt,
+        encryptedAccessToken: encryptSecret(token.access_token),
+        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
+        environment: getEbayEnvironment(),
+        refreshTokenExpiresAt: refreshTokenExpiresAt ?? undefined,
+        scopes,
+        status: EbayConnectionStatus.CONNECTED,
+        tokenExpiresAt,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        message: "Account eBay collegato.",
+        shopId: oauthState.shopId,
+        type: AuditEventType.EBAY_CONNECTED,
+      },
+    }),
+  ]);
 
   return oauthState.shop.shopDomain;
 }
@@ -194,8 +198,10 @@ function getEbayMarketplaceId() {
 function getEbayScopes() {
   return (process.env.EBAY_SCOPES ?? "")
     .split(/\s+/)
-    .map((scope) => scope.trim())
-    .filter(Boolean);
+    .flatMap((scope) => {
+      const trimmedScope = scope.trim();
+      return trimmedScope ? [trimmedScope] : [];
+    });
 }
 
 function requiredEnv(key: string) {
