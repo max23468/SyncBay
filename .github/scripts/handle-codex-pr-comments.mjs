@@ -7,27 +7,36 @@ const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
 const codexLoginPattern = new RegExp(process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex", "i");
 const inboxIssueTitle = process.env.CODEX_INBOX_ISSUE_TITLE ?? "Codex feedback inbox";
-const codexCommand = process.env.CODEX_AUTOFIX_COMMENT ?? "@codex address that feedback";
-const inboxMarker = "<!-- syncbay-codex-feedback-inbox -->";
-const requestMarker = "<!-- syncbay-codex-feedback-request -->";
+const repositoryName = repository?.split("/")[1] ?? "repository";
+const inboxMarker =
+  process.env.CODEX_INBOX_MARKER ??
+  `<!-- ${normalizeInboxMarkerName(repositoryName)}-codex-feedback-inbox -->`;
 const dryRun = process.env.DRY_RUN === "true";
 const eventName = process.env.GITHUB_EVENT_NAME ?? "";
 const eventPayload = await readGitHubEventPayload();
-const fullScan = eventName === "workflow_dispatch" || eventName === "schedule";
+const fullScan = shouldRunFullScan();
 const eventPullRequestNumber = getEventPullRequestNumber(eventPayload);
 const recentPrLimit = parsePositiveInteger(process.env.CODEX_RECENT_PR_LIMIT, 50);
 const recentPrDays = parsePositiveInteger(process.env.CODEX_RECENT_PR_DAYS, 30);
+const historyPrLimit = parsePositiveInteger(process.env.CODEX_HISTORY_PR_LIMIT, 8);
+const historyThreadLimit = parsePositiveInteger(process.env.CODEX_HISTORY_THREAD_LIMIT, 5);
 
-if (!repository) fail("GITHUB_REPOSITORY non impostato.");
-if (!token) fail("GITHUB_TOKEN non impostato.");
+if (!repository) {
+  fail("GITHUB_REPOSITORY non impostato.");
+}
+
+if (!token) {
+  fail("GITHUB_TOKEN non impostato.");
+}
 
 const [owner, repo] = repository.split("/");
 
-if (!owner || !repo) fail(`GITHUB_REPOSITORY non valido: ${repository}`);
+if (!owner || !repo) {
+  fail(`GITHUB_REPOSITORY non valido: ${repository}`);
+}
 
 const prs = await listPullRequests();
 const inboxEntries = [];
-const requestedPrs = [];
 
 for (const pr of prs) {
   const threads = await listReviewThreads(pr.number);
@@ -47,15 +56,6 @@ for (const pr of prs) {
     url: pr.html_url,
     wasMerged: Boolean(pr.merged_at),
   });
-
-  if (actionableThreads.length === 0) continue;
-
-  const alreadyRequested = await hasAutomationRequest(pr.number, actionableThreads);
-
-  if (!alreadyRequested) {
-    const posted = await requestCodexHandling(pr, actionableThreads);
-    if (posted) requestedPrs.push(pr.number);
-  }
 }
 
 const inboxIssue = await upsertInboxIssue(inboxEntries);
@@ -63,13 +63,14 @@ const inboxIssue = await upsertInboxIssue(inboxEntries);
 console.log(
   JSON.stringify(
     {
+      automaticPrComments: false,
+      closedDuplicateInboxIssues: inboxIssue.closedDuplicateNumbers,
       dryRun,
       eventName,
       fullScan,
-      inboxIssue: inboxIssue?.html_url ?? null,
+      inboxIssue: inboxIssue.issue?.html_url ?? null,
       prsScanned: prs.length,
       prsWithCodexThreads: inboxEntries.length,
-      requestedPrs,
       totalActionableThreads: inboxEntries.reduce(
         (total, entry) => total + entry.actionableThreads.length,
         0,
@@ -85,16 +86,25 @@ console.log(
 );
 
 async function listPullRequests() {
-  if (fullScan) return listPullRequestPages({ state: "all" });
+  if (fullScan) return listAllPullRequests();
 
   const prsByNumber = new Map();
 
-  for (const pr of await listPullRequestPages({ state: "open" })) {
+  for (const pr of await listOpenPullRequests()) {
     prsByNumber.set(pr.number, pr);
   }
 
   for (const pr of await listRecentPullRequests()) {
     prsByNumber.set(pr.number, pr);
+  }
+
+  for (const prNumber of await listInboxPullRequestNumbers()) {
+    if (prsByNumber.has(prNumber)) continue;
+
+    const inboxPr = await getPullRequestFromInbox(prNumber);
+    if (!inboxPr) continue;
+
+    prsByNumber.set(inboxPr.number, inboxPr);
   }
 
   if (eventPullRequestNumber && !prsByNumber.has(eventPullRequestNumber)) {
@@ -105,6 +115,43 @@ async function listPullRequests() {
   return [...prsByNumber.values()].sort(
     (left, right) => new Date(right.updated_at) - new Date(left.updated_at),
   );
+}
+
+async function listAllPullRequests() {
+  return listPullRequestPages({ state: "all" });
+}
+
+async function getPullRequestFromInbox(prNumber) {
+  try {
+    return await githubJson(`/repos/${owner}/${repo}/pulls/${prNumber}`);
+  } catch (error) {
+    if (error.status === 404) {
+      console.warn(`PR #${prNumber} presente nella inbox ma non trovata: la salto.`);
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+async function listInboxPullRequestNumbers() {
+  const existingIssue = chooseCanonicalInboxIssue(await findInboxIssues());
+
+  return existingIssue ? extractInboxPullRequestNumbers(existingIssue.body ?? "") : [];
+}
+
+function extractInboxPullRequestNumbers(body) {
+  return [
+    ...new Set(
+      [...body.matchAll(/^### PR #(\d+) - /gm)]
+        .map((match) => Number.parseInt(match[1], 10))
+        .filter(Number.isInteger),
+    ),
+  ];
+}
+
+async function listOpenPullRequests() {
+  return listPullRequestPages({ state: "open" });
 }
 
 async function listRecentPullRequests() {
@@ -123,7 +170,7 @@ async function listRecentPullRequests() {
 async function listPullRequestPages({ limit = Infinity, state, stopAfterBatch } = {}) {
   const results = [];
 
-  for (let page = 1; results.length < limit; page += 1) {
+  for (let page = 1; results.length < limit; page++) {
     const query = new URLSearchParams({
       direction: "desc",
       page: String(page),
@@ -136,6 +183,7 @@ async function listPullRequestPages({ limit = Infinity, state, stopAfterBatch } 
     if (batch.length === 0) break;
 
     results.push(...batch);
+
     if (stopAfterBatch?.(batch)) break;
   }
 
@@ -203,57 +251,27 @@ function isActionableThread(thread) {
   return isCodexThread(thread) && !thread.isResolved && !thread.isOutdated;
 }
 
-async function hasAutomationRequest(prNumber, threads) {
-  const comments = await githubJson(
-    `/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100`,
-  );
-  const threadUrls = threads.map(getCodexThreadUrl).filter(Boolean);
-
-  return comments.some((comment) => {
-    if (!comment.body?.includes(requestMarker)) return false;
-    if (threadUrls.length === 0) return true;
-
-    return threadUrls.every((url) => comment.body.includes(url));
-  });
-}
-
-async function requestCodexHandling(pr, threads) {
-  const threadList = threads.map(renderThreadForRequest).join("\n");
-  const prState = pr.state === "open" ? "aperta" : pr.merged_at ? "mergiata" : "chiusa";
-  const body = `${requestMarker}
-${codexCommand}
-
-Ho trovato ${threads.length} thread Codex actionable in questa PR (${prState}):
-${threadList}
-
-Risolvi i problemi segnalati, controlla anche la issue "${inboxIssueTitle}" per il backlog completo dei commenti Codex e aggiorna la PR o apri un follow-up se questa PR non è più modificabile.`;
-
-  if (dryRun) {
-    console.log(`DRY RUN: commento non pubblicato su PR #${pr.number}:\n${body}`);
-    return true;
-  }
-
-  try {
-    await githubJson(`/repos/${owner}/${repo}/issues/${pr.number}/comments`, { body });
-    return true;
-  } catch (error) {
-    console.warn(`Impossibile commentare la PR #${pr.number}: ${error.message}`);
-    return false;
-  }
-}
-
 async function upsertInboxIssue(entries) {
   const body = buildInboxBody(entries);
-  const existingIssue = await findInboxIssue();
+  const inboxIssues = await findInboxIssues();
+  const existingIssue = chooseCanonicalInboxIssue(inboxIssues);
+  const duplicateIssues = inboxIssues.filter(
+    (issue) => issue.state === "open" && issue.number !== existingIssue?.number,
+  );
+  const closedDuplicateNumbers = await closeDuplicateInboxIssues(duplicateIssues, existingIssue);
 
   if (dryRun) {
     console.log(`DRY RUN: issue inbox non aggiornata.\n${body}`);
-    return existingIssue;
+    return {
+      closedDuplicateNumbers,
+      issue: existingIssue,
+    };
   }
 
   if (existingIssue) {
-    try {
-      return await githubJson(
+    return {
+      closedDuplicateNumbers,
+      issue: await githubJson(
         `/repos/${owner}/${repo}/issues/${existingIssue.number}`,
         {
           body,
@@ -261,195 +279,303 @@ async function upsertInboxIssue(entries) {
           title: inboxIssueTitle,
         },
         "PATCH",
-      );
-    } catch (error) {
-      if (isNonCriticalWriteError(error)) {
-        console.warn(`Impossibile aggiornare la issue inbox: ${error.message}`);
-        return existingIssue;
-      }
-
-      throw error;
-    }
+      ),
+    };
   }
 
-  try {
-    return await githubJson(`/repos/${owner}/${repo}/issues`, {
+  return {
+    closedDuplicateNumbers,
+    issue: await githubJson(`/repos/${owner}/${repo}/issues`, {
       body,
       title: inboxIssueTitle,
-    });
-  } catch (error) {
-    if (isNonCriticalWriteError(error)) {
-      console.warn(`Impossibile creare la issue inbox: ${error.message}`);
-      return null;
-    }
-
-    throw error;
-  }
+    }),
+  };
 }
 
-async function findInboxIssue() {
+async function findInboxIssues() {
   const query = new URLSearchParams({
-    per_page: "20",
+    per_page: "100",
     q: `repo:${owner}/${repo} is:issue in:title "${inboxIssueTitle}"`,
   });
   const result = await githubJson(`/search/issues?${query}`);
+  const exactTitleIssues = result.items.filter((issue) => issue.title === inboxIssueTitle);
+  const issues = [];
 
-  for (const item of result.items) {
-    if (item.title !== inboxIssueTitle) continue;
+  for (const issue of exactTitleIssues) {
+    const issueDetails = await githubJson(`/repos/${owner}/${repo}/issues/${issue.number}`);
 
-    const issue = await githubJson(`/repos/${owner}/${repo}/issues/${item.number}`);
-    if (issue.body?.includes(inboxMarker)) return issue;
+    if (isManagedInboxIssue(issueDetails)) {
+      issues.push(issueDetails);
+    }
   }
 
-  return null;
+  return issues;
+}
+
+function isManagedInboxIssue(issue) {
+  return (
+    issue.title === inboxIssueTitle && (issue.body?.includes(inboxMarker) || issue.state === "open")
+  );
+}
+
+function chooseCanonicalInboxIssue(issues) {
+  return (
+    issues
+      .filter((issue) => issue.state === "open")
+      .sort((left, right) => new Date(right.updated_at) - new Date(left.updated_at))[0] ?? null
+  );
+}
+
+async function closeDuplicateInboxIssues(issues, canonicalIssue) {
+  const closedDuplicateNumbers = [];
+
+  for (const issue of issues) {
+    const body = canonicalIssue
+      ? `Chiudo come duplicato della inbox attiva #${canonicalIssue.number}.`
+      : `Chiudo come duplicato: il workflow ricreerà la inbox canonica "${inboxIssueTitle}".`;
+
+    if (dryRun) {
+      console.log(`DRY RUN: chiuderei la issue inbox duplicata #${issue.number}.`);
+      closedDuplicateNumbers.push(issue.number);
+      continue;
+    }
+
+    await githubJson(`/repos/${owner}/${repo}/issues/${issue.number}/comments`, {
+      body,
+    });
+    await githubJson(
+      `/repos/${owner}/${repo}/issues/${issue.number}`,
+      {
+        state: "closed",
+        state_reason: "not_planned",
+      },
+      "PATCH",
+    );
+    closedDuplicateNumbers.push(issue.number);
+  }
+
+  return closedDuplicateNumbers;
 }
 
 function buildInboxBody(entries) {
-  const actionableCount = entries.reduce(
-    (total, entry) => total + entry.actionableThreads.length,
+  const actionableEntries = entries
+    .map((entry) => ({
+      ...entry,
+      threads: entry.actionableThreads,
+    }))
+    .filter((entry) => entry.threads.length > 0);
+  const historicalEntries = entries
+    .map((entry) => ({
+      ...entry,
+      threads: entry.historicalThreads,
+    }))
+    .filter((entry) => entry.threads.length > 0);
+  const totalActionable = actionableEntries.reduce(
+    (total, entry) => total + entry.threads.length,
     0,
   );
-  const historicalCount = entries.reduce(
-    (total, entry) => total + entry.historicalThreads.length,
+  const totalHistorical = historicalEntries.reduce(
+    (total, entry) => total + entry.threads.length,
     0,
   );
+
   const lines = [
     inboxMarker,
     "# Codex feedback inbox",
     "",
     "Issue aggiornata automaticamente dal workflow `Codex PR comments`.",
+    "Fonte di verità: review thread GitHub su tutte le PR, aperte, chiuse e mergiate.",
     "",
-    `- PR con thread Codex: ${entries.length}`,
-    `- Thread actionable: ${actionableCount}`,
-    `- Thread storici/non actionable: ${historicalCount}`,
+    "## Da risolvere ora",
     "",
   ];
 
-  if (entries.length === 0) {
-    lines.push("Nessun thread Codex trovato nelle PR analizzate.");
-    return lines.join("\n");
+  if (totalActionable === 0) {
+    lines.push("Nessun thread Codex actionable al momento.", "");
+  } else {
+    lines.push(`Thread actionable: ${totalActionable}`, "");
+    appendEntrySection(lines, actionableEntries, true);
   }
 
+  lines.push("## Storico e audit", "");
+
+  if (totalHistorical === 0) {
+    lines.push("Nessun thread Codex storico da mostrare.", "");
+  } else {
+    const compactHistoricalEntries = compactHistoricalEntriesForInbox(historicalEntries);
+    const displayedHistorical = compactHistoricalEntries.reduce(
+      (total, entry) => total + entry.threads.length,
+      0,
+    );
+
+    lines.push(
+      `Thread storici totali: ${totalHistorical}. Mostro ${displayedHistorical} thread recenti in ${compactHistoricalEntries.length} PR.`,
+      "",
+    );
+    appendEntrySection(lines, compactHistoricalEntries, false);
+  }
+
+  lines.push(
+    "## Regola operativa",
+    "",
+    "Quando questa issue segnala thread actionable, Codex deve risolvere prima i commenti nuovi e poi controllare anche lo storico ancora rilevante. La inbox si aggiorna su eventi PR trusted, commenti issue, dispatch manuale e scansione programmata; se un thread viene solo marcato come risolto nella UI GitHub senza push o commenti, lascia un commento sulla inbox o avvia il workflow manuale per forzare il refresh. I thread pending non pubblicati da GitHub non sono leggibili via API finché la review non viene inviata.",
+    "",
+  );
+
+  return `${lines.join("\n").trimEnd()}\n`;
+}
+
+function compactHistoricalEntriesForInbox(entries) {
+  return entries.slice(0, historyPrLimit).map((entry) => ({
+    ...entry,
+    threads: entry.threads.slice(0, historyThreadLimit),
+  }));
+}
+
+function appendEntrySection(lines, entries, actionable) {
   for (const entry of entries) {
-    const state = entry.state === "open" ? "aperta" : entry.wasMerged ? "mergiata" : "chiusa";
-
-    lines.push(`## PR #${entry.number} - ${entry.title}`);
+    lines.push(`### PR #${entry.number} - ${entry.title}`);
+    lines.push(`- URL: ${entry.url}`);
+    lines.push(`- Stato: ${renderPrState(entry)}`);
+    lines.push(`- Thread: ${entry.threads.length}`);
     lines.push("");
-    lines.push(`- Stato: ${state}`);
-    lines.push(`- Link: ${entry.url}`);
-    lines.push(`- Actionable: ${entry.actionableThreads.length}`);
-    lines.push(`- Storici/non actionable: ${entry.historicalThreads.length}`);
 
-    if (entry.actionableThreads.length > 0) {
-      lines.push("");
-      lines.push("### Actionable");
-      lines.push(...entry.actionableThreads.map(renderThreadForInbox));
+    for (const thread of entry.threads) {
+      const checkbox = actionable ? "[ ]" : "[x]";
+      lines.push(`- ${checkbox} ${renderThread(thread)}`);
     }
 
     lines.push("");
   }
-
-  return lines.join("\n");
 }
 
-function renderThreadForRequest(thread) {
-  return `- ${renderThreadLocation(thread)}: ${getCodexThreadUrl(thread) ?? "thread senza URL"}`;
+function renderPrState(entry) {
+  if (entry.state === "open") return "aperta";
+  return entry.wasMerged ? "mergiata" : "chiusa";
 }
 
-function renderThreadForInbox(thread) {
-  return `- ${renderThreadLocation(thread)} - ${getCodexThreadUrl(thread) ?? "thread senza URL"}`;
+function renderThread(thread) {
+  const firstCodexComment = getFirstCodexComment(thread);
+  const location = renderThreadLocation(thread);
+  const summary = firstLine(firstCodexComment?.body ?? "commento Codex") ?? "commento Codex";
+  const threadUrl = firstCodexComment?.url;
+  const state = `resolved=${thread.isResolved ? "yes" : "no"}, outdated=${
+    thread.isOutdated ? "yes" : "no"
+  }`;
+  const link = threadUrl ? ` ([thread](${threadUrl}))` : "";
+
+  return `\`${location}\` - ${summary} (${state})${link}`;
 }
 
 function renderThreadLocation(thread) {
   const line = thread.line ?? thread.originalLine;
+
   return line ? `${thread.path}:${line}` : thread.path;
 }
 
-function getCodexThreadUrl(thread) {
+function getFirstCodexComment(thread) {
   return thread.comments.nodes.find((comment) =>
     codexLoginPattern.test(comment.author?.login ?? ""),
-  )?.url;
+  );
 }
 
-async function githubGraphql(query, variables) {
-  const response = await fetch("https://api.github.com/graphql", {
-    body: JSON.stringify({ query, variables }),
-    headers: githubHeaders(),
-    method: "POST",
-  });
-  const json = await parseGitHubResponse(response);
-
-  if (json.errors?.length) {
-    fail(JSON.stringify(json.errors));
-  }
-
-  return json.data;
-}
-
-async function githubJson(path, body, method = body ? "POST" : "GET") {
-  const response = await fetch(`https://api.github.com${path}`, {
-    body: body ? JSON.stringify(body) : undefined,
-    headers: githubHeaders(),
-    method,
-  });
-
-  return parseGitHubResponse(response);
-}
-
-function githubHeaders() {
-  return {
-    Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-    "X-GitHub-Api-Version": "2022-11-28",
-  };
-}
-
-async function parseGitHubResponse(response) {
-  const text = await response.text();
-  const json = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    throw new GitHubApiError(response.status, response.statusText, text);
-  }
-
-  return json;
-}
-
-function isNonCriticalWriteError(error) {
-  return error instanceof GitHubApiError && [403, 404, 410].includes(error.status);
+function firstLine(value) {
+  return value
+    .split("\n")
+    .map((line) => line.replace(/<[^>]+>/g, "").trim())
+    .find(Boolean)
+    ?.slice(0, 160);
 }
 
 async function readGitHubEventPayload() {
-  if (!process.env.GITHUB_EVENT_PATH) return {};
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+
+  if (!eventPath) return null;
 
   try {
-    return JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, "utf8"));
-  } catch {
-    return {};
+    return JSON.parse(await readFile(eventPath, "utf8"));
+  } catch (error) {
+    console.warn(`Impossibile leggere GITHUB_EVENT_PATH: ${error.message}`);
+    return null;
   }
 }
 
+function shouldRunFullScan() {
+  if (process.env.CODEX_FULL_SCAN === "true") return true;
+  if (!eventName) return true;
+  if (eventName === "schedule" || eventName === "workflow_dispatch") return true;
+
+  return eventName === "issue_comment" && eventPayload?.issue?.title === inboxIssueTitle;
+}
+
 function getEventPullRequestNumber(payload) {
-  if (payload.pull_request?.number) return payload.pull_request.number;
-  if (payload.issue?.pull_request && payload.issue?.number) return payload.issue.number;
+  if (payload?.pull_request?.number) return payload.pull_request.number;
+  if (payload?.issue?.pull_request) return payload.issue.number;
+
   return null;
 }
 
 function parsePositiveInteger(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
+
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function normalizeInboxMarkerName(value) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "repository"
+  );
+}
+
+async function githubJson(path, body, method) {
+  const response = await fetch(`https://api.github.com${path}`, {
+    body: body ? JSON.stringify(body) : undefined,
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    method: method ?? (body ? "POST" : "GET"),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new Error(`GitHub REST ${path} ha risposto ${response.status}: ${text}`);
+    error.status = response.status;
+    throw error;
+  }
+
+  return response.json();
+}
+
+async function githubGraphql(query, variables) {
+  const response = await fetch("https://api.github.com/graphql", {
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+  const payload = await response.json();
+
+  if (!response.ok || payload.errors) {
+    fail(`GitHub GraphQL ha risposto con errore: ${JSON.stringify(payload.errors ?? payload)}`);
+  }
+
+  return payload.data;
 }
 
 function fail(message) {
   console.error(message);
   process.exit(1);
-}
-
-class GitHubApiError extends Error {
-  constructor(status, statusText, body) {
-    super(`${status} ${statusText}: ${body}`);
-    this.name = "GitHubApiError";
-    this.status = status;
-  }
 }
