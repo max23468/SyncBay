@@ -1,5 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
-import { defineConfig, type UserConfig } from "vite";
+import { createLogger, defineConfig, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
@@ -17,6 +17,34 @@ if (
 
 const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost")
   .hostname;
+
+const serverOnlyResourceRouteChunks = new Set([
+  "auth._",
+  "auth.ebay.callback",
+  "auth.ebay.start",
+  "webhooks.app.scopes_update",
+  "webhooks.app.uninstalled",
+  "webhooks.ebay.account-deletion",
+  "webhooks.inventory_levels.update",
+  "webhooks.orders.paid",
+  "webhooks.products.update",
+]);
+
+const logger = createLogger();
+const viteWarn = logger.warn;
+logger.warn = (message, options) => {
+  const emptyChunkMatch = message.match(
+    /Generated an empty chunk: "([^"]+)"/,
+  );
+  if (
+    emptyChunkMatch &&
+    serverOnlyResourceRouteChunks.has(emptyChunkMatch[1])
+  ) {
+    return;
+  }
+
+  viteWarn(message, options);
+};
 
 let hmrConfig;
 if (host === "localhost") {
@@ -36,6 +64,7 @@ if (host === "localhost") {
 }
 
 export default defineConfig({
+  customLogger: logger,
   server: {
     allowedHosts: [host],
     cors: {
