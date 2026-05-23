@@ -23,6 +23,9 @@ interface ShopifyProductCreateResponse {
       }>;
     };
   };
+  errors?: Array<{
+    message: string;
+  }>;
 }
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
@@ -95,6 +98,25 @@ export async function createShopifyDraftProductsIfEnabled(input: {
       { variables: { product } },
     );
     const json = (await response.json()) as ShopifyProductCreateResponse;
+
+    if (!response.ok) {
+      return {
+        createdProducts,
+        errorMessage: `Shopify ha risposto con stato HTTP ${response.status}.`,
+        readiness,
+        status: "failed" as const,
+      };
+    }
+
+    if (json.errors?.length) {
+      return {
+        createdProducts,
+        errorMessage: json.errors.map((error) => error.message).join("; "),
+        readiness,
+        status: "failed" as const,
+      };
+    }
+
     const userErrors = json.data?.productCreate?.userErrors ?? [];
 
     if (userErrors.length > 0) {
@@ -107,7 +129,16 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     }
 
     const createdProduct = json.data?.productCreate?.product;
-    if (createdProduct) createdProducts.push(createdProduct);
+    if (!createdProduct) {
+      return {
+        createdProducts,
+        errorMessage: "Shopify non ha restituito il prodotto draft creato.",
+        readiness,
+        status: "failed" as const,
+      };
+    }
+
+    createdProducts.push(createdProduct);
   }
 
   return {
