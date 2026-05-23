@@ -120,6 +120,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw redirect(`/app/import-preview?${params.toString()}`);
     }
 
+    if (!selectedLocation) {
+      const params = new URLSearchParams({
+        locationRename: "blocked",
+        message:
+          "location Shopify predefinita non leggibile o non più attiva",
+      });
+
+      throw redirect(`/app/import-preview?${params.toString()}`);
+    }
+
     const result = await renameShopifyLocation({
       admin,
       canWriteLocations: hasSessionScope(session.scope, "write_locations"),

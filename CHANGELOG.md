@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Rafforzata la rinomina location Shopify bloccando richieste su location non più leggibili o diverse dalla predefinita salvata.
+- L'import draft Shopify ora fallisce esplicitamente su errori GraphQL top-level, HTTP non OK o prodotto non restituito.
+
 ### Novità
 
 - Aggiunta gestione Shopify della location selezionata nella preview import, con rinomina tramite `write_locations`.
