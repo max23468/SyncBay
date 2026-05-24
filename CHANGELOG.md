@@ -23,6 +23,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Sotto il cofano
 
+- Allineata l'immagine Docker base a Node 24 per rispettare `engines.node` con `engine-strict=true`.
 - Rimossi export e utility non usati per riportare React Doctor a 100/100.
 - Allineato l'engine Node dichiarato al requisito minimo di React Doctor.
 - Portato React Doctor a 100/100 correggendo warning reali di performance, server waterfall e accessibilità senza soppressioni.

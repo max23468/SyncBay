@@ -12,8 +12,9 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Enforcement engine | `.npmrc` con `engine-strict=true` |
 | Package manager | npm |
 | Lockfile | `package-lock.json` |
+| Immagine Docker base | `node:24-alpine` |
 
-Il floor Node `>=22.13` è richiesto dalla dipendenza `react-doctor@0.2.3`; non abbassarlo senza cambiare strategia sul quality gate.
+Il floor Node `>=22.13` è richiesto dalla dipendenza `react-doctor@0.2.3`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker deve restare su Node 22.13+ e sotto 25 perché `.npmrc` abilita `engine-strict=true`.
 
 ## Stack applicativo
 
