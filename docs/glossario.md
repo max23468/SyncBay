@@ -36,7 +36,7 @@ Questo glossario guida UI, documentazione e microcopy.
 - Parlare al negoziante con "tu" professionale.
 - Per UI e materiali pubblici preferire "negoziante" o "venditore" a "negoziante/venditore".
 - Messaggi brevi e operativi.
-- Ogni errore deve spiegare cosa e successo, impatto e prossima azione.
+- Ogni errore deve spiegare cosa è successo, impatto e prossima azione.
 - Niente emoji nella UI.
 - Non usare "Oops".
 - Non promettere cancellazioni automatiche distruttive: preferire archiviazione e ripristino.

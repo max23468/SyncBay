@@ -21,7 +21,7 @@ La sorgente principale resta eBay. Shopify diventa una copia pulita, vendibile e
 
 ## Differenziazione
 
-SyncBay non vuole essere l'ennesima app marketplace bidirezionale. La promessa e:
+SyncBay non vuole essere l'ennesima app marketplace bidirezionale. La promessa è:
 
 > SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pronte a vendere, disponibilità sincronizzate e meno rischio di vendere prodotti non disponibili.
 
@@ -53,7 +53,7 @@ Provisioning minimo:
 
 - Vercel project: `matteos-projects-9226d217/syncbay`.
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
-- Vercel production attuale: `https://syncbay.vercel.app`, ultimo deployment `READY`.
+- Vercel production attuale: `https://syncbay.vercel.app`; non equivale ancora a release pubblica Shopify App Store.
 - eBay production RuName: predisposto negli env senza OAuth sul keyset provvisorio FiscalBay; non abilitarlo finché non arriva il keyset dedicato SyncBay.
 - eBay account deletion: endpoint preparatorio `/webhooks/ebay/account-deletion`; challenge GET implementata, POST notifiche disabilitato finché non esiste verifica firma/cancellazione dati.
 - Dettagli: `guides/provisioning-runtime.md`.
@@ -69,13 +69,16 @@ Provisioning minimo:
 - `npm run prisma:validate`
 - `npm run db:verify`
 - `npm run release:dry-run`
-- `npx prisma migrate deploy` con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target quando bisogna applicare migration remote; su Supabase pooler puo richiedere fallback SQL via `supabase db query --linked` e registrazione in `_prisma_migrations`
+- `npx prisma migrate deploy` con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target quando bisogna applicare migration remote; su Supabase pooler può richiedere fallback SQL via `supabase db query --linked` e registrazione in `_prisma_migrations`
 
 ## Documenti principali
 
+- Indice: `INDEX.md`
 - Piano: `syncbay-product-technical-plan.md`
+- Roadmap: `ROADMAP.md`
+- Backlog: `BACKLOG.md`
+- Toolchain: `TOOLCHAIN.md`
 - Brand: `../BRAND.md`
-- Roadmap: `../ROADMAP.md`
 - Benchmark: `market/shopify-ebay-app-benchmark.md`
 - Stack: `decisions/0001-stack.md`
 - Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`

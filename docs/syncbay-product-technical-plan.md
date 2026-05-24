@@ -92,7 +92,7 @@ Dashboard SyncBay
 
 ## Stack iniziale
 
-La decisione stack e tracciata in `docs/decisions/0001-stack.md`.
+La decisione stack è tracciata in `docs/decisions/0001-stack.md`.
 
 Direzione corrente:
 
@@ -107,7 +107,7 @@ Direzione corrente:
 - Supabase Cron;
 - Supabase Storage come staging privato temporaneo per immagini quando serve.
 
-La decisione infrastrutturale MVP e tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
+La decisione infrastrutturale MVP è tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
 Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura delle decisioni tecniche bloccanti. Import, sync, worker e OAuth eBay restano fuori dallo scaffold iniziale.
 
@@ -115,7 +115,7 @@ Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura dell
 
 ### Shopify
 
-Usare Shopify Admin GraphQL come interfaccia principale. La mutazione `productSet` e indicata per sincronizzare prodotti da sorgenti esterne e gestire aggiornamenti batch di catalogo.
+Usare Shopify Admin GraphQL come interfaccia principale. La mutazione `productSet` è indicata per sincronizzare prodotti da sorgenti esterne e gestire aggiornamenti batch di catalogo.
 
 Scope iniziali previsti:
 
@@ -229,7 +229,7 @@ Default:
 - aggiornamento eBay tramite API compatibile con il tipo di listing.
 - se update eBay fallisce, creare alert critico in dashboard e retry prioritario.
 - stock buffer configurabile, per mantenere una riserva non pubblicata su Shopify.
-- soglia di sicurezza: se eBay non risponde o il sync stock e incerto, SyncBay può mettere il prodotto Shopify in stato prudente secondo configurazione.
+- soglia di sicurezza: se eBay non risponde o il sync stock è incerto, SyncBay può mettere il prodotto Shopify in stato prudente secondo configurazione.
 
 Regola: la quantità disponibile da mostrare su Shopify deve rispettare lo stato eBay più recente noto, salvo conflitti espliciti.
 
@@ -397,7 +397,7 @@ Esempi di errori:
 
 Ogni errore deve mostrare:
 
-- cosa e successo;
+- cosa è successo;
 - impatto sul prodotto o sullo stock;
 - prossima azione consigliata;
 - pulsante di retry quando sicuro;
