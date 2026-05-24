@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.6.0] — 2026-05-24
+
 ### Correzioni
 
 - L'import draft Shopify ora limita le creazioni concorrenti per ridurre il rischio di saturare la Admin API durante verifiche pilota.
@@ -158,6 +160,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.6.0]: #060--2026-05-24
 [0.5.0]: #050--2026-05-10
 [0.4.0]: #040--2026-05-10
 [0.3.0]: #030--2026-05-10
