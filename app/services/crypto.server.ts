@@ -17,25 +17,6 @@ export function encryptSecret(plaintext: string) {
   ].join(".");
 }
 
-export function decryptSecret(payload: string) {
-  const [version, iv, authTag, ciphertext] = payload.split(".");
-  if (version !== "v1" || !iv || !authTag || !ciphertext) {
-    throw new Error("Formato secret cifrato non valido.");
-  }
-
-  const decipher = crypto.createDecipheriv(
-    ALGORITHM,
-    getTokenKey(),
-    Buffer.from(iv, "base64url"),
-  );
-  decipher.setAuthTag(Buffer.from(authTag, "base64url"));
-
-  return Buffer.concat([
-    decipher.update(Buffer.from(ciphertext, "base64url")),
-    decipher.final(),
-  ]).toString("utf8");
-}
-
 export function hashState(state: string) {
   return crypto.createHash("sha256").update(state).digest("hex");
 }

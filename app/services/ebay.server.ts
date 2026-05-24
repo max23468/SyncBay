@@ -84,9 +84,11 @@ export async function completeEbayAuthorization({
     where: { stateHash },
   });
 
-  if (!oauthState || oauthState.consumedAt || oauthState.expiresAt < new Date()) {
+  if (!oauthState) {
     throw new Error("State OAuth eBay non valido o scaduto.");
   }
+
+  await consumeOAuthState(oauthState.id);
 
   const token = await exchangeAuthorizationCode(code);
   const connectedAt = new Date();
@@ -97,10 +99,6 @@ export async function completeEbayAuthorization({
   const scopes = token.scope ?? getEbayScopes().join(" ");
 
   await prisma.$transaction([
-    prisma.ebayOAuthState.update({
-      data: { consumedAt: connectedAt },
-      where: { id: oauthState.id },
-    }),
     prisma.ebayConnection.upsert({
       where: {
         shopId_marketplaceId: {
@@ -141,6 +139,24 @@ export async function completeEbayAuthorization({
   ]);
 
   return oauthState.shop.shopDomain;
+}
+
+async function consumeOAuthState(oauthStateId: string) {
+  const consumedAt = new Date();
+  const result = await prisma.ebayOAuthState.updateMany({
+    data: { consumedAt },
+    where: {
+      consumedAt: null,
+      expiresAt: {
+        gte: consumedAt,
+      },
+      id: oauthStateId,
+    },
+  });
+
+  if (result.count !== 1) {
+    throw new Error("State OAuth eBay non valido o scaduto.");
+  }
 }
 
 async function exchangeAuthorizationCode(code: string) {

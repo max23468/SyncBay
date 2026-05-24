@@ -16,7 +16,7 @@ Piani, ADR, guide interne, regole agenti e documentazione non esposta nell'app p
 ## Single source of truth
 
 - `app/lib/version.ts` esporta `APP_VERSION` e `BUILD_DATE`.
-- La dashboard embedded importa `APP_VERSION` da quel file.
+- La dashboard embedded importa `APP_VERSION` e `BUILD_DATE` da quel file.
 - Non hardcodare la versione in UI, README o documenti operativi.
 
 ## Comandi
