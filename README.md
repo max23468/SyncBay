@@ -42,6 +42,8 @@ Provisioning minimo creato:
 - Typecheck: `npm run typecheck`
 - Lint: `npm run lint`
 - Build: `npm run build`
+- Smoke UI: `npm run smoke:ui`
+- React Doctor: `npm run quality:react-doctor`
 - Prisma/setup runtime locale: `npm run setup`
 - Validazione Prisma: `npm run prisma:validate`
 - Verifica advisor Supabase collegato: `npm run db:verify`
@@ -62,9 +64,11 @@ Provisioning minimo creato:
 ## Documenti principali
 
 - Piano prodotto e tecnico: `docs/syncbay-product-technical-plan.md`
-- Contesto rapido: `docs/context.md`
-- Indice documentazione: `docs/README.md`
-- Roadmap: `ROADMAP.md`
+- Contesto rapido: `docs/CONTEXT.md`
+- Indice documentazione: `docs/INDEX.md`
+- Roadmap: `docs/ROADMAP.md`
+- Backlog: `docs/BACKLOG.md`
+- Toolchain: `docs/TOOLCHAIN.md`
 - Changelog: `CHANGELOG.md`
 - Brand: `BRAND.md`
 - Security policy: `SECURITY.md`

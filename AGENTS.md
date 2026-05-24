@@ -63,15 +63,18 @@ Spostamenti strutturali verso questi perimetri richiedono una decisione esplicit
 Prima di modifiche non banali leggi:
 
 1. `docs/syncbay-product-technical-plan.md`
-2. `docs/context.md`
-3. `BRAND.md`
-4. `ROADMAP.md`
-5. `docs/decisions-pending.md`
-6. `docs/market/shopify-ebay-app-benchmark.md`
-7. `docs/decisions/0001-stack.md`
-8. `docs/decisions/0005-runtime-infrastructure.md`
-9. `docs/decisions/0006-versioning-runtime-locale.md`
-10. `README.md`
+2. `docs/CONTEXT.md`
+3. `docs/INDEX.md`
+4. `BRAND.md`
+5. `docs/ROADMAP.md`
+6. `docs/BACKLOG.md`
+7. `docs/TOOLCHAIN.md`
+8. `docs/decisions-pending.md`
+9. `docs/market/shopify-ebay-app-benchmark.md`
+10. `docs/decisions/0001-stack.md`
+11. `docs/decisions/0005-runtime-infrastructure.md`
+12. `docs/decisions/0006-versioning-runtime-locale.md`
+13. `README.md`
 
 Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione App Store o modello dati, aggiorna o crea un ADR in `docs/decisions/`.
 
@@ -121,7 +124,7 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 
 ## Errori comuni da evitare
 
-- Non promettere "real-time assoluto" indiscriminato: il target confermato e sync entro 5 minuti.
+- Non promettere "real-time assoluto" indiscriminato: il target confermato è sync entro 5 minuti.
 - Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, preferiscilo e documenta il fallback.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
 - Non assumere che Shopify sia la sorgente di verità: per il catalogo MVP la sorgente è eBay.
@@ -179,10 +182,13 @@ SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia un
 
 - `docs/syncbay-product-technical-plan.md`: perimetro prodotto, MVP, fasi, requisiti funzionali e rischi.
 - `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
-- `ROADMAP.md`: priorità, backlog e stato decisioni/prossime fasi.
+- `docs/INDEX.md`: indice documentale canonico.
+- `docs/ROADMAP.md`: priorità e stato decisioni/prossime fasi.
+- `docs/BACKLOG.md`: idee, debiti e attività non ancora promosse.
+- `docs/TOOLCHAIN.md`: runtime, tool, versioni e verifiche.
 - `CHANGELOG.md`: storico modifiche significative.
 - `BRAND.md`: identità, tagline, tono, palette direzionale, logo direction e claim vietati.
-- `docs/context.md`: handoff rapido per nuove chat o nuovi agenti.
+- `docs/CONTEXT.md`: handoff rapido per nuove chat o nuovi agenti.
 - `docs/decisions-pending.md`: decisioni aperte e blocchi prima delle prossime fasi.
 - `docs/data-model.md`: entità e regole dati concettuali.
 - `docs/glossario.md`: terminologia prodotto e microcopy.
@@ -225,6 +231,10 @@ Comandi runtime attuali:
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
+- `npm run smoke:ui`
+- `npm run prisma:validate`
+- `npm run db:verify`
+- `npm run quality:react-doctor`
 - `npm audit --omit=dev`
 - `npm run release:dry-run`
 
@@ -292,7 +302,7 @@ Dettagli: `docs/guides/versioning-e-release.md`, ADR `docs/decisions/0006-versio
 
 Nelle risposte finali:
 
-- riassumi cosa e cambiato o scoperto;
+- riassumi cosa è cambiato o scoperto;
 - indica i file principali toccati;
 - riporta verifiche solo quando utili o quando ci sono limiti/rischi;
 - dichiara rischi residui concreti;

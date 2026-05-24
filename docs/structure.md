@@ -46,8 +46,12 @@ SyncBay/
       source/
       svg/
   docs/
+    INDEX.md
+    ROADMAP.md
+    BACKLOG.md
+    CONTEXT.md
+    TOOLCHAIN.md
     README.md
-    context.md
     data-model.md
     decisions-pending.md
     glossario.md
@@ -61,6 +65,8 @@ SyncBay/
       0003-git-pubblicazione-versioning.md
       0004-runtime-ci-release-future.md
       0005-runtime-infrastructure.md
+      0006-versioning-runtime-locale.md
+      0007-privacy-provvisoria-pilota.md
     guides/
       architettura.md
       git-e-pubblicazione.md
