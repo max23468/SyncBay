@@ -8,18 +8,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Correzioni
 
+- L'import draft Shopify ora limita le creazioni concorrenti per ridurre il rischio di saturare la Admin API durante verifiche pilota.
+- La callback OAuth eBay consuma lo state prima dello scambio token, impedendo riutilizzi dello stesso state anche se il token exchange fallisce.
 - Rafforzata la rinomina location Shopify bloccando richieste su location non più leggibili o diverse dalla predefinita salvata.
 - La lettura delle location Shopify ora pagina oltre le prime 50 location, evitando falsi blocchi su shop con molte sedi.
 - L'import draft Shopify ora fallisce esplicitamente su errori GraphQL top-level, HTTP non OK o prodotto non restituito.
 
 ### Novità
 
+- La dashboard embedded mostra anche la data build accanto alla versione app.
 - Aggiunta gestione Shopify della location selezionata nella preview import, con rinomina tramite `write_locations`.
 - Rifinita la preview mock per renderla verificabile senza collegamenti esterni reali e con messaggi più espliciti su validazioni e scritture Shopify.
 - Ripuliti i riferimenti eBay residui dai messaggi dei dati mock della preview, mantenendo sospeso il filone integrazione.
 
 ### Sotto il cofano
 
+- Rimossi export e utility non usati per riportare React Doctor a 100/100.
+- Allineato l'engine Node dichiarato al requisito minimo di React Doctor.
 - Portato React Doctor a 100/100 correggendo warning reali di performance, server waterfall e accessibilità senza soppressioni.
 - Ridotti i warning di build Vercel limitando l'engine Node, aggiornando ESLint a flat config e filtrando i chunk vuoti attesi delle resource route server-side.
 - Applicate su Supabase le migration remote per primitive runtime e mapping/snapshot/conflitti, mantenendo disabilitato l'import Shopify draft.

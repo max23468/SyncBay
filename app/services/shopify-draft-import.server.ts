@@ -34,6 +34,7 @@ type ShopifyDraftProductInput = ReturnType<typeof buildShopifyDraftProductInputs
 type ShopifyCreatedProduct = NonNullable<
   NonNullable<ShopifyProductCreateResponse["data"]>["productCreate"]
 >["product"];
+const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 
 type ShopifyDraftProductResult =
   | {
@@ -94,10 +95,10 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     };
   }
 
-  const results = await Promise.all(
-    buildShopifyDraftProductInputs(input.previewResult).map((product) =>
-      createShopifyDraftProduct(input.admin, product),
-    ),
+  const results = await mapWithConcurrency(
+    buildShopifyDraftProductInputs(input.previewResult),
+    DRAFT_PRODUCT_CREATE_CONCURRENCY,
+    (product) => createShopifyDraftProduct(input.admin, product),
   );
   const createdProducts = results.flatMap((result) =>
     result.status === "created" ? [result.product] : [],
@@ -180,6 +181,34 @@ async function createShopifyDraftProduct(
     product: createdProduct,
     status: "created",
   };
+}
+
+async function mapWithConcurrency<Input, Output>(
+  items: Input[],
+  concurrency: number,
+  mapper: (item: Input) => Promise<Output>,
+) {
+  const results = new Array<Output>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, items.length);
+
+  const runNext = (): Promise<void> => {
+    const currentIndex = nextIndex;
+    nextIndex += 1;
+
+    if (currentIndex >= items.length) {
+      return Promise.resolve();
+    }
+
+    return mapper(items[currentIndex]).then((result) => {
+      results[currentIndex] = result;
+      return runNext();
+    });
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
+
+  return results;
 }
 
 function getImportablePreviewItems(previewResult: ImportPreviewResult) {

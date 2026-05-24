@@ -49,7 +49,7 @@ const DEFAULT_PRODUCT_STATUS = "draft";
 const DEFAULT_DESCRIPTION_MODE = "HTML pulito senza template";
 const MAX_SIMPLE_VARIANTS = 1;
 
-export function buildImportPreview(
+function buildImportPreview(
   candidates: ImportPreviewListingCandidate[],
   mode: ImportPreviewResult["mode"] = "live",
 ): ImportPreviewResult {
@@ -61,10 +61,6 @@ export function buildImportPreview(
     mode,
     summary,
   };
-}
-
-export function getEmptyImportPreview() {
-  return buildImportPreview([], "empty");
 }
 
 export function getMockImportPreview() {

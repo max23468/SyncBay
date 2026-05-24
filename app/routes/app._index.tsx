@@ -2,7 +2,7 @@ import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
-import { APP_VERSION } from "../lib/version";
+import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import { getDashboardState } from "../services/syncbay.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -182,6 +182,7 @@ export default function Index() {
           </s-list-item>
           <s-list-item>Osservabilità: Vercel Analytics e Speed Insights</s-list-item>
           <s-list-item>Versione app: {APP_VERSION}</s-list-item>
+          <s-list-item>Data build: {BUILD_DATE}</s-list-item>
         </s-unordered-list>
       </s-section>
 
