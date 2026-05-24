@@ -1,0 +1,50 @@
+name: PR Title
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-title:
+    name: Conventional PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check title
+        env:
+          PR_TITLE: "${{ github.event.pull_request.title || 'chore: manual title check' }}"
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+
+          title = os.environ["PR_TITLE"].strip()
+          pattern = re.compile(
+              r"^(feat|fix|perf|docs|test|chore|ci|refactor|build)"
+              r"(\([a-z0-9._-]+\))?!?: .+"
+          )
+          if not pattern.fullmatch(title):
+              print(f"Invalid PR title: {title!r}", file=sys.stderr)
+              print(
+                  "Use Conventional Commit format, for example "
+                  "'feat: add import checkpoint' or 'docs: clarify app store policy'.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
+          PY
