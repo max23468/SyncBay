@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.8.1] — 2026-05-25
+
+### Correzioni
+
+- Impostato esplicitamente `Accept-Language` nelle chiamate eBay Inventory API per evitare il rifiuto della preview live su `EBAY_IT`.
+
 ## [0.8.0] — 2026-05-25
 
 ### Novità
@@ -194,6 +200,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.8.1]: #081--2026-05-25
 [0.8.0]: #080--2026-05-25
 [0.7.2]: #072--2026-05-25
 [0.7.1]: #071--2026-05-25

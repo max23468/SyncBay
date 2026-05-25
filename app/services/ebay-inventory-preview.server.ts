@@ -75,6 +75,9 @@ const EBAY_INVENTORY_URLS = {
   production: "https://api.ebay.com/sell/inventory/v1",
   sandbox: "https://api.sandbox.ebay.com/sell/inventory/v1",
 };
+const EBAY_MARKETPLACE_LOCALES: Record<string, string> = {
+  EBAY_IT: "it-IT",
+};
 const DEFAULT_PREVIEW_LIMIT = 50;
 const MAX_PREVIEW_LIMIT = 100;
 const OFFER_LOOKUP_CONCURRENCY = 4;
@@ -135,10 +138,11 @@ async function fetchInventoryItems(input: {
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", "0");
 
-  const response = await fetchEbayJson<EbayInventoryItemsResponse>(
+  const response = await fetchEbayJson<EbayInventoryItemsResponse>({
+    accessToken: input.accessToken,
+    marketplaceId: input.connection.marketplaceId,
     url,
-    input.accessToken,
-  );
+  });
 
   return {
     inventoryItems: response.inventoryItems ?? [],
@@ -188,19 +192,25 @@ async function fetchPublishedOfferForSku(input: {
   url.searchParams.set("limit", "100");
   url.searchParams.set("offset", "0");
 
-  const response = await fetchEbayJson<EbayOffersResponse>(
+  const response = await fetchEbayJson<EbayOffersResponse>({
+    accessToken: input.accessToken,
+    marketplaceId: input.connection.marketplaceId,
     url,
-    input.accessToken,
-  );
+  });
 
   return (response.offers ?? []).find(isPublishedOffer) ?? null;
 }
 
-async function fetchEbayJson<T>(url: URL, accessToken: string): Promise<T> {
-  const response = await fetch(url, {
+async function fetchEbayJson<T>(input: {
+  accessToken: string;
+  marketplaceId: string;
+  url: URL;
+}): Promise<T> {
+  const response = await fetch(input.url, {
     headers: {
       Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
+      "Accept-Language": getMarketplaceLocale(input.marketplaceId),
+      Authorization: `Bearer ${input.accessToken}`,
     },
   });
   const json = (await response.json()) as T & EbayErrorResponse;
@@ -256,6 +266,10 @@ function getInventoryBaseUrl(environment: string) {
   return environment === "production"
     ? EBAY_INVENTORY_URLS.production
     : EBAY_INVENTORY_URLS.sandbox;
+}
+
+function getMarketplaceLocale(marketplaceId: string) {
+  return EBAY_MARKETPLACE_LOCALES[marketplaceId] ?? "en-US";
 }
 
 function getPreviewLimit(limit: number | undefined) {
