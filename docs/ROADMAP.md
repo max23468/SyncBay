@@ -52,9 +52,9 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Stato | Voce | Note |
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
-| In corso | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API implementati; keyset dedicato SyncBay ricevuto; resta verifica end-to-end sul runtime aggiornato |
-| In corso | Onboarding guidato | Readiness dashboard e wizard import preview iniziale predisposti; scelta location Shopify salvabile, preview mock fittizia e regole dry-run MVP codificate; restano lettura listing eBay e conferma import |
-| Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da OAuth eBay e lettura listing |
+| Fatto | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API verificati end-to-end sul keyset dedicato SyncBay |
+| In corso | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API e regole dry-run MVP codificate; restano fallback Trading API e conferma import |
+| Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da copertura listing completa e conferma pilota |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
 | Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
@@ -79,14 +79,14 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | --- | --- | --- |
 | Da fare | Cifratura token a riposo | Shopify/eBay refresh token |
 | Da fare | Shopify GDPR webhook | Disinstallazione, cancellazione dati shop/customer dove richiesto |
-| In corso | eBay marketplace account deletion | Challenge GET e POST con verifica firma e cleanup dati eBay implementati; restano migration/deploy runtime e test notification eBay prima del flag reale |
+| Fatto | eBay marketplace account deletion | Challenge GET e POST con verifica firma e cleanup dati eBay implementati, migration/deploy runtime applicati e test notification eBay superata |
 | Da fare | Audit log minimo | Connect, disconnect, refresh fallito, sync critici |
 | Da fare | Rate limit e retry policy | Provider API e job queue |
 | Da fare | Rollback import | Archiviare/ripristinare sessioni import |
 
 ## Prossime mosse suggerite
 
-1. Applicare migration e deploy runtime per rendere attivo il POST eBay account deletion aggiornato.
-2. Abilitare gli env eBay sul keyset dedicato, inviare la test notification e completare OAuth eBay end-to-end.
-3. Preparare l'import Shopify draft controllato su dati mock/fixture, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
-4. Implementare lettura listing eBay per alimentare la preview import catalogo eBay -> Shopify senza sync automatico.
+1. Verificare in Shopify Admin che la preview live Inventory API legga correttamente gli item disponibili per lo shop pilota.
+2. Aggiungere fallback Trading API per coprire listing storici creati o gestiti solo da Seller Hub/UI.
+3. Preparare l'import Shopify draft controllato da preview live, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
+4. Collegare mapping/snapshot prodotto e job queue solo dopo una conferma pilota dell'import iniziale.

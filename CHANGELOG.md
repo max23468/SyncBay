@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.8.0] — 2026-05-25
+
+### Novità
+
+- Collegata la preview import alla lettura live eBay Inventory API quando l'account eBay è connesso, con refresh sicuro dell'access token e fallback mock solo se eBay non è collegato.
+
+### Correzioni
+
+- Rimossa la falsa diagnostica `read_locations` mancante quando Shopify restituisce lo scope `write_locations` come scope effettivo della sessione.
+
+### Sotto il cofano
+
+- Documentato il limite della preview live: Inventory API copre inventory item con offer pubblicate, mentre i listing storici creati da Seller Hub/UI richiedono ancora fallback Trading API.
+- Aggiornato lo smoke UI per verificare la preview import generica invece della vecchia label mock-only.
+
 ## [0.7.2] — 2026-05-25
 
 ### Sicurezza
@@ -179,6 +194,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.8.0]: #080--2026-05-25
 [0.7.2]: #072--2026-05-25
 [0.7.1]: #071--2026-05-25
 [0.7.0]: #070--2026-05-25

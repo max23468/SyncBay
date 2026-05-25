@@ -30,7 +30,9 @@ interface ShopifyProductCreateResponse {
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
 
-type ShopifyDraftProductInput = ReturnType<typeof buildShopifyDraftProductInputs>[number];
+type ShopifyDraftProductInput = ReturnType<
+  typeof buildShopifyDraftProductInputs
+>[number];
 type ShopifyCreatedProduct = NonNullable<
   NonNullable<ShopifyProductCreateResponse["data"]>["productCreate"]
 >["product"];
@@ -54,8 +56,12 @@ export function getDraftImportReadiness(input: {
   const importableItems = getImportablePreviewItems(input.previewResult);
   const blockers = [
     !enabled ? "import Shopify draft non abilitato" : null,
-    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
-    importableItems.length === 0 ? "nessun prodotto importabile nella preview" : null,
+    !input.hasDefaultLocation
+      ? "location Shopify predefinita non confermata"
+      : null,
+    importableItems.length === 0
+      ? "nessun prodotto importabile nella preview"
+      : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
   return {
@@ -69,10 +75,12 @@ export function getDraftImportReadiness(input: {
   };
 }
 
-export function buildShopifyDraftProductInputs(previewResult: ImportPreviewResult) {
+export function buildShopifyDraftProductInputs(
+  previewResult: ImportPreviewResult,
+) {
   return getImportablePreviewItems(previewResult).map((item) => ({
     status: "DRAFT",
-    tags: ["SyncBay", "Import mock"],
+    tags: ["SyncBay", "Import preview"],
     title: item.normalized.title,
   }));
 }
@@ -104,7 +112,9 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     result.status === "created" ? [result.product] : [],
   );
   const failedResult = results.find(
-    (result): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
+    (
+      result,
+    ): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
       result.status === "failed",
   );
 

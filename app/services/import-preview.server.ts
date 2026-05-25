@@ -49,7 +49,7 @@ const DEFAULT_PRODUCT_STATUS = "draft";
 const DEFAULT_DESCRIPTION_MODE = "HTML pulito senza template";
 const MAX_SIMPLE_VARIANTS = 1;
 
-function buildImportPreview(
+export function buildImportPreview(
   candidates: ImportPreviewListingCandidate[],
   mode: ImportPreviewResult["mode"] = "live",
 ): ImportPreviewResult {
@@ -61,6 +61,12 @@ function buildImportPreview(
     mode,
     summary,
   };
+}
+
+export function getEmptyImportPreview(
+  mode: ImportPreviewResult["mode"] = "live",
+) {
+  return buildImportPreview([], mode);
 }
 
 export function getMockImportPreview() {
@@ -149,7 +155,9 @@ export function getImportPreviewValidationRules() {
   ];
 }
 
-function buildPreviewItem(candidate: ImportPreviewListingCandidate): ImportPreviewItem {
+function buildPreviewItem(
+  candidate: ImportPreviewListingCandidate,
+): ImportPreviewItem {
   const issues = getPreviewIssues(candidate);
   const hasErrors = issues.some((issue) => issue.severity === "error");
 
@@ -173,7 +181,8 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if (!normalizeText(candidate.sku)) {
     issues.push({
       code: "missing_sku",
-      message: "SKU mancante: il prodotto va corretto o escluso prima dell'import.",
+      message:
+        "SKU mancante: il prodotto va corretto o escluso prima dell'import.",
       severity: "error",
     });
   }
@@ -210,7 +219,10 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
     });
   }
 
-  if (candidate.descriptionHtml && looksLikeTemplate(candidate.descriptionHtml)) {
+  if (
+    candidate.descriptionHtml &&
+    looksLikeTemplate(candidate.descriptionHtml)
+  ) {
     issues.push({
       code: "description_cleanup",
       message: "Descrizione con possibile template storico da ripulire.",
@@ -221,10 +233,13 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   return issues;
 }
 
-function summarizePreviewItems(items: ImportPreviewItem[]): ImportPreviewSummary {
+function summarizePreviewItems(
+  items: ImportPreviewItem[],
+): ImportPreviewSummary {
   return {
     errorCount: items.filter((item) => item.status === "error").length,
-    importableCount: items.filter((item) => item.status === "importable").length,
+    importableCount: items.filter((item) => item.status === "importable")
+      .length,
     skippedCount: items.filter((item) => item.status === "skipped").length,
     totalCount: items.length,
     warningCount: items.reduce(

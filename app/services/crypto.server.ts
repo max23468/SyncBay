@@ -6,7 +6,10 @@ const IV_LENGTH = 12;
 export function encryptSecret(plaintext: string) {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, getTokenKey(), iv);
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const ciphertext = Buffer.concat([
+    cipher.update(plaintext, "utf8"),
+    cipher.final(),
+  ]);
   const authTag = cipher.getAuthTag();
 
   return [
@@ -15,6 +18,26 @@ export function encryptSecret(plaintext: string) {
     authTag.toString("base64url"),
     ciphertext.toString("base64url"),
   ].join(".");
+}
+
+export function decryptSecret(secret: string) {
+  const [version, encodedIv, encodedAuthTag, encodedCiphertext] =
+    secret.split(".");
+  if (version !== "v1" || !encodedIv || !encodedAuthTag || !encodedCiphertext) {
+    throw new Error("Formato segreto cifrato non valido.");
+  }
+
+  const decipher = crypto.createDecipheriv(
+    ALGORITHM,
+    getTokenKey(),
+    Buffer.from(encodedIv, "base64url"),
+  );
+  decipher.setAuthTag(Buffer.from(encodedAuthTag, "base64url"));
+
+  return Buffer.concat([
+    decipher.update(Buffer.from(encodedCiphertext, "base64url")),
+    decipher.final(),
+  ]).toString("utf8");
 }
 
 export function hashState(state: string) {

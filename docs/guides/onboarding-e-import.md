@@ -33,7 +33,7 @@ La dashboard embedded mostra già una readiness operativa per:
 
 - connessione Shopify, scope e webhook pilota;
 - runtime Vercel/Supabase;
-- eBay OAuth predisposto con recupero `userId`, da verificare end-to-end sul keyset dedicato;
+- eBay OAuth verificato end-to-end sul keyset dedicato SyncBay, con recupero `userId` e token cifrati;
 - endpoint account deletion con challenge, verifica firma e cleanup dati, controllato da flag runtime;
 - default import e blocker della preview.
 
@@ -44,14 +44,15 @@ wizard:
 - permette di salvare una location Shopify predefinita;
 - permette di rinominare la location selezionata quando lo shop ha riapprovato
   lo scope `write_locations`;
-- mostra una preview mock con dati fittizi finché mancano OAuth e lettura listing live;
-- rende la preview mock usabile senza collegamenti esterni reali, mantenendo
-  ogni scrittura Shopify dietro conferma;
+- mostra una preview live da eBay Inventory API quando l'account eBay è collegato;
+- mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
+  quando serve un fallback dimostrativo;
+- mantiene ogni scrittura Shopify dietro conferma esplicita;
 - mostra default import e sequenza di preview prevista;
 - mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
   successive;
-- mantiene il dry-run bloccato finché mancano account eBay collegato e lettura
-  listing eBay.
+- mantiene il dry-run bloccato finché mancano account eBay collegato, location
+  Shopify predefinita o lettura eBay valida.
 
 Validazioni MVP già codificate per la preview:
 
@@ -71,16 +72,25 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - l'attivazione richiede conferma esplicita, migration remote applicata e
   verifica manuale su shop pilota.
 
+Limite attuale della preview live:
+
+- la prima lettura usa Inventory API eBay e considera inventory item con offer
+  pubblicate;
+- i listing storici creati o gestiti solo da Seller Hub/UI possono non comparire
+  in questa fonte;
+- per copertura completa eBay.it serve aggiungere fallback Trading API prima
+  dell'import iniziale fino a 2.000 prodotti.
+
 Smoke UI locale:
 
-- `npm run smoke:ui` verifica che dashboard, preview mock e gestione location
+- `npm run smoke:ui` verifica che dashboard, preview import e gestione location
   restino presenti nelle superfici React Router principali.
 
 La preview import resta bloccata finché non sono disponibili:
 
 - account eBay collegato via OAuth;
 - location Shopify predefinita;
-- logica di lettura listing eBay.
+- lettura live eBay riuscita o fallback dimostrativo accettabile per la fase.
 
 ## Default consigliati
 

@@ -9,9 +9,10 @@ const checks = [
     file: "app/routes/app.import-preview.tsx",
     needles: [
       "Preview mock pronta",
+      "Preview live pronta",
       "Rinomina location",
       "Fasi Shopify",
-      "Crea bozze mock",
+      "Crea bozze da preview",
     ],
   },
   {
@@ -37,4 +38,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("Smoke UI passato: dashboard, preview mock e gestione location presenti.");
+console.log("Smoke UI passato: dashboard, preview import e gestione location presenti.");

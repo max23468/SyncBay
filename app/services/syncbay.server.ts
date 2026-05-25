@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { getEbayInventoryImportPreview } from "./ebay-inventory-preview.server";
 import {
   getImportPreviewValidationRules,
   getMockImportPreview,
@@ -82,7 +83,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
   const importPreview = getImportPreviewReadiness({
     ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
-    listingReaderAvailable: false,
+    listingReaderAvailable: true,
   });
   const readiness = [
     shopifyReadiness.summary,
@@ -140,7 +141,9 @@ export async function getDashboardState(session: ShopifySessionLike) {
       ),
       jobsByStatus: summarizeJobsByStatus(recentJobs),
       jobsByType: summarizeJobsByType(recentJobs),
-      pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
+      pendingJobs: recentJobs.filter(
+        (job) => job.status === SyncJobStatus.PENDING,
+      ).length,
       lastJobs: recentJobs.map((job) => ({
         attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
@@ -168,13 +171,19 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       },
     },
   });
-  const ebayConnected = ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const ebayConnected =
+    ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const preview =
+    ebayConnected && ebayConnection
+      ? await getEbayInventoryImportPreview(ebayConnection)
+      : getMockImportPreviewState();
   const importPreview = getImportPreviewReadiness({
     ebayConnected,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
-    listingReaderAvailable: false,
+    listingReaderAvailable: true,
+    listingReaderError: preview.errorMessage,
   });
-  const previewResult = getMockImportPreview();
+  const previewResult = preview.previewResult;
 
   return {
     draftImport: getDraftImportReadiness({
@@ -189,6 +198,13 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     onboarding: getOnboardingReadiness(),
     previewPlan: getImportPreviewPlan(),
     previewResult,
+    previewSource: {
+      coverageNote: preview.coverageNote,
+      errorMessage: preview.errorMessage,
+      readCount: preview.readCount,
+      source: preview.source,
+      totalAvailable: preview.totalAvailable,
+    },
     runtimePhases: getRuntimePhaseReadiness({
       ebayConnected,
       hasDefaultLocation: Boolean(shop.defaultLocationGid),
@@ -314,7 +330,10 @@ export async function markShopUninstalled(shopDomain: string) {
   });
 }
 
-export async function updateShopifyScopes(shopDomain: string, scopes: string[]) {
+export async function updateShopifyScopes(
+  shopDomain: string,
+  scopes: string[],
+) {
   const shop = await prisma.shop.upsert({
     where: { shopDomain },
     create: {
@@ -337,7 +356,9 @@ export async function updateShopifyScopes(shopDomain: string, scopes: string[]) 
   });
 }
 
-export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput) {
+export async function recordShopifyWebhookPlaceholder(
+  input: WebhookRecordInput,
+) {
   const normalizedTopic = normalizeShopifyWebhookTopic(input.topic);
   const shop = await prisma.shop.upsert({
     where: { shopDomain: input.shopDomain },
@@ -436,20 +457,25 @@ export function getEbayRuntimeReadiness() {
           : `Mancano ${missingRequirements.length} requisiti OAuth.`,
       label: "eBay",
       status:
-        missingRequirements.length === 0 && oauthEnabled ? "pronto" : "da completare",
+        missingRequirements.length === 0 && oauthEnabled
+          ? "pronto"
+          : "da completare",
     },
   };
 }
 
 export function getAccountDeletionChallengeConfig() {
   const endpoint = process.env.EBAY_ACCOUNT_DELETION_ENDPOINT_URL;
-  const verificationToken = process.env.EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN;
+  const verificationToken =
+    process.env.EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN;
 
   return {
     endpoint,
     missingRequirements: [
       !hasRuntimeValue(endpoint) ? "endpoint account deletion eBay" : null,
-      !hasRuntimeValue(verificationToken) ? "verification token account deletion eBay" : null,
+      !hasRuntimeValue(verificationToken)
+        ? "verification token account deletion eBay"
+        : null,
     ].filter((requirement): requirement is string => Boolean(requirement)),
     notificationsEnabled:
       process.env.EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED === "true",
@@ -480,13 +506,17 @@ export function extractWebhookResourceId(payload: unknown) {
   if (!payload || typeof payload !== "object") return null;
 
   const record = payload as Record<string, unknown>;
-  return getStringField(record, "admin_graphql_api_id") ?? getStringField(record, "id");
+  return (
+    getStringField(record, "admin_graphql_api_id") ??
+    getStringField(record, "id")
+  );
 }
 
 function getPlaceholderJobType(topic: string) {
   if (topic === "orders/paid") return SyncJobType.UPDATE_EBAY_STOCK;
   if (topic === "products/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
-  if (topic === "inventory_levels/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
+  if (topic === "inventory_levels/update")
+    return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
 }
@@ -500,8 +530,13 @@ function getEbayMarketplaceId() {
 }
 
 function getSyncTargetSeconds() {
-  const parsed = Number.parseInt(process.env.SYNC_POLL_INTERVAL_SECONDS ?? "", 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_SYNC_TARGET_SECONDS;
+  const parsed = Number.parseInt(
+    process.env.SYNC_POLL_INTERVAL_SECONDS ?? "",
+    10,
+  );
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_SYNC_TARGET_SECONDS;
 }
 
 function getShopifyReadiness(scopes: string[]) {
@@ -512,7 +547,8 @@ function getShopifyReadiness(scopes: string[]) {
   const missingConfiguredScopes = REQUIRED_SHOPIFY_SCOPES.filter(
     (scope) => !hasEffectiveShopifyScope(configuredScopes, scope),
   );
-  const ready = missingScopes.length === 0 && missingConfiguredScopes.length === 0;
+  const ready =
+    missingScopes.length === 0 && missingConfiguredScopes.length === 0;
 
   return {
     missingConfiguredScopes,
@@ -529,7 +565,8 @@ function getShopifyReadiness(scopes: string[]) {
 }
 
 function getSupabaseReadiness() {
-  const queueProviderReady = process.env.JOB_QUEUE_PROVIDER === "supabase_queues";
+  const queueProviderReady =
+    process.env.JOB_QUEUE_PROVIDER === "supabase_queues";
   const schedulerProviderReady =
     process.env.JOB_SCHEDULER_PROVIDER === "supabase_cron";
   const storageBucket =
@@ -545,7 +582,10 @@ function getSupabaseReadiness() {
           ? "Database operativo; queue, cron e storage sono predisposti."
           : "Provider queue/cron da allineare agli env runtime.",
       label: "Supabase",
-      status: queueProviderReady && schedulerProviderReady ? "pronto" : "da completare",
+      status:
+        queueProviderReady && schedulerProviderReady
+          ? "pronto"
+          : "da completare",
     },
   };
 }
@@ -598,7 +638,10 @@ function getComplianceReadiness() {
           : "Endpoint account deletion pronto; abilita il flag quando vuoi ricevere notifiche reali."
         : "Endpoint e verification token account deletion da completare.",
       label: "Privacy",
-      status: ready && accountDeletion.notificationsEnabled ? "pronto" : "da completare",
+      status:
+        ready && accountDeletion.notificationsEnabled
+          ? "pronto"
+          : "da completare",
     },
   };
 }
@@ -620,14 +663,34 @@ function getOnboardingReadiness() {
   };
 }
 
+function getMockImportPreviewState() {
+  const previewResult = getMockImportPreview();
+
+  return {
+    coverageNote:
+      "Preview dimostrativa locale: usa dati fittizi finché eBay non è collegato.",
+    errorMessage: null,
+    previewResult,
+    readCount: previewResult.summary.totalCount,
+    source: "mock" as const,
+    totalAvailable: previewResult.summary.totalCount,
+  };
+}
+
 function getImportPreviewReadiness(input: {
   ebayConnected: boolean;
   hasDefaultLocation: boolean;
+  listingReaderError?: string | null;
   listingReaderAvailable?: boolean;
 }) {
   const blockers = [
     !input.ebayConnected ? "account eBay non collegato" : null,
-    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+    !input.hasDefaultLocation
+      ? "location Shopify predefinita non confermata"
+      : null,
+    input.listingReaderError
+      ? `lettura listing eBay non riuscita: ${input.listingReaderError}`
+      : null,
     input.listingReaderAvailable === false
       ? "lettura listing eBay non ancora implementata"
       : null,
@@ -643,7 +706,7 @@ function getImportPreviewReadiness(input: {
     summary: {
       detail:
         blockers.length === 0
-          ? "Preview import pronta da costruire sui listing eBay."
+          ? "Preview import pronta sui dati eBay disponibili."
           : `Preview bloccata: ${blockers.join(", ")}.`,
       label: "Import preview",
       status: blockers.length === 0 ? "pronto" : "bloccato",
@@ -674,10 +737,10 @@ function getRuntimePhaseReadiness(input: {
   return [
     {
       detail: input.ebayConnected
-        ? "Account eBay collegato."
+        ? "Account eBay collegato; preview Inventory API attiva per offer pubblicate. Fallback Trading API ancora da aggiungere per listing storici."
         : "Bloccato finché OAuth eBay non viene completato.",
       label: "Lettura listing eBay",
-      status: input.ebayConnected ? "preparabile" : "bloccato",
+      status: input.ebayConnected ? "parziale" : "bloccato",
     },
     {
       detail: input.hasDefaultLocation
@@ -687,27 +750,32 @@ function getRuntimePhaseReadiness(input: {
       status: input.hasDefaultLocation ? "preparabile" : "bloccato",
     },
     {
-      detail: "Schema job presente; consumer Supabase da implementare quando esiste import reale.",
+      detail:
+        "Schema job presente; consumer Supabase da implementare quando esiste import reale.",
       label: "Job queue e retry",
       status: "da implementare",
     },
     {
-      detail: "Polling entro 5 minuti da collegare dopo mapping e snapshot prodotto.",
+      detail:
+        "Polling entro 5 minuti da collegare dopo mapping e snapshot prodotto.",
       label: "Sync incrementale eBay -> Shopify",
       status: "da implementare",
     },
     {
-      detail: "Webhook Shopify preparati; update eBay stock dipende da OAuth e capability listing.",
+      detail:
+        "Webhook Shopify preparati; update eBay stock dipende da OAuth e capability listing.",
       label: "Protezione disponibilità Shopify -> eBay",
       status: input.ebayConnected ? "preparabile" : "bloccato",
     },
     {
-      detail: "Webhook Shopify product/inventory tracciati; modello conflitti da aggiungere.",
+      detail:
+        "Webhook Shopify product/inventory tracciati; modello conflitti da aggiungere.",
       label: "Conflitti Shopify",
       status: "da implementare",
     },
     {
-      detail: "Challenge e POST account deletion pronti; flag runtime controlla la ricezione reale.",
+      detail:
+        "Challenge e POST account deletion pronti; flag runtime controlla la ricezione reale.",
       label: "Compliance eBay/Shopify",
       status: "preparabile",
     },
@@ -746,20 +814,22 @@ function getConfiguredShopifyScopes() {
 
 function splitScopes(scopes?: string | null) {
   return scopes
-    ? scopes
-        .split(",")
-        .flatMap((scope) => {
-          const trimmedScope = scope.trim();
-          return trimmedScope ? [trimmedScope] : [];
-        })
+    ? scopes.split(",").flatMap((scope) => {
+        const trimmedScope = scope.trim();
+        return trimmedScope ? [trimmedScope] : [];
+      })
     : [];
 }
 
 function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
   if (scopes.includes(requiredScope)) return true;
 
-  if (requiredScope === "read_products") return scopes.includes("write_products");
-  if (requiredScope === "read_inventory") return scopes.includes("write_inventory");
+  if (requiredScope === "read_products")
+    return scopes.includes("write_products");
+  if (requiredScope === "read_inventory")
+    return scopes.includes("write_inventory");
+  if (requiredScope === "read_locations")
+    return scopes.includes("write_locations");
 
   return false;
 }
