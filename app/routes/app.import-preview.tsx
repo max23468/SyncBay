@@ -133,8 +133,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!selectedLocation) {
       const params = new URLSearchParams({
         locationRename: "blocked",
-        message:
-          "location Shopify predefinita non leggibile o non più attiva",
+        message: "location Shopify predefinita non leggibile o non più attiva",
       });
 
       throw redirect(`/app/import-preview?${params.toString()}`);
@@ -155,7 +154,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       await recordShopifyLocationRenamed(session, {
         locationGid: result.location.id,
         locationName: result.location.name,
-        previousLocationName: selectedLocation?.name ?? "nome precedente non letto",
+        previousLocationName:
+          selectedLocation?.name ?? "nome precedente non letto",
       });
       params.set("name", result.location.name);
       params.set("updated", "location-name");
@@ -181,7 +181,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  await updateDefaultShopifyLocation(session, locationGid, locationResult.locations);
+  await updateDefaultShopifyLocation(
+    session,
+    locationGid,
+    locationResult.locations,
+  );
 
   throw redirect("/app/import-preview?updated=location");
 };
@@ -204,7 +208,14 @@ export default function ImportPreview() {
   const isRenamingLocation = isSaving && activeIntent === "renameLocation";
   const isSavingLocation = isSaving && activeIntent === "saveLocation";
   const isCreatingDrafts = isSaving && activeIntent === "createDraftProducts";
-  const draftStatus = searchParams.get("draft") as ShopifyDraftImportStatus | null;
+  const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
+  const previewReadLabel =
+    wizard.previewSource.source === "inventory_api"
+      ? "Elementi Inventory API letti"
+      : "Elementi mock letti";
+  const draftStatus = searchParams.get(
+    "draft",
+  ) as ShopifyDraftImportStatus | null;
   const locationRenameStatus = searchParams.get(
     "locationRename",
   ) as ShopifyLocationRenameStatus | null;
@@ -216,216 +227,420 @@ export default function ImportPreview() {
 
   return (
     <s-page heading="Preview import">
-      <s-section heading="Preparazione">
+      <PreparationSection
+        locationRenameStatus={locationRenameStatus}
+        previewSource={wizard.previewSource}
+        searchParams={searchParams}
+        shopDomain={wizard.shop.domain}
+      />
+      <LocationShopifySection
+        locationError={locationError}
+        locationRename={locationRename}
+        locationUiState={{
+          canWriteLocations,
+          isRenamingLocation,
+          isSaving,
+          isSavingLocation,
+        }}
+        locations={locations}
+        selectedLocation={selectedLocation}
+        wizard={wizard}
+      />
+      <DefaultImportSection wizard={wizard} />
+      <PreviewStatusSection wizard={wizard} />
+      <DryRunSection
+        previewModeLabel={previewModeLabel}
+        previewReadLabel={previewReadLabel}
+        wizard={wizard}
+      />
+      <PreviewExamplesSection wizard={wizard} />
+      <DraftImportSection
+        draftStatus={draftStatus}
+        isCreatingDrafts={isCreatingDrafts}
+        isSaving={isSaving}
+        searchParams={searchParams}
+        wizard={wizard}
+      />
+      <ValidationSection wizard={wizard} />
+      <AsideSections
+        previewModeLabel={previewModeLabel}
+        selectedLocation={selectedLocation}
+        visibleRuntimePhases={visibleRuntimePhases}
+        wizard={wizard}
+      />
+    </s-page>
+  );
+}
+
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
+};
+
+type LoaderData = Awaited<ReturnType<typeof loader>>;
+type WizardState = LoaderData["wizard"];
+type PreviewSourceState = WizardState["previewSource"];
+type LocationRenameState = LoaderData["locationRename"];
+type RuntimePhaseState = WizardState["runtimePhases"][number];
+
+function PreparationSection({
+  locationRenameStatus,
+  previewSource,
+  searchParams,
+  shopDomain,
+}: {
+  locationRenameStatus: ShopifyLocationRenameStatus | null;
+  previewSource: PreviewSourceState;
+  searchParams: URLSearchParams;
+  shopDomain: string;
+}) {
+  return (
+    <s-section heading="Preparazione">
+      <s-paragraph>
+        Negozio: {shopDomain}. {getPreviewIntro(previewSource.source)}
+      </s-paragraph>
+      {searchParams.get("updated") === "location" ? (
+        <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
+      ) : null}
+      {locationRenameStatus === "renamed" ? (
         <s-paragraph>
-          Negozio: {wizard.shop.domain}. La preview mock usa dati fittizi e resta
-          in sola lettura finché non viene confermata una scrittura esplicita su
-          Shopify.
+          Location rinominata: {searchParams.get("name") ?? "nome aggiornato"}.
         </s-paragraph>
-        {searchParams.get("updated") === "location" ? (
-          <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
-        ) : null}
-        {locationRenameStatus === "renamed" ? (
-          <s-paragraph>
-            Location rinominata: {searchParams.get("name") ?? "nome aggiornato"}.
-          </s-paragraph>
-        ) : locationRenameStatus === "blocked" ? (
-          <s-paragraph>
-            Rinomina bloccata: {searchParams.get("message") ?? "permessi incompleti"}.
-          </s-paragraph>
-        ) : locationRenameStatus === "failed" ? (
-          <s-paragraph>
-            Rinomina non completata:{" "}
-            {searchParams.get("message") ?? "errore Shopify"}.
-          </s-paragraph>
-        ) : null}
-      </s-section>
-
-      <s-section heading="Location Shopify">
-        {locationError ? (
-          <s-paragraph>{locationError}</s-paragraph>
-        ) : locations.length > 0 ? (
-          <form method="post">
-            <input type="hidden" name="intent" value="saveLocation" />
-            <label htmlFor="defaultLocationGid">Location predefinita</label>
-            <select
-              defaultValue={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
-              id="defaultLocationGid"
-              name="defaultLocationGid"
-            >
-              {locations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                  {location.isActive ? "" : " - non attiva"}
-                  {location.fulfillsOnlineOrders ? "" : " - fulfillment online non attivo"}
-                </option>
-              ))}
-            </select>
-            <s-button type="submit" disabled={isSaving}>
-              {isSavingLocation ? "Salvataggio..." : "Salva location"}
-            </s-button>
-          </form>
-        ) : (
-          <s-paragraph>
-            Nessuna location Shopify leggibile con gli scope attuali.
-          </s-paragraph>
-        )}
-        {selectedLocation ? (
-          <form method="post">
-            <input type="hidden" name="intent" value="renameLocation" />
-            <input type="hidden" name="locationGid" value={selectedLocation.id} />
-            <label htmlFor="locationName">Nome location</label>
-            <input
-              aria-label="Nome location Shopify"
-              defaultValue={selectedLocation.name}
-              disabled={!locationRename.canRename || isSaving}
-              id="locationName"
-              maxLength={80}
-              name="locationName"
-              required
-            />
-            <s-button
-              type="submit"
-              disabled={!locationRename.canRename || isSaving}
-            >
-              {isRenamingLocation ? "Rinomina..." : "Rinomina location"}
-            </s-button>
-            <s-paragraph>{locationRename.nextAction}</s-paragraph>
-            {!canWriteLocations ? (
-              <s-paragraph>
-                Apri di nuovo SyncBay da Shopify Admin per riapprovare il nuovo
-                permesso `write_locations`.
-              </s-paragraph>
-            ) : null}
-          </form>
-        ) : null}
-      </s-section>
-
-      <s-section heading="Default import">
-        <s-unordered-list>
-          <s-list-item>
-            Stato prodotti: {wizard.importPreview.defaults.productStatus}
-          </s-list-item>
-          <s-list-item>
-            Immagini: {wizard.importPreview.defaults.imageImport}
-          </s-list-item>
-          <s-list-item>
-            Descrizioni: {wizard.importPreview.defaults.descriptionMode}
-          </s-list-item>
-          <s-list-item>
-            Limite MVP: {wizard.previewPlan.limits.maxProducts} prodotti per shop
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
-
-      <s-section heading="Stato preview">
+      ) : locationRenameStatus === "blocked" ? (
         <s-paragraph>
-          Preview mock pronta: puoi verificare conteggi, validazioni e messaggi
-          senza collegamenti esterni.
+          Rinomina bloccata:{" "}
+          {searchParams.get("message") ?? "permessi incompleti"}.
         </s-paragraph>
-        {wizard.importPreview.blockers.length > 0 ? (
-          <s-paragraph>
-            I dati reali restano sospesi; questa pagina lavora sui dati mock.
-          </s-paragraph>
-        ) : null}
-      </s-section>
-
-      <s-section heading="Dry-run">
+      ) : locationRenameStatus === "failed" ? (
         <s-paragraph>
-          Modalità:{" "}
-          {wizard.previewResult.mode === "mock"
-            ? "dati dimostrativi fittizi"
-            : wizard.previewResult.mode}
-          . Nessun prodotto viene creato su Shopify.
+          Rinomina non completata:{" "}
+          {searchParams.get("message") ?? "errore Shopify"}.
         </s-paragraph>
-        <s-unordered-list>
-          <s-list-item>
-            Elementi mock letti: {wizard.previewResult.summary.totalCount}
-          </s-list-item>
-          <s-list-item>
-            Importabili: {wizard.previewResult.summary.importableCount}
-          </s-list-item>
-          <s-list-item>
-            Saltati: {wizard.previewResult.summary.skippedCount}
-          </s-list-item>
-          <s-list-item>
-            Errori: {wizard.previewResult.summary.errorCount}
-          </s-list-item>
-          <s-list-item>
-            Warning: {wizard.previewResult.summary.warningCount}
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
+      ) : null}
+    </s-section>
+  );
+}
 
-      <s-section heading="Esempi preview">
-        {wizard.previewResult.items.length > 0 ? (
-          <s-unordered-list>
-            {wizard.previewResult.items.map((item) => (
-              <s-list-item key={item.itemId}>
-                {item.normalized.title}: {formatPreviewStatus(item.status)} - SKU{" "}
-                {item.normalized.sku ?? "mancante"} - immagini{" "}
-                {item.normalized.imageCount} -{" "}
-                {formatPreviewIssues(item.issues)}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun elemento mock letto.</s-paragraph>
-        )}
-      </s-section>
+function LocationShopifySection({
+  locationError,
+  locationRename,
+  locationUiState,
+  locations,
+  selectedLocation,
+  wizard,
+}: {
+  locationError: string | null;
+  locationRename: LocationRenameState;
+  locationUiState: {
+    canWriteLocations: boolean;
+    isRenamingLocation: boolean;
+    isSaving: boolean;
+    isSavingLocation: boolean;
+  };
+  locations: ShopifyLocation[];
+  selectedLocation?: ShopifyLocation;
+  wizard: WizardState;
+}) {
+  return (
+    <s-section heading="Location Shopify">
+      {locationError ? (
+        <s-paragraph>{locationError}</s-paragraph>
+      ) : locations.length > 0 ? (
+        <LocationSaveForm
+          isSaving={locationUiState.isSaving}
+          isSavingLocation={locationUiState.isSavingLocation}
+          locations={locations}
+          wizard={wizard}
+        />
+      ) : (
+        <s-paragraph>
+          Nessuna location Shopify leggibile con gli scope attuali.
+        </s-paragraph>
+      )}
+      {selectedLocation ? (
+        <LocationRenameForm
+          canWriteLocations={locationUiState.canWriteLocations}
+          isRenamingLocation={locationUiState.isRenamingLocation}
+          isSaving={locationUiState.isSaving}
+          locationRename={locationRename}
+          selectedLocation={selectedLocation}
+        />
+      ) : null}
+    </s-section>
+  );
+}
 
-      <s-section heading="Import Shopify draft">
-        {draftStatus === "created" ? (
-          <s-paragraph>
-            Create {searchParams.get("count") ?? "0"} bozze Shopify da dati mock.
-          </s-paragraph>
-        ) : draftStatus === "blocked" ? (
-          <s-paragraph>
-            Import draft bloccato: {searchParams.get("message") ?? "requisiti incompleti"}.
-          </s-paragraph>
-        ) : draftStatus === "failed" ? (
-          <s-paragraph>
-            Import draft non completato: {searchParams.get("message") ?? "errore Shopify"}.
-          </s-paragraph>
+function LocationSaveForm({
+  isSaving,
+  isSavingLocation,
+  locations,
+  wizard,
+}: {
+  isSaving: boolean;
+  isSavingLocation: boolean;
+  locations: ShopifyLocation[];
+  wizard: WizardState;
+}) {
+  return (
+    <form method="post">
+      <input type="hidden" name="intent" value="saveLocation" />
+      <label htmlFor="defaultLocationGid">Location predefinita</label>
+      <select
+        defaultValue={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
+        id="defaultLocationGid"
+        name="defaultLocationGid"
+      >
+        {locations.map((location) => (
+          <option key={location.id} value={location.id}>
+            {location.name}
+            {location.isActive ? "" : " - non attiva"}
+            {location.fulfillsOnlineOrders
+              ? ""
+              : " - fulfillment online non attivo"}
+          </option>
+        ))}
+      </select>
+      <s-button type="submit" disabled={isSaving}>
+        {isSavingLocation ? "Salvataggio..." : "Salva location"}
+      </s-button>
+    </form>
+  );
+}
+
+function LocationRenameForm({
+  canWriteLocations,
+  isRenamingLocation,
+  isSaving,
+  locationRename,
+  selectedLocation,
+}: {
+  canWriteLocations: boolean;
+  isRenamingLocation: boolean;
+  isSaving: boolean;
+  locationRename: LocationRenameState;
+  selectedLocation: ShopifyLocation;
+}) {
+  return (
+    <form method="post">
+      <input type="hidden" name="intent" value="renameLocation" />
+      <input type="hidden" name="locationGid" value={selectedLocation.id} />
+      <label htmlFor="locationName">Nome location</label>
+      <input
+        aria-label="Nome location Shopify"
+        defaultValue={selectedLocation.name}
+        disabled={!locationRename.canRename || isSaving}
+        id="locationName"
+        maxLength={80}
+        name="locationName"
+        required
+      />
+      <s-button type="submit" disabled={!locationRename.canRename || isSaving}>
+        {isRenamingLocation ? "Rinomina..." : "Rinomina location"}
+      </s-button>
+      <s-paragraph>{locationRename.nextAction}</s-paragraph>
+      {!canWriteLocations ? (
+        <s-paragraph>
+          Apri di nuovo SyncBay da Shopify Admin per riapprovare il nuovo
+          permesso `write_locations`.
+        </s-paragraph>
+      ) : null}
+    </form>
+  );
+}
+
+function DefaultImportSection({ wizard }: { wizard: WizardState }) {
+  return (
+    <s-section heading="Default import">
+      <s-unordered-list>
+        <s-list-item>
+          Stato prodotti: {wizard.importPreview.defaults.productStatus}
+        </s-list-item>
+        <s-list-item>
+          Immagini: {wizard.importPreview.defaults.imageImport}
+        </s-list-item>
+        <s-list-item>
+          Descrizioni: {wizard.importPreview.defaults.descriptionMode}
+        </s-list-item>
+        <s-list-item>
+          Limite MVP: {wizard.previewPlan.limits.maxProducts} prodotti per shop
+        </s-list-item>
+      </s-unordered-list>
+    </s-section>
+  );
+}
+
+function PreviewStatusSection({ wizard }: { wizard: WizardState }) {
+  return (
+    <s-section heading="Stato preview">
+      <s-paragraph>{getPreviewStatusMessage(wizard.previewSource)}</s-paragraph>
+      <s-paragraph>{wizard.previewSource.coverageNote}</s-paragraph>
+      {wizard.importPreview.blockers.length > 0 ? (
+        <s-paragraph>
+          Blocchi: {wizard.importPreview.blockers.join(", ")}.
+        </s-paragraph>
+      ) : null}
+    </s-section>
+  );
+}
+
+function DryRunSection({
+  previewModeLabel,
+  previewReadLabel,
+  wizard,
+}: {
+  previewModeLabel: string;
+  previewReadLabel: string;
+  wizard: WizardState;
+}) {
+  return (
+    <s-section heading="Dry-run">
+      <s-paragraph>
+        Modalità: {previewModeLabel}. Nessun prodotto viene creato su Shopify.
+      </s-paragraph>
+      <s-unordered-list>
+        <s-list-item>
+          {previewReadLabel}: {wizard.previewSource.readCount}
+        </s-list-item>
+        <s-list-item>
+          Elementi in preview: {wizard.previewResult.summary.totalCount}
+        </s-list-item>
+        {wizard.previewSource.totalAvailable !== null ? (
+          <s-list-item>
+            Totale disponibile dalla fonte:{" "}
+            {wizard.previewSource.totalAvailable}
+          </s-list-item>
         ) : null}
-        <s-unordered-list>
-          <s-list-item>
-            Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
-          </s-list-item>
-          <s-list-item>
-            Prodotti importabili: {wizard.draftImport.importableCount}
-          </s-list-item>
-          <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
-          {wizard.draftImport.blockers.length > 0 ? (
-            <s-list-item>
-              Blocchi: {wizard.draftImport.blockers.join(", ")}
-            </s-list-item>
-          ) : null}
-        </s-unordered-list>
-        <form method="post">
-          <input type="hidden" name="intent" value="createDraftProducts" />
-          <s-button
-            type="submit"
-            disabled={isSaving || wizard.draftImport.blockers.length > 0}
-          >
-            {isCreatingDrafts ? "Creazione..." : "Crea bozze mock"}
-          </s-button>
-        </form>
-      </s-section>
+        <s-list-item>
+          Fonte: {formatPreviewSource(wizard.previewSource.source)}
+        </s-list-item>
+        <s-list-item>
+          Importabili: {wizard.previewResult.summary.importableCount}
+        </s-list-item>
+        <s-list-item>
+          Saltati: {wizard.previewResult.summary.skippedCount}
+        </s-list-item>
+        <s-list-item>
+          Errori: {wizard.previewResult.summary.errorCount}
+        </s-list-item>
+        <s-list-item>
+          Warning: {wizard.previewResult.summary.warningCount}
+        </s-list-item>
+      </s-unordered-list>
+    </s-section>
+  );
+}
 
-      <s-section heading="Validazioni MVP">
+function PreviewExamplesSection({ wizard }: { wizard: WizardState }) {
+  return (
+    <s-section heading="Esempi preview">
+      {wizard.previewResult.items.length > 0 ? (
         <s-unordered-list>
-          {wizard.validationRules.map((rule) => (
-            <s-list-item key={rule.code}>
-              {rule.label}: {rule.severity}
+          {wizard.previewResult.items.map((item) => (
+            <s-list-item key={item.itemId}>
+              {item.normalized.title}: {formatPreviewStatus(item.status)} - SKU{" "}
+              {item.normalized.sku ?? "mancante"} - immagini{" "}
+              {item.normalized.imageCount} - {formatPreviewIssues(item.issues)}
             </s-list-item>
           ))}
         </s-unordered-list>
-      </s-section>
+      ) : (
+        <s-paragraph>
+          Nessun elemento letto dalla fonte preview corrente.
+        </s-paragraph>
+      )}
+    </s-section>
+  );
+}
 
+function DraftImportSection({
+  draftStatus,
+  isCreatingDrafts,
+  isSaving,
+  searchParams,
+  wizard,
+}: {
+  draftStatus: ShopifyDraftImportStatus | null;
+  isCreatingDrafts: boolean;
+  isSaving: boolean;
+  searchParams: URLSearchParams;
+  wizard: WizardState;
+}) {
+  return (
+    <s-section heading="Import Shopify draft">
+      {draftStatus === "created" ? (
+        <s-paragraph>
+          Create {searchParams.get("count") ?? "0"} bozze Shopify dalla preview.
+        </s-paragraph>
+      ) : draftStatus === "blocked" ? (
+        <s-paragraph>
+          Import draft bloccato:{" "}
+          {searchParams.get("message") ?? "requisiti incompleti"}.
+        </s-paragraph>
+      ) : draftStatus === "failed" ? (
+        <s-paragraph>
+          Import draft non completato:{" "}
+          {searchParams.get("message") ?? "errore Shopify"}.
+        </s-paragraph>
+      ) : null}
+      <s-unordered-list>
+        <s-list-item>
+          Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
+        </s-list-item>
+        <s-list-item>
+          Prodotti importabili: {wizard.draftImport.importableCount}
+        </s-list-item>
+        <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
+        {wizard.draftImport.blockers.length > 0 ? (
+          <s-list-item>
+            Blocchi: {wizard.draftImport.blockers.join(", ")}
+          </s-list-item>
+        ) : null}
+      </s-unordered-list>
+      <form method="post">
+        <input type="hidden" name="intent" value="createDraftProducts" />
+        <s-button
+          type="submit"
+          disabled={isSaving || wizard.draftImport.blockers.length > 0}
+        >
+          {isCreatingDrafts ? "Creazione..." : "Crea bozze da preview"}
+        </s-button>
+      </form>
+    </s-section>
+  );
+}
+
+function ValidationSection({ wizard }: { wizard: WizardState }) {
+  return (
+    <s-section heading="Validazioni MVP">
+      <s-unordered-list>
+        {wizard.validationRules.map((rule) => (
+          <s-list-item key={rule.code}>
+            {rule.label}: {rule.severity}
+          </s-list-item>
+        ))}
+      </s-unordered-list>
+    </s-section>
+  );
+}
+
+function AsideSections({
+  previewModeLabel,
+  selectedLocation,
+  visibleRuntimePhases,
+  wizard,
+}: {
+  previewModeLabel: string;
+  selectedLocation?: ShopifyLocation;
+  visibleRuntimePhases: RuntimePhaseState[];
+  wizard: WizardState;
+}) {
+  return (
+    <>
       <s-section slot="aside" heading="Riepilogo">
         <s-unordered-list>
-          <s-list-item>Modalità preview: dati mock</s-list-item>
+          <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
+          <s-list-item>
+            Fonte: {formatPreviewSource(wizard.previewSource.source)}
+          </s-list-item>
           <s-list-item>
             Location salvata: {selectedLocation?.name ?? "non confermata"}
           </s-list-item>
@@ -434,16 +649,22 @@ export default function ImportPreview() {
           </s-list-item>
         </s-unordered-list>
       </s-section>
-
-      <s-section slot="aside" heading="Sequenza mock">
+      <s-section slot="aside" heading="Sequenza preview">
         <s-unordered-list>
-          <s-list-item>Leggere dati dimostrativi fittizi.</s-list-item>
-          <s-list-item>Validare SKU, immagini, prezzo e disponibilità.</s-list-item>
-          <s-list-item>Mostrare prodotti importabili, errori e warning.</s-list-item>
-          <s-list-item>Tenere ogni scrittura Shopify dietro conferma.</s-list-item>
+          <s-list-item>
+            {getPreviewFirstStep(wizard.previewSource.source)}
+          </s-list-item>
+          <s-list-item>
+            Validare SKU, immagini, prezzo e disponibilità.
+          </s-list-item>
+          <s-list-item>
+            Mostrare prodotti importabili, errori e warning.
+          </s-list-item>
+          <s-list-item>
+            Tenere ogni scrittura Shopify dietro conferma.
+          </s-list-item>
         </s-unordered-list>
       </s-section>
-
       <s-section slot="aside" heading="Fasi Shopify">
         <s-unordered-list>
           {visibleRuntimePhases.map((phase) => (
@@ -453,13 +674,9 @@ export default function ImportPreview() {
           ))}
         </s-unordered-list>
       </s-section>
-    </s-page>
+    </>
   );
 }
-
-export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
-};
 
 async function fetchShopifyLocations(
   admin: Awaited<ReturnType<typeof authenticate.admin>>["admin"],
@@ -504,14 +721,16 @@ async function fetchShopifyLocations(
       : null;
   } while (cursor);
 
-
   return {
     errorMessage: null,
     locations,
   };
 }
 
-function hasSessionScope(scopes: string | null | undefined, requiredScope: string) {
+function hasSessionScope(
+  scopes: string | null | undefined,
+  requiredScope: string,
+) {
   return Boolean(
     scopes
       ?.split(",")
@@ -526,6 +745,53 @@ function formatPreviewStatus(status: string) {
   if (status === "error") return "da correggere";
 
   return status;
+}
+
+function getPreviewIntro(source: string) {
+  if (source === "inventory_api") {
+    return "La preview live legge eBay in sola lettura e non scrive su Shopify senza conferma esplicita.";
+  }
+
+  return "La preview mock usa dati fittizi e resta in sola lettura finché non viene confermata una scrittura esplicita su Shopify.";
+}
+
+function getPreviewModeLabel(mode: string) {
+  if (mode === "mock") return "dati dimostrativi fittizi";
+  if (mode === "live") return "lettura live eBay";
+  if (mode === "empty") return "nessun dato";
+
+  return mode;
+}
+
+function formatPreviewSource(source: string) {
+  if (source === "inventory_api") return "Inventory API eBay";
+  if (source === "mock") return "mock locale";
+
+  return source;
+}
+
+function getPreviewStatusMessage(source: {
+  errorMessage: string | null;
+  readCount: number;
+  source: string;
+}) {
+  if (source.errorMessage) {
+    return `Preview live non completata: ${source.errorMessage}`;
+  }
+
+  if (source.source === "inventory_api") {
+    return `Preview live pronta: letti ${source.readCount} elementi Inventory API eBay.`;
+  }
+
+  return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";
+}
+
+function getPreviewFirstStep(source: string) {
+  if (source === "inventory_api") {
+    return "Leggere inventory item e offer pubblicate da eBay.";
+  }
+
+  return "Leggere dati dimostrativi fittizi.";
 }
 
 function formatPreviewIssues(

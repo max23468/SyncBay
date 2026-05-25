@@ -4,9 +4,9 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 ## Stato
 
-Fase corrente: adattamento scaffold a SyncBay.
+Fase corrente: onboarding/import preview pilota.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run e dati mock fittizi, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay lato app con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import o sync catalogo attivi.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import completo o sync catalogo attivi.
 
 ## Direzione prodotto
 
@@ -90,7 +90,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Applicare la migration account deletion all'ambiente remoto e deployare il runtime aggiornato prima di abilitare notifiche eBay reali.
-2. Allineare gli env eBay al keyset dedicato SyncBay, mantenendo `EBAY_SCOPES` sul set minimo MVP e `EBAY_OAUTH_ENABLED=true` solo quando si testa il consenso.
-3. In eBay Developer, inviare la test notification account deletion e completare OAuth eBay end-to-end.
-4. Dopo OAuth verificato, collegare la prima lettura listing live alla preview import senza attivare sync automatico.
+1. Verificare la preview live in Shopify Admin sullo shop pilota e controllare quanti item eBay arrivano da Inventory API.
+2. Aggiungere fallback Trading API per coprire listing storici Seller Hub/UI prima dell'import completo.
+3. Preparare l'import Shopify draft controllato da preview live, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
+4. Collegare mapping/snapshot prodotto e job queue solo dopo conferma pilota dell'import iniziale.

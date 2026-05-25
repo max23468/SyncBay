@@ -33,7 +33,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run MVP e dati mock fittizi, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify placeholder, flusso OAuth eBay lato app con recupero `userId` e POST account deletion con verifica firma e cleanup dati eBay. La preview Shopify Admin è stata verificata sul dev store. Non esistono ancora import, sync catalogo o job queue runtime attivo.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run MVP, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST account deletion con verifica firma e cleanup dati eBay. La preview Shopify Admin è stata verificata sul dev store. Non esistono ancora import completo, sync catalogo o job queue runtime attivo.
 
 ## Runtime deciso
 
@@ -55,8 +55,9 @@ Provisioning minimo:
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
 - Vercel production attuale: `https://syncbay.vercel.app`; non equivale ancora a release pubblica Shopify App Store.
 - eBay keyset: usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti.
-- eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end ancora da completare sul runtime aggiornato.
-- eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
+- eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
+- eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
+- Preview import: live via Inventory API per offer pubblicate; fallback Trading API ancora da aggiungere per listing storici Seller Hub/UI.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Comandi runtime
