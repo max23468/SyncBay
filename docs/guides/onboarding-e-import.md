@@ -33,8 +33,8 @@ La dashboard embedded mostra già una readiness operativa per:
 
 - connessione Shopify, scope e webhook pilota;
 - runtime Vercel/Supabase;
-- eBay OAuth predisposto ma bloccato fino al keyset dedicato;
-- endpoint account deletion predisposto ma notifiche reali non abilitate;
+- eBay OAuth predisposto con recupero `userId`, da verificare end-to-end sul keyset dedicato;
+- endpoint account deletion con challenge, verifica firma e cleanup dati, controllato da flag runtime;
 - default import e blocker della preview.
 
 La pagina embedded `/app/import-preview` aggiunge il primo passo operativo del
@@ -44,7 +44,7 @@ wizard:
 - permette di salvare una location Shopify predefinita;
 - permette di rinominare la location selezionata quando lo shop ha riapprovato
   lo scope `write_locations`;
-- mostra una preview mock con dati fittizi finché manca il keyset eBay;
+- mostra una preview mock con dati fittizi finché mancano OAuth e lettura listing live;
 - rende la preview mock usabile senza collegamenti esterni reali, mantenendo
   ogni scrittura Shopify dietro conferma;
 - mostra default import e sequenza di preview prevista;

@@ -72,6 +72,13 @@ enum SyncConflictResolution {
   IGNORE_FIELD
 }
 
+enum EbayAccountDeletionRequestStatus {
+  PROCESSING
+  PROCESSED
+  NO_MATCH
+  FAILED
+}
+
 enum AuditEventType {
   SHOP_INSTALLED
   SHOP_UNINSTALLED
@@ -85,6 +92,8 @@ enum AuditEventType {
   SYNC_JOB_FAILED
   SYNC_JOB_SUCCEEDED
   CONNECTION_CHECK
+  EBAY_ACCOUNT_DELETION_RECEIVED
+  EBAY_ACCOUNT_DELETION_PROCESSED
 }
 
 model Session {
@@ -279,4 +288,25 @@ model AuditLog {
 
   @@index([shopId, createdAt])
   @@index([type, createdAt])
+}
+
+model EbayAccountDeletionRequest {
+  id                  String                           @id @default(cuid())
+  notificationId      String                           @unique
+  hashedUserId        String
+  status              EbayAccountDeletionRequestStatus @default(PROCESSING)
+  matchedShopCount    Int                              @default(0)
+  signatureKeyId      String?
+  publishAttemptCount Int?
+  eventDate           DateTime?
+  publishDate         DateTime?
+  receivedAt          DateTime                         @default(now())
+  processedAt         DateTime?
+  failureCode         String?
+  failureMessage      String?
+  createdAt           DateTime                         @default(now())
+  updatedAt           DateTime                         @updatedAt
+
+  @@index([hashedUserId, receivedAt])
+  @@index([status, receivedAt])
 }

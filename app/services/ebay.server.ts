@@ -20,6 +20,12 @@ interface EbayTokenResponse {
   scope?: string;
 }
 
+interface EbayUserResponse {
+  accountType?: string;
+  registrationMarketplaceId?: string;
+  userId?: string;
+}
+
 const EBAY_AUTH_URLS = {
   production: "https://auth.ebay.com/oauth2/authorize",
   sandbox: "https://auth.sandbox.ebay.com/oauth2/authorize",
@@ -28,6 +34,11 @@ const EBAY_AUTH_URLS = {
 const EBAY_TOKEN_URLS = {
   production: "https://api.ebay.com/identity/v1/oauth2/token",
   sandbox: "https://api.sandbox.ebay.com/identity/v1/oauth2/token",
+};
+
+const EBAY_IDENTITY_URLS = {
+  production: "https://apiz.ebay.com/commerce/identity/v1/user/",
+  sandbox: "https://apiz.sandbox.ebay.com/commerce/identity/v1/user/",
 };
 
 const OAUTH_STATE_TTL_MINUTES = 15;
@@ -91,6 +102,7 @@ export async function completeEbayAuthorization({
   await consumeOAuthState(oauthState.id);
 
   const token = await exchangeAuthorizationCode(code);
+  const ebayUser = await fetchEbayUser(token.access_token);
   const connectedAt = new Date();
   const refreshTokenExpiresAt = token.refresh_token_expires_in
     ? secondsFromNow(token.refresh_token_expires_in)
@@ -110,6 +122,7 @@ export async function completeEbayAuthorization({
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
         encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
+        ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         marketplaceId: getEbayMarketplaceId(),
         refreshTokenExpiresAt,
@@ -122,6 +135,7 @@ export async function completeEbayAuthorization({
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
         encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
+        ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         refreshTokenExpiresAt: refreshTokenExpiresAt ?? undefined,
         scopes,
@@ -157,6 +171,28 @@ async function consumeOAuthState(oauthStateId: string) {
   if (result.count !== 1) {
     throw new Error("State OAuth eBay non valido o scaduto.");
   }
+}
+
+async function fetchEbayUser(accessToken: string) {
+  const response = await fetch(getIdentityUserUrl(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
+  });
+  const json = (await response.json()) as EbayUserResponse & {
+    errors?: Array<{ message?: string }>;
+  };
+
+  if (!response.ok || !json.userId) {
+    throw new Error("Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.");
+  }
+
+  return {
+    accountType: json.accountType ?? null,
+    registrationMarketplaceId: json.registrationMarketplaceId ?? null,
+    userId: json.userId,
+  };
 }
 
 async function exchangeAuthorizationCode(code: string) {
@@ -201,6 +237,12 @@ function getTokenUrl() {
   return getEbayEnvironment() === "production"
     ? EBAY_TOKEN_URLS.production
     : EBAY_TOKEN_URLS.sandbox;
+}
+
+function getIdentityUserUrl() {
+  return getEbayEnvironment() === "production"
+    ? EBAY_IDENTITY_URLS.production
+    : EBAY_IDENTITY_URLS.sandbox;
 }
 
 function getEbayEnvironment() {

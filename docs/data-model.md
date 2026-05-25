@@ -9,10 +9,11 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - connessione eBay per marketplace (`EbayConnection`);
 - state OAuth eBay anti-CSRF (`EbayOAuthState`);
 - job applicativi tracciati a database (`SyncJob`);
-- audit log operativo (`AuditLog`).
+- audit log operativo (`AuditLog`);
 - mapping prodotto eBay -> Shopify (`ProductMapping`);
 - snapshot prodotto (`ProductSnapshot`);
 - conflitti Shopify (`SyncConflict`).
+- richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`).
 
 Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import ha già una base runtime non persistente per normalizzare candidati listing e classificare errori MVP prima di qualunque scrittura Shopify.
 
@@ -67,6 +68,20 @@ Schema iniziale:
 - scadenza breve;
 - timestamp consumo;
 - eventuale URL di ritorno futuro.
+
+### Richieste account deletion eBay
+
+Traccia in modo minimizzato le notifiche eBay marketplace account deletion.
+
+Schema iniziale:
+
+- `notificationId` univoco per idempotenza;
+- `hashedUserId` calcolato con HMAC applicativo, senza salvare il `userId` raw;
+- stato processing/processed/no match/failed;
+- conteggio shop corrispondenti;
+- key id usato per la firma eBay;
+- date evento/pubblicazione se presenti;
+- nessun salvataggio di `username`, `eiasToken` o payload raw.
 
 ### Mapping prodotto
 

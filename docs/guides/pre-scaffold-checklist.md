@@ -27,9 +27,9 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 ## 3. Account eBay
 
 - [x] Account eBay Developer disponibile.
-- [ ] App/keyset eBay SyncBay approvato (richiesto a eBay, in attesa).
+- [x] App/keyset eBay SyncBay dedicato ricevuto.
 - [x] Marketplace iniziale confermato: `EBAY_IT`.
-- [ ] OAuth RuName e accept/reject URL decisi (in attesa keyset/app URL).
+- [x] OAuth RuName e accept/reject URL decisi per il pilota; verifica end-to-end ancora da completare.
 - [x] Scope eBay necessari definiti come bozza MVP e verificati su documentazione corrente.
 - [x] Strategia Trading API + Inventory API confermata.
 - [x] Marketplace account deletion notification/opt-out verificato come requisito.

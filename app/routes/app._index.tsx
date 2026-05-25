@@ -16,6 +16,7 @@ export default function Index() {
   const ebayStatus = dashboard.ebay.oauthReady
     ? dashboard.ebay.oauthStatus
     : "In attesa configurazione";
+  const ebayConnected = dashboard.ebay.status === "CONNECTED";
   const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
   const lastJobs = dashboard.sync.lastJobs;
 
@@ -78,6 +79,11 @@ export default function Index() {
           </s-list-item>
           <s-list-item>Sync catalogo: {syncStatus}</s-list-item>
         </s-unordered-list>
+        {dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled ? (
+          <s-button href="/auth/ebay/start">
+            {ebayConnected ? "Ricollega eBay" : "Collega eBay"}
+          </s-button>
+        ) : null}
       </s-section>
 
       <s-section heading="Onboarding e preview">
@@ -88,7 +94,7 @@ export default function Index() {
             </s-list-item>
           ) : !dashboard.ebay.oauthEnabled ? (
             <s-list-item>
-              Attendi il keyset eBay dedicato prima di testare OAuth.
+              Abilita il flag runtime OAuth eBay quando vuoi testare il consenso.
             </s-list-item>
           ) : (
             <s-list-item>Avvia connessione OAuth eBay.</s-list-item>

@@ -52,7 +52,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Stato | Voce | Note |
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
-| In corso | Connessione eBay.it OAuth | Flusso OAuth, state e cifratura token implementati; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay; in attesa keyset dedicato per verifica end-to-end |
+| In corso | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API implementati; keyset dedicato SyncBay ricevuto; resta verifica end-to-end sul runtime aggiornato |
 | In corso | Onboarding guidato | Readiness dashboard e wizard import preview iniziale predisposti; scelta location Shopify salvabile, preview mock fittizia e regole dry-run MVP codificate; restano lettura listing eBay e conferma import |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da OAuth eBay e lettura listing |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
@@ -79,14 +79,14 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | --- | --- | --- |
 | Da fare | Cifratura token a riposo | Shopify/eBay refresh token |
 | Da fare | Shopify GDPR webhook | Disinstallazione, cancellazione dati shop/customer dove richiesto |
-| In corso | eBay marketplace account deletion | Challenge endpoint predisposto; notifiche POST disabilitate finché mancano verifica firma e cancellazione dati |
+| In corso | eBay marketplace account deletion | Challenge GET e POST con verifica firma e cleanup dati eBay implementati; restano migration/deploy runtime e test notification eBay prima del flag reale |
 | Da fare | Audit log minimo | Connect, disconnect, refresh fallito, sync critici |
 | Da fare | Rate limit e retry policy | Provider API e job queue |
 | Da fare | Rollback import | Archiviare/ripristinare sessioni import |
 
 ## Prossime mosse suggerite
 
-1. Attendere il keyset eBay dedicato SyncBay e sostituire i valori provvisori FiscalBay negli env.
-2. Abilitare OAuth sul RuName del keyset dedicato, verificare OAuth eBay end-to-end e poi collegare il primo account venditore.
+1. Applicare migration e deploy runtime per rendere attivo il POST eBay account deletion aggiornato.
+2. Abilitare gli env eBay sul keyset dedicato, inviare la test notification e completare OAuth eBay end-to-end.
 3. Preparare l'import Shopify draft controllato su dati mock/fixture, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
 4. Implementare lettura listing eBay per alimentare la preview import catalogo eBay -> Shopify senza sync automatico.
