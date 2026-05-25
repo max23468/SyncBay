@@ -46,7 +46,10 @@ wizard:
   lo scope `write_locations`;
 - mostra una preview live da eBay Inventory API quando l'account eBay è collegato;
 - se Inventory API non restituisce prodotti importabili, prova il fallback
-  Trading API `GetMyeBaySelling` per listing attivi storici/Seller Hub;
+  Trading API `GetMyeBaySelling` e arricchisce i dettagli con `GetItem` sui
+  primi 10 listing del batch preview per listing attivi storici/Seller Hub;
+- genera SKU fallback `EBAY-<ItemID>` quando eBay non restituisce uno SKU del
+  listing, segnalandolo come nota nella preview;
 - mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
   quando serve un fallback dimostrativo;
 - mantiene ogni scrittura Shopify dietro conferma esplicita;
@@ -68,9 +71,11 @@ Validazioni MVP già codificate per la preview:
 La base di import Shopify in `draft` è preparata dietro feature flag:
 
 - env: `SYNCBAY_DRAFT_IMPORT_ENABLED=false` per default;
+- env: `SYNCBAY_DRAFT_IMPORT_LIMIT=3` per limitare il batch pilota;
 - quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
-- quando sarà attivato, il codice userà solo item importabili della preview e
-  creerà prodotti Shopify in stato `DRAFT`;
+- quando sarà attivato, il codice userà solo item importabili della preview,
+  fino al limite runtime, e creerà prodotti Shopify in stato `DRAFT` con titolo,
+  descrizione HTML, prime immagini e metadati SyncBay/eBay;
 - l'attivazione richiede conferma esplicita, migration remote applicata e
   verifica manuale su shop pilota.
 
@@ -81,6 +86,8 @@ Copertura attuale della preview live:
 - se non emergono prodotti importabili, SyncBay usa Trading API
   `GetMyeBaySelling` in sola lettura per coprire listing attivi storici creati o
   gestiti solo da Seller Hub/UI;
+- per i primi 10 listing Trading della preview, SyncBay prova `GetItem` per
+  recuperare dettagli e immagini non restituiti nella lista;
 - la prima pagina di preview resta limitata a 50 prodotti, entro il limite
   tecnico massimo di 100 per lettura UI, mentre l'import completo fino a 2.000
   prodotti richiederà job/mapping/snapshot.

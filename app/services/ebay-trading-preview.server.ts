@@ -26,6 +26,8 @@ const EBAY_TRADING_SITE_IDS: Record<string, string> = {
 };
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TRADING_API_ERROR_LANGUAGE = "it_IT";
+const GET_ITEM_DETAIL_LOOKUP_LIMIT = 10;
+const GET_ITEM_LOOKUP_CONCURRENCY = 4;
 const xmlParser = new XMLParser({
   attributeNamePrefix: "@_",
   ignoreAttributes: false,
@@ -40,48 +42,32 @@ export async function getEbayTradingImportPreview(
   input: EbayTradingPreviewInput,
 ): Promise<EbayTradingPreviewPage> {
   const xml = buildGetMyeBaySellingRequest(input.limit);
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: xml,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": "GetMyeBaySelling",
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-    },
-    method: "POST",
+  const body = await fetchTradingXml({
+    accessToken: input.accessToken,
+    callName: "GetMyeBaySelling",
+    connection: input.connection,
+    requestXml: xml,
   });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new EbayTradingPreviewError(
-      `eBay Trading API ha risposto con HTTP ${response.status}.`,
-    );
-  }
-
-  const parsed = xmlParser.parse(responseText) as unknown;
-  const responseNode = asRecord(parsed)?.GetMyeBaySellingResponse;
-  const body = asRecord(responseNode);
-  if (!body) {
-    throw new EbayTradingPreviewError(
-      "eBay Trading API ha restituito una risposta non leggibile.",
-    );
-  }
-
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    throw new EbayTradingPreviewError(getTradingApiErrorMessage(body));
-  }
-
   const activeList = asRecord(body.ActiveList);
   const items = getTradingItems(activeList);
-  const candidates = items.flatMap((item) => {
-    const candidate = mapTradingItemToCandidate(item);
-    return candidate ? [candidate] : [];
-  });
+  const candidates = await mapWithConcurrency(
+    items,
+    GET_ITEM_LOOKUP_CONCURRENCY,
+    async (item, index) => {
+      if (index >= GET_ITEM_DETAIL_LOOKUP_LIMIT) {
+        const listCandidate = mapTradingItemToCandidate(item);
+        return listCandidate ? withFallbackSku(listCandidate) : null;
+      }
+
+      return getEnrichedTradingCandidate(input, item);
+    },
+  );
 
   return {
-    candidates,
+    candidates: candidates.filter(
+      (candidate): candidate is ImportPreviewListingCandidate =>
+        Boolean(candidate),
+    ),
     readCount: items.length,
     totalAvailable: getTotalEntries(activeList),
   };
@@ -92,6 +78,93 @@ class EbayTradingPreviewError extends Error {
     super(message);
     this.name = "EbayTradingPreviewError";
   }
+}
+
+async function getEnrichedTradingCandidate(
+  input: EbayTradingPreviewInput,
+  item: XmlRecord,
+): Promise<ImportPreviewListingCandidate | null> {
+  const listCandidate = mapTradingItemToCandidate(item);
+  if (!listCandidate) return null;
+
+  const detailItem = await getTradingItemDetail(input, listCandidate.itemId);
+  if (!detailItem) return withFallbackSku(listCandidate);
+  const detailVariations = getTradingVariations(detailItem);
+
+  return withFallbackSku({
+    descriptionHtml:
+      getString(detailItem, "Description") ?? listCandidate.descriptionHtml,
+    imageUrls: getTradingImageUrls(detailItem, listCandidate.imageUrls),
+    itemId: listCandidate.itemId,
+    priceAmount:
+      getTradingPrice(detailItem, detailVariations) ?? listCandidate.priceAmount,
+    quantity:
+      getTradingQuantity(detailItem, detailVariations) ?? listCandidate.quantity,
+    sku: getTradingSku(detailItem, detailVariations) ?? listCandidate.sku,
+    title: getString(detailItem, "Title") ?? listCandidate.title,
+    variantCount: Math.max(
+      detailVariations.length,
+      listCandidate.variantCount ?? 1,
+    ),
+  });
+}
+
+async function getTradingItemDetail(
+  input: EbayTradingPreviewInput,
+  itemId: string,
+) {
+  const requestXml = buildGetItemRequest(itemId);
+
+  return fetchTradingXml({
+    accessToken: input.accessToken,
+    callName: "GetItem",
+    connection: input.connection,
+    requestXml,
+  })
+    .then((body) => asRecord(body.Item))
+    .catch(() => null);
+}
+
+async function fetchTradingXml(input: {
+  accessToken: string;
+  callName: "GetItem" | "GetMyeBaySelling";
+  connection: EbayConnection;
+  requestXml: string;
+}) {
+  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
+    body: input.requestXml,
+    headers: {
+      "Content-Type": "text/xml; charset=utf-8",
+      "X-EBAY-API-CALL-NAME": input.callName,
+      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
+      "X-EBAY-API-IAF-TOKEN": input.accessToken,
+      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+    },
+    method: "POST",
+  });
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new EbayTradingPreviewError(
+      `eBay Trading API ${input.callName} ha risposto con HTTP ${response.status}.`,
+    );
+  }
+
+  const parsed = xmlParser.parse(responseText) as unknown;
+  const responseNode = asRecord(parsed)?.[`${input.callName}Response`];
+  const body = asRecord(responseNode);
+  if (!body) {
+    throw new EbayTradingPreviewError(
+      `eBay Trading API ${input.callName} ha restituito una risposta non leggibile.`,
+    );
+  }
+
+  const ack = getString(body, "Ack");
+  if (ack && !["Success", "Warning"].includes(ack)) {
+    throw new EbayTradingPreviewError(getTradingApiErrorMessage(body));
+  }
+
+  return body;
 }
 
 function buildGetMyeBaySellingRequest(limit: number) {
@@ -110,6 +183,18 @@ function buildGetMyeBaySellingRequest(limit: number) {
   </ActiveList>
   <HideVariations>false</HideVariations>
 </GetMyeBaySellingRequest>`;
+}
+
+function buildGetItemRequest(itemId: string) {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
+  <DetailLevel>ReturnAll</DetailLevel>
+  <ErrorLanguage>${TRADING_API_ERROR_LANGUAGE}</ErrorLanguage>
+  <WarningLevel>High</WarningLevel>
+  <IncludeItemSpecifics>true</IncludeItemSpecifics>
+  <ItemID>${escapeXml(itemId)}</ItemID>
+</GetItemRequest>`;
 }
 
 function getTradingItems(activeList: XmlRecord | null) {
@@ -161,7 +246,24 @@ function getTradingSku(item: XmlRecord, variations: XmlRecord[]) {
   );
 }
 
-function getTradingImageUrls(item: XmlRecord) {
+function withFallbackSku(
+  candidate: ImportPreviewListingCandidate,
+): ImportPreviewListingCandidate {
+  if (normalizeText(candidate.sku)) {
+    return {
+      ...candidate,
+      skuGenerated: false,
+    };
+  }
+
+  return {
+    ...candidate,
+    sku: `EBAY-${candidate.itemId}`,
+    skuGenerated: true,
+  };
+}
+
+function getTradingImageUrls(item: XmlRecord, fallbackUrls: string[] = []) {
   const pictureDetails = asRecord(item.PictureDetails);
   const directUrls = asArray(pictureDetails?.PictureURL).flatMap((url) => {
     const text = normalizeText(toText(url));
@@ -174,13 +276,15 @@ function getTradingImageUrls(item: XmlRecord) {
   const pictures = asRecord(variations?.Pictures);
   const pictureSets = asArray(pictures?.VariationSpecificPictureSet);
 
-  return pictureSets.flatMap((pictureSet) => {
+  const variationUrls = pictureSets.flatMap((pictureSet) => {
     const record = asRecord(pictureSet);
     return asArray(record?.PictureURL).flatMap((url) => {
       const text = normalizeText(toText(url));
       return text ? [text] : [];
     });
   });
+
+  return variationUrls.length > 0 ? variationUrls : fallbackUrls;
 }
 
 function getTradingPrice(item: XmlRecord, variations: XmlRecord[]) {
@@ -301,4 +405,41 @@ function asArray(value: unknown) {
 function normalizeText(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function escapeXml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+async function mapWithConcurrency<Input, Output>(
+  items: Input[],
+  concurrency: number,
+  mapper: (item: Input, index: number) => Promise<Output>,
+) {
+  const results = new Array<Output>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(concurrency, items.length);
+
+  const runNext = (): Promise<void> => {
+    const currentIndex = nextIndex;
+    nextIndex += 1;
+
+    if (currentIndex >= items.length) {
+      return Promise.resolve();
+    }
+
+    return mapper(items[currentIndex], currentIndex).then((result) => {
+      results[currentIndex] = result;
+      return runNext();
+    });
+  };
+
+  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
+
+  return results;
 }

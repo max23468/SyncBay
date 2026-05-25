@@ -140,7 +140,7 @@ Webhook Shopify MVP:
 Usare una combinazione di:
 
 - Trading API per leggere tutti i listing attivi, inclusi listing storici creati da Seller Hub/UI eBay.
-- GetMyeBaySelling/GetItem/GetSellerEvents per import, dettaglio e polling incrementale.
+- GetMyeBaySelling/GetItem/GetSellerEvents per import, dettaglio, immagini e polling incrementale.
 - Platform Notifications, dove disponibili, per accelerare revisioni tipo `ItemRevised`.
 - Inventory API dove disponibile per aggiornare quantità/prezzi di listing compatibili e per casi già migrati al modello inventory.
 
