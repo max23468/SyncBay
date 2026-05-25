@@ -45,6 +45,7 @@ type ShopifyDraftProductResult =
   | {
       product: NonNullable<ShopifyCreatedProduct>;
       status: "created";
+      warnings?: string[];
     }
   | {
       errorMessage: string;
@@ -131,6 +132,9 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   const createdProducts = results.flatMap((result) =>
     result.status === "created" ? [result.product] : [],
   );
+  const warnings = results.flatMap((result) =>
+    result.status === "created" ? (result.warnings ?? []) : [],
+  );
   const failedResult = results.find(
     (
       result,
@@ -144,6 +148,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
       errorMessage: failedResult.errorMessage,
       readiness,
       status: "failed" as const,
+      warnings,
     };
   }
 
@@ -151,10 +156,41 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     createdProducts,
     readiness,
     status: "created" as const,
+    warnings,
   };
 }
 
 async function createShopifyDraftProduct(
+  admin: ShopifyAdminGraphqlClient,
+  draftProduct: ShopifyDraftProductInput,
+): Promise<ShopifyDraftProductResult> {
+  const resultWithMedia = await createShopifyDraftProductRequest(
+    admin,
+    draftProduct,
+  );
+
+  if (resultWithMedia.status === "created" || draftProduct.media.length === 0) {
+    return resultWithMedia;
+  }
+
+  const resultWithoutMedia = await createShopifyDraftProductRequest(admin, {
+    ...draftProduct,
+    media: [],
+  });
+
+  if (resultWithoutMedia.status === "created") {
+    return {
+      ...resultWithoutMedia,
+      warnings: [
+        "Shopify ha creato alcune bozze senza immagini perché le URL media esterne sono state rifiutate.",
+      ],
+    };
+  }
+
+  return resultWithMedia;
+}
+
+async function createShopifyDraftProductRequest(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
 ): Promise<ShopifyDraftProductResult> {
@@ -196,15 +232,27 @@ async function createShopifyDraftProduct(
   }
 
   const userErrors = json.data?.productCreate?.userErrors ?? [];
+  const createdProduct = json.data?.productCreate?.product;
 
   if (userErrors.length > 0) {
+    if (createdProduct) {
+      return {
+        product: createdProduct,
+        status: "created",
+        warnings: [
+          `Shopify ha creato la bozza con avvisi: ${userErrors
+            .map((error) => error.message)
+            .join("; ")}`,
+        ],
+      };
+    }
+
     return {
       errorMessage: userErrors.map((error) => error.message).join("; "),
       status: "failed",
     };
   }
 
-  const createdProduct = json.data?.productCreate?.product;
   if (!createdProduct) {
     return {
       errorMessage: "Shopify non ha restituito il prodotto draft creato.",

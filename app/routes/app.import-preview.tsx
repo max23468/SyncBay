@@ -5,6 +5,7 @@ import type {
 } from "react-router";
 import {
   redirect,
+  useActionData,
   useLoaderData,
   useNavigation,
   useSearchParams,
@@ -47,6 +48,19 @@ interface LocationsQueryResponse {
   errors?: unknown;
 }
 
+type ImportPreviewActionData =
+  | {
+      count?: number;
+      draftStatus: ShopifyDraftImportStatus;
+      intent: "createDraftProducts";
+      message?: string;
+    }
+  | {
+      intent: "saveLocation";
+      message: string;
+      status: "blocked";
+    };
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const [locationResult, wizard] = await Promise.all([
@@ -86,19 +100,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       previewResult: wizard.previewResult,
     });
 
-    const params = new URLSearchParams({
-      draft: result.status,
+    return Response.json({
+      count:
+        result.status === "created" || result.status === "failed"
+          ? result.createdProducts.length
+          : undefined,
+      draftStatus: result.status,
+      intent,
+      message:
+        result.status === "created"
+          ? [...new Set(result.warnings ?? [])].join(" ")
+          : result.status === "failed"
+            ? result.errorMessage
+            : result.readiness.blockers.join(", "),
     });
-
-    if (result.status === "created") {
-      params.set("count", String(result.createdProducts.length));
-    } else if (result.status === "failed" && result.errorMessage) {
-      params.set("message", result.errorMessage);
-    } else if (result.status === "blocked") {
-      params.set("message", result.readiness.blockers.join(", "));
-    }
-
-    throw redirect(`/app/import-preview?${params.toString()}`);
   }
 
   if (intent === "renameLocation") {
@@ -174,6 +189,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (locationResult.errorMessage) {
     return Response.json(
       {
+        intent: "saveLocation",
         message: locationResult.errorMessage,
         status: "blocked",
       },
@@ -198,6 +214,7 @@ export default function ImportPreview() {
     locations,
     wizard,
   } = useLoaderData<typeof loader>();
+  const actionData = useActionData() as ImportPreviewActionData | undefined;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const selectedLocation = locations.find(
@@ -210,9 +227,11 @@ export default function ImportPreview() {
   const isCreatingDrafts = isSaving && activeIntent === "createDraftProducts";
   const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
   const previewReadLabel = getPreviewReadLabel(wizard.previewSource.source);
-  const draftStatus = searchParams.get(
-    "draft",
-  ) as ShopifyDraftImportStatus | null;
+  const draftActionData =
+    actionData?.intent === "createDraftProducts" ? actionData : null;
+  const draftStatus =
+    draftActionData?.draftStatus ??
+    (searchParams.get("draft") as ShopifyDraftImportStatus | null);
   const locationRenameStatus = searchParams.get(
     "locationRename",
   ) as ShopifyLocationRenameStatus | null;
@@ -252,10 +271,11 @@ export default function ImportPreview() {
       />
       <PreviewExamplesSection wizard={wizard} />
       <DraftImportSection
+        draftCount={draftActionData?.count ?? searchParams.get("count")}
+        draftMessage={draftActionData?.message ?? searchParams.get("message")}
         draftStatus={draftStatus}
         isCreatingDrafts={isCreatingDrafts}
         isSaving={isSaving}
-        searchParams={searchParams}
         wizard={wizard}
       />
       <ValidationSection wizard={wizard} />
@@ -559,33 +579,34 @@ function PreviewExamplesSection({ wizard }: { wizard: WizardState }) {
 }
 
 function DraftImportSection({
+  draftCount,
+  draftMessage,
   draftStatus,
   isCreatingDrafts,
   isSaving,
-  searchParams,
   wizard,
 }: {
+  draftCount?: number | string | null;
+  draftMessage?: string | null;
   draftStatus: ShopifyDraftImportStatus | null;
   isCreatingDrafts: boolean;
   isSaving: boolean;
-  searchParams: URLSearchParams;
   wizard: WizardState;
 }) {
   return (
     <s-section heading="Import Shopify draft">
       {draftStatus === "created" ? (
         <s-paragraph>
-          Create {searchParams.get("count") ?? "0"} bozze Shopify dalla preview.
+          Create {draftCount ?? "0"} bozze Shopify dalla preview.
+          {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "blocked" ? (
         <s-paragraph>
-          Import draft bloccato:{" "}
-          {searchParams.get("message") ?? "requisiti incompleti"}.
+          Import draft bloccato: {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : draftStatus === "failed" ? (
         <s-paragraph>
-          Import draft non completato:{" "}
-          {searchParams.get("message") ?? "errore Shopify"}.
+          Import draft non completato: {draftMessage ?? "errore Shopify"}.
         </s-paragraph>
       ) : null}
       <s-unordered-list>

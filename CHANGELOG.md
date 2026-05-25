@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.10.1] — 2026-05-25
+
+### Correzioni
+
+- L'import draft Shopify mostra l'esito della creazione dentro la pagina embedded e crea le bozze senza immagini quando Shopify rifiuta le URL media esterne del listing.
+
 ## [0.10.0] — 2026-05-25
 
 ### Novità
@@ -214,6 +220,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.10.1]: #0101--2026-05-25
 [0.10.0]: #0100--2026-05-25
 [0.9.0]: #090--2026-05-25
 [0.8.1]: #081--2026-05-25
