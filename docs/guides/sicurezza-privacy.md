@@ -40,8 +40,9 @@ Da implementare prima di beta reale:
 - Shopify GDPR webhook dove richiesti;
 - cancellazione o anonimizzazione dati shop su richiesta;
 - eBay marketplace account deletion notification oppure opt-out corretto;
-- endpoint eBay account deletion predisposto: `/ebay/account-deletion`;
-- verifica firma delle notifiche e cancellazione dati eBay prima di abilitare `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED=true`;
+- endpoint eBay account deletion: `/ebay/account-deletion`;
+- verifica `X-EBAY-SIGNATURE` con public key eBay e cleanup dati eBay collegati a `userId`;
+- `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED=true` solo dopo deploy/migration e test notification riuscita;
 - privacy policy per custom app e futura app pubblica;
 - audit log connect/disconnect/revoca/refresh fallito.
 
@@ -56,6 +57,14 @@ Conservare solo dati utili a:
 - compliance.
 
 Non salvare dati cliente o ordine oltre quanto serve a proteggere la disponibilità e agli obblighi provider.
+
+Per eBay marketplace account deletion:
+
+- non conservare payload raw;
+- non conservare `username` o `eiasToken`;
+- usare `notification.data.userId` solo per trovare la connessione eBay e poi azzerarlo;
+- conservare solo un hash HMAC del `userId` per audit e idempotenza operativa;
+- rimuovere mapping, snapshot, conflitti e payload job collegati allo shop/account eBay.
 
 ## Incident response minima
 

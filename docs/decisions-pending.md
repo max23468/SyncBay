@@ -14,8 +14,8 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | --- | --- | --- | --- |
 | Env runtime e URL reali | Aperta | Vercel/Supabase provisionati; scaffold presente; env e callback da compilare sul primo runtime utilizzabile | Servono URL reali, database URL e secret provider prima di usare runtime o webhook. |
 | Shopify dev setup | Chiuso per dev store | Account Partner, dev store, app `SyncBay`, CLI, scaffold e preview Admin verificati | Resta da definire il deploy production quando servirà. |
-| eBay dev setup | Aperta | Account Developer confermato; keyset/app SyncBay richiesto a eBay; `EBAY_IT` confermato; RuName production SyncBay predisposto senza OAuth sul keyset provvisorio FiscalBay | Servono approvazione keyset dedicato, OAuth attivo sul RuName dedicato, endpoint account deletion e verifica end-to-end. Non abilitare OAuth SyncBay sul keyset FiscalBay per non rischiare FiscalBay. |
-| Lettura listing eBay live | Bloccata da eBay dev setup | Validazioni preview e readiness dry-run implementate senza chiamate live | Non va collegata una lettura reale Trading/Inventory API finché OAuth dedicato SyncBay non è verificato end-to-end. |
+| eBay dev setup | Aperta | Account Developer confermato; keyset/app dedicato SyncBay ricevuto; `EBAY_IT` confermato; endpoint account deletion configurato | Servono deploy/migration runtime aggiornato, test notification eBay e OAuth end-to-end sul keyset dedicato. |
+| Lettura listing eBay live | Bloccata da OAuth eBay end-to-end | Validazioni preview e readiness dry-run implementate senza chiamate live | Non va collegata una lettura reale Trading/Inventory API finché OAuth dedicato SyncBay non è verificato end-to-end. |
 | Applicazione migration import reale | Chiusa | Schema e migration mapping/snapshot/conflitti applicati su Supabase; import draft ancora disabilitato | Le tabelle remote esistono con RLS attivo. Prima di creare bozze Shopify serve scegliere una verifica pilota e abilitare esplicitamente `SYNCBAY_DRAFT_IMPORT_ENABLED`. |
 
 ## Decisioni da chiudere prima della beta
@@ -24,7 +24,7 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | --- | --- | --- | --- |
 | Billing | Aperta | Fuori dalla custom app pilota | Necessario per app pubblica Shopify App Store. |
 | Piano dati/retention | Aperta | Conservare solo dati utili a sync, rollback, conflitti e compliance | Serve privacy policy reale. |
-| Verifica firma eBay account deletion | Aperta | Endpoint challenge predisposto, notifiche POST disabilitate | Serve prima di abilitare notifiche reali e prima di produzione con dati eBay persistiti. |
+| Verifica firma eBay account deletion | Chiusa lato codice | Challenge GET e POST con `X-EBAY-SIGNATURE`, public key eBay, idempotenza e cleanup dati implementati; flag runtime ancora disabilitabile | Prima di notifiche reali servono migration/deploy e test notification dal portale eBay. |
 | Multi-location avanzato | Aperta | 1 location Shopify predefinita nel MVP | Impatta disponibilità e rischio di vendere prodotti non disponibili. |
 | Varianti complesse | Aperta | Supporto semplice + log/esclusione guidata | Impatta import completo dei listing. |
 | Matching prodotti esistenti | Aperta | Roadmap prioritaria, non MVP base | Import aggressivo potrebbe sporcare shop già avviati. |

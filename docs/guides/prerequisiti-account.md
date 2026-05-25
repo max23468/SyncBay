@@ -8,14 +8,14 @@ Non contiene segreti reali. I valori sensibili vanno inseriti solo nei provider/
 
 Prerequisiti Shopify confermati e Shopify CLI collegata all'app `SyncBay`.
 
-Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile, nuovo keyset/app SyncBay richiesto a eBay e in attesa di approvazione. Restano da completare RuName, URL OAuth e requisiti account deletion quando il keyset sarà disponibile.
+Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile e keyset/app dedicato SyncBay ricevuto. Restano da completare deploy runtime aggiornato, flag runtime e verifica OAuth/account deletion end-to-end prima di collegare letture listing reali.
 
-Finché non vengono forniti URL reali e keyset eBay approvato:
+Finché OAuth e account deletion non sono verificati sul runtime aggiornato:
 
-- non attivare OAuth eBay reale o sync runtime;
-- non riusare keyset di altri progetti senza decisione esplicita;
+- non attivare sync runtime;
+- non riusare keyset di altri progetti;
 - non salvare token o secret nel repo;
-- non configurare webhook produttivi.
+- non abilitare notifiche eBay reali senza migration/deploy e test notification riuscita.
 
 ## Shopify
 
@@ -102,15 +102,15 @@ Default MVP:
 | Campo | Stato | Note |
 | --- | --- | --- |
 | Account eBay Developer | Confermato | Account disponibile. |
-| App/keyset eBay SyncBay | In attesa eBay | Richiesto keyset/app separato per SyncBay; non riusare FiscalBay salvo fallback esplicito. |
+| App/keyset eBay SyncBay | Ricevuto | Usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti. |
 | Marketplace iniziale | Confermato | `EBAY_IT` |
-| OAuth RuName Sandbox | In attesa keyset | eBay usa `RuName` come `redirect_uri` nel token exchange. |
-| OAuth RuName Production | Predisposto, OAuth non abilitato | RuName SyncBay creato sul keyset provvisorio FiscalBay, senza abilitare OAuth per non disattivare FiscalBay. Il valore resta negli env, non nel repo. |
+| OAuth RuName Sandbox | Da verificare | eBay usa `RuName` come `redirect_uri` nel token exchange. |
+| OAuth RuName Production | Da verificare end-to-end | Il valore resta negli env, non nel repo. |
 | Accept URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
 | Reject URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
-| Scopes eBay | Definiti come bozza MVP | Da validare contro metodi effettivi usati. |
-| Account deletion endpoint | Da derivare da Vercel | Richiede HTTPS pubblico e challenge response. |
-| Verification token | Da generare fuori repo | 32-80 caratteri, non salvare in Git. |
+| Scopes eBay | Minimo MVP definito | Identity readonly + Inventory readonly/write. |
+| Account deletion endpoint | Configurato | `https://syncbay.vercel.app/ebay/account-deletion` |
+| Verification token | Configurato fuori repo | 32-80 caratteri, non salvare in Git. |
 
 ### OAuth
 
@@ -118,12 +118,7 @@ SyncBay dovrà usare Authorization Code Grant per token utente venditore eBay.
 
 Nota importante: nel token exchange eBay il parametro `redirect_uri` non è una normale URL applicativa, ma il `RuName` assegnato all'app eBay per l'ambiente Sandbox o Production.
 
-Stato provvisorio 2026-05-10: SyncBay ha un RuName production predisposto su
-keyset FiscalBay, ma OAuth resta disabilitato su quel RuName. eBay consente
-OAuth attivo su un solo RuName per app/keyset: abilitarlo ora su SyncBay
-potrebbe disabilitarlo per FiscalBay. Il login eBay end-to-end resta quindi
-bloccato fino al keyset dedicato SyncBay o a una nuova decisione esplicita del
-maintainer.
+Stato 2026-05-25: il keyset dedicato SyncBay è disponibile. Il flusso OAuth lato app scambia il codice, cifra i token e legge il `userId` immutabile con Identity API per poter applicare correttamente eventuali notifiche marketplace account deletion. La verifica end-to-end resta da eseguire sul runtime aggiornato.
 
 Valori previsti:
 
@@ -136,7 +131,7 @@ Valori previsti:
 | Marketplace | `EBAY_MARKETPLACE_ID=EBAY_IT` |
 | Accept URL | `EBAY_OAUTH_ACCEPT_URL` |
 | Reject URL | `EBAY_OAUTH_REJECT_URL` |
-| Flag abilitazione OAuth | `EBAY_OAUTH_ENABLED=false` finché si usa keyset provvisorio FiscalBay |
+| Flag abilitazione OAuth | `EBAY_OAUTH_ENABLED=true` solo quando il runtime è pronto per il test end-to-end |
 
 Endpoint token:
 
@@ -148,16 +143,16 @@ Endpoint token:
 Bozza iniziale:
 
 ```text
+https://api.ebay.com/oauth/api_scope/commerce.identity.readonly
 https://api.ebay.com/oauth/api_scope/sell.inventory.readonly
 https://api.ebay.com/oauth/api_scope/sell.inventory
-https://api.ebay.com/oauth/api_scope/commerce.notification.subscription
 ```
 
 Da verificare in fase implementazione:
 
 - metodi Trading API effettivamente usati per leggere listing storici;
 - se servono scope aggiuntivi per Sell Feed, Metadata o Taxonomy;
-- se la subscription notification e application-based o user-based.
+- se in futuro serve gestire subscription Notification API via API invece che dal portale.
 
 Regola: Inventory API non copre necessariamente tutti i listing storici; Trading API resta prevista dove serve.
 
@@ -183,8 +178,10 @@ https://syncbay.vercel.app/ebay/account-deletion
 Stato implementazione:
 
 - `GET ?challenge_code=...` calcola la `challengeResponse` richiesta da eBay usando `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` e `EBAY_ACCOUNT_DELETION_ENDPOINT_URL`.
-- `POST` resta disabilitato finché `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` non viene impostato a `true`.
-- Non abilitare notifiche reali prima di verifica firma notifiche e cancellazione/anonimizzazione dati eBay.
+- `POST` verifica `X-EBAY-SIGNATURE`, recupera e cache-a la public key eBay e risponde `204` quando la notifica è valida e processata.
+- La notifica viene associata a `EbayConnection.ebayUserId`; per gli shop corrispondenti SyncBay revoca la connessione eBay, azzera token/user id, cancella mapping, snapshot, conflitti e payload job collegati al catalogo eBay.
+- SyncBay registra solo audit minimizzato e `hashedUserId`, senza salvare username, eiasToken o payload raw.
+- `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta il flag di sicurezza: abilitarlo solo dopo migration/deploy e test notification riuscita.
 
 ## Dati che il maintainer deve fornire
 
@@ -200,11 +197,11 @@ Stato implementazione:
 ### eBay
 
 - Account eBay Developer: confermato.
-- App/keyset eBay SyncBay: richiesto a eBay, in attesa di approvazione.
-- Sandbox keyset: in attesa.
-- Production keyset: in attesa.
-- RuName Sandbox: da compilare quando eBay approva/mostra il keyset.
-- RuName Production: predisposto senza OAuth su keyset provvisorio FiscalBay; valore custodito negli env.
+- App/keyset eBay SyncBay: ricevuto, dedicato a SyncBay.
+- Sandbox keyset: da verificare se necessario per test non production.
+- Production keyset: disponibile; valori custoditi negli env/provider.
+- RuName Sandbox: da verificare se si usa Sandbox.
+- RuName Production: da verificare end-to-end; valore custodito negli env.
 - Accept URL e Reject URL: confermate su `https://syncbay.vercel.app/auth/ebay/callback`.
 - Preferenza iniziale: test su Sandbox quando disponibile; Production solo dopo decisione esplicita.
 
@@ -212,9 +209,9 @@ Stato implementazione:
 
 Anche con questa guida chiusa, prima delle prossime fasi runtime restano da completare:
 
-- callback provider eBay reali;
-- keyset eBay dedicato SyncBay;
-- OAuth attivo sul RuName del keyset dedicato;
+- deploy runtime aggiornato e migration account deletion;
+- test notification eBay account deletion;
+- OAuth eBay end-to-end sul keyset dedicato;
 - secret runtime nei provider, non nel repo.
 
 ## Fonti

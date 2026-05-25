@@ -21,6 +21,15 @@ export function hashState(state: string) {
   return crypto.createHash("sha256").update(state).digest("hex");
 }
 
+export function hashSecretIdentifier(value: string, purpose: string) {
+  return crypto
+    .createHmac("sha256", getTokenKey())
+    .update(purpose)
+    .update(":")
+    .update(value)
+    .digest("hex");
+}
+
 export function createOAuthState() {
   return crypto.randomBytes(32).toString("base64url");
 }

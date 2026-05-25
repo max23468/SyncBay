@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: adattamento scaffold a SyncBay.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run e dati mock fittizi, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti applicato su Supabase, webhook Shopify tracciati come placeholder e flusso OAuth eBay implementato lato app. Non esistono ancora import o sync catalogo attivi.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview iniziale con validazioni dry-run e dati mock fittizi, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay lato app con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import o sync catalogo attivi.
 
 ## Direzione prodotto
 
@@ -90,7 +90,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Attendere il keyset eBay dedicato SyncBay. Il RuName production e le callback sono predisposti, ma OAuth resta disabilitato sul keyset provvisorio FiscalBay per non rischiare FiscalBay.
-2. Spostare `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` ed `EBAY_RU_NAME` sul keyset dedicato, poi verificare OAuth eBay end-to-end prima di qualunque sync catalogo.
-3. Preparare l'import Shopify in `draft` con dati mock/fixture, lasciando `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
-4. Quando arriva il keyset dedicato SyncBay, verificare OAuth eBay end-to-end e poi collegare la lettura listing live alla preview import già predisposta.
+1. Applicare la migration account deletion all'ambiente remoto e deployare il runtime aggiornato prima di abilitare notifiche eBay reali.
+2. Allineare gli env eBay al keyset dedicato SyncBay, mantenendo `EBAY_SCOPES` sul set minimo MVP e `EBAY_OAUTH_ENABLED=true` solo quando si testa il consenso.
+3. In eBay Developer, inviare la test notification account deletion e completare OAuth eBay end-to-end.
+4. Dopo OAuth verificato, collegare la prima lettura listing live alla preview import senza attivare sync automatico.

@@ -14,8 +14,8 @@ Vincoli:
 
 - non inserire segreti, token o dati reali nel repository;
 - non promettere cifratura non ancora implementata;
-- non attivare OAuth eBay sul keyset FiscalBay;
-- non abilitare notifiche account deletion reali prima di verifica firma e cancellazione dati;
+- usare solo il keyset dedicato SyncBay per OAuth eBay;
+- non abilitare notifiche account deletion reali prima di deploy/migration e test notification riuscita;
 - sostituire questa policy prima di una beta pubblica, billing o Shopify App Store.
 
 ## Decisione
@@ -40,9 +40,11 @@ L'endpoint preparatorio per marketplace account deletion è:
 /ebay/account-deletion
 ```
 
-La challenge `GET ?challenge_code=...` è supportata. Le notifiche `POST` restano
-disabilitate finché non vengono completate verifica firma e cancellazione o
-anonimizzazione dei dati eBay.
+La challenge `GET ?challenge_code=...` è supportata. Le notifiche `POST`
+verificano `X-EBAY-SIGNATURE`, usano la public key eBay e rimuovono i dati
+eBay collegati allo shop quando la notifica contiene un `userId` già associato a
+una connessione SyncBay. Il flag `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`
+resta la protezione operativa prima di ricevere notifiche reali.
 
 ## Conseguenze
 

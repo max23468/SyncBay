@@ -425,15 +425,18 @@ export function getEbayRuntimeReadiness() {
     oauthEnabled,
     oauthStatus: oauthEnabled
       ? "Attivabile"
-      : "Predisposto, OAuth non abilitato sul keyset provvisorio",
+      : "Predisposto, ma disabilitato da flag runtime",
     ready: missingRequirements.length === 0,
     summary: {
       detail:
         missingRequirements.length === 0
-          ? "Env OAuth presenti; test end-to-end in attesa del keyset dedicato."
+          ? oauthEnabled
+            ? "Env OAuth presenti; pronto per test end-to-end."
+            : "Env OAuth presenti; abilita il flag runtime per testare."
           : `Mancano ${missingRequirements.length} requisiti OAuth.`,
       label: "eBay",
-      status: missingRequirements.length === 0 ? "bloccato" : "da completare",
+      status:
+        missingRequirements.length === 0 && oauthEnabled ? "pronto" : "da completare",
     },
   };
 }
@@ -451,6 +454,25 @@ export function getAccountDeletionChallengeConfig() {
     notificationsEnabled:
       process.env.EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED === "true",
     verificationToken,
+  };
+}
+
+export function getAccountDeletionPostConfig() {
+  const challengeConfig = getAccountDeletionChallengeConfig();
+  const postRequirements = [
+    { envKey: "EBAY_CLIENT_ID", label: "Client ID eBay" },
+    { envKey: "EBAY_CLIENT_SECRET", label: "Client secret eBay" },
+    { envKey: "TOKEN_ENCRYPTION_KEY", label: "chiave cifratura token" },
+  ].flatMap((requirement) =>
+    hasRuntimeValue(process.env[requirement.envKey]) ? [] : [requirement.label],
+  );
+
+  return {
+    ...challengeConfig,
+    missingRequirements: [
+      ...challengeConfig.missingRequirements,
+      ...postRequirements,
+    ],
   };
 }
 
@@ -560,7 +582,7 @@ function getShopifyReadinessDetail(input: {
 }
 
 function getComplianceReadiness() {
-  const accountDeletion = getAccountDeletionChallengeConfig();
+  const accountDeletion = getAccountDeletionPostConfig();
   const ready = accountDeletion.missingRequirements.length === 0;
 
   return {
@@ -571,10 +593,12 @@ function getComplianceReadiness() {
     },
     summary: {
       detail: ready
-        ? "Endpoint account deletion predisposto; notifiche reali non abilitate."
+        ? accountDeletion.notificationsEnabled
+          ? "Endpoint account deletion pronto con POST verificato e cleanup dati."
+          : "Endpoint account deletion pronto; abilita il flag quando vuoi ricevere notifiche reali."
         : "Endpoint e verification token account deletion da completare.",
       label: "Privacy",
-      status: ready ? "bloccato" : "da completare",
+      status: ready && accountDeletion.notificationsEnabled ? "pronto" : "da completare",
     },
   };
 }
@@ -651,7 +675,7 @@ function getRuntimePhaseReadiness(input: {
     {
       detail: input.ebayConnected
         ? "Account eBay collegato."
-        : "Bloccato dal keyset/OAuth eBay dedicato.",
+        : "Bloccato finché OAuth eBay non viene completato.",
       label: "Lettura listing eBay",
       status: input.ebayConnected ? "preparabile" : "bloccato",
     },
@@ -683,10 +707,9 @@ function getRuntimePhaseReadiness(input: {
       status: "da implementare",
     },
     {
-      detail:
-        "Challenge account deletion pronta; POST reale resta disabilitato fino a verifica firma e cancellazione dati.",
+      detail: "Challenge e POST account deletion pronti; flag runtime controlla la ricezione reale.",
       label: "Compliance eBay/Shopify",
-      status: "bloccato",
+      status: "preparabile",
     },
   ];
 }
