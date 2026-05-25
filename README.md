@@ -53,6 +53,7 @@ Provisioning minimo creato:
 
 ## Endpoint scaffold SyncBay
 
+- About pubblico per branding eBay: `/about`
 - Dashboard embedded: `/app`
 - Wizard import preview: `/app/import-preview`
 - Avvio OAuth eBay: `/auth/ebay/start`

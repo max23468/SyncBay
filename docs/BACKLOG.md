@@ -26,6 +26,7 @@ Questo documento raccoglie idee, debiti e attività non ancora promosse nella ro
 | CI runtime completa | Aperta | ADR `docs/decisions/0004-runtime-ci-release-future.md`; non aggiungere workflow generici senza gate reali. |
 | Deploy production policy | Aperta | Esiste deploy Vercel, ma non esiste ancora policy di deploy production/app pubblica. |
 | Verifica smoke post-deploy | Aperta | Da rendere gate solo quando deploy production e ambienti saranno decisi. |
+| Logo eBay consent page | Aperta | Riprovare upload logo su eBay Developer: il portale rifiuta PNG e JPG SyncBay con errore generico, mentre About URL e branding testuale sono configurabili. |
 
 ## Decisioni collegate
 
