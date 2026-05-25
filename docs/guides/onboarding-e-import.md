@@ -45,6 +45,8 @@ wizard:
 - permette di rinominare la location selezionata quando lo shop ha riapprovato
   lo scope `write_locations`;
 - mostra una preview live da eBay Inventory API quando l'account eBay è collegato;
+- se Inventory API non restituisce prodotti importabili, prova il fallback
+  Trading API `GetMyeBaySelling` per listing attivi storici/Seller Hub;
 - mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
   quando serve un fallback dimostrativo;
 - mantiene ogni scrittura Shopify dietro conferma esplicita;
@@ -72,14 +74,16 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - l'attivazione richiede conferma esplicita, migration remote applicata e
   verifica manuale su shop pilota.
 
-Limite attuale della preview live:
+Copertura attuale della preview live:
 
 - la prima lettura usa Inventory API eBay e considera inventory item con offer
   pubblicate;
-- i listing storici creati o gestiti solo da Seller Hub/UI possono non comparire
-  in questa fonte;
-- per copertura completa eBay.it serve aggiungere fallback Trading API prima
-  dell'import iniziale fino a 2.000 prodotti.
+- se non emergono prodotti importabili, SyncBay usa Trading API
+  `GetMyeBaySelling` in sola lettura per coprire listing attivi storici creati o
+  gestiti solo da Seller Hub/UI;
+- la prima pagina di preview resta limitata a 50 prodotti, entro il limite
+  tecnico massimo di 100 per lettura UI, mentre l'import completo fino a 2.000
+  prodotti richiederà job/mapping/snapshot.
 
 Smoke UI locale:
 
@@ -90,7 +94,8 @@ La preview import resta bloccata finché non sono disponibili:
 
 - account eBay collegato via OAuth;
 - location Shopify predefinita;
-- lettura live eBay riuscita o fallback dimostrativo accettabile per la fase.
+- lettura live eBay riuscita tramite Inventory API o Trading API, oppure
+  fallback dimostrativo accettabile per la fase.
 
 ## Default consigliati
 

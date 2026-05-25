@@ -148,13 +148,13 @@ https://api.ebay.com/oauth/api_scope/sell.inventory.readonly
 https://api.ebay.com/oauth/api_scope/sell.inventory
 ```
 
-Da verificare in fase implementazione:
-
-- metodi Trading API effettivamente usati per leggere listing storici;
+- metodo Trading API usato per leggere listing storici: `GetMyeBaySelling`
+  via OAuth user access token e header `X-EBAY-API-IAF-TOKEN`; le API
+  tradizionali eBay non usano scope OAuth propri;
 - se servono scope aggiuntivi per Sell Feed, Metadata o Taxonomy;
 - se in futuro serve gestire subscription Notification API via API invece che dal portale.
 
-Regola: Inventory API non copre necessariamente tutti i listing storici; Trading API resta prevista dove serve.
+Regola: Inventory API non copre necessariamente tutti i listing storici; Trading API resta il fallback di lettura dove serve.
 
 ### Marketplace account deletion
 
