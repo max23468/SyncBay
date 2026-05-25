@@ -53,7 +53,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
 | Fatto | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API verificati end-to-end sul keyset dedicato SyncBay |
-| In corso | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API e regole dry-run MVP codificate; restano fallback Trading API e conferma import |
+| In corso | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API con fallback Trading API e regole dry-run MVP codificate; resta confermare import draft pilota |
 | Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da copertura listing completa e conferma pilota |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
 | Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |
@@ -86,7 +86,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 
 ## Prossime mosse suggerite
 
-1. Verificare in Shopify Admin che la preview live Inventory API legga correttamente gli item disponibili per lo shop pilota.
-2. Aggiungere fallback Trading API per coprire listing storici creati o gestiti solo da Seller Hub/UI.
-3. Preparare l'import Shopify draft controllato da preview live, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
+1. Verificare in Shopify Admin che la preview live combinata Inventory API -> Trading API legga correttamente gli item disponibili per lo shop pilota.
+2. Se i dati reali sono corretti, scegliere un sottoinsieme pilota e abilitare temporaneamente `SYNCBAY_DRAFT_IMPORT_ENABLED`.
+3. Creare bozze Shopify dalla preview importabile e controllare titoli, immagini, prezzi e disponibilità nello shop pilota.
 4. Collegare mapping/snapshot prodotto e job queue solo dopo una conferma pilota dell'import iniziale.

@@ -8,7 +8,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
-import { getEbayInventoryImportPreview } from "./ebay-inventory-preview.server";
+import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
   getImportPreviewValidationRules,
   getMockImportPreview,
@@ -175,7 +175,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const preview =
     ebayConnected && ebayConnection
-      ? await getEbayInventoryImportPreview(ebayConnection)
+      ? await getEbayLiveImportPreview(ebayConnection)
       : getMockImportPreviewState();
   const importPreview = getImportPreviewReadiness({
     ebayConnected,
@@ -202,6 +202,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       coverageNote: preview.coverageNote,
       errorMessage: preview.errorMessage,
       readCount: preview.readCount,
+      readCounts: preview.readCounts,
       source: preview.source,
       totalAvailable: preview.totalAvailable,
     },
@@ -672,6 +673,10 @@ function getMockImportPreviewState() {
     errorMessage: null,
     previewResult,
     readCount: previewResult.summary.totalCount,
+    readCounts: {
+      inventoryApi: 0,
+      tradingApi: 0,
+    },
     source: "mock" as const,
     totalAvailable: previewResult.summary.totalCount,
   };
@@ -737,10 +742,10 @@ function getRuntimePhaseReadiness(input: {
   return [
     {
       detail: input.ebayConnected
-        ? "Account eBay collegato; preview Inventory API attiva per offer pubblicate. Fallback Trading API ancora da aggiungere per listing storici."
+        ? "Account eBay collegato; preview live usa Inventory API e fallback Trading API in sola lettura per listing storici."
         : "Bloccato finché OAuth eBay non viene completato.",
       label: "Lettura listing eBay",
-      status: input.ebayConnected ? "parziale" : "bloccato",
+      status: input.ebayConnected ? "preparabile" : "bloccato",
     },
     {
       detail: input.hasDefaultLocation

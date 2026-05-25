@@ -209,10 +209,7 @@ export default function ImportPreview() {
   const isSavingLocation = isSaving && activeIntent === "saveLocation";
   const isCreatingDrafts = isSaving && activeIntent === "createDraftProducts";
   const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
-  const previewReadLabel =
-    wizard.previewSource.source === "inventory_api"
-      ? "Elementi Inventory API letti"
-      : "Elementi mock letti";
+  const previewReadLabel = getPreviewReadLabel(wizard.previewSource.source);
   const draftStatus = searchParams.get(
     "draft",
   ) as ShopifyDraftImportStatus | null;
@@ -500,6 +497,16 @@ function DryRunSection({
         <s-list-item>
           {previewReadLabel}: {wizard.previewSource.readCount}
         </s-list-item>
+        {wizard.previewSource.source !== "mock" ? (
+          <>
+            <s-list-item>
+              Inventory API letti: {wizard.previewSource.readCounts.inventoryApi}
+            </s-list-item>
+            <s-list-item>
+              Trading API letti: {wizard.previewSource.readCounts.tradingApi}
+            </s-list-item>
+          </>
+        ) : null}
         <s-list-item>
           Elementi in preview: {wizard.previewResult.summary.totalCount}
         </s-list-item>
@@ -748,7 +755,7 @@ function formatPreviewStatus(status: string) {
 }
 
 function getPreviewIntro(source: string) {
-  if (source === "inventory_api") {
+  if (source === "inventory_api" || source === "trading_api") {
     return "La preview live legge eBay in sola lettura e non scrive su Shopify senza conferma esplicita.";
   }
 
@@ -765,9 +772,18 @@ function getPreviewModeLabel(mode: string) {
 
 function formatPreviewSource(source: string) {
   if (source === "inventory_api") return "Inventory API eBay";
+  if (source === "trading_api") return "Trading API eBay";
   if (source === "mock") return "mock locale";
 
   return source;
+}
+
+function getPreviewReadLabel(source: string) {
+  if (source === "inventory_api") return "Elementi Inventory API letti";
+  if (source === "trading_api") return "Elementi Trading API letti";
+  if (source === "mock") return "Elementi mock letti";
+
+  return "Elementi letti";
 }
 
 function getPreviewStatusMessage(source: {
@@ -783,12 +799,20 @@ function getPreviewStatusMessage(source: {
     return `Preview live pronta: letti ${source.readCount} elementi Inventory API eBay.`;
   }
 
+  if (source.source === "trading_api") {
+    return `Preview live pronta: letti ${source.readCount} elementi Trading API eBay.`;
+  }
+
   return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";
 }
 
 function getPreviewFirstStep(source: string) {
   if (source === "inventory_api") {
     return "Leggere inventory item e offer pubblicate da eBay.";
+  }
+
+  if (source === "trading_api") {
+    return "Leggere listing attivi con fallback Trading API.";
   }
 
   return "Leggere dati dimostrativi fittizi.";

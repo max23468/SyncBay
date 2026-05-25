@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: onboarding/import preview pilota.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import completo o sync catalogo attivi.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import completo o sync catalogo attivi.
 
 ## Direzione prodotto
 
@@ -90,7 +90,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Verificare la preview live in Shopify Admin sullo shop pilota e controllare quanti item eBay arrivano da Inventory API.
-2. Aggiungere fallback Trading API per coprire listing storici Seller Hub/UI prima dell'import completo.
-3. Preparare l'import Shopify draft controllato da preview live, mantenendo `SYNCBAY_DRAFT_IMPORT_ENABLED=false` finché non viene scelta una verifica pilota.
+1. Verificare in Shopify Admin quanti item eBay arrivano dalla preview live combinata Inventory API -> Trading API.
+2. Se la preview mostra dati reali corretti, scegliere un sottoinsieme pilota e abilitare temporaneamente `SYNCBAY_DRAFT_IMPORT_ENABLED`.
+3. Creare bozze Shopify solo dalla preview live importabile e controllare i risultati nello shop pilota.
 4. Collegare mapping/snapshot prodotto e job queue solo dopo conferma pilota dell'import iniziale.

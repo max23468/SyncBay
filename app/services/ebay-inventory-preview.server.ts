@@ -7,6 +7,7 @@ import {
   type ImportPreviewResult,
 } from "./import-preview.server";
 import { EbayTokenError, getUsableEbayAccessToken } from "./ebay-token.server";
+import { getEbayTradingImportPreview } from "./ebay-trading-preview.server";
 
 interface EbayInventoryItem {
   availability?: {
@@ -67,7 +68,11 @@ export interface EbayInventoryPreviewState {
   errorMessage: string | null;
   previewResult: ImportPreviewResult;
   readCount: number;
-  source: "inventory_api";
+  readCounts: {
+    inventoryApi: number;
+    tradingApi: number;
+  };
+  source: "inventory_api" | "trading_api";
   totalAvailable: number | null;
 }
 
@@ -82,49 +87,169 @@ const DEFAULT_PREVIEW_LIMIT = 50;
 const MAX_PREVIEW_LIMIT = 100;
 const OFFER_LOOKUP_CONCURRENCY = 4;
 const INVENTORY_API_COVERAGE_NOTE =
-  "Preview live da Inventory API eBay: copre gli inventory item con offer pubblicate. I listing storici creati da Seller Hub/UI richiedono ancora fallback Trading API.";
+  "Preview live da Inventory API eBay: copre gli inventory item con offer pubblicate. Se non trova prodotti, SyncBay prova il fallback Trading API in sola lettura.";
+const TRADING_API_COVERAGE_NOTE =
+  "Preview live da Trading API eBay: fallback in sola lettura per listing attivi My eBay/Seller Hub non visibili nella Inventory API.";
 
-export async function getEbayInventoryImportPreview(
+async function getEbayInventoryImportPreview(
   connection: EbayConnection,
   options: { limit?: number } = {},
 ): Promise<EbayInventoryPreviewState> {
+  const limit = getPreviewLimit(options.limit);
+
   try {
     const { accessToken } = await getUsableEbayAccessToken(connection);
-    const limit = getPreviewLimit(options.limit);
-    const inventoryPage = await fetchInventoryItems({
+    const inventoryResult = await readInventoryPreview({
       accessToken,
       connection,
       limit,
+    }).catch((error: unknown) => ({
+      errorMessage: getPublicPreviewErrorMessage(error),
+      page: null,
+    }));
+
+    if (
+      inventoryResult.page &&
+      inventoryResult.page.candidates.length > 0
+    ) {
+      return {
+        coverageNote: INVENTORY_API_COVERAGE_NOTE,
+        errorMessage: null,
+        previewResult: buildImportPreview(
+          inventoryResult.page.candidates,
+          "live",
+        ),
+        readCount: inventoryResult.page.readCount,
+        readCounts: {
+          inventoryApi: inventoryResult.page.readCount,
+          tradingApi: 0,
+        },
+        source: "inventory_api",
+        totalAvailable: inventoryResult.page.totalAvailable,
+      };
+    }
+
+    const inventoryErrorMessage =
+      "errorMessage" in inventoryResult ? inventoryResult.errorMessage : null;
+    const inventoryReadCount = inventoryResult.page?.readCount ?? 0;
+    const tradingPage = await getEbayTradingImportPreview({
+      accessToken,
+      connection,
+      limit,
+    }).catch((error: unknown) => {
+      throw new EbayLivePreviewError({
+        inventoryErrorMessage,
+        inventoryReadCount,
+        message: getPublicPreviewErrorMessage(error),
+        totalAvailable: inventoryResult.page?.totalAvailable ?? null,
+      });
     });
-    const offerCandidates = await mapWithConcurrency(
-      inventoryPage.inventoryItems,
-      OFFER_LOOKUP_CONCURRENCY,
-      async (item) =>
-        getPublishedOfferCandidate({ accessToken, connection, item }),
-    );
-    const candidates = offerCandidates.filter(
-      (candidate): candidate is ImportPreviewListingCandidate =>
-        Boolean(candidate),
-    );
 
     return {
-      coverageNote: INVENTORY_API_COVERAGE_NOTE,
+      coverageNote: getTradingCoverageNote(inventoryErrorMessage),
       errorMessage: null,
-      previewResult: buildImportPreview(candidates, "live"),
-      readCount: inventoryPage.inventoryItems.length,
-      source: "inventory_api",
-      totalAvailable: inventoryPage.total,
+      previewResult: buildImportPreview(tradingPage.candidates, "live"),
+      readCount: tradingPage.readCount,
+      readCounts: {
+        inventoryApi: inventoryReadCount,
+        tradingApi: tradingPage.readCount,
+      },
+      source: "trading_api",
+      totalAvailable: tradingPage.totalAvailable,
     };
   } catch (error) {
+    if (error instanceof EbayLivePreviewError) {
+      return {
+        coverageNote: getTradingCoverageNote(error.inventoryErrorMessage),
+        errorMessage: error.message,
+        previewResult: getEmptyImportPreview("live"),
+        readCount: 0,
+        readCounts: {
+          inventoryApi: error.inventoryReadCount,
+          tradingApi: 0,
+        },
+        source: "trading_api",
+        totalAvailable: error.totalAvailable,
+      };
+    }
+
     return {
-      coverageNote: INVENTORY_API_COVERAGE_NOTE,
+      coverageNote: TRADING_API_COVERAGE_NOTE,
       errorMessage: getPublicPreviewErrorMessage(error),
       previewResult: getEmptyImportPreview("live"),
       readCount: 0,
-      source: "inventory_api",
+      readCounts: {
+        inventoryApi: 0,
+        tradingApi: 0,
+      },
+      source: "trading_api",
       totalAvailable: null,
     };
   }
+}
+
+async function readInventoryPreview(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  limit: number;
+}) {
+  const inventoryPage = await fetchInventoryItems(input);
+  const offerCandidates = await mapWithConcurrency(
+    inventoryPage.inventoryItems,
+    OFFER_LOOKUP_CONCURRENCY,
+    async (item) =>
+      getPublishedOfferCandidate({
+        accessToken: input.accessToken,
+        connection: input.connection,
+        item,
+      }),
+  );
+  const candidates = offerCandidates.filter(
+    (candidate): candidate is ImportPreviewListingCandidate =>
+      Boolean(candidate),
+  );
+
+  return {
+    page: {
+      candidates,
+      readCount: inventoryPage.inventoryItems.length,
+      totalAvailable: inventoryPage.total,
+    },
+  };
+}
+
+class EbayLivePreviewError extends Error {
+  inventoryErrorMessage: string | null;
+  inventoryReadCount: number;
+  totalAvailable: number | null;
+
+  constructor(input: {
+    inventoryErrorMessage: string | null;
+    inventoryReadCount: number;
+    message: string;
+    totalAvailable: number | null;
+  }) {
+    super(input.message);
+    this.name = "EbayLivePreviewError";
+    this.inventoryErrorMessage = input.inventoryErrorMessage;
+    this.inventoryReadCount = input.inventoryReadCount;
+    this.totalAvailable = input.totalAvailable;
+  }
+}
+
+function getTradingCoverageNote(inventoryErrorMessage?: string | null) {
+  if (inventoryErrorMessage) {
+    return `${TRADING_API_COVERAGE_NOTE} Inventory API non completata: ${inventoryErrorMessage}`;
+  }
+
+  return `${TRADING_API_COVERAGE_NOTE} Inventory API non ha restituito prodotti importabili nella prima pagina.`;
+}
+
+export async function getEbayLiveImportPreview(
+  connection: EbayConnection,
+  options: { limit?: number } = {},
+) {
+  return getEbayInventoryImportPreview(connection, options);
 }
 
 async function fetchInventoryItems(input: {
