@@ -37,7 +37,7 @@ La sezione sicurezza deve restare aderente al runtime corrente:
 L'endpoint preparatorio per marketplace account deletion è:
 
 ```text
-/webhooks/ebay/account-deletion
+/ebay/account-deletion
 ```
 
 La challenge `GET ?challenge_code=...` è supportata. Le notifiche `POST` restano

@@ -177,7 +177,7 @@ Requisiti:
 Endpoint predisposto:
 
 ```text
-https://syncbay.vercel.app/webhooks/ebay/account-deletion
+https://syncbay.vercel.app/ebay/account-deletion
 ```
 
 Stato implementazione:

@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.7.1] — 2026-05-25
+
+### Correzioni
+
+- Aggiunto alias `/ebay/account-deletion` per configurare eBay marketplace account deletion con un endpoint pubblico dedicato.
+
 ## [0.7.0] — 2026-05-25
 
 ### Novità
@@ -166,6 +172,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.7.1]: #071--2026-05-25
 [0.7.0]: #070--2026-05-25
 [0.6.0]: #060--2026-05-24
 [0.5.0]: #050--2026-05-10
