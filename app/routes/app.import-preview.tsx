@@ -595,6 +595,12 @@ function DraftImportSection({
         <s-list-item>
           Prodotti importabili: {wizard.draftImport.importableCount}
         </s-list-item>
+        <s-list-item>
+          Limite batch pilota: {wizard.draftImport.draftLimit}
+        </s-list-item>
+        <s-list-item>
+          Bozze previste: {wizard.draftImport.plannedCreateCount}
+        </s-list-item>
         <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
         {wizard.draftImport.blockers.length > 0 ? (
           <s-list-item>

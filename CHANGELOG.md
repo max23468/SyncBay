@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.10.0] — 2026-05-25
+
+### Novità
+
+- Arricchiti i primi 10 listing della preview Trading API con `GetItem`, recuperando dettagli e immagini quando `GetMyeBaySelling` restituisce dati ridotti senza appesantire il batch pilota.
+- Introdotta la policy SKU fallback `EBAY-<ItemID>` per listing storici senza SKU eBay, visibile come nota nella preview.
+- Limitato l'import draft pilota con `SYNCBAY_DRAFT_IMPORT_LIMIT`, includendo descrizione, prime immagini e metadati SyncBay/eBay nelle bozze Shopify create.
+
 ## [0.9.0] — 2026-05-25
 
 ### Novità
@@ -206,6 +214,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.10.0]: #0100--2026-05-25
 [0.9.0]: #090--2026-05-25
 [0.8.1]: #081--2026-05-25
 [0.8.0]: #080--2026-05-25

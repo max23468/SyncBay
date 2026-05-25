@@ -35,6 +35,7 @@ Note:
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
 - `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default: le migration mapping/snapshot/conflitti sono applicate, ma non attivare import draft finché non viene scelta una verifica su shop pilota.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT=3` limita il batch pilota di bozze Shopify; non aumentarlo senza verifica manuale del primo batch.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
