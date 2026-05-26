@@ -78,18 +78,24 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - quando è attivato, il codice usa solo item importabili della preview, fino al
   limite runtime, e crea o riusa prodotti Shopify con lo stato configurato
   nelle Impostazioni; il default runtime è `Pubblicato`, con override `Bozza`,
-  insieme a titolo, descrizione HTML, prime immagini e metadati SyncBay/eBay;
+  insieme a titolo, descrizione HTML, tutte le immagini eBay disponibili fino al
+  limite media Shopify e metadati SyncBay/eBay;
+- se Shopify rifiuta una URL immagine eBay diretta, SyncBay scarica
+  temporaneamente l'immagine nel bucket privato Supabase Storage
+  `syncbay-import-staging`, genera una URL firmata e riprova la creazione media
+  su Shopify;
 - dopo creazione o riuso, SyncBay attiva il tracking scorte sull'inventory item
   Shopify, collega la variante alla location predefinita e imposta la quantità
   disponibile usando la disponibilità letta da eBay;
 - sui prodotti Shopify già riusati, SyncBay riallinea anche lo stato al default
-  dello shop e verifica che tracking e quantità impostati siano confermati da
-  Shopify prima di marcare l'import come riuscito;
+  dello shop, riallinea i media al set eBay disponibile e verifica che tracking
+  e quantità impostati siano confermati da Shopify prima di marcare l'import
+  come riuscito;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   product/variant GID, snapshot `EBAY` e `SYNCBAY` e registra audit di
   avvio/esito;
 - il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
-  audit coerenti; l'ultimo import reale ha creato 26 nuove bozze Shopify e ne
+  audit coerenti; l'ultimo import reale ha creato 26 nuovi prodotti Shopify e ne
   ha riusate 24 senza duplicati. La schedule Supabase Cron
   `syncbay-run-due-jobs` riprende ogni minuto i job `IMPORT_CATALOG` dovuti.
 
@@ -122,6 +128,8 @@ La preview import resta bloccata finché non sono disponibili:
 
 - Prodotti iniziali in `pubblicato`, con fallback opzionale `bozza`.
 - Tutte le immagini copiate su Shopify.
+- Nessuna cancellazione automatica delle immagini Shopify se eBay non restituisce
+  immagini per un listing durante una lettura incompleta.
 - Una sola location Shopify predefinita.
 - Nessun matching automatico aggressivo con prodotti Shopify esistenti.
 - Nessun publish massivo senza conferma.

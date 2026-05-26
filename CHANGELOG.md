@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.17.0] — 2026-05-26
+
+### Novità
+
+- L'import Shopify copia ora tutte le immagini eBay disponibili fino al limite
+  media Shopify per ogni prodotto creato o riusato da SyncBay.
+- Quando Shopify rifiuta una URL immagine eBay diretta, SyncBay scarica
+  temporaneamente l'immagine nel bucket privato Supabase Storage
+  `syncbay-import-staging`, genera una URL firmata e riprova la creazione media
+  su Shopify.
+
+### Sotto il cofano
+
+- Aggiunti gli scope Shopify `read_files` e `write_files` alla configurazione
+  app, così SyncBay può rimuovere media prodotto precedenti durante il
+  riallineamento immagini.
+
 ## [0.16.1] — 2026-05-26
 
 ### Correzioni
@@ -314,6 +331,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.17.0]: #0170--2026-05-26
 [0.16.1]: #0161--2026-05-26
 [0.16.0]: #0160--2026-05-26
 [0.15.0]: #0150--2026-05-26

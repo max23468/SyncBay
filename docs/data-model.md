@@ -15,7 +15,7 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - conflitti Shopify (`SyncConflict`).
 - richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`).
 
-Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import draft controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID e stato dell'allineamento scorte scritto da SyncBay.
+Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID, stato dell'allineamento scorte e diagnostica del riallineamento immagini scritto da SyncBay.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -144,6 +144,11 @@ Modalità:
 ### Asset media
 
 Traccia immagini importate da eBay e caricate su Shopify.
+
+Nel runtime attuale non esiste ancora una tabella dedicata `MediaAsset`: lo stato
+media dell'import viene salvato nel payload diagnostico degli snapshot
+`SYNCBAY` e nel risultato del job. La tabella dedicata resta utile quando
+serviranno retry granulari, cleanup e relazione immagine -> variante.
 
 Requisiti:
 
