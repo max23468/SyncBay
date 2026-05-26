@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.13.0] — 2026-05-26
+
+### Novità
+
+- Aggiunto un runner protetto `/api/jobs/run-due` per riprendere job `IMPORT_CATALOG` dovuti usando la sessione Shopify offline e la preview eBay live.
+- Portato il limite tecnico dell'import draft pilota a 25 prodotti per proseguire la scala controllata dopo il batch 10 verificato.
+
 ## [0.12.0] — 2026-05-26
 
 ### Novità
@@ -251,6 +258,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.13.0]: #0130--2026-05-26
 [0.12.0]: #0120--2026-05-26
 [0.11.1]: #0111--2026-05-26
 [0.11.0]: #0110--2026-05-26

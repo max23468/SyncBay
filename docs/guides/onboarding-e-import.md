@@ -73,15 +73,16 @@ Validazioni MVP già codificate per la preview:
 La base di import Shopify in `draft` è preparata dietro feature flag:
 
 - env: `SYNCBAY_DRAFT_IMPORT_ENABLED=false` per default;
-- env: `SYNCBAY_DRAFT_IMPORT_LIMIT=3` per limitare il batch pilota;
+- env: `SYNCBAY_DRAFT_IMPORT_LIMIT` per limitare il batch pilota;
 - quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
 - quando è attivato, il codice usa solo item importabili della preview, fino al
   limite runtime, e crea o riusa prodotti Shopify in stato `DRAFT` con titolo,
   descrizione HTML, prime immagini e metadati SyncBay/eBay;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   snapshot `EBAY` e `SYNCBAY` e registra audit di avvio/esito;
-- il primo batch pilota è stato verificato sul dev store. Prima di aumentare il
-  limite oltre il batch pilota, verificare mapping, snapshot e audit su Supabase.
+- il batch 10 è stato verificato sul dev store con mapping, snapshot, job e
+  audit coerenti. Il limite tecnico ora consente il passo controllato a 25
+  prodotti prima di valutare 50.
 
 Copertura attuale della preview live:
 
@@ -94,7 +95,8 @@ Copertura attuale della preview live:
   recuperare dettagli e immagini non restituiti nella lista;
 - la prima pagina di preview resta limitata a 50 prodotti, entro il limite
   tecnico massimo di 100 per lettura UI. L'import completo fino a 2.000 prodotti
-  richiederà batch controllati, consumer Supabase Queues/Cron e retry automatici.
+  richiederà batch controllati, schedule Supabase Cron sul runner `/api/jobs/run-due`
+  e sync incrementale.
 
 Smoke UI locale:
 

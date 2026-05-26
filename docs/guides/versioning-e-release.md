@@ -113,7 +113,7 @@ Prima di dichiarare conclusa una fase, pubblicazione o release:
 
 Il versioning locale non crea deploy, tag o GitHub Release.
 
-Quando il deploy production sarà attivo, una pubblicazione completa dovrà distinguere:
+Con il deployment pilota Vercel attivo, una pubblicazione completa deve distinguere:
 
 - merge su `main`;
 - deploy Vercel completato;
@@ -121,4 +121,4 @@ Quando il deploy production sarà attivo, una pubblicazione completa dovrà dist
 - eventuale release SemVer;
 - cleanup branch.
 
-Fino ad allora, una release SyncBay aggiorna repo e changelog, ma non implica pubblicazione Shopify App Store, billing o integrazioni produttive.
+Anche con deploy pilota attivo, una release SyncBay aggiorna repo e changelog, ma non implica pubblicazione Shopify App Store, billing, tag GitHub o integrazioni produttive.

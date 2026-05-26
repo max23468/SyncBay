@@ -13,7 +13,7 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Workflow `Codex PR comments` configurato per mantenere la issue `Codex feedback inbox`.
 - Dependabot configurato per GitHub Actions e npm.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
-- Nessun deploy production deciso.
+- Deployment pilota Vercel production attivo per verifiche controllate.
 - Nessuna CI runtime definita.
 
 ## Regola base
@@ -78,14 +78,14 @@ Nella fase attuale:
 
 - "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`, con commit/push diretto per docs-only piccoli oppure PR/merge per lavori non banali;
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;
-- "deploya" non ha effetto operativo finché non esiste un deploy production deciso;
+- "deploya" = aggiornare e verificare il deployment pilota Vercel production, senza implicare App Store, billing, tag o GitHub Release;
 - "rilascia" significa preparare una release locale con `npm run release`, senza tag o GitHub Release.
 
-Quando il deploy production esisterà, "pubblicato" significherà almeno:
+Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
 
 1. branch di lavoro mergeato su `main`;
 2. controlli locali/remoti rilevanti superati;
-3. eventuale deploy verificato se il deploy esiste ed è richiesto dalla modifica;
+3. deploy Vercel production verificato quando la modifica tocca runtime o UI;
 4. branch dedicato pulito localmente e su GitHub, salvo motivo esplicito.
 
 "Pubblicare" non significa automaticamente creare tag, GitHub Release, deploy, billing o pubblicazione Shopify App Store.
@@ -139,9 +139,9 @@ Prima di dichiarare completata una modifica:
 
 ## Deploy e release
 
-Finché SyncBay non ha deploy production:
+Finché SyncBay resta in deployment pilota:
 
-- non creare deploy;
+- usare Vercel production solo per verifiche controllate del dev store;
 - non creare GitHub Release;
 - non creare tag SemVer;
 - non introdurre Release Please senza ADR;
