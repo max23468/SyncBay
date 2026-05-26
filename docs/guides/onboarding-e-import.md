@@ -79,8 +79,12 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   limite runtime, e crea o riusa prodotti Shopify con lo stato configurato
   nelle Impostazioni; il default runtime è `Pubblicato`, con override `Bozza`,
   insieme a titolo, descrizione HTML, prime immagini e metadati SyncBay/eBay;
+- dopo creazione o riuso, SyncBay attiva il tracking scorte sull'inventory item
+  Shopify, collega la variante alla location predefinita e imposta la quantità
+  disponibile usando la disponibilità letta da eBay;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
-  snapshot `EBAY` e `SYNCBAY` e registra audit di avvio/esito;
+  product/variant GID, snapshot `EBAY` e `SYNCBAY` e registra audit di
+  avvio/esito;
 - il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
   audit coerenti; l'ultimo import reale ha creato 26 nuove bozze Shopify e ne
   ha riusate 24 senza duplicati. La schedule Supabase Cron

@@ -25,10 +25,12 @@ const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 
-export async function runDueSyncJobs(input: {
-  limit?: number;
-  now?: Date;
-} = {}) {
+export async function runDueSyncJobs(
+  input: {
+    limit?: number;
+    now?: Date;
+  } = {},
+) {
   const now = input.now ?? new Date();
   const limit = normalizeRunDueLimit(input.limit);
   const jobs = await prisma.syncJob.findMany({
@@ -164,6 +166,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
 
   const result = await createShopifyDraftProductsIfEnabled({
     admin,
+    defaultLocationGid: job.shop.defaultLocationGid,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     previewResult: filteredPreviewResult,
     shopDomain: session.shop,
@@ -188,15 +191,13 @@ async function runImportCatalogJob(job: DueSyncJob) {
     await markJobFailedOrRetrying({
       errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
       errorMessage:
-        result.errorMessage ??
-        "Import Shopify non completato dal runner.",
+        result.errorMessage ?? "Import Shopify non completato dal runner.",
       job,
     });
 
     return {
       errorMessage:
-        result.errorMessage ??
-        "Import Shopify non completato dal runner.",
+        result.errorMessage ?? "Import Shopify non completato dal runner.",
       jobId: job.id,
       status: "failed" as const,
       type: job.type,
@@ -237,9 +238,7 @@ async function markJobFailedOrRetrying(input: {
 }) {
   const nextAttempts = input.job.attempts + 1;
   const retryAt =
-    nextAttempts < input.job.maxAttempts
-      ? getRetryAfter(nextAttempts)
-      : null;
+    nextAttempts < input.job.maxAttempts ? getRetryAfter(nextAttempts) : null;
   const result = {
     runnerErrorCode: input.errorCode,
     runnerErrorMessage: input.errorMessage,
@@ -325,7 +324,9 @@ function filterPreviewResultByItemIds(
   };
 }
 
-function summarizePreviewItems(items: ImportPreviewItem[]): ImportPreviewSummary {
+function summarizePreviewItems(
+  items: ImportPreviewItem[],
+): ImportPreviewSummary {
   return {
     errorCount: items.filter((item) => item.status === "error").length,
     importableCount: items.filter((item) => item.status === "importable")
@@ -346,7 +347,9 @@ function getEbayItemIds(payload: Prisma.JsonValue | null) {
   const ebayItemIds = object?.ebayItemIds;
 
   return Array.isArray(ebayItemIds)
-    ? ebayItemIds.filter((itemId): itemId is string => typeof itemId === "string")
+    ? ebayItemIds.filter(
+        (itemId): itemId is string => typeof itemId === "string",
+      )
     : [];
 }
 

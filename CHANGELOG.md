@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.16.0] — 2026-05-26
+
+### Novità
+
+- L'import Shopify attiva ora il tracking scorte, collega l'inventory item alla location Shopify predefinita e imposta la quantità disponibile usando il valore letto da eBay per prodotti creati o riusati.
+
+### Correzioni
+
+- Il mapping e lo snapshot SyncBay salvano ora anche il `shopifyVariantGid`, necessario per i prossimi sync stock e per audit più precisi.
+- Spostata l'estensione Supabase `pg_net` fuori dallo schema `public`, ricreandola nello schema `extensions` e mantenendo disponibili le funzioni `net.http_post` usate dalla schedule Cron.
+
+### Sotto il cofano
+
+- Allineata la configurazione React Doctor alla nuova route Impostazioni React Router e rimossa l'esportazione inutilizzata del default stato prodotti.
+
 ## [0.15.0] — 2026-05-26
 
 ### Novità
@@ -288,6 +303,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.16.0]: #0160--2026-05-26
 [0.15.0]: #0150--2026-05-26
 [0.14.0]: #0140--2026-05-26
 [0.13.1]: #0131--2026-05-26

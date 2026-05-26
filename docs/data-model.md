@@ -15,7 +15,7 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - conflitti Shopify (`SyncConflict`).
 - richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`).
 
-Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import draft controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per bozze Shopify create o riusate.
+Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import draft controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID e stato dell'allineamento scorte scritto da SyncBay.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 

@@ -1,18 +1,13 @@
 export const IMPORT_PRODUCT_STATUS_VALUES = ["ACTIVE", "DRAFT"] as const;
 
-export type ImportProductStatus =
-  (typeof IMPORT_PRODUCT_STATUS_VALUES)[number];
+export type ImportProductStatus = (typeof IMPORT_PRODUCT_STATUS_VALUES)[number];
 
-export const DEFAULT_IMPORT_PRODUCT_STATUS: ImportProductStatus = "ACTIVE";
+const DEFAULT_IMPORT_PRODUCT_STATUS: ImportProductStatus = "ACTIVE";
 
 export function normalizeImportProductStatus(
   value: string | null | undefined,
 ): ImportProductStatus {
   return value === "DRAFT" ? "DRAFT" : DEFAULT_IMPORT_PRODUCT_STATUS;
-}
-
-export function getImportProductStatusLabel(status: ImportProductStatus) {
-  return status === "DRAFT" ? "bozza" : "pubblicato";
 }
 
 export function getImportProductStatusLabelCapitalized(
@@ -26,7 +21,5 @@ export function getImportedProductsLabel(status: ImportProductStatus) {
 }
 
 export function getImportedProductSingularLabel(status: ImportProductStatus) {
-  return status === "DRAFT"
-    ? "bozza Shopify"
-    : "prodotto Shopify pubblicato";
+  return status === "DRAFT" ? "bozza Shopify" : "prodotto Shopify pubblicato";
 }

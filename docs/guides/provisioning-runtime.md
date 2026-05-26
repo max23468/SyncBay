@@ -17,17 +17,17 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 
 ## Vercel
 
-| Campo | Valore |
-| --- | --- |
-| Scope | `matteos-projects-9226d217` |
-| Project name | `syncbay` |
-| Project ID | `prj_X9vkqDlE5t4QDUhOxE6m2aMFosiz` |
-| Root directory | `.` |
-| Node.js | `24.x` |
-| Framework | `react-router` |
-| Production domain | `https://syncbay.vercel.app` |
-| Ultimo deployment | `READY` |
-| Link locale | Creato in `.vercel/`, ignorato da Git |
+| Campo             | Valore                                |
+| ----------------- | ------------------------------------- |
+| Scope             | `matteos-projects-9226d217`           |
+| Project name      | `syncbay`                             |
+| Project ID        | `prj_X9vkqDlE5t4QDUhOxE6m2aMFosiz`    |
+| Root directory    | `.`                                   |
+| Node.js           | `24.x`                                |
+| Framework         | `react-router`                        |
+| Production domain | `https://syncbay.vercel.app`          |
+| Ultimo deployment | `READY`                               |
+| Link locale       | Creato in `.vercel/`, ignorato da Git |
 
 Note:
 
@@ -45,14 +45,14 @@ Note:
 
 ## Supabase
 
-| Campo | Valore |
-| --- | --- |
+| Campo           | Valore                 |
+| --------------- | ---------------------- |
 | Organization ID | `dvparweojjzveymxscdy` |
-| Project name | `SyncBay` |
-| Project ref | `mgjcbuokppfnglsftsmi` |
-| Region | `eu-west-1` |
-| Postgres | `17.6` |
-| Link locale | `supabase/config.toml` |
+| Project name    | `SyncBay`              |
+| Project ref     | `mgjcbuokppfnglsftsmi` |
+| Region          | `eu-west-1`            |
+| Postgres        | `17.6`                 |
+| Link locale     | `supabase/config.toml` |
 
 La password database generata durante il provisioning è stata salvata nel Keychain macOS:
 
@@ -76,6 +76,7 @@ Non salvarla in Git e non stamparla nei log.
 - schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni minuto tramite `pg_net` e secret in Supabase Vault
 - retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
 - batch reale da 50 prodotti verificato sul dev store: job `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti i 50 `ItemID`
+- warning storico Supabase `extension_in_public` chiuso: `pg_net` ricreata nello schema `extensions`, funzioni `net.http_get`/`net.http_post` ancora disponibili e schedule `syncbay-run-due-jobs` ancora attiva
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
 - verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
@@ -83,13 +84,13 @@ Non salvarla in Git e non stamparla nei log.
 
 Estensioni Supabase verificate:
 
-| Estensione | Stato |
-| --- | --- |
-| `pgcrypto` | Installata |
-| `uuid-ossp` | Installata |
-| `pgmq` | Abilitata via migration Prisma |
-| `pg_cron` | Abilitata via migration Prisma |
-| `pg_net` | Abilitata per chiamate HTTP della schedule Cron |
+| Estensione  | Stato                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------------------------ |
+| `pgcrypto`  | Installata                                                                                             |
+| `uuid-ossp` | Installata                                                                                             |
+| `pgmq`      | Abilitata via migration Prisma                                                                         |
+| `pg_cron`   | Abilitata via migration Prisma                                                                         |
+| `pg_net`    | Installata nello schema `extensions`; funzioni `net.*` attive per le chiamate HTTP della schedule Cron |
 
 Primitive Supabase tracciate:
 
