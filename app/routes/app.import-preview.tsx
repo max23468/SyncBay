@@ -101,6 +101,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const wizard = await getImportWizardState(session);
     const result = await createShopifyDraftProductsIfEnabled({
       admin,
+      defaultLocationGid: wizard.shop.defaultLocationGid,
       hasDefaultLocation: Boolean(wizard.shop.defaultLocationGid),
       previewResult: wizard.previewResult,
       shopDomain: session.shop,
@@ -527,7 +528,8 @@ function DryRunSection({
         {wizard.previewSource.source !== "mock" ? (
           <>
             <s-list-item>
-              Inventory API letti: {wizard.previewSource.readCounts.inventoryApi}
+              Inventory API letti:{" "}
+              {wizard.previewSource.readCounts.inventoryApi}
             </s-list-item>
             <s-list-item>
               Trading API letti: {wizard.previewSource.readCounts.tradingApi}

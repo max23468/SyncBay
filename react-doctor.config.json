@@ -2,7 +2,11 @@
   "ignore": {
     "overrides": [
       {
-        "files": ["app/routes/app._index.tsx", "app/routes/app.import-preview.tsx"],
+        "files": [
+          "app/routes/app._index.tsx",
+          "app/routes/app.import-preview.tsx",
+          "app/routes/app.settings.tsx"
+        ],
         "rules": ["react-doctor/only-export-components"]
       }
     ]

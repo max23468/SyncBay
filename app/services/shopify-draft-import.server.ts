@@ -27,17 +27,35 @@ interface ShopifyAdminGraphqlClient {
   ) => Promise<Response>;
 }
 
+interface ShopifyUserError {
+  code?: string | null;
+  field?: string[] | null;
+  message: string;
+}
+
+interface ShopifyInventoryItemNode {
+  id: string;
+  tracked?: boolean | null;
+}
+
+interface ShopifyDraftProductVariantNode {
+  id: string;
+  inventoryItem?: ShopifyInventoryItemNode | null;
+}
+
+interface ShopifyDraftProductNode {
+  id: string;
+  title: string;
+  variants?: {
+    nodes?: ShopifyDraftProductVariantNode[];
+  } | null;
+}
+
 interface ShopifyProductCreateResponse {
   data?: {
     productCreate?: {
-      product?: {
-        id: string;
-        title: string;
-      } | null;
-      userErrors?: Array<{
-        field?: string[] | null;
-        message: string;
-      }>;
+      product?: ShopifyDraftProductNode | null;
+      userErrors?: ShopifyUserError[];
     };
   };
   errors?: Array<{
@@ -57,12 +75,50 @@ interface ShopifyProductLookupResponse {
   }>;
 }
 
-interface ShopifyDraftProductLookupNode {
-  id: string;
-  title: string;
+interface ShopifyDraftProductLookupNode extends ShopifyDraftProductNode {
   metafield?: {
     value: string;
   } | null;
+}
+
+interface ShopifyInventoryItemUpdateResponse {
+  data?: {
+    inventoryItemUpdate?: {
+      inventoryItem?: ShopifyInventoryItemNode | null;
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyInventoryActivateResponse {
+  data?: {
+    inventoryActivate?: {
+      inventoryLevel?: {
+        id: string;
+      } | null;
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyInventorySetQuantitiesResponse {
+  data?: {
+    inventorySetQuantities?: {
+      inventoryAdjustmentGroup?: {
+        referenceDocumentUri?: string | null;
+      } | null;
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
 }
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
@@ -75,6 +131,9 @@ type ShopifyCreatedProduct = NonNullable<
 >["product"];
 type DraftImportPersistenceResult = {
   createdCount: number;
+  inventoryFailedCount: number;
+  inventorySkippedCount: number;
+  inventorySyncedCount: number;
   managedCount: number;
   reusedCount: number;
 };
@@ -85,7 +144,33 @@ const MAX_DRAFT_MEDIA_PER_PRODUCT = 3;
 const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 
-type ShopifyDraftProductResult =
+type ShopifyInventorySyncResult =
+  | {
+      inventoryItemGid: string;
+      locationGid: string;
+      quantity: number;
+      status: "synced";
+      variantGid: string;
+    }
+  | {
+      message: string;
+      reason:
+        | "missing_inventory_item"
+        | "missing_location"
+        | "missing_quantity";
+      status: "skipped";
+      variantGid?: string;
+    }
+  | {
+      errorMessage: string;
+      inventoryItemGid?: string;
+      locationGid?: string;
+      quantity?: number;
+      status: "failed";
+      variantGid?: string;
+    };
+
+type ShopifyDraftProductCreateResult =
   | {
       product: NonNullable<ShopifyCreatedProduct>;
       resultType: "created" | "reused";
@@ -96,6 +181,12 @@ type ShopifyDraftProductResult =
       errorMessage: string;
       status: "failed";
     };
+
+type ShopifyDraftProductResult =
+  | (Extract<ShopifyDraftProductCreateResult, { status: "created" }> & {
+      inventorySync: ShopifyInventorySyncResult;
+    })
+  | Extract<ShopifyDraftProductCreateResult, { status: "failed" }>;
 
 export function getDraftImportReadiness(input: {
   defaultProductStatus: ImportProductStatus;
@@ -161,6 +252,7 @@ export function buildShopifyDraftProductInputs(
 
 export async function createShopifyDraftProductsIfEnabled(input: {
   admin: ShopifyAdminGraphqlClient;
+  defaultLocationGid?: string | null;
   hasDefaultLocation: boolean;
   previewResult: ImportPreviewResult;
   shopDomain: string;
@@ -198,7 +290,11 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   const results = await mapWithConcurrency(
     draftProducts,
     DRAFT_PRODUCT_CREATE_CONCURRENCY,
-    (product) => createShopifyDraftProductSafely(input.admin, product),
+    (product) =>
+      createShopifyDraftProductSafely(input.admin, product, {
+        defaultLocationGid: input.defaultLocationGid ?? null,
+        jobId: job.id,
+      }),
   );
   const createdProducts = results.flatMap((result) =>
     result.status === "created" ? [result.product] : [],
@@ -212,6 +308,14 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     ): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
       result.status === "failed",
   );
+  const inventoryFailedResults = getInventoryFailedResults({
+    products: draftProducts,
+    results,
+  });
+  const inventoryFailureMessage =
+    inventoryFailedResults.length > 0
+      ? `Tracking scorte Shopify non completato per ${inventoryFailedResults.length} prodotti.`
+      : null;
   const persistenceResult = await recordDraftImportPersistence({
     jobId: job.id,
     products: draftProducts,
@@ -219,9 +323,10 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     shopId: shop.id,
   });
 
-  if (failedResult) {
+  if (failedResult || inventoryFailureMessage) {
     await finishDraftImportJob({
-      errorMessage: failedResult.errorMessage,
+      errorMessage:
+        failedResult?.errorMessage ?? inventoryFailureMessage ?? undefined,
       importProductStatus,
       jobId: job.id,
       persistenceResult,
@@ -234,7 +339,8 @@ export async function createShopifyDraftProductsIfEnabled(input: {
 
     return {
       createdProducts,
-      errorMessage: failedResult.errorMessage,
+      errorMessage:
+        failedResult?.errorMessage ?? inventoryFailureMessage ?? undefined,
       jobId: job.id,
       readiness,
       status: "failed" as const,
@@ -265,7 +371,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
 async function createShopifyDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
-): Promise<ShopifyDraftProductResult> {
+): Promise<ShopifyDraftProductCreateResult> {
   const existingProduct = await findExistingSyncBayDraftProduct(
     admin,
     draftProduct,
@@ -311,9 +417,32 @@ async function createShopifyDraftProduct(
 async function createShopifyDraftProductSafely(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
+  context: {
+    defaultLocationGid: string | null;
+    jobId: string;
+  },
 ): Promise<ShopifyDraftProductResult> {
   try {
-    return await createShopifyDraftProduct(admin, draftProduct);
+    const result = await createShopifyDraftProduct(admin, draftProduct);
+
+    if (result.status === "failed") return result;
+
+    const inventorySync = await syncShopifyInventoryFromEbayQuantity(
+      admin,
+      result.product,
+      draftProduct,
+      context,
+    );
+    const inventoryWarnings =
+      inventorySync.status === "skipped" || inventorySync.status === "failed"
+        ? [getInventorySyncWarning(inventorySync)]
+        : [];
+
+    return {
+      ...result,
+      inventorySync,
+      warnings: [...(result.warnings ?? []), ...inventoryWarnings],
+    };
   } catch (error) {
     return {
       errorMessage: getErrorMessage(error),
@@ -325,7 +454,7 @@ async function createShopifyDraftProductSafely(
 async function createShopifyDraftProductRequest(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
-): Promise<ShopifyDraftProductResult> {
+): Promise<ShopifyDraftProductCreateResult> {
   const response = await admin.graphql(
     `#graphql
     mutation SyncBayCreateDraftProduct($media: [CreateMediaInput!], $product: ProductCreateInput!) {
@@ -333,6 +462,15 @@ async function createShopifyDraftProductRequest(
         product {
           id
           title
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
         }
         userErrors {
           field
@@ -410,6 +548,15 @@ async function findExistingSyncBayDraftProduct(
       productByHandle(handle: $handle) {
         id
         title
+        variants(first: 1) {
+          nodes {
+            id
+            inventoryItem {
+              id
+              tracked
+            }
+          }
+        }
         metafield(namespace: "syncbay", key: "ebay_item_id") {
           value
         }
@@ -418,6 +565,15 @@ async function findExistingSyncBayDraftProduct(
         nodes {
           id
           title
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
           metafield(namespace: "syncbay", key: "ebay_item_id") {
             value
           }
@@ -452,6 +608,284 @@ async function findExistingSyncBayDraftProduct(
         product.id === json.data?.productByHandle?.id,
     ) ?? null
   );
+}
+
+async function syncShopifyInventoryFromEbayQuantity(
+  admin: ShopifyAdminGraphqlClient,
+  product: NonNullable<ShopifyCreatedProduct>,
+  draftProduct: ShopifyDraftProductInput,
+  context: {
+    defaultLocationGid: string | null;
+    jobId: string;
+  },
+): Promise<ShopifyInventorySyncResult> {
+  const quantity = draftProduct.previewItem.normalized.quantity;
+  const variant = getFirstProductVariant(product);
+  const inventoryItemGid = variant?.inventoryItem?.id;
+
+  if (!context.defaultLocationGid) {
+    return {
+      message: "Location Shopify predefinita assente.",
+      reason: "missing_location",
+      status: "skipped",
+      variantGid: variant?.id,
+    };
+  }
+
+  if (quantity === null) {
+    return {
+      message: "Quantità eBay non disponibile per il prodotto importato.",
+      reason: "missing_quantity",
+      status: "skipped",
+      variantGid: variant?.id,
+    };
+  }
+
+  if (!variant || !inventoryItemGid) {
+    return {
+      message:
+        "Inventory item Shopify non restituito per la variante importata.",
+      reason: "missing_inventory_item",
+      status: "skipped",
+      variantGid: variant?.id,
+    };
+  }
+
+  const trackingResult = await updateShopifyInventoryItemTracking(
+    admin,
+    inventoryItemGid,
+  );
+
+  if (trackingResult.status === "failed") {
+    return {
+      ...trackingResult,
+      inventoryItemGid,
+      locationGid: context.defaultLocationGid,
+      quantity,
+      variantGid: variant.id,
+    };
+  }
+
+  const activationResult = await activateShopifyInventoryAtLocation(admin, {
+    inventoryItemGid,
+    locationGid: context.defaultLocationGid,
+    quantity,
+  });
+
+  if (activationResult.status === "failed") {
+    return {
+      ...activationResult,
+      inventoryItemGid,
+      locationGid: context.defaultLocationGid,
+      quantity,
+      variantGid: variant.id,
+    };
+  }
+
+  const quantityResult = await setShopifyInventoryQuantity(admin, {
+    inventoryItemGid,
+    jobId: context.jobId,
+    locationGid: context.defaultLocationGid,
+    quantity,
+  });
+
+  if (quantityResult.status === "failed") {
+    return {
+      ...quantityResult,
+      inventoryItemGid,
+      locationGid: context.defaultLocationGid,
+      quantity,
+      variantGid: variant.id,
+    };
+  }
+
+  return {
+    inventoryItemGid,
+    locationGid: context.defaultLocationGid,
+    quantity,
+    status: "synced",
+    variantGid: variant.id,
+  };
+}
+
+async function updateShopifyInventoryItemTracking(
+  admin: ShopifyAdminGraphqlClient,
+  inventoryItemGid: string,
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayTrackInventoryItem($id: ID!, $input: InventoryItemInput!) {
+      inventoryItemUpdate(id: $id, input: $input) {
+        inventoryItem {
+          id
+          tracked
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: inventoryItemGid,
+        input: {
+          tracked: true,
+        },
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventoryItemUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify inventoryItemUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.inventoryItemUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function activateShopifyInventoryAtLocation(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    inventoryItemGid: string;
+    locationGid: string;
+    quantity: number;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayActivateInventoryItem($available: Int, $inventoryItemId: ID!, $locationId: ID!) {
+      inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
+        inventoryLevel {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        available: input.quantity,
+        inventoryItemId: input.inventoryItemGid,
+        locationId: input.locationGid,
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventoryActivateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify inventoryActivate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.inventoryActivate?.userErrors ?? [];
+
+  if (userErrors.length > 0 && !isAlreadyActiveInventoryError(userErrors)) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function setShopifyInventoryQuantity(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    inventoryItemGid: string;
+    jobId: string;
+    locationGid: string;
+    quantity: number;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBaySetInventoryQuantity($input: InventorySetQuantitiesInput!) {
+      inventorySetQuantities(input: $input) {
+        inventoryAdjustmentGroup {
+          referenceDocumentUri
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        input: {
+          ignoreCompareQuantity: true,
+          name: "available",
+          quantities: [
+            {
+              inventoryItemId: input.inventoryItemGid,
+              locationId: input.locationGid,
+              quantity: input.quantity,
+            },
+          ],
+          reason: "correction",
+          referenceDocumentUri: `gid://syncbay/SyncJob/${input.jobId}`,
+        },
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventorySetQuantitiesResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify inventorySetQuantities ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.inventorySetQuantities?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
 }
 
 async function ensureDraftImportShop(shopDomain: string) {
@@ -533,6 +967,8 @@ async function recordDraftImportPersistence(input: {
   await prisma.$transaction(async (tx) => {
     for (const pair of successfulPairs) {
       const now = new Date();
+      const variantGid =
+        getFirstProductVariant(pair.result.product)?.id ?? null;
       const mapping = await tx.productMapping.upsert({
         where: {
           shopId_marketplaceId_ebayItemId: {
@@ -547,6 +983,7 @@ async function recordDraftImportPersistence(input: {
           marketplaceId: getEbayMarketplaceId(),
           shopId: input.shopId,
           shopifyProductGid: pair.result.product.id,
+          shopifyVariantGid: variantGid,
           sku: pair.draftProduct.previewItem.normalized.sku,
           status: ProductMappingStatus.ACTIVE,
         },
@@ -555,6 +992,7 @@ async function recordDraftImportPersistence(input: {
           lastErrorMessage: null,
           lastSyncedAt: now,
           shopifyProductGid: pair.result.product.id,
+          shopifyVariantGid: variantGid,
           sku: pair.draftProduct.previewItem.normalized.sku,
           status: ProductMappingStatus.ACTIVE,
         },
@@ -586,6 +1024,15 @@ async function recordDraftImportPersistence(input: {
     createdCount: successfulPairs.filter(
       (pair) => pair.result.resultType === "created",
     ).length,
+    inventoryFailedCount: successfulPairs.filter(
+      (pair) => pair.result.inventorySync.status === "failed",
+    ).length,
+    inventorySkippedCount: successfulPairs.filter(
+      (pair) => pair.result.inventorySync.status === "skipped",
+    ).length,
+    inventorySyncedCount: successfulPairs.filter(
+      (pair) => pair.result.inventorySync.status === "synced",
+    ).length,
     managedCount: successfulPairs.length,
     reusedCount: successfulPairs.filter(
       (pair) => pair.result.resultType === "reused",
@@ -614,9 +1061,22 @@ async function finishDraftImportJob(input: {
         ]
       : [],
   );
+  const inventoryFailedResults = getInventoryFailedResults({
+    products: input.products,
+    results: input.results,
+  });
+  const inventorySkippedResults = getInventorySkippedResults({
+    products: input.products,
+    results: input.results,
+  });
   const resultPayload = {
     createdCount: input.persistenceResult.createdCount,
     failedResults,
+    inventoryFailedCount: input.persistenceResult.inventoryFailedCount,
+    inventoryFailedResults,
+    inventorySkippedCount: input.persistenceResult.inventorySkippedCount,
+    inventorySkippedResults,
+    inventorySyncedCount: input.persistenceResult.inventorySyncedCount,
     importProductStatus: input.importProductStatus,
     managedCount: input.persistenceResult.managedCount,
     requestedCount: input.products.length,
@@ -707,6 +1167,7 @@ function buildSyncBayProductSnapshot(input: {
   shopId: string;
 }) {
   const item = input.draftProduct.previewItem;
+  const variant = getFirstProductVariant(input.result.product);
 
   return {
     descriptionHash: hashNullableText(item.normalized.descriptionHtml),
@@ -716,6 +1177,7 @@ function buildSyncBayProductSnapshot(input: {
     payload: {
       handle: input.draftProduct.product.handle,
       importJobId: input.jobId,
+      inventorySync: input.result.inventorySync,
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
     } satisfies Prisma.JsonObject,
@@ -724,6 +1186,7 @@ function buildSyncBayProductSnapshot(input: {
     quantity: item.normalized.quantity,
     shopId: input.shopId,
     shopifyProductGid: input.result.product.id,
+    shopifyVariantGid: variant?.id ?? null,
     sku: item.normalized.sku,
     source: ProductSnapshotSource.SYNCBAY,
     title: input.result.product.title,
@@ -737,6 +1200,87 @@ function buildEbaySnapshotPayload(item: ImportPreviewItem) {
     skuGenerated: item.normalized.skuGenerated,
     status: item.status,
   } satisfies Prisma.JsonObject;
+}
+
+function getInventoryFailedResults(input: {
+  products: ShopifyDraftProductInput[];
+  results: ShopifyDraftProductResult[];
+}) {
+  return input.results.flatMap((result, index) =>
+    result.status === "created" && result.inventorySync.status === "failed"
+      ? [
+          {
+            ebayItemId: input.products[index]?.source.ebayItemId ?? null,
+            errorMessage: result.inventorySync.errorMessage,
+            inventoryItemGid: result.inventorySync.inventoryItemGid ?? null,
+            locationGid: result.inventorySync.locationGid ?? null,
+            quantity: result.inventorySync.quantity ?? null,
+            shopifyProductGid: result.product.id,
+            shopifyVariantGid: result.inventorySync.variantGid ?? null,
+          },
+        ]
+      : [],
+  );
+}
+
+function getInventorySkippedResults(input: {
+  products: ShopifyDraftProductInput[];
+  results: ShopifyDraftProductResult[];
+}) {
+  return input.results.flatMap((result, index) =>
+    result.status === "created" && result.inventorySync.status === "skipped"
+      ? [
+          {
+            ebayItemId: input.products[index]?.source.ebayItemId ?? null,
+            message: result.inventorySync.message,
+            reason: result.inventorySync.reason,
+            shopifyProductGid: result.product.id,
+            shopifyVariantGid: result.inventorySync.variantGid ?? null,
+          },
+        ]
+      : [],
+  );
+}
+
+function getInventorySyncWarning(result: ShopifyInventorySyncResult) {
+  if (result.status === "failed") {
+    return `Tracking scorte Shopify non completato: ${result.errorMessage}`;
+  }
+
+  if (result.status === "skipped") {
+    return `Tracking scorte Shopify saltato: ${result.message}`;
+  }
+
+  return "";
+}
+
+function getFirstProductVariant(product: ShopifyDraftProductNode) {
+  return product.variants?.nodes?.[0] ?? null;
+}
+
+function formatShopifyGraphqlErrors(errors: Array<{ message: string }>) {
+  return errors.map((error) => error.message).join("; ");
+}
+
+function formatShopifyUserErrors(errors: ShopifyUserError[]) {
+  return errors
+    .map((error) => {
+      const code = error.code ? ` (${error.code})` : "";
+      return `${error.message}${code}`;
+    })
+    .join("; ");
+}
+
+function isAlreadyActiveInventoryError(errors: ShopifyUserError[]) {
+  return errors.every((error) => {
+    const normalizedMessage = error.message.toLowerCase();
+
+    return (
+      normalizedMessage.includes("already") &&
+      (normalizedMessage.includes("active") ||
+        normalizedMessage.includes("stock"))
+    );
+  });
 }
 
 function buildDraftImportJobPayload(input: {
