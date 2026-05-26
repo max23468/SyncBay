@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.10.3] — 2026-05-26
+
+### Correzioni
+
+- Corretta la microcopy dell'esito import draft Shopify, evitando il testo ambiguo `Create` e descrivendo correttamente anche il riuso di bozze esistenti.
+
 ## [0.10.2] — 2026-05-26
 
 ### Correzioni
