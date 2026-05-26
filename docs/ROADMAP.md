@@ -54,9 +54,9 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
 | Fatto | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API verificati end-to-end sul keyset dedicato SyncBay |
 | Fatto | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API con fallback Trading API/GetItem sui primi 10 listing del batch preview, SKU fallback, regole dry-run MVP codificate e import draft pilota confermato sul dev store |
-| In corso | Import iniziale fino a 2.000 prodotti | Primo batch pilota verificato con bozze Shopify idempotenti; ora l'import controllato registra mapping, snapshot, job e audit ed espone lo storico in dashboard. Resta espandere batch e copertura fino al limite MVP |
+| In corso | Import iniziale fino a 2.000 prodotti | Batch 10 verificato con bozze Shopify idempotenti; ora l'import controllato registra mapping, snapshot, job e audit ed espone lo storico in dashboard. Il limite tecnico pilota è pronto per batch 25; resta espandere copertura fino al limite MVP |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
-| In corso | Job import e retry | Import draft tracciato con `SyncJob` idempotente, tentativi, risultato, audit e retry pianificato con backoff; consumer Supabase Queues/Cron ancora da collegare per esecuzione automatica |
+| In corso | Job import e retry | Import draft tracciato con `SyncJob` idempotente, tentativi, risultato, audit e retry pianificato con backoff; runner HTTP protetto disponibile per riprendere job `IMPORT_CATALOG` dovuti, schedule Supabase Cron ancora da collegare |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
 | In corso | Dashboard operativa | Stato connessioni, job recenti, storico import, conteggi mapping/snapshot e rimessa in coda manuale; restano conflitti e azioni sync complete |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
@@ -81,13 +81,13 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Da fare | Shopify GDPR webhook | Disinstallazione, cancellazione dati shop/customer dove richiesto |
 | Fatto | eBay marketplace account deletion | Challenge GET e POST con verifica firma e cleanup dati eBay implementati, migration/deploy runtime applicati e test notification eBay superata |
 | Da fare | Audit log minimo | Connect, disconnect, refresh fallito, sync critici |
-| In corso | Rate limit e retry policy | Backoff import draft predisposto; restano policy provider API e consumer job queue |
+| In corso | Rate limit e retry policy | Backoff import draft e runner job dovuti predisposti; restano policy provider API complete e schedule Supabase Cron |
 | Da fare | Rollback import | Archiviare/ripristinare sessioni import |
 
 ## Prossime mosse suggerite
 
-1. Deployare la dashboard con storico import, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili.
-2. Portare il batch pilota a 10 prodotti e verificare da Shopify Admin/Supabase che mapping, snapshot, job e audit restino coerenti.
-3. Aumentare il batch in modo graduale a 25/50 prodotti solo dopo verifica del batch 10.
-4. Collegare consumer Supabase Queues/Cron per eseguire automaticamente job `RETRYING`/`PENDING` e applicare il backoff già tracciato.
-5. Iniziare il sync incrementale eBay -> Shopify e la protezione disponibilità Shopify -> eBay.
+1. Verificare il batch pilota da 25 prodotti su Shopify Admin e Supabase.
+2. Collegare una schedule Supabase Cron sicura al runner `/api/jobs/run-due`, evitando di esporre `CRON_SECRET` in repo o log.
+3. Dopo batch 25 stabile, valutare il passaggio a 50 prodotti.
+4. Iniziare il sync incrementale eBay -> Shopify.
+5. Implementare la protezione disponibilità Shopify -> eBay per ordini pagati.

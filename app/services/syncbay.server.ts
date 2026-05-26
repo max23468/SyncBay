@@ -841,7 +841,7 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail:
-        "Import draft tracciato con job idempotente e retry pianificati; consumer Supabase da collegare per esecuzione automatica.",
+        "Import draft tracciato con job idempotente e retry pianificati; runner protetto disponibile, schedule Supabase Cron da collegare.",
       label: "Job queue e retry",
       status: "preparabile",
     },

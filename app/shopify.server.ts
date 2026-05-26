@@ -27,3 +27,4 @@ const shopify = shopifyApp({
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const login = shopify.login;
+export const unauthenticated = shopify.unauthenticated;

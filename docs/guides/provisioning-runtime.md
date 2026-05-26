@@ -8,9 +8,11 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 
 Provisioning minimo completato il 2026-05-09.
 
-Lo scaffold Shopify CLI React Router esiste. Esiste un primo deployment Vercel
-production pronto. Il batch draft pilota è stato verificato sul dev store; non
-esistono ancora import completo fino a 2.000 prodotti o sync catalogo.
+Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
+production pronto. Il batch draft pilota è stato verificato sul dev store fino a
+10 prodotti; il limite tecnico ora consente il passo controllato a 25. Non
+esistono ancora import completo fino a 2.000 prodotti, sync catalogo o schedule
+Supabase Cron attiva.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -35,8 +37,9 @@ Note:
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
-- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota può essere riattivato dopo il deploy della versione che registra mapping, snapshot, job e audit.
-- `SYNCBAY_DRAFT_IMPORT_LIMIT=3` limita il batch pilota di bozze Shopify; aumentarlo solo in modo graduale dopo verifica manuale di mapping, snapshot e audit.
+- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota è riattivabile solo per import controllati da preview.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il batch 10 è stato verificato su runtime pilota; il limite tecnico ora consente il passo controllato a 25 prodotti prima di valutare 50.
+- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron va collegata senza scrivere il secret in repo, log o documentazione.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
