@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.16.1] — 2026-05-26
+
+### Correzioni
+
+- L'import Shopify riallinea ora anche lo stato dei prodotti SyncBay già
+  esistenti quando vengono riusati, così il default `Pubblicato` non lascia
+  prodotti in bozza su reinvii o retry.
+- La sincronizzazione inventario verifica ora dopo le mutation Shopify che il
+  tracking sia davvero attivo e che la quantità disponibile sulla location
+  predefinita corrisponda al valore eBay.
+
 ## [0.16.0] — 2026-05-26
 
 ### Novità
@@ -303,6 +314,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.16.1]: #0161--2026-05-26
 [0.16.0]: #0160--2026-05-26
 [0.15.0]: #0150--2026-05-26
 [0.14.0]: #0140--2026-05-26

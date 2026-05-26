@@ -5,25 +5,12 @@ name = "SyncBay"
 application_url = "https://syncbay.vercel.app"
 embedded = true
 
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,write_locations"
-optional_scopes = [ ]
-use_legacy_install_flow = false
-
-[auth]
-redirect_urls = [ "https://syncbay.vercel.app/auth/callback" ]
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "syncbay-dev.myshopify.com"
 
 [webhooks]
 api_version = "2026-04"
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/uninstalled"
-  topics = [ "app/uninstalled" ]
-
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/scopes_update"
-  topics = [ "app/scopes_update" ]
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/products/update"
@@ -33,6 +20,19 @@ api_version = "2026-04"
   uri = "/webhooks/inventory_levels/update"
   topics = [ "inventory_levels/update" ]
 
-[build]
-automatically_update_urls_on_dev = true
-dev_store_url = "syncbay-dev.myshopify.com"
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_inventory,read_locations,read_products,write_inventory,write_locations,write_products"
+optional_scopes = [ ]
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [ "https://syncbay.vercel.app/auth/callback" ]
