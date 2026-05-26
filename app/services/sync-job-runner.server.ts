@@ -184,9 +184,34 @@ async function runImportCatalogJob(job: DueSyncJob) {
     };
   }
 
+  if (result.status === "failed") {
+    await markJobFailedOrRetrying({
+      errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
+      errorMessage:
+        result.errorMessage ??
+        "Import draft Shopify non completato dal runner.",
+      job,
+    });
+
+    return {
+      errorMessage:
+        result.errorMessage ??
+        "Import draft Shopify non completato dal runner.",
+      jobId: job.id,
+      status: "failed" as const,
+      type: job.type,
+    };
+  }
+
+  await markJobSucceeded({
+    delegatedJobId: result.jobId,
+    job,
+    warnings: result.warnings ?? [],
+  });
+
   return {
     jobId: job.id,
-    status: result.status === "created" ? ("succeeded" as const) : "failed",
+    status: "succeeded" as const,
     type: job.type,
   };
 }
@@ -243,6 +268,38 @@ async function markJobFailedOrRetrying(input: {
           : "Job SyncBay non completato dal runner.",
         shopId: input.job.shopId,
         type: AuditEventType.SYNC_JOB_FAILED,
+      },
+    }),
+  ]);
+}
+
+async function markJobSucceeded(input: {
+  delegatedJobId: string | null;
+  job: DueSyncJob;
+  warnings: string[];
+}) {
+  const result = {
+    delegatedJobId: input.delegatedJobId,
+    warnings: [...new Set(input.warnings)],
+  } satisfies Prisma.JsonObject;
+
+  await prisma.$transaction([
+    prisma.syncJob.update({
+      data: {
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: new Date(),
+        result,
+        status: SyncJobStatus.SUCCEEDED,
+      },
+      where: { id: input.job.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: result,
+        message: "Job SyncBay completato dal runner.",
+        shopId: input.job.shopId,
+        type: AuditEventType.SYNC_JOB_SUCCEEDED,
       },
     }),
   ]);

@@ -165,6 +165,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   if (readiness.blockers.length > 0) {
     return {
       createdProducts: [],
+      jobId: null,
       readiness,
       status: "blocked" as const,
     };
@@ -217,6 +218,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     return {
       createdProducts,
       errorMessage: failedResult.errorMessage,
+      jobId: job.id,
       readiness,
       status: "failed" as const,
       warnings,
@@ -235,6 +237,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
 
   return {
     createdProducts,
+    jobId: job.id,
     readiness,
     status: "created" as const,
     warnings,
