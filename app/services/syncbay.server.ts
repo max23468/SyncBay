@@ -756,9 +756,9 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail:
-        "Schema job presente; consumer Supabase da implementare quando esiste import reale.",
+        "Import draft tracciato con job idempotente; consumer Supabase da implementare per retry automatici.",
       label: "Job queue e retry",
-      status: "da implementare",
+      status: "preparabile",
     },
     {
       detail:
@@ -774,7 +774,7 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail:
-        "Webhook Shopify product/inventory tracciati; modello conflitti da aggiungere.",
+        "Webhook Shopify product/inventory tracciati; rilevazione conflitti ancora da collegare.",
       label: "Conflitti Shopify",
       status: "da implementare",
     },

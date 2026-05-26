@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.11.0] — 2026-05-26
+
+### Novità
+
+- L'import draft Shopify registra ora un job `IMPORT_CATALOG` idempotente, mapping prodotto eBay -> Shopify, snapshot e audit log per ogni bozza creata o riusata.
+
 ## [0.10.3] — 2026-05-26
 
 ### Correzioni
@@ -232,6 +238,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.11.0]: #0110--2026-05-26
+[0.10.3]: #0103--2026-05-26
 [0.10.2]: #0102--2026-05-26
 [0.10.1]: #0101--2026-05-25
 [0.10.0]: #0100--2026-05-25

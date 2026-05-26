@@ -4,9 +4,9 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 ## Stato
 
-Fase corrente: onboarding/import preview pilota.
+Fase corrente: import iniziale controllato.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Non esistono ancora import completo o sync catalogo attivi.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Il batch draft pilota è stato verificato sul dev store e l'import registra mapping, snapshot, job e audit per bozze create o riusate. Non esistono ancora import completo fino a 2.000 prodotti, sync catalogo entro 5 minuti o consumer Supabase automatico.
 
 ## Direzione prodotto
 
@@ -90,7 +90,8 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Verificare in Shopify Admin che la preview live arricchita mostri immagini, SKU fallback e prodotti importabili.
-2. Se i dati reali sono corretti, abilitare temporaneamente `SYNCBAY_DRAFT_IMPORT_ENABLED` con `SYNCBAY_DRAFT_IMPORT_LIMIT=3`.
-3. Creare un piccolo batch di bozze Shopify e controllare i risultati nello shop pilota.
-4. Collegare mapping/snapshot prodotto e job queue solo dopo conferma pilota dell'import iniziale.
+1. Deployare la versione con mapping/snapshot/job/audit dell'import draft.
+2. Riabilitare `SYNCBAY_DRAFT_IMPORT_ENABLED` sul runtime pilota e rilanciare un import da preview.
+3. Verificare su Supabase che `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` siano coerenti con le bozze Shopify riusate o create.
+4. Aumentare il batch gradualmente a 10, poi 25/50 prodotti, prima di progettare l'import completo fino a 2.000 prodotti.
+5. Collegare consumer Supabase Queues/Cron per retry automatici e sync incrementale.

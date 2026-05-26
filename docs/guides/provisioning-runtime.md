@@ -9,7 +9,8 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Esiste un primo deployment Vercel
-production pronto, ma non esistono ancora import catalogo o sync.
+production pronto. Il batch draft pilota è stato verificato sul dev store; non
+esistono ancora import completo fino a 2.000 prodotti o sync catalogo.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -34,8 +35,8 @@ Note:
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
-- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default: le migration mapping/snapshot/conflitti sono applicate, ma non attivare import draft finché non viene scelta una verifica su shop pilota.
-- `SYNCBAY_DRAFT_IMPORT_LIMIT=3` limita il batch pilota di bozze Shopify; non aumentarlo senza verifica manuale del primo batch.
+- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota può essere riattivato dopo il deploy della versione che registra mapping, snapshot, job e audit.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT=3` limita il batch pilota di bozze Shopify; aumentarlo solo in modo graduale dopo verifica manuale di mapping, snapshot e audit.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
@@ -90,8 +91,10 @@ Primitive Supabase tracciate:
 - estensione `pg_cron`;
 - bucket privato `syncbay-import-staging` per staging temporaneo immagini.
 
-Non ci sono ancora schedule cron o consumer queue: verranno aggiunti quando
-esisterà la logica import/sync.
+Non ci sono ancora schedule cron o consumer queue attivi: il runtime import
+draft registra `SyncJob` idempotenti con tentativi e risultato, mentre retry
+automatici e drenaggio queue verranno aggiunti quando l'import controllato
+verrà esteso oltre il batch pilota.
 
 ## Cosa resta da fare
 

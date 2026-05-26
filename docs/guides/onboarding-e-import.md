@@ -53,6 +53,8 @@ wizard:
 - mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
   quando serve un fallback dimostrativo;
 - mantiene ogni scrittura Shopify dietro conferma esplicita;
+- crea o riusa bozze Shopify in modo idempotente per eBay ItemID;
+- registra mapping prodotto, snapshot e job audit per ogni bozza gestita;
 - mostra default import e sequenza di preview prevista;
 - mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
   successive;
@@ -73,11 +75,13 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - env: `SYNCBAY_DRAFT_IMPORT_ENABLED=false` per default;
 - env: `SYNCBAY_DRAFT_IMPORT_LIMIT=3` per limitare il batch pilota;
 - quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
-- quando sarà attivato, il codice userà solo item importabili della preview,
-  fino al limite runtime, e creerà prodotti Shopify in stato `DRAFT` con titolo,
+- quando è attivato, il codice usa solo item importabili della preview, fino al
+  limite runtime, e crea o riusa prodotti Shopify in stato `DRAFT` con titolo,
   descrizione HTML, prime immagini e metadati SyncBay/eBay;
-- l'attivazione richiede conferma esplicita, migration remote applicata e
-  verifica manuale su shop pilota.
+- ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
+  snapshot `EBAY` e `SYNCBAY` e registra audit di avvio/esito;
+- il primo batch pilota è stato verificato sul dev store. Prima di aumentare il
+  limite oltre il batch pilota, verificare mapping, snapshot e audit su Supabase.
 
 Copertura attuale della preview live:
 
@@ -89,8 +93,8 @@ Copertura attuale della preview live:
 - per i primi 10 listing Trading della preview, SyncBay prova `GetItem` per
   recuperare dettagli e immagini non restituiti nella lista;
 - la prima pagina di preview resta limitata a 50 prodotti, entro il limite
-  tecnico massimo di 100 per lettura UI, mentre l'import completo fino a 2.000
-  prodotti richiederà job/mapping/snapshot.
+  tecnico massimo di 100 per lettura UI. L'import completo fino a 2.000 prodotti
+  richiederà batch controllati, consumer Supabase Queues/Cron e retry automatici.
 
 Smoke UI locale:
 
