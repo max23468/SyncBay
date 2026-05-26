@@ -37,5 +37,5 @@ Questo documento traccia decisioni non ancora chiuse. Quando una decisione diven
 | Shopify App Store listing | Aperta | Dopo beta custom | Richiede contenuti, support policy, billing e review. |
 | Support policy | Aperta | Self-service first | Il prodotto non deve dipendere da supporto umano nella prima fase. |
 | Multi-marketplace | Idea | Fuori scope | Rischia di diluire il vantaggio eBay.it-first. |
-| Release production | Aperta | Versioning locale attivo in ADR 0006; niente tag, GitHub Release o Release Please finché non viene deciso il deploy production | Serve prima di deploy pubblici versionati. |
+| Release production | Aperta per App Store/production | Versioning locale attivo in ADR 0006; tag `vX.Y.Z` e GitHub Release ammessi solo per release prodotto reali secondo ADR 0008; niente Release Please | Resta da decidere policy completa di App Store, billing, supporto e promozione production. |
 | CI runtime | Aperta | Policy futura in ADR 0004; nessun workflow Quality finché non vengono decisi comandi e gate reali | Serve prima di sviluppo runtime continuativo. |

@@ -36,7 +36,9 @@ npm run release -- --bump major
 npm run release -- --bump none
 ```
 
-Il comando aggiorna `CHANGELOG.md` e `app/lib/version.ts`, ma non crea tag Git, GitHub Release o deploy.
+Il comando aggiorna `CHANGELOG.md` e `app/lib/version.ts`, ma non crea deploy.
+Tag Git e GitHub Release sono regolati da ADR 0008 e valgono solo per release
+prodotto reali.
 
 ## Regole
 
@@ -54,8 +56,8 @@ Pubblicare su GitHub/main non significa sempre rilasciare una versione.
 Rilasciare una versione non significa automaticamente:
 
 - deploy production;
-- tag GitHub;
-- GitHub Release;
+- tag GitHub fuori dalla policy ADR 0008;
+- GitHub Release fuori dalla policy ADR 0008;
 - pubblicazione Shopify App Store;
 - billing;
 - attivazione integrazioni produttive.

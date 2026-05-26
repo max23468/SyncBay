@@ -62,8 +62,13 @@ Il floor Node `>=22.13` è richiesto dalla dipendenza `react-doctor@0.2.3`; non 
 
 ## Deploy e release
 
-SyncBay ha versioning locale e un deployment pilota Vercel production, ma non ha ancora una policy di release pubblica, tag GitHub, GitHub Release o pubblicazione Shopify App Store.
+SyncBay ha versioning locale, un deployment pilota Vercel production e una
+policy tag/GitHub Release per release prodotto reali. Non ha ancora una policy
+di release pubblica Shopify App Store.
 
 - `pubblica` significa portare il lavoro su GitHub/main secondo `docs/guides/git-e-pubblicazione.md`.
 - `rilascia` significa usare il flusso locale `npm run release`.
-- `deploya` significa aggiornare il deployment pilota Vercel production e verificarlo; non implica App Store, billing, tag o GitHub Release.
+- `deploya` significa aggiornare il deployment pilota Vercel production e
+  verificarlo; non implica App Store, billing, tag o GitHub Release.
+- tag e GitHub Release si creano solo per release prodotto reali secondo ADR
+  `docs/decisions/0008-tag-e-github-release.md`.

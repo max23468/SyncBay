@@ -79,7 +79,7 @@ Nella fase attuale:
 - "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`, con commit/push diretto per docs-only piccoli oppure PR/merge per lavori non banali;
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;
 - "deploya" = aggiornare e verificare il deployment pilota Vercel production, senza implicare App Store, billing, tag o GitHub Release;
-- "rilascia" significa preparare una release locale con `npm run release`, senza tag o GitHub Release.
+- "rilascia" significa preparare una release locale con `npm run release`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `0008`.
 
 Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
 
@@ -142,9 +142,8 @@ Prima di dichiarare completata una modifica:
 Finché SyncBay resta in deployment pilota:
 
 - usare Vercel production solo per verifiche controllate del dev store;
-- non creare GitHub Release;
-- non creare tag SemVer;
+- non creare GitHub Release o tag SemVer fuori da una release prodotto reale;
 - non introdurre Release Please senza ADR;
 - non aggiungere CI runtime senza comandi reali e policy esplicita.
 
-Il versioning locale è definito in `docs/decisions/0006-versioning-runtime-locale.md`. La policy futura di CI e deploy è definita in `docs/decisions/0004-runtime-ci-release-future.md`.
+Il versioning locale è definito in `docs/decisions/0006-versioning-runtime-locale.md`. Tag e GitHub Release sono definiti in `docs/decisions/0008-tag-e-github-release.md`. La policy futura di CI e deploy è definita in `docs/decisions/0004-runtime-ci-release-future.md`.

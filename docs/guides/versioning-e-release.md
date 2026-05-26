@@ -2,7 +2,10 @@
 
 Questa guida descrive come gestire il versioning di SyncBay.
 
-Decisione di riferimento: `docs/decisions/0006-versioning-runtime-locale.md`.
+Decisioni di riferimento:
+
+- `docs/decisions/0006-versioning-runtime-locale.md`
+- `docs/decisions/0008-tag-e-github-release.md`
 
 ## Pubblicare non è sempre rilasciare
 
@@ -107,11 +110,15 @@ Prima di dichiarare conclusa una fase, pubblicazione o release:
 2. se contiene solo `### Non versionato`, non eseguire release SemVer;
 3. se contiene `### Novità`, `### Correzioni`, `### Sotto il cofano` o `### Rimosso`, esegui `npm run release` oppure dichiara esplicitamente che la release resta il prossimo passo operativo;
 4. verifica il diff generato prima di commit/push;
-5. non creare tag, GitHub Release o Release Please fuori da una decisione esplicita.
+5. creare tag o GitHub Release solo per release prodotto reali secondo ADR 0008;
+6. non creare Release Please fuori da una decisione esplicita.
 
 ## Rapporto con deploy
 
-Il versioning locale non crea deploy, tag o GitHub Release.
+Il versioning locale non crea deploy.
+
+Tag e GitHub Release sono ammessi solo per release prodotto reali secondo ADR
+0008.
 
 Con il deployment pilota Vercel attivo, una pubblicazione completa deve distinguere:
 
@@ -119,6 +126,25 @@ Con il deployment pilota Vercel attivo, una pubblicazione completa deve distingu
 - deploy Vercel completato;
 - verifica smoke della dashboard embedded;
 - eventuale release SemVer;
+- eventuale tag/GitHub Release solo se la release è prodotto reale;
 - cleanup branch.
 
-Anche con deploy pilota attivo, una release SyncBay aggiorna repo e changelog, ma non implica pubblicazione Shopify App Store, billing, tag GitHub o integrazioni produttive.
+Anche con deploy pilota attivo, una release SyncBay aggiorna repo e changelog,
+ma non implica pubblicazione Shopify App Store, billing o integrazioni
+produttive.
+
+## Tag e GitHub Release
+
+Per una release prodotto reale:
+
+- `app/lib/version.ts`, aggiornato da `npm run release`, resta la source of
+  truth;
+- il tag Git deve avere formato `vX.Y.Z` e corrispondere esattamente a
+  `APP_VERSION`;
+- la GitHub Release, se creata, parte da quel tag e usa note derivate dalla
+  sezione rilasciata di `CHANGELOG.md`;
+- il deploy Vercel resta separato e non implica App Store, billing o
+  integrazioni produttive.
+
+Non creare tag o GitHub Release per `### Non versionato`, piani, ADR, guide,
+governance, template o pubblicazioni docs-only.

@@ -262,19 +262,19 @@ Comandi runtime attuali:
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" non significa automaticamente deploy, release versionata, billing, App Store o integrazioni produttive.
 - Se il maintainer chiede "deploya" o "pubblica e deploy", verifica prima se esiste una policy SyncBay attuale. Oggi non esiste deploy production: dichiaralo e procedi solo dopo decisione esplicita.
-- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md`, salvo richiesta esplicita di tag, GitHub Release o deploy.
+- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
 
 Dettagli: `docs/guides/git-e-pubblicazione.md`.
 
 ## Release, deploy e App Store
 
-SyncBay ha un flusso di versioning locale, ma non ha ancora un flusso di deploy production.
+SyncBay ha un flusso di versioning locale e un deployment pilota Vercel
+production. Non ha ancora un flusso di release pubblica Shopify App Store.
 
 Fino a decisione esplicita:
 
-- non configurare deploy;
-- non creare tag GitHub o GitHub Release;
+- non creare tag GitHub o GitHub Release fuori dalla policy ADR 0008;
 - non introdurre billing;
 - non avviare pubblicazione Shopify App Store;
 - non creare integrazioni produttive Shopify/eBay.
@@ -284,7 +284,8 @@ Versioning locale:
 - `app/lib/version.ts` è la single source of truth per `APP_VERSION` e `BUILD_DATE`;
 - `npm run release` prepara una release aggiornando `CHANGELOG.md` e `app/lib/version.ts`;
 - `npm run release:dry-run` verifica la categoria senza modificare file;
-- il comando non crea deploy, tag o GitHub Release.
+- il comando non crea deploy; tag e GitHub Release restano una scelta separata
+  ammessa solo per release prodotto reali.
 
 Ogni modifica deve essere classificata prima della chiusura:
 
@@ -295,9 +296,15 @@ Ogni modifica deve essere classificata prima della chiusura:
 
 Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime futuri in sezioni versionate, non chiudere senza release oppure senza dichiarare il rilascio come prossimo step operativo.
 
-Quando deploy production o pubblicazione App Store verranno decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`, `docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e il piano tecnico.
+Quando pubblicazione App Store, billing o promozione production stabile verranno
+decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`,
+`docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e
+il piano tecnico.
 
-Dettagli: `docs/guides/versioning-e-release.md`, ADR `docs/decisions/0006-versioning-runtime-locale.md` e policy futura CI/deploy in `docs/decisions/0004-runtime-ci-release-future.md`.
+Dettagli: `docs/guides/versioning-e-release.md`, ADR
+`docs/decisions/0006-versioning-runtime-locale.md`, ADR
+`docs/decisions/0008-tag-e-github-release.md` e policy futura CI/deploy in
+`docs/decisions/0004-runtime-ci-release-future.md`.
 
 ## Risposte finali e handoff
 
