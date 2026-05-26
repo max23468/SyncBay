@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.17.1] — 2026-05-26
+
+### Correzioni
+
+- Aggiunta la direttiva Shopify `@idempotent` ai campi mutation inventario
+  `inventoryActivate` e `inventorySetQuantities`, richiesta dalla Admin API
+  2026-04 per evitare rifiuti runtime sui prossimi import.
+- Rimossa la proprietà non supportata `ignoreCompareQuantity` dall'input
+  `inventorySetQuantities`, allineando la mutation allo schema Admin GraphQL
+  corrente letto via Shopify CLI.
+- L'aggiornamento quantità legge ora la disponibilità corrente Shopify e la
+  passa come `changeFromQuantity`, richiesta dalla mutation
+  `inventorySetQuantities`.
+
 ## [0.17.0] — 2026-05-26
 
 ### Novità
@@ -331,6 +345,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.17.1]: #0171--2026-05-26
 [0.17.0]: #0170--2026-05-26
 [0.16.1]: #0161--2026-05-26
 [0.16.0]: #0160--2026-05-26

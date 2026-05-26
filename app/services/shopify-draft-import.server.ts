@@ -1477,8 +1477,8 @@ async function activateShopifyInventoryAtLocation(
 ): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
   const response = await admin.graphql(
     `#graphql
-    mutation SyncBayActivateInventoryItem($available: Int, $inventoryItemId: ID!, $locationId: ID!) {
-      inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
+    mutation SyncBayActivateInventoryItem($available: Int, $idempotencyKey: String!, $inventoryItemId: ID!, $locationId: ID!) {
+      inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) @idempotent(key: $idempotencyKey) {
         inventoryLevel {
           id
         }
@@ -1491,6 +1491,12 @@ async function activateShopifyInventoryAtLocation(
     {
       variables: {
         available: input.quantity,
+        idempotencyKey: buildShopifyMutationIdempotencyKey({
+          inventoryItemGid: input.inventoryItemGid,
+          locationGid: input.locationGid,
+          operation: "inventory-activate",
+          quantity: input.quantity,
+        }),
         inventoryItemId: input.inventoryItemGid,
         locationId: input.locationGid,
       },
@@ -1533,10 +1539,20 @@ async function setShopifyInventoryQuantity(
     quantity: number;
   },
 ): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const currentQuantityResult = await getShopifyInventoryAvailableQuantity(
+    admin,
+    {
+      inventoryItemGid: input.inventoryItemGid,
+      locationGid: input.locationGid,
+    },
+  );
+
+  if (currentQuantityResult.status === "failed") return currentQuantityResult;
+
   const response = await admin.graphql(
     `#graphql
-    mutation SyncBaySetInventoryQuantity($input: InventorySetQuantitiesInput!) {
-      inventorySetQuantities(input: $input) {
+    mutation SyncBaySetInventoryQuantity($idempotencyKey: String!, $input: InventorySetQuantitiesInput!) {
+      inventorySetQuantities(input: $input) @idempotent(key: $idempotencyKey) {
         inventoryAdjustmentGroup {
           referenceDocumentUri
         }
@@ -1548,11 +1564,18 @@ async function setShopifyInventoryQuantity(
     }`,
     {
       variables: {
+        idempotencyKey: buildShopifyMutationIdempotencyKey({
+          inventoryItemGid: input.inventoryItemGid,
+          jobId: input.jobId,
+          locationGid: input.locationGid,
+          operation: "inventory-set-quantities",
+          quantity: input.quantity,
+        }),
         input: {
-          ignoreCompareQuantity: true,
           name: "available",
           quantities: [
             {
+              changeFromQuantity: currentQuantityResult.availableQuantity ?? 0,
               inventoryItemId: input.inventoryItemGid,
               locationId: input.locationGid,
               quantity: input.quantity,
@@ -1590,6 +1613,75 @@ async function setShopifyInventoryQuantity(
   }
 
   return { status: "synced" };
+}
+
+async function getShopifyInventoryAvailableQuantity(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    inventoryItemGid: string;
+    locationGid: string;
+  },
+): Promise<
+  | {
+      availableQuantity: number | null;
+      status: "synced";
+    }
+  | { errorMessage: string; status: "failed" }
+> {
+  const response = await admin.graphql(
+    `#graphql
+    query SyncBayCurrentInventoryQuantity($inventoryItemGid: ID!, $locationGid: ID!) {
+      node(id: $inventoryItemGid) {
+        ... on InventoryItem {
+          id
+          inventoryLevel(locationId: $locationGid) {
+            quantities(names: ["available"]) {
+              name
+              quantity
+            }
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        inventoryItemGid: input.inventoryItemGid,
+        locationGid: input.locationGid,
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventoryVerificationResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify lettura quantità corrente ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const inventoryItem = json.data?.node;
+
+  if (!inventoryItem) {
+    return {
+      errorMessage: "Shopify non ha restituito l'inventory item per leggere la quantità corrente.",
+      status: "failed",
+    };
+  }
+
+  return {
+    availableQuantity:
+      inventoryItem.inventoryLevel?.quantities?.find(
+        (quantity) => quantity.name === "available",
+      )?.quantity ?? null,
+    status: "synced",
+  };
 }
 
 async function verifyShopifyInventoryAtLocation(
@@ -2192,6 +2284,26 @@ function getSupabaseStorageConfig() {
     serviceRoleKey,
     supabaseUrl,
   };
+}
+
+function buildShopifyMutationIdempotencyKey(input: {
+  inventoryItemGid: string;
+  jobId?: string;
+  locationGid: string;
+  operation: string;
+  quantity: number;
+}) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        inventoryItemGid: input.inventoryItemGid,
+        jobId: input.jobId ?? null,
+        locationGid: input.locationGid,
+        operation: input.operation,
+        quantity: input.quantity,
+      }),
+    )
+    .digest("hex");
 }
 
 function buildSupabaseImageObjectPath(input: {
