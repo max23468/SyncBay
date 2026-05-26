@@ -43,8 +43,20 @@ interface ShopifyDraftProductVariantNode {
   inventoryItem?: ShopifyInventoryItemNode | null;
 }
 
+interface ShopifyProductMediaNode {
+  alt?: string | null;
+  id: string;
+  mediaContentType?: string | null;
+  preview?: {
+    status?: string | null;
+  } | null;
+}
+
 interface ShopifyDraftProductNode {
   id: string;
+  media?: {
+    nodes?: ShopifyProductMediaNode[];
+  } | null;
   status?: string | null;
   title: string;
   variants?: {
@@ -134,6 +146,18 @@ interface ShopifyProductUpdateResponse {
   }>;
 }
 
+interface ShopifyFileDeleteResponse {
+  data?: {
+    fileDelete?: {
+      deletedFileIds?: string[];
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 interface ShopifyInventoryVerificationResponse {
   data?: {
     node?: {
@@ -165,15 +189,21 @@ type DraftImportPersistenceResult = {
   inventoryFailedCount: number;
   inventorySkippedCount: number;
   inventorySyncedCount: number;
+  mediaDeletedCount: number;
+  mediaFailedCount: number;
+  mediaImageCreatedCount: number;
+  mediaStagedCount: number;
+  mediaSyncedCount: number;
   managedCount: number;
   reusedCount: number;
 };
 const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 50;
-const MAX_DRAFT_MEDIA_PER_PRODUCT = 3;
 const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
+const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
+const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
 
 type ShopifyInventorySyncResult =
   | {
@@ -201,6 +231,22 @@ type ShopifyInventorySyncResult =
       variantGid?: string;
     };
 
+type ShopifyMediaSyncResult = {
+  createdCount: number;
+  deletedCount: number;
+  directCreatedCount: number;
+  failedResults: Array<{
+    errorMessage: string;
+    index: number;
+    sourceUrl: string;
+  }>;
+  requestedCount: number;
+  sourceImageUrls: string[];
+  stagedCreatedCount: number;
+  stagedObjectPaths: string[];
+  status: "failed" | "synced";
+};
+
 type ShopifyDraftProductCreateResult =
   | {
       product: NonNullable<ShopifyCreatedProduct>;
@@ -216,6 +262,7 @@ type ShopifyDraftProductCreateResult =
 type ShopifyDraftProductResult =
   | (Extract<ShopifyDraftProductCreateResult, { status: "created" }> & {
       inventorySync: ShopifyInventorySyncResult;
+      mediaSync: ShopifyMediaSyncResult;
     })
   | Extract<ShopifyDraftProductCreateResult, { status: "failed" }>;
 
@@ -259,8 +306,8 @@ export function buildShopifyDraftProductInputs(
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
     .map((item) => ({
-      media: item.normalized.imageUrls
-        .slice(0, MAX_DRAFT_MEDIA_PER_PRODUCT)
+      media: dedupeImageUrls(item.normalized.imageUrls)
+        .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
         .map((imageUrl) => ({
           alt: item.normalized.title,
           mediaContentType: "IMAGE",
@@ -343,9 +390,17 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     products: draftProducts,
     results,
   });
+  const mediaFailedResults = getMediaFailedResults({
+    products: draftProducts,
+    results,
+  });
   const inventoryFailureMessage =
     inventoryFailedResults.length > 0
       ? `Tracking scorte Shopify non completato per ${inventoryFailedResults.length} prodotti.`
+      : null;
+  const mediaFailureMessage =
+    mediaFailedResults.length > 0
+      ? `Immagini Shopify non completate per ${mediaFailedResults.length} prodotti.`
       : null;
   const persistenceResult = await recordDraftImportPersistence({
     jobId: job.id,
@@ -354,10 +409,13 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     shopId: shop.id,
   });
 
-  if (failedResult || inventoryFailureMessage) {
+  if (failedResult || inventoryFailureMessage || mediaFailureMessage) {
     await finishDraftImportJob({
       errorMessage:
-        failedResult?.errorMessage ?? inventoryFailureMessage ?? undefined,
+        failedResult?.errorMessage ??
+        inventoryFailureMessage ??
+        mediaFailureMessage ??
+        undefined,
       importProductStatus,
       jobId: job.id,
       persistenceResult,
@@ -371,7 +429,10 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     return {
       createdProducts,
       errorMessage:
-        failedResult?.errorMessage ?? inventoryFailureMessage ?? undefined,
+        failedResult?.errorMessage ??
+        inventoryFailureMessage ??
+        mediaFailureMessage ??
+        undefined,
       jobId: job.id,
       readiness,
       status: "failed" as const,
@@ -430,30 +491,10 @@ async function createShopifyDraftProduct(
     };
   }
 
-  const resultWithMedia = await createShopifyDraftProductRequest(
-    admin,
-    draftProduct,
-  );
-
-  if (resultWithMedia.status === "created" || draftProduct.media.length === 0) {
-    return resultWithMedia;
-  }
-
-  const resultWithoutMedia = await createShopifyDraftProductRequest(admin, {
+  return createShopifyDraftProductRequest(admin, {
     ...draftProduct,
     media: [],
   });
-
-  if (resultWithoutMedia.status === "created") {
-    return {
-      ...resultWithoutMedia,
-      warnings: [
-        "Shopify ha creato alcuni prodotti senza immagini perché le URL media esterne sono state rifiutate.",
-      ],
-    };
-  }
-
-  return resultWithMedia;
 }
 
 async function createShopifyDraftProductSafely(
@@ -469,6 +510,14 @@ async function createShopifyDraftProductSafely(
 
     if (result.status === "failed") return result;
 
+    const mediaSync = await syncShopifyMediaFromEbayImages(
+      admin,
+      result.product,
+      draftProduct,
+      {
+        jobId: context.jobId,
+      },
+    );
     const inventorySync = await syncShopifyInventoryFromEbayQuantity(
       admin,
       result.product,
@@ -479,11 +528,18 @@ async function createShopifyDraftProductSafely(
       inventorySync.status === "skipped" || inventorySync.status === "failed"
         ? [getInventorySyncWarning(inventorySync)]
         : [];
+    const mediaWarnings =
+      mediaSync.status === "failed" ? [getMediaSyncWarning(mediaSync)] : [];
 
     return {
       ...result,
       inventorySync,
-      warnings: [...(result.warnings ?? []), ...inventoryWarnings],
+      mediaSync,
+      warnings: [
+        ...(result.warnings ?? []),
+        ...mediaWarnings,
+        ...inventoryWarnings,
+      ],
     };
   } catch (error) {
     return {
@@ -503,6 +559,16 @@ async function createShopifyDraftProductRequest(
       productCreate(product: $product, media: $media) {
         product {
           id
+          media(first: 250) {
+            nodes {
+              alt
+              id
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
           status
           title
           variants(first: 1) {
@@ -590,6 +656,16 @@ async function findExistingSyncBayDraftProduct(
     query SyncBayFindDraftProduct($handle: String!, $query: String!) {
       productByHandle(handle: $handle) {
         id
+        media(first: 250) {
+          nodes {
+            alt
+            id
+            mediaContentType
+            preview {
+              status
+            }
+          }
+        }
         status
         title
         variants(first: 1) {
@@ -608,6 +684,16 @@ async function findExistingSyncBayDraftProduct(
       products(first: 250, query: $query) {
         nodes {
           id
+          media(first: 250) {
+            nodes {
+              alt
+              id
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
           status
           title
           variants(first: 1) {
@@ -798,6 +884,16 @@ async function updateShopifyProductStatus(
       productUpdate(product: $product) {
         product {
           id
+          media(first: 250) {
+            nodes {
+              alt
+              id
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
           status
           title
           variants(first: 1) {
@@ -865,6 +961,454 @@ async function updateShopifyProductStatus(
     warnings: [
       `SyncBay ha riallineato lo stato Shopify del prodotto a ${status}.`,
     ],
+  };
+}
+
+async function syncShopifyMediaFromEbayImages(
+  admin: ShopifyAdminGraphqlClient,
+  product: NonNullable<ShopifyCreatedProduct>,
+  draftProduct: ShopifyDraftProductInput,
+  context: {
+    jobId: string;
+  },
+): Promise<ShopifyMediaSyncResult> {
+  const existingMediaIds = getProductMediaIds(product);
+  const sourceMedia = draftProduct.media;
+  const stagedObjectPaths: string[] = [];
+  const failedResults: ShopifyMediaSyncResult["failedResults"] = [];
+  let directCreatedCount = 0;
+  let stagedCreatedCount = 0;
+  let deletedCount = 0;
+
+  for (const [index, media] of sourceMedia.entries()) {
+    const directResult = await addShopifyProductMedia(admin, {
+      media,
+      productGid: product.id,
+    });
+
+    if (directResult.status === "synced") {
+      directCreatedCount += 1;
+      continue;
+    }
+
+    const stagedResult = await createStagedImageMediaInput({
+      ebayItemId: draftProduct.source.ebayItemId,
+      index,
+      jobId: context.jobId,
+      media,
+    });
+
+    if (stagedResult.status === "failed") {
+      failedResults.push({
+        errorMessage: `${directResult.errorMessage}; fallback Supabase non riuscito: ${stagedResult.errorMessage}`,
+        index,
+        sourceUrl: media.originalSource,
+      });
+      continue;
+    }
+
+    stagedObjectPaths.push(stagedResult.objectPath);
+
+    const stagedMediaResult = await addShopifyProductMedia(admin, {
+      media: stagedResult.media,
+      productGid: product.id,
+    });
+
+    if (stagedMediaResult.status === "failed") {
+      failedResults.push({
+        errorMessage: `${directResult.errorMessage}; fallback Supabase caricato ma rifiutato da Shopify: ${stagedMediaResult.errorMessage}`,
+        index,
+        sourceUrl: media.originalSource,
+      });
+      continue;
+    }
+
+    stagedCreatedCount += 1;
+  }
+
+  const createdCount = directCreatedCount + stagedCreatedCount;
+
+  if (existingMediaIds.length > 0 && createdCount > 0) {
+    const deleteResult = await deleteShopifyProductMediaFiles(
+      admin,
+      existingMediaIds,
+    );
+
+    if (deleteResult.status === "failed") {
+      return {
+        createdCount,
+        deletedCount,
+        directCreatedCount,
+        failedResults: [
+          ...failedResults,
+          {
+            errorMessage: deleteResult.errorMessage,
+            index: -1,
+            sourceUrl: "",
+          },
+        ],
+        requestedCount: sourceMedia.length,
+        sourceImageUrls: sourceMedia.map((media) => media.originalSource),
+        stagedCreatedCount,
+        stagedObjectPaths,
+        status: "failed",
+      };
+    }
+
+    deletedCount = deleteResult.deletedCount;
+  }
+
+  return {
+    createdCount,
+    deletedCount,
+    directCreatedCount,
+    failedResults,
+    requestedCount: sourceMedia.length,
+    sourceImageUrls: sourceMedia.map((media) => media.originalSource),
+    stagedCreatedCount,
+    stagedObjectPaths,
+    status: failedResults.length > 0 ? "failed" : "synced",
+  };
+}
+
+async function addShopifyProductMedia(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    media: ShopifyDraftProductInput["media"][number];
+    productGid: string;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayAddProductMedia($media: [CreateMediaInput!], $product: ProductUpdateInput!) {
+      productUpdate(media: $media, product: $product) {
+        product {
+          id
+          media(first: 250) {
+            nodes {
+              alt
+              id
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        media: [input.media],
+        product: {
+          id: input.productGid,
+        },
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyProductUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify productUpdate media ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function deleteShopifyProductMediaFiles(
+  admin: ShopifyAdminGraphqlClient,
+  mediaIds: string[],
+): Promise<
+  | { deletedCount: number; status: "synced" }
+  | { errorMessage: string; status: "failed" }
+> {
+  const uniqueMediaIds = [...new Set(mediaIds)];
+
+  if (uniqueMediaIds.length === 0) {
+    return {
+      deletedCount: 0,
+      status: "synced",
+    };
+  }
+
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayDeleteProductMediaFiles($fileIds: [ID!]!) {
+      fileDelete(fileIds: $fileIds) {
+        deletedFileIds
+        userErrors {
+          code
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        fileIds: uniqueMediaIds,
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyFileDeleteResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify fileDelete ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.fileDelete?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return {
+    deletedCount: json.data?.fileDelete?.deletedFileIds?.length ?? 0,
+    status: "synced",
+  };
+}
+
+async function createStagedImageMediaInput(input: {
+  ebayItemId: string;
+  index: number;
+  jobId: string;
+  media: ShopifyDraftProductInput["media"][number];
+}): Promise<
+  | {
+      media: ShopifyDraftProductInput["media"][number];
+      objectPath: string;
+      status: "synced";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  const config = getSupabaseStorageConfig();
+
+  if (!config) {
+    return {
+      errorMessage:
+        "Supabase Storage fallback non configurato nel runtime server.",
+      status: "failed",
+    };
+  }
+
+  const imageResult = await downloadImageForStaging(input.media.originalSource);
+
+  if (imageResult.status === "failed") {
+    return imageResult;
+  }
+
+  const objectPath = buildSupabaseImageObjectPath({
+    contentType: imageResult.contentType,
+    ebayItemId: input.ebayItemId,
+    index: input.index,
+    jobId: input.jobId,
+    sourceUrl: input.media.originalSource,
+  });
+  const uploadResult = await uploadSupabaseStorageObject({
+    body: imageResult.body,
+    bucket: config.bucket,
+    contentType: imageResult.contentType,
+    objectPath,
+    serviceRoleKey: config.serviceRoleKey,
+    supabaseUrl: config.supabaseUrl,
+  });
+
+  if (uploadResult.status === "failed") {
+    return uploadResult;
+  }
+
+  const signedUrlResult = await createSupabaseSignedUrl({
+    bucket: config.bucket,
+    objectPath,
+    serviceRoleKey: config.serviceRoleKey,
+    supabaseUrl: config.supabaseUrl,
+  });
+
+  if (signedUrlResult.status === "failed") {
+    return signedUrlResult;
+  }
+
+  return {
+    media: {
+      ...input.media,
+      originalSource: signedUrlResult.signedUrl,
+    },
+    objectPath,
+    status: "synced",
+  };
+}
+
+async function downloadImageForStaging(
+  sourceUrl: string,
+): Promise<
+  | {
+      body: Uint8Array;
+      contentType: string;
+      status: "synced";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  const response = await fetch(sourceUrl, {
+    headers: {
+      "user-agent": "SyncBay/0.1 image-staging",
+    },
+  });
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Download immagine eBay fallito con HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  const contentType = normalizeImageContentType(
+    response.headers.get("content-type"),
+    sourceUrl,
+  );
+
+  if (!contentType) {
+    return {
+      errorMessage: "Il download immagine non ha restituito un content-type immagine supportato.",
+      status: "failed",
+    };
+  }
+
+  const body = new Uint8Array(await response.arrayBuffer());
+
+  if (body.byteLength === 0) {
+    return {
+      errorMessage: "Il download immagine ha restituito un file vuoto.",
+      status: "failed",
+    };
+  }
+
+  return {
+    body,
+    contentType,
+    status: "synced",
+  };
+}
+
+async function uploadSupabaseStorageObject(input: {
+  body: Uint8Array;
+  bucket: string;
+  contentType: string;
+  objectPath: string;
+  serviceRoleKey: string;
+  supabaseUrl: string;
+}): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await fetch(
+    `${input.supabaseUrl}/storage/v1/object/${encodeURIComponent(input.bucket)}/${encodeSupabaseObjectPath(input.objectPath)}`,
+    {
+      body: Buffer.from(input.body),
+      headers: {
+        apikey: input.serviceRoleKey,
+        authorization: `Bearer ${input.serviceRoleKey}`,
+        "cache-control": "31536000",
+        "content-type": input.contentType,
+        "x-upsert": "true",
+      },
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Upload Supabase Storage fallito con HTTP ${response.status}: ${await readShortResponseText(response)}`,
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function createSupabaseSignedUrl(input: {
+  bucket: string;
+  objectPath: string;
+  serviceRoleKey: string;
+  supabaseUrl: string;
+}): Promise<
+  | { signedUrl: string; status: "synced" }
+  | { errorMessage: string; status: "failed" }
+> {
+  const response = await fetch(
+    `${input.supabaseUrl}/storage/v1/object/sign/${encodeURIComponent(input.bucket)}/${encodeSupabaseObjectPath(input.objectPath)}`,
+    {
+      body: JSON.stringify({
+        expiresIn: SUPABASE_SIGNED_URL_TTL_SECONDS,
+      }),
+      headers: {
+        apikey: input.serviceRoleKey,
+        authorization: `Bearer ${input.serviceRoleKey}`,
+        "content-type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Creazione signed URL Supabase fallita con HTTP ${response.status}: ${await readShortResponseText(response)}`,
+      status: "failed",
+    };
+  }
+
+  const json = (await response.json()) as { signedURL?: string };
+  const signedUrl = json.signedURL;
+
+  if (!signedUrl) {
+    return {
+      errorMessage: "Supabase Storage non ha restituito una signed URL.",
+      status: "failed",
+    };
+  }
+
+  return {
+    signedUrl: signedUrl.startsWith("http")
+      ? signedUrl
+      : `${input.supabaseUrl}/storage/v1${signedUrl}`,
+    status: "synced",
   };
 }
 
@@ -1271,6 +1815,24 @@ async function recordDraftImportPersistence(input: {
     inventorySyncedCount: successfulPairs.filter(
       (pair) => pair.result.inventorySync.status === "synced",
     ).length,
+    mediaDeletedCount: successfulPairs.reduce(
+      (total, pair) => total + pair.result.mediaSync.deletedCount,
+      0,
+    ),
+    mediaFailedCount: successfulPairs.filter(
+      (pair) => pair.result.mediaSync.status === "failed",
+    ).length,
+    mediaImageCreatedCount: successfulPairs.reduce(
+      (total, pair) => total + pair.result.mediaSync.createdCount,
+      0,
+    ),
+    mediaStagedCount: successfulPairs.reduce(
+      (total, pair) => total + pair.result.mediaSync.stagedCreatedCount,
+      0,
+    ),
+    mediaSyncedCount: successfulPairs.filter(
+      (pair) => pair.result.mediaSync.status === "synced",
+    ).length,
     managedCount: successfulPairs.length,
     reusedCount: successfulPairs.filter(
       (pair) => pair.result.resultType === "reused",
@@ -1307,6 +1869,10 @@ async function finishDraftImportJob(input: {
     products: input.products,
     results: input.results,
   });
+  const mediaFailedResults = getMediaFailedResults({
+    products: input.products,
+    results: input.results,
+  });
   const resultPayload = {
     createdCount: input.persistenceResult.createdCount,
     failedResults,
@@ -1317,6 +1883,12 @@ async function finishDraftImportJob(input: {
     inventorySyncedCount: input.persistenceResult.inventorySyncedCount,
     importProductStatus: input.importProductStatus,
     managedCount: input.persistenceResult.managedCount,
+    mediaDeletedCount: input.persistenceResult.mediaDeletedCount,
+    mediaFailedCount: input.persistenceResult.mediaFailedCount,
+    mediaFailedResults,
+    mediaImageCreatedCount: input.persistenceResult.mediaImageCreatedCount,
+    mediaStagedCount: input.persistenceResult.mediaStagedCount,
+    mediaSyncedCount: input.persistenceResult.mediaSyncedCount,
     requestedCount: input.products.length,
     reusedCount: input.persistenceResult.reusedCount,
     warnings: [...new Set(input.warnings)],
@@ -1410,12 +1982,13 @@ function buildSyncBayProductSnapshot(input: {
   return {
     descriptionHash: hashNullableText(item.normalized.descriptionHtml),
     ebayItemId: item.itemId,
-    imageCount: input.draftProduct.media.length,
+    imageCount: input.result.mediaSync.createdCount,
     mappingId: input.mappingId,
     payload: {
       handle: input.draftProduct.product.handle,
       importJobId: input.jobId,
       inventorySync: input.result.inventorySync,
+      mediaSync: input.result.mediaSync,
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
     } satisfies Prisma.JsonObject,
@@ -1480,6 +2053,25 @@ function getInventorySkippedResults(input: {
   );
 }
 
+function getMediaFailedResults(input: {
+  products: ShopifyDraftProductInput[];
+  results: ShopifyDraftProductResult[];
+}) {
+  return input.results.flatMap((result, index) =>
+    result.status === "created" && result.mediaSync.status === "failed"
+      ? [
+          {
+            ebayItemId: input.products[index]?.source.ebayItemId ?? null,
+            failedImages: result.mediaSync.failedResults,
+            requestedCount: result.mediaSync.requestedCount,
+            shopifyProductGid: result.product.id,
+            stagedObjectPaths: result.mediaSync.stagedObjectPaths,
+          },
+        ]
+      : [],
+  );
+}
+
 function getInventorySyncWarning(result: ShopifyInventorySyncResult) {
   if (result.status === "failed") {
     return `Tracking scorte Shopify non completato: ${result.errorMessage}`;
@@ -1492,8 +2084,18 @@ function getInventorySyncWarning(result: ShopifyInventorySyncResult) {
   return "";
 }
 
+function getMediaSyncWarning(result: ShopifyMediaSyncResult) {
+  return `Immagini Shopify non completate: ${result.failedResults
+    .map((failure) => failure.errorMessage)
+    .join("; ")}`;
+}
+
 function getFirstProductVariant(product: ShopifyDraftProductNode) {
   return product.variants?.nodes?.[0] ?? null;
+}
+
+function getProductMediaIds(product: ShopifyDraftProductNode) {
+  return (product.media?.nodes ?? []).map((media) => media.id);
 }
 
 function formatShopifyGraphqlErrors(errors: Array<{ message: string }>) {
@@ -1575,6 +2177,105 @@ function getErrorMessage(error: unknown) {
 
 function getEbayMarketplaceId() {
   return process.env.EBAY_MARKETPLACE_ID ?? DEFAULT_MARKETPLACE_ID;
+}
+
+function getSupabaseStorageConfig() {
+  const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const bucket =
+    process.env.SUPABASE_STORAGE_BUCKET?.trim() ?? "syncbay-import-staging";
+
+  if (!supabaseUrl || !serviceRoleKey || !bucket) return null;
+
+  return {
+    bucket,
+    serviceRoleKey,
+    supabaseUrl,
+  };
+}
+
+function buildSupabaseImageObjectPath(input: {
+  contentType: string;
+  ebayItemId: string;
+  index: number;
+  jobId: string;
+  sourceUrl: string;
+}) {
+  const hash = createHash("sha256")
+    .update(input.sourceUrl)
+    .digest("hex")
+    .slice(0, 16);
+  const extension = getImageExtension(input.contentType, input.sourceUrl);
+
+  return [
+    "imports",
+    sanitizeStoragePathSegment(input.jobId),
+    sanitizeStoragePathSegment(input.ebayItemId),
+    `${String(input.index + 1).padStart(3, "0")}-${hash}.${extension}`,
+  ].join("/");
+}
+
+function sanitizeStoragePathSegment(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function encodeSupabaseObjectPath(path: string) {
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+function normalizeImageContentType(
+  rawContentType: string | null,
+  sourceUrl: string,
+) {
+  const contentType = rawContentType?.split(";")[0]?.trim().toLowerCase();
+
+  if (contentType?.startsWith("image/")) return contentType;
+
+  const extension = sourceUrl
+    .split("?")[0]
+    .split("#")[0]
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  if (extension === "gif") return "image/gif";
+
+  return null;
+}
+
+function getImageExtension(contentType: string, sourceUrl: string) {
+  if (contentType === "image/jpeg") return "jpg";
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  if (contentType === "image/gif") return "gif";
+
+  return (
+    sourceUrl
+      .split("?")[0]
+      .split("#")[0]
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "") || "jpg"
+  );
+}
+
+async function readShortResponseText(response: Response) {
+  const text = await response.text();
+
+  return text.slice(0, 300);
+}
+
+function dedupeImageUrls(imageUrls: string[]) {
+  return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
+    Boolean,
+  );
 }
 
 async function mapWithConcurrency<Input, Output>(

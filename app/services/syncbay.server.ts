@@ -50,6 +50,8 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "write_inventory",
   "read_locations",
   "write_locations",
+  "read_files",
+  "write_files",
 ];
 const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",

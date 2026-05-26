@@ -64,11 +64,14 @@ read_inventory
 write_inventory
 read_locations
 write_locations
+read_files
+write_files
 ```
 
 Da verificare durante l'evoluzione runtime:
 
-- eventuali scope media/file se l'upload immagini passa da API che li richiedono;
+- mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
+  prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
 - `read_orders` solo dopo configurazione Shopify per protected customer data;
 - requisiti esatti dei webhook e della versione Admin API usata.

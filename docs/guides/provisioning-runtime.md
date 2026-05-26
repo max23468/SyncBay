@@ -99,7 +99,16 @@ Primitive Supabase tracciate:
 - estensione `pg_cron`;
 - estensione `pg_net`;
 - schedule `syncbay-run-due-jobs` ogni minuto per riprendere job `IMPORT_CATALOG` dovuti;
-- bucket privato `syncbay-import-staging` per staging temporaneo immagini.
+- bucket privato `syncbay-import-staging` per staging temporaneo immagini, usato
+  per generare URL firmate quando Shopify rifiuta le URL immagine eBay dirette.
+
+Scope Shopify richiesti dal pilota runtime:
+
+- `read_products`, `write_products`;
+- `read_inventory`, `write_inventory`;
+- `read_locations`, `write_locations`;
+- `read_files`, `write_files` per riallineare media prodotto e rimuovere media
+  precedenti gestiti da SyncBay.
 
 La schedule Cron attuale copre solo il runner `IMPORT_CATALOG` del pilota. Il
 drenaggio completo di queue e i job di sync/stock restano da progettare quando
