@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.11.1] — 2026-05-26
+
+### Correzioni
+
+- Corretto il submit delle form embedded della preview import, così la creazione delle bozze Shopify passa dall'action React Router senza perdere la richiesta nell'iframe Shopify.
+
 ## [0.11.0] — 2026-05-26
 
 ### Novità
@@ -238,6 +244,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.11.1]: #0111--2026-05-26
 [0.11.0]: #0110--2026-05-26
 [0.10.3]: #0103--2026-05-26
 [0.10.2]: #0102--2026-05-26
