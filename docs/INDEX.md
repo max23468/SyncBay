@@ -36,6 +36,7 @@ docs/
       0004-runtime-ci-release-future.md
       0005-runtime-infrastructure.md
       0006-versioning-runtime-locale.md
+      0008-tag-e-github-release.md
     guides/
       architettura.md
       git-e-pubblicazione.md
@@ -67,6 +68,7 @@ docs/
 | Capire lo stack scelto | `decisions/0001-stack.md` |
 | Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
 | Capire versioning runtime locale | `decisions/0006-versioning-runtime-locale.md` |
+| Capire tag e GitHub Release | `decisions/0008-tag-e-github-release.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |

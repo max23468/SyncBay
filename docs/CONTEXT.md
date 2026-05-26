@@ -54,9 +54,9 @@ Infrastruttura MVP: Vercel + Supabase.
 - Supabase Storage: staging privato temporaneo immagini quando serve.
 - Vercel Web Analytics e Speed Insights: baseline osservabilità.
 - Versioning locale corrente: `app/lib/version.ts` + `npm run release`.
-  Gap Atlas da riallineare: quando SyncBay entrerà in release prodotto reale,
-  definire policy completa per tag GitHub, GitHub Release, changelog e rapporto
-  con Vercel/App Store production.
+  Tag `vX.Y.Z` e GitHub Release sono ammessi solo per release prodotto reali
+  secondo ADR `decisions/0008-tag-e-github-release.md`; deploy Vercel e App
+  Store restano separati.
 
 Vedi ADR `decisions/0005-runtime-infrastructure.md`.
 
@@ -77,8 +77,9 @@ Provisioning minimo:
   `git diff --check`, senza smoke, deploy, release o App Store.
 - Runtime/config: `npm run lint`, `npm run typecheck`, `npm run build`,
   `npm run prisma:validate` o check mirati secondo impatto.
-- Release prodotto: non confondere Vercel production con release pubblica; serve
-  policy dedicata prima di tag o GitHub Release stabili.
+- Release prodotto: non confondere Vercel production con release pubblica
+  Shopify App Store; tag e GitHub Release seguono ADR 0008, mentre App Store,
+  billing e support policy restano decisioni separate.
 
 ## Comandi runtime
 
@@ -105,6 +106,7 @@ Provisioning minimo:
 - Stack: `decisions/0001-stack.md`
 - Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`
 - Versioning runtime locale: `decisions/0006-versioning-runtime-locale.md`
+- Tag e GitHub Release: `decisions/0008-tag-e-github-release.md`
 - Decisioni stabili: `DECISIONS.md`
 - Decisioni aperte: `DECISIONS_PENDING.md`
 - Provisioning runtime: `guides/provisioning-runtime.md`

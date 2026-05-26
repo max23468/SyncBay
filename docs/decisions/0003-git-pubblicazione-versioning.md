@@ -52,7 +52,8 @@ Nella fase attuale:
 
 - "deploya" non ha effetto operativo perché non esiste deploy production deciso;
 - "rilascia" usa la procedura locale documentata in ADR 0006;
-- non creare tag GitHub, GitHub Release, Release Please o workflow Actions di release senza ADR.
+- tag GitHub e GitHub Release seguono ADR 0008;
+- non creare Release Please o workflow Actions di release senza ADR.
 
 Ogni modifica deve essere classificata come `MAJOR`, `MINOR`, `PATCH` o `Non versionato` prima della chiusura.
 
@@ -80,7 +81,8 @@ Usare `git branch -D` solo se non ci sono commit unici da conservare.
 - SyncBay ha un percorso chiaro per pubblicare su GitHub senza inventare runtime.
 - Le parole "pubblica", "deploya" e "rilascia" hanno significati distinti.
 - Il changelog resta utile anche nella fase documentale.
-- Il flusso SemVer locale è attivo senza introdurre tag, GitHub Release o deploy automatici.
+- Il flusso SemVer locale è attivo senza introdurre deploy automatici; tag e
+  GitHub Release sono regolati da ADR 0008.
 
 ## Alternative considerate
 

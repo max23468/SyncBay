@@ -20,6 +20,7 @@ Usa un ADR quando una scelta:
 - `0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
 - `0006-versioning-runtime-locale.md`: versioning SemVer locale in linea con Pratix.
 - `0007-privacy-provvisoria-pilota.md`: privacy policy provvisoria per RuName eBay e pilota controllato.
+- `0008-tag-e-github-release.md`: policy per tag `vX.Y.Z` e GitHub Release.
 
 ## Convenzioni
 
