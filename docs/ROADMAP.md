@@ -32,7 +32,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Fatto | Scaffold Shopify CLI React Router | Runtime TypeScript con React Router, Prisma session storage, webhook uninstall/scopes update e dashboard embedded minima |
 | Fatto | Adattamento scaffold a SyncBay | Dashboard SyncBay, schema Prisma iniziale, webhook placeholder e stato connessioni Shopify/eBay |
 | Fatto | Baseline osservabilità e primitive Supabase | Vercel Analytics/Speed Insights nel root app; `pgmq`, `pg_cron`, coda `syncbay_jobs` e bucket `syncbay-import-staging` applicati su Supabase |
-| Fatto | Modello mapping/snapshot/conflitti | Schema Prisma e migration applicati su Supabase; import reale ancora disabilitato |
+| Fatto | Modello mapping/snapshot/conflitti | Schema Prisma e migration applicati su Supabase; l'import draft pilota registra mapping, snapshot, job e audit per bozze create o riusate |
 
 ## 1. Identità prodotto
 
@@ -53,10 +53,10 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | --- | --- | --- |
 | Fatto | Connessione Shopify custom app | Dev store `syncbay-dev.myshopify.com` verificato via Shopify CLI preview, sessione persistita e audit installazione registrato |
 | Fatto | Connessione eBay.it OAuth | Flusso OAuth, state, cifratura token e recupero `userId` via Identity API verificati end-to-end sul keyset dedicato SyncBay |
-| In corso | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API con fallback Trading API/GetItem sui primi 10 listing del batch preview, SKU fallback e regole dry-run MVP codificate; resta confermare import draft pilota |
-| Da fare | Import iniziale fino a 2.000 prodotti | Preview/dry-run, draft default, immagini copiate su Shopify; bloccato da copertura listing completa e conferma pilota |
+| Fatto | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API con fallback Trading API/GetItem sui primi 10 listing del batch preview, SKU fallback, regole dry-run MVP codificate e import draft pilota confermato sul dev store |
+| In corso | Import iniziale fino a 2.000 prodotti | Primo batch pilota verificato con bozze Shopify idempotenti; ora l'import controllato registra mapping, snapshot, job e audit. Resta espandere batch e copertura fino al limite MVP |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
-| Da fare | Consumer queue e schedule Supabase Cron | Da aggiungere quando esiste la logica import/sync; Vercel Cron resta fuori dal sync primario |
+| In corso | Job import e retry | Import draft tracciato con `SyncJob` idempotente, tentativi, risultato e audit; consumer Supabase Queues/Cron ancora da collegare per retry automatici |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
 | Da fare | Dashboard operativa | Stato sync, job, errori, conflitti, retry |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
@@ -86,7 +86,8 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 
 ## Prossime mosse suggerite
 
-1. Verificare in Shopify Admin che la preview live arricchita mostri immagini, SKU fallback e prodotti importabili.
-2. Se i dati reali sono corretti, abilitare temporaneamente `SYNCBAY_DRAFT_IMPORT_ENABLED` con `SYNCBAY_DRAFT_IMPORT_LIMIT=3`.
-3. Creare bozze Shopify dalla preview importabile e controllare titoli, immagini, descrizioni e metadati eBay nello shop pilota.
-4. Collegare mapping/snapshot prodotto e job queue solo dopo una conferma pilota dell'import iniziale.
+1. Deployare la versione con mapping/snapshot/job/audit dell'import draft.
+2. Riabilitare `SYNCBAY_DRAFT_IMPORT_ENABLED` solo sul runtime pilota dopo il deploy della nuova versione.
+3. Rilanciare l'import da preview e verificare che non crei duplicati, che i mapping puntino ai prodotti Shopify attesi e che gli snapshot risultino tracciati.
+4. Aumentare il batch in modo graduale, prima 10 e poi 25/50 prodotti, solo dopo verifica mapping e audit.
+5. Collegare consumer Supabase Queues/Cron per retry automatici e poi iniziare il sync incrementale eBay -> Shopify.

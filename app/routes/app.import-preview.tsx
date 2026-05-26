@@ -98,6 +98,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       admin,
       hasDefaultLocation: Boolean(wizard.shop.defaultLocationGid),
       previewResult: wizard.previewResult,
+      shopDomain: session.shop,
     });
 
     return Response.json({
