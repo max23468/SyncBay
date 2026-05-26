@@ -56,7 +56,7 @@ Percorso standard per lavori non banali:
 7. mergea quando la PR è pronta;
 8. elimina branch remoto e branch locale quando il lavoro è assorbito.
 
-Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `ROADMAP.md`, `BRAND.md` o `docs/**` e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
+Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `BRAND.md`, `docs/**` o altri documenti canonici e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
 
 Prima di eliminare un branch locale assorbito:
 

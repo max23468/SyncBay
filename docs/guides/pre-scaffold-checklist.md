@@ -8,7 +8,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] Remote GitHub deciso e configurato: https://github.com/max23468/SyncBay
 - [x] Branch policy provvisoria documentata.
 - [x] `AGENTS.md` riletto e coerente con lo stato reale.
-- [x] `docs/decisions-pending.md` aggiornato.
+- [x] `docs/DECISIONS_PENDING.md` aggiornato.
 - [x] Decisioni tecniche bloccanti spostate in ADR quando chiuse.
 - [x] Scaffold Shopify CLI React Router creato.
 

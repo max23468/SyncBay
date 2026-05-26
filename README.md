@@ -74,7 +74,7 @@ Provisioning minimo creato:
 - Changelog: `CHANGELOG.md`
 - Brand: `BRAND.md`
 - Security policy: `SECURITY.md`
-- Decisioni aperte: `docs/decisions-pending.md`
+- Decisioni aperte: `docs/DECISIONS_PENDING.md`
 - Checklist pre-scaffold: `docs/guides/pre-scaffold-checklist.md`
 - Prerequisiti account: `docs/guides/prerequisiti-account.md`
 - Provisioning runtime: `docs/guides/provisioning-runtime.md`
