@@ -4,6 +4,7 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import {
+  Form,
   redirect,
   useActionData,
   useLoaderData,
@@ -399,7 +400,7 @@ function LocationSaveForm({
   wizard: WizardState;
 }) {
   return (
-    <form method="post">
+    <Form method="post">
       <input type="hidden" name="intent" value="saveLocation" />
       <label htmlFor="defaultLocationGid">Location predefinita</label>
       <select
@@ -420,7 +421,7 @@ function LocationSaveForm({
       <s-button type="submit" disabled={isSaving}>
         {isSavingLocation ? "Salvataggio..." : "Salva location"}
       </s-button>
-    </form>
+    </Form>
   );
 }
 
@@ -438,7 +439,7 @@ function LocationRenameForm({
   selectedLocation: ShopifyLocation;
 }) {
   return (
-    <form method="post">
+    <Form method="post">
       <input type="hidden" name="intent" value="renameLocation" />
       <input type="hidden" name="locationGid" value={selectedLocation.id} />
       <label htmlFor="locationName">Nome location</label>
@@ -461,7 +462,7 @@ function LocationRenameForm({
           permesso `write_locations`.
         </s-paragraph>
       ) : null}
-    </form>
+    </Form>
   );
 }
 
@@ -630,7 +631,7 @@ function DraftImportSection({
           </s-list-item>
         ) : null}
       </s-unordered-list>
-      <form method="post">
+      <Form method="post">
         <input type="hidden" name="intent" value="createDraftProducts" />
         <s-button
           type="submit"
@@ -638,7 +639,7 @@ function DraftImportSection({
         >
           {isCreatingDrafts ? "Creazione..." : "Crea bozze da preview"}
         </s-button>
-      </form>
+      </Form>
     </s-section>
   );
 }
