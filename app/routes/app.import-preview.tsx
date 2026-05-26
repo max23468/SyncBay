@@ -597,7 +597,7 @@ function DraftImportSection({
     <s-section heading="Import Shopify draft">
       {draftStatus === "created" ? (
         <s-paragraph>
-          Create {draftCount ?? "0"} bozze Shopify dalla preview.
+          Operazione completata: {formatDraftImportCount(draftCount)}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "blocked" ? (
@@ -640,6 +640,16 @@ function DraftImportSection({
       </form>
     </s-section>
   );
+}
+
+function formatDraftImportCount(count?: number | string | null) {
+  const normalizedCount = count ?? "0";
+
+  if (String(normalizedCount) === "1") {
+    return `${normalizedCount} bozza Shopify gestita dalla preview.`;
+  }
+
+  return `${normalizedCount} bozze Shopify gestite dalla preview.`;
 }
 
 function ValidationSection({ wizard }: { wizard: WizardState }) {
