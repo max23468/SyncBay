@@ -77,6 +77,7 @@ const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 10;
 const MAX_DRAFT_MEDIA_PER_PRODUCT = 3;
+const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 
 type ShopifyDraftProductResult =
@@ -456,6 +457,7 @@ async function startDraftImportJob(input: {
     create: {
       attempts: 1,
       idempotencyKey,
+      maxAttempts: DRAFT_IMPORT_MAX_ATTEMPTS,
       payload,
       runAfter: now,
       shopId: input.shopId,
@@ -468,6 +470,7 @@ async function startDraftImportJob(input: {
       errorCode: null,
       errorMessage: null,
       finishedAt: null,
+      maxAttempts: DRAFT_IMPORT_MAX_ATTEMPTS,
       payload,
       result: Prisma.DbNull,
       runAfter: now,
@@ -594,6 +597,18 @@ async function finishDraftImportJob(input: {
     warnings: [...new Set(input.warnings)],
   } satisfies Prisma.JsonObject;
   const success = input.status === "created";
+  const job = await prisma.syncJob.findUnique({
+    where: { id: input.jobId },
+  });
+  const retryAt =
+    !success && job && job.attempts < job.maxAttempts
+      ? getDraftImportRetryAfter(job.attempts)
+      : null;
+  const finalResultPayload = {
+    ...resultPayload,
+    retryScheduledAt: retryAt?.toISOString() ?? null,
+    willRetry: Boolean(retryAt),
+  } satisfies Prisma.JsonObject;
 
   await prisma.$transaction([
     prisma.syncJob.update({
@@ -601,17 +616,24 @@ async function finishDraftImportJob(input: {
         errorCode: success ? null : "SHOPIFY_DRAFT_IMPORT_FAILED",
         errorMessage: success ? null : input.errorMessage,
         finishedAt: new Date(),
-        result: resultPayload,
-        status: success ? SyncJobStatus.SUCCEEDED : SyncJobStatus.FAILED,
+        result: finalResultPayload,
+        runAfter: retryAt ?? undefined,
+        status: success
+          ? SyncJobStatus.SUCCEEDED
+          : retryAt
+            ? SyncJobStatus.RETRYING
+            : SyncJobStatus.FAILED,
       },
       where: { id: input.jobId },
     }),
     prisma.auditLog.create({
       data: {
-        details: resultPayload,
+        details: finalResultPayload,
         message: success
           ? "Import draft Shopify completato."
-          : "Import draft Shopify non completato.",
+          : retryAt
+            ? "Import draft Shopify non completato; retry pianificato."
+            : "Import draft Shopify non completato.",
         shopId: input.shopId,
         type: success
           ? AuditEventType.SYNC_JOB_SUCCEEDED
@@ -619,6 +641,12 @@ async function finishDraftImportJob(input: {
       },
     }),
   ]);
+}
+
+function getDraftImportRetryAfter(attempts: number) {
+  const retryDelaySeconds = attempts <= 1 ? 60 : attempts === 2 ? 300 : 900;
+
+  return new Date(Date.now() + retryDelaySeconds * 1000);
 }
 
 function buildEbayProductSnapshot(input: {

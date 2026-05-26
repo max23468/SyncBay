@@ -54,7 +54,14 @@ const SHOPIFY_WEBHOOK_TOPICS = [
 
 export async function getDashboardState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
-  const [ebayConnection, recentJobs, recentAuditLogs] = await Promise.all([
+  const [
+    ebayConnection,
+    recentJobs,
+    recentImportJobs,
+    recentAuditLogs,
+    mappingCount,
+    snapshotCount,
+  ] = await Promise.all([
     prisma.ebayConnection.findUnique({
       where: {
         shopId_marketplaceId: {
@@ -68,10 +75,21 @@ export async function getDashboardState(session: ShopifySessionLike) {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.syncJob.findMany({
+      where: { shopId: shop.id, type: SyncJobType.IMPORT_CATALOG },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
     prisma.auditLog.findMany({
       where: { shopId: shop.id },
       orderBy: { createdAt: "desc" },
       take: 5,
+    }),
+    prisma.productMapping.count({
+      where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
+    }),
+    prisma.productSnapshot.count({
+      where: { shopId: shop.id },
     }),
   ]);
   const ebayRuntime = getEbayRuntimeReadiness();
@@ -126,6 +144,11 @@ export async function getDashboardState(session: ShopifySessionLike) {
     vercel: vercelReadiness,
     onboarding: getOnboardingReadiness(),
     importPreview,
+    imports: {
+      mappingCount,
+      recentJobs: recentImportJobs.map(formatImportJobSummary),
+      snapshotCount,
+    },
     sync: {
       failedJobs: recentJobs.flatMap((job) =>
         job.status === SyncJobStatus.FAILED
@@ -148,6 +171,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
         attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
         errorMessage: job.errorMessage,
+        id: job.id,
         runAfter: job.runAfter.toISOString(),
         status: job.status,
         type: job.type,
@@ -158,6 +182,67 @@ export async function getDashboardState(session: ShopifySessionLike) {
       message: log.message,
       type: log.type,
     })),
+  };
+}
+
+export async function requestSyncJobRetry(
+  session: ShopifySessionLike,
+  jobId: string,
+) {
+  const shop = await ensureShopForSession(session);
+  const job = await prisma.syncJob.findFirst({
+    where: {
+      id: jobId,
+      shopId: shop.id,
+    },
+  });
+
+  if (!job) {
+    throw new Response("Job SyncBay non trovato per questo shop.", {
+      status: 404,
+    });
+  }
+
+  if (!canRequestRetry(job.status)) {
+    throw new Response("Questo job non è in uno stato riprogrammabile.", {
+      status: 400,
+    });
+  }
+
+  const now = new Date();
+  const details = {
+    jobId: job.id,
+    previousRunAfter: job.runAfter.toISOString(),
+    previousStatus: job.status,
+    requestedAt: now.toISOString(),
+    type: job.type,
+  } satisfies Prisma.JsonObject;
+
+  await prisma.$transaction([
+    prisma.syncJob.update({
+      data: {
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: null,
+        runAfter: now,
+        status: SyncJobStatus.PENDING,
+      },
+      where: { id: job.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details,
+        message: "Retry job richiesto dalla dashboard.",
+        shopId: shop.id,
+        type: AuditEventType.SYNC_JOB_CREATED,
+      },
+    }),
+  ]);
+
+  return {
+    message:
+      "Job rimesso in coda. Il runner automatico lo prenderà in carico quando sarà collegato; per l'import draft puoi rieseguire subito dalla preview.",
+    status: "queued" as const,
   };
 }
 
@@ -756,7 +841,7 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail:
-        "Import draft tracciato con job idempotente; consumer Supabase da implementare per retry automatici.",
+        "Import draft tracciato con job idempotente e retry pianificati; consumer Supabase da collegare per esecuzione automatica.",
       label: "Job queue e retry",
       status: "preparabile",
     },
@@ -785,6 +870,49 @@ function getRuntimePhaseReadiness(input: {
       status: "preparabile",
     },
   ];
+}
+
+function formatImportJobSummary(job: {
+  attempts: number;
+  createdAt: Date;
+  errorMessage: string | null;
+  finishedAt: Date | null;
+  id: string;
+  maxAttempts: number;
+  result: Prisma.JsonValue | null;
+  runAfter: Date;
+  status: SyncJobStatus;
+  type: SyncJobType;
+}) {
+  const result = getJsonObject(job.result);
+  const failedResults = getJsonArray(result?.failedResults);
+
+  return {
+    attempts: job.attempts,
+    canRequestRetry: canRequestRetry(job.status),
+    createdAt: job.createdAt.toISOString(),
+    errorMessage: job.errorMessage,
+    failedCount:
+      getJsonNumber(result?.failedCount) ?? failedResults?.length ?? 0,
+    finishedAt: job.finishedAt?.toISOString() ?? null,
+    id: job.id,
+    managedCount: getJsonNumber(result?.managedCount) ?? 0,
+    maxAttempts: job.maxAttempts,
+    requestedCount: getJsonNumber(result?.requestedCount) ?? 0,
+    reusedCount: getJsonNumber(result?.reusedCount) ?? 0,
+    runAfter: job.runAfter.toISOString(),
+    status: job.status,
+    willRetry: getJsonBoolean(result?.willRetry) ?? false,
+  };
+}
+
+function canRequestRetry(status: SyncJobStatus) {
+  const retryableStatuses: SyncJobStatus[] = [
+    SyncJobStatus.FAILED,
+    SyncJobStatus.RETRYING,
+  ];
+
+  return retryableStatuses.includes(status);
 }
 
 function summarizeJobsByStatus(
@@ -841,6 +969,24 @@ function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
 
 function hasRuntimeValue(value: string | undefined) {
   return Boolean(value && value.trim().length > 0);
+}
+
+function getJsonObject(value: Prisma.JsonValue | undefined) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return value as Record<string, Prisma.JsonValue>;
+}
+
+function getJsonArray(value: Prisma.JsonValue | undefined) {
+  return Array.isArray(value) ? value : null;
+}
+
+function getJsonBoolean(value: Prisma.JsonValue | undefined) {
+  return typeof value === "boolean" ? value : null;
+}
+
+function getJsonNumber(value: Prisma.JsonValue | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function getStringField(record: Record<string, unknown>, key: string) {

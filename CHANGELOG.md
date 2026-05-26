@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.12.0] — 2026-05-26
+
+### Novità
+
+- La dashboard embedded mostra lo storico dell'import controllato, i conteggi di mapping/snapshot e permette di rimettere in coda i job riprogrammabili.
+- L'import draft Shopify pianifica retry con backoff quando un batch fallisce prima di esaurire i tentativi.
+
 ## [0.11.1] — 2026-05-26
 
 ### Correzioni
@@ -244,6 +251,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.12.0]: #0120--2026-05-26
 [0.11.1]: #0111--2026-05-26
 [0.11.0]: #0110--2026-05-26
 [0.10.3]: #0103--2026-05-26
