@@ -69,7 +69,7 @@ Prima di modifiche non banali leggi:
 5. `docs/ROADMAP.md`
 6. `docs/BACKLOG.md`
 7. `docs/TOOLCHAIN.md`
-8. `docs/decisions-pending.md`
+8. `docs/DECISIONS_PENDING.md`
 9. `docs/market/shopify-ebay-app-benchmark.md`
 10. `docs/decisions/0001-stack.md`
 11. `docs/decisions/0005-runtime-infrastructure.md`
@@ -186,10 +186,11 @@ SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia un
 - `docs/ROADMAP.md`: priorità e stato decisioni/prossime fasi.
 - `docs/BACKLOG.md`: idee, debiti e attività non ancora promosse.
 - `docs/TOOLCHAIN.md`: runtime, tool, versioni e verifiche.
+- `docs/DECISIONS.md`: indice decisioni stabili.
 - `CHANGELOG.md`: storico modifiche significative.
 - `BRAND.md`: identità, tagline, tono, palette direzionale, logo direction e claim vietati.
 - `docs/CONTEXT.md`: handoff rapido per nuove chat o nuovi agenti.
-- `docs/decisions-pending.md`: decisioni aperte e blocchi prima delle prossime fasi.
+- `docs/DECISIONS_PENDING.md`: decisioni aperte e blocchi prima delle prossime fasi.
 - `docs/data-model.md`: entità e regole dati concettuali.
 - `docs/glossario.md`: terminologia prodotto e microcopy.
 - `docs/guides/`: guide operative tematiche.
@@ -197,7 +198,7 @@ SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia un
 - `docs/guides/provisioning-runtime.md`: provisioning Vercel/Supabase e riferimenti non segreti.
 - `docs/guides/service-governance.md`: limiti MVP, retention, error handling e governance servizio.
 - `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
-- `docs/decisions/`: decisioni architetturali o operative stabili.
+- `docs/decisions/`: ADR architetturali o operative stabili.
 - `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
 - `docs/decisions/0006-versioning-runtime-locale.md`: versioning SemVer locale.
 - `docs/structure.md`: struttura repo prevista nella fase corrente.

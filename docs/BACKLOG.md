@@ -1,12 +1,12 @@
 # Backlog - SyncBay
 
-Questo documento raccoglie idee, debiti e attività non ancora promosse nella roadmap operativa. La direzione e le prossime mosse stanno in `docs/ROADMAP.md`.
+Questo documento raccoglie idee, debiti e attività non ancora promosse nella roadmap operativa. Una voce nel backlog non è scope approvato. La direzione e le prossime mosse stanno in `docs/ROADMAP.md`.
 
 ## Regole
 
 - Non usare il backlog come autorizzazione a implementare.
 - Promuovi una voce in `docs/ROADMAP.md` solo quando diventa prioritaria o decisa.
-- Le decisioni aperte restano in `docs/decisions-pending.md` finché non diventano ADR o vengono scartate.
+- Le decisioni aperte restano in `docs/DECISIONS_PENDING.md` finché non diventano ADR o vengono scartate.
 - Non allargare SyncBay a marketplace generico bidirezionale senza decisione esplicita.
 
 ## Idee prodotto non ancora scelte
@@ -30,7 +30,7 @@ Questo documento raccoglie idee, debiti e attività non ancora promosse nella ro
 
 ## Decisioni collegate
 
-- Decisioni aperte: `docs/decisions-pending.md`
+- Decisioni aperte: `docs/DECISIONS_PENDING.md`
 - Policy Git/pubblicazione: `docs/guides/git-e-pubblicazione.md`
 - Versioning e release: `docs/guides/versioning-e-release.md`
 - Runtime e CI futuri: `docs/decisions/0004-runtime-ci-release-future.md`

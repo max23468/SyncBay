@@ -22,14 +22,13 @@ docs/
   BACKLOG.md
   CONTEXT.md
   TOOLCHAIN.md
-  README.md
+  DECISIONS.md
   data-model.md
-  decisions-pending.md
+  DECISIONS_PENDING.md
   glossario.md
   syncbay-product-technical-plan.md
   structure.md
     decisions/
-      README.md
       template.md
       0001-stack.md
       0002-branding.md
@@ -63,8 +62,8 @@ docs/
 | Capire runtime, tool e verifiche | `TOOLCHAIN.md` |
 | Capire identità, tono e visual direction | `../BRAND.md` |
 | Capire la struttura docs/repo | `structure.md` |
-| Consultare decisioni stabili | `decisions/` |
-| Consultare decisioni ancora aperte | `decisions-pending.md` |
+| Consultare decisioni stabili | `DECISIONS.md` |
+| Consultare decisioni ancora aperte | `DECISIONS_PENDING.md` |
 | Capire lo stack scelto | `decisions/0001-stack.md` |
 | Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
 | Capire versioning runtime locale | `decisions/0006-versioning-runtime-locale.md` |
@@ -90,16 +89,15 @@ I file nella root sono punti d'ingresso convenzionali:
 - `README.md`: orientamento rapido.
 - `AGENTS.md`: regole operative per agenti e Codex.
 - `BRAND.md`: identità, tono, tagline e visual direction.
-- `ROADMAP.md`: rinvio alla roadmap canonica `docs/ROADMAP.md`.
 - `CHANGELOG.md`: storico modifiche significative.
 - `SECURITY.md`: policy sicurezza root.
 - `.env.example`: env var previste.
 
-Rinvii storici:
+Rinvii storici rimossi:
 
-- `docs/README.md` rinvia a `docs/INDEX.md`.
-- `ROADMAP.md` rinvia a `docs/ROADMAP.md`.
-- Il vecchio path `docs/context.md` è stato sostituito da `docs/CONTEXT.md`.
+- il vecchio path `docs/context.md` è stato sostituito da `docs/CONTEXT.md`;
+- non creare nuovi `README.md` o `ROADMAP.md` in sottocartelle quando esiste già
+  un documento canonico con lo stesso basename.
 
 ## Regola di manutenzione
 

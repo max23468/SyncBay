@@ -19,7 +19,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Fatto | Stack iniziale documentato                  | ADR `docs/decisions/0001-stack.md`                                                                                                                  |
 | Fatto | Regole operative agenti                     | `AGENTS.md`                                                                                                                                         |
 | Fatto | Sistema documentale base                    | `docs/INDEX.md`, `docs/ROADMAP.md`, `docs/BACKLOG.md`, `docs/CONTEXT.md`, `docs/TOOLCHAIN.md`, changelog, glossario, guide e data model concettuale |
-| Fatto | Decisioni aperte e checklist pre-scaffold   | `docs/decisions-pending.md`, `docs/guides/pre-scaffold-checklist.md`                                                                                |
+| Fatto | Decisioni aperte e checklist pre-scaffold   | `docs/DECISIONS_PENDING.md`, `docs/guides/pre-scaffold-checklist.md`                                                                                |
 | Fatto | Governance servizio e security policy       | `docs/guides/service-governance.md`, `SECURITY.md`                                                                                                  |
 | Fatto | Remote GitHub e branch policy iniziale      | Repo privato `max23468/SyncBay`, branch policy provvisoria in `docs/guides/git-e-pubblicazione.md`                                                  |
 | Fatto | Policy pubblicazione e versioning           | ADR `docs/decisions/0003-git-pubblicazione-versioning.md`, guide Git e versioning aggiornate                                                        |

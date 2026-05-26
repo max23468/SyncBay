@@ -2,6 +2,14 @@
 
 Questo file è un handoff rapido. Per i dettagli completi vedi `syncbay-product-technical-plan.md`.
 
+## Stato progetto
+
+- Fase: import iniziale controllato su scaffold Shopify CLI React Router.
+- Produzione tecnica: Vercel production `https://syncbay.vercel.app`, distinta
+  da release pubblica Shopify App Store.
+- Source of truth operative: `AGENTS.md`, `docs/INDEX.md`, `docs/TOOLCHAIN.md`,
+  `docs/DECISIONS.md` e ADR in `docs/decisions/`.
+
 ## Cos'è SyncBay
 
 SyncBay è una Shopify app per negozianti che vendono già su eBay.it e vogliono creare o alimentare un catalogo Shopify senza ricreare manualmente schede, immagini, prezzi e disponibilità.
@@ -45,7 +53,10 @@ Infrastruttura MVP: Vercel + Supabase.
 - Supabase Queues/Cron: job persistenti, polling e retry.
 - Supabase Storage: staging privato temporaneo immagini quando serve.
 - Vercel Web Analytics e Speed Insights: baseline osservabilità.
-- Versioning locale: `app/lib/version.ts` + `npm run release`, senza tag o GitHub Release automatici.
+- Versioning locale corrente: `app/lib/version.ts` + `npm run release`.
+  Gap Atlas da riallineare: quando SyncBay entrerà in release prodotto reale,
+  definire policy completa per tag GitHub, GitHub Release, changelog e rapporto
+  con Vercel/App Store production.
 
 Vedi ADR `decisions/0005-runtime-infrastructure.md`.
 
@@ -59,6 +70,15 @@ Provisioning minimo:
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
 - Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche il `shopifyVariantGid`, attiva tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti.
 - Dettagli: `guides/provisioning-runtime.md`.
+
+## Pubblicazione proporzionata
+
+- Docs-only/governance-only: review documentale, coerenza link e
+  `git diff --check`, senza smoke, deploy, release o App Store.
+- Runtime/config: `npm run lint`, `npm run typecheck`, `npm run build`,
+  `npm run prisma:validate` o check mirati secondo impatto.
+- Release prodotto: non confondere Vercel production con release pubblica; serve
+  policy dedicata prima di tag o GitHub Release stabili.
 
 ## Comandi runtime
 
@@ -85,6 +105,8 @@ Provisioning minimo:
 - Stack: `decisions/0001-stack.md`
 - Infrastruttura runtime: `decisions/0005-runtime-infrastructure.md`
 - Versioning runtime locale: `decisions/0006-versioning-runtime-locale.md`
+- Decisioni stabili: `DECISIONS.md`
+- Decisioni aperte: `DECISIONS_PENDING.md`
 - Provisioning runtime: `guides/provisioning-runtime.md`
 - Regole agenti: `../AGENTS.md`
 

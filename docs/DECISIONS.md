@@ -1,6 +1,7 @@
 # Architecture Decision Records
 
-Questa cartella contiene le decisioni stabili del progetto.
+Questo registro contiene le decisioni stabili del progetto. Le ADR puntuali
+vivono in `docs/decisions/`.
 
 Usa un ADR quando una scelta:
 

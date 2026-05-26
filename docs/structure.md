@@ -13,7 +13,6 @@ SyncBay/
   AGENTS.md
   BRAND.md
   README.md
-  ROADMAP.md
   CHANGELOG.md
   SECURITY.md
   .env.example
@@ -38,7 +37,7 @@ SyncBay/
   supabase/
     config.toml
   brand/
-    README.md
+    BRAND_ASSETS.md
     assets/
       favicon/
       manifest.json
@@ -51,14 +50,13 @@ SyncBay/
     BACKLOG.md
     CONTEXT.md
     TOOLCHAIN.md
-    README.md
+    DECISIONS.md
     data-model.md
-    decisions-pending.md
+    DECISIONS_PENDING.md
     glossario.md
     syncbay-product-technical-plan.md
     structure.md
     decisions/
-      README.md
       template.md
       0001-stack.md
       0002-branding.md
