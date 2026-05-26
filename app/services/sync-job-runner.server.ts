@@ -1,5 +1,6 @@
 import {
   AuditEventType,
+  EbayConnection,
   EbayConnectionStatus,
   Prisma,
   SyncJobStatus,
@@ -8,12 +9,14 @@ import {
 
 import prisma from "../db.server";
 import { unauthenticated } from "../shopify.server";
-import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
+import { getUsableEbayAccessToken } from "./ebay-token.server";
+import { getEbayTradingCandidatesByItemIds } from "./ebay-trading-preview.server";
 import type {
   ImportPreviewItem,
   ImportPreviewResult,
   ImportPreviewSummary,
 } from "./import-preview.server";
+import { buildImportPreview } from "./import-preview.server";
 import { createShopifyDraftProductsIfEnabled } from "./shopify-draft-import.server";
 
 type DueSyncJob = Prisma.SyncJobGetPayload<{ include: { shop: true } }>;
@@ -138,36 +141,31 @@ async function runImportCatalogJob(job: DueSyncJob) {
     throw new Error("Connessione eBay non collegata per il job import.");
   }
 
-  const [{ admin, session }, preview] = await Promise.all([
+  const [{ admin, session }, previewResult] = await Promise.all([
     unauthenticated.admin(job.shop.shopDomain),
-    getEbayLiveImportPreview(connection, {
-      limit: Math.max(ebayItemIds.length, DEFAULT_RUN_DUE_LIMIT),
-    }),
+    getImportPreviewResultByItemIds(connection, ebayItemIds),
   ]);
-
-  if (preview.errorMessage) {
-    throw new Error(preview.errorMessage);
-  }
-
-  const previewResult = filterPreviewResultByItemIds(
-    preview.previewResult,
+  const filteredPreviewResult = filterPreviewResultByItemIds(
+    previewResult,
     ebayItemIds,
   );
-  const foundItemIds = new Set(previewResult.items.map((item) => item.itemId));
+  const foundItemIds = new Set(
+    filteredPreviewResult.items.map((item) => item.itemId),
+  );
   const missingItemIds = ebayItemIds.filter(
     (itemId) => !foundItemIds.has(itemId),
   );
 
   if (missingItemIds.length > 0) {
     throw new Error(
-      `${missingItemIds.length} listing eBay del job non sono più presenti nella preview live.`,
+      `${missingItemIds.length} listing eBay del job non sono più recuperabili via ItemID.`,
     );
   }
 
   const result = await createShopifyDraftProductsIfEnabled({
     admin,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
-    previewResult,
+    previewResult: filteredPreviewResult,
     shopDomain: session.shop,
   });
 
@@ -191,6 +189,20 @@ async function runImportCatalogJob(job: DueSyncJob) {
     status: result.status === "created" ? ("succeeded" as const) : "failed",
     type: job.type,
   };
+}
+
+async function getImportPreviewResultByItemIds(
+  connection: EbayConnection,
+  ebayItemIds: string[],
+) {
+  const { accessToken } = await getUsableEbayAccessToken(connection);
+  const candidates = await getEbayTradingCandidatesByItemIds({
+    accessToken,
+    connection,
+    itemIds: ebayItemIds,
+  });
+
+  return buildImportPreview(candidates, "live");
 }
 
 async function markJobFailedOrRetrying(input: {

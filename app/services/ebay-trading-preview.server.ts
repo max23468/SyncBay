@@ -9,6 +9,11 @@ interface EbayTradingPreviewInput {
   limit: number;
 }
 
+type EbayTradingRequestContext = Pick<
+  EbayTradingPreviewInput,
+  "accessToken" | "connection"
+>;
+
 export interface EbayTradingPreviewPage {
   candidates: ImportPreviewListingCandidate[];
   readCount: number;
@@ -73,6 +78,37 @@ export async function getEbayTradingImportPreview(
   };
 }
 
+export async function getEbayTradingCandidatesByItemIds(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  itemIds: string[];
+}) {
+  const itemIds = Array.from(
+    new Set(
+      input.itemIds.flatMap((itemId) => {
+        const normalizedItemId = normalizeText(itemId);
+        return normalizedItemId ? [normalizedItemId] : [];
+      }),
+    ),
+  );
+  const candidates = await mapWithConcurrency(
+    itemIds,
+    GET_ITEM_LOOKUP_CONCURRENCY,
+    async (itemId) => {
+      const detailItem = await getTradingItemDetail(input, itemId);
+      if (!detailItem) return null;
+
+      const candidate = mapTradingItemToCandidate(detailItem);
+      return candidate ? withFallbackSku(candidate) : null;
+    },
+  );
+
+  return candidates.filter(
+    (candidate): candidate is ImportPreviewListingCandidate =>
+      Boolean(candidate),
+  );
+}
+
 class EbayTradingPreviewError extends Error {
   constructor(message: string) {
     super(message);
@@ -110,7 +146,7 @@ async function getEnrichedTradingCandidate(
 }
 
 async function getTradingItemDetail(
-  input: EbayTradingPreviewInput,
+  input: EbayTradingRequestContext,
   itemId: string,
 ) {
   const requestXml = buildGetItemRequest(itemId);
