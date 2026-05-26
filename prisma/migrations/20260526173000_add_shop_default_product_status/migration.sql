@@ -1,0 +1,2 @@
+ALTER TABLE "Shop"
+ADD COLUMN "defaultProductStatus" TEXT NOT NULL DEFAULT 'ACTIVE';

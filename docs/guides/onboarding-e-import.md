@@ -11,7 +11,7 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e 
 1. Installa SyncBay su Shopify.
 2. Collega account eBay.it.
 3. Sceglie location Shopify predefinita.
-4. Sceglie stato iniziale prodotti: `draft` consigliato o pubblicato.
+4. Lascia il default prodotti su `pubblicato` oppure seleziona `bozza` in Impostazioni.
 5. Sceglie import immagini: tutte per default.
 6. Sceglie modalità descrizione:
    - HTML completo;
@@ -53,8 +53,8 @@ wizard:
 - mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
   quando serve un fallback dimostrativo;
 - mantiene ogni scrittura Shopify dietro conferma esplicita;
-- crea o riusa bozze Shopify in modo idempotente per eBay ItemID;
-- registra mapping prodotto, snapshot e job audit per ogni bozza gestita;
+- crea o riusa prodotti Shopify in modo idempotente per eBay ItemID;
+- registra mapping prodotto, snapshot e job audit per ogni prodotto gestito;
 - mostra default import e sequenza di preview prevista;
 - mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
   successive;
@@ -76,8 +76,9 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - env: `SYNCBAY_DRAFT_IMPORT_LIMIT` per limitare il batch pilota;
 - quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
 - quando è attivato, il codice usa solo item importabili della preview, fino al
-  limite runtime, e crea o riusa prodotti Shopify in stato `DRAFT` con titolo,
-  descrizione HTML, prime immagini e metadati SyncBay/eBay;
+  limite runtime, e crea o riusa prodotti Shopify con lo stato configurato
+  nelle Impostazioni; il default runtime è `Pubblicato`, con override `Bozza`,
+  insieme a titolo, descrizione HTML, prime immagini e metadati SyncBay/eBay;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   snapshot `EBAY` e `SYNCBAY` e registra audit di avvio/esito;
 - il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
@@ -112,7 +113,7 @@ La preview import resta bloccata finché non sono disponibili:
 
 ## Default consigliati
 
-- Prodotti iniziali in `draft`.
+- Prodotti iniziali in `pubblicato`, con fallback opzionale `bozza`.
 - Tutte le immagini copiate su Shopify.
 - Una sola location Shopify predefinita.
 - Nessun matching automatico aggressivo con prodotti Shopify esistenti.

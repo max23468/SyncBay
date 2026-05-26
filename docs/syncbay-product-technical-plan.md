@@ -188,7 +188,7 @@ Flusso iniziale:
 
 Default consigliato:
 
-- import iniziale in `draft`;
+- import iniziale in `pubblicato`, con possibilità di usare `draft` da Impostazioni;
 - publish massivo solo dopo preview;
 - copia fisica delle immagini su Shopify, non dipendenza permanente dagli URL eBay;
 - location Shopify predefinita selezionata durante onboarding.

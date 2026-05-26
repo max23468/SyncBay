@@ -10,6 +10,11 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import {
+  getImportedProductsLabel,
+  normalizeImportProductStatus,
+  type ImportProductStatus,
+} from "../lib/import-product-status";
 import type {
   ImportPreviewItem,
   ImportPreviewResult,
@@ -93,6 +98,7 @@ type ShopifyDraftProductResult =
     };
 
 export function getDraftImportReadiness(input: {
+  defaultProductStatus: ImportProductStatus;
   hasDefaultLocation: boolean;
   previewResult: ImportPreviewResult;
 }) {
@@ -101,7 +107,7 @@ export function getDraftImportReadiness(input: {
   const importableItems = getImportablePreviewItems(input.previewResult);
   const plannedCreateCount = Math.min(importableItems.length, draftLimit);
   const blockers = [
-    !enabled ? "import Shopify draft non abilitato" : null,
+    !enabled ? "import Shopify non abilitato" : null,
     !input.hasDefaultLocation
       ? "location Shopify predefinita non confermata"
       : null,
@@ -115,16 +121,18 @@ export function getDraftImportReadiness(input: {
     draftLimit,
     enabled,
     importableCount: importableItems.length,
+    importProductStatus: input.defaultProductStatus,
     plannedCreateCount,
     nextAction:
       blockers.length > 0
-        ? "Completa i blocchi prima di creare bozze Shopify."
-        : `Pronto per creare o riusare fino a ${plannedCreateCount} bozze Shopify dietro conferma esplicita.`,
+        ? "Completa i blocchi prima di creare prodotti Shopify."
+        : `Pronto per creare o riusare fino a ${plannedCreateCount} ${getImportedProductsLabel(input.defaultProductStatus)} dietro conferma esplicita.`,
   };
 }
 
 export function buildShopifyDraftProductInputs(
   previewResult: ImportPreviewResult,
+  importProductStatus: ImportProductStatus,
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
@@ -140,7 +148,7 @@ export function buildShopifyDraftProductInputs(
         descriptionHtml: item.normalized.descriptionHtml ?? undefined,
         handle: buildSyncBayProductHandle(item.itemId),
         metafields: buildSyncBayProductMetafields(item),
-        status: "DRAFT",
+        status: importProductStatus,
         tags: ["SyncBay", "Import preview", "eBay import pilot"],
         title: item.normalized.title,
       },
@@ -157,7 +165,12 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   previewResult: ImportPreviewResult;
   shopDomain: string;
 }) {
+  const shop = await ensureDraftImportShop(input.shopDomain);
+  const importProductStatus = normalizeImportProductStatus(
+    shop.defaultProductStatus,
+  );
   const readiness = getDraftImportReadiness({
+    defaultProductStatus: importProductStatus,
     hasDefaultLocation: input.hasDefaultLocation,
     previewResult: input.previewResult,
   });
@@ -171,10 +184,13 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     };
   }
 
-  const shop = await ensureDraftImportShop(input.shopDomain);
-  const draftProducts = buildShopifyDraftProductInputs(input.previewResult);
+  const draftProducts = buildShopifyDraftProductInputs(
+    input.previewResult,
+    importProductStatus,
+  );
   const job = await startDraftImportJob({
     draftLimit: readiness.draftLimit,
+    importProductStatus,
     previewMode: input.previewResult.mode,
     products: draftProducts,
     shopId: shop.id,
@@ -206,6 +222,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   if (failedResult) {
     await finishDraftImportJob({
       errorMessage: failedResult.errorMessage,
+      importProductStatus,
       jobId: job.id,
       persistenceResult,
       products: draftProducts,
@@ -226,6 +243,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   }
 
   await finishDraftImportJob({
+    importProductStatus,
     jobId: job.id,
     persistenceResult,
     products: draftProducts,
@@ -259,7 +277,7 @@ async function createShopifyDraftProduct(
       resultType: "reused",
       status: "created",
       warnings: [
-        "SyncBay ha riusato bozze Shopify già presenti per lo stesso eBay ItemID e non ha creato duplicati.",
+        "SyncBay ha riusato prodotti Shopify già presenti per lo stesso eBay ItemID e non ha creato duplicati.",
       ],
     };
   }
@@ -282,7 +300,7 @@ async function createShopifyDraftProduct(
     return {
       ...resultWithoutMedia,
       warnings: [
-        "Shopify ha creato alcune bozze senza immagini perché le URL media esterne sono state rifiutate.",
+        "Shopify ha creato alcuni prodotti senza immagini perché le URL media esterne sono state rifiutate.",
       ],
     };
   }
@@ -355,7 +373,7 @@ async function createShopifyDraftProductRequest(
         resultType: "created",
         status: "created",
         warnings: [
-          `Shopify ha creato la bozza con avvisi: ${userErrors
+          `Shopify ha creato il prodotto con avvisi: ${userErrors
             .map((error) => error.message)
             .join("; ")}`,
         ],
@@ -370,7 +388,7 @@ async function createShopifyDraftProductRequest(
 
   if (!createdProduct) {
     return {
-      errorMessage: "Shopify non ha restituito il prodotto draft creato.",
+      errorMessage: "Shopify non ha restituito il prodotto creato.",
       status: "failed",
     };
   }
@@ -448,6 +466,7 @@ async function ensureDraftImportShop(shopDomain: string) {
 
 async function startDraftImportJob(input: {
   draftLimit: number;
+  importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
   shopId: string;
@@ -485,7 +504,7 @@ async function startDraftImportJob(input: {
   await prisma.auditLog.create({
     data: {
       details: payload,
-      message: "Import draft Shopify avviato.",
+      message: "Import Shopify avviato.",
       shopId: input.shopId,
       type: AuditEventType.SYNC_JOB_CREATED,
     },
@@ -550,6 +569,9 @@ async function recordDraftImportPersistence(input: {
           }),
           buildSyncBayProductSnapshot({
             draftProduct: pair.draftProduct,
+            importProductStatus: normalizeImportProductStatus(
+              pair.draftProduct.product.status,
+            ),
             jobId: input.jobId,
             mappingId: mapping.id,
             result: pair.result,
@@ -573,6 +595,7 @@ async function recordDraftImportPersistence(input: {
 
 async function finishDraftImportJob(input: {
   errorMessage?: string;
+  importProductStatus: ImportProductStatus;
   jobId: string;
   persistenceResult: DraftImportPersistenceResult;
   products: ShopifyDraftProductInput[];
@@ -594,6 +617,7 @@ async function finishDraftImportJob(input: {
   const resultPayload = {
     createdCount: input.persistenceResult.createdCount,
     failedResults,
+    importProductStatus: input.importProductStatus,
     managedCount: input.persistenceResult.managedCount,
     requestedCount: input.products.length,
     reusedCount: input.persistenceResult.reusedCount,
@@ -633,10 +657,10 @@ async function finishDraftImportJob(input: {
       data: {
         details: finalResultPayload,
         message: success
-          ? "Import draft Shopify completato."
+          ? "Import Shopify completato."
           : retryAt
-            ? "Import draft Shopify non completato; retry pianificato."
-            : "Import draft Shopify non completato.",
+            ? "Import Shopify non completato; retry pianificato."
+            : "Import Shopify non completato.",
         shopId: input.shopId,
         type: success
           ? AuditEventType.SYNC_JOB_SUCCEEDED
@@ -676,6 +700,7 @@ function buildEbayProductSnapshot(input: {
 
 function buildSyncBayProductSnapshot(input: {
   draftProduct: ShopifyDraftProductInput;
+  importProductStatus: ImportProductStatus;
   jobId: string;
   mappingId: string;
   result: Extract<ShopifyDraftProductResult, { status: "created" }>;
@@ -695,7 +720,7 @@ function buildSyncBayProductSnapshot(input: {
       tags: input.draftProduct.product.tags,
     } satisfies Prisma.JsonObject,
     priceAmount: item.normalized.priceAmount,
-    productStatus: "DRAFT",
+    productStatus: input.importProductStatus,
     quantity: item.normalized.quantity,
     shopId: input.shopId,
     shopifyProductGid: input.result.product.id,
@@ -716,6 +741,7 @@ function buildEbaySnapshotPayload(item: ImportPreviewItem) {
 
 function buildDraftImportJobPayload(input: {
   draftLimit: number;
+  importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
   shopId: string;
@@ -723,6 +749,7 @@ function buildDraftImportJobPayload(input: {
   return {
     draftLimit: input.draftLimit,
     ebayItemIds: input.products.map((product) => product.source.ebayItemId),
+    importProductStatus: input.importProductStatus,
     marketplaceId: getEbayMarketplaceId(),
     previewMode: input.previewMode,
     requestedCount: input.products.length,
@@ -731,6 +758,7 @@ function buildDraftImportJobPayload(input: {
 }
 
 function buildDraftImportJobIdempotencyKey(input: {
+  importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
   shopId: string;
@@ -739,6 +767,7 @@ function buildDraftImportJobIdempotencyKey(input: {
     .update(
       JSON.stringify({
         ebayItemIds: input.products.map((product) => product.source.ebayItemId),
+        importProductStatus: input.importProductStatus,
         marketplaceId: getEbayMarketplaceId(),
         previewMode: input.previewMode,
         shopId: input.shopId,
@@ -759,7 +788,7 @@ function hashNullableText(value: string | null) {
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
 
-  return "Errore inatteso durante l'import draft Shopify.";
+  return "Errore inatteso durante l'import Shopify.";
 }
 
 function getEbayMarketplaceId() {

@@ -2,6 +2,7 @@
   "name": "syncbay",
   "private": true,
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "react-router build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",

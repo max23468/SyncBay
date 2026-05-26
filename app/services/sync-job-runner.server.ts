@@ -189,14 +189,14 @@ async function runImportCatalogJob(job: DueSyncJob) {
       errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
       errorMessage:
         result.errorMessage ??
-        "Import draft Shopify non completato dal runner.",
+        "Import Shopify non completato dal runner.",
       job,
     });
 
     return {
       errorMessage:
         result.errorMessage ??
-        "Import draft Shopify non completato dal runner.",
+        "Import Shopify non completato dal runner.",
       jobId: job.id,
       status: "failed" as const,
       type: job.type,

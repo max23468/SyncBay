@@ -13,7 +13,7 @@ const checks = [
       "Rinomina location",
       "Fasi Shopify",
       "Trading API",
-      "Crea bozze da preview",
+      "Crea prodotti da preview",
     ],
   },
   {

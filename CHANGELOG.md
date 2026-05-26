@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.15.0] — 2026-05-26
+
+### Novità
+
+- Aggiunta l'area embedded `/app/settings` per scegliere il default stato prodotti dei nuovi import Shopify.
+- I nuovi import usano ora `Pubblicato` come default runtime, con override `Bozza` salvabile per shop.
+
+### Correzioni
+
+- Aggiornata la preview import e la dashboard per mostrare il nuovo default prodotti senza parlare solo di bozze quando lo shop importa in stato pubblicato.
+- Ridotte le query Prisma concorrenti della dashboard embedded per evitare errori runtime `EMAXCONNSESSION` su Supabase session mode durante il caricamento di `/app`.
+- Allineato il build runtime a `prisma generate` prima della build React Router, così Vercel non distribuisce un Prisma Client obsoleto dopo modifiche allo schema `Shop`.
+
 ## [0.14.0] — 2026-05-26
 
 ### Novità
@@ -275,6 +288,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.15.0]: #0150--2026-05-26
 [0.14.0]: #0140--2026-05-26
 [0.13.1]: #0131--2026-05-26
 [0.13.0]: #0130--2026-05-26

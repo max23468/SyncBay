@@ -164,6 +164,7 @@ export default function Index() {
           </s-list-item>
         </s-unordered-list>
         <s-button href="/app/import-preview">Apri preview import</s-button>
+        <s-button href="/app/settings">Apri impostazioni</s-button>
       </s-section>
 
       <s-section heading="Attività recenti">

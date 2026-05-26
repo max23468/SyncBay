@@ -124,6 +124,7 @@ model Shop {
   installationStatus ShopInstallationStatus @default(INSTALLED)
   shopifyScopes      String?
   defaultLocationGid String?
+  defaultProductStatus String               @default("ACTIVE")
   syncEnabled        Boolean                @default(false)
   syncTargetSeconds  Int                    @default(300)
   installedAt        DateTime               @default(now())

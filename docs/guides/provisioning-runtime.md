@@ -32,6 +32,7 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 Note:
 
 - Il framework preset Vercel è `react-router`.
+- Il build runtime esegue `prisma generate` prima di `react-router build`, così il Prisma Client resta coerente con `prisma/schema.prisma` anche quando Vercel riusa cache di installazione.
 - Esiste un deployment production Vercel, ma non è ancora una release pubblica Shopify App Store.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.

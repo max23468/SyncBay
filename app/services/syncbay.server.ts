@@ -8,6 +8,12 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import {
+  getImportProductStatusLabelCapitalized,
+  type ImportProductStatus,
+  IMPORT_PRODUCT_STATUS_VALUES,
+  normalizeImportProductStatus,
+} from "../lib/import-product-status";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
   getImportPreviewValidationRules,
@@ -54,6 +60,9 @@ const SHOPIFY_WEBHOOK_TOPICS = [
 
 export async function getDashboardState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
+  const defaultProductStatus = normalizeImportProductStatus(
+    shop.defaultProductStatus,
+  );
   const [
     ebayConnection,
     recentJobs,
@@ -61,7 +70,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     recentAuditLogs,
     mappingCount,
     snapshotCount,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.ebayConnection.findUnique({
       where: {
         shopId_marketplaceId: {
@@ -99,6 +108,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
   const vercelReadiness = getVercelReadiness();
   const complianceReadiness = getComplianceReadiness();
   const importPreview = getImportPreviewReadiness({
+    defaultProductStatus,
     ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
@@ -120,6 +130,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       syncEnabled: shop.syncEnabled,
       syncTargetSeconds: shop.syncTargetSeconds,
       defaultLocationGid: shop.defaultLocationGid,
+      defaultProductStatus,
     },
     shopify: {
       connected: true,
@@ -142,7 +153,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     },
     supabase: supabaseReadiness,
     vercel: vercelReadiness,
-    onboarding: getOnboardingReadiness(),
+    onboarding: getOnboardingReadiness({ defaultProductStatus }),
     importPreview,
     imports: {
       mappingCount,
@@ -241,13 +252,16 @@ export async function requestSyncJobRetry(
 
   return {
     message:
-      "Job rimesso in coda. Il runner automatico lo prenderà in carico quando sarà collegato; per l'import draft puoi rieseguire subito dalla preview.",
+      "Job rimesso in coda. Il runner automatico lo prenderà in carico quando sarà collegato; per l'import puoi rieseguire subito dalla preview.",
     status: "queued" as const,
   };
 }
 
 export async function getImportWizardState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
+  const defaultProductStatus = normalizeImportProductStatus(
+    shop.defaultProductStatus,
+  );
   const ebayConnection = await prisma.ebayConnection.findUnique({
     where: {
       shopId_marketplaceId: {
@@ -263,6 +277,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       ? await getEbayLiveImportPreview(ebayConnection)
       : getMockImportPreviewState();
   const importPreview = getImportPreviewReadiness({
+    defaultProductStatus,
     ebayConnected,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
@@ -272,6 +287,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
 
   return {
     draftImport: getDraftImportReadiness({
+      defaultProductStatus,
       hasDefaultLocation: Boolean(shop.defaultLocationGid),
       previewResult,
     }),
@@ -280,7 +296,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
     },
     importPreview,
-    onboarding: getOnboardingReadiness(),
+    onboarding: getOnboardingReadiness({ defaultProductStatus }),
     previewPlan: getImportPreviewPlan(),
     previewResult,
     previewSource: {
@@ -292,14 +308,29 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       totalAvailable: preview.totalAvailable,
     },
     runtimePhases: getRuntimePhaseReadiness({
+      defaultProductStatus,
       ebayConnected,
       hasDefaultLocation: Boolean(shop.defaultLocationGid),
     }),
     shop: {
       defaultLocationGid: shop.defaultLocationGid,
+      defaultProductStatus,
       domain: shop.shopDomain,
     },
     validationRules: getImportPreviewValidationRules(),
+  };
+}
+
+export async function getShopSettingsState(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+
+  return {
+    shop: {
+      defaultProductStatus: normalizeImportProductStatus(
+        shop.defaultProductStatus,
+      ),
+      domain: shop.shopDomain,
+    },
   };
 }
 
@@ -389,6 +420,41 @@ export async function recordShopifyLocationRenamed(
       type: AuditEventType.CONNECTION_CHECK,
     },
   });
+}
+
+export async function updateDefaultImportProductStatus(
+  session: ShopifySessionLike,
+  defaultProductStatus: string,
+) {
+  if (
+    !IMPORT_PRODUCT_STATUS_VALUES.includes(
+      defaultProductStatus as ImportProductStatus,
+    )
+  ) {
+    throw new Response("Stato prodotti non supportato.", { status: 400 });
+  }
+
+  const shop = await ensureShopForSession(session);
+  const normalizedStatus = normalizeImportProductStatus(defaultProductStatus);
+
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: { defaultProductStatus: normalizedStatus },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          defaultProductStatus: normalizedStatus,
+        },
+        message: `Default stato prodotti aggiornato: ${getImportProductStatusLabelCapitalized(normalizedStatus)}.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ]);
+
+  return normalizedStatus;
 }
 
 export async function markShopUninstalled(shopDomain: string) {
@@ -732,12 +798,16 @@ function getComplianceReadiness() {
   };
 }
 
-function getOnboardingReadiness() {
+function getOnboardingReadiness(input: {
+  defaultProductStatus: ImportProductStatus;
+}) {
   return {
     defaults: {
       descriptionMode: "HTML pulito senza template",
       imageImport: "Tutte le immagini",
-      productStatus: "draft",
+      productStatus: getImportProductStatusLabelCapitalized(
+        input.defaultProductStatus,
+      ),
     },
     steps: [
       "Collega Shopify",
@@ -768,6 +838,7 @@ function getMockImportPreviewState() {
 }
 
 function getImportPreviewReadiness(input: {
+  defaultProductStatus: ImportProductStatus;
   ebayConnected: boolean;
   hasDefaultLocation: boolean;
   listingReaderError?: string | null;
@@ -791,7 +862,9 @@ function getImportPreviewReadiness(input: {
     defaults: {
       descriptionMode: "HTML pulito senza template",
       imageImport: "Tutte le immagini",
-      productStatus: "draft",
+      productStatus: getImportProductStatusLabelCapitalized(
+        input.defaultProductStatus,
+      ),
     },
     summary: {
       detail:
@@ -815,12 +888,13 @@ function getImportPreviewPlan() {
       "Validare SKU, varianti, immagini e disponibilità",
       "Pulire descrizioni e rimuovere template eBay",
       "Mostrare prodotti importabili, saltati ed errori",
-      "Creare bozze Shopify solo dopo conferma",
+      "Creare prodotti Shopify solo dopo conferma",
     ],
   };
 }
 
 function getRuntimePhaseReadiness(input: {
+  defaultProductStatus: ImportProductStatus;
   ebayConnected: boolean;
   hasDefaultLocation: boolean;
 }) {
@@ -834,14 +908,16 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail: input.hasDefaultLocation
-        ? "Location Shopify pronta per bozze e inventario."
+        ? `Location Shopify pronta per import prodotti in stato ${getImportProductStatusLabelCapitalized(
+            input.defaultProductStatus,
+          )} e inventario.`
         : "Serve una location Shopify attiva e abilitata agli ordini online.",
-      label: "Import Shopify in draft",
+      label: "Import Shopify controllato",
       status: input.hasDefaultLocation ? "preparabile" : "bloccato",
     },
     {
       detail:
-        "Import draft tracciato con job idempotente e retry pianificati; runner protetto disponibile, schedule Supabase Cron da collegare.",
+        "Import controllato tracciato con job idempotente e retry pianificati; runner protetto disponibile, schedule Supabase Cron da collegare.",
       label: "Job queue e retry",
       status: "preparabile",
     },

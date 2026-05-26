@@ -51,7 +51,7 @@ export interface ImportPreviewResult {
   summary: ImportPreviewSummary;
 }
 
-const DEFAULT_PRODUCT_STATUS = "draft";
+const DEFAULT_PRODUCT_STATUS = "published";
 const DEFAULT_DESCRIPTION_MODE = "HTML pulito senza template";
 const MAX_SIMPLE_VARIANTS = 1;
 
@@ -206,7 +206,7 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
   if (candidate.skuGenerated && normalizeText(candidate.sku)) {
     issues.push({
       code: "generated_sku",
-      message: `SKU eBay assente: SyncBay userà ${normalizeText(candidate.sku)} per la bozza pilota.`,
+      message: `SKU eBay assente: SyncBay userà ${normalizeText(candidate.sku)} per il prodotto pilota.`,
       severity: "info",
     });
   }

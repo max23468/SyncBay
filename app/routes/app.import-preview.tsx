@@ -13,6 +13,10 @@ import {
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import {
+  getImportedProductsLabel,
+  getImportedProductSingularLabel,
+} from "../lib/import-product-status";
 import { authenticate } from "../shopify.server";
 import {
   getLocationRenameReadiness,
@@ -483,6 +487,7 @@ function DefaultImportSection({ wizard }: { wizard: WizardState }) {
           Limite MVP: {wizard.previewPlan.limits.maxProducts} prodotti per shop
         </s-list-item>
       </s-unordered-list>
+      <s-button href="/app/settings">Apri impostazioni</s-button>
     </s-section>
   );
 }
@@ -596,19 +601,23 @@ function DraftImportSection({
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Import Shopify draft">
+    <s-section heading="Import Shopify">
       {draftStatus === "created" ? (
         <s-paragraph>
-          Operazione completata: {formatDraftImportCount(draftCount)}
+          Operazione completata:{" "}
+          {formatDraftImportCount(
+            draftCount,
+            wizard.draftImport.importProductStatus,
+          )}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "blocked" ? (
         <s-paragraph>
-          Import draft bloccato: {draftMessage ?? "requisiti incompleti"}.
+          Import Shopify bloccato: {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : draftStatus === "failed" ? (
         <s-paragraph>
-          Import draft non completato: {draftMessage ?? "errore Shopify"}.
+          Import Shopify non completato: {draftMessage ?? "errore Shopify"}.
         </s-paragraph>
       ) : null}
       <s-unordered-list>
@@ -622,7 +631,10 @@ function DraftImportSection({
           Limite batch pilota: {wizard.draftImport.draftLimit}
         </s-list-item>
         <s-list-item>
-          Bozze previste: {wizard.draftImport.plannedCreateCount}
+          Stato prodotti creati: {wizard.importPreview.defaults.productStatus}
+        </s-list-item>
+        <s-list-item>
+          Prodotti previsti: {wizard.draftImport.plannedCreateCount}
         </s-list-item>
         <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
         {wizard.draftImport.blockers.length > 0 ? (
@@ -637,21 +649,24 @@ function DraftImportSection({
           type="submit"
           disabled={isSaving || wizard.draftImport.blockers.length > 0}
         >
-          {isCreatingDrafts ? "Creazione..." : "Crea bozze da preview"}
+          {isCreatingDrafts ? "Creazione..." : "Crea prodotti da preview"}
         </s-button>
       </Form>
     </s-section>
   );
 }
 
-function formatDraftImportCount(count?: number | string | null) {
+function formatDraftImportCount(
+  count: number | string | null | undefined,
+  importProductStatus: WizardState["draftImport"]["importProductStatus"],
+) {
   const normalizedCount = count ?? "0";
 
   if (String(normalizedCount) === "1") {
-    return `${normalizedCount} bozza Shopify gestita dalla preview.`;
+    return `${normalizedCount} ${getImportedProductSingularLabel(importProductStatus)} gestito dalla preview.`;
   }
 
-  return `${normalizedCount} bozze Shopify gestite dalla preview.`;
+  return `${normalizedCount} ${getImportedProductsLabel(importProductStatus)} gestiti dalla preview.`;
 }
 
 function ValidationSection({ wizard }: { wizard: WizardState }) {

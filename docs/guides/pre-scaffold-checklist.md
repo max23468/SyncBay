@@ -49,7 +49,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 
 ## 5. Product defaults
 
-- [ ] Import iniziale default `draft` confermato.
+- [x] Import iniziale default `pubblicato` confermato, con opzione `bozza` in Impostazioni.
 - [ ] 1 location Shopify predefinita confermata.
 - [ ] Tutte le immagini copiate su Shopify confermato.
 - [ ] Descrizione pulita con anteprima confermata.
