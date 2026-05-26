@@ -56,7 +56,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 | Fatto | Onboarding guidato | Readiness dashboard e wizard import preview predisposti; scelta location Shopify salvabile, preview live Inventory API con fallback Trading API/GetItem sui primi 10 listing del batch preview, SKU fallback, regole dry-run MVP codificate e import draft pilota confermato sul dev store |
 | In corso | Import iniziale fino a 2.000 prodotti | Batch 25 verificato con bozze Shopify idempotenti; ora l'import controllato registra mapping, snapshot, job e audit ed espone lo storico in dashboard. Resta espandere copertura fino al limite MVP |
 | Da fare | Sync catalogo entro 5 minuti | Real-time dove possibile e sostenibile; polling incrementale come fallback obbligatorio |
-| In corso | Job import e retry | Import draft tracciato con `SyncJob` idempotente, tentativi, risultato, audit e retry pianificato con backoff; runner HTTP protetto collegato a Supabase Cron ogni minuto per job `IMPORT_CATALOG` dovuti. Restano job sync/stock futuri |
+| In corso | Job import e retry | Import draft tracciato con `SyncJob` idempotente, tentativi, risultato, audit e retry pianificato con backoff; runner HTTP protetto collegato a Supabase Cron ogni minuto per job `IMPORT_CATALOG` dovuti. I retry reali sono verificati end-to-end e recuperano i listing richiesti via Trading API `GetItem` per `ItemID`, chiudendo correttamente il job originale. Restano job sync/stock futuri |
 | Da fare | Protezione disponibilità | Ordine Shopify pagato -> aggiornamento disponibilità eBay prioritario |
 | In corso | Dashboard operativa | Stato connessioni, job recenti, storico import, conteggi mapping/snapshot e rimessa in coda manuale; restano conflitti e azioni sync complete |
 | Da fare | Regole prezzo Shopify-only | Sconto, markup, moltiplicatore, arrotondamento, prezzo minimo, margine minimo, compare-at |
@@ -86,7 +86,7 @@ Le idee e i debiti non ancora promossi stanno in `BACKLOG.md`.
 
 ## Prossime mosse suggerite
 
-1. Osservare i primi run Supabase Cron del runner `/api/jobs/run-due` e verificare retry reali quando compaiono job `RETRYING`.
-2. Dopo batch 25 stabile, valutare il passaggio a 50 prodotti.
+1. Passare dal batch 25 al batch 50 e verificarlo sul dev store.
+2. Disegnare l'import completo fino a 2.000 prodotti mantenendo idempotenza, mapping e snapshot.
 3. Iniziare il sync incrementale eBay -> Shopify.
 4. Implementare la protezione disponibilità Shopify -> eBay per ordini pagati.

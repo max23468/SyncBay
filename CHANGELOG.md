@@ -6,10 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.13.1] — 2026-05-26
 
-- Attivata la schedule Supabase Cron pilota `syncbay-run-due-jobs` per chiamare il runner protetto `/api/jobs/run-due` ogni minuto tramite secret in Supabase Vault.
-- Aggiornata la documentazione operativa dopo la verifica del batch draft da 25 prodotti.
+### Correzioni
+
+- Il runner `/api/jobs/run-due` riprende i job `IMPORT_CATALOG` leggendo i listing richiesti via eBay Trading API `GetItem` per `ItemID`, evitando falsi fallimenti dovuti alla preview live paginata.
+- I job automatici completati dal runner aggiornano ora il record originale con esito finale e non restano bloccati in stato `RUNNING`.
 
 ## [0.13.0] — 2026-05-26
 
@@ -263,6 +265,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.13.1]: #0131--2026-05-26
 [0.13.0]: #0130--2026-05-26
 [0.12.0]: #0120--2026-05-26
 [0.11.1]: #0111--2026-05-26

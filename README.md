@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: import iniziale controllato.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Il batch draft pilota è stato verificato sul dev store fino a 25 prodotti e l'import registra mapping, snapshot, job e audit per bozze create o riusate; la dashboard espone storico import, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili. È presente il runner HTTP protetto `/api/jobs/run-due` per riprendere job `IMPORT_CATALOG` dovuti con sessione Shopify offline, collegato a una schedule Supabase Cron ogni minuto tramite secret in Supabase Vault. Non esistono ancora import completo fino a 2.000 prodotti o sync catalogo entro 5 minuti.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. Il batch draft pilota è stato verificato sul dev store fino a 25 prodotti e l'import registra mapping, snapshot, job e audit per bozze create o riusate; la dashboard espone storico import, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili. È presente il runner HTTP protetto `/api/jobs/run-due` per riprendere job `IMPORT_CATALOG` dovuti con sessione Shopify offline, collegato a una schedule Supabase Cron ogni minuto tramite secret in Supabase Vault; il retry automatico è stato verificato end-to-end sul dev store con recupero puntuale dei listing via Trading API `GetItem` per `ItemID` e chiusura corretta del job originale. Non esistono ancora import completo fino a 2.000 prodotti o sync catalogo entro 5 minuti.
 
 ## Direzione prodotto
 
@@ -90,7 +90,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Osservare i primi run Supabase Cron del runner `/api/jobs/run-due` e verificare che eventuali job `RETRYING` vengano ripresi senza duplicati.
-2. Dopo batch 25 stabile, valutare il passaggio a 50 prodotti e poi il disegno dell'import completo fino a 2.000 prodotti.
+1. Portare il batch draft pilota da 25 a 50 prodotti e verificarlo sul dev store.
+2. Disegnare l'import completo fino a 2.000 prodotti senza perdere idempotenza, mapping e snapshot.
 3. Implementare il sync incrementale eBay -> Shopify.
 4. Implementare la protezione disponibilità Shopify -> eBay per ordini pagati.
