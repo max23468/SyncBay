@@ -28,6 +28,26 @@ interface ShopifyProductCreateResponse {
   }>;
 }
 
+interface ShopifyProductLookupResponse {
+  data?: {
+    productByHandle?: ShopifyDraftProductLookupNode | null;
+    products?: {
+      nodes?: ShopifyDraftProductLookupNode[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyDraftProductLookupNode {
+  id: string;
+  title: string;
+  metafield?: {
+    value: string;
+  } | null;
+}
+
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
 
 type ShopifyDraftProductInput = ReturnType<
@@ -98,10 +118,14 @@ export function buildShopifyDraftProductInputs(
         })),
       product: {
         descriptionHtml: item.normalized.descriptionHtml ?? undefined,
+        handle: buildSyncBayProductHandle(item.itemId),
         metafields: buildSyncBayProductMetafields(item),
         status: "DRAFT",
         tags: ["SyncBay", "Import preview", "eBay import pilot"],
         title: item.normalized.title,
+      },
+      source: {
+        ebayItemId: item.itemId,
       },
     }));
 }
@@ -164,6 +188,21 @@ async function createShopifyDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
 ): Promise<ShopifyDraftProductResult> {
+  const existingProduct = await findExistingSyncBayDraftProduct(
+    admin,
+    draftProduct,
+  );
+
+  if (existingProduct) {
+    return {
+      product: existingProduct,
+      status: "created",
+      warnings: [
+        "SyncBay ha riusato bozze Shopify già presenti per lo stesso eBay ItemID e non ha creato duplicati.",
+      ],
+    };
+  }
+
   const resultWithMedia = await createShopifyDraftProductRequest(
     admin,
     draftProduct,
@@ -266,6 +305,60 @@ async function createShopifyDraftProductRequest(
   };
 }
 
+async function findExistingSyncBayDraftProduct(
+  admin: ShopifyAdminGraphqlClient,
+  draftProduct: ShopifyDraftProductInput,
+) {
+  const response = await admin.graphql(
+    `#graphql
+    query SyncBayFindDraftProduct($handle: String!, $query: String!) {
+      productByHandle(handle: $handle) {
+        id
+        title
+        metafield(namespace: "syncbay", key: "ebay_item_id") {
+          value
+        }
+      }
+      products(first: 250, query: $query) {
+        nodes {
+          id
+          title
+          metafield(namespace: "syncbay", key: "ebay_item_id") {
+            value
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        handle: draftProduct.product.handle,
+        query: "tag:SyncBay",
+      },
+    },
+  );
+
+  if (!response.ok) return null;
+
+  const json = (await response.json()) as ShopifyProductLookupResponse;
+
+  if (json.errors?.length) return null;
+
+  const products = [
+    json.data?.productByHandle ?? null,
+    ...(json.data?.products?.nodes ?? []),
+  ].filter((product): product is ShopifyDraftProductLookupNode =>
+    Boolean(product),
+  );
+
+  return (
+    products.find(
+      (product) =>
+        product.metafield?.value === draftProduct.source.ebayItemId ||
+        product.id === json.data?.productByHandle?.id,
+    ) ?? null
+  );
+}
+
 async function mapWithConcurrency<Input, Output>(
   items: Input[],
   concurrency: number,
@@ -345,6 +438,13 @@ function buildSyncBayProductMetafields(item: ImportPreviewItem) {
   ].filter((metafield): metafield is NonNullable<typeof metafield> =>
     Boolean(metafield),
   );
+}
+
+function buildSyncBayProductHandle(ebayItemId: string) {
+  return `syncbay-ebay-${ebayItemId
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")}`;
 }
 
 function getDraftImportLimit() {
