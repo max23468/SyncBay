@@ -80,9 +80,10 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   descrizione HTML, prime immagini e metadati SyncBay/eBay;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   snapshot `EBAY` e `SYNCBAY` e registra audit di avvio/esito;
-- il batch 25 è stato verificato sul dev store con mapping, snapshot, job e
-  audit coerenti. La schedule Supabase Cron `syncbay-run-due-jobs` riprende ogni
-  minuto i job `IMPORT_CATALOG` dovuti prima di valutare il passo a 50 prodotti.
+- il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
+  audit coerenti; l'ultimo import reale ha creato 26 nuove bozze Shopify e ne
+  ha riusate 24 senza duplicati. La schedule Supabase Cron
+  `syncbay-run-due-jobs` riprende ogni minuto i job `IMPORT_CATALOG` dovuti.
 
 Copertura attuale della preview live:
 

@@ -10,7 +10,7 @@ Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. Il batch draft pilota è stato verificato sul dev store fino a
-25 prodotti. Non esistono ancora import completo fino a 2.000 prodotti o sync
+50 prodotti. Non esistono ancora import completo fino a 2.000 prodotti o sync
 catalogo.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
@@ -37,7 +37,7 @@ Note:
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
 - `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota è riattivabile solo per import controllati da preview.
-- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il batch 25 è stato verificato su runtime pilota prima di valutare 50.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il runtime pilota è stato verificato a 50 prodotti con 26 nuove bozze e 24 riusi senza duplicati sull'ultimo batch reale.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
@@ -74,6 +74,7 @@ Non salvarla in Git e non stamparla nei log.
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
 - schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni minuto tramite `pg_net` e secret in Supabase Vault
 - retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
+- batch reale da 50 prodotti verificato sul dev store: job `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti i 50 `ItemID`
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
 - verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
