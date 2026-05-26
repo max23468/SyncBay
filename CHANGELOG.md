@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.14.0] — 2026-05-26
+
+### Novità
+
+- Portato il batch draft pilota a 50 prodotti, aggiornando il limite runtime e il corrispondente valore di ambiente.
+
+### Correzioni
+
+- Verificato sul dev store l'import reale da 50 listing con esito idempotente: 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti gli `ItemID` del batch.
+
 ## [0.13.1] — 2026-05-26
 
 ### Correzioni
@@ -265,6 +275,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.14.0]: #0140--2026-05-26
 [0.13.1]: #0131--2026-05-26
 [0.13.0]: #0130--2026-05-26
 [0.12.0]: #0120--2026-05-26
