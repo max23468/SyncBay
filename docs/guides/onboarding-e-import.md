@@ -82,6 +82,9 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - dopo creazione o riuso, SyncBay attiva il tracking scorte sull'inventory item
   Shopify, collega la variante alla location predefinita e imposta la quantità
   disponibile usando la disponibilità letta da eBay;
+- sui prodotti Shopify già riusati, SyncBay riallinea anche lo stato al default
+  dello shop e verifica che tracking e quantità impostati siano confermati da
+  Shopify prima di marcare l'import come riuscito;
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   product/variant GID, snapshot `EBAY` e `SYNCBAY` e registra audit di
   avvio/esito;

@@ -45,6 +45,7 @@ interface ShopifyDraftProductVariantNode {
 
 interface ShopifyDraftProductNode {
   id: string;
+  status?: string | null;
   title: string;
   variants?: {
     nodes?: ShopifyDraftProductVariantNode[];
@@ -115,6 +116,36 @@ interface ShopifyInventorySetQuantitiesResponse {
       } | null;
       userErrors?: ShopifyUserError[];
     };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyProductUpdateResponse {
+  data?: {
+    productUpdate?: {
+      product?: ShopifyDraftProductNode | null;
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyInventoryVerificationResponse {
+  data?: {
+    node?: {
+      id?: string;
+      tracked?: boolean | null;
+      inventoryLevel?: {
+        quantities?: Array<{
+          name: string;
+          quantity: number;
+        }>;
+      } | null;
+    } | null;
   };
   errors?: Array<{
     message: string;
@@ -378,12 +409,23 @@ async function createShopifyDraftProduct(
   );
 
   if (existingProduct) {
+    const statusResult = await updateShopifyProductStatus(
+      admin,
+      existingProduct,
+      draftProduct.product.status,
+    );
+
+    if (statusResult.status === "failed") {
+      return statusResult;
+    }
+
     return {
-      product: existingProduct,
+      product: statusResult.product,
       resultType: "reused",
       status: "created",
       warnings: [
         "SyncBay ha riusato prodotti Shopify già presenti per lo stesso eBay ItemID e non ha creato duplicati.",
+        ...statusResult.warnings,
       ],
     };
   }
@@ -461,6 +503,7 @@ async function createShopifyDraftProductRequest(
       productCreate(product: $product, media: $media) {
         product {
           id
+          status
           title
           variants(first: 1) {
             nodes {
@@ -547,6 +590,7 @@ async function findExistingSyncBayDraftProduct(
     query SyncBayFindDraftProduct($handle: String!, $query: String!) {
       productByHandle(handle: $handle) {
         id
+        status
         title
         variants(first: 1) {
           nodes {
@@ -564,6 +608,7 @@ async function findExistingSyncBayDraftProduct(
       products(first: 250, query: $query) {
         nodes {
           id
+          status
           title
           variants(first: 1) {
             nodes {
@@ -699,12 +744,127 @@ async function syncShopifyInventoryFromEbayQuantity(
     };
   }
 
+  const verificationResult = await verifyShopifyInventoryAtLocation(admin, {
+    inventoryItemGid,
+    locationGid: context.defaultLocationGid,
+    quantity,
+  });
+
+  if (verificationResult.status === "failed") {
+    return {
+      ...verificationResult,
+      inventoryItemGid,
+      locationGid: context.defaultLocationGid,
+      quantity,
+      variantGid: variant.id,
+    };
+  }
+
   return {
     inventoryItemGid,
     locationGid: context.defaultLocationGid,
     quantity,
     status: "synced",
     variantGid: variant.id,
+  };
+}
+
+async function updateShopifyProductStatus(
+  admin: ShopifyAdminGraphqlClient,
+  product: NonNullable<ShopifyCreatedProduct>,
+  status: ImportProductStatus,
+): Promise<
+  | {
+      product: NonNullable<ShopifyCreatedProduct>;
+      status: "synced";
+      warnings: string[];
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  if (product.status === status) {
+    return {
+      product,
+      status: "synced",
+      warnings: [],
+    };
+  }
+
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayUpdateProductStatus($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product {
+          id
+          status
+          title
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        product: {
+          id: product.id,
+          status,
+        },
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyProductUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify productUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  const updatedProduct = json.data?.productUpdate?.product;
+
+  if (!updatedProduct) {
+    return {
+      errorMessage: "Shopify non ha restituito il prodotto aggiornato.",
+      status: "failed",
+    };
+  }
+
+  return {
+    product: updatedProduct,
+    status: "synced",
+    warnings: [
+      `SyncBay ha riallineato lo stato Shopify del prodotto a ${status}.`,
+    ],
   };
 }
 
@@ -881,6 +1041,84 @@ async function setShopifyInventoryQuantity(
   if (userErrors.length > 0) {
     return {
       errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function verifyShopifyInventoryAtLocation(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    inventoryItemGid: string;
+    locationGid: string;
+    quantity: number;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    query SyncBayVerifyInventory($inventoryItemGid: ID!, $locationGid: ID!) {
+      node(id: $inventoryItemGid) {
+        ... on InventoryItem {
+          id
+          tracked
+          inventoryLevel(locationId: $locationGid) {
+            quantities(names: ["available"]) {
+              name
+              quantity
+            }
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        inventoryItemGid: input.inventoryItemGid,
+        locationGid: input.locationGid,
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventoryVerificationResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify verifica inventario ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const inventoryItem = json.data?.node;
+
+  if (!inventoryItem) {
+    return {
+      errorMessage: "Shopify non ha restituito l'inventory item da verificare.",
+      status: "failed",
+    };
+  }
+
+  if (inventoryItem.tracked !== true) {
+    return {
+      errorMessage: "Shopify non ha confermato il tracking scorte attivo.",
+      status: "failed",
+    };
+  }
+
+  const availableQuantity =
+    inventoryItem.inventoryLevel?.quantities?.find(
+      (quantity) => quantity.name === "available",
+    )?.quantity ?? null;
+
+  if (availableQuantity !== input.quantity) {
+    return {
+      errorMessage: `Shopify ha confermato quantità ${availableQuantity ?? "assente"} invece di ${input.quantity}.`,
       status: "failed",
     };
   }
