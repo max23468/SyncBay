@@ -1,9 +1,27 @@
-import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData } from "react-router";
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+  LoaderFunctionArgs,
+} from "react-router";
+import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
-import { getDashboardState } from "../services/syncbay.server";
+import {
+  getDashboardState,
+  requestSyncJobRetry,
+} from "../services/syncbay.server";
+
+type DashboardActionData = {
+  intent: "retryJob";
+  message: string;
+  status: "queued";
+};
+
+const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -11,14 +29,46 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return getDashboardState(session);
 };
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const [{ session }, formData] = await Promise.all([
+    authenticate.admin(request),
+    request.formData(),
+  ]);
+  const intent = String(formData.get("intent") ?? "");
+
+  if (intent === "retryJob") {
+    const jobId = String(formData.get("jobId") ?? "");
+
+    if (!jobId) {
+      throw new Response("Job SyncBay mancante.", { status: 400 });
+    }
+
+    const result = await requestSyncJobRetry(session, jobId);
+
+    return Response.json({
+      intent,
+      message: result.message,
+      status: result.status,
+    } satisfies DashboardActionData);
+  }
+
+  throw new Response("Azione dashboard non supportata.", { status: 400 });
+};
+
 export default function Index() {
   const dashboard = useLoaderData<typeof loader>();
+  const actionData = useActionData() as DashboardActionData | undefined;
+  const navigation = useNavigation();
   const ebayStatus = dashboard.ebay.oauthReady
     ? dashboard.ebay.oauthStatus
     : "In attesa configurazione";
   const ebayConnected = dashboard.ebay.status === "CONNECTED";
   const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
   const lastJobs = dashboard.sync.lastJobs;
+  const retryingJobId =
+    navigation.formData?.get("intent") === "retryJob"
+      ? String(navigation.formData.get("jobId") ?? "")
+      : null;
 
   return (
     <s-page heading="SyncBay">
@@ -137,6 +187,53 @@ export default function Index() {
         )}
       </s-section>
 
+      <s-section heading="Import controllato">
+        <s-unordered-list>
+          <s-list-item>
+            Mapping eBay {"->"} Shopify registrati:{" "}
+            {dashboard.imports.mappingCount}
+          </s-list-item>
+          <s-list-item>
+            Snapshot prodotto salvati: {dashboard.imports.snapshotCount}
+          </s-list-item>
+        </s-unordered-list>
+        {actionData?.intent === "retryJob" ? (
+          <s-paragraph>{actionData.message}</s-paragraph>
+        ) : null}
+        {dashboard.imports.recentJobs.length > 0 ? (
+          <s-unordered-list>
+            {dashboard.imports.recentJobs.map((job) => (
+              <s-list-item key={job.id}>
+                Import {formatDateTime(job.createdAt)}: {job.status}, gestiti{" "}
+                {job.managedCount}/{job.requestedCount}, riusati{" "}
+                {job.reusedCount}, falliti {job.failedCount}, tentativi{" "}
+                {job.attempts}/{job.maxAttempts}
+                {job.errorMessage ? ` - ${job.errorMessage}` : ""}
+                {job.willRetry
+                  ? ` - retry pianificato da ${formatDateTime(job.runAfter)}`
+                  : ""}
+                {job.canRequestRetry ? (
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="retryJob" />
+                    <input type="hidden" name="jobId" value={job.id} />
+                    <s-button
+                      type="submit"
+                      disabled={retryingJobId === job.id}
+                    >
+                      {retryingJobId === job.id
+                        ? "Riprogrammazione..."
+                        : "Rimetti in coda"}
+                    </s-button>
+                  </Form>
+                ) : null}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun import controllato registrato.</s-paragraph>
+        )}
+      </s-section>
+
       <s-section heading="Diagnostica job">
         {dashboard.sync.failedJobs.length > 0 ? (
           <s-unordered-list>
@@ -210,3 +307,9 @@ export default function Index() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
+function formatDateTime(value: string | null) {
+  if (!value) return "non concluso";
+
+  return itDateTimeFormatter.format(new Date(value));
+}
