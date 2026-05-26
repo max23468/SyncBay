@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.17.2] — 2026-05-26
+
 ### Sotto il cofano
 
 - Aggiornato il floor Node a `>=24.15 <25` per consentire l'upgrade di React
@@ -352,6 +354,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.17.2]: #0172--2026-05-26
 [0.17.1]: #0171--2026-05-26
 [0.17.0]: #0170--2026-05-26
 [0.16.1]: #0161--2026-05-26
