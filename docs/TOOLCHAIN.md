@@ -7,14 +7,14 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Area | Valore |
 | --- | --- |
 | Runtime principale | Node.js |
-| Versione locale preferita | `.node-version` = `24` |
-| Range supportato | `package.json` `engines.node` = `>=22.13 <25` |
+| Versione locale preferita | `.node-version` = `24.16.0` |
+| Range supportato | `package.json` `engines.node` = `>=24.15 <25` |
 | Enforcement engine | `.npmrc` con `engine-strict=true` |
 | Package manager | npm |
 | Lockfile | `package-lock.json` |
-| Immagine Docker base | `node:24-alpine` |
+| Immagine Docker base | `node:24.16.0-alpine` |
 
-Il floor Node `>=22.13` è richiesto dalla dipendenza `react-doctor@0.2.3`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker deve restare su Node 22.13+ e sotto 25 perché `.npmrc` abilita `engine-strict=true`.
+Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@0.2.8` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`.
 
 ## Stack applicativo
 

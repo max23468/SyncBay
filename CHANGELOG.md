@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Aggiornato il floor Node a `>=24.15 <25` per consentire l'upgrade di React
+  Doctor alla linea `0.2.8` mantenendo `engine-strict=true`.
+- Pinnata l'immagine Docker a `node:24.16.0-alpine`, così anche il container
+  rispetta lo stesso floor Node della toolchain locale.
+
 ## [0.17.1] — 2026-05-26
 
 ### Correzioni

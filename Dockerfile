@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:24.16.0-alpine
 RUN apk add --no-cache openssl
 
 EXPOSE 3000

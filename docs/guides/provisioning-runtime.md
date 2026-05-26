@@ -23,7 +23,7 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 | Project name      | `syncbay`                             |
 | Project ID        | `prj_X9vkqDlE5t4QDUhOxE6m2aMFosiz`    |
 | Root directory    | `.`                                   |
-| Node.js           | `24.x`                                |
+| Node.js           | `24.x` (`>=24.15`)                    |
 | Framework         | `react-router`                        |
 | Production domain | `https://syncbay.vercel.app`          |
 | Ultimo deployment | `READY`                               |
