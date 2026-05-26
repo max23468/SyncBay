@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Attivata la schedule Supabase Cron pilota `syncbay-run-due-jobs` per chiamare il runner protetto `/api/jobs/run-due` ogni minuto tramite secret in Supabase Vault.
+- Aggiornata la documentazione operativa dopo la verifica del batch draft da 25 prodotti.
+
 ## [0.13.0] — 2026-05-26
 
 ### Novità

@@ -10,9 +10,8 @@ Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. Il batch draft pilota è stato verificato sul dev store fino a
-10 prodotti; il limite tecnico ora consente il passo controllato a 25. Non
-esistono ancora import completo fino a 2.000 prodotti, sync catalogo o schedule
-Supabase Cron attiva.
+25 prodotti. Non esistono ancora import completo fino a 2.000 prodotti o sync
+catalogo.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -38,8 +37,8 @@ Note:
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
 - `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota è riattivabile solo per import controllati da preview.
-- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il batch 10 è stato verificato su runtime pilota; il limite tecnico ora consente il passo controllato a 25 prodotti prima di valutare 50.
-- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron va collegata senza scrivere il secret in repo, log o documentazione.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il batch 25 è stato verificato su runtime pilota prima di valutare 50.
+- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
@@ -73,6 +72,7 @@ Non salvarla in Git e non stamparla nei log.
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
+- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni minuto tramite `pg_net` e secret in Supabase Vault
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
 - verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
@@ -86,18 +86,20 @@ Estensioni Supabase verificate:
 | `uuid-ossp` | Installata |
 | `pgmq` | Abilitata via migration Prisma |
 | `pg_cron` | Abilitata via migration Prisma |
+| `pg_net` | Abilitata per chiamate HTTP della schedule Cron |
 
 Primitive Supabase tracciate:
 
 - estensione `pgmq`;
 - coda `syncbay_jobs`;
 - estensione `pg_cron`;
+- estensione `pg_net`;
+- schedule `syncbay-run-due-jobs` ogni minuto per riprendere job `IMPORT_CATALOG` dovuti;
 - bucket privato `syncbay-import-staging` per staging temporaneo immagini.
 
-Non ci sono ancora schedule cron o consumer queue attivi: il runtime import
-draft registra `SyncJob` idempotenti con tentativi e risultato, mentre retry
-automatici e drenaggio queue verranno aggiunti quando l'import controllato
-verrà esteso oltre il batch pilota.
+La schedule Cron attuale copre solo il runner `IMPORT_CATALOG` del pilota. Il
+drenaggio completo di queue e i job di sync/stock restano da progettare quando
+l'import controllato verrà esteso oltre il batch pilota.
 
 ## Cosa resta da fare
 
