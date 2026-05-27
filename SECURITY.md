@@ -49,7 +49,7 @@ In caso di sospetto problema:
 
 1. mettere in pausa sync o job coinvolti se esiste rischio di modifiche errate;
 2. identificare provider coinvolto: Shopify, eBay, database, job queue o hosting;
-3. ruotare segreti se c'è rischio esposizione;
+3. sostituire credenziali se c'è rischio esposizione;
 4. proteggere stock con modalità prudente se necessario;
 5. usare snapshot/rollback dove possibile;
 6. documentare incidente, impatto e correzione.
