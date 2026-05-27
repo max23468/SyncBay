@@ -11,7 +11,9 @@ Decisioni di riferimento:
 
 In SyncBay ci sono due azioni diverse:
 
-1. **Pubblicare**: portare una modifica su GitHub/main e verificarne i check pertinenti.
+1. **Pubblicare**: portare una modifica su GitHub/main con PR/merge (o commit diretto
+   documentato), verificarne i check pertinenti e completare il cleanup branch/worktree
+   assorbito.
 2. **Rilasciare**: creare una nuova versione SemVer dell'app aggiornando `app/lib/version.ts` e chiudendo il blocco versionato del changelog.
 
 Piani, ADR, guide interne, regole agenti e documentazione non esposta nell'app possono essere pubblicati nel repo senza rilasciare una nuova versione. In quel caso non modificare `APP_VERSION` e usa `### Non versionato` nel changelog se serve tenere traccia del lavoro.

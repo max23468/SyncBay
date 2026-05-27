@@ -76,7 +76,9 @@ Usa `git branch -D <branch>` solo se il comando non mostra commit unici da conse
 
 Nella fase attuale:
 
-- "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`, con commit/push diretto per docs-only piccoli oppure PR/merge per lavori non banali;
+- "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`
+  con branch dedicato e PR/merge quando non è docs-only diretto; se possibile,
+  verifica merge e poi cleanup del branch/worktree e del branch remoto usato.
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;
 - "deploya" = aggiornare e verificare il deployment pilota Vercel production, senza implicare App Store, billing, tag o GitHub Release;
 - "rilascia" significa preparare una release locale con `npm run release`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `0008`.
@@ -86,7 +88,8 @@ Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
 1. branch di lavoro mergeato su `main`;
 2. controlli locali/remoti rilevanti superati;
 3. deploy Vercel production verificato quando la modifica tocca runtime o UI;
-4. branch dedicato pulito localmente e su GitHub, salvo motivo esplicito.
+4. branch dedicato pulito localmente, worktree chiuso e branch remoto su GitHub
+   chiuso/assorbito, salvo motivo esplicito.
 
 "Pubblicare" non significa automaticamente creare tag, GitHub Release, deploy, billing o pubblicazione Shopify App Store.
 

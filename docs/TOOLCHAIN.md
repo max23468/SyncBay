@@ -66,7 +66,10 @@ SyncBay ha versioning locale, un deployment pilota Vercel production e una
 policy tag/GitHub Release per release prodotto reali. Non ha ancora una policy
 di release pubblica Shopify App Store.
 
-- `pubblica` significa portare il lavoro su GitHub/main secondo `docs/guides/git-e-pubblicazione.md`.
+- `pubblica` significa portare il lavoro su GitHub/main secondo
+  `docs/guides/git-e-pubblicazione.md`, con PR/merge o commit diretto previsto,
+  controlli completi e cleanup branch/worktree locali e remoti al termine quando
+  assorbito.
 - `rilascia` significa usare il flusso locale `npm run release`.
 - `deploya` significa aggiornare il deployment pilota Vercel production e
   verificarlo; non implica App Store, billing, tag o GitHub Release.
