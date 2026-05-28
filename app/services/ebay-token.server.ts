@@ -69,18 +69,34 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
   const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
   if (scopes) body.set("scope", scopes);
 
-  const response = await fetch(getTokenUrl(connection.environment), {
-    body,
-    headers: {
-      Authorization: `Basic ${getBasicAuthHeader()}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    method: "POST",
-  });
-  const json = (await response.json()) as EbayTokenResponse;
+  let response: Response;
+  let json: EbayTokenResponse;
+
+  try {
+    response = await fetch(getTokenUrl(connection.environment), {
+      body,
+      headers: {
+        Authorization: `Basic ${getBasicAuthHeader()}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      method: "POST",
+    });
+    json = (await response.json()) as EbayTokenResponse;
+  } catch (_error) {
+    throw new EbayTokenError("Errore di rete durante refresh token eBay.");
+  }
+
+  const shouldMarkReconnect =
+    !response.ok &&
+    (response.status === 401 ||
+      response.status === 403 ||
+      isAuthTokenError(json.error));
 
   if (!response.ok || !json.access_token) {
-    await markReconnectRequired(connection.id);
+    if (shouldMarkReconnect) {
+      await markReconnectRequired(connection.id);
+    }
+
     throw new EbayTokenError(
       json.error_description ??
         json.error ??
@@ -127,6 +143,14 @@ function getTokenUrl(environment: string) {
   return environment === "production"
     ? EBAY_TOKEN_URLS.production
     : EBAY_TOKEN_URLS.sandbox;
+}
+
+function isAuthTokenError(error?: string) {
+  if (!error) return false;
+
+  return ["invalid_grant", "invalid_request", "invalid_client", "unauthorized_client"].includes(
+    error.toLowerCase(),
+  );
 }
 
 function requiredEnv(key: string) {

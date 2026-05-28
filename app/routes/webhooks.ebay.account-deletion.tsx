@@ -27,7 +27,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  const config = getAccountDeletionPostConfig();
+  const config = getAccountDeletionChallengeConfig();
   if (
     !config.endpoint ||
     !config.verificationToken ||
@@ -48,7 +48,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .update(config.endpoint)
     .digest("hex");
 
-  return Response.json({ challengeResponse });
+  return new Response(challengeResponse, {
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+    },
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -62,7 +66,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const config = getAccountDeletionChallengeConfig();
+  const config = getAccountDeletionPostConfig();
   if (config.missingRequirements.length > 0) {
     return Response.json(
       {

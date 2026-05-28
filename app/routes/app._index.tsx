@@ -19,6 +19,7 @@ type DashboardActionData = {
 };
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
+  timeZone: "Europe/Rome",
   dateStyle: "short",
   timeStyle: "short",
 });
