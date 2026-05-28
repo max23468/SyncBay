@@ -260,7 +260,8 @@ Comandi runtime attuali:
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
 - Prima di mergiare una PR non banale, controlla se la `Codex feedback inbox` segnala thread actionable collegati alla PR corrente.
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
-- "Pubblica" significa chiudere il flusso operativo con PR mergeata su `main` e, se la modifica ha impatto runtime o è richiesto esplicitamente, eseguire anche il deploy pilota Vercel production. In entrambi i casi, chiudi anche la pulizia branch/worktree locali e remoti non più necessari.
+- "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main` e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
+- Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
 - Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production. Non interpretarlo come pubblicazione Shopify App Store, billing, tag o GitHub Release.
 - Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
