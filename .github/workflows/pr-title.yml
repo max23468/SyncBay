@@ -36,14 +36,14 @@ jobs:
 
           title = os.environ["PR_TITLE"].strip()
           pattern = re.compile(
-              r"^(feat|fix|perf|docs|test|chore|ci|refactor|build)"
+              r"^(feat|fix|perf|docs|test|chore|ci|refactor|build|style)"
               r"(\([a-z0-9._-]+\))?!?: .+"
           )
           if not pattern.fullmatch(title):
               print(f"Invalid PR title: {title!r}", file=sys.stderr)
               print(
                   "Use Conventional Commit format, for example "
-                  "'feat: add import checkpoint' or 'docs: clarify app store policy'.",
+                  "'feat: add import checkpoint' or 'docs: clarify app store policy' or 'style: clean up webhook formatter'.",
                   file=sys.stderr,
               )
               sys.exit(1)
