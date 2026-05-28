@@ -79,7 +79,9 @@ Usare `git branch -D` solo se non ci sono commit unici da conservare.
 ## Conseguenze
 
 - SyncBay ha un percorso chiaro per pubblicare su GitHub senza inventare runtime.
-- Le parole "pubblica", "deploya" e "rilascia" hanno significati distinti.
+- "Pubblica" resta la chiusura del flusso completo (PR/merge, verifiche e cleanup
+  degli spazi temporanei); "deploya" e "rilascia" sono azioni operative specifiche
+  che entrano nel flusso quando previste dal contesto corrente.
 - Il changelog resta utile anche nella fase documentale.
 - Il flusso SemVer locale è attivo senza introdurre deploy automatici; tag e
   GitHub Release sono regolati da ADR 0008.

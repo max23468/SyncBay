@@ -91,7 +91,7 @@ Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
 4. branch dedicato pulito localmente, worktree chiuso e branch remoto su GitHub
    chiuso/assorbito, salvo motivo esplicito.
 
-"Pubblicare" non significa automaticamente creare tag, GitHub Release, deploy, billing o pubblicazione Shopify App Store.
+"Pubblicare" applica il flusso completo di questa fase (`main`/PR/merge, verifica e cleanup); non implica automaticamente creare tag, GitHub Release, deploy, billing o pubblicazione Shopify App Store, che entrano invece solo quando sono previsti dal flusso corrente o esplicitamente richiesti.
 
 ## Impostazioni GitHub iniziali
 

@@ -48,10 +48,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .update(config.endpoint)
     .digest("hex");
 
-  return new Response(challengeResponse, {
-    headers: {
-      "content-type": "text/plain; charset=utf-8",
-    },
+  return Response.json({
+    challenge_response: challengeResponse,
   });
 };
 
