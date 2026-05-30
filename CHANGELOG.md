@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- La preview eBay passa ora al fallback Trading API quando Inventory API legge
+  solo risultati non importabili, invece di fermarsi su una preview senza
+  prodotti utilizzabili.
+- I warning sulla verifica quantità Shopify dopo aggiornamenti concorrenti
+  vengono propagati nel risultato import senza segnare il job come fallito.
+
 ## [0.17.2] — 2026-05-26
 
 ### Sotto il cofano
