@@ -11,6 +11,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - La preview eBay passa ora al fallback Trading API quando Inventory API legge
   solo risultati non importabili, invece di fermarsi su una preview senza
   prodotti utilizzabili.
+- La challenge eBay account deletion risponde ora con il campo JSON
+  `challengeResponse` richiesto da eBay.
 - I warning sulla verifica quantità Shopify dopo aggiornamenti concorrenti
   vengono propagati nel risultato import senza segnare il job come fallito.
 
