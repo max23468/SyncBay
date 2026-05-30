@@ -14,7 +14,7 @@
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
-    "quality:react-doctor": "react-doctor --full --fail-on error .",
+    "quality:react-doctor": "npx react-doctor@latest --full --fail-on error .",
     "smoke:ui": "node scripts/smoke-ui.mjs",
     "shopify": "shopify",
     "prisma": "prisma",
@@ -70,7 +70,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.6.2",
-    "react-doctor": "0.2.8",
     "typescript": "^5.9.3",
     "vite": "^6.3.6"
   },

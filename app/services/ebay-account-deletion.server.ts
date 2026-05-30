@@ -210,73 +210,76 @@ async function purgeEbayDataForShops(
     SyncJobStatus.RUNNING,
     SyncJobStatus.RETRYING,
   ];
+  const finishedAt = new Date();
 
-  await tx.shop.updateMany({
-    data: { syncEnabled: false },
-    where: { id: { in: input.shopIds } },
-  });
-  await tx.syncJob.updateMany({
-    data: {
-      errorCode: "EBAY_ACCOUNT_DELETION",
-      errorMessage: "Pulizia dati eBay richiesta.",
-      finishedAt: new Date(),
-      payload: Prisma.DbNull,
-      result: Prisma.DbNull,
-      status: SyncJobStatus.CANCELLED,
-    },
-    where: {
-      shopId: { in: input.shopIds },
-      status: { in: jobStatusFilters },
-    },
-  });
-  await tx.syncJob.updateMany({
-    data: {
-      payload: Prisma.DbNull,
-      result: Prisma.DbNull,
-    },
-    where: {
-      shopId: { in: input.shopIds },
-      status: { notIn: jobStatusFilters },
-    },
-  });
-  await tx.syncConflict.deleteMany({
-    where: { shopId: { in: input.shopIds } },
-  });
-  await tx.productSnapshot.deleteMany({
-    where: { shopId: { in: input.shopIds } },
-  });
-  await tx.productMapping.deleteMany({
-    where: { shopId: { in: input.shopIds } },
-  });
-  await tx.ebayOAuthState.deleteMany({
-    where: { shopId: { in: input.shopIds } },
-  });
-  await tx.ebayConnection.updateMany({
-    data: {
-      connectedAt: null,
-      ebayUserId: null,
-      encryptedAccessToken: null,
-      encryptedRefreshToken: null,
-      lastRefreshAt: null,
-      refreshTokenExpiresAt: null,
-      scopes: null,
-      status: EbayConnectionStatus.REVOKED,
-      tokenExpiresAt: null,
-    },
-    where: { id: { in: input.connectionIds } },
-  });
-  await tx.auditLog.createMany({
-    data: input.shopIds.map((shopId) => ({
-      details: {
-        accountDeletionRequestId: input.accountDeletionRequestId,
-        hashedUserId: input.hashedUserId,
-        notificationId: input.notificationId,
-      } satisfies Prisma.JsonObject,
-      message: "Dati eBay del negozio rimossi per account deletion.",
-      shopId,
-      type: AuditEventType.EBAY_ACCOUNT_DELETION_PROCESSED,
-    })),
-  });
+  await Promise.all([
+    tx.shop.updateMany({
+      data: { syncEnabled: false },
+      where: { id: { in: input.shopIds } },
+    }),
+    tx.syncJob.updateMany({
+      data: {
+        errorCode: "EBAY_ACCOUNT_DELETION",
+        errorMessage: "Pulizia dati eBay richiesta.",
+        finishedAt,
+        payload: Prisma.DbNull,
+        result: Prisma.DbNull,
+        status: SyncJobStatus.CANCELLED,
+      },
+      where: {
+        shopId: { in: input.shopIds },
+        status: { in: jobStatusFilters },
+      },
+    }),
+    tx.syncJob.updateMany({
+      data: {
+        payload: Prisma.DbNull,
+        result: Prisma.DbNull,
+      },
+      where: {
+        shopId: { in: input.shopIds },
+        status: { notIn: jobStatusFilters },
+      },
+    }),
+    tx.syncConflict.deleteMany({
+      where: { shopId: { in: input.shopIds } },
+    }),
+    tx.productSnapshot.deleteMany({
+      where: { shopId: { in: input.shopIds } },
+    }),
+    tx.productMapping.deleteMany({
+      where: { shopId: { in: input.shopIds } },
+    }),
+    tx.ebayOAuthState.deleteMany({
+      where: { shopId: { in: input.shopIds } },
+    }),
+    tx.ebayConnection.updateMany({
+      data: {
+        connectedAt: null,
+        ebayUserId: null,
+        encryptedAccessToken: null,
+        encryptedRefreshToken: null,
+        lastRefreshAt: null,
+        refreshTokenExpiresAt: null,
+        scopes: null,
+        status: EbayConnectionStatus.REVOKED,
+        tokenExpiresAt: null,
+      },
+      where: { id: { in: input.connectionIds } },
+    }),
+    tx.auditLog.createMany({
+      data: input.shopIds.map((shopId) => ({
+        details: {
+          accountDeletionRequestId: input.accountDeletionRequestId,
+          hashedUserId: input.hashedUserId,
+          notificationId: input.notificationId,
+        } satisfies Prisma.JsonObject,
+        message: "Dati eBay del negozio rimossi per account deletion.",
+        shopId,
+        type: AuditEventType.EBAY_ACCOUNT_DELETION_PROCESSED,
+      })),
+    }),
+  ]);
 }
 
 function getObject(value: unknown) {

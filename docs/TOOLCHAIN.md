@@ -14,7 +14,7 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Lockfile | `package-lock.json` |
 | Immagine Docker base | `node:24.16.0-alpine` |
 
-Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@0.2.8` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`.
+Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`.
 
 ## Stack applicativo
 

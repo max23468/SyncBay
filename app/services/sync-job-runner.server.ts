@@ -20,6 +20,16 @@ import { buildImportPreview } from "./import-preview.server";
 import { createShopifyDraftProductsIfEnabled } from "./shopify-draft-import.server";
 
 type DueSyncJob = Prisma.SyncJobGetPayload<{ include: { shop: true } }>;
+type DueSyncJobRunResult = {
+  errorMessage?: string;
+  jobId: string;
+  status: "failed" | "skipped" | "succeeded";
+  type: SyncJobType;
+};
+type ClaimedDueSyncJob = {
+  claimedJob: DueSyncJob;
+  index: number;
+};
 
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
@@ -43,32 +53,71 @@ export async function runDueSyncJobs(
       type: SyncJobType.IMPORT_CATALOG,
     },
   });
-  const results = [];
+  const claimedJobs = await Promise.all(
+    jobs.map(async (job, index) => {
+      const claimedJob = await claimDueSyncJob(job, now);
 
-  for (const job of jobs) {
-    const claimedJob = await claimDueSyncJob(job, now);
+      return {
+        claimedJob,
+        index,
+        job,
+      };
+    }),
+  );
+  const results = new Array<DueSyncJobRunResult>(jobs.length);
 
+  const runnableJobsByShop = new Map<string, ClaimedDueSyncJob[]>();
+
+  for (const { claimedJob, index, job } of claimedJobs) {
     if (!claimedJob) {
-      results.push({
+      results[index] = {
         jobId: job.id,
         status: "skipped" as const,
         type: job.type,
-      });
+      };
       continue;
     }
 
-    results.push(await runDueSyncJob(claimedJob));
+    const shopJobs = runnableJobsByShop.get(claimedJob.shopId) ?? [];
+    shopJobs.push({ claimedJob, index });
+    runnableJobsByShop.set(claimedJob.shopId, shopJobs);
   }
 
+  await Promise.all(
+    [...runnableJobsByShop.values()].map((shopJobs) =>
+      runClaimedDueSyncJobGroup(shopJobs, results),
+    ),
+  );
+
+  const completedResults = results.filter(
+    (result): result is DueSyncJobRunResult => Boolean(result),
+  );
+
   return {
-    failedCount: results.filter((result) => result.status === "failed").length,
-    processedCount: results.length,
-    skippedCount: results.filter((result) => result.status === "skipped")
+    failedCount: completedResults.filter((result) => result.status === "failed")
       .length,
-    succeededCount: results.filter((result) => result.status === "succeeded")
-      .length,
-    results,
+    processedCount: completedResults.length,
+    skippedCount: completedResults.filter(
+      (result) => result.status === "skipped",
+    ).length,
+    succeededCount: completedResults.filter(
+      (result) => result.status === "succeeded",
+    ).length,
+    results: completedResults,
   };
+}
+
+async function runClaimedDueSyncJobGroup(
+  shopJobs: ClaimedDueSyncJob[],
+  results: DueSyncJobRunResult[],
+) {
+  const [nextJob, ...remainingJobs] = shopJobs;
+
+  if (!nextJob) return;
+
+  results[nextJob.index] = await runDueSyncJob(nextJob.claimedJob);
+
+  await runClaimedDueSyncJobGroup(remainingJobs, results);
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
