@@ -82,7 +82,7 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
       method: "POST",
     });
     json = (await response.json()) as EbayTokenResponse;
-  } catch (_error) {
+  } catch {
     throw new EbayTokenError("Errore di rete durante refresh token eBay.");
   }
 

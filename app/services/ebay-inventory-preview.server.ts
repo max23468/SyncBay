@@ -108,25 +108,26 @@ async function getEbayInventoryImportPreview(
       page: null,
     }));
 
-    if (
-      inventoryResult.page &&
-      inventoryResult.page.candidates.length > 0
-    ) {
-      return {
-        coverageNote: INVENTORY_API_COVERAGE_NOTE,
-        errorMessage: null,
-        previewResult: buildImportPreview(
-          inventoryResult.page.candidates,
-          "live",
-        ),
-        readCount: inventoryResult.page.readCount,
-        readCounts: {
-          inventoryApi: inventoryResult.page.readCount,
-          tradingApi: 0,
-        },
-        source: "inventory_api",
-        totalAvailable: inventoryResult.page.totalAvailable,
-      };
+    if (inventoryResult.page && inventoryResult.page.candidates.length > 0) {
+      const inventoryPreview = buildImportPreview(
+        inventoryResult.page.candidates,
+        "live",
+      );
+
+      if (inventoryPreview.summary.importableCount > 0) {
+        return {
+          coverageNote: INVENTORY_API_COVERAGE_NOTE,
+          errorMessage: null,
+          previewResult: inventoryPreview,
+          readCount: inventoryResult.page.readCount,
+          readCounts: {
+            inventoryApi: inventoryResult.page.readCount,
+            tradingApi: 0,
+          },
+          source: "inventory_api",
+          totalAvailable: inventoryResult.page.totalAvailable,
+        };
+      }
     }
 
     const inventoryErrorMessage =

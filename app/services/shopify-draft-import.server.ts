@@ -514,7 +514,9 @@ async function createShopifyDraftProductSafely(
       context,
     );
     const inventoryWarnings =
-      inventorySync.status === "skipped" || inventorySync.status === "failed"
+      inventorySync.status === "skipped" ||
+      inventorySync.status === "failed" ||
+      Boolean(inventorySync.warning)
         ? [getInventorySyncWarning(inventorySync)]
         : [];
     const mediaWarnings =
@@ -728,7 +730,7 @@ async function findExistingSyncBayDraftProduct(
       }`,
       {
         variables: {
-      query: "tag:SyncBay",
+          query: "tag:SyncBay",
           cursor,
         },
       },
@@ -754,7 +756,7 @@ async function findExistingSyncBayDraftProduct(
     );
 
     if (!queryJson.data?.products?.pageInfo?.hasNextPage) break;
-    cursor = queryJson.data.products.pageInfo.endCursor;
+    cursor = queryJson.data.products.pageInfo.endCursor ?? null;
     if (!cursor) break;
   }
 
@@ -1740,7 +1742,10 @@ async function verifyShopifyInventoryAtLocation(
     locationGid: string;
     quantity: number;
   },
-): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+): Promise<
+  | { status: "synced"; warning?: string }
+  | { errorMessage: string; status: "failed" }
+> {
   const response = await admin.graphql(
     `#graphql
     query SyncBayVerifyInventory($inventoryItemGid: ID!, $locationGid: ID!) {
