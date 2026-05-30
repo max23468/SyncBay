@@ -22,6 +22,7 @@ docs/
   BACKLOG.md
   CONTEXT.md
   TOOLCHAIN.md
+  doppler-setup.md
   DECISIONS.md
   data-model.md
   DECISIONS_PENDING.md
@@ -61,6 +62,7 @@ docs/
 | Vedere cosa fare ora e dopo | `ROADMAP.md` |
 | Vedere idee e debiti non ancora promossi | `BACKLOG.md` |
 | Capire runtime, tool e verifiche | `TOOLCHAIN.md` |
+| Verificare integrazione Doppler e segreti CI | `doppler-setup.md` |
 | Capire identità, tono e visual direction | `../BRAND.md` |
 | Capire la struttura docs/repo | `structure.md` |
 | Consultare decisioni stabili | `DECISIONS.md` |
