@@ -6,8 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.17.3] — 2026-05-31
+
 ### Correzioni
 
+- Il runner dei job import claimma ora ogni job subito prima dell'esecuzione,
+  così le notifiche eBay account deletion possono cancellare correttamente i
+  job ancora in coda senza riscritture successive.
 - La preview eBay passa ora al fallback Trading API quando Inventory API legge
   solo risultati non importabili, invece di fermarsi su una preview senza
   prodotti utilizzabili.
@@ -372,6 +377,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.17.3]: #0173--2026-05-31
 [0.17.2]: #0172--2026-05-26
 [0.17.1]: #0171--2026-05-26
 [0.17.0]: #0170--2026-05-26

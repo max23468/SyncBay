@@ -77,21 +77,23 @@ Usa `git branch -D <branch>` solo se il comando non mostra commit unici da conse
 Nella fase attuale:
 
 - "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`
-  con branch dedicato e PR/merge quando non è docs-only diretto; se possibile,
-  verifica merge e poi cleanup del branch/worktree e del branch remoto usato.
+  con branch dedicato e PR/merge quando non è docs-only diretto; se il diff contiene
+  sezioni versionate nel blocco `[Non rilasciato]` del changelog, eseguire anche
+  `npm run release` prima di commit/push, così versione e pubblicazione restano nello stesso flusso.
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;
 - "deploya" = aggiornare e verificare il deployment pilota Vercel production, senza implicare App Store, billing, tag o GitHub Release;
-- "rilascia" significa preparare una release locale con `npm run release`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `0008`.
+- "rilascia" significa preparare una release locale con `npm run release` e pubblicarla su GitHub/main con lo stesso flusso; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `0008`.
 
 Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
 
 1. branch di lavoro mergeato su `main`;
 2. controlli locali/remoti rilevanti superati;
-3. deploy Vercel production verificato quando la modifica tocca runtime o UI;
-4. branch dedicato pulito localmente, worktree chiuso e branch remoto su GitHub
+3. release locale eseguita e inclusa nel commit quando il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate;
+4. deploy Vercel production verificato quando la modifica tocca runtime o UI;
+5. branch dedicato pulito localmente, worktree chiuso e branch remoto su GitHub
    chiuso/assorbito, salvo motivo esplicito.
 
-"Pubblicare" applica il flusso completo di questa fase (`main`/PR/merge, verifica e cleanup); non implica automaticamente creare tag, GitHub Release, deploy, billing o pubblicazione Shopify App Store, che entrano invece solo quando sono previsti dal flusso corrente o esplicitamente richiesti.
+"Pubblicare" applica il flusso completo di questa fase (`npm run release` per diff versionati, `main`/PR/merge, verifica e cleanup); non implica automaticamente creare tag, GitHub Release, billing o pubblicazione Shopify App Store, che entrano invece solo quando sono previsti dal flusso corrente o esplicitamente richiesti.
 
 ## Impostazioni GitHub iniziali
 
@@ -135,10 +137,10 @@ Prima di dichiarare completata una modifica:
 
 1. controlla `git status --short --branch`;
 2. controlla il diff finale o il commit finale;
-3. verifica se `CHANGELOG.md` deve essere aggiornato;
+3. verifica se `CHANGELOG.md` deve essere aggiornato e se `npm run release` deve essere eseguito;
 4. se c'è una PR, assicurati che il titolo sia Conventional Commit;
 5. se hai mergeato una PR, fai cleanup branch;
-6. dichiara eventuali limiti: niente deploy production, release locale non necessaria, check non eseguibili.
+6. dichiara eventuali limiti: niente deploy production, release locale non necessaria perché il blocco è solo `Non versionato`, check non eseguibili.
 
 ## Deploy e release
 

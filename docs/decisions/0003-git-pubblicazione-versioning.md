@@ -10,7 +10,7 @@ SyncBay è nato come repository docs-first, già collegato a GitHub, e ora conti
 
 Il maintainer vuole una disciplina simile alle repo operative esistenti:
 
-- Pratix come riferimento principale per pubblicazione su GitHub/main, PR, changelog e distinzione tra pubblicare e rilasciare;
+- Pratix come riferimento principale per pubblicazione su GitHub/main, PR, changelog e chiusura completa del flusso quando una modifica è rilasciabile;
 - DocMolder come riferimento per branch dedicati, PR verso `main`, cleanup branch e flusso completo quando una modifica è rilasciabile;
 - FiscalBay come riferimento per Conventional Commit, separazione tra pubblicazione codice, deploy operativo e release versionata.
 
@@ -18,7 +18,7 @@ Il vincolo specifico di SyncBay è non introdurre workflow CI, deploy o automazi
 
 ## Decisione
 
-GitHub è la fonte primaria per documentazione e codice SyncBay. La pubblicazione consiste nel portare modifiche coerenti su `main` GitHub; la release SemVer locale è definita da ADR 0006.
+GitHub è la fonte primaria per documentazione e codice SyncBay. La pubblicazione consiste nel portare modifiche coerenti su `main` GitHub; quando il diff contiene modifiche versionate, pubblicazione e release SemVer locale procedono insieme secondo ADR 0006.
 
 ## Policy operativa
 
@@ -42,16 +42,17 @@ Nella fase attuale:
 - "pubblica", "manda su GitHub" o "carica" significa portare il lavoro su GitHub/main;
 - per docs-only piccoli bastano commit e push diretti;
 - per lavori non banali serve PR/merge;
+- se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, la pubblicazione include anche `npm run release` prima del commit/push finale o della PR di chiusura;
 - una PR aperta o un push su branch non bastano se l'utente ha chiesto pubblicazione completa.
 
-Quando esisterà deploy production, pubblicazione completa includerà anche controlli/deploy coerenti con la policy attiva.
+Quando il diff tocca runtime, UI o configurazione deploy, pubblicazione completa includerà anche controlli/deploy coerenti con la policy attiva.
 
 ### Deploy e release
 
 Nella fase attuale:
 
-- "deploya" non ha effetto operativo perché non esiste deploy production deciso;
-- "rilascia" usa la procedura locale documentata in ADR 0006;
+- "deploya" usa il deployment pilota Vercel production e va verificato secondo la policy attiva;
+- "rilascia" usa la procedura locale documentata in ADR 0006 e porta la release su GitHub/main con lo stesso flusso di pubblicazione;
 - tag GitHub e GitHub Release seguono ADR 0008;
 - non creare Release Please o workflow Actions di release senza ADR.
 
@@ -79,9 +80,9 @@ Usare `git branch -D` solo se non ci sono commit unici da conservare.
 ## Conseguenze
 
 - SyncBay ha un percorso chiaro per pubblicare su GitHub senza inventare runtime.
-- "Pubblica" resta la chiusura del flusso completo (PR/merge, verifiche e cleanup
-  degli spazi temporanei); "deploya" e "rilascia" sono azioni operative specifiche
-  che entrano nel flusso quando previste dal contesto corrente.
+- "Pubblica" resta la chiusura del flusso completo (release locale per diff
+  versionati, PR/merge, verifiche e cleanup degli spazi temporanei); "deploya"
+  entra nel flusso quando previsto dal contesto corrente.
 - Il changelog resta utile anche nella fase documentale.
 - Il flusso SemVer locale è attivo senza introdurre deploy automatici; tag e
   GitHub Release sono regolati da ADR 0008.
