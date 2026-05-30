@@ -10,7 +10,7 @@ Obiettivo: mantenere modifiche coerenti, sicure, documentate e facilmente revisi
 
 1. Istruzioni di sistema/developer ricevute nella sessione corrente.
 2. Questo file `AGENTS.md`.
-3. Eventuali `AGENTS.md` più profondi nella cartella toccata.
+3. Eventuali `AGENTS.md` più profondi nella cartella toccata, che prevalgono sulle regole root per il loro scope.
 4. Documentazione di progetto in `docs/` e `README.md`.
 5. Convenzioni dedotte da codice, test e configurazioni vicine.
 6. Assunzioni dell'agente, solo per dettagli marginali.
@@ -211,6 +211,10 @@ SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia un
 
 Non creare documenti duplicati. Se serve dettaglio nuovo, preferisci integrare il piano principale o creare un ADR mirato.
 
+Durante migrazioni, rinomini o merge documentali non perdere contenuti utili:
+aggiorna link e indici, preserva ciò che resta valido e dichiara nel riepilogo
+ciò che viene rimosso perché superato.
+
 Per modifiche solo documentali, non inventare test applicativi: rileggi i documenti toccati, verifica link interni e coerenza con il piano.
 
 ## Testing e verifica
@@ -226,6 +230,10 @@ Per modifiche runtime:
 - mantieni questo file aggiornato con i comandi reali del repo;
 - aggiungi gate per lint, test, build, typecheck, audit e verifiche browser quando pertinenti;
 - mantieni i comandi allineati allo stack effettivamente generato.
+
+Usa tre corsie di verifica: `veloce` per docs/governance a basso rischio,
+`standard` per codice/config ordinari, `completa` per release, deploy,
+sicurezza, dati, provider, auth o integrazioni esterne.
 
 Comandi runtime attuali:
 
@@ -260,7 +268,9 @@ Comandi runtime attuali:
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
-- Prima di mergiare una PR non banale, controlla se la `Codex feedback inbox` segnala thread actionable collegati alla PR corrente.
+- Prima di PR ready, merge, pubblicazione, deploy o release controlla se la
+  `Codex feedback inbox` segnala thread actionable collegati alla PR corrente:
+  risolvili o dichiarali fuori scope prima di chiudere.
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
 - Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
@@ -290,6 +300,8 @@ Versioning locale:
 - `npm run release:dry-run` verifica la categoria senza modificare file;
 - il comando non crea deploy; tag e GitHub Release restano una scelta separata
   ammessa solo per release prodotto reali.
+- Release Please non è adottato: non delegare changelog, versioni, tag o GitHub
+  Release a bot automatici senza nuova ADR.
 
 Ogni modifica deve essere classificata prima della chiusura:
 
@@ -317,6 +329,7 @@ Nelle risposte finali:
 - riassumi cosa è cambiato o scoperto;
 - indica i file principali toccati;
 - riporta verifiche solo quando utili o quando ci sono limiti/rischi;
+- dichiara stato publish/release/deploy e branch/worktree quando applicabile;
 - dichiara rischi residui concreti;
 - includi sempre i prossimi passi consigliati quando esiste un seguito operativo reale;
 - i prossimi passi devono essere concreti, ordinati e proporzionati al lavoro appena concluso;
