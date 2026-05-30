@@ -186,6 +186,7 @@ type DraftImportPersistenceResult = {
   reusedCount: number;
 };
 const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
+const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 50;
 const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
@@ -1044,50 +1045,74 @@ async function syncShopifyMediaFromEbayImages(
     deletedCount = deleteResult.deletedCount;
   }
 
-  for (const [index, media] of sourceMedia.entries()) {
-    const directResult = await addShopifyProductMedia(admin, {
-      media,
-      productGid: product.id,
-    });
+  const mediaResults = await mapWithConcurrency(
+    sourceMedia.map((media, index) => ({ index, media })),
+    SHOPIFY_MEDIA_SYNC_CONCURRENCY,
+    async ({ index, media }) => {
+      const directResult = await addShopifyProductMedia(admin, {
+        media,
+        productGid: product.id,
+      });
 
-    if (directResult.status === "synced") {
+      if (directResult.status === "synced") {
+        return { mode: "direct" as const, status: "synced" as const };
+      }
+
+      const stagedResult = await createStagedImageMediaInput({
+        ebayItemId: draftProduct.source.ebayItemId,
+        index,
+        jobId: context.jobId,
+        media,
+      });
+
+      if (stagedResult.status === "failed") {
+        return {
+          errorMessage: `${directResult.errorMessage}; fallback Supabase non riuscito: ${stagedResult.errorMessage}`,
+          index,
+          sourceUrl: media.originalSource,
+          status: "failed" as const,
+        };
+      }
+
+      const stagedMediaResult = await addShopifyProductMedia(admin, {
+        media: stagedResult.media,
+        productGid: product.id,
+      });
+
+      if (stagedMediaResult.status === "failed") {
+        return {
+          errorMessage: `${directResult.errorMessage}; fallback Supabase caricato ma rifiutato da Shopify: ${stagedMediaResult.errorMessage}`,
+          index,
+          sourceUrl: media.originalSource,
+          status: "failed" as const,
+        };
+      }
+
+      return {
+        mode: "staged" as const,
+        objectPath: stagedResult.objectPath,
+        status: "synced" as const,
+      };
+    },
+  );
+
+  for (const result of mediaResults) {
+    if (result.status === "failed") {
+      failedResults.push({
+        errorMessage: result.errorMessage,
+        index: result.index,
+        sourceUrl: result.sourceUrl,
+      });
+      continue;
+    }
+
+    if (result.mode === "direct") {
       directCreatedCount += 1;
       continue;
     }
 
-    const stagedResult = await createStagedImageMediaInput({
-      ebayItemId: draftProduct.source.ebayItemId,
-      index,
-      jobId: context.jobId,
-      media,
-    });
-
-    if (stagedResult.status === "failed") {
-      failedResults.push({
-        errorMessage: `${directResult.errorMessage}; fallback Supabase non riuscito: ${stagedResult.errorMessage}`,
-        index,
-        sourceUrl: media.originalSource,
-      });
-      continue;
-    }
-
-    stagedObjectPaths.push(stagedResult.objectPath);
-
-    const stagedMediaResult = await addShopifyProductMedia(admin, {
-      media: stagedResult.media,
-      productGid: product.id,
-    });
-
-    if (stagedMediaResult.status === "failed") {
-      failedResults.push({
-        errorMessage: `${directResult.errorMessage}; fallback Supabase caricato ma rifiutato da Shopify: ${stagedMediaResult.errorMessage}`,
-        index,
-        sourceUrl: media.originalSource,
-      });
-      continue;
-    }
-
     stagedCreatedCount += 1;
+    stagedObjectPaths.push(result.objectPath);
   }
 
   const createdCount = directCreatedCount + stagedCreatedCount;
@@ -1894,59 +1919,61 @@ async function recordDraftImportPersistence(input: {
   );
 
   await prisma.$transaction(async (tx) => {
-    for (const pair of successfulPairs) {
-      const now = new Date();
-      const variantGid =
-        getFirstProductVariant(pair.result.product)?.id ?? null;
-      const mapping = await tx.productMapping.upsert({
-        where: {
-          shopId_marketplaceId_ebayItemId: {
+    await Promise.all(
+      successfulPairs.map(async (pair) => {
+        const now = new Date();
+        const variantGid =
+          getFirstProductVariant(pair.result.product)?.id ?? null;
+        const mapping = await tx.productMapping.upsert({
+          where: {
+            shopId_marketplaceId_ebayItemId: {
+              ebayItemId: pair.draftProduct.source.ebayItemId,
+              marketplaceId: getEbayMarketplaceId(),
+              shopId: input.shopId,
+            },
+          },
+          create: {
             ebayItemId: pair.draftProduct.source.ebayItemId,
+            lastSyncedAt: now,
             marketplaceId: getEbayMarketplaceId(),
             shopId: input.shopId,
+            shopifyProductGid: pair.result.product.id,
+            shopifyVariantGid: variantGid,
+            sku: pair.draftProduct.previewItem.normalized.sku,
+            status: ProductMappingStatus.ACTIVE,
           },
-        },
-        create: {
-          ebayItemId: pair.draftProduct.source.ebayItemId,
-          lastSyncedAt: now,
-          marketplaceId: getEbayMarketplaceId(),
-          shopId: input.shopId,
-          shopifyProductGid: pair.result.product.id,
-          shopifyVariantGid: variantGid,
-          sku: pair.draftProduct.previewItem.normalized.sku,
-          status: ProductMappingStatus.ACTIVE,
-        },
-        update: {
-          lastErrorCode: null,
-          lastErrorMessage: null,
-          lastSyncedAt: now,
-          shopifyProductGid: pair.result.product.id,
-          shopifyVariantGid: variantGid,
-          sku: pair.draftProduct.previewItem.normalized.sku,
-          status: ProductMappingStatus.ACTIVE,
-        },
-      });
+          update: {
+            lastErrorCode: null,
+            lastErrorMessage: null,
+            lastSyncedAt: now,
+            shopifyProductGid: pair.result.product.id,
+            shopifyVariantGid: variantGid,
+            sku: pair.draftProduct.previewItem.normalized.sku,
+            status: ProductMappingStatus.ACTIVE,
+          },
+        });
 
-      await tx.productSnapshot.createMany({
-        data: [
-          buildEbayProductSnapshot({
-            draftProduct: pair.draftProduct,
-            mappingId: mapping.id,
-            shopId: input.shopId,
-          }),
-          buildSyncBayProductSnapshot({
-            draftProduct: pair.draftProduct,
-            importProductStatus: normalizeImportProductStatus(
-              pair.draftProduct.product.status,
-            ),
-            jobId: input.jobId,
-            mappingId: mapping.id,
-            result: pair.result,
-            shopId: input.shopId,
-          }),
-        ],
-      });
-    }
+        await tx.productSnapshot.createMany({
+          data: [
+            buildEbayProductSnapshot({
+              draftProduct: pair.draftProduct,
+              mappingId: mapping.id,
+              shopId: input.shopId,
+            }),
+            buildSyncBayProductSnapshot({
+              draftProduct: pair.draftProduct,
+              importProductStatus: normalizeImportProductStatus(
+                pair.draftProduct.product.status,
+              ),
+              jobId: input.jobId,
+              mappingId: mapping.id,
+              result: pair.result,
+              shopId: input.shopId,
+            }),
+          ],
+        });
+      }),
+    );
   });
 
   return {
@@ -2454,7 +2481,7 @@ function dedupeImageUrls(imageUrls: string[]) {
 async function mapWithConcurrency<Input, Output>(
   items: Input[],
   concurrency: number,
-  mapper: (item: Input) => Promise<Output>,
+  mapper: (item: Input, index: number) => Promise<Output>,
 ) {
   const results = new Array<Output>(items.length);
   let nextIndex = 0;
@@ -2468,7 +2495,7 @@ async function mapWithConcurrency<Input, Output>(
       return Promise.resolve();
     }
 
-    return mapper(items[currentIndex]).then((result) => {
+    return mapper(items[currentIndex], currentIndex).then((result) => {
       results[currentIndex] = result;
       return runNext();
     });

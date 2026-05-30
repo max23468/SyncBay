@@ -16,12 +16,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - I warning sulla verifica quantità Shopify dopo aggiornamenti concorrenti
   vengono propagati nel risultato import senza segnare il job come fallito.
 
+### Sotto il cofano
+
+- Ridotte le attese sequenziali nel runner import, nella sincronizzazione media
+  Shopify e nella pulizia eBay account deletion, mantenendo claim atomico,
+  concorrenza controllata e isolamento per shop.
+- Configurato il quality gate React Doctor per usare sempre
+  `react-doctor@latest`.
+
 ## [0.17.2] — 2026-05-26
 
 ### Sotto il cofano
 
-- Aggiornato il floor Node a `>=24.15 <25` per consentire l'upgrade di React
-  Doctor alla linea `0.2.8` mantenendo `engine-strict=true`.
+- Aggiornato il floor Node a `>=24.15 <25` per consentire l'upgrade della
+  catena React Doctor mantenendo `engine-strict=true`.
 - Pinnata l'immagine Docker a `node:24.16.0-alpine`, così anche il container
   rispetta lo stesso floor Node della toolchain locale.
 
