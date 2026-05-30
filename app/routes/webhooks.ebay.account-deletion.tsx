@@ -49,7 +49,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .digest("hex");
 
   return Response.json({
-    challenge_response: challengeResponse,
+    challengeResponse,
   });
 };
 
