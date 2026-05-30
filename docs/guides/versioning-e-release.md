@@ -7,16 +7,18 @@ Decisioni di riferimento:
 - `docs/decisions/0006-versioning-runtime-locale.md`
 - `docs/decisions/0008-tag-e-github-release.md`
 
-## Pubblicare non è sempre rilasciare
+## Pubblicare e rilasciare
 
-In SyncBay ci sono due azioni diverse:
+In SyncBay pubblicazione e release locale devono procedere insieme quando una modifica è versionata:
 
 1. **Pubblicare**: portare una modifica su GitHub/main con PR/merge (o commit diretto
-   documentato), verificarne i check pertinenti e completare il cleanup branch/worktree
-   assorbito.
-2. **Rilasciare**: creare una nuova versione SemVer dell'app aggiornando `app/lib/version.ts` e chiudendo il blocco versionato del changelog.
+   documentato), verificarne i check pertinenti, completare il cleanup branch/worktree
+   assorbito e includere la release locale quando serve.
+2. **Rilasciare**: creare una nuova versione SemVer dell'app aggiornando `app/lib/version.ts`, chiudendo il blocco versionato del changelog e pubblicando quella modifica su GitHub/main.
 
-Piani, ADR, guide interne, regole agenti e documentazione non esposta nell'app possono essere pubblicati nel repo senza rilasciare una nuova versione. In quel caso non modificare `APP_VERSION` e usa `### Non versionato` nel changelog se serve tenere traccia del lavoro.
+Piani, ADR, guide interne, regole agenti e documentazione non esposta nell'app possono essere pubblicati nel repo senza bump SemVer. In quel caso non modificare `APP_VERSION` e usa `### Non versionato` nel changelog se serve tenere traccia del lavoro.
+
+Regola operativa: se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate (`Novità`, `Correzioni`, `Sotto il cofano`, `Rimosso`), una richiesta di `pubblica` o `rilascia` deve includere `npm run release` prima di commit/push o prima della PR finale.
 
 ## Single source of truth
 
@@ -110,7 +112,7 @@ Prima di dichiarare conclusa una fase, pubblicazione o release:
 
 1. controlla `CHANGELOG.md`;
 2. se contiene solo `### Non versionato`, non eseguire release SemVer;
-3. se contiene `### Novità`, `### Correzioni`, `### Sotto il cofano` o `### Rimosso`, esegui `npm run release` oppure dichiara esplicitamente che la release resta il prossimo passo operativo;
+3. se contiene `### Novità`, `### Correzioni`, `### Sotto il cofano` o `### Rimosso`, esegui `npm run release` e includi `CHANGELOG.md` e `app/lib/version.ts` nel commit di pubblicazione;
 4. verifica il diff generato prima di commit/push;
 5. creare tag o GitHub Release solo per release prodotto reali secondo ADR 0008;
 6. non creare Release Please fuori da una decisione esplicita.
@@ -122,12 +124,12 @@ Il versioning locale non crea deploy.
 Tag e GitHub Release sono ammessi solo per release prodotto reali secondo ADR
 0008.
 
-Con il deployment pilota Vercel attivo, una pubblicazione completa deve distinguere:
+Con il deployment pilota Vercel attivo, una pubblicazione completa deve includere:
 
 - merge su `main`;
+- release SemVer quando il blocco `[Non rilasciato]` del changelog contiene sezioni versionate;
 - deploy Vercel completato;
 - verifica smoke della dashboard embedded;
-- eventuale release SemVer;
 - eventuale tag/GitHub Release solo se la release è prodotto reale;
 - cleanup branch.
 

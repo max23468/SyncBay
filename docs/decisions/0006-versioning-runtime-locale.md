@@ -51,7 +51,13 @@ prodotto reali.
 
 ## Rapporto con pubblicazione
 
-Pubblicare su GitHub/main non significa sempre rilasciare una versione.
+Pubblicare su GitHub/main e rilasciare una versione procedono insieme quando il
+diff contiene modifiche versionate.
+
+Se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate
+(`Novità`, `Correzioni`, `Sotto il cofano`, `Rimosso`), la pubblicazione deve
+includere `npm run release` prima del commit/push finale o prima della PR di
+chiusura. Se il blocco è solo `Non versionato`, non serve bump SemVer.
 
 Rilasciare una versione non significa automaticamente:
 

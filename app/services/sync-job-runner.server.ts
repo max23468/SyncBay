@@ -26,9 +26,9 @@ type DueSyncJobRunResult = {
   status: "failed" | "skipped" | "succeeded";
   type: SyncJobType;
 };
-type ClaimedDueSyncJob = {
-  claimedJob: DueSyncJob;
+type DueSyncJobRunQueueItem = {
   index: number;
+  job: DueSyncJob;
 };
 
 const DEFAULT_RUN_DUE_LIMIT = 5;
@@ -53,39 +53,18 @@ export async function runDueSyncJobs(
       type: SyncJobType.IMPORT_CATALOG,
     },
   });
-  const claimedJobs = await Promise.all(
-    jobs.map(async (job, index) => {
-      const claimedJob = await claimDueSyncJob(job, now);
-
-      return {
-        claimedJob,
-        index,
-        job,
-      };
-    }),
-  );
   const results = new Array<DueSyncJobRunResult>(jobs.length);
+  const runnableJobsByShop = new Map<string, DueSyncJobRunQueueItem[]>();
 
-  const runnableJobsByShop = new Map<string, ClaimedDueSyncJob[]>();
-
-  for (const { claimedJob, index, job } of claimedJobs) {
-    if (!claimedJob) {
-      results[index] = {
-        jobId: job.id,
-        status: "skipped" as const,
-        type: job.type,
-      };
-      continue;
-    }
-
-    const shopJobs = runnableJobsByShop.get(claimedJob.shopId) ?? [];
-    shopJobs.push({ claimedJob, index });
-    runnableJobsByShop.set(claimedJob.shopId, shopJobs);
+  for (const [index, job] of jobs.entries()) {
+    const shopJobs = runnableJobsByShop.get(job.shopId) ?? [];
+    shopJobs.push({ index, job });
+    runnableJobsByShop.set(job.shopId, shopJobs);
   }
 
   await Promise.all(
     [...runnableJobsByShop.values()].map((shopJobs) =>
-      runClaimedDueSyncJobGroup(shopJobs, results),
+      runDueSyncJobGroup(shopJobs, results, now),
     ),
   );
 
@@ -107,17 +86,28 @@ export async function runDueSyncJobs(
   };
 }
 
-async function runClaimedDueSyncJobGroup(
-  shopJobs: ClaimedDueSyncJob[],
+async function runDueSyncJobGroup(
+  shopJobs: DueSyncJobRunQueueItem[],
   results: DueSyncJobRunResult[],
+  now: Date,
 ) {
   const [nextJob, ...remainingJobs] = shopJobs;
 
   if (!nextJob) return;
 
-  results[nextJob.index] = await runDueSyncJob(nextJob.claimedJob);
+  const claimedJob = await claimDueSyncJob(nextJob.job, now);
 
-  await runClaimedDueSyncJobGroup(remainingJobs, results);
+  if (!claimedJob) {
+    results[nextJob.index] = {
+      jobId: nextJob.job.id,
+      status: "skipped" as const,
+      type: nextJob.job.type,
+    };
+  } else {
+    results[nextJob.index] = await runDueSyncJob(claimedJob);
+  }
+
+  await runDueSyncJobGroup(remainingJobs, results, now);
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {

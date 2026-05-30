@@ -41,8 +41,8 @@ un ciclo release operativo stabile.
 
 - Tag/GitHub Release solo dopo App Store: scartato perché una release prodotto
   runtime può servire anche prima dell'app pubblica.
-- Tag a ogni merge su `main`: scartato perché confonde pubblicazione GitHub e
-  release prodotto.
+- Tag a ogni merge su `main`: scartato perché non tutte le pubblicazioni sono
+  versionate e tag/GitHub Release restano riservati alle release prodotto reali.
 - Release Please subito: scartato perché SyncBay usa ancora un comando locale
   intenzionale e non ha un ciclo release automatico maturo.
 

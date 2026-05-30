@@ -67,10 +67,12 @@ policy tag/GitHub Release per release prodotto reali. Non ha ancora una policy
 di release pubblica Shopify App Store.
 
 - `pubblica` significa portare il lavoro su GitHub/main secondo
-  `docs/guides/git-e-pubblicazione.md`, con PR/merge o commit diretto previsto,
+  `docs/guides/git-e-pubblicazione.md`, includendo `npm run release` quando il
+  blocco `[Non rilasciato]` del changelog contiene sezioni versionate, con PR/merge o commit diretto previsto,
   controlli completi e cleanup branch/worktree locali e remoti al termine quando
   assorbito.
-- `rilascia` significa usare il flusso locale `npm run release`.
+- `rilascia` significa usare il flusso locale `npm run release` e pubblicare la
+  release su GitHub/main nello stesso flusso operativo.
 - `deploya` significa aggiornare il deployment pilota Vercel production e
   verificarlo; non implica App Store, billing, tag o GitHub Release.
 - tag e GitHub Release si creano solo per release prodotto reali secondo ADR

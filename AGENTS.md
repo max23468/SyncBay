@@ -10,8 +10,10 @@ Obiettivo: mantenere modifiche coerenti, sicure, documentate e facilmente revisi
 
 1. Istruzioni di sistema/developer ricevute nella sessione corrente.
 2. Questo file `AGENTS.md`.
-3. Documentazione di progetto in `docs/` e `README.md`.
-4. Assunzioni dell'agente.
+3. Eventuali `AGENTS.md` più profondi nella cartella toccata.
+4. Documentazione di progetto in `docs/` e `README.md`.
+5. Convenzioni dedotte da codice, test e configurazioni vicine.
+6. Assunzioni dell'agente, solo per dettagli marginali.
 
 In caso di conflitto, seguire sempre il livello più alto. Se una decisione nuova arriva dalla chat del maintainer e cambia il perimetro in modo stabile, aggiorna i documenti rilevanti.
 
@@ -259,11 +261,12 @@ Comandi runtime attuali:
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
 - Prima di mergiare una PR non banale, controlla se la `Codex feedback inbox` segnala thread actionable collegati alla PR corrente.
-- Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub: verifiche rilevanti, commit coerente, push e, per lavori non banali, PR/merge su `main`.
-- "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main` e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
+- Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
+- "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
 - Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
-- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production. Non interpretarlo come pubblicazione Shopify App Store, billing, tag o GitHub Release.
-- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md`; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
+- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store, billing, tag o GitHub Release.
+- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md` e porta la release su GitHub/main con lo stesso flusso di pubblicazione. Tag e GitHub Release valgono solo per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
+- Release e deploy vanno valutati insieme quando entrambi sono applicabili: non chiudere una release senza dichiarare lo stato del deploy, e non chiudere un deploy senza dichiarare se la release è necessaria o `N/A`.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
 
 Dettagli: `docs/guides/git-e-pubblicazione.md`.
@@ -295,7 +298,7 @@ Ogni modifica deve essere classificata prima della chiusura:
 - `PATCH`: bugfix, hardening o miglioramento operativo compatibile;
 - `Non versionato`: piani, ADR, guide interne, regole agenti e documentazione non esposta al prodotto.
 
-Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime futuri in sezioni versionate, non chiudere senza release oppure senza dichiarare il rilascio come prossimo step operativo.
+Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre il blocco `[Non rilasciato]` di `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime o comunque sezioni versionate (`Novità`, `Correzioni`, `Sotto il cofano`, `Rimosso`), non chiudere la pubblicazione senza avere eseguito `npm run release` e incluso nel commit anche `app/lib/version.ts` e il changelog rilasciato.
 
 Quando pubblicazione App Store, billing o promozione production stabile verranno
 decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`,
@@ -332,6 +335,7 @@ Una modifica è pronta se:
 - aggiorna documenti/ADR quando una decisione cambia davvero;
 - non lascia segreti, dati personali, file temporanei o modifiche non correlate;
 - include verifiche eseguite o limiti noti quando rilevanti.
+- publish, release e deploy sono stati completati oppure dichiarati non applicabili con motivo.
 
 ## Sotto-moduli
 
