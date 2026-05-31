@@ -1,8 +1,11 @@
 # Security Policy
 
-SyncBay è in fase di pianificazione e fondazioni. Non esiste ancora runtime produttivo.
+SyncBay ha un deployment pilota Vercel production per uso controllato. Questo
+non equivale a pubblicazione Shopify App Store, billing, onboarding pubblico o
+production stabile.
 
-Questa policy fissa i principi minimi da rispettare già nella progettazione.
+Questa policy fissa i principi minimi da rispettare nel pilota e nelle fasi
+successive.
 
 ## Perimetro dati previsto
 
@@ -24,11 +27,14 @@ Regole obbligatorie:
 - non committare token, client secret, refresh token o chiavi di cifratura;
 - non stampare segreti in log, errori o chat;
 - verificare presenza dei segreti con controlli booleani, non con `echo`;
-- cifrare token Shopify/eBay a riposo quando il runtime verrà implementato.
+- mantenere i token provider cifrati a riposo secondo lo storage deciso: i
+  token eBay persistiti da SyncBay sono cifrati applicativamente; lo storage
+  sessioni Shopify segue il template finché non viene sostituito o integrato.
 
 ## Compliance minima prevista
 
-Prima della beta reale servono:
+Prima di beta aperta, App Store, billing o trattamento dati non limitato al
+pilota servono:
 
 - gestione disinstallazione Shopify;
 - Shopify GDPR webhook dove richiesti;
@@ -39,7 +45,8 @@ Prima della beta reale servono:
 
 ## Segnalazione problemi
 
-Finché il progetto è privato e senza runtime pubblico, i problemi di sicurezza vanno segnalati direttamente al maintainer del repo.
+Durante il pilota controllato, i problemi di sicurezza vanno segnalati
+direttamente al maintainer del repo.
 
 Non aprire issue pubbliche con segreti, token, payload reali o dati del negoziante.
 
