@@ -324,12 +324,14 @@ Dettagli: `docs/guides/versioning-e-release.md`, ADR
 
 ## Risposte finali e handoff
 
+## Risposta finale
+
 Nelle risposte finali:
 
 - riassumi cosa è cambiato o scoperto;
 - indica i file principali toccati;
 - riporta verifiche solo quando utili o quando ci sono limiti/rischi;
-- dichiara stato publish/release/deploy e branch/worktree quando applicabile;
+- dichiara stato publish, release e deploy e branch/worktree quando applicabile;
 - dichiara rischi residui concreti;
 - includi sempre i prossimi passi consigliati quando esiste un seguito operativo reale;
 - i prossimi passi devono essere concreti, ordinati e proporzionati al lavoro appena concluso;
