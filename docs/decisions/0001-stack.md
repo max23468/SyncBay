@@ -4,7 +4,7 @@ Data: 2026-05-09
 
 ## Stato
 
-Proposto e adottato come direzione iniziale, da rivalutare solo prima dello scaffold applicativo se Shopify o vincoli deploy richiedono modifiche.
+Accettato. Lo scaffold applicativo e il runtime pilota sono stati creati seguendo questa direzione; eventuali cambi di stack richiedono una nuova ADR o l'aggiornamento esplicito di questa decisione.
 
 ## Contesto
 
