@@ -56,7 +56,7 @@ Infrastruttura MVP: Vercel + Supabase.
   riallineare i media prodotto e rimuovere media precedenti gestiti da SyncBay.
 - Vercel Web Analytics e Speed Insights: baseline osservabilità.
 - Versioning locale corrente: `app/lib/version.ts` + `npm run release`.
-  Tag `vX.Y.Z` e GitHub Release sono ammessi solo per release prodotto reali
+  Tag `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali
   secondo ADR `decisions/0008-tag-e-github-release.md`; deploy Vercel e App
   Store restano separati.
 

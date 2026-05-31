@@ -63,7 +63,7 @@ Poiché lo scaffold esiste, mantenere anche l'ecosistema package coerente col pa
 Il versioning locale è definito in ADR 0006 e usa `app/lib/version.ts` + `npm run release`.
 
 Tag GitHub e GitHub Release sono definiti in ADR 0008 e restano manuali,
-ammessi solo per release prodotto reali. Restano non attivi Release Please e
+obbligatori per release prodotto reali. Restano non attivi Release Please e
 release collegate automaticamente a deploy production.
 
 Se verrà introdotta una release collegata a deploy production, dovrà definire:

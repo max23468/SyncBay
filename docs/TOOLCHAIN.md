@@ -71,9 +71,10 @@ di release pubblica Shopify App Store.
   blocco `[Non rilasciato]` del changelog contiene sezioni versionate, con PR/merge o commit diretto previsto,
   controlli completi e cleanup branch/worktree locali e remoti al termine quando
   assorbito.
-- `rilascia` significa usare il flusso locale `npm run release` e pubblicare la
-  release su GitHub/main nello stesso flusso operativo.
+- `rilascia` significa usare il flusso locale `npm run release`, pubblicare la
+  release su GitHub/main nello stesso flusso operativo e, per release prodotto
+  reale, creare tag Git `vX.Y.Z` e GitHub Release.
 - `deploya` significa aggiornare il deployment pilota Vercel production e
   verificarlo; non implica App Store, billing, tag o GitHub Release.
-- tag e GitHub Release si creano solo per release prodotto reali secondo ADR
+- tag Git `vX.Y.Z` e GitHub Release si creano per ogni release prodotto reale secondo ADR
   `docs/decisions/0008-tag-e-github-release.md`.

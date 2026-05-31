@@ -25,7 +25,7 @@ Quando SyncBay prepara una release prodotto reale:
 - `npm run release` aggiorna `CHANGELOG.md` e `app/lib/version.ts`;
 - il tag Git deve avere formato `vX.Y.Z` e corrispondere esattamente a
   `APP_VERSION`;
-- la GitHub Release, se creata, parte da quel tag e usa note derivate dalla
+- la GitHub Release deve essere creata da quel tag e usare note derivate dalla
   sezione rilasciata di `CHANGELOG.md`;
 - il deploy Vercel resta separato e va verificato con la policy attiva;
 - pubblicazione Shopify App Store, billing e integrazioni produttive restano
@@ -42,7 +42,7 @@ un ciclo release operativo stabile.
 - Tag/GitHub Release solo dopo App Store: scartato perché una release prodotto
   runtime può servire anche prima dell'app pubblica.
 - Tag a ogni merge su `main`: scartato perché non tutte le pubblicazioni sono
-  versionate e tag/GitHub Release restano riservati alle release prodotto reali.
+  versionate e tag/GitHub Release restano obbligatori per le release prodotto reali.
 - Release Please subito: scartato perché SyncBay usa ancora un comando locale
   intenzionale e non ha un ciclo release automatico maturo.
 
