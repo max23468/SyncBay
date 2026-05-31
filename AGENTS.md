@@ -190,7 +190,7 @@ piani tecnici vivono in `docs/`; l'indice canonico è `docs/INDEX.md`.
 - `docs/syncbay-product-technical-plan.md`: perimetro prodotto, MVP, fasi, requisiti funzionali e rischi.
 - `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
 - `docs/INDEX.md`: indice documentale canonico.
-- `docs/ROADMAP.md`: priorità e stato decisioni/prossime fasi.
+- `docs/ROADMAP.md`: direzione, priorità e prossimi passi correnti; non usarla come storico di completati.
 - `docs/BACKLOG.md`: idee, debiti e attività non ancora promosse.
 - `docs/TOOLCHAIN.md`: runtime, tool, versioni e verifiche.
 - `docs/DECISIONS.md`: indice decisioni stabili.

@@ -19,6 +19,7 @@ supabase/
 docs/
   INDEX.md
   ROADMAP.md
+  ROADMAP_HISTORY.md
   BACKLOG.md
   CONTEXT.md
   TOOLCHAIN.md
@@ -60,6 +61,7 @@ docs/
 | Capire in 2 minuti il progetto | `CONTEXT.md` |
 | Capire perimetro, MVP e fasi | `syncbay-product-technical-plan.md` |
 | Vedere cosa fare ora e dopo | `ROADMAP.md` |
+| Consultare lo storico esteso della vecchia roadmap | `ROADMAP_HISTORY.md` |
 | Vedere idee e debiti non ancora promossi | `BACKLOG.md` |
 | Capire runtime, tool e verifiche | `TOOLCHAIN.md` |
 | Verificare integrazione Doppler e segreti CI | `doppler-setup.md` |
