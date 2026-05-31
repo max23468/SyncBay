@@ -392,11 +392,7 @@ async function findInboxIssues() {
 }
 
 function isManagedInboxIssue(issue) {
-  return (
-    issue.title === inboxIssueTitle &&
-    issue.body?.includes(inboxMarker) &&
-    issue.labels?.some((label) => label.name === inboxIssueLabel)
-  );
+  return issue.title === inboxIssueTitle && issue.body?.includes(inboxMarker);
 }
 
 function chooseCanonicalInboxIssue(issues) {
