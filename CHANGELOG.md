@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.17.6] — 2026-05-31
+
+### Correzioni
+
+- Il runner recupera i job import `RUNNING` stantii prima di cercare nuovi job
+  dovuti, così anche un import rimasto bloccato senza job successivi viene
+  riportato a retry o fallimento.
+
 ## [0.17.5] — 2026-05-31
 
 ### Correzioni
@@ -393,6 +401,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.17.6]: #0176--2026-05-31
 [0.17.5]: #0175--2026-05-31
 [0.17.4]: #0174--2026-05-31
 [0.17.3]: #0173--2026-05-31
