@@ -111,27 +111,50 @@ async function runDueSyncJobGroup(
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
-  const claimed = await prisma.syncJob.updateMany({
-    data: {
-      errorCode: null,
-      errorMessage: null,
-      finishedAt: null,
-      startedAt: now,
-      status: SyncJobStatus.RUNNING,
-    },
-    where: {
-      id: job.id,
-      runAfter: { lte: now },
-      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
-      type: SyncJobType.IMPORT_CATALOG,
-    },
-  });
+  return prisma.$transaction(async (tx) => {
+    // Serialize claims for the same shop across overlapping Cron invocations.
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM "Shop"
+      WHERE id = ${job.shopId}
+      FOR UPDATE
+    `;
 
-  if (claimed.count !== 1) return null;
+    const runningImportJob = await tx.syncJob.findFirst({
+      select: { id: true },
+      where: {
+        id: { not: job.id },
+        shopId: job.shopId,
+        status: SyncJobStatus.RUNNING,
+        type: SyncJobType.IMPORT_CATALOG,
+      },
+    });
 
-  return prisma.syncJob.findUniqueOrThrow({
-    include: { shop: true },
-    where: { id: job.id },
+    if (runningImportJob) return null;
+
+    const claimed = await tx.syncJob.updateMany({
+      data: {
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: null,
+        startedAt: now,
+        status: SyncJobStatus.RUNNING,
+      },
+      where: {
+        id: job.id,
+        runAfter: { lte: now },
+        shopId: job.shopId,
+        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        type: SyncJobType.IMPORT_CATALOG,
+      },
+    });
+
+    if (claimed.count !== 1) return null;
+
+    return tx.syncJob.findUniqueOrThrow({
+      include: { shop: true },
+      where: { id: job.id },
+    });
   });
 }
 
