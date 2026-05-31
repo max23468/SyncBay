@@ -180,6 +180,11 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 
 SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia una decisione stabile.
 
+La root resta per ingresso e file convenzionali (`README.md`, `AGENTS.md`,
+`BRAND.md`, `CHANGELOG.md`, `SECURITY.md`, `.env.example`). Governance,
+roadmap, backlog, contesto, toolchain, decisioni, guide, benchmark, struttura e
+piani tecnici vivono in `docs/`; l'indice canonico è `docs/INDEX.md`.
+
 ### Cosa aggiornare e quando
 
 - `docs/syncbay-product-technical-plan.md`: perimetro prodotto, MVP, fasi, requisiti funzionali e rischi.
