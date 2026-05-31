@@ -14,7 +14,7 @@
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
-    "quality:react-doctor": "npx react-doctor@latest --full --fail-on error .",
+    "quality:react-doctor": "npx --yes react-doctor@latest --full --fail-on error .",
     "smoke:ui": "node scripts/smoke-ui.mjs",
     "shopify": "shopify",
     "prisma": "prisma",
