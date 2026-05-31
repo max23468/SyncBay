@@ -279,8 +279,8 @@ Comandi runtime attuali:
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
 - Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
-- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store, billing, tag o GitHub Release.
-- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md` e porta la release su GitHub/main con lo stesso flusso di pubblicazione. Tag e GitHub Release valgono solo per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
+- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store o billing; tag Git `vX.Y.Z` e GitHub Release entrano solo se la release è prodotto reale.
+- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md` e porta la release su GitHub/main con lo stesso flusso di pubblicazione. Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
 - Release e deploy vanno valutati insieme quando entrambi sono applicabili: non chiudere una release senza dichiarare lo stato del deploy, e non chiudere un deploy senza dichiarare se la release è necessaria o `N/A`.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
 
@@ -303,8 +303,8 @@ Versioning locale:
 - `app/lib/version.ts` è la single source of truth per `APP_VERSION` e `BUILD_DATE`;
 - `npm run release` prepara una release aggiornando `CHANGELOG.md` e `app/lib/version.ts`;
 - `npm run release:dry-run` verifica la categoria senza modificare file;
-- il comando non crea deploy; tag e GitHub Release restano una scelta separata
-  ammessa solo per release prodotto reali.
+- il comando non crea deploy; tag Git `vX.Y.Z` e GitHub Release restano un
+  passaggio separato ma obbligatorio per release prodotto reali.
 - Release Please non è adottato: non delegare changelog, versioni, tag o GitHub
   Release a bot automatici senza nuova ADR.
 

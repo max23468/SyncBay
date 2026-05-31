@@ -114,14 +114,14 @@ Prima di dichiarare conclusa una fase, pubblicazione o release:
 2. se contiene solo `### Non versionato`, non eseguire release SemVer;
 3. se contiene `### Novità`, `### Correzioni`, `### Sotto il cofano` o `### Rimosso`, esegui `npm run release` e includi `CHANGELOG.md` e `app/lib/version.ts` nel commit di pubblicazione;
 4. verifica il diff generato prima di commit/push;
-5. creare tag o GitHub Release solo per release prodotto reali secondo ADR 0008;
+5. creare tag Git `vX.Y.Z` e GitHub Release per ogni release prodotto reale secondo ADR 0008;
 6. non creare Release Please fuori da una decisione esplicita.
 
 ## Rapporto con deploy
 
 Il versioning locale non crea deploy.
 
-Tag e GitHub Release sono ammessi solo per release prodotto reali secondo ADR
+Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR
 0008.
 
 Con il deployment pilota Vercel attivo, una pubblicazione completa deve includere:
@@ -130,7 +130,7 @@ Con il deployment pilota Vercel attivo, una pubblicazione completa deve includer
 - release SemVer quando il blocco `[Non rilasciato]` del changelog contiene sezioni versionate;
 - deploy Vercel completato;
 - verifica smoke della dashboard embedded;
-- eventuale tag/GitHub Release solo se la release è prodotto reale;
+- tag Git `vX.Y.Z` e GitHub Release se la release è prodotto reale;
 - cleanup branch.
 
 Anche con deploy pilota attivo, una release SyncBay aggiorna repo e changelog,
@@ -145,7 +145,7 @@ Per una release prodotto reale:
   truth;
 - il tag Git deve avere formato `vX.Y.Z` e corrispondere esattamente a
   `APP_VERSION`;
-- la GitHub Release, se creata, parte da quel tag e usa note derivate dalla
+- la GitHub Release deve essere creata da quel tag e usare note derivate dalla
   sezione rilasciata di `CHANGELOG.md`;
 - il deploy Vercel resta separato e non implica App Store, billing o
   integrazioni produttive.
