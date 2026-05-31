@@ -24,8 +24,8 @@ Questo documento raccoglie idee, debiti e attività non ancora promosse nella ro
 | --- | --- | --- |
 | Rimozione override `ajv` | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata. |
 | CI runtime completa | Aperta | ADR `docs/decisions/0004-runtime-ci-release-future.md`; non aggiungere workflow generici senza gate reali. |
-| Deploy production policy | Aperta | Esiste deploy Vercel, ma non esiste ancora policy di deploy production/app pubblica. |
-| Verifica smoke post-deploy | Aperta | Da rendere gate solo quando deploy production e ambienti saranno decisi. |
+| Policy production e App Store | Aperta | Esiste un deployment Vercel production per il pilota, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
+| Verifica smoke post-deploy | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi. |
 | Logo eBay consent page | Aperta | Riprovare upload logo su eBay Developer: il portale rifiuta PNG e JPG SyncBay con errore generico, mentre About URL e branding testuale sono configurabili. |
 
 ## Decisioni collegate
