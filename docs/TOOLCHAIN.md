@@ -55,7 +55,7 @@ Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite 
 | --- | --- |
 | Docs-only | Review contenuto e `git diff --check` |
 | Runtime TypeScript/UI | `npm run typecheck`, `npm run lint`, `npm run build` |
-| Qualità React dopo cambi UI/React | `npm run quality:react-doctor` |
+| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx react-doctor@latest` |
 | Flussi UI principali | `npm run smoke:ui` quando il dev server o lo script sono applicabili |
 | Prisma/database | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
 | Versioning/changelog runtime | `npm run release:dry-run` |
