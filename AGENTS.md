@@ -138,6 +138,11 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Non usare dati reali di negoziante, ordini, clienti o listing in fixture, screenshot, log o documentazione.
 - Quando scrivi UI, microcopy o materiali prodotto, considera che target e lingua sono italiani: evita inglesismi non necessari come "merchant", "seller" o "overselling" se puoi usare "negoziante", "venditore" o "vendere prodotti non disponibili".
 - I file `.DS_Store` non fanno parte del repository: ignorali sempre e rimuovili se vengono tracciati per errore.
+- Non committare build output, cache o stato locale di Shopify/Vercel/React
+  Router, staging locali, export/import di lavoro o output generati dal pilota.
+  In Git restano codice, schema, migration, fixture sintetiche e documentazione;
+  mapping, snapshot, job, audit e staging immagini vivono nei provider runtime
+  o in file locali fuori repo.
 
 ## Shopify ed eBay
 
