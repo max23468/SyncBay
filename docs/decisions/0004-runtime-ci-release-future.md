@@ -98,9 +98,12 @@ Se adottato, andrà documentato con ADR o aggiornamento di questa decisione, e d
 
 ## Deploy futuro
 
-Non esiste deploy production oggi, ma il provider runtime MVP è deciso in ADR 0005.
+Esiste un deployment pilota Vercel production, ma non equivale a production
+stabile Shopify App Store, billing o release pubblica. Il provider runtime MVP
+resta quello deciso in ADR 0005.
 
-Quando verrà attivato il deploy production, servirà aggiornare le guide operative con:
+Quando verrà promossa una production stabile oltre il pilota, servirà aggiornare
+le guide operative con:
 
 - ambienti preview/staging/production;
 - segreti e variabili ambiente;
