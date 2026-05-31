@@ -34,6 +34,10 @@ type DueSyncJobRunQueueItem = {
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
+const RUNNING_IMPORT_STALE_AFTER_MS = 15 * 60 * 1000;
+const STALE_RUNNING_IMPORT_ERROR_CODE = "SYNCBAY_RUNNING_IMPORT_STALE";
+const STALE_RUNNING_IMPORT_ERROR_MESSAGE =
+  "Job import rimasto RUNNING oltre la finestra di sicurezza del runner.";
 
 export async function runDueSyncJobs(
   input: {
@@ -103,9 +107,11 @@ async function runDueSyncJobGroup(
       status: "skipped" as const,
       type: nextJob.job.type,
     };
-  } else {
-    results[nextJob.index] = await runDueSyncJob(claimedJob);
+
+    return;
   }
+
+  results[nextJob.index] = await runDueSyncJob(claimedJob);
 
   await runDueSyncJobGroup(remainingJobs, results, now);
 }
@@ -119,6 +125,13 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
       WHERE id = ${job.shopId}
       FOR UPDATE
     `;
+
+    const recoveredStaleJobCount = await recoverStaleRunningImportJobs(tx, {
+      now,
+      shopId: job.shopId,
+    });
+
+    if (recoveredStaleJobCount > 0) return null;
 
     const runningImportJob = await tx.syncJob.findFirst({
       select: { id: true },
@@ -156,6 +169,76 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
       where: { id: job.id },
     });
   });
+}
+
+async function recoverStaleRunningImportJobs(
+  tx: Prisma.TransactionClient,
+  input: {
+    now: Date;
+    shopId: string;
+  },
+): Promise<number> {
+  const staleCutoff = new Date(
+    input.now.getTime() - RUNNING_IMPORT_STALE_AFTER_MS,
+  );
+  const staleJobs = await tx.syncJob.findMany({
+    select: {
+      attempts: true,
+      id: true,
+      maxAttempts: true,
+      runAfter: true,
+      startedAt: true,
+    },
+    where: {
+      OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
+      shopId: input.shopId,
+      status: SyncJobStatus.RUNNING,
+      type: SyncJobType.IMPORT_CATALOG,
+    },
+  });
+  let recoveredCount = 0;
+
+  for (const staleJob of staleJobs) {
+    const nextAttempts = staleJob.attempts + 1;
+    const retryAt =
+      nextAttempts < staleJob.maxAttempts ? staleJob.runAfter : null;
+    const result = {
+      runnerErrorCode: STALE_RUNNING_IMPORT_ERROR_CODE,
+      runnerErrorMessage: STALE_RUNNING_IMPORT_ERROR_MESSAGE,
+      staleAfterSeconds: RUNNING_IMPORT_STALE_AFTER_MS / 1000,
+      staleStartedAt: staleJob.startedAt?.toISOString() ?? null,
+      retryScheduledAt: retryAt?.toISOString() ?? null,
+      willRetry: Boolean(retryAt),
+    } satisfies Prisma.JsonObject;
+
+    await tx.syncJob.update({
+      data: {
+        attempts: { increment: 1 },
+        errorCode: STALE_RUNNING_IMPORT_ERROR_CODE,
+        errorMessage: STALE_RUNNING_IMPORT_ERROR_MESSAGE,
+        finishedAt: input.now,
+        result,
+        runAfter: retryAt ?? undefined,
+        status: retryAt ? SyncJobStatus.RETRYING : SyncJobStatus.FAILED,
+      },
+      where: { id: staleJob.id },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        details: result,
+        message: retryAt
+          ? "Job import RUNNING stantio recuperato; retry pianificato dal runner."
+          : "Job import RUNNING stantio segnato come fallito dal runner.",
+        shopId: input.shopId,
+        type: AuditEventType.SYNC_JOB_FAILED,
+      },
+    });
+
+    recoveredCount += 1;
+  }
+
+  return recoveredCount;
 }
 
 async function runDueSyncJob(job: DueSyncJob) {
@@ -430,10 +513,10 @@ function getJsonObject(value: Prisma.JsonValue | null) {
   return value as Record<string, Prisma.JsonValue>;
 }
 
-function getRetryAfter(attempts: number) {
+function getRetryAfter(attempts: number, from = new Date()) {
   const retryDelaySeconds = attempts <= 1 ? 60 : attempts === 2 ? 300 : 900;
 
-  return new Date(Date.now() + retryDelaySeconds * 1000);
+  return new Date(from.getTime() + retryDelaySeconds * 1000);
 }
 
 function normalizeRunDueLimit(limit?: number) {
