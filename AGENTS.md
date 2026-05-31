@@ -272,7 +272,7 @@ Comandi runtime attuali:
 - Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purché il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
-- I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
+- I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, marcata dalla label `codex-feedback-inbox` e aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
 - Prima di PR ready, merge, pubblicazione, deploy o release controlla se la
   `Codex feedback inbox` segnala thread actionable collegati alla PR corrente:
   risolvili o dichiarali fuori scope prima di chiudere.
