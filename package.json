@@ -30,8 +30,10 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=24.15 <25"
+    "node": ">=24.15 <25",
+    "npm": ">=11 <12"
   },
+  "packageManager": "npm@11.14.1",
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@react-router/dev": "^7.12.0",
