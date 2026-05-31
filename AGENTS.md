@@ -280,7 +280,9 @@ Comandi runtime attuali:
   - `ci:` per workflow/CI.
 - Prima di commit o PR, fai self-review del diff.
 - GitHub è la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
-- Non aggiungere workflow GitHub Actions, policy deploy o release flow senza richiesta esplicita e senza ADR.
+- Non aggiungere nuovi workflow GitHub Actions, policy deploy o release flow fuori
+  dalle ADR già approvate senza richiesta esplicita; tag Git e GitHub Release
+  per release prodotto reali seguono ADR `docs/decisions/0008-tag-e-github-release.md`.
 - Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR è pronta.
 - Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purché il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
