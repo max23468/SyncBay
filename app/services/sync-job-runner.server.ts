@@ -47,6 +47,9 @@ export async function runDueSyncJobs(
 ) {
   const now = input.now ?? new Date();
   const limit = normalizeRunDueLimit(input.limit);
+
+  await recoverStaleRunningImportJobsForDueShops({ limit, now });
+
   const jobs = await prisma.syncJob.findMany({
     include: { shop: true },
     orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
@@ -118,13 +121,7 @@ async function runDueSyncJobGroup(
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
   return prisma.$transaction(async (tx) => {
-    // Serialize claims for the same shop across overlapping Cron invocations.
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id
-      FROM "Shop"
-      WHERE id = ${job.shopId}
-      FOR UPDATE
-    `;
+    await lockShopForUpdate(tx, job.shopId);
 
     const recoveredStaleJobCount = await recoverStaleRunningImportJobs(tx, {
       now,
@@ -171,6 +168,42 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
   });
 }
 
+async function recoverStaleRunningImportJobsForDueShops(input: {
+  limit: number;
+  now: Date;
+}) {
+  const staleCutoff = getRunningImportStaleCutoff(input.now);
+  const staleRunningJobs = await prisma.syncJob.findMany({
+    orderBy: [{ startedAt: "asc" }, { createdAt: "asc" }],
+    select: { shopId: true },
+    take: input.limit,
+    where: getStaleRunningImportJobWhere(staleCutoff),
+  });
+  const staleShopIds = [...new Set(staleRunningJobs.map((job) => job.shopId))];
+
+  await Promise.all(
+    staleShopIds.map((shopId) =>
+      prisma.$transaction(async (tx) => {
+        await lockShopForUpdate(tx, shopId);
+        await recoverStaleRunningImportJobs(tx, {
+          now: input.now,
+          shopId,
+        });
+      }),
+    ),
+  );
+}
+
+async function lockShopForUpdate(tx: Prisma.TransactionClient, shopId: string) {
+  // Serialize claims and stale recovery for the same shop across Cron invocations.
+  await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT id
+    FROM "Shop"
+    WHERE id = ${shopId}
+    FOR UPDATE
+  `;
+}
+
 async function recoverStaleRunningImportJobs(
   tx: Prisma.TransactionClient,
   input: {
@@ -178,9 +211,7 @@ async function recoverStaleRunningImportJobs(
     shopId: string;
   },
 ): Promise<number> {
-  const staleCutoff = new Date(
-    input.now.getTime() - RUNNING_IMPORT_STALE_AFTER_MS,
-  );
+  const staleCutoff = getRunningImportStaleCutoff(input.now);
   const staleJobs = await tx.syncJob.findMany({
     select: {
       attempts: true,
@@ -189,12 +220,7 @@ async function recoverStaleRunningImportJobs(
       runAfter: true,
       startedAt: true,
     },
-    where: {
-      OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
-      shopId: input.shopId,
-      status: SyncJobStatus.RUNNING,
-      type: SyncJobType.IMPORT_CATALOG,
-    },
+    where: getStaleRunningImportJobWhere(staleCutoff, input.shopId),
   });
   let recoveredCount = 0;
 
@@ -239,6 +265,22 @@ async function recoverStaleRunningImportJobs(
   }
 
   return recoveredCount;
+}
+
+function getRunningImportStaleCutoff(now: Date) {
+  return new Date(now.getTime() - RUNNING_IMPORT_STALE_AFTER_MS);
+}
+
+function getStaleRunningImportJobWhere(
+  staleCutoff: Date,
+  shopId?: string,
+): Prisma.SyncJobWhereInput {
+  return {
+    OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
+    shopId,
+    status: SyncJobStatus.RUNNING,
+    type: SyncJobType.IMPORT_CATALOG,
+  };
 }
 
 async function runDueSyncJob(job: DueSyncJob) {
