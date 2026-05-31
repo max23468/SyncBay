@@ -240,6 +240,19 @@ Usa tre corsie di verifica: `veloce` per docs/governance a basso rischio,
 `standard` per codice/config ordinari, `completa` per release, deploy,
 sicurezza, dati, provider, auth o integrazioni esterne.
 
+Mappa il rischio prima dei comandi:
+
+- sola analisi o nessuna modifica: nessun test applicativo, dichiarare fonti e
+  limiti;
+- docs-only: review, coerenza e `git diff --check`;
+- documenti operativi critici, workflow o config: review mirata e check del
+  file eseguibile modificato;
+- test-only, runtime piccolo, UI localizzata o microcopy: test/check mirati
+  (`npm run typecheck`, `npm run lint`, `npm run build` quando pertinenti);
+- runtime condiviso, Prisma/database, provider/API, auth, deploy/config,
+  release/versioning o UI sostanziale: gate completi proporzionati, smoke UI,
+  `npm run db:verify` o React Doctor quando applicabili.
+
 Comandi runtime attuali:
 
 - `npm install`
