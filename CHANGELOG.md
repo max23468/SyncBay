@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.5] — 2026-06-01
+
+### Correzioni
+
+- La rimozione dei media Shopify gestiti da SyncBay usa ora la mutazione
+  `productDeleteMedia`, compatibile con Admin GraphQL `2026-04`, evitando il
+  blocco dei retry import su `ProductUpdateInput.mediaIdsToDelete`.
+
 ## [0.18.4] — 2026-06-01
 
 ### Correzioni
@@ -447,6 +455,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.5]: #0185--2026-06-01
 [0.18.4]: #0184--2026-06-01
 [0.18.3]: #0183--2026-06-01
 [0.18.2]: #0182--2026-06-01
