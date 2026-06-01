@@ -1,0 +1,125 @@
+const MARKETPLACE_CURRENCIES: Record<string, string> = {
+  EBAY_IT: "EUR",
+};
+
+export function getExpectedMarketplaceCurrency(marketplaceId: string) {
+  return MARKETPLACE_CURRENCIES[marketplaceId] ?? null;
+}
+
+export function isEbayStockDryRunEnabled(value: string | undefined) {
+  return value?.trim().toLowerCase() === "true";
+}
+
+export function normalizeCurrency(value: string | null | undefined) {
+  const normalized = value?.trim().toUpperCase();
+
+  return normalized || null;
+}
+
+export function validateEbayStockCurrency(input: {
+  marketplaceId: string;
+  snapshotCurrency: string | null | undefined;
+}):
+  | {
+      expectedCurrency: string | null;
+      ok: true;
+      reason: null;
+      snapshotCurrency: string | null;
+    }
+  | {
+      expectedCurrency: string | null;
+      ok: false;
+      reason: "currency_mismatch" | "missing_snapshot_currency";
+      snapshotCurrency: string | null;
+    } {
+  const expectedCurrency = getExpectedMarketplaceCurrency(input.marketplaceId);
+  const snapshotCurrency = normalizeCurrency(input.snapshotCurrency);
+
+  if (!expectedCurrency) {
+    return {
+      expectedCurrency,
+      ok: true,
+      reason: null,
+      snapshotCurrency,
+    };
+  }
+
+  if (!snapshotCurrency) {
+    return {
+      expectedCurrency,
+      ok: false,
+      reason: "missing_snapshot_currency",
+      snapshotCurrency,
+    };
+  }
+
+  if (snapshotCurrency !== expectedCurrency) {
+    return {
+      expectedCurrency,
+      ok: false,
+      reason: "currency_mismatch",
+      snapshotCurrency,
+    };
+  }
+
+  return {
+    expectedCurrency,
+    ok: true,
+    reason: null,
+    snapshotCurrency,
+  };
+}
+
+export function validateEbayStockOrderCurrency(input: {
+  marketplaceId: string;
+  orderCurrency: string | null | undefined;
+}):
+  | {
+      expectedCurrency: string | null;
+      ok: true;
+      orderCurrency: string | null;
+      reason: null;
+    }
+  | {
+      expectedCurrency: string | null;
+      ok: false;
+      orderCurrency: string | null;
+      reason: "currency_mismatch" | "missing_order_currency";
+    } {
+  const expectedCurrency = getExpectedMarketplaceCurrency(input.marketplaceId);
+  const orderCurrency = normalizeCurrency(input.orderCurrency);
+
+  if (!expectedCurrency) {
+    return {
+      expectedCurrency,
+      ok: true,
+      orderCurrency,
+      reason: null,
+    };
+  }
+
+  if (!orderCurrency) {
+    return {
+      expectedCurrency,
+      ok: false,
+      orderCurrency,
+      reason: "missing_order_currency",
+    };
+  }
+
+  if (orderCurrency !== expectedCurrency) {
+    return {
+      expectedCurrency,
+      ok: false,
+      orderCurrency,
+      reason: "currency_mismatch",
+    };
+  }
+
+  return {
+    expectedCurrency,
+    ok: true,
+    orderCurrency,
+    reason: null,
+  };
+}

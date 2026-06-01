@@ -62,6 +62,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
 | Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
 | Riparazione prezzo/SKU   | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run` |
+| Test guardia stock eBay  | `npm run test:stock-guard`                                                             |
 | React Doctor             | `npm run quality:react-doctor`                                                          |
 | Release dry-run          | `npm run release:dry-run`                                                               |
 | Release locale           | `npm run release`                                                                       |
@@ -81,6 +82,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest`              |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
 | Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
+| Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build` |
 | Versioning/changelog runtime                                        | `npm run release:dry-run`                                                       |
 
 ## Deploy e release

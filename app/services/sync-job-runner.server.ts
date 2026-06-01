@@ -13,6 +13,11 @@ import { createHash } from "node:crypto";
 
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
+import {
+  isEbayStockDryRunEnabled,
+  validateEbayStockCurrency,
+  validateEbayStockOrderCurrency,
+} from "../lib/syncbay-stock-guard";
 import { unauthenticated } from "../shopify.server";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCandidatesByItemIds } from "./ebay-trading-preview.server";
@@ -676,9 +681,48 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   }
 
   const connection = await getConnectedEbayConnection(job);
-  const { accessToken } = await getUsableEbayAccessToken(connection);
+  const stockDryRun = isEbayStockDryRunEnabled(
+    process.env.SYNCBAY_EBAY_STOCK_DRY_RUN,
+  );
+  const accessToken = stockDryRun
+    ? null
+    : (await getUsableEbayAccessToken(connection)).accessToken;
+  const planned: Prisma.JsonObject[] = [];
   const updated: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
+  const orderCurrencyValidation = validateEbayStockOrderCurrency({
+    marketplaceId: connection.marketplaceId,
+    orderCurrency: getOrderCurrency(job.payload),
+  });
+
+  if (!orderCurrencyValidation.ok) {
+    await markJobSucceeded({
+      delegatedJobId: null,
+      job,
+      result: {
+        dryRun: stockDryRun,
+        planned,
+        plannedCount: planned.length,
+        skipped: lineItems.map((lineItem) => ({
+          expectedCurrency: orderCurrencyValidation.expectedCurrency,
+          lineItemKey: lineItem.lineItemKey,
+          orderCurrency: orderCurrencyValidation.orderCurrency,
+          quantity: lineItem.quantity,
+          reason: orderCurrencyValidation.reason,
+        })),
+        skippedCount: lineItems.length,
+        updated,
+        updatedCount: updated.length,
+      },
+      warnings: ["Ordine Shopify saltato: valuta non coerente con eBay.it."],
+    });
+
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
+  }
 
   for (const lineItem of lineItems) {
     const mapping = await findProductMappingForOrderLine(job.shopId, lineItem);
@@ -710,8 +754,43 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         mappingId: mapping.id,
       },
     });
+    const currencyValidation = validateEbayStockCurrency({
+      marketplaceId: mapping.marketplaceId,
+      snapshotCurrency: latestSnapshot?.currency ?? null,
+    });
+
+    if (!currencyValidation.ok) {
+      skipped.push({
+        ebayItemId: mapping.ebayItemId,
+        expectedCurrency: currencyValidation.expectedCurrency,
+        lineItemKey: lineItem.lineItemKey,
+        quantity: lineItem.quantity,
+        reason: currencyValidation.reason,
+        snapshotCurrency: currencyValidation.snapshotCurrency,
+      });
+      continue;
+    }
+
     const previousQuantity = latestSnapshot?.quantity ?? 0;
     const nextQuantity = Math.max(0, previousQuantity - lineItem.quantity);
+
+    if (stockDryRun) {
+      planned.push({
+        currency: currencyValidation.snapshotCurrency,
+        dryRun: true,
+        ebayItemId: mapping.ebayItemId,
+        lineItemKey: lineItem.lineItemKey,
+        nextQuantity,
+        orderedQuantity: lineItem.quantity,
+        previousQuantity,
+        reason: "stock_dry_run_enabled",
+      });
+      continue;
+    }
+
+    if (!accessToken) {
+      throw new Error("Token eBay non disponibile per aggiornare lo stock.");
+    }
 
     await reviseEbayTradingInventoryQuantity({
       accessToken,
@@ -731,6 +810,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
           syncJobId: job.id,
           updatedEbayFromShopifyOrder: true,
         } satisfies Prisma.JsonObject,
+        currency: currencyValidation.snapshotCurrency,
         priceAmount: latestSnapshot?.priceAmount ?? null,
         productStatus: latestSnapshot?.productStatus ?? null,
         quantity: nextQuantity,
@@ -743,6 +823,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       },
     });
     updated.push({
+      currency: currencyValidation.snapshotCurrency,
       ebayItemId: mapping.ebayItemId,
       lineItemKey: lineItem.lineItemKey,
       nextQuantity,
@@ -755,13 +836,18 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     delegatedJobId: null,
     job,
     result: {
+      dryRun: stockDryRun,
+      planned,
+      plannedCount: planned.length,
       skipped,
       skippedCount: skipped.length,
       updated,
       updatedCount: updated.length,
     },
     warnings:
-      skipped.length > 0 ? ["Alcune righe ordine non hanno mapping."] : [],
+      skipped.length > 0
+        ? ["Alcune righe ordine non sono state applicate a eBay."]
+        : [],
   });
 
   return {
@@ -1060,6 +1146,12 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
       },
     ];
   });
+}
+
+function getOrderCurrency(payload: Prisma.JsonValue | null) {
+  const object = getJsonObject(payload);
+
+  return getJsonString(object?.orderCurrency);
 }
 
 async function findProductMappingForOrderLine(

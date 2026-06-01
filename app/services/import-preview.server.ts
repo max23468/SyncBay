@@ -2,6 +2,7 @@ export type ImportPreviewSeverity = "info" | "warning" | "error";
 export type ImportPreviewStatus = "importable" | "skipped" | "error";
 
 export interface ImportPreviewListingCandidate {
+  currency?: string | null;
   descriptionHtml?: string | null;
   imageUrls?: string[];
   itemId: string;
@@ -23,6 +24,7 @@ export interface ImportPreviewItem {
   itemId: string;
   issues: ImportPreviewIssue[];
   normalized: {
+    currency: string | null;
     descriptionHtml: string | null;
     descriptionMode: string;
     imageUrls: string[];
@@ -79,6 +81,7 @@ export function getMockImportPreview() {
   return buildImportPreview(
     [
       {
+        currency: "EUR",
         descriptionHtml: "<p>Giacca vintage in pelle.</p>",
         imageUrls: [
           "https://example.invalid/syncbay/mock/giacca-pelle-1.jpg",
@@ -93,6 +96,7 @@ export function getMockImportPreview() {
       },
       {
         descriptionHtml: "<table><tr><td>Template storico</td></tr></table>",
+        currency: "EUR",
         imageUrls: [],
         itemId: "mock-ebay-it-1002",
         priceAmount: 24.5,
@@ -103,6 +107,7 @@ export function getMockImportPreview() {
       },
       {
         descriptionHtml: "<p>Set con varianti multiple.</p>",
+        currency: "EUR",
         imageUrls: ["https://example.invalid/syncbay/mock/set-tazze-1.jpg"],
         itemId: "mock-ebay-it-1003",
         priceAmount: 19.9,
@@ -113,6 +118,7 @@ export function getMockImportPreview() {
       },
       {
         descriptionHtml: "<p>Prodotto senza SKU.</p>",
+        currency: "EUR",
         imageUrls: ["https://example.invalid/syncbay/mock/scatola-1.jpg"],
         itemId: "mock-ebay-it-1004",
         priceAmount: 12,
@@ -176,6 +182,7 @@ function buildPreviewItem(
     itemId: candidate.itemId,
     issues,
     normalized: {
+      currency: normalizeCurrency(candidate.currency),
       descriptionHtml: normalizeText(candidate.descriptionHtml),
       descriptionMode: DEFAULT_DESCRIPTION_MODE,
       imageUrls: candidate.imageUrls ?? [],
@@ -303,4 +310,8 @@ function looksLikeTemplate(descriptionHtml: string) {
 function normalizeText(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function normalizeCurrency(value: string | null | undefined) {
+  return normalizeText(value)?.toUpperCase() ?? null;
 }

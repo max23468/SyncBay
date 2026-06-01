@@ -1,6 +1,7 @@
 import type { EbayConnection } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 
+import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { ImportPreviewListingCandidate } from "./import-preview.server";
 
 interface EbayTradingPreviewInput {
@@ -70,7 +71,10 @@ export async function getEbayTradingImportPreview(
     GET_ITEM_LOOKUP_CONCURRENCY,
     async (item, index) => {
       if (index >= GET_ITEM_DETAIL_LOOKUP_LIMIT) {
-        const listCandidate = mapTradingItemToCandidate(item);
+        const listCandidate = mapTradingItemToCandidate(
+          item,
+          input.connection.marketplaceId,
+        );
         return listCandidate ? withFallbackSku(listCandidate) : null;
       }
 
@@ -169,7 +173,10 @@ export async function getEbayTradingCandidatesByItemIds(input: {
       const detailItem = await getTradingItemDetail(input, itemId);
       if (!detailItem) return null;
 
-      const candidate = mapTradingItemToCandidate(detailItem);
+      const candidate = mapTradingItemToCandidate(
+        detailItem,
+        input.connection.marketplaceId,
+      );
       return candidate ? withFallbackSku(candidate) : null;
     },
   );
@@ -191,7 +198,10 @@ async function getEnrichedTradingCandidate(
   input: EbayTradingPreviewInput,
   item: XmlRecord,
 ): Promise<ImportPreviewListingCandidate | null> {
-  const listCandidate = mapTradingItemToCandidate(item);
+  const listCandidate = mapTradingItemToCandidate(
+    item,
+    input.connection.marketplaceId,
+  );
   if (!listCandidate) return null;
 
   const detailItem = await getTradingItemDetail(input, listCandidate.itemId);
@@ -199,6 +209,10 @@ async function getEnrichedTradingCandidate(
   const detailVariations = getTradingVariations(detailItem);
 
   return withFallbackSku({
+    currency:
+      getTradingCurrency(detailItem, detailVariations) ??
+      listCandidate.currency ??
+      getExpectedMarketplaceCurrency(input.connection.marketplaceId),
     descriptionHtml:
       getString(detailItem, "Description") ?? listCandidate.descriptionHtml,
     imageUrls: getTradingImageUrls(detailItem, listCandidate.imageUrls),
@@ -323,6 +337,7 @@ function getTradingItems(activeList: XmlRecord | null) {
 
 function mapTradingItemToCandidate(
   item: XmlRecord,
+  marketplaceId: string,
 ): ImportPreviewListingCandidate | null {
   const itemId = getString(item, "ItemID");
   if (!itemId) return null;
@@ -330,6 +345,9 @@ function mapTradingItemToCandidate(
   const variations = getTradingVariations(item);
 
   return {
+    currency:
+      getTradingCurrency(item, variations) ??
+      getExpectedMarketplaceCurrency(marketplaceId),
     descriptionHtml: getString(item, "Description"),
     imageUrls: getTradingImageUrls(item),
     itemId,
@@ -414,6 +432,18 @@ function getTradingPrice(item: XmlRecord, variations: XmlRecord[]) {
   );
 }
 
+function getTradingCurrency(item: XmlRecord, variations: XmlRecord[]) {
+  return (
+    getMoneyCurrency(asRecord(item.SellingStatus)?.CurrentPrice) ??
+    getMoneyCurrency(item.StartPrice) ??
+    getMoneyCurrency(item.BuyItNowPrice) ??
+    variations
+      .map((variation) => getMoneyCurrency(variation.StartPrice))
+      .find((currency): currency is string => Boolean(currency)) ??
+    null
+  );
+}
+
 function getTradingQuantity(item: XmlRecord, variations: XmlRecord[]) {
   const variationQuantities = variations.flatMap((variation) => {
     const quantity = getAvailableQuantity(variation);
@@ -488,6 +518,13 @@ function getMoneyValue(value: unknown) {
 
   const parsed = Number.parseFloat(text);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getMoneyCurrency(value: unknown) {
+  const record = asRecord(value);
+  const currency = record ? normalizeText(toText(record["@_currencyID"])) : null;
+
+  return currency?.toUpperCase() ?? null;
 }
 
 function getInteger(record: XmlRecord | null, key: string) {
