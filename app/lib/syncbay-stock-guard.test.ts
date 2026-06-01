@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
+import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, selectShopifyOrderCurrency, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
   assert.equal(getExpectedMarketplaceCurrency("EBAY_IT"), "EUR");
@@ -83,5 +83,31 @@ test("blocks EBAY_IT stock updates when order currency is missing or not EUR", (
       orderCurrency: "USD",
       reason: "currency_mismatch",
     },
+  );
+});
+
+test("selects Shopify presentment currency before shop currency", () => {
+  assert.equal(
+    selectShopifyOrderCurrency({
+      currency: "EUR",
+      presentmentCurrency: "USD",
+      shopMoneyCurrency: "EUR",
+    }),
+    "USD",
+  );
+  assert.equal(
+    selectShopifyOrderCurrency({
+      currency: "EUR",
+      presentmentMoneyCurrency: "GBP",
+      shopMoneyCurrency: "EUR",
+    }),
+    "GBP",
+  );
+  assert.equal(
+    selectShopifyOrderCurrency({
+      currency: "EUR",
+      shopMoneyCurrency: "USD",
+    }),
+    "EUR",
   );
 });
