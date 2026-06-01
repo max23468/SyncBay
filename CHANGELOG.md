@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Aggiunta l'icona vettoriale monocromatica per la navigazione Shopify agli
+  asset brand e al relativo manifest.
+
 ## [0.20.3] — 2026-06-01
 
 ### Correzioni
