@@ -69,6 +69,13 @@
       "background": "transparent"
     },
     {
+      "path": "brand/assets/png/transparent/icon/syncbay-icon-square-1200.png",
+      "bytes": 123933,
+      "width": 1200,
+      "height": 1200,
+      "background": "transparent"
+    },
+    {
       "path": "brand/assets/png/transparent/icon/syncbay-icon-square-128.png",
       "bytes": 5312,
       "width": 128,
@@ -227,6 +234,13 @@
       "bytes": 54148,
       "width": 1024,
       "height": 1024,
+      "background": "white"
+    },
+    {
+      "path": "brand/assets/png/white/icon/syncbay-icon-square-1200-white.png",
+      "bytes": 97827,
+      "width": 1200,
+      "height": 1200,
       "background": "white"
     },
     {
