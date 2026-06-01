@@ -45,6 +45,11 @@ Note:
   creare più batch fino al minore tra listing attivi eBay e limite MVP di 2.000
   prodotti.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
+- Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
+  `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
+  non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
+  syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
+  query --linked` e stampa solo stato job sanitizzato.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 

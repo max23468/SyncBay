@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Aggiunto il comando `npm run jobs:status` per diagnosticare gli import
+  catalogo dal database Supabase remoto senza richiedere `DATABASE_URL` locale
+  o stampare segreti.
+
 ## [0.18.5] — 2026-06-01
 
 ### Correzioni
