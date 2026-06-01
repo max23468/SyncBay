@@ -86,17 +86,7 @@ export async function runDueSyncJobs(
   await enqueueIncrementalSyncJobs(now);
   await recoverStaleRunningImportJobsForDueShops({ limit, now });
 
-  const jobs = await prisma.syncJob.findMany({
-    include: { shop: true },
-    orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
-    take: limit,
-    where: {
-      runAfter: { lte: now },
-      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
-      type: { in: getRunnableSyncJobTypes() },
-    },
-  });
-  jobs.sort(compareSyncJobPriority);
+  const jobs = await findDueSyncJobsByPriority({ limit, now });
   const results = new Array<DueSyncJobRunResult>(jobs.length);
   const runnableJobsByShop = new Map<string, DueSyncJobRunQueueItem[]>();
 
@@ -128,6 +118,31 @@ export async function runDueSyncJobs(
     ).length,
     results: completedResults,
   };
+}
+
+async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
+  const jobs: DueSyncJob[] = [];
+
+  for (const type of getRunnableSyncJobTypes()) {
+    const remainingLimit = input.limit - jobs.length;
+
+    if (remainingLimit <= 0) break;
+
+    const typedJobs = await prisma.syncJob.findMany({
+      include: { shop: true },
+      orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
+      take: remainingLimit,
+      where: {
+        runAfter: { lte: input.now },
+        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        type,
+      },
+    });
+
+    jobs.push(...typedJobs);
+  }
+
+  return jobs;
 }
 
 async function runDueSyncJobGroup(
@@ -1087,26 +1102,31 @@ async function hasCompletedStockUpdateForLine(
 ) {
   if (!lineItem.lineItemKey) return false;
 
-  const snapshots = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    select: { payload: true },
-    take: 20,
+  const snapshot = await prisma.productSnapshot.findFirst({
+    select: { id: true },
     where: {
+      AND: [
+        { payload: { path: ["syncJobId"], equals: job.id } },
+        {
+          payload: {
+            path: ["orderLineItemKey"],
+            equals: lineItem.lineItemKey,
+          },
+        },
+        {
+          payload: {
+            path: ["updatedEbayFromShopifyOrder"],
+            equals: true,
+          },
+        },
+      ],
       mappingId,
       shopId: job.shopId,
       source: ProductSnapshotSource.SYNCBAY,
     },
   });
 
-  return snapshots.some((snapshot) => {
-    const payload = getJsonObject(snapshot.payload);
-
-    return (
-      payload?.syncJobId === job.id &&
-      payload.orderLineItemKey === lineItem.lineItemKey &&
-      payload.updatedEbayFromShopifyOrder === true
-    );
-  });
+  return Boolean(snapshot);
 }
 
 async function findMappingByInventoryItemGid(
@@ -1333,29 +1353,11 @@ function getErrorMessage(error: unknown) {
 
 function getRunnableSyncJobTypes() {
   return [
-    SyncJobType.IMPORT_CATALOG,
-    SyncJobType.SYNC_INCREMENTAL,
     SyncJobType.UPDATE_EBAY_STOCK,
+    SyncJobType.SYNC_INCREMENTAL,
     SyncJobType.DETECT_SHOPIFY_CHANGES,
+    SyncJobType.IMPORT_CATALOG,
   ];
-}
-
-function compareSyncJobPriority(left: DueSyncJob, right: DueSyncJob) {
-  const priorityDiff =
-    getSyncJobPriority(left.type) - getSyncJobPriority(right.type);
-
-  if (priorityDiff !== 0) return priorityDiff;
-
-  return left.runAfter.getTime() - right.runAfter.getTime();
-}
-
-function getSyncJobPriority(type: SyncJobType) {
-  if (type === SyncJobType.UPDATE_EBAY_STOCK) return 0;
-  if (type === SyncJobType.SYNC_INCREMENTAL) return 1;
-  if (type === SyncJobType.DETECT_SHOPIFY_CHANGES) return 2;
-  if (type === SyncJobType.IMPORT_CATALOG) return 3;
-
-  return 99;
 }
 
 function chunkArray<T>(items: T[], size: number) {

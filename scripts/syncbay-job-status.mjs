@@ -2,6 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -9,7 +10,8 @@ const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_RECENT_LIMIT = 12;
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain = args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain =
+  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
 const recentLimit = args.limit ?? DEFAULT_RECENT_LIMIT;
 
 const diagnosticsSql = `
@@ -78,6 +80,21 @@ select jsonb_build_object(
   'shopDomain', ${sqlString(shopDomain)},
   'runId', (select run_id from latest_run),
   'statusRows', coalesce((select jsonb_agg(to_jsonb(status_rows) order by job_kind, status) from status_rows), '[]'::jsonb),
+  'queueRows', coalesce((
+    select jsonb_agg(to_jsonb(queue_rows) order by type, status)
+    from (
+      select
+        j.type,
+        j.status,
+        count(*)::int as job_count,
+        min(j."runAfter") as first_run_after,
+        max(j."updatedAt") as last_updated_at
+      from "SyncJob" j
+      join "Shop" s on s.id = j."shopId"
+      where s."shopDomain" = ${sqlString(shopDomain)}
+      group by j.type, j.status
+    ) queue_rows
+  ), '[]'::jsonb),
   'recentRows', coalesce((select rows from recent_rows), '[]'::jsonb)
 ) as diagnostics;
 `;
@@ -110,6 +127,7 @@ async function querySupabaseJson(sql) {
     ["supabase", "db", "query", "--linked", "--output", "json", sql],
     {
       cwd: process.cwd(),
+      env: await getSupabaseCliEnv(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 45_000,
     },
@@ -188,11 +206,24 @@ function printSummary(payload) {
   }
 
   console.log("");
+  console.log("Coda complessiva:");
+
+  for (const row of payload.queueRows ?? []) {
+    console.log(
+      `- ${row.type} ${row.status}: ${row.job_count} job, primo runAfter ${row.first_run_after}, ultimo aggiornamento ${row.last_updated_at}`,
+    );
+  }
+
+  console.log("");
   console.log("Recenti:");
 
   for (const row of payload.recentRows ?? []) {
-    const batch = row.batchIndex ? ` batch ${row.batchIndex}/${row.batchCount}` : "";
-    const error = row.errorCode ? `, ${row.errorCode}: ${row.errorMessage}` : "";
+    const batch = row.batchIndex
+      ? ` batch ${row.batchIndex}/${row.batchCount}`
+      : "";
+    const error = row.errorCode
+      ? `, ${row.errorCode}: ${row.errorMessage}`
+      : "";
     const result =
       row.createdCount || row.reusedCount || row.failedCount || row.skippedCount
         ? `, creati ${row.createdCount ?? 0}, riusati ${row.reusedCount ?? 0}, falliti ${row.failedCount ?? 0}, saltati ${row.skippedCount ?? 0}`
@@ -232,7 +263,7 @@ function parseArgs(rawArgs) {
       console.log(`Uso: npm run jobs:status -- [--shop dominio.myshopify.com] [--limit 12] [--json]
 
 Interroga il database Supabase remoto tramite \`supabase db query --linked\`.
-Non richiede DATABASE_URL locale e non stampa segreti.`);
+Non richiede DATABASE_URL locale; usa SUPABASE_DB_PASSWORD o il Portachiavi macOS e non stampa segreti.`);
       process.exit(0);
     }
 

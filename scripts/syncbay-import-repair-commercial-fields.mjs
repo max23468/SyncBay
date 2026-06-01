@@ -2,6 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -311,6 +312,7 @@ async function querySupabaseJson(sql) {
     ["supabase", "db", "query", "--linked", "--output", "json", sql],
     {
       cwd: process.cwd(),
+      env: await getSupabaseCliEnv(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 45_000,
     },
