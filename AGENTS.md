@@ -82,7 +82,9 @@ Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione
 
 ## Stato attuale del repository
 
-Il repository ha completato la fase di pianificazione/fondazioni e contiene lo scaffold Shopify CLI React Router iniziale.
+Il repository è nella fase di import iniziale controllato su scaffold Shopify
+CLI React Router: esiste una produzione tecnica Vercel pilota, distinta da
+release pubblica Shopify App Store e da billing.
 
 Regola importante: non creare worker dedicati, sync catalogo, job queue runtime, integrazioni eBay oltre OAuth o cartelle applicative ulteriori fuori dallo scaffold senza richiesta esplicita del maintainer.
 
@@ -374,8 +376,12 @@ Una modifica è pronta se:
 - non sovrascrive modifiche non tue;
 - aggiorna documenti/ADR quando una decisione cambia davvero;
 - non lascia segreti, dati personali, file temporanei o modifiche non correlate;
-- include verifiche eseguite o limiti noti quando rilevanti.
+- include verifiche eseguite o limiti noti quando rilevanti;
+- la `Codex feedback inbox` è stata controllata quando il flusso prevede PR,
+  merge, publish, deploy o release;
 - publish, release e deploy sono stati completati oppure dichiarati non applicabili con motivo.
+- branch/worktree creati per il lavoro sono stati puliti oppure il residuo è
+  dichiarato esplicitamente.
 
 ## Sotto-moduli
 
