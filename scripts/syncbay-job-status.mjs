@@ -114,13 +114,25 @@ async function querySupabaseJson(sql) {
       timeout: 45_000,
     },
   );
-  const jsonStart = stdout.indexOf("{");
+  const jsonStart = findJsonStart(stdout);
 
   if (jsonStart < 0) {
     throw new Error("Supabase CLI non ha restituito JSON.");
   }
 
-  return JSON.parse(stdout.slice(jsonStart));
+  const parsed = JSON.parse(stdout.slice(jsonStart));
+
+  return Array.isArray(parsed) ? { rows: parsed } : parsed;
+}
+
+function findJsonStart(value) {
+  const objectStart = value.indexOf("{");
+  const arrayStart = value.indexOf("[");
+
+  if (objectStart < 0) return arrayStart;
+  if (arrayStart < 0) return objectStart;
+
+  return Math.min(objectStart, arrayStart);
 }
 
 function formatCliError(error) {

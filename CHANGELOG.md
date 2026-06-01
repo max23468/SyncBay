@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.6] — 2026-06-01
+
 ### Sotto il cofano
 
 - Aggiunto il comando `npm run jobs:status` per diagnosticare gli import
@@ -461,6 +463,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.6]: #0186--2026-06-01
 [0.18.5]: #0185--2026-06-01
 [0.18.4]: #0184--2026-06-01
 [0.18.3]: #0183--2026-06-01
