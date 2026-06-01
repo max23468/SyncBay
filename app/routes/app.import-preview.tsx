@@ -667,6 +667,7 @@ function formatCatalogImportQueuedMessage(result: {
   batchCount: number;
   createdJobCount: number;
   existingJobCount: number;
+  requeuedJobCount: number;
   resumedJobCount: number;
   totalAvailable: number | null;
   truncatedAtMaxProducts: boolean;
@@ -679,7 +680,7 @@ function formatCatalogImportQueuedMessage(result: {
     ? "limite MVP raggiunto"
     : "store sotto il limite MVP o lettura completata";
 
-  return `${result.batchCount} batch; ${result.createdJobCount} nuovi, ${result.resumedJobCount} ripresi, ${result.existingJobCount} già presenti; ${totalLabel}; ${capLabel}.`;
+  return `${result.batchCount} batch; ${result.createdJobCount} nuovi, ${result.requeuedJobCount} ripianificati, ${result.resumedJobCount} ripresi, ${result.existingJobCount} già presenti; ${totalLabel}; ${capLabel}.`;
 }
 
 function formatDraftImportCount(
