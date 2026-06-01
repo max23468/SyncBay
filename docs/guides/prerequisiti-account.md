@@ -21,16 +21,16 @@ Finché OAuth e account deletion non sono verificati sul runtime aggiornato:
 
 ### Cosa serve
 
-| Campo | Stato | Note |
-| --- | --- | --- |
-| Account Shopify Partner | Confermato | Login CLI: `matteofilisina@icloud.com`. |
-| Development store | Confermato | `syncbay-dev.myshopify.com` |
-| Nome app custom | Confermato | `SyncBay` |
-| Shopify CLI | Collegata | `shopify.app.toml` collegato all'app `SyncBay`. |
-| App URL locale/provvisoria | Provider creato | Vercel project `syncbay`; dev preview verificata via Shopify CLI. |
-| Redirect URL OAuth | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest pilota. |
-| Scopes iniziali | Definiti e ridotti | Nessun `read_orders` finché Shopify protected customer data non viene configurato. |
-| Webhook minimi | Parzialmente configurati | `orders/paid` preparato lato route ma non sottoscritto nel manifest. |
+| Campo                      | Stato                | Note                                                                                        |
+| -------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| Account Shopify Partner    | Confermato           | Login CLI: `matteofilisina@icloud.com`.                                                     |
+| Development store          | Confermato           | `syncbay-dev.myshopify.com`                                                                 |
+| Nome app custom            | Confermato           | `SyncBay`                                                                                   |
+| Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                             |
+| App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                           |
+| Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest pilota.                             |
+| Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità da ordini pagati nel pilota controllato. |
+| Webhook minimi             | Configurati          | Include `orders/paid`, `products/update` e `inventory_levels/update`.                       |
 
 ### App e URL
 
@@ -45,11 +45,11 @@ Default operativo per lo scaffold:
 
 URL previsti per il primo deploy Vercel:
 
-| Uso | Pattern provvisorio |
-| --- | --- |
-| App URL | `https://<syncbay-vercel-host>` |
-| Shopify OAuth callback | `https://<syncbay-vercel-host>/auth/shopify/callback` |
-| Shopify webhook endpoint | `https://<syncbay-vercel-host>/webhooks/shopify` |
+| Uso                      | Pattern provvisorio                                   |
+| ------------------------ | ----------------------------------------------------- |
+| App URL                  | `https://<syncbay-vercel-host>`                       |
+| Shopify OAuth callback   | `https://<syncbay-vercel-host>/auth/shopify/callback` |
+| Shopify webhook endpoint | `https://<syncbay-vercel-host>/webhooks/shopify`      |
 
 I path Shopify restano allineati allo scaffold generato.
 
@@ -73,7 +73,8 @@ Da verificare durante l'evoluzione runtime:
 - mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
   prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
-- `read_orders` solo dopo configurazione Shopify per protected customer data;
+- `read_orders` è richiesto dal pilota controllato per il webhook
+  `orders/paid`;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
 Regola: chiedere solo scope necessari al flusso MVP.
@@ -82,18 +83,18 @@ Regola: chiedere solo scope necessari al flusso MVP.
 
 Bozza minima:
 
-| Evento | Perché serve |
-| --- | --- |
-| App uninstall | Fermare sync, revocare accessi, gestire cleanup. |
+| Evento                 | Perché serve                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| App uninstall          | Fermare sync, revocare accessi, gestire cleanup.                                 |
 | Inventory level update | Trigger iniziale per rilevare variazioni quantità senza protected customer data. |
-| Order paid o order created | Trigger futuro per ridurre disponibilità eBay dopo vendita Shopify, dopo configurazione protected customer data. |
-| Product update | Rilevare modifiche manuali Shopify e aprire conflitti. |
-| GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati. |
+| Order paid             | Ridurre disponibilità eBay dopo vendita Shopify nel pilota controllato.          |
+| Product update         | Rilevare modifiche manuali Shopify e aprire conflitti.                           |
+| GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati.                             |
 
 Default MVP:
 
-- trigger stock principale iniziale: variazione inventario;
-- trigger stock ordine pagato: da attivare dopo configurazione protected customer data;
+- trigger stock principale iniziale: ordine pagato;
+- trigger variazione inventario: rilevare conflitti Shopify;
 - opzione futura/aggressiva: ordine creato;
 - app-specific subscriptions via configurazione Shopify CLI quando supportato;
 - fallback GraphQL Admin API se la subscription deve dipendere dallo shop.
@@ -102,18 +103,18 @@ Default MVP:
 
 ### Cosa serve
 
-| Campo | Stato | Note |
-| --- | --- | --- |
-| Account eBay Developer | Confermato | Account disponibile. |
-| App/keyset eBay SyncBay | Ricevuto | Usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti. |
-| Marketplace iniziale | Confermato | `EBAY_IT` |
-| OAuth RuName Sandbox | Da verificare | eBay usa `RuName` come `redirect_uri` nel token exchange. |
-| OAuth RuName Production | Da verificare end-to-end | Il valore resta negli env, non nel repo. |
-| Accept URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
-| Reject URL | Confermata | `https://syncbay.vercel.app/auth/ebay/callback` |
-| Scopes eBay | Minimo MVP definito | Identity readonly + Inventory readonly/write. |
-| Account deletion endpoint | Configurato | `https://syncbay.vercel.app/ebay/account-deletion` |
-| Verification token | Configurato fuori repo | 32-80 caratteri, non salvare in Git. |
+| Campo                     | Stato                    | Note                                                                         |
+| ------------------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| Account eBay Developer    | Confermato               | Account disponibile.                                                         |
+| App/keyset eBay SyncBay   | Ricevuto                 | Usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti. |
+| Marketplace iniziale      | Confermato               | `EBAY_IT`                                                                    |
+| OAuth RuName Sandbox      | Da verificare            | eBay usa `RuName` come `redirect_uri` nel token exchange.                    |
+| OAuth RuName Production   | Da verificare end-to-end | Il valore resta negli env, non nel repo.                                     |
+| Accept URL                | Confermata               | `https://syncbay.vercel.app/auth/ebay/callback`                              |
+| Reject URL                | Confermata               | `https://syncbay.vercel.app/auth/ebay/callback`                              |
+| Scopes eBay               | Minimo MVP definito      | Identity readonly + Inventory readonly/write.                                |
+| Account deletion endpoint | Configurato              | `https://syncbay.vercel.app/ebay/account-deletion`                           |
+| Verification token        | Configurato fuori repo   | 32-80 caratteri, non salvare in Git.                                         |
 
 ### OAuth
 
@@ -125,15 +126,15 @@ Stato 2026-05-25: il keyset dedicato SyncBay è disponibile. Il flusso OAuth lat
 
 Valori previsti:
 
-| Uso | Nome env futuro |
-| --- | --- |
-| Client ID | `EBAY_CLIENT_ID` |
-| Client Secret | `EBAY_CLIENT_SECRET` |
-| RuName | `EBAY_RU_NAME` |
-| Ambiente | `EBAY_ENVIRONMENT` |
-| Marketplace | `EBAY_MARKETPLACE_ID=EBAY_IT` |
-| Accept URL | `EBAY_OAUTH_ACCEPT_URL` |
-| Reject URL | `EBAY_OAUTH_REJECT_URL` |
+| Uso                     | Nome env futuro                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| Client ID               | `EBAY_CLIENT_ID`                                                                 |
+| Client Secret           | `EBAY_CLIENT_SECRET`                                                             |
+| RuName                  | `EBAY_RU_NAME`                                                                   |
+| Ambiente                | `EBAY_ENVIRONMENT`                                                               |
+| Marketplace             | `EBAY_MARKETPLACE_ID=EBAY_IT`                                                    |
+| Accept URL              | `EBAY_OAUTH_ACCEPT_URL`                                                          |
+| Reject URL              | `EBAY_OAUTH_REJECT_URL`                                                          |
 | Flag abilitazione OAuth | `EBAY_OAUTH_ENABLED=true` solo quando il runtime è pronto per il test end-to-end |
 
 Endpoint token:

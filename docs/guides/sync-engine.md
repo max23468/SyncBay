@@ -40,11 +40,30 @@ Se Shopify cambia manualmente un campo controllato da eBay o SyncBay, aprire con
 Default:
 
 - trigger: ordine Shopify pagato;
-- update eBay prioritario;
+- update eBay prioritario tramite job `UPDATE_EBAY_STOCK`;
 - retry con backoff;
 - alert critico se fallisce;
 - stock buffer configurabile;
 - modalità prudente se lo stock non è affidabile.
+
+Nel pilota il webhook `orders/paid` salva solo riferimenti prodotto/variante e
+quantità, poi il runner usa Trading API `ReviseInventoryStatus` con ItemID e SKU
+del mapping SyncBay per ridurre la disponibilità eBay.
+
+## Sync incrementale
+
+Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
+50 mapping attivi. I batch rileggono i listing via Trading API `GetItem` e
+riusano il flusso import controllato per riallineare Shopify. Se un mapping ha
+conflitti Shopify aperti, il prodotto viene saltato finché il negoziante sceglie
+un'azione guidata.
+
+## Conflitti Shopify
+
+I webhook `products/update` e `inventory_levels/update` creano job
+`DETECT_SHOPIFY_CHANGES`. Il runner confronta il prodotto Shopify live con
+l'ultimo snapshot `SYNCBAY` e apre conflitti per titolo, descrizione, stato,
+prezzo, quantità e immagini quando rileva drift.
 
 ## Riconciliazione
 

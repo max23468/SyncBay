@@ -641,10 +641,10 @@ async function createShopifyDraftProduct(
   );
 
   if (existingProduct) {
-    const statusResult = await updateShopifyProductStatus(
+    const statusResult = await updateShopifyProductFromEbay(
       admin,
       existingProduct,
-      draftProduct.product.status,
+      draftProduct,
     );
 
     if (statusResult.status === "failed") {
@@ -1161,10 +1161,10 @@ async function syncShopifyInventoryFromEbayQuantity(
   };
 }
 
-async function updateShopifyProductStatus(
+async function updateShopifyProductFromEbay(
   admin: ShopifyAdminGraphqlClient,
   product: NonNullable<ShopifyCreatedProduct>,
-  status: ImportProductStatus,
+  draftProduct: ShopifyDraftProductInput,
 ): Promise<
   | {
       product: NonNullable<ShopifyCreatedProduct>;
@@ -1176,13 +1176,12 @@ async function updateShopifyProductStatus(
       status: "failed";
     }
 > {
-  if (product.status === status) {
-    return {
-      product,
-      status: "synced",
-      warnings: [],
-    };
-  }
+  const productInput = {
+    descriptionHtml: draftProduct.product.descriptionHtml,
+    id: product.id,
+    status: draftProduct.product.status,
+    title: draftProduct.product.title,
+  };
 
   const response = await admin.graphql(
     `#graphql
@@ -1220,10 +1219,7 @@ async function updateShopifyProductStatus(
     }`,
     {
       variables: {
-        product: {
-          id: product.id,
-          status,
-        },
+        product: productInput,
       },
     },
   );
@@ -1265,7 +1261,7 @@ async function updateShopifyProductStatus(
     product: updatedProduct,
     status: "synced",
     warnings: [
-      `SyncBay ha riallineato lo stato Shopify del prodotto a ${status}.`,
+      "SyncBay ha riallineato titolo, descrizione e stato Shopify dal listing eBay.",
     ],
   };
 }

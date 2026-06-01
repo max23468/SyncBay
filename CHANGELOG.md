@@ -6,6 +6,24 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.19.0] — 2026-06-01
+
+### Novità
+
+- Il runner pianifica job `SYNC_INCREMENTAL` per shop con sync attivo, in batch
+  da 50 mapping, e riallinea i prodotti Shopify da eBay entro il target di
+  polling configurato.
+- Il webhook `orders/paid` crea job prioritari `UPDATE_EBAY_STOCK` che riducono
+  la disponibilità eBay tramite Trading API `ReviseInventoryStatus`.
+- I webhook Shopify product/inventory aprono conflitti `SyncConflict` quando
+  rilevano drift rispetto all'ultimo snapshot SyncBay; la dashboard mostra i
+  conflitti e offre azioni guidate.
+
+### Correzioni
+
+- I prodotti riusati vengono riallineati anche su titolo e descrizione eBay,
+  non solo stato, prezzo, SKU, media e inventario.
+
 ## [0.18.8] — 2026-06-01
 
 ### Correzioni
@@ -496,6 +514,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.19.0]: #0190--2026-06-01
 [0.18.8]: #0188--2026-06-01
 [0.18.7]: #0187--2026-06-01
 [0.18.6]: #0186--2026-06-01

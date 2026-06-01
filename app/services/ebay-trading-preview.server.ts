@@ -204,9 +204,11 @@ async function getEnrichedTradingCandidate(
     imageUrls: getTradingImageUrls(detailItem, listCandidate.imageUrls),
     itemId: listCandidate.itemId,
     priceAmount:
-      getTradingPrice(detailItem, detailVariations) ?? listCandidate.priceAmount,
+      getTradingPrice(detailItem, detailVariations) ??
+      listCandidate.priceAmount,
     quantity:
-      getTradingQuantity(detailItem, detailVariations) ?? listCandidate.quantity,
+      getTradingQuantity(detailItem, detailVariations) ??
+      listCandidate.quantity,
     sku: getTradingSku(detailItem, detailVariations) ?? listCandidate.sku,
     title: getString(detailItem, "Title") ?? listCandidate.title,
     variantCount: Math.max(
@@ -232,23 +234,26 @@ async function getTradingItemDetail(
     .catch(() => null);
 }
 
-async function fetchTradingXml(input: {
+export async function fetchTradingXml(input: {
   accessToken: string;
-  callName: "GetItem" | "GetMyeBaySelling";
+  callName: "GetItem" | "GetMyeBaySelling" | "ReviseInventoryStatus";
   connection: EbayConnection;
   requestXml: string;
 }) {
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: input.requestXml,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": input.callName,
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+  const response = await fetch(
+    getTradingBaseUrl(input.connection.environment),
+    {
+      body: input.requestXml,
+      headers: {
+        "Content-Type": "text/xml; charset=utf-8",
+        "X-EBAY-API-CALL-NAME": input.callName,
+        "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
+        "X-EBAY-API-IAF-TOKEN": input.accessToken,
+        "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+      },
+      method: "POST",
     },
-    method: "POST",
-  });
+  );
   const responseText = await response.text();
 
   if (!response.ok) {
@@ -429,7 +434,10 @@ function getAvailableQuantity(record: XmlRecord) {
   const quantity = getInteger(record, "Quantity");
   if (typeof quantity !== "number") return null;
 
-  const quantitySold = getInteger(asRecord(record.SellingStatus), "QuantitySold");
+  const quantitySold = getInteger(
+    asRecord(record.SellingStatus),
+    "QuantitySold",
+  );
   return Math.max(quantity - (quantitySold ?? 0), 0);
 }
 

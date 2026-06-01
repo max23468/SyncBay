@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: import iniziale controllato.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify tracciati come placeholder, flusso OAuth eBay verificato end-to-end con recupero `userId` e POST eBay account deletion con verifica firma. L'import controllato registra mapping, product/variant GID, snapshot, job e audit per prodotti creati o riusati; dopo creazione o riuso aggiorna prezzo e SKU della variante Shopify, attiva il tracking scorte, imposta la quantità disponibile sulla location predefinita usando il valore letto da eBay e copia tutte le immagini eBay disponibili fino al limite media Shopify. Se Shopify rifiuta una URL immagine eBay diretta, SyncBay usa il bucket privato Supabase Storage `syncbay-import-staging` come staging temporaneo e riprova con URL firmata. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti; prezzo e SKU variante dei prodotti già importati sono stati riallineati dagli snapshot dell'ultima run. Per i nuovi import, il default runtime è `Pubblicato`, con override `Bozza` salvabile in `/app/settings`. La dashboard espone storico import, avanzamento dell'ultima run, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili. È presente il runner HTTP protetto `/api/jobs/run-due` per riprendere job `IMPORT_CATALOG` dovuti con sessione Shopify offline, collegato a una schedule Supabase Cron ogni minuto tramite secret in Supabase Vault; il retry automatico è stato verificato end-to-end sul dev store con recupero puntuale dei listing via Trading API `GetItem` per `ItemID` e chiusura corretta del job originale. La conferma import può pianificare batch asincroni fino al limite MVP di 2.000 listing attivi, fermandosi prima quando lo store eBay collegato ne espone meno. Non esistono ancora sync catalogo entro 5 minuti o protezione reale disponibilità Shopify -> eBay.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase e flusso OAuth eBay verificato end-to-end. L'import controllato registra mapping, product/variant GID, snapshot, job e audit per prodotti creati o riusati; dopo creazione o riuso aggiorna titolo, descrizione, prezzo, SKU, stato, media e inventario Shopify dai dati eBay. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner HTTP protetto `/api/jobs/run-due`, collegato a Supabase Cron ogni minuto, riprende import, pianifica sync incrementali eBay -> Shopify per shop con sync attivo, aggiorna disponibilità eBay da ordini Shopify pagati e rileva conflitti Shopify da webhook product/inventory. La dashboard espone storico import, avanzamento ultima run, conflitti Shopify con azioni guidate, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili.
 
 ## Direzione prodotto
 
@@ -60,8 +60,7 @@ Provisioning minimo creato:
 - Avvio OAuth eBay: `/auth/ebay/start`
 - Callback OAuth eBay: `/auth/ebay/callback`
 - Endpoint eBay account deletion: `/ebay/account-deletion`
-- Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
-- Webhook Shopify preparato ma non ancora configurato: `/webhooks/orders/paid`, in attesa della configurazione Shopify per protected customer data
+- Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`, `/webhooks/orders/paid`
 
 ## Documenti principali
 
@@ -91,7 +90,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Implementare il sync incrementale eBay -> Shopify.
-2. Implementare la protezione disponibilità Shopify -> eBay per ordini pagati.
-3. Collegare conflitti Shopify e azioni guidate di risoluzione.
-4. Preparare la diagnostica self-service per retry e rollback di import/sync.
+1. Verificare end-to-end su dev store un ciclo sync incrementale con dati eBay cambiati.
+2. Verificare end-to-end un ordine Shopify pagato su prodotto SyncBay e l'update eBay conseguente.
+3. Estendere diagnostica self-service per rollback e retry per prodotto.
+4. Preparare screenshot e rifiniture microcopy della dashboard operativa.
