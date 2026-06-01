@@ -125,7 +125,8 @@ Scope iniziali previsti:
 - `write_inventory`
 - `read_locations`
 - `write_locations`
-- `read_orders` solo quando sarà completata la configurazione Shopify per protected customer data.
+- `read_orders` per il webhook `orders/paid` nel pilota controllato di
+  protezione disponibilità.
 - scope necessari per file/media e webhook, da confermare in fase scaffold in base alla versione API Shopify usata.
 
 Webhook Shopify MVP:

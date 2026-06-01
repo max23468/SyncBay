@@ -99,10 +99,9 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   al minore tra listing disponibili nello store e limite MVP di 2.000 prodotti;
 - ogni prodotto creato o riusato aggiorna anche prezzo e SKU della variante
   Shopify, oltre a stato prodotto, immagini e inventario;
-- il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
-  audit coerenti; l'ultimo import reale ha creato 26 nuovi prodotti Shopify e ne
-  ha riusate 24 senza duplicati. La schedule Supabase Cron
-  `syncbay-run-due-jobs` riprende ogni minuto i job `IMPORT_CATALOG` dovuti.
+- l'import reale ha completato 958 listing sul dev store con mapping, snapshot,
+  job e audit coerenti. La schedule Supabase Cron `syncbay-run-due-jobs`
+  riprende ogni minuto i job `IMPORT_CATALOG` dovuti.
 
 Copertura attuale della preview live:
 

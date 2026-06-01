@@ -15,13 +15,20 @@ import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import {
   getDashboardState,
   requestSyncJobRetry,
+  resolveSyncConflict,
 } from "../services/syncbay.server";
 
-type DashboardActionData = {
-  intent: "retryJob";
-  message: string;
-  status: "queued";
-};
+type DashboardActionData =
+  | {
+      intent: "retryJob";
+      message: string;
+      status: "queued";
+    }
+  | {
+      intent: "resolveConflict";
+      message: string;
+      status: "resolved";
+    };
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   timeZone: "Europe/Rome",
@@ -58,6 +65,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     } satisfies DashboardActionData);
   }
 
+  if (intent === "resolveConflict") {
+    const conflictId = String(formData.get("conflictId") ?? "");
+    const resolution = String(formData.get("resolution") ?? "");
+
+    if (!conflictId) {
+      throw new Response("Conflitto SyncBay mancante.", { status: 400 });
+    }
+
+    const result = await resolveSyncConflict(session, {
+      conflictId,
+      resolution,
+    });
+
+    return Response.json({
+      intent,
+      message: result.message,
+      status: result.status,
+    } satisfies DashboardActionData);
+  }
+
   throw new Response("Azione dashboard non supportata.", { status: 400 });
 };
 
@@ -75,6 +102,10 @@ export default function Index() {
   const retryingJobId =
     navigation.formData?.get("intent") === "retryJob"
       ? String(navigation.formData.get("jobId") ?? "")
+      : null;
+  const resolvingConflictId =
+    navigation.formData?.get("intent") === "resolveConflict"
+      ? String(navigation.formData.get("conflictId") ?? "")
       : null;
 
   return (
@@ -286,6 +317,67 @@ export default function Index() {
         )}
       </s-section>
 
+      <s-section heading="Conflitti Shopify">
+        <s-paragraph>
+          Conflitti aperti: {dashboard.conflicts.openCount}. I prodotti con
+          conflitti aperti vengono esclusi dal sync incrementale finché scegli
+          un&apos;azione.
+        </s-paragraph>
+        {actionData?.intent === "resolveConflict" ? (
+          <s-paragraph>{actionData.message}</s-paragraph>
+        ) : null}
+        {dashboard.conflicts.recent.length > 0 ? (
+          <s-unordered-list>
+            {dashboard.conflicts.recent.map((conflict) => (
+              <s-list-item key={conflict.id}>
+                {conflict.ebayItemId ?? "Prodotto Shopify"} - {conflict.field}:{" "}
+                Shopify {formatConflictValue(conflict.shopifyValue)}, SyncBay{" "}
+                {formatConflictValue(conflict.syncbayValue)}
+                <Form method="post">
+                  <input type="hidden" name="intent" value="resolveConflict" />
+                  <input type="hidden" name="conflictId" value={conflict.id} />
+                  <input
+                    type="hidden"
+                    name="resolution"
+                    value="REALIGN_FROM_EBAY"
+                  />
+                  <s-button
+                    type="submit"
+                    disabled={resolvingConflictId === conflict.id}
+                  >
+                    Riallinea da eBay
+                  </s-button>
+                </Form>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="resolveConflict" />
+                  <input type="hidden" name="conflictId" value={conflict.id} />
+                  <input type="hidden" name="resolution" value="KEEP_SHOPIFY" />
+                  <s-button
+                    type="submit"
+                    disabled={resolvingConflictId === conflict.id}
+                  >
+                    Mantieni Shopify
+                  </s-button>
+                </Form>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="resolveConflict" />
+                  <input type="hidden" name="conflictId" value={conflict.id} />
+                  <input type="hidden" name="resolution" value="IGNORE_FIELD" />
+                  <s-button
+                    type="submit"
+                    disabled={resolvingConflictId === conflict.id}
+                  >
+                    Ignora campo
+                  </s-button>
+                </Form>
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        ) : (
+          <s-paragraph>Nessun conflitto Shopify aperto.</s-paragraph>
+        )}
+      </s-section>
+
       <s-section heading="Diagnostica job">
         {dashboard.sync.failedJobs.length > 0 ? (
           <s-unordered-list>
@@ -376,4 +468,11 @@ function formatRunId(value: string) {
 
 function formatImportJobKind(value: string) {
   return value === "catalog_batch" ? "Batch catalogo" : "Import Shopify";
+}
+
+function formatConflictValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "assente";
+  if (typeof value === "string" || typeof value === "number") return value;
+
+  return JSON.stringify(value);
 }

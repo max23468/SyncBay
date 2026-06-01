@@ -7,22 +7,20 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
-- Verificare l'import iniziale pianificato oltre il batch da 50 listing verso
-  il limite MVP di 2.000 prodotti, mantenendo idempotenza, mapping, snapshot e
-  audit.
-- Rendere robusti batch, paginazione, retry e runner HTTP protetto per job
-  `IMPORT_CATALOG` dovuti.
+- Verificare end-to-end sul dev store il primo ciclo sync incrementale
+  eBay -> Shopify dopo una modifica reale su eBay.
+- Verificare end-to-end un ordine Shopify pagato su prodotto SyncBay e
+  l'aggiornamento disponibilità eBay generato dal job prioritario.
 - Consolidare la dashboard operativa su stato connessioni, job recenti, storico
-  import, conteggi mapping/snapshot e rimessa in coda manuale.
+  import, conflitti Shopify, conteggi mapping/snapshot e rimessa in coda
+  manuale.
 - Tenere sotto controllo sicurezza e dati: cifratura token, webhook GDPR,
   audit log, rate limit/retry e rollback import restano superfici prioritarie.
 
 ## Prossimo
 
-- Avviare il sync incrementale eBay -> Shopify con fallback sostenibile.
-- Implementare protezione disponibilità Shopify -> eBay per ordini pagati.
-- Aggiungere regole prezzo Shopify-only, pulizia descrizioni eBay e gestione
-  conflitti Shopify.
+- Estendere diagnostica self-service per retry e rollback per prodotto.
+- Aggiungere regole prezzo Shopify-only e pulizia descrizioni eBay più profonda.
 - Preparare screenshot prodotto e raffinamento microcopy quando la dashboard è
   abbastanza stabile.
 

@@ -5,6 +5,8 @@ import {
   EbayConnectionStatus,
   Prisma,
   ShopInstallationStatus,
+  SyncConflictResolution,
+  SyncConflictStatus,
   SyncJobStatus,
   SyncJobType,
   type EbayConnection,
@@ -35,6 +37,7 @@ interface ShopifySessionLike {
 }
 
 interface WebhookRecordInput {
+  payload?: unknown;
   shopDomain: string;
   topic: string;
   resourceId?: string | null;
@@ -61,12 +64,14 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "write_inventory",
   "read_locations",
   "write_locations",
+  "read_orders",
   "read_files",
   "write_files",
 ];
 const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",
   "app/scopes_update",
+  "orders/paid",
   "products/update",
   "inventory_levels/update",
 ];
@@ -82,6 +87,8 @@ export async function getDashboardState(session: ShopifySessionLike) {
     recentImportJobs,
     recentAuditLogs,
     mappingCount,
+    openConflictCount,
+    openConflicts,
     snapshotCount,
   ] = await prisma.$transaction([
     prisma.ebayConnection.findUnique({
@@ -109,6 +116,28 @@ export async function getDashboardState(session: ShopifySessionLike) {
     }),
     prisma.productMapping.count({
       where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
+    }),
+    prisma.syncConflict.count({
+      where: {
+        shopId: shop.id,
+        status: SyncConflictStatus.OPEN,
+      },
+    }),
+    prisma.syncConflict.findMany({
+      include: {
+        mapping: {
+          select: {
+            ebayItemId: true,
+            shopifyProductGid: true,
+          },
+        },
+      },
+      orderBy: { detectedAt: "desc" },
+      take: 8,
+      where: {
+        shopId: shop.id,
+        status: SyncConflictStatus.OPEN,
+      },
     }),
     prisma.productSnapshot.count({
       where: { shopId: shop.id },
@@ -174,6 +203,18 @@ export async function getDashboardState(session: ShopifySessionLike) {
       mappingCount,
       recentJobs: recentImportJobs.map(formatImportJobSummary),
       snapshotCount,
+    },
+    conflicts: {
+      openCount: openConflictCount,
+      recent: openConflicts.map((conflict) => ({
+        detectedAt: conflict.detectedAt.toISOString(),
+        ebayItemId: conflict.mapping?.ebayItemId ?? null,
+        field: conflict.field,
+        id: conflict.id,
+        shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
+        shopifyValue: conflict.shopifyValue,
+        syncbayValue: conflict.lastSyncBayValue,
+      })),
     },
     sync: {
       failedJobs: recentJobs.flatMap((job) =>
@@ -281,6 +322,84 @@ export async function requestSyncJobRetry(
   };
 }
 
+export async function resolveSyncConflict(
+  session: ShopifySessionLike,
+  input: {
+    conflictId: string;
+    resolution: string;
+  },
+) {
+  const shop = await ensureShopForSession(session);
+  const resolution = normalizeConflictResolution(input.resolution);
+  const conflict = await prisma.syncConflict.findFirst({
+    include: { mapping: true },
+    where: {
+      id: input.conflictId,
+      shopId: shop.id,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+
+  if (!conflict) {
+    throw new Response("Conflitto SyncBay non trovato.", { status: 404 });
+  }
+
+  const now = new Date();
+  const operations: Prisma.PrismaPromise<unknown>[] = [
+    prisma.syncConflict.update({
+      data: {
+        resolution,
+        resolvedAt: now,
+        status:
+          resolution === SyncConflictResolution.IGNORE_FIELD
+            ? SyncConflictStatus.IGNORED
+            : SyncConflictStatus.RESOLVED,
+      },
+      where: { id: conflict.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          conflictId: conflict.id,
+          field: conflict.field,
+          resolution,
+        },
+        message: "Conflitto Shopify gestito dalla dashboard.",
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ];
+
+  if (
+    resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
+    conflict.mapping?.ebayItemId
+  ) {
+    operations.push(
+      prisma.syncJob.create({
+        data: {
+          payload: {
+            ebayItemIds: [conflict.mapping.ebayItemId],
+            marketplaceId: conflict.mapping.marketplaceId,
+            source: "conflict_resolution",
+          } satisfies Prisma.JsonObject,
+          runAfter: now,
+          shopId: shop.id,
+          status: SyncJobStatus.PENDING,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+    );
+  }
+
+  await prisma.$transaction(operations);
+
+  return {
+    message: "Conflitto aggiornato.",
+    status: "resolved" as const,
+  };
+}
+
 export async function startCatalogImportJobs(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
   const importProductStatus = normalizeImportProductStatus(
@@ -355,6 +474,11 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     if (result === "requeued") requeuedJobCount += 1;
     if (result === "resumed") resumedJobCount += 1;
   }
+
+  await prisma.shop.update({
+    data: { syncEnabled: true },
+    where: { id: shop.id },
+  });
 
   const resultPayload = {
     batchCount: batches.length,
@@ -659,6 +783,7 @@ export async function recordShopifyWebhookPlaceholder(
   });
   const jobType = getPlaceholderJobType(normalizedTopic);
   const details = {
+    ...getWebhookJobPayload(normalizedTopic, input.payload),
     provider: "shopify",
     resourceId: input.resourceId ?? null,
     topic: normalizedTopic,
@@ -805,6 +930,65 @@ function getPlaceholderJobType(topic: string) {
     return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
+}
+
+function getWebhookJobPayload(topic: string, payload: unknown) {
+  if (topic === "orders/paid") {
+    return {
+      lineItems: extractShopifyOrderLineItems(payload),
+    } satisfies Prisma.JsonObject;
+  }
+
+  if (topic === "inventory_levels/update") {
+    return {
+      inventoryItemGid: extractShopifyInventoryItemGid(payload),
+    } satisfies Prisma.JsonObject;
+  }
+
+  return {};
+}
+
+function extractShopifyOrderLineItems(payload: unknown) {
+  if (!payload || typeof payload !== "object") return [];
+
+  const record = payload as Record<string, unknown>;
+  const rawLineItems = Array.isArray(record.line_items)
+    ? record.line_items
+    : [];
+
+  return rawLineItems.flatMap((lineItem) => {
+    if (!lineItem || typeof lineItem !== "object") return [];
+
+    const lineItemRecord = lineItem as Record<string, unknown>;
+    const quantity = getNumberField(lineItemRecord, "quantity");
+    const productId = getStringField(lineItemRecord, "product_id");
+    const variantId = getStringField(lineItemRecord, "variant_id");
+
+    if (!quantity || quantity <= 0) return [];
+
+    return [
+      {
+        quantity,
+        shopifyProductGid: productId
+          ? `gid://shopify/Product/${productId}`
+          : null,
+        shopifyVariantGid: variantId
+          ? `gid://shopify/ProductVariant/${variantId}`
+          : null,
+      },
+    ];
+  });
+}
+
+function extractShopifyInventoryItemGid(payload: unknown) {
+  if (!payload || typeof payload !== "object") return null;
+
+  const record = payload as Record<string, unknown>;
+  const inventoryItemId = getStringField(record, "inventory_item_id");
+
+  return inventoryItemId
+    ? `gid://shopify/InventoryItem/${inventoryItemId}`
+    : null;
 }
 
 function normalizeShopifyWebhookTopic(topic: string) {
@@ -1232,21 +1416,21 @@ function getRuntimePhaseReadiness(input: {
     },
     {
       detail:
-        "Polling entro 5 minuti da collegare dopo mapping e snapshot prodotto.",
+        "Runner pianifica batch incrementali per mapping attivi entro il target configurato.",
       label: "Sync incrementale eBay -> Shopify",
-      status: "da implementare",
+      status: "preparabile",
     },
     {
       detail:
-        "Webhook Shopify preparati; update eBay stock dipende da OAuth e capability listing.",
+        "Webhook orders/paid crea job prioritari per ridurre disponibilità eBay.",
       label: "Protezione disponibilità Shopify -> eBay",
       status: input.ebayConnected ? "preparabile" : "bloccato",
     },
     {
       detail:
-        "Webhook Shopify product/inventory tracciati; rilevazione conflitti ancora da collegare.",
+        "Webhook product/inventory aprono conflitti visibili e risolvibili in dashboard.",
       label: "Conflitti Shopify",
-      status: "da implementare",
+      status: "preparabile",
     },
     {
       detail:
@@ -1444,6 +1628,20 @@ function canRequestRetry(status: SyncJobStatus) {
   return retryableStatuses.includes(status);
 }
 
+function normalizeConflictResolution(value: string) {
+  if (value === SyncConflictResolution.KEEP_SHOPIFY) {
+    return SyncConflictResolution.KEEP_SHOPIFY;
+  }
+  if (value === SyncConflictResolution.REALIGN_FROM_EBAY) {
+    return SyncConflictResolution.REALIGN_FROM_EBAY;
+  }
+  if (value === SyncConflictResolution.IGNORE_FIELD) {
+    return SyncConflictResolution.IGNORE_FIELD;
+  }
+
+  throw new Response("Risoluzione conflitto non supportata.", { status: 400 });
+}
+
 function summarizeJobsByStatus(
   jobs: Array<{
     status: SyncJobStatus;
@@ -1526,6 +1724,18 @@ function getStringField(record: Record<string, unknown>, key: string) {
   const value = record[key];
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);
+
+  return null;
+}
+
+function getNumberField(record: Record<string, unknown>, key: string) {
+  const value = record[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : null;
+  }
 
   return null;
 }

@@ -9,10 +9,12 @@ Non contiene segreti reali. Password, token e connection string complete devono 
 Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
-production pronto. Il batch draft pilota è stato verificato sul dev store fino a
-50 prodotti. La pianificazione import può creare batch fino a 2.000 listing
-attivi o fermarsi prima quando lo store collegato ne espone meno; resta da
-verificare un import reale oltre il batch 50. Non esiste ancora sync catalogo.
+production pronto. La pianificazione import può creare batch fino a 2.000
+listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
+dev store l'import reale ha completato 958 listing. Il runner copre import,
+sync incrementale, update stock eBay da `orders/paid` e rilevazione conflitti
+Shopify; restano da verificare end-to-end le due nuove superfici su eventi reali
+post-deploy.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -48,8 +50,8 @@ Note:
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
-  syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
-  query --linked` e stampa solo stato job sanitizzato.
+syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
+query --linked` e stampa solo stato job sanitizzato.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
