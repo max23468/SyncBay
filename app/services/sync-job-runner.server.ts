@@ -670,10 +670,21 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
 
     if (!mapping) {
       skipped.push({
+        lineItemKey: lineItem.lineItemKey,
         quantity: lineItem.quantity,
         reason: "mapping_not_found",
         shopifyProductGid: lineItem.shopifyProductGid ?? null,
         shopifyVariantGid: lineItem.shopifyVariantGid ?? null,
+      });
+      continue;
+    }
+
+    if (await hasCompletedStockUpdateForLine(job, mapping.id, lineItem)) {
+      skipped.push({
+        ebayItemId: mapping.ebayItemId,
+        lineItemKey: lineItem.lineItemKey,
+        quantity: lineItem.quantity,
+        reason: "already_processed",
       });
       continue;
     }
@@ -700,6 +711,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         mappingId: mapping.id,
         payload: {
           previousQuantity,
+          orderLineItemKey: lineItem.lineItemKey,
           reason: "shopify_order_paid",
           syncJobId: job.id,
           updatedEbayFromShopifyOrder: true,
@@ -717,6 +729,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     });
     updated.push({
       ebayItemId: mapping.ebayItemId,
+      lineItemKey: lineItem.lineItemKey,
       nextQuantity,
       orderedQuantity: lineItem.quantity,
       previousQuantity,
@@ -1025,6 +1038,7 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
 
     return [
       {
+        lineItemKey: getJsonString(lineItemObject.lineItemKey),
         quantity,
         shopifyProductGid: getJsonString(lineItemObject.shopifyProductGid),
         shopifyVariantGid: getJsonString(lineItemObject.shopifyVariantGid),
@@ -1036,6 +1050,7 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
 async function findProductMappingForOrderLine(
   shopId: string,
   lineItem: {
+    lineItemKey: string | null;
     shopifyProductGid: string | null;
     shopifyVariantGid: string | null;
   },
@@ -1060,6 +1075,37 @@ async function findProductMappingForOrderLine(
       shopifyProductGid: lineItem.shopifyProductGid,
       status: ProductMappingStatus.ACTIVE,
     },
+  });
+}
+
+async function hasCompletedStockUpdateForLine(
+  job: DueSyncJob,
+  mappingId: string,
+  lineItem: {
+    lineItemKey: string | null;
+  },
+) {
+  if (!lineItem.lineItemKey) return false;
+
+  const snapshots = await prisma.productSnapshot.findMany({
+    orderBy: { capturedAt: "desc" },
+    select: { payload: true },
+    take: 20,
+    where: {
+      mappingId,
+      shopId: job.shopId,
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+
+  return snapshots.some((snapshot) => {
+    const payload = getJsonObject(snapshot.payload);
+
+    return (
+      payload?.syncJobId === job.id &&
+      payload.orderLineItemKey === lineItem.lineItemKey &&
+      payload.updatedEbayFromShopifyOrder === true
+    );
   });
 }
 

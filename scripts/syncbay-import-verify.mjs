@@ -89,6 +89,7 @@ latest_syncbay as (
     ps.title,
     ps."priceAmount",
     ps.quantity,
+    ps."productStatus",
     ps."imageCount",
     ps.payload,
     ps."capturedAt"
@@ -110,6 +111,7 @@ sample_rows as (
     sb.title,
     sb."priceAmount"::text as "expectedPrice",
     sb.quantity as "expectedQuantity",
+    sb."productStatus" as "expectedProductStatus",
     sb."imageCount" as "expectedImageCount",
     eb."priceAmount"::text as "ebayPrice",
     eb.quantity as "ebayQuantity",
@@ -217,10 +219,13 @@ function verifySampleRow(row, product) {
   const expectedPrice = normalizeMoney(row.expectedPrice);
   const actualPrice = normalizeMoney(variant?.price);
   const expectedImageCount = normalizeNumber(row.expectedImageCount);
+  const expectedProductStatus = normalizeProductStatus(
+    row.expectedProductStatus,
+  );
   const failures = [
     !product ? "prodotto Shopify non trovato" : null,
-    product && product.status !== "ACTIVE"
-      ? `stato Shopify ${product.status}`
+    product && product.status !== expectedProductStatus
+      ? `stato Shopify ${product.status}, atteso ${expectedProductStatus}`
       : null,
     product &&
     expectedQuantity !== null &&
@@ -256,6 +261,7 @@ function verifySampleRow(row, product) {
     ebayItemId: row.ebayItemId,
     expectedImageCount,
     expectedPrice,
+    expectedProductStatus,
     expectedQuantity,
     failures,
     handle: product?.handle ?? null,
@@ -263,6 +269,10 @@ function verifySampleRow(row, product) {
     status: failures.length > 0 ? "failed" : "ok",
     title: product?.title ?? row.title,
   };
+}
+
+function normalizeProductStatus(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : "ACTIVE";
 }
 
 async function querySupabaseJson(sql) {

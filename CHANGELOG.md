@@ -6,6 +6,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.19.1] — 2026-06-01
+
+### Correzioni
+
+- Il manifest Shopify pilota resta deployabile senza `read_orders` e senza
+  subscription `orders/paid`, che richiedono approvazione Shopify per protected
+  customer data; il codice `UPDATE_EBAY_STOCK` resta pronto ma non attivato dal
+  manifest finché l'approvazione non è disponibile.
+- `npm run import:verify` ora confronta lo stato prodotto Shopify con
+  `productStatus` dello snapshot SyncBay invece di assumere sempre `ACTIVE`,
+  evitando falsi fallimenti per import configurati come bozze.
+- I retry dei job `UPDATE_EBAY_STOCK` saltano le righe ordine già applicate
+  nello stesso job, evitando doppie riduzioni della disponibilità eBay.
+- L'azione conflitto `Mantieni Shopify` aggiorna la baseline SyncBay del campo,
+  così il sync incrementale successivo non annulla la scelta del negoziante.
+
 ## [0.19.0] — 2026-06-01
 
 ### Novità
@@ -514,6 +530,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.19.1]: #0191--2026-06-01
 [0.19.0]: #0190--2026-06-01
 [0.18.8]: #0188--2026-06-01
 [0.18.7]: #0187--2026-06-01

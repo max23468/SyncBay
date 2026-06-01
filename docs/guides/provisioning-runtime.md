@@ -12,9 +12,10 @@ Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. La pianificazione import può creare batch fino a 2.000
 listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
 dev store l'import reale ha completato 958 listing. Il runner copre import,
-sync incrementale, update stock eBay da `orders/paid` e rilevazione conflitti
-Shopify; restano da verificare end-to-end le due nuove superfici su eventi reali
-post-deploy.
+sync incrementale, job update stock eBay preparato per `orders/paid` e
+rilevazione conflitti Shopify; `orders/paid` resta fuori dal manifest finché
+Shopify protected customer data non viene approvato. Restano da verificare
+end-to-end le nuove superfici su eventi reali post-deploy.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
