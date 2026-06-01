@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.3] — 2026-06-01
+
+### Correzioni
+
+- Allineata la versione Admin GraphQL runtime a `2026-04`, coerente con la
+  configurazione webhook e con la sintassi inventario `changeFromQuantity`.
+
 ## [0.18.2] — 2026-06-01
 
 ### Sotto il cofano
@@ -425,6 +432,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.3]: #0183--2026-06-01
 [0.18.2]: #0182--2026-06-01
 [0.18.1]: #0181--2026-06-01
 [0.18.0]: #0180--2026-06-01
