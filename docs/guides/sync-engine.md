@@ -46,9 +46,11 @@ Default:
 - stock buffer configurabile;
 - modalità prudente se lo stock non è affidabile.
 
-Nel pilota il webhook `orders/paid` salva solo riferimenti prodotto/variante e
-quantità, poi il runner usa Trading API `ReviseInventoryStatus` con ItemID e SKU
-del mapping SyncBay per ridurre la disponibilità eBay.
+Il job `UPDATE_EBAY_STOCK` è pronto, ma il manifest pilota non sottoscrive
+`orders/paid` finché Shopify protected customer data non viene approvato. Quando
+il webhook sarà attivo, SyncBay salverà solo riferimenti prodotto/variante e
+quantità, poi il runner userà Trading API `ReviseInventoryStatus` con ItemID e
+SKU del mapping SyncBay per ridurre la disponibilità eBay.
 
 ## Sync incrementale
 

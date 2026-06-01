@@ -4,6 +4,7 @@ import {
   AuditEventType,
   EbayConnectionStatus,
   Prisma,
+  ProductSnapshotSource,
   ShopInstallationStatus,
   SyncConflictResolution,
   SyncConflictStatus,
@@ -64,14 +65,12 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "write_inventory",
   "read_locations",
   "write_locations",
-  "read_orders",
   "read_files",
   "write_files",
 ];
 const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",
   "app/scopes_update",
-  "orders/paid",
   "products/update",
   "inventory_levels/update",
 ];
@@ -339,6 +338,16 @@ export async function resolveSyncConflict(
       status: SyncConflictStatus.OPEN,
     },
   });
+  const baselineSnapshot =
+    resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId
+      ? await prisma.productSnapshot.findFirst({
+          orderBy: { capturedAt: "desc" },
+          where: {
+            mappingId: conflict.mappingId,
+            source: ProductSnapshotSource.SYNCBAY,
+          },
+        })
+      : null;
 
   if (!conflict) {
     throw new Response("Conflitto SyncBay non trovato.", { status: 404 });
@@ -371,6 +380,17 @@ export async function resolveSyncConflict(
     }),
   ];
 
+  if (baselineSnapshot) {
+    operations.push(
+      prisma.productSnapshot.create({
+        data: buildKeepShopifyBaselineSnapshot({
+          conflict,
+          snapshot: baselineSnapshot,
+        }),
+      }),
+    );
+  }
+
   if (
     resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
     conflict.mapping?.ebayItemId
@@ -397,6 +417,55 @@ export async function resolveSyncConflict(
   return {
     message: "Conflitto aggiornato.",
     status: "resolved" as const,
+  };
+}
+
+function buildKeepShopifyBaselineSnapshot(input: {
+  conflict: Prisma.SyncConflictGetPayload<Record<string, never>>;
+  snapshot: Prisma.ProductSnapshotGetPayload<Record<string, never>>;
+}) {
+  const shopifyValue = input.conflict.shopifyValue;
+
+  return {
+    descriptionHash:
+      input.conflict.field === "description"
+        ? getJsonStringValue(shopifyValue)
+        : input.snapshot.descriptionHash,
+    ebayItemId: input.snapshot.ebayItemId,
+    imageCount:
+      input.conflict.field === "images"
+        ? getJsonIntegerValue(shopifyValue)
+        : input.snapshot.imageCount,
+    mappingId: input.snapshot.mappingId,
+    payload: {
+      ...(getJsonObject(input.snapshot.payload) ?? {}),
+      conflictResolution: {
+        conflictId: input.conflict.id,
+        field: input.conflict.field,
+        resolution: SyncConflictResolution.KEEP_SHOPIFY,
+      },
+    } satisfies Prisma.JsonObject,
+    priceAmount:
+      input.conflict.field === "price"
+        ? getJsonDecimalValue(shopifyValue)
+        : input.snapshot.priceAmount,
+    productStatus:
+      input.conflict.field === "status"
+        ? getJsonStringValue(shopifyValue)
+        : input.snapshot.productStatus,
+    quantity:
+      input.conflict.field === "quantity"
+        ? getJsonIntegerValue(shopifyValue)
+        : input.snapshot.quantity,
+    shopId: input.snapshot.shopId,
+    shopifyProductGid: input.snapshot.shopifyProductGid,
+    shopifyVariantGid: input.snapshot.shopifyVariantGid,
+    sku: input.snapshot.sku,
+    source: ProductSnapshotSource.SYNCBAY,
+    title:
+      input.conflict.field === "title"
+        ? getJsonStringValue(shopifyValue)
+        : input.snapshot.title,
   };
 }
 
@@ -956,10 +1025,11 @@ function extractShopifyOrderLineItems(payload: unknown) {
     ? record.line_items
     : [];
 
-  return rawLineItems.flatMap((lineItem) => {
+  return rawLineItems.flatMap((lineItem, index) => {
     if (!lineItem || typeof lineItem !== "object") return [];
 
     const lineItemRecord = lineItem as Record<string, unknown>;
+    const lineItemId = getStringField(lineItemRecord, "id");
     const quantity = getNumberField(lineItemRecord, "quantity");
     const productId = getStringField(lineItemRecord, "product_id");
     const variantId = getStringField(lineItemRecord, "variant_id");
@@ -968,6 +1038,9 @@ function extractShopifyOrderLineItems(payload: unknown) {
 
     return [
       {
+        lineItemKey:
+          lineItemId ??
+          `${productId ?? "no-product"}:${variantId ?? "no-variant"}:${index}`,
         quantity,
         shopifyProductGid: productId
           ? `gid://shopify/Product/${productId}`
@@ -1714,6 +1787,24 @@ function getJsonBoolean(value: Prisma.JsonValue | undefined) {
 
 function getJsonNumber(value: Prisma.JsonValue | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function getJsonIntegerValue(value: Prisma.JsonValue | undefined) {
+  const number = getJsonNumber(value);
+
+  return Number.isInteger(number) ? number : null;
+}
+
+function getJsonStringValue(value: Prisma.JsonValue | undefined) {
+  return typeof value === "string" ? value : null;
+}
+
+function getJsonDecimalValue(value: Prisma.JsonValue | undefined) {
+  if (typeof value !== "number" && typeof value !== "string") return null;
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? new Prisma.Decimal(value) : null;
 }
 
 function getJsonString(value: Prisma.JsonValue | undefined) {

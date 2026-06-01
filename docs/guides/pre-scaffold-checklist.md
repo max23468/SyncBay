@@ -22,7 +22,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] Redirect URL Shopify provvisorio deciso: `https://syncbay.vercel.app/auth/callback`.
 - [x] Scopes Shopify iniziali definiti come bozza MVP.
 - [x] Webhook minimi definiti come bozza MVP: uninstall, orders, products, inventory.
-- [x] Webhook minimi configurati nello scaffold come placeholder tracciati, incluso `orders/paid` per il pilota controllato.
+- [x] Webhook minimi configurati nello scaffold come placeholder tracciati; `orders/paid` resta route preparata ma non sottoscritta finché Shopify protected customer data non viene approvato.
 
 ## 3. Account eBay
 
