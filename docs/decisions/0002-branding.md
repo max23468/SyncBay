@@ -32,7 +32,10 @@ Direzione proposta:
 - La comunicazione deve evitare inglesismi non necessari: preferire "negoziante", "venditore", "disponibilità", "sincronizzazione", "anteprima" quando il contesto lo consente.
 - Il brand deve enfatizzare anteprima, ripristino, conflitti chiari e diagnostica self-service.
 - Gli asset approvati vivono in `brand/assets/` e vanno usati come fonte primaria per UI, documenti e materiali futuri.
-- Il PNG approvato resta la source of truth visiva; gli SVG attuali sono wrapper raster fedeli e non ancora tracciati vettoriali puri.
+- Il PNG approvato resta la source of truth visiva; gli SVG logo attuali sono
+  wrapper raster fedeli e non ancora tracciati vettoriali puri.
+- L'icona di navigazione Shopify è una variante tecnica dedicata: tracciato
+  vettoriale puro, 16x16, monocromatico e con sfondo trasparente.
 - Gli export PNG trasparenti devono mantenere colori pieni e uniformi della palette approvata, senza ricavare trasparenze dai colori chiari.
 - Prima di app pubblica, dominio o trademark, va fatta verifica legale/brand su nome e uso dei marchi eBay/Shopify.
 

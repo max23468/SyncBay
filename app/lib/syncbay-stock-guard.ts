@@ -123,3 +123,17 @@ export function validateEbayStockOrderCurrency(input: {
     reason: null,
   };
 }
+
+export function selectShopifyOrderCurrency(input: {
+  currency?: string | null;
+  presentmentCurrency?: string | null;
+  presentmentMoneyCurrency?: string | null;
+  shopMoneyCurrency?: string | null;
+}) {
+  return (
+    normalizeCurrency(input.presentmentCurrency) ??
+    normalizeCurrency(input.presentmentMoneyCurrency) ??
+    normalizeCurrency(input.currency) ??
+    normalizeCurrency(input.shopMoneyCurrency)
+  );
+}

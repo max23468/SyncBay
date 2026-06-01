@@ -13,7 +13,7 @@
     "white": "#FFFFFF"
   },
   "quality_note": "Composizione originale preservata; asset normalizzati su colori pieni con bordi antialiasati morbidi, senza macchie, gradienti, sbiadimenti o contorni sgranati.",
-  "note": "Gli SVG sono wrapper raster per preservare fedelmente il master approvato; un tracciato vettoriale puro va rifatto in un tool di design a partire da questo riferimento.",
+  "note": "Gli SVG logo sono wrapper raster per preservare fedelmente il master approvato; l'icona navigazione Shopify è un tracciato vettoriale puro dedicato.",
   "files": [
     {
       "path": "brand/assets/favicon/favicon.ico",
@@ -376,6 +376,15 @@
     {
       "path": "brand/assets/svg/syncbay-icon.svg",
       "bytes": 91498
+    },
+    {
+      "path": "brand/assets/svg/syncbay-navigation-icon.svg",
+      "bytes": 313,
+      "width": 16,
+      "height": 16,
+      "background": "transparent",
+      "format": "svg",
+      "usage": "Shopify navigation icon"
     },
     {
       "path": "brand/assets/svg/syncbay-logo-horizontal-tagline.svg",

@@ -20,6 +20,7 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
+import { selectShopifyOrderCurrency } from "../lib/syncbay-stock-guard";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -1091,13 +1092,15 @@ function extractShopifyOrderCurrency(payload: unknown) {
 
   const record = payload as Record<string, unknown>;
   const moneySet = getRecordField(record, "current_total_price_set");
+  const presentmentMoney = getRecordField(moneySet, "presentment_money");
   const shopMoney = getRecordField(moneySet, "shop_money");
 
-  return (
-    getStringField(record, "currency") ??
-    getStringField(record, "presentment_currency") ??
-    getStringField(shopMoney, "currency_code")
-  );
+  return selectShopifyOrderCurrency({
+    currency: getStringField(record, "currency"),
+    presentmentCurrency: getStringField(record, "presentment_currency"),
+    presentmentMoneyCurrency: getStringField(presentmentMoney, "currency_code"),
+    shopMoneyCurrency: getStringField(shopMoney, "currency_code"),
+  });
 }
 
 function extractShopifyInventoryItemGid(payload: unknown) {

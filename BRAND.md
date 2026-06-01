@@ -257,6 +257,7 @@ Asset:
 - combinato verticale: `brand/assets/svg/syncbay-logo-stacked-tagline.svg`;
 - wordmark: `brand/assets/svg/syncbay-wordmark.svg`;
 - icona quadrata: `brand/assets/svg/syncbay-icon-square.svg`;
+- icona navigazione Shopify: `brand/assets/svg/syncbay-navigation-icon.svg`;
 - export PNG: `brand/assets/png/`;
 - favicon: `brand/assets/favicon/favicon.ico`;
 - manifest: `brand/assets/manifest.json`.
@@ -265,7 +266,8 @@ Regole:
 
 - usare il PNG approvato in `brand/assets/source/` come source of truth visiva;
 - gli asset sono rigenerati con colori pieni sulla palette logo definitiva, per evitare componenti sbiaditi o non uniformi nei PNG trasparenti;
-- gli SVG attuali sono wrapper raster fedeli, non tracciati vettoriali puri modificabili punto per punto;
+- gli SVG logo attuali sono wrapper raster fedeli, non tracciati vettoriali puri modificabili punto per punto;
+- l'icona navigazione Shopify è un tracciato vettoriale puro 16x16, monocromatico e con sfondo trasparente;
 - per stampa, deposito marchio o requisiti App Store che richiedano vettoriale puro, creare una versione tracciata in un tool di design partendo dal riferimento approvato;
 - preferire SVG o PNG trasparenti dove possibile, secondo il contesto di utilizzo;
 - usare PNG trasparenti per UI e documenti su sfondi controllati;

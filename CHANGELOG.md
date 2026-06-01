@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.4] — 2026-06-01
+
+### Correzioni
+
+- Il guard valuta dei job `UPDATE_EBAY_STOCK` considera la valuta presentment
+  dell'ordine Shopify prima della valuta base dello store, evitando di applicare
+  riduzioni stock eBay.it su ordini pagati o presentati in una valuta diversa
+  da EUR.
+
+### Sotto il cofano
+
+- Aggiunta l'icona vettoriale monocromatica per la navigazione Shopify agli
+  asset brand e al relativo manifest.
+
 ## [0.20.3] — 2026-06-01
 
 ### Correzioni
@@ -583,6 +597,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.4]: #0204--2026-06-01
 [0.20.3]: #0203--2026-06-01
 [0.20.2]: #0202--2026-06-01
 [0.20.1]: #0201--2026-06-01
