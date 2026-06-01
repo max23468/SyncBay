@@ -316,6 +316,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
   const now = new Date();
   let createdJobCount = 0;
   let existingJobCount = 0;
+  let requeuedJobCount = 0;
   let resumedJobCount = 0;
 
   for (const [batchIndex, ebayItemIds] of batches.entries()) {
@@ -333,6 +334,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
 
     if (result === "created") createdJobCount += 1;
     if (result === "existing") existingJobCount += 1;
+    if (result === "requeued") requeuedJobCount += 1;
     if (result === "resumed") resumedJobCount += 1;
   }
 
@@ -345,6 +347,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     importProductStatus,
     plannedListingCount: plan.itemIds.length,
     readCount: plan.readCount,
+    requeuedJobCount,
     resumedJobCount,
     source: "trading_api",
     totalAvailable: plan.totalAvailable,
@@ -846,29 +849,51 @@ async function upsertCatalogImportBatchJob(input: {
     return "created" as const;
   }
 
+  if (existingJob.status === SyncJobStatus.SUCCEEDED) {
+    await resetCatalogImportBatchJob({
+      existingJobId: existingJob.id,
+      now: input.now,
+      payload,
+    });
+
+    return "requeued" as const;
+  }
+
   if (
     existingJob.status === SyncJobStatus.FAILED ||
     existingJob.status === SyncJobStatus.CANCELLED
   ) {
-    await prisma.syncJob.update({
-      data: {
-        attempts: 0,
-        errorCode: null,
-        errorMessage: null,
-        finishedAt: null,
-        payload,
-        result: Prisma.DbNull,
-        runAfter: input.now,
-        startedAt: null,
-        status: SyncJobStatus.PENDING,
-      },
-      where: { id: existingJob.id },
+    await resetCatalogImportBatchJob({
+      existingJobId: existingJob.id,
+      now: input.now,
+      payload,
     });
 
     return "resumed" as const;
   }
 
   return "existing" as const;
+}
+
+async function resetCatalogImportBatchJob(input: {
+  existingJobId: string;
+  now: Date;
+  payload: Prisma.JsonObject;
+}) {
+  await prisma.syncJob.update({
+    data: {
+      attempts: 0,
+      errorCode: null,
+      errorMessage: null,
+      finishedAt: null,
+      payload: input.payload,
+      result: Prisma.DbNull,
+      runAfter: input.now,
+      startedAt: null,
+      status: SyncJobStatus.PENDING,
+    },
+    where: { id: input.existingJobId },
+  });
 }
 
 function buildCatalogImportBatchPayload(input: {
