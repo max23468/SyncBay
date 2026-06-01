@@ -153,6 +153,10 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 
 - Usa Shopify Admin GraphQL come interfaccia primaria per prodotti, inventario, media e webhook.
 - Mantieni compatibilità con Shopify CLI e app embedded.
+- Per attività Shopify assistite da AI, usa le skill Shopify AI Toolkit
+  disponibili e, quando serve contesto live, il Dev MCP Shopify configurato
+  localmente. Le skill sono supporto operativo e di validazione, non una fonte
+  che prevale su AGENTS, ADR o documentazione SyncBay.
 - Prima di fissare scope o webhook, verifica la documentazione Shopify aggiornata.
 - Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilità e vetrina Shopify.
 - Per modifiche future alla UI embedded, usa pattern coerenti con Shopify Admin e Polaris/App Bridge quando saranno introdotti.
