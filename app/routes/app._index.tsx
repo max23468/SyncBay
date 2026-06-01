@@ -3,7 +3,12 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+} from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
@@ -66,6 +71,7 @@ export default function Index() {
   const ebayConnected = dashboard.ebay.status === "CONNECTED";
   const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
   const lastJobs = dashboard.sync.lastJobs;
+  const latestImportRun = dashboard.imports.latestRun;
   const retryingJobId =
     navigation.formData?.get("intent") === "retryJob"
       ? String(navigation.formData.get("jobId") ?? "")
@@ -145,7 +151,8 @@ export default function Index() {
             </s-list-item>
           ) : !dashboard.ebay.oauthEnabled ? (
             <s-list-item>
-              Abilita il flag runtime OAuth eBay quando vuoi testare il consenso.
+              Abilita il flag runtime OAuth eBay quando vuoi testare il
+              consenso.
             </s-list-item>
           ) : (
             <s-list-item>Avvia connessione OAuth eBay.</s-list-item>
@@ -170,10 +177,18 @@ export default function Index() {
 
       <s-section heading="Attività recenti">
         <s-unordered-list>
-          <s-list-item>Job pending: {dashboard.sync.jobsByStatus.PENDING}</s-list-item>
-          <s-list-item>Job in esecuzione: {dashboard.sync.jobsByStatus.RUNNING}</s-list-item>
-          <s-list-item>Job falliti: {dashboard.sync.jobsByStatus.FAILED}</s-list-item>
-          <s-list-item>Job riusciti: {dashboard.sync.jobsByStatus.SUCCEEDED}</s-list-item>
+          <s-list-item>
+            Job pending: {dashboard.sync.jobsByStatus.PENDING}
+          </s-list-item>
+          <s-list-item>
+            Job in esecuzione: {dashboard.sync.jobsByStatus.RUNNING}
+          </s-list-item>
+          <s-list-item>
+            Job falliti: {dashboard.sync.jobsByStatus.FAILED}
+          </s-list-item>
+          <s-list-item>
+            Job riusciti: {dashboard.sync.jobsByStatus.SUCCEEDED}
+          </s-list-item>
         </s-unordered-list>
         {lastJobs.length > 0 ? (
           <s-unordered-list>
@@ -199,6 +214,44 @@ export default function Index() {
             Snapshot prodotto salvati: {dashboard.imports.snapshotCount}
           </s-list-item>
         </s-unordered-list>
+        {latestImportRun ? (
+          <>
+            <s-paragraph>
+              Ultima run: {formatRunId(latestImportRun.runId)}. Avanzamento{" "}
+              {latestImportRun.completedItemCount}/
+              {latestImportRun.plannedItemCount} item, batch{" "}
+              {latestImportRun.batchCount}, job attivi{" "}
+              {latestImportRun.activeJobCount}, job falliti{" "}
+              {latestImportRun.failedJobCount}.
+            </s-paragraph>
+            <s-unordered-list>
+              {latestImportRun.statusRows.map((row) => (
+                <s-list-item key={`${row.jobKind}-${row.status}`}>
+                  {formatImportJobKind(row.jobKind)} {row.status}:{" "}
+                  {row.jobCount} job, {row.itemCount} item
+                  {row.firstBatch && row.lastBatch
+                    ? `, batch ${row.firstBatch}-${row.lastBatch}/${row.batchCount}`
+                    : ""}
+                </s-list-item>
+              ))}
+            </s-unordered-list>
+            {latestImportRun.recentProblemJobs.length > 0 ? (
+              <s-unordered-list>
+                {latestImportRun.recentProblemJobs.map((job) => (
+                  <s-list-item key={job.id}>
+                    {formatImportJobKind(job.jobKind)}
+                    {job.batchIndex ? ` batch ${job.batchIndex}` : ""}:{" "}
+                    {job.status}, tentativi {job.attempts}/{job.maxAttempts}
+                    {job.errorMessage ? ` - ${job.errorMessage}` : ""}
+                    {job.status === "RETRYING"
+                      ? ` - retry da ${formatDateTime(job.runAfter)}`
+                      : ""}
+                  </s-list-item>
+                ))}
+              </s-unordered-list>
+            ) : null}
+          </>
+        ) : null}
         {actionData?.intent === "retryJob" ? (
           <s-paragraph>{actionData.message}</s-paragraph>
         ) : null}
@@ -218,10 +271,7 @@ export default function Index() {
                   <Form method="post">
                     <input type="hidden" name="intent" value="retryJob" />
                     <input type="hidden" name="jobId" value={job.id} />
-                    <s-button
-                      type="submit"
-                      disabled={retryingJobId === job.id}
-                    >
+                    <s-button type="submit" disabled={retryingJobId === job.id}>
                       {retryingJobId === job.id
                         ? "Riprogrammazione..."
                         : "Rimetti in coda"}
@@ -285,7 +335,9 @@ export default function Index() {
           <s-list-item>
             URL pubblico: {dashboard.vercel.publicUrl ?? "non configurato"}
           </s-list-item>
-          <s-list-item>Osservabilità: Vercel Analytics e Speed Insights</s-list-item>
+          <s-list-item>
+            Osservabilità: Vercel Analytics e Speed Insights
+          </s-list-item>
           <s-list-item>Versione app: {APP_VERSION}</s-list-item>
           <s-list-item>Data build: {BUILD_DATE}</s-list-item>
         </s-unordered-list>
@@ -314,4 +366,14 @@ function formatDateTime(value: string | null) {
   if (!value) return "non concluso";
 
   return itDateTimeFormatter.format(new Date(value));
+}
+
+function formatRunId(value: string) {
+  const parts = value.split(":");
+
+  return parts[parts.length - 1]?.slice(0, 8) ?? value.slice(0, 8);
+}
+
+function formatImportJobKind(value: string) {
+  return value === "catalog_batch" ? "Batch catalogo" : "Import Shopify";
 }
