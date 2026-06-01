@@ -146,6 +146,20 @@ interface ShopifyProductUpdateResponse {
   }>;
 }
 
+interface ShopifyProductDeleteMediaResponse {
+  data?: {
+    productDeleteMedia?: {
+      deletedMediaIds?: string[];
+      deletedProductImageIds?: string[];
+      mediaUserErrors?: ShopifyUserError[];
+      product?: ShopifyDraftProductNode | null;
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 interface ShopifyInventoryVerificationResponse {
   data?: {
     node?: {
@@ -1227,8 +1241,10 @@ async function deleteShopifyProductMediaFiles(
 
   const response = await admin.graphql(
     `#graphql
-    mutation SyncBayDeleteProductMediaFiles($fileIds: [ID!]!, $productId: ID!) {
-      productUpdate(product: { id: $productId, mediaIdsToDelete: $fileIds }) {
+    mutation SyncBayDeleteProductMediaFiles($mediaIds: [ID!]!, $productId: ID!) {
+      productDeleteMedia(mediaIds: $mediaIds, productId: $productId) {
+        deletedMediaIds
+        deletedProductImageIds
         product {
           id
           media(first: 250) {
@@ -1242,7 +1258,7 @@ async function deleteShopifyProductMediaFiles(
             }
           }
         }
-        userErrors {
+        mediaUserErrors {
           code
           field
           message
@@ -1251,16 +1267,16 @@ async function deleteShopifyProductMediaFiles(
     }`,
     {
       variables: {
-        fileIds: uniqueMediaIds,
+        mediaIds: uniqueMediaIds,
         productId: productGid,
       },
     },
   );
-  const json = (await response.json()) as ShopifyProductUpdateResponse;
+  const json = (await response.json()) as ShopifyProductDeleteMediaResponse;
 
   if (!response.ok) {
     return {
-      errorMessage: `Shopify productUpdate media ha risposto con stato HTTP ${response.status}.`,
+      errorMessage: `Shopify productDeleteMedia ha risposto con stato HTTP ${response.status}.`,
       status: "failed",
     };
   }
@@ -1272,7 +1288,7 @@ async function deleteShopifyProductMediaFiles(
     };
   }
 
-  const userErrors = json.data?.productUpdate?.userErrors ?? [];
+  const userErrors = json.data?.productDeleteMedia?.mediaUserErrors ?? [];
 
   if (userErrors.length > 0) {
     return {
@@ -1282,7 +1298,10 @@ async function deleteShopifyProductMediaFiles(
   }
 
   return {
-    deletedCount: uniqueMediaIds.length,
+    deletedCount:
+      json.data?.productDeleteMedia?.deletedMediaIds?.length ??
+      json.data?.productDeleteMedia?.deletedProductImageIds?.length ??
+      uniqueMediaIds.length,
     status: "synced",
   };
 }
