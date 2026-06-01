@@ -878,9 +878,15 @@ export async function recordShopifyWebhookPlaceholder(
       shopId: shop.id,
     });
 
-    const jobOperation = coalescedJob
-      ? prisma.syncJob.update({
-          where: { id: coalescedJob.id },
+    await prisma.$transaction(async (tx) => {
+      let coalesced = false;
+
+      if (coalescedJob) {
+        const updated = await tx.syncJob.updateMany({
+          where: {
+            id: coalescedJob.id,
+            status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+          },
           data: {
             errorCode: null,
             errorMessage: null,
@@ -889,26 +895,32 @@ export async function recordShopifyWebhookPlaceholder(
             runAfter: new Date(),
             status: SyncJobStatus.PENDING,
           },
-        })
-      : idempotencyKey
-        ? prisma.syncJob.upsert({
+        });
+
+        coalesced = updated.count === 1;
+      }
+
+      if (!coalesced) {
+        if (idempotencyKey) {
+          await tx.syncJob.upsert({
             where: { idempotencyKey },
             create: jobData,
             update: {},
-          })
-        : prisma.syncJob.create({ data: jobData });
+          });
+        } else {
+          await tx.syncJob.create({ data: jobData });
+        }
+      }
 
-    await prisma.$transaction([
-      jobOperation,
-      prisma.auditLog.create({
+      await tx.auditLog.create({
         data: {
           details,
           message: "Webhook Shopify ricevuto e tracciato.",
           shopId: shop.id,
           type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
         },
-      }),
-    ]);
+      });
+    });
     return;
   }
 
