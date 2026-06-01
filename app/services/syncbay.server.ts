@@ -65,12 +65,14 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "write_inventory",
   "read_locations",
   "write_locations",
+  "read_orders",
   "read_files",
   "write_files",
 ];
 const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",
   "app/scopes_update",
+  "orders/paid",
   "products/update",
   "inventory_levels/update",
 ];

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.0] — 2026-06-01
+
+### Novità
+
+- Riattivata la subscription Shopify `orders/paid` e lo scope `read_orders`
+  dopo la scelta della distribuzione personalizzata, per abilitare il job
+  `UPDATE_EBAY_STOCK` nel pilota controllato.
+
 ## [0.19.1] — 2026-06-01
 
 ### Correzioni
@@ -530,6 +538,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.0]: #0200--2026-06-01
 [0.19.1]: #0191--2026-06-01
 [0.19.0]: #0190--2026-06-01
 [0.18.8]: #0188--2026-06-01
