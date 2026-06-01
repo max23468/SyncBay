@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.2] — 2026-06-01
+
+### Correzioni
+
+- La coalescenza dei webhook Shopify non può più riportare a `PENDING` un job
+  `DETECT_SHOPIFY_CHANGES` già claimato dal runner; se il job è stato preso in
+  carico, il webhook crea una nuova verifica pendente.
+
 ## [0.20.1] — 2026-06-01
 
 ### Correzioni
@@ -558,6 +566,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.2]: #0202--2026-06-01
 [0.20.1]: #0201--2026-06-01
 [0.20.0]: #0200--2026-06-01
 [0.19.1]: #0191--2026-06-01
