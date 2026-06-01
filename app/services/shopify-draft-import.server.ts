@@ -33,6 +33,25 @@ interface ShopifyUserError {
   message: string;
 }
 
+interface ShopifyGraphqlResponseEnvelope {
+  errors?: Array<{
+    extensions?: {
+      code?: string | null;
+    } | null;
+    message: string;
+  }>;
+  extensions?: {
+    cost?: {
+      actualQueryCost?: number | null;
+      requestedQueryCost?: number | null;
+      throttleStatus?: {
+        currentlyAvailable?: number | null;
+        restoreRate?: number | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
 interface ShopifyInventoryItemNode {
   id: string;
   tracked?: boolean | null;
@@ -78,6 +97,7 @@ interface ShopifyProductCreateResponse {
 
 interface ShopifyProductLookupResponse {
   data?: {
+    node?: ShopifyDraftProductLookupNode | null;
     productByHandle?: ShopifyDraftProductLookupNode | null;
     products?: {
       nodes?: ShopifyDraftProductLookupNode[];
@@ -210,6 +230,9 @@ const MAX_DRAFT_IMPORT_LIMIT = 50;
 const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
+const SHOPIFY_GRAPHQL_MAX_ATTEMPTS = 4;
+const SHOPIFY_GRAPHQL_MIN_AVAILABLE_POINTS = 120;
+const SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS = 15_000;
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
 
 type ShopifyInventorySyncResult =
@@ -273,6 +296,110 @@ type ShopifyDraftProductResult =
       mediaSync: ShopifyMediaSyncResult;
     })
   | Extract<ShopifyDraftProductCreateResult, { status: "failed" }>;
+
+function createShopifyAdminGraphqlClientWithBackoff(
+  admin: ShopifyAdminGraphqlClient,
+): ShopifyAdminGraphqlClient {
+  return {
+    async graphql(query, options) {
+      let response: Response | null = null;
+
+      for (
+        let attempt = 1;
+        attempt <= SHOPIFY_GRAPHQL_MAX_ATTEMPTS;
+        attempt += 1
+      ) {
+        response = await admin.graphql(query, options);
+
+        const envelope = await readShopifyGraphqlEnvelope(response);
+        const throttled = isShopifyGraphqlThrottled(response, envelope);
+
+        if (!throttled) {
+          await waitForShopifyGraphqlBudget(envelope);
+          return response;
+        }
+
+        if (attempt === SHOPIFY_GRAPHQL_MAX_ATTEMPTS) {
+          return response;
+        }
+
+        await sleep(calculateShopifyThrottleWaitMs(envelope, attempt));
+      }
+
+      return response ?? admin.graphql(query, options);
+    },
+  };
+}
+
+async function readShopifyGraphqlEnvelope(response: Response) {
+  try {
+    return (await response.clone().json()) as ShopifyGraphqlResponseEnvelope;
+  } catch {
+    return null;
+  }
+}
+
+function isShopifyGraphqlThrottled(
+  response: Response,
+  envelope: ShopifyGraphqlResponseEnvelope | null,
+) {
+  if (response.status === 429) return true;
+
+  return (envelope?.errors ?? []).some((error) => {
+    const code = error.extensions?.code?.toUpperCase();
+
+    return code === "THROTTLED" || error.message.toLowerCase() === "throttled";
+  });
+}
+
+async function waitForShopifyGraphqlBudget(
+  envelope: ShopifyGraphqlResponseEnvelope | null,
+) {
+  const waitMs = calculateShopifyThrottleWaitMs(envelope, 0);
+
+  if (waitMs > 0) {
+    await sleep(waitMs);
+  }
+}
+
+function calculateShopifyThrottleWaitMs(
+  envelope: ShopifyGraphqlResponseEnvelope | null,
+  attempt: number,
+) {
+  const cost = envelope?.extensions?.cost;
+  const throttleStatus = cost?.throttleStatus;
+  const currentlyAvailable = throttleStatus?.currentlyAvailable;
+  const restoreRate = throttleStatus?.restoreRate;
+  const requestedCost = cost?.requestedQueryCost ?? cost?.actualQueryCost ?? 0;
+  const targetAvailable = Math.max(
+    SHOPIFY_GRAPHQL_MIN_AVAILABLE_POINTS,
+    requestedCost,
+  );
+
+  if (
+    typeof currentlyAvailable === "number" &&
+    typeof restoreRate === "number" &&
+    restoreRate > 0 &&
+    currentlyAvailable < targetAvailable
+  ) {
+    return Math.min(
+      Math.ceil(((targetAvailable - currentlyAvailable) / restoreRate) * 1000) +
+        250,
+      SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS,
+    );
+  }
+
+  if (attempt <= 0) return 0;
+
+  return Math.min(
+    1000 * 2 ** (attempt - 1),
+    SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS,
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function getDraftImportReadiness(input: {
   defaultProductStatus: ImportProductStatus;
@@ -346,6 +473,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   shopDomain: string;
 }) {
   const shop = await ensureDraftImportShop(input.shopDomain);
+  const admin = createShopifyAdminGraphqlClientWithBackoff(input.admin);
   const importProductStatus =
     input.importProductStatusOverride ??
     normalizeImportProductStatus(shop.defaultProductStatus);
@@ -380,9 +508,10 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     draftProducts,
     DRAFT_PRODUCT_CREATE_CONCURRENCY,
     (product) =>
-      createShopifyDraftProductSafely(input.admin, product, {
+      createShopifyDraftProductSafely(admin, product, {
         defaultLocationGid: input.defaultLocationGid ?? null,
         jobId: job.id,
+        shopId: shop.id,
       }),
   );
   const createdProducts = results.flatMap((result) =>
@@ -474,10 +603,14 @@ export async function createShopifyDraftProductsIfEnabled(input: {
 async function createShopifyDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
+  context: {
+    shopId: string;
+  },
 ): Promise<ShopifyDraftProductCreateResult> {
   const existingProduct = await findExistingSyncBayDraftProduct(
     admin,
     draftProduct,
+    context,
   );
 
   if (existingProduct) {
@@ -514,10 +647,13 @@ async function createShopifyDraftProductSafely(
   context: {
     defaultLocationGid: string | null;
     jobId: string;
+    shopId: string;
   },
 ): Promise<ShopifyDraftProductResult> {
   try {
-    const result = await createShopifyDraftProduct(admin, draftProduct);
+    const result = await createShopifyDraftProduct(admin, draftProduct, {
+      shopId: context.shopId,
+    });
 
     if (result.status === "failed") return result;
 
@@ -663,7 +799,17 @@ async function createShopifyDraftProductRequest(
 async function findExistingSyncBayDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
+  context: {
+    shopId: string;
+  },
 ) {
+  const mappedProduct = await findMappedSyncBayDraftProduct(admin, {
+    ebayItemId: draftProduct.source.ebayItemId,
+    shopId: context.shopId,
+  });
+
+  if (mappedProduct) return mappedProduct;
+
   const handleLookupResponse = await admin.graphql(
     `#graphql
     query SyncBayFindDraftProduct($handle: String!) {
@@ -709,96 +855,84 @@ async function findExistingSyncBayDraftProduct(
 
   if (handleLookupJson.errors?.length) return null;
 
-  const products: ShopifyDraftProductLookupNode[] = [];
-  let cursor: string | null = null;
+  const productByHandle = handleLookupJson.data?.productByHandle;
 
-  while (true) {
-    const queryResponse = await admin.graphql(
-      `#graphql
-      query SyncBayFindDraftProduct($query: String!, $cursor: String) {
-        products(first: 250, query: $query, after: $cursor) {
-          nodes {
-            id
-            media(first: 250) {
-              nodes {
-                alt
-                id
-                mediaContentType
-                preview {
-                  status
-                }
+  return productByHandle?.metafield?.value === draftProduct.source.ebayItemId
+    ? productByHandle
+    : null;
+}
+
+async function findMappedSyncBayDraftProduct(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    ebayItemId: string;
+    shopId: string;
+  },
+) {
+  const mapping = await prisma.productMapping.findUnique({
+    select: {
+      shopifyProductGid: true,
+    },
+    where: {
+      shopId_marketplaceId_ebayItemId: {
+        ebayItemId: input.ebayItemId,
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: input.shopId,
+      },
+    },
+  });
+
+  if (!mapping?.shopifyProductGid) return null;
+
+  const response = await admin.graphql(
+    `#graphql
+    query SyncBayFindMappedProduct($id: ID!) {
+      node(id: $id) {
+        ... on Product {
+          id
+          media(first: 250) {
+            nodes {
+              alt
+              id
+              mediaContentType
+              preview {
+                status
               }
-            }
-            status
-            title
-            variants(first: 1) {
-              nodes {
-                id
-                inventoryItem {
-                  id
-                  tracked
-                }
-              }
-            }
-            metafield(namespace: "syncbay", key: "ebay_item_id") {
-              value
             }
           }
-          pageInfo {
-            endCursor
-            hasNextPage
+          status
+          title
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
+          metafield(namespace: "syncbay", key: "ebay_item_id") {
+            value
           }
         }
-      }`,
-      {
-        variables: {
-          query: "tag:SyncBay",
-          cursor,
-        },
+      }
+    }`,
+    {
+      variables: {
+        id: mapping.shopifyProductGid,
       },
-    );
-
-    if (!queryResponse.ok) return null;
-
-    const queryJson =
-      (await queryResponse.json()) as ShopifyProductLookupResponse & {
-        data?: {
-          products?: {
-            pageInfo?: {
-              hasNextPage?: boolean;
-              endCursor?: string | null;
-            };
-          };
-        };
-      };
-
-    if (queryJson.errors?.length) return null;
-
-    products.push(
-      ...((queryJson.data?.products
-        ?.nodes as ShopifyDraftProductLookupNode[]) ?? []),
-    );
-
-    if (!queryJson.data?.products?.pageInfo?.hasNextPage) break;
-    cursor = queryJson.data.products.pageInfo.endCursor ?? null;
-    if (!cursor) break;
-  }
-
-  const allProducts = [
-    handleLookupJson.data?.productByHandle?.metafield?.value ===
-    draftProduct.source.ebayItemId
-      ? handleLookupJson.data?.productByHandle
-      : null,
-    ...products,
-  ].filter((product): product is ShopifyDraftProductLookupNode =>
-    Boolean(product),
+    },
   );
 
-  return (
-    allProducts.find(
-      (product) => product.metafield?.value === draftProduct.source.ebayItemId,
-    ) ?? null
-  );
+  if (!response.ok) return null;
+
+  const json = (await response.json()) as ShopifyProductLookupResponse;
+
+  if (json.errors?.length) return null;
+
+  return json.data?.node?.metafield?.value === input.ebayItemId
+    ? json.data.node
+    : null;
 }
 
 async function syncShopifyInventoryFromEbayQuantity(
