@@ -59,11 +59,13 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Smoke UI | `npm run smoke:ui` |
 | Validazione Prisma | `npm run prisma:validate` |
 | Advisor Supabase | `npm run db:verify` |
+| Diagnostica job import | `npm run jobs:status -- --shop syncbay-dev.myshopify.com` |
 | React Doctor | `npm run quality:react-doctor` |
 | Release dry-run | `npm run release:dry-run` |
 | Release locale | `npm run release` |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
+`npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
 `npm run build` esegue sempre `prisma generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
 
 ## Verifiche per tipo di modifica
