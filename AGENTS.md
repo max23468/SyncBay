@@ -113,6 +113,7 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 
 - Controlla sempre `git status --short`.
 - Se il worktree contiene modifiche non tue o non collegate alla richiesta, non sovrascriverle e non normalizzarle. Ignorale se sono estranee, oppure lavora attorno a esse.
+- Se quelle modifiche rendono necessario un lavoro non minuscolo, non limitarti a creare una branch nello stesso checkout: separa il nuovo filone con un branch/worktree dedicato da una base pulita, oppure lavora nello stesso checkout solo su file non sovrapposti e dichiaralo nel riepilogo.
 - Prima di proporre architetture, refactor o integrazioni, leggi documenti, configurazione e stato repo pertinenti.
 - Per informazioni variabili su Shopify, eBay, App Store, API, piani, policy, billing o compliance, verifica fonti ufficiali aggiornate o pagine Shopify App Store correnti.
 - Se la richiesta è ambigua su scope, comportamento atteso, rischio, deploy o pubblicazione, fai domande mirate prima di procedere.
@@ -292,6 +293,7 @@ Comandi runtime attuali:
   per release prodotto reali seguono ADR `docs/decisions/0008-tag-e-github-release.md`.
 - Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR è pronta.
 - Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purché il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
+- Per lavori paralleli o ripresi da una nuova chat, mantieni ownership chiara su file/moduli, evita sovrapposizioni e lascia un handoff sintetico nella PR o nella risposta finale quando serve a coordinare il seguito.
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, marcata dalla label `codex-feedback-inbox` e aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
