@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import {
   AuditEventType,
@@ -314,6 +314,10 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
   const draftLimit = getDraftImportLimit();
   const batches = chunkArray(plan.itemIds, draftLimit);
   const now = new Date();
+  const catalogImportRunId = buildCatalogImportRunId({
+    now,
+    shopId: shop.id,
+  });
   let createdJobCount = 0;
   let existingJobCount = 0;
   let requeuedJobCount = 0;
@@ -323,6 +327,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     const result = await upsertCatalogImportBatchJob({
       batchCount: batches.length,
       batchIndex,
+      catalogImportRunId,
       draftLimit,
       ebayItemIds,
       importProductStatus,
@@ -818,6 +823,7 @@ function getCatalogImportBlockers(input: {
 async function upsertCatalogImportBatchJob(input: {
   batchCount: number;
   batchIndex: number;
+  catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
   importProductStatus: ImportProductStatus;
@@ -850,26 +856,28 @@ async function upsertCatalogImportBatchJob(input: {
   }
 
   if (existingJob.status === SyncJobStatus.SUCCEEDED) {
-    await resetCatalogImportBatchJob({
+    const wasReset = await resetCatalogImportBatchJob({
       existingJobId: existingJob.id,
+      expectedStatus: existingJob.status,
       now: input.now,
       payload,
     });
 
-    return "requeued" as const;
+    return wasReset ? ("requeued" as const) : ("existing" as const);
   }
 
   if (
     existingJob.status === SyncJobStatus.FAILED ||
     existingJob.status === SyncJobStatus.CANCELLED
   ) {
-    await resetCatalogImportBatchJob({
+    const wasReset = await resetCatalogImportBatchJob({
       existingJobId: existingJob.id,
+      expectedStatus: existingJob.status,
       now: input.now,
       payload,
     });
 
-    return "resumed" as const;
+    return wasReset ? ("resumed" as const) : ("existing" as const);
   }
 
   return "existing" as const;
@@ -877,10 +885,11 @@ async function upsertCatalogImportBatchJob(input: {
 
 async function resetCatalogImportBatchJob(input: {
   existingJobId: string;
+  expectedStatus: SyncJobStatus;
   now: Date;
   payload: Prisma.JsonObject;
 }) {
-  await prisma.syncJob.update({
+  const reset = await prisma.syncJob.updateMany({
     data: {
       attempts: 0,
       errorCode: null,
@@ -892,13 +901,20 @@ async function resetCatalogImportBatchJob(input: {
       startedAt: null,
       status: SyncJobStatus.PENDING,
     },
-    where: { id: input.existingJobId },
+    where: {
+      id: input.existingJobId,
+      status: input.expectedStatus,
+      type: SyncJobType.IMPORT_CATALOG,
+    },
   });
+
+  return reset.count === 1;
 }
 
 function buildCatalogImportBatchPayload(input: {
   batchCount: number;
   batchIndex: number;
+  catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
   importProductStatus: ImportProductStatus;
@@ -910,6 +926,7 @@ function buildCatalogImportBatchPayload(input: {
     batchCount: input.batchCount,
     batchIndex: input.batchIndex + 1,
     catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+    catalogImportRunId: input.catalogImportRunId,
     draftLimit: input.draftLimit,
     ebayItemIds: input.ebayItemIds,
     importProductStatus: input.importProductStatus,
@@ -921,6 +938,10 @@ function buildCatalogImportBatchPayload(input: {
     totalAvailable: input.totalAvailable,
     totalPlanned: input.totalPlanned,
   } satisfies Prisma.JsonObject;
+}
+
+function buildCatalogImportRunId(input: { now: Date; shopId: string }) {
+  return `catalog-import:${input.shopId}:${input.now.toISOString()}:${randomUUID()}`;
 }
 
 function buildCatalogImportBatchIdempotencyKey(input: {

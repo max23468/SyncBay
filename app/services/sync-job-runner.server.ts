@@ -354,6 +354,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
 
   const result = await createShopifyDraftProductsIfEnabled({
     admin,
+    catalogImportRunId: getCatalogImportRunId(job.payload),
     defaultLocationGid: job.shop.defaultLocationGid,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
@@ -558,6 +559,15 @@ function getImportProductStatus(payload: Prisma.JsonValue | null) {
   return normalizeImportProductStatus(
     typeof importProductStatus === "string" ? importProductStatus : undefined,
   );
+}
+
+function getCatalogImportRunId(payload: Prisma.JsonValue | null) {
+  const object = getJsonObject(payload);
+  const catalogImportRunId = object?.catalogImportRunId;
+
+  return typeof catalogImportRunId === "string" && catalogImportRunId.trim()
+    ? catalogImportRunId
+    : null;
 }
 
 function getJsonObject(value: Prisma.JsonValue | null) {

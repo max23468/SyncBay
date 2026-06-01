@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.4] — 2026-06-01
+
+### Correzioni
+
+- I rilanci dello stesso import catalogo completato usano ora uno scope
+  idempotente nuovo per l'import Shopify delegato, senza consumare il budget
+  retry dei tentativi precedenti.
+- Il reset dei batch import catalogo è ora condizionato allo stato terminale
+  atteso, evitando di riportare a `PENDING` un job già claimato dal runner.
+
+### Sotto il cofano
+
+- Aggiunti gli asset icona quadrata SyncBay 1200 px nelle varianti trasparente
+  e bianca al manifest brand.
+
 ## [0.18.3] — 2026-06-01
 
 ### Correzioni
@@ -432,6 +447,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.4]: #0184--2026-06-01
 [0.18.3]: #0183--2026-06-01
 [0.18.2]: #0182--2026-06-01
 [0.18.1]: #0181--2026-06-01

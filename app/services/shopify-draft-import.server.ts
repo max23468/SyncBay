@@ -324,6 +324,7 @@ export function buildShopifyDraftProductInputs(
 
 export async function createShopifyDraftProductsIfEnabled(input: {
   admin: ShopifyAdminGraphqlClient;
+  catalogImportRunId?: string | null;
   defaultLocationGid?: string | null;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
@@ -354,6 +355,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     importProductStatus,
   );
   const job = await startDraftImportJob({
+    catalogImportRunId: input.catalogImportRunId ?? null,
     draftLimit: readiness.draftLimit,
     importProductStatus,
     previewMode: input.previewResult.mode,
@@ -744,21 +746,23 @@ async function findExistingSyncBayDraftProduct(
 
     if (!queryResponse.ok) return null;
 
-    const queryJson = (await queryResponse.json()) as ShopifyProductLookupResponse & {
-      data?: {
-        products?: {
-          pageInfo?: {
-            hasNextPage?: boolean;
-            endCursor?: string | null;
+    const queryJson =
+      (await queryResponse.json()) as ShopifyProductLookupResponse & {
+        data?: {
+          products?: {
+            pageInfo?: {
+              hasNextPage?: boolean;
+              endCursor?: string | null;
+            };
           };
         };
       };
-    };
 
     if (queryJson.errors?.length) return null;
 
     products.push(
-      ...((queryJson.data?.products?.nodes as ShopifyDraftProductLookupNode[]) ?? []),
+      ...((queryJson.data?.products
+        ?.nodes as ShopifyDraftProductLookupNode[]) ?? []),
     );
 
     if (!queryJson.data?.products?.pageInfo?.hasNextPage) break;
@@ -772,7 +776,9 @@ async function findExistingSyncBayDraftProduct(
       ? handleLookupJson.data?.productByHandle
       : null,
     ...products,
-  ].filter((product): product is ShopifyDraftProductLookupNode => Boolean(product));
+  ].filter((product): product is ShopifyDraftProductLookupNode =>
+    Boolean(product),
+  );
 
   return (
     allProducts.find(
@@ -1354,9 +1360,7 @@ async function createStagedImageMediaInput(input: {
   };
 }
 
-async function downloadImageForStaging(
-  sourceUrl: string,
-): Promise<
+async function downloadImageForStaging(sourceUrl: string): Promise<
   | {
       body: Uint8Array;
       contentType: string;
@@ -1387,7 +1391,8 @@ async function downloadImageForStaging(
 
   if (!contentType) {
     return {
-      errorMessage: "Il download immagine non ha restituito un content-type immagine supportato.",
+      errorMessage:
+        "Il download immagine non ha restituito un content-type immagine supportato.",
       status: "failed",
     };
   }
@@ -1751,7 +1756,8 @@ async function getShopifyInventoryAvailableQuantity(
 
   if (!inventoryItem) {
     return {
-      errorMessage: "Shopify non ha restituito l'inventory item per leggere la quantità corrente.",
+      errorMessage:
+        "Shopify non ha restituito l'inventory item per leggere la quantità corrente.",
       status: "failed",
     };
   }
@@ -1838,8 +1844,7 @@ async function verifyShopifyInventoryAtLocation(
 
   if (availableQuantity !== input.quantity) {
     return {
-      warning:
-        `Shopify riporta una quantità diversa (${availableQuantity ?? "assente"}) rispetto a quella appena scritta (${input.quantity}); la verifica può variare per aggiornamenti concorrenti.`,
+      warning: `Shopify riporta una quantità diversa (${availableQuantity ?? "assente"}) rispetto a quella appena scritta (${input.quantity}); la verifica può variare per aggiornamenti concorrenti.`,
       status: "synced",
     };
   }
@@ -1858,6 +1863,7 @@ async function ensureDraftImportShop(shopDomain: string) {
 }
 
 async function startDraftImportJob(input: {
+  catalogImportRunId?: string | null;
   draftLimit: number;
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
@@ -2307,6 +2313,7 @@ function isAlreadyActiveInventoryError(errors: ShopifyUserError[]) {
 }
 
 function buildDraftImportJobPayload(input: {
+  catalogImportRunId?: string | null;
   draftLimit: number;
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
@@ -2314,6 +2321,7 @@ function buildDraftImportJobPayload(input: {
   shopId: string;
 }) {
   return {
+    catalogImportRunId: input.catalogImportRunId ?? null,
     draftLimit: input.draftLimit,
     ebayItemIds: input.products.map((product) => product.source.ebayItemId),
     importProductStatus: input.importProductStatus,
@@ -2325,21 +2333,33 @@ function buildDraftImportJobPayload(input: {
 }
 
 function buildDraftImportJobIdempotencyKey(input: {
+  catalogImportRunId?: string | null;
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
   shopId: string;
 }) {
+  const keyPayload: {
+    catalogImportRunId?: string;
+    ebayItemIds: string[];
+    importProductStatus: ImportProductStatus;
+    marketplaceId: string;
+    previewMode: ImportPreviewResult["mode"];
+    shopId: string;
+  } = {
+    ebayItemIds: input.products.map((product) => product.source.ebayItemId),
+    importProductStatus: input.importProductStatus,
+    marketplaceId: getEbayMarketplaceId(),
+    previewMode: input.previewMode,
+    shopId: input.shopId,
+  };
+
+  if (input.catalogImportRunId) {
+    keyPayload.catalogImportRunId = input.catalogImportRunId;
+  }
+
   const hash = createHash("sha256")
-    .update(
-      JSON.stringify({
-        ebayItemIds: input.products.map((product) => product.source.ebayItemId),
-        importProductStatus: input.importProductStatus,
-        marketplaceId: getEbayMarketplaceId(),
-        previewMode: input.previewMode,
-        shopId: input.shopId,
-      }),
-    )
+    .update(JSON.stringify(keyPayload))
     .digest("hex")
     .slice(0, 20);
 
