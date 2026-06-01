@@ -1,5 +1,6 @@
 import type { EbayConnection } from "@prisma/client";
 
+import { selectEbayTradingInventorySku } from "../lib/syncbay-stock-guard";
 import { fetchTradingXml } from "./ebay-trading-preview.server";
 
 export async function reviseEbayTradingInventoryQuantity(input: {
@@ -19,17 +20,17 @@ export async function reviseEbayTradingInventoryQuantity(input: {
   return {
     itemId: input.itemId,
     quantity: input.quantity,
-    sku: input.sku ?? null,
+    sku: selectEbayTradingInventorySku(input),
     status: "updated" as const,
   };
 }
 
-function buildReviseInventoryStatusRequest(input: {
+export function buildReviseInventoryStatusRequest(input: {
   itemId: string;
   quantity: number;
   sku?: string | null;
 }) {
-  const sku = input.sku?.trim();
+  const sku = selectEbayTradingInventorySku(input);
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents">

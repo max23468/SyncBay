@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, selectShopifyOrderCurrency, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
+import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, selectEbayTradingInventorySku, selectShopifyOrderCurrency, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
   assert.equal(getExpectedMarketplaceCurrency("EBAY_IT"), "EUR");
@@ -13,6 +13,30 @@ test("enables stock dry-run only for explicit true", () => {
   assert.equal(isEbayStockDryRunEnabled("TRUE"), true);
   assert.equal(isEbayStockDryRunEnabled("false"), false);
   assert.equal(isEbayStockDryRunEnabled(undefined), false);
+});
+
+test("omits SyncBay fallback SKU from eBay Trading stock updates", () => {
+  assert.equal(
+    selectEbayTradingInventorySku({
+      itemId: "168148953253",
+      sku: "EBAY-168148953253",
+    }),
+    null,
+  );
+  assert.equal(
+    selectEbayTradingInventorySku({
+      itemId: "168148953253",
+      sku: " ebay-168148953253 ",
+    }),
+    null,
+  );
+  assert.equal(
+    selectEbayTradingInventorySku({
+      itemId: "168148953253",
+      sku: "SELLER-SKU-1",
+    }),
+    "SELLER-SKU-1",
+  );
 });
 
 test("blocks EBAY_IT stock updates when snapshot currency is missing or not EUR", () => {

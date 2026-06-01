@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.5] — 2026-06-02
+
+### Correzioni
+
+- Gli aggiornamenti stock eBay tramite Trading API non inviano più lo SKU
+  fallback `EBAY-<ItemID>` generato da SyncBay, evitando errori su inserzioni
+  eBay senza gestione per SKU.
+
 ## [0.20.4] — 2026-06-01
 
 ### Correzioni
@@ -597,6 +605,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.5]: #0205--2026-06-02
 [0.20.4]: #0204--2026-06-01
 [0.20.3]: #0203--2026-06-01
 [0.20.2]: #0202--2026-06-01
