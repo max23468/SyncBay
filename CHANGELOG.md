@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.2] — 2026-06-01
+
+### Sotto il cofano
+
+- Documentato l'uso operativo del Shopify AI Toolkit come supporto per sviluppo
+  assistito su superfici Shopify, senza introdurlo come dipendenza runtime.
+- Allineata la Shopify CLI locale del progetto alla versione globale `4.1.0`.
+
 ## [0.18.1] — 2026-06-01
 
 ### Correzioni
@@ -417,6 +425,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.2]: #0182--2026-06-01
 [0.18.1]: #0181--2026-06-01
 [0.18.0]: #0180--2026-06-01
 [0.17.6]: #0176--2026-05-31

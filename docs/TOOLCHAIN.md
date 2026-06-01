@@ -20,7 +20,7 @@ Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite 
 
 | Area | Tool |
 | --- | --- |
-| Shopify app | Shopify CLI `3.94.3` |
+| Shopify app | Shopify CLI `4.1.0` |
 | Frontend/backend app | React Router, React, TypeScript, Vite |
 | Hosting previsto | Vercel |
 | Database | Supabase Postgres |
@@ -29,6 +29,23 @@ Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite 
 | Storage immagini temporaneo | Supabase Storage privato |
 | Osservabilità baseline | Vercel Web Analytics e Speed Insights |
 | Quality React | React Doctor |
+
+## Tool agenti Shopify
+
+Per sviluppo assistito su superfici Shopify, la postazione locale può usare
+Shopify AI Toolkit installato come skill globali dell'agente:
+
+- installazione: `npx skills add Shopify/shopify-ai-toolkit`;
+- skill attese: `shopify-admin`, `shopify-use-shopify-cli`,
+  `shopify-polaris-app-home`, `shopify-app-store-review`, `shopify-dev` e le
+  altre skill Shopify installate dal toolkit;
+- Dev MCP Shopify opzionale: `shopify-dev-mcp` via `npx -y @shopify/dev-mcp@latest`
+  nella configurazione locale Codex.
+
+Questi tool non sono dipendenze runtime di SyncBay e non sostituiscono ADR,
+documentazione del progetto o verifiche locali. Le skill installate manualmente
+non si aggiornano da sole: prima di usarle per decisioni sensibili su API,
+App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
 ## Comandi locali
 
