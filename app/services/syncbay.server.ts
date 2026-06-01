@@ -52,6 +52,8 @@ const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
+const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
+const RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS = 4;
 const REQUIRED_SHOPIFY_SCOPES = [
   "read_products",
   "write_products",
@@ -112,6 +114,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       where: { shopId: shop.id },
     }),
   ]);
+  const latestImportRun = await getLatestImportRunSummary(shop.id);
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -167,6 +170,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     onboarding: getOnboardingReadiness({ defaultProductStatus }),
     importPreview,
     imports: {
+      latestRun: latestImportRun,
       mappingCount,
       recentJobs: recentImportJobs.map(formatImportJobSummary),
       snapshotCount,
@@ -234,6 +238,8 @@ export async function requestSyncJobRetry(
   const now = new Date();
   const details = {
     jobId: job.id,
+    previousAttempts: job.attempts,
+    previousMaxAttempts: job.maxAttempts,
     previousRunAfter: job.runAfter.toISOString(),
     previousStatus: job.status,
     requestedAt: now.toISOString(),
@@ -246,7 +252,14 @@ export async function requestSyncJobRetry(
         errorCode: null,
         errorMessage: null,
         finishedAt: null,
+        attempts: 0,
+        maxAttempts: Math.max(
+          job.maxAttempts,
+          RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS,
+        ),
+        result: Prisma.DbNull,
         runAfter: now,
+        startedAt: null,
         status: SyncJobStatus.PENDING,
       },
       where: { id: job.id },
@@ -843,7 +856,7 @@ async function upsertCatalogImportBatchJob(input: {
       data: {
         attempts: 0,
         idempotencyKey,
-        maxAttempts: 3,
+        maxAttempts: CATALOG_IMPORT_BATCH_MAX_ATTEMPTS,
         payload,
         runAfter: input.now,
         shopId: input.shopId,
@@ -895,6 +908,7 @@ async function resetCatalogImportBatchJob(input: {
       errorCode: null,
       errorMessage: null,
       finishedAt: null,
+      maxAttempts: CATALOG_IMPORT_BATCH_MAX_ATTEMPTS,
       payload: input.payload,
       result: Prisma.DbNull,
       runAfter: input.now,
@@ -1243,6 +1257,150 @@ function getRuntimePhaseReadiness(input: {
   ];
 }
 
+async function getLatestImportRunSummary(shopId: string) {
+  const importJobs = await prisma.syncJob.findMany({
+    orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
+    take: 300,
+    where: { shopId, type: SyncJobType.IMPORT_CATALOG },
+  });
+  const latestRunId = importJobs
+    .map((job) => getCatalogImportRunIdFromPayload(job.payload))
+    .find((runId): runId is string => Boolean(runId));
+
+  if (!latestRunId) return null;
+
+  const runJobs = importJobs.filter(
+    (job) => getCatalogImportRunIdFromPayload(job.payload) === latestRunId,
+  );
+  const statusRowsByKey = new Map<
+    string,
+    {
+      batchCount: number | null;
+      firstBatch: number | null;
+      itemCount: number;
+      jobCount: number;
+      jobKind: string;
+      lastBatch: number | null;
+      status: SyncJobStatus;
+    }
+  >();
+
+  for (const job of runJobs) {
+    const payload = getJsonObject(job.payload);
+    const jobKind = getImportJobKind(payload);
+    const batchIndex = getJsonNumber(payload?.batchIndex);
+    const batchCount = getJsonNumber(payload?.batchCount);
+    const itemCount = getImportJobItemCount(payload, job.result);
+    const key = `${jobKind}:${job.status}`;
+    const row = statusRowsByKey.get(key) ?? {
+      batchCount: batchCount ?? null,
+      firstBatch: batchIndex ?? null,
+      itemCount: 0,
+      jobCount: 0,
+      jobKind,
+      lastBatch: batchIndex ?? null,
+      status: job.status,
+    };
+
+    row.batchCount = Math.max(row.batchCount ?? 0, batchCount ?? 0) || null;
+    row.firstBatch =
+      row.firstBatch === null || batchIndex === null
+        ? row.firstBatch
+        : Math.min(row.firstBatch, batchIndex);
+    row.lastBatch =
+      row.lastBatch === null || batchIndex === null
+        ? row.lastBatch
+        : Math.max(row.lastBatch, batchIndex);
+    row.itemCount += itemCount;
+    row.jobCount += 1;
+    statusRowsByKey.set(key, row);
+  }
+
+  const catalogBatchJobs = runJobs.filter(
+    (job) => getImportJobKind(getJsonObject(job.payload)) === "catalog_batch",
+  );
+  const activeStatuses = new Set<SyncJobStatus>([
+    SyncJobStatus.PENDING,
+    SyncJobStatus.RETRYING,
+    SyncJobStatus.RUNNING,
+  ]);
+  const plannedItemCount = catalogBatchJobs.reduce(
+    (total, job) =>
+      total + getImportJobItemCount(getJsonObject(job.payload), job.result),
+    0,
+  );
+  const completedItemCount = catalogBatchJobs
+    .filter((job) => job.status === SyncJobStatus.SUCCEEDED)
+    .reduce(
+      (total, job) =>
+        total + getImportJobItemCount(getJsonObject(job.payload), job.result),
+      0,
+    );
+  const failedJobCount = runJobs.filter(
+    (job) => job.status === SyncJobStatus.FAILED,
+  ).length;
+  const activeJobCount = runJobs.filter((job) =>
+    activeStatuses.has(job.status),
+  ).length;
+
+  return {
+    activeJobCount,
+    batchCount: catalogBatchJobs.length,
+    completedItemCount,
+    failedJobCount,
+    plannedItemCount,
+    recentProblemJobs: runJobs
+      .filter(
+        (job) =>
+          job.status === SyncJobStatus.FAILED ||
+          job.status === SyncJobStatus.RETRYING ||
+          job.status === SyncJobStatus.RUNNING,
+      )
+      .slice(0, 8)
+      .map((job) => {
+        const payload = getJsonObject(job.payload);
+
+        return {
+          attempts: job.attempts,
+          batchIndex: getJsonNumber(payload?.batchIndex),
+          errorCode: job.errorCode,
+          errorMessage: job.errorMessage,
+          id: job.id,
+          jobKind: getImportJobKind(payload),
+          maxAttempts: job.maxAttempts,
+          runAfter: job.runAfter.toISOString(),
+          status: job.status,
+        };
+      }),
+    runId: latestRunId,
+    statusRows: [...statusRowsByKey.values()].sort((left, right) =>
+      `${left.jobKind}:${left.status}`.localeCompare(
+        `${right.jobKind}:${right.status}`,
+      ),
+    ),
+  };
+}
+
+function getCatalogImportRunIdFromPayload(value: Prisma.JsonValue | null) {
+  return getJsonString(getJsonObject(value)?.catalogImportRunId);
+}
+
+function getImportJobKind(payload: Record<string, Prisma.JsonValue> | null) {
+  return payload?.batchIndex ? "catalog_batch" : "shopify_import";
+}
+
+function getImportJobItemCount(
+  payload: Record<string, Prisma.JsonValue> | null,
+  result: Prisma.JsonValue | null,
+) {
+  const payloadItemCount = getJsonArray(payload?.ebayItemIds)?.length;
+  const requestedCount =
+    getJsonNumber(payload?.requestedCount) ??
+    getJsonNumber(getJsonObject(result)?.requestedCount);
+
+  return payloadItemCount ?? requestedCount ?? 0;
+}
+
 function formatImportJobSummary(job: {
   attempts: number;
   createdAt: Date;
@@ -1358,6 +1516,10 @@ function getJsonBoolean(value: Prisma.JsonValue | undefined) {
 
 function getJsonNumber(value: Prisma.JsonValue | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function getJsonString(value: Prisma.JsonValue | undefined) {
+  return typeof value === "string" ? value : null;
 }
 
 function getStringField(record: Record<string, unknown>, key: string) {

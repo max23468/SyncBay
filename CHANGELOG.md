@@ -6,6 +6,30 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.18.8] — 2026-06-01
+
+### Correzioni
+
+- L'import Shopify aggiorna prezzo e SKU della variante per prodotti creati o
+  riusati, invece di salvare il prezzo eBay solo negli snapshot/metafield.
+- I retry manuali dalla dashboard ripartono con tentativi azzerati, risultato
+  precedente pulito e budget minimo riallineato; i batch catalogo e gli import
+  Shopify delegati hanno un tentativo in più per assorbire recuperi stale del
+  runner.
+- Il riuso prodotti mantiene il fallback di scansione `tag:SyncBay` sul
+  metafield `syncbay.ebay_item_id`, evitando duplicati quando manca un mapping
+  locale e l'handle Shopify è stato modificato.
+
+### Sotto il cofano
+
+- La dashboard mostra l'avanzamento dell'ultima run import con conteggi per
+  batch catalogo/import Shopify, job attivi, job falliti e problemi recenti.
+- Aggiunto `npm run import:verify` per confrontare un campione dell'ultima run
+  tra snapshot eBay/SyncBay, mapping e prodotti Shopify live senza richiedere
+  `DATABASE_URL` locale.
+- Aggiunto `npm run import:repair-commercial-fields` per riallineare prezzo e
+  SKU variante Shopify dai dati dell'ultima run import.
+
 ## [0.18.7] — 2026-06-01
 
 ### Correzioni
@@ -472,6 +496,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.18.8]: #0188--2026-06-01
 [0.18.7]: #0187--2026-06-01
 [0.18.6]: #0186--2026-06-01
 [0.18.5]: #0185--2026-06-01

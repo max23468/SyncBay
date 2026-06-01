@@ -4,31 +4,31 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 
 ## Runtime locale
 
-| Area | Valore |
-| --- | --- |
-| Runtime principale | Node.js |
-| Versione locale preferita | `.node-version` = `24.16.0` |
-| Range supportato | `package.json` `engines.node` = `>=24.15 <25` |
-| Enforcement engine | `.npmrc` con `engine-strict=true` |
-| Package manager | `npm@11.14.1` |
-| Lockfile | `package-lock.json` |
-| Immagine Docker base | `node:24.16.0-alpine` |
+| Area                      | Valore                                        |
+| ------------------------- | --------------------------------------------- |
+| Runtime principale        | Node.js                                       |
+| Versione locale preferita | `.node-version` = `24.16.0`                   |
+| Range supportato          | `package.json` `engines.node` = `>=24.15 <25` |
+| Enforcement engine        | `.npmrc` con `engine-strict=true`             |
+| Package manager           | `npm@11.14.1`                                 |
+| Lockfile                  | `package-lock.json`                           |
+| Immagine Docker base      | `node:24.16.0-alpine`                         |
 
 Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`. Il package manager canonico è dichiarato in `package.json` come `npm@11.14.1`.
 
 ## Stack applicativo
 
-| Area | Tool |
-| --- | --- |
-| Shopify app | Shopify CLI `4.1.0` |
-| Frontend/backend app | React Router, React, TypeScript, Vite |
-| Hosting previsto | Vercel |
-| Database | Supabase Postgres |
-| ORM | Prisma |
-| Queue e scheduler previsti | Supabase Queues e Supabase Cron |
-| Storage immagini temporaneo | Supabase Storage privato |
-| Osservabilità baseline | Vercel Web Analytics e Speed Insights |
-| Quality React | React Doctor |
+| Area                        | Tool                                  |
+| --------------------------- | ------------------------------------- |
+| Shopify app                 | Shopify CLI `4.1.0`                   |
+| Frontend/backend app        | React Router, React, TypeScript, Vite |
+| Hosting previsto            | Vercel                                |
+| Database                    | Supabase Postgres                     |
+| ORM                         | Prisma                                |
+| Queue e scheduler previsti  | Supabase Queues e Supabase Cron       |
+| Storage immagini temporaneo | Supabase Storage privato              |
+| Osservabilità baseline      | Vercel Web Analytics e Speed Insights |
+| Quality React               | React Doctor                          |
 
 ## Tool agenti Shopify
 
@@ -49,35 +49,39 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
 ## Comandi locali
 
-| Scopo | Comando |
-| --- | --- |
-| Installazione | `npm install` |
-| Sviluppo Shopify | `npm run dev` |
-| Typecheck | `npm run typecheck` |
-| Lint | `npm run lint` |
-| Build | `npm run build` |
-| Smoke UI | `npm run smoke:ui` |
-| Validazione Prisma | `npm run prisma:validate` |
-| Advisor Supabase | `npm run db:verify` |
-| Diagnostica job import | `npm run jobs:status -- --shop syncbay-dev.myshopify.com` |
-| React Doctor | `npm run quality:react-doctor` |
-| Release dry-run | `npm run release:dry-run` |
-| Release locale | `npm run release` |
+| Scopo                    | Comando                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| Installazione            | `npm install`                                                                           |
+| Sviluppo Shopify         | `npm run dev`                                                                           |
+| Typecheck                | `npm run typecheck`                                                                     |
+| Lint                     | `npm run lint`                                                                          |
+| Build                    | `npm run build`                                                                         |
+| Smoke UI                 | `npm run smoke:ui`                                                                      |
+| Validazione Prisma       | `npm run prisma:validate`                                                               |
+| Advisor Supabase         | `npm run db:verify`                                                                     |
+| Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
+| Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
+| Riparazione prezzo/SKU   | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run` |
+| React Doctor             | `npm run quality:react-doctor`                                                          |
+| Release dry-run          | `npm run release:dry-run`                                                               |
+| Release locale           | `npm run release`                                                                       |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
 `npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
+`npm run import:verify` usa Supabase CLI linked più Shopify CLI store execute in sola lettura per confrontare un campione dell'ultima run import tra snapshot eBay/SyncBay, mapping e prodotto Shopify live.
+`npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run build` esegue sempre `prisma generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
 
 ## Verifiche per tipo di modifica
 
-| Tipo modifica | Verifiche proporzionate |
-| --- | --- |
-| Docs-only | Review contenuto e `git diff --check` |
-| Runtime TypeScript/UI | `npm run typecheck`, `npm run lint`, `npm run build` |
-| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest` |
-| Flussi UI principali | `npm run smoke:ui` quando il dev server o lo script sono applicabili |
-| Prisma/database | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
-| Versioning/changelog runtime | `npm run release:dry-run` |
+| Tipo modifica                                                       | Verifiche proporzionate                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Docs-only                                                           | Review contenuto e `git diff --check`                                           |
+| Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                            |
+| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest`              |
+| Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
+| Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
+| Versioning/changelog runtime                                        | `npm run release:dry-run`                                                       |
 
 ## Deploy e release
 

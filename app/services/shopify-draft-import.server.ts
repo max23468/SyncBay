@@ -54,12 +54,15 @@ interface ShopifyGraphqlResponseEnvelope {
 
 interface ShopifyInventoryItemNode {
   id: string;
+  sku?: string | null;
   tracked?: boolean | null;
 }
 
 interface ShopifyDraftProductVariantNode {
   id: string;
   inventoryItem?: ShopifyInventoryItemNode | null;
+  price?: string | null;
+  sku?: string | null;
 }
 
 interface ShopifyProductMediaNode {
@@ -101,6 +104,10 @@ interface ShopifyProductLookupResponse {
     productByHandle?: ShopifyDraftProductLookupNode | null;
     products?: {
       nodes?: ShopifyDraftProductLookupNode[];
+      pageInfo?: {
+        endCursor?: string | null;
+        hasNextPage?: boolean | null;
+      } | null;
     };
   };
   errors?: Array<{
@@ -180,6 +187,18 @@ interface ShopifyProductDeleteMediaResponse {
   }>;
 }
 
+interface ShopifyProductVariantsBulkUpdateResponse {
+  data?: {
+    productVariantsBulkUpdate?: {
+      productVariants?: ShopifyDraftProductVariantNode[];
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 interface ShopifyInventoryVerificationResponse {
   data?: {
     node?: {
@@ -227,7 +246,7 @@ const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 50;
-const DRAFT_IMPORT_MAX_ATTEMPTS = 3;
+const DRAFT_IMPORT_MAX_ATTEMPTS = 4;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
 const SHOPIFY_GRAPHQL_MAX_ATTEMPTS = 4;
@@ -399,6 +418,14 @@ function calculateShopifyThrottleWaitMs(
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function formatShopifyPrice(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return value.toFixed(2);
 }
 
 export function getDraftImportReadiness(input: {
@@ -657,9 +684,19 @@ async function createShopifyDraftProductSafely(
 
     if (result.status === "failed") return result;
 
+    const commercialFieldsSync =
+      await syncShopifyVariantCommercialFieldsFromEbay(admin, {
+        draftProduct,
+        product: result.product,
+      });
+
+    if (commercialFieldsSync.status === "failed") {
+      return commercialFieldsSync;
+    }
+
     const mediaSync = await syncShopifyMediaFromEbayImages(
       admin,
-      result.product,
+      commercialFieldsSync.product,
       draftProduct,
       {
         jobId: context.jobId,
@@ -667,7 +704,7 @@ async function createShopifyDraftProductSafely(
     );
     const inventorySync = await syncShopifyInventoryFromEbayQuantity(
       admin,
-      result.product,
+      commercialFieldsSync.product,
       draftProduct,
       context,
     );
@@ -682,6 +719,7 @@ async function createShopifyDraftProductSafely(
 
     return {
       ...result,
+      product: commercialFieldsSync.product,
       inventorySync,
       mediaSync,
       warnings: [
@@ -857,9 +895,11 @@ async function findExistingSyncBayDraftProduct(
 
   const productByHandle = handleLookupJson.data?.productByHandle;
 
-  return productByHandle?.metafield?.value === draftProduct.source.ebayItemId
-    ? productByHandle
-    : null;
+  if (productByHandle?.metafield?.value === draftProduct.source.ebayItemId) {
+    return productByHandle;
+  }
+
+  return findExistingSyncBayDraftProductByMetafieldScan(admin, draftProduct);
 }
 
 async function findMappedSyncBayDraftProduct(
@@ -933,6 +973,78 @@ async function findMappedSyncBayDraftProduct(
   return json.data?.node?.metafield?.value === input.ebayItemId
     ? json.data.node
     : null;
+}
+
+async function findExistingSyncBayDraftProductByMetafieldScan(
+  admin: ShopifyAdminGraphqlClient,
+  draftProduct: ShopifyDraftProductInput,
+) {
+  let cursor: string | null = null;
+
+  while (true) {
+    const response = await admin.graphql(
+      `#graphql
+      query SyncBayFindDraftProductByMetafield($query: String!, $cursor: String) {
+        products(first: 250, query: $query, after: $cursor) {
+          nodes {
+            id
+            media(first: 250) {
+              nodes {
+                alt
+                id
+                mediaContentType
+                preview {
+                  status
+                }
+              }
+            }
+            status
+            title
+            variants(first: 1) {
+              nodes {
+                id
+                inventoryItem {
+                  id
+                  tracked
+                }
+              }
+            }
+            metafield(namespace: "syncbay", key: "ebay_item_id") {
+              value
+            }
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+        }
+      }`,
+      {
+        variables: {
+          cursor,
+          query: "tag:SyncBay",
+        },
+      },
+    );
+
+    if (!response.ok) return null;
+
+    const json = (await response.json()) as ShopifyProductLookupResponse;
+
+    if (json.errors?.length) return null;
+
+    const product = json.data?.products?.nodes?.find(
+      (node) => node.metafield?.value === draftProduct.source.ebayItemId,
+    );
+
+    if (product) return product;
+
+    const pageInfo = json.data?.products?.pageInfo;
+
+    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return null;
+
+    cursor = pageInfo.endCursor;
+  }
 }
 
 async function syncShopifyInventoryFromEbayQuantity(
@@ -1156,6 +1268,212 @@ async function updateShopifyProductStatus(
       `SyncBay ha riallineato lo stato Shopify del prodotto a ${status}.`,
     ],
   };
+}
+
+async function syncShopifyVariantCommercialFieldsFromEbay(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    draftProduct: ShopifyDraftProductInput;
+    product: NonNullable<ShopifyCreatedProduct>;
+  },
+): Promise<
+  | {
+      product: NonNullable<ShopifyCreatedProduct>;
+      status: "synced";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  const variant = getFirstProductVariant(input.product);
+  const price = formatShopifyPrice(
+    input.draftProduct.previewItem.normalized.priceAmount,
+  );
+
+  if (!variant) {
+    return {
+      errorMessage:
+        "Variante Shopify non restituita per il prodotto importato.",
+      status: "failed",
+    };
+  }
+
+  if (!price) {
+    return {
+      errorMessage: "Prezzo eBay non disponibile per la variante Shopify.",
+      status: "failed",
+    };
+  }
+
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayUpdateVariantCommercialFields($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+          sku
+          price
+          inventoryItem {
+            id
+            tracked
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        productId: input.product.id,
+        variants: [
+          {
+            id: variant.id,
+            price,
+          },
+        ],
+      },
+    },
+  );
+  const json =
+    (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify productVariantsBulkUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productVariantsBulkUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  const updatedVariant =
+    json.data?.productVariantsBulkUpdate?.productVariants?.[0];
+
+  if (!updatedVariant) {
+    return {
+      errorMessage: "Shopify non ha restituito la variante aggiornata.",
+      status: "failed",
+    };
+  }
+
+  const inventoryItemGid =
+    updatedVariant.inventoryItem?.id ?? variant.inventoryItem?.id ?? null;
+  const sku = input.draftProduct.previewItem.normalized.sku;
+
+  if (sku && !inventoryItemGid) {
+    return {
+      errorMessage:
+        "Inventory item Shopify non restituito per aggiornare lo SKU.",
+      status: "failed",
+    };
+  }
+
+  if (sku && inventoryItemGid) {
+    const skuResult = await updateShopifyInventoryItemSku(
+      admin,
+      inventoryItemGid,
+      sku,
+    );
+
+    if (skuResult.status === "failed") return skuResult;
+  }
+
+  return {
+    product: {
+      ...input.product,
+      variants: {
+        nodes: [
+          {
+            ...variant,
+            inventoryItem: inventoryItemGid
+              ? {
+                  ...(updatedVariant.inventoryItem ?? variant.inventoryItem),
+                  id: inventoryItemGid,
+                  sku: sku ?? updatedVariant.inventoryItem?.sku ?? null,
+                }
+              : (updatedVariant.inventoryItem ?? variant.inventoryItem),
+            price: updatedVariant.price,
+            sku: updatedVariant.sku ?? variant.sku,
+          },
+        ],
+      },
+    },
+    status: "synced",
+  };
+}
+
+async function updateShopifyInventoryItemSku(
+  admin: ShopifyAdminGraphqlClient,
+  inventoryItemGid: string,
+  sku: string,
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayUpdateInventorySku($id: ID!, $input: InventoryItemInput!) {
+      inventoryItemUpdate(id: $id, input: $input) {
+        inventoryItem {
+          id
+          sku
+          tracked
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: inventoryItemGid,
+        input: {
+          sku,
+        },
+      },
+    },
+  );
+  const json = (await response.json()) as ShopifyInventoryItemUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify inventoryItemUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.inventoryItemUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
 }
 
 async function syncShopifyMediaFromEbayImages(
