@@ -94,6 +94,9 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
 - ogni import crea un `SyncJob` idempotente, aggiorna `ProductMapping`, salva
   product/variant GID, snapshot `EBAY` e `SYNCBAY` e registra audit di
   avvio/esito;
+- la conferma import pianifica job `IMPORT_CATALOG` in batch basati su
+  `SYNCBAY_DRAFT_IMPORT_LIMIT`, leggendo gli ItemID attivi da Trading API fino
+  al minore tra listing disponibili nello store e limite MVP di 2.000 prodotti;
 - il batch 50 è stato verificato sul dev store con mapping, snapshot, job e
   audit coerenti; l'ultimo import reale ha creato 26 nuovi prodotti Shopify e ne
   ha riusate 24 senza duplicati. La schedule Supabase Cron
@@ -109,8 +112,11 @@ Copertura attuale della preview live:
 - per i primi 10 listing Trading della preview, SyncBay prova `GetItem` per
   recuperare dettagli e immagini non restituiti nella lista;
 - la prima pagina di preview resta limitata a 50 prodotti, entro il limite
-  tecnico massimo di 100 per lettura UI. L'import completo fino a 2.000 prodotti
-  richiederà batch controllati più ampi e sync incrementale.
+  tecnico massimo di 100 per lettura UI;
+- l'import catalogo completo è pianificato in batch asincroni fino a 2.000
+  listing attivi e si ferma prima se Trading API dichiara o restituisce meno
+  listing per lo store collegato. Resta da verificare sul dev store un import
+  reale oltre il batch 50.
 
 Smoke UI locale:
 

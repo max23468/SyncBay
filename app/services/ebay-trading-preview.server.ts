@@ -20,6 +20,12 @@ export interface EbayTradingPreviewPage {
   totalAvailable: number | null;
 }
 
+export interface EbayTradingCatalogImportPlan {
+  itemIds: string[];
+  readCount: number;
+  totalAvailable: number | null;
+}
+
 type XmlRecord = Record<string, unknown>;
 
 const EBAY_TRADING_URLS = {
@@ -31,6 +37,7 @@ const EBAY_TRADING_SITE_IDS: Record<string, string> = {
 };
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TRADING_API_ERROR_LANGUAGE = "it_IT";
+const TRADING_API_MAX_ENTRIES_PER_PAGE = 200;
 const GET_ITEM_DETAIL_LOOKUP_LIMIT = 10;
 const GET_ITEM_LOOKUP_CONCURRENCY = 4;
 const xmlParser = new XMLParser({
@@ -46,7 +53,10 @@ const xmlParser = new XMLParser({
 export async function getEbayTradingImportPreview(
   input: EbayTradingPreviewInput,
 ): Promise<EbayTradingPreviewPage> {
-  const xml = buildGetMyeBaySellingRequest(input.limit);
+  const xml = buildGetMyeBaySellingRequest({
+    entriesPerPage: input.limit,
+    pageNumber: 1,
+  });
   const body = await fetchTradingXml({
     accessToken: input.accessToken,
     callName: "GetMyeBaySelling",
@@ -75,6 +85,67 @@ export async function getEbayTradingImportPreview(
     ),
     readCount: items.length,
     totalAvailable: getTotalEntries(activeList),
+  };
+}
+
+export async function getEbayTradingCatalogImportPlan(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  maxProducts: number;
+}): Promise<EbayTradingCatalogImportPlan> {
+  const maxProducts = normalizePositiveInteger(input.maxProducts);
+  const entriesPerPage = Math.min(
+    maxProducts,
+    TRADING_API_MAX_ENTRIES_PER_PAGE,
+  );
+  const itemIds: string[] = [];
+  const seenItemIds = new Set<string>();
+  let pageNumber = 1;
+  let readCount = 0;
+  let totalAvailable: number | null = null;
+  let totalPages: number | null = null;
+
+  while (itemIds.length < maxProducts) {
+    if (totalPages !== null && pageNumber > totalPages) break;
+
+    const xml = buildGetMyeBaySellingRequest({
+      entriesPerPage,
+      pageNumber,
+    });
+    const body = await fetchTradingXml({
+      accessToken: input.accessToken,
+      callName: "GetMyeBaySelling",
+      connection: input.connection,
+      requestXml: xml,
+    });
+    const activeList = asRecord(body.ActiveList);
+    const items = getTradingItems(activeList);
+
+    readCount += items.length;
+    totalAvailable ??= getTotalEntries(activeList);
+    totalPages ??= getTotalPages(activeList);
+
+    for (const item of items) {
+      const itemId = getString(item, "ItemID");
+      if (!itemId || seenItemIds.has(itemId)) continue;
+
+      seenItemIds.add(itemId);
+      itemIds.push(itemId);
+
+      if (itemIds.length >= maxProducts) break;
+    }
+
+    if (items.length === 0) break;
+    if (totalAvailable !== null && readCount >= totalAvailable) break;
+    if (items.length < entriesPerPage && totalPages === null) break;
+
+    pageNumber += 1;
+  }
+
+  return {
+    itemIds,
+    readCount,
+    totalAvailable,
   };
 }
 
@@ -203,7 +274,10 @@ async function fetchTradingXml(input: {
   return body;
 }
 
-function buildGetMyeBaySellingRequest(limit: number) {
+function buildGetMyeBaySellingRequest(input: {
+  entriesPerPage: number;
+  pageNumber: number;
+}) {
   return `<?xml version="1.0" encoding="utf-8"?>
 <GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
   <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
@@ -213,8 +287,8 @@ function buildGetMyeBaySellingRequest(limit: number) {
   <ActiveList>
     <Include>true</Include>
     <Pagination>
-      <EntriesPerPage>${limit}</EntriesPerPage>
-      <PageNumber>1</PageNumber>
+      <EntriesPerPage>${input.entriesPerPage}</EntriesPerPage>
+      <PageNumber>${input.pageNumber}</PageNumber>
     </Pagination>
   </ActiveList>
   <HideVariations>false</HideVariations>
@@ -366,6 +440,13 @@ function getTotalEntries(activeList: XmlRecord | null) {
   return typeof total === "number" ? total : null;
 }
 
+function getTotalPages(activeList: XmlRecord | null) {
+  const paginationResult = asRecord(activeList?.PaginationResult);
+  const total = getInteger(paginationResult, "TotalNumberOfPages");
+
+  return typeof total === "number" ? total : null;
+}
+
 function getTradingApiErrorMessage(body: XmlRecord) {
   const errors: string[] = [];
 
@@ -441,6 +522,10 @@ function asArray(value: unknown) {
 function normalizeText(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function normalizePositiveInteger(value: number) {
+  return Number.isInteger(value) && value > 0 ? value : 1;
 }
 
 function escapeXml(value: string) {

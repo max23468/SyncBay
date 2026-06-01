@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   AuditEventType,
   EbayConnectionStatus,
@@ -5,6 +7,7 @@ import {
   ShopInstallationStatus,
   SyncJobStatus,
   SyncJobType,
+  type EbayConnection,
 } from "@prisma/client";
 
 import prisma from "../db.server";
@@ -14,12 +17,17 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
+import { getUsableEbayAccessToken } from "./ebay-token.server";
+import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
   getImportPreviewValidationRules,
   getMockImportPreview,
 } from "./import-preview.server";
-import { getDraftImportReadiness } from "./shopify-draft-import.server";
+import {
+  getDraftImportLimit,
+  getDraftImportReadiness,
+} from "./shopify-draft-import.server";
 
 interface ShopifySessionLike {
   shop: string;
@@ -43,6 +51,7 @@ interface ShopifyLocationInput {
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
+const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
 const REQUIRED_SHOPIFY_SCOPES = [
   "read_products",
   "write_products",
@@ -255,6 +264,108 @@ export async function requestSyncJobRetry(
   return {
     message:
       "Job rimesso in coda. Il runner automatico lo prenderà in carico quando sarà collegato; per l'import puoi rieseguire subito dalla preview.",
+    status: "queued" as const,
+  };
+}
+
+export async function startCatalogImportJobs(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const importProductStatus = normalizeImportProductStatus(
+    shop.defaultProductStatus,
+  );
+  const connection = await prisma.ebayConnection.findUnique({
+    where: {
+      shopId_marketplaceId: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+      },
+    },
+  });
+  const blockers = getCatalogImportBlockers({
+    connection,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+  });
+
+  if (blockers.length > 0) {
+    return {
+      blockers,
+      status: "blocked" as const,
+    };
+  }
+
+  if (!connection) {
+    throw new Error("Connessione eBay non disponibile per l'import catalogo.");
+  }
+
+  const { accessToken } = await getUsableEbayAccessToken(connection);
+  const plan = await getEbayTradingCatalogImportPlan({
+    accessToken,
+    connection,
+    maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+  });
+
+  if (plan.itemIds.length === 0) {
+    return {
+      blockers: ["nessun listing attivo eBay leggibile per l'import"],
+      status: "blocked" as const,
+    };
+  }
+
+  const draftLimit = getDraftImportLimit();
+  const batches = chunkArray(plan.itemIds, draftLimit);
+  const now = new Date();
+  let createdJobCount = 0;
+  let existingJobCount = 0;
+  let resumedJobCount = 0;
+
+  for (const [batchIndex, ebayItemIds] of batches.entries()) {
+    const result = await upsertCatalogImportBatchJob({
+      batchCount: batches.length,
+      batchIndex,
+      draftLimit,
+      ebayItemIds,
+      importProductStatus,
+      now,
+      shopId: shop.id,
+      totalAvailable: plan.totalAvailable,
+      totalPlanned: plan.itemIds.length,
+    });
+
+    if (result === "created") createdJobCount += 1;
+    if (result === "existing") existingJobCount += 1;
+    if (result === "resumed") resumedJobCount += 1;
+  }
+
+  const resultPayload = {
+    batchCount: batches.length,
+    catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+    createdJobCount,
+    draftLimit,
+    existingJobCount,
+    importProductStatus,
+    plannedListingCount: plan.itemIds.length,
+    readCount: plan.readCount,
+    resumedJobCount,
+    source: "trading_api",
+    totalAvailable: plan.totalAvailable,
+    truncatedAtMaxProducts:
+      plan.totalAvailable !== null
+        ? plan.totalAvailable > plan.itemIds.length
+        : plan.itemIds.length >= CATALOG_IMPORT_MAX_PRODUCTS,
+  } satisfies Prisma.JsonObject;
+
+  await prisma.auditLog.create({
+    data: {
+      details: resultPayload,
+      message: "Import catalogo eBay pianificato in batch.",
+      shopId: shop.id,
+      type: AuditEventType.SYNC_JOB_CREATED,
+    },
+  });
+
+  return {
+    ...resultPayload,
+    blockers: [],
     status: "queued" as const,
   };
 }
@@ -681,6 +792,142 @@ function normalizeShopifyWebhookTopic(topic: string) {
 
 function getEbayMarketplaceId() {
   return process.env.EBAY_MARKETPLACE_ID ?? DEFAULT_MARKETPLACE_ID;
+}
+
+function getCatalogImportBlockers(input: {
+  connection: EbayConnection | null;
+  hasDefaultLocation: boolean;
+}) {
+  return [
+    process.env.SYNCBAY_DRAFT_IMPORT_ENABLED !== "true"
+      ? "import Shopify non abilitato"
+      : null,
+    !input.hasDefaultLocation
+      ? "location Shopify predefinita non confermata"
+      : null,
+    !input.connection ||
+    input.connection.status !== EbayConnectionStatus.CONNECTED
+      ? "account eBay non collegato"
+      : null,
+  ].filter((blocker): blocker is string => Boolean(blocker));
+}
+
+async function upsertCatalogImportBatchJob(input: {
+  batchCount: number;
+  batchIndex: number;
+  draftLimit: number;
+  ebayItemIds: string[];
+  importProductStatus: ImportProductStatus;
+  now: Date;
+  shopId: string;
+  totalAvailable: number | null;
+  totalPlanned: number;
+}) {
+  const idempotencyKey = buildCatalogImportBatchIdempotencyKey(input);
+  const payload = buildCatalogImportBatchPayload(input);
+  const existingJob = await prisma.syncJob.findUnique({
+    where: { idempotencyKey },
+  });
+
+  if (!existingJob) {
+    await prisma.syncJob.create({
+      data: {
+        attempts: 0,
+        idempotencyKey,
+        maxAttempts: 3,
+        payload,
+        runAfter: input.now,
+        shopId: input.shopId,
+        status: SyncJobStatus.PENDING,
+        type: SyncJobType.IMPORT_CATALOG,
+      },
+    });
+
+    return "created" as const;
+  }
+
+  if (
+    existingJob.status === SyncJobStatus.FAILED ||
+    existingJob.status === SyncJobStatus.CANCELLED
+  ) {
+    await prisma.syncJob.update({
+      data: {
+        attempts: 0,
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: null,
+        payload,
+        result: Prisma.DbNull,
+        runAfter: input.now,
+        startedAt: null,
+        status: SyncJobStatus.PENDING,
+      },
+      where: { id: existingJob.id },
+    });
+
+    return "resumed" as const;
+  }
+
+  return "existing" as const;
+}
+
+function buildCatalogImportBatchPayload(input: {
+  batchCount: number;
+  batchIndex: number;
+  draftLimit: number;
+  ebayItemIds: string[];
+  importProductStatus: ImportProductStatus;
+  shopId: string;
+  totalAvailable: number | null;
+  totalPlanned: number;
+}) {
+  return {
+    batchCount: input.batchCount,
+    batchIndex: input.batchIndex + 1,
+    catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+    draftLimit: input.draftLimit,
+    ebayItemIds: input.ebayItemIds,
+    importProductStatus: input.importProductStatus,
+    marketplaceId: getEbayMarketplaceId(),
+    previewMode: "live",
+    requestedCount: input.ebayItemIds.length,
+    shopId: input.shopId,
+    source: "trading_api",
+    totalAvailable: input.totalAvailable,
+    totalPlanned: input.totalPlanned,
+  } satisfies Prisma.JsonObject;
+}
+
+function buildCatalogImportBatchIdempotencyKey(input: {
+  batchIndex: number;
+  ebayItemIds: string[];
+  importProductStatus: ImportProductStatus;
+  shopId: string;
+}) {
+  const hash = createHash("sha256")
+    .update(
+      JSON.stringify({
+        batchIndex: input.batchIndex,
+        ebayItemIds: input.ebayItemIds,
+        importProductStatus: input.importProductStatus,
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: input.shopId,
+      }),
+    )
+    .digest("hex")
+    .slice(0, 20);
+
+  return `catalog-import-batch:${input.shopId}:${hash}`;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }
 
 function getSyncTargetSeconds() {

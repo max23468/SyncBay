@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { unauthenticated } from "../shopify.server";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCandidatesByItemIds } from "./ebay-trading-preview.server";
@@ -355,6 +356,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     admin,
     defaultLocationGid: job.shop.defaultLocationGid,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
+    importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
     shopDomain: session.shop,
   });
@@ -547,6 +549,15 @@ function getEbayMarketplaceId(payload: Prisma.JsonValue | null) {
   return typeof marketplaceId === "string" && marketplaceId.trim()
     ? marketplaceId
     : DEFAULT_MARKETPLACE_ID;
+}
+
+function getImportProductStatus(payload: Prisma.JsonValue | null) {
+  const object = getJsonObject(payload);
+  const importProductStatus = object?.importProductStatus;
+
+  return normalizeImportProductStatus(
+    typeof importProductStatus === "string" ? importProductStatus : undefined,
+  );
 }
 
 function getJsonObject(value: Prisma.JsonValue | null) {
