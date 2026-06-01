@@ -24,12 +24,12 @@ import {
   type ShopifyLocationRenameStatus,
 } from "../services/shopify-location.server";
 import {
-  createShopifyDraftProductsIfEnabled,
   type ShopifyDraftImportStatus,
 } from "../services/shopify-draft-import.server";
 import {
   getImportWizardState,
   recordShopifyLocationRenamed,
+  startCatalogImportJobs,
   updateDefaultShopifyLocation,
 } from "../services/syncbay.server";
 
@@ -58,6 +58,7 @@ type ImportPreviewActionData =
       count?: number;
       draftStatus: ShopifyDraftImportStatus;
       intent: "createDraftProducts";
+      jobCount?: number;
       message?: string;
     }
   | {
@@ -98,28 +99,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = String(formData.get("intent") ?? "saveLocation");
 
   if (intent === "createDraftProducts") {
-    const wizard = await getImportWizardState(session);
-    const result = await createShopifyDraftProductsIfEnabled({
-      admin,
-      defaultLocationGid: wizard.shop.defaultLocationGid,
-      hasDefaultLocation: Boolean(wizard.shop.defaultLocationGid),
-      previewResult: wizard.previewResult,
-      shopDomain: session.shop,
-    });
+    const result = await startCatalogImportJobs(session);
 
     return Response.json({
-      count:
-        result.status === "created" || result.status === "failed"
-          ? result.createdProducts.length
-          : undefined,
+      count: result.status === "queued" ? result.plannedListingCount : undefined,
       draftStatus: result.status,
       intent,
+      jobCount: result.status === "queued" ? result.batchCount : undefined,
       message:
-        result.status === "created"
-          ? [...new Set(result.warnings ?? [])].join(" ")
-          : result.status === "failed"
-            ? result.errorMessage
-            : result.readiness.blockers.join(", "),
+        result.status === "queued"
+          ? formatCatalogImportQueuedMessage(result)
+          : result.blockers.join(", "),
     });
   }
 
@@ -613,6 +603,15 @@ function DraftImportSection({
           )}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
+      ) : draftStatus === "queued" ? (
+        <s-paragraph>
+          Import pianificato:{" "}
+          {formatDraftImportCount(
+            draftCount,
+            wizard.draftImport.importProductStatus,
+          )}
+          {draftMessage ? ` ${draftMessage}` : null}
+        </s-paragraph>
       ) : draftStatus === "blocked" ? (
         <s-paragraph>
           Import Shopify bloccato: {draftMessage ?? "requisiti incompleti"}.
@@ -638,6 +637,10 @@ function DraftImportSection({
         <s-list-item>
           Prodotti previsti: {wizard.draftImport.plannedCreateCount}
         </s-list-item>
+        <s-list-item>
+          Import completo: pianifica batch fino al minore tra listing attivi
+          eBay e limite MVP {wizard.previewPlan.limits.maxProducts}
+        </s-list-item>
         <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
         {wizard.draftImport.blockers.length > 0 ? (
           <s-list-item>
@@ -651,11 +654,32 @@ function DraftImportSection({
           type="submit"
           disabled={isSaving || wizard.draftImport.blockers.length > 0}
         >
-          {isCreatingDrafts ? "Creazione..." : "Crea prodotti da preview"}
+          {isCreatingDrafts
+            ? "Pianificazione..."
+            : "Pianifica import catalogo"}
         </s-button>
       </Form>
     </s-section>
   );
+}
+
+function formatCatalogImportQueuedMessage(result: {
+  batchCount: number;
+  createdJobCount: number;
+  existingJobCount: number;
+  resumedJobCount: number;
+  totalAvailable: number | null;
+  truncatedAtMaxProducts: boolean;
+}) {
+  const totalLabel =
+    result.totalAvailable === null
+      ? "totale eBay non dichiarato"
+      : `totale eBay ${result.totalAvailable}`;
+  const capLabel = result.truncatedAtMaxProducts
+    ? "limite MVP raggiunto"
+    : "store sotto il limite MVP o lettura completata";
+
+  return `${result.batchCount} batch; ${result.createdJobCount} nuovi, ${result.resumedJobCount} ripresi, ${result.existingJobCount} già presenti; ${totalLabel}; ${capLabel}.`;
 }
 
 function formatDraftImportCount(

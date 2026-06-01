@@ -164,7 +164,11 @@ interface ShopifyInventoryVerificationResponse {
   }>;
 }
 
-export type ShopifyDraftImportStatus = "blocked" | "created" | "failed";
+export type ShopifyDraftImportStatus =
+  | "blocked"
+  | "created"
+  | "failed"
+  | "queued";
 
 type ShopifyDraftProductInput = ReturnType<
   typeof buildShopifyDraftProductInputs
@@ -322,13 +326,14 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   admin: ShopifyAdminGraphqlClient;
   defaultLocationGid?: string | null;
   hasDefaultLocation: boolean;
+  importProductStatusOverride?: ImportProductStatus;
   previewResult: ImportPreviewResult;
   shopDomain: string;
 }) {
   const shop = await ensureDraftImportShop(input.shopDomain);
-  const importProductStatus = normalizeImportProductStatus(
-    shop.defaultProductStatus,
-  );
+  const importProductStatus =
+    input.importProductStatusOverride ??
+    normalizeImportProductStatus(shop.defaultProductStatus);
   const readiness = getDraftImportReadiness({
     defaultProductStatus: importProductStatus,
     hasDefaultLocation: input.hasDefaultLocation,
@@ -2566,7 +2571,7 @@ function buildSyncBayProductHandle(ebayItemId: string) {
     .replace(/^-+|-+$/g, "")}`;
 }
 
-function getDraftImportLimit() {
+export function getDraftImportLimit() {
   const parsed = Number.parseInt(
     process.env.SYNCBAY_DRAFT_IMPORT_LIMIT ?? "",
     10,

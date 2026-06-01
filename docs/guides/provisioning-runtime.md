@@ -10,8 +10,9 @@ Provisioning minimo completato il 2026-05-09.
 
 Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. Il batch draft pilota è stato verificato sul dev store fino a
-50 prodotti. Non esistono ancora import completo fino a 2.000 prodotti o sync
-catalogo.
+50 prodotti. La pianificazione import può creare batch fino a 2.000 listing
+attivi o fermarsi prima quando lo store collegato ne espone meno; resta da
+verificare un import reale oltre il batch 50. Non esiste ancora sync catalogo.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -38,7 +39,11 @@ Note:
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
 - `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota è riattivabile solo per import controllati da preview.
-- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita il batch pilota di bozze Shopify. Il runtime pilota è stato verificato a 50 prodotti con 26 nuove bozze e 24 riusi senza duplicati sull'ultimo batch reale.
+- `SYNCBAY_DRAFT_IMPORT_LIMIT` limita la dimensione dei batch `IMPORT_CATALOG`.
+  Il runtime pilota è stato verificato a 50 prodotti con 26 nuove bozze e 24
+  riusi senza duplicati sull'ultimo batch reale. La pianificazione import può
+  creare più batch fino al minore tra listing attivi eBay e limite MVP di 2.000
+  prodotti.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.

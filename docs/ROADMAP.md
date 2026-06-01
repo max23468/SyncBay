@@ -7,8 +7,9 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
-- Espandere l'import iniziale oltre il batch da 50 listing verso il limite MVP
-  di 2.000 prodotti, mantenendo idempotenza, mapping, snapshot e audit.
+- Verificare l'import iniziale pianificato oltre il batch da 50 listing verso
+  il limite MVP di 2.000 prodotti, mantenendo idempotenza, mapping, snapshot e
+  audit.
 - Rendere robusti batch, paginazione, retry e runner HTTP protetto per job
   `IMPORT_CATALOG` dovuti.
 - Consolidare la dashboard operativa su stato connessioni, job recenti, storico
