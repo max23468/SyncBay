@@ -10,6 +10,18 @@ export function isEbayStockDryRunEnabled(value: string | undefined) {
   return value?.trim().toLowerCase() === "true";
 }
 
+export function selectEbayTradingInventorySku(input: {
+  itemId: string;
+  sku?: string | null;
+}) {
+  const sku = input.sku?.trim();
+  if (!sku) return null;
+
+  const fallbackSku = `EBAY-${input.itemId}`;
+
+  return sku.toUpperCase() === fallbackSku.toUpperCase() ? null : sku;
+}
+
 export function normalizeCurrency(value: string | null | undefined) {
   const normalized = value?.trim().toUpperCase();
 
