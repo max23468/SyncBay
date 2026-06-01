@@ -2606,6 +2606,7 @@ function buildEbayProductSnapshot(input: {
   const item = input.draftProduct.previewItem;
 
   return {
+    currency: item.normalized.currency,
     descriptionHash: hashNullableText(item.normalized.descriptionHtml),
     ebayItemId: item.itemId,
     imageCount: item.normalized.imageCount,
@@ -2632,6 +2633,7 @@ function buildSyncBayProductSnapshot(input: {
   const variant = getFirstProductVariant(input.result.product);
 
   return {
+    currency: item.normalized.currency,
     descriptionHash: hashNullableText(item.normalized.descriptionHtml),
     ebayItemId: item.itemId,
     imageCount: input.result.mediaSync.createdCount,

@@ -16,6 +16,7 @@
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "quality:react-doctor": "npx --yes react-doctor@latest --full --fail-on error .",
     "smoke:ui": "node scripts/smoke-ui.mjs",
+    "test:stock-guard": "node --test --experimental-strip-types app/lib/syncbay-stock-guard.test.ts",
     "shopify": "shopify",
     "prisma": "prisma",
     "vite": "vite",

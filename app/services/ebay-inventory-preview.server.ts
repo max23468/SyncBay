@@ -6,6 +6,7 @@ import {
   type ImportPreviewListingCandidate,
   type ImportPreviewResult,
 } from "./import-preview.server";
+import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import { EbayTokenError, getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingImportPreview } from "./ebay-trading-preview.server";
 
@@ -41,9 +42,11 @@ interface EbayOffer {
   offerId?: string;
   pricingSummary?: {
     auctionStartPrice?: {
+      currency?: string;
       value?: string;
     };
     price?: {
+      currency?: string;
       value?: string;
     };
   };
@@ -292,6 +295,9 @@ async function getPublishedOfferCandidate(input: {
   if (!offer) return null;
 
   return {
+    currency:
+      getOfferCurrency(offer) ??
+      getExpectedMarketplaceCurrency(input.connection.marketplaceId),
     descriptionHtml:
       normalizeText(offer.listingDescription) ??
       normalizeText(input.item.product?.description),
@@ -371,6 +377,13 @@ function getOfferPrice(offer: EbayOffer) {
     offer.pricingSummary?.price?.value ??
       offer.pricingSummary?.auctionStartPrice?.value,
   );
+}
+
+function getOfferCurrency(offer: EbayOffer) {
+  return normalizeText(
+    offer.pricingSummary?.price?.currency ??
+      offer.pricingSummary?.auctionStartPrice?.currency,
+  )?.toUpperCase();
 }
 
 function getOfferQuantity(offer: EbayOffer, item: EbayInventoryItem) {

@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.3] — 2026-06-01
+
+### Correzioni
+
+- I job `UPDATE_EBAY_STOCK` supportano il dry-run runtime
+  `SYNCBAY_EBAY_STOCK_DRY_RUN=true`, che pianifica la riduzione stock senza
+  chiamare eBay e senza scrivere snapshot di stock fittizi.
+- Per eBay.it il runner stock applica solo ordini e snapshot catalogo in EUR e
+  salta le righe con valuta mancante o diversa, evitando aggiornamenti stock
+  eBay incoerenti con il marketplace.
+
+### Sotto il cofano
+
+- Preview Inventory/Trading API e import Shopify salvano la valuta del catalogo
+  negli snapshot prodotto, così i job stock possono validarla prima di chiamare
+  eBay.
+
 ## [0.20.2] — 2026-06-01
 
 ### Correzioni
@@ -566,6 +583,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.3]: #0203--2026-06-01
 [0.20.2]: #0202--2026-06-01
 [0.20.1]: #0201--2026-06-01
 [0.20.0]: #0200--2026-06-01

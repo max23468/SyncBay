@@ -70,7 +70,12 @@ Provisioning minimo:
 - eBay keyset: usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti.
 - eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
-- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche il `shopifyVariantGid`, riallinea lo stato dei prodotti Shopify riusati al default dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
+- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, riallinea lo stato dei prodotti Shopify riusati al default dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
+- Stock eBay da ordini Shopify: il pilota custom riceve `orders/paid` e crea
+  job prioritari `UPDATE_EBAY_STOCK`. `SYNCBAY_EBAY_STOCK_DRY_RUN=true` pianifica
+  le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per
+  marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot
+  catalogo in `EUR` e salta righe con valuta mancante o diversa.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata

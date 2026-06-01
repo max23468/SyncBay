@@ -46,6 +46,14 @@ Note:
   riusi senza duplicati sull'ultimo batch reale. La pianificazione import può
   creare più batch fino al minore tra listing attivi eBay e limite MVP di 2.000
   prodotti.
+- `SYNCBAY_EBAY_STOCK_DRY_RUN=true` blocca le chiamate reali a eBay per i job
+  `UPDATE_EBAY_STOCK`: il runner registra le riduzioni pianificate nel risultato
+  del job, senza modificare la disponibilità eBay e senza scrivere snapshot di
+  stock fittizi. In produzione pilota resta utile per ordini di prova; va
+  riportato a `false` solo quando store, valuta e dati di test sono coerenti.
+- Per eBay.it i job `UPDATE_EBAY_STOCK` richiedono ordine Shopify e snapshot
+  catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
+  saltata e non viene inviata nessuna mutation a eBay.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
@@ -122,10 +130,12 @@ Scope Shopify richiesti dal pilota runtime:
 - `read_locations`, `write_locations`;
 - `read_files`, `write_files` per riallineare media prodotto e rimuovere media
   precedenti gestiti da SyncBay.
+- `read_orders` per ricevere `orders/paid` nel pilota custom e creare job
+  prioritari `UPDATE_EBAY_STOCK`.
 
-La schedule Cron attuale copre solo il runner `IMPORT_CATALOG` del pilota. Il
-drenaggio completo di queue e i job di sync/stock restano da progettare quando
-l'import controllato verrà esteso oltre il batch pilota.
+La schedule Cron attuale richiama il runner `/api/jobs/run-due`, che drena
+import catalogo, sync incrementale, rilevazione conflitti Shopify e job stock
+eBay secondo priorità.
 
 ## Cosa resta da fare
 

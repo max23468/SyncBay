@@ -429,6 +429,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
   const shopifyValue = input.conflict.shopifyValue;
 
   return {
+    currency: input.snapshot.currency,
     descriptionHash:
       input.conflict.field === "description"
         ? getJsonStringValue(shopifyValue)
@@ -1035,6 +1036,7 @@ function getPlaceholderJobType(topic: string) {
 function getWebhookJobPayload(topic: string, payload: unknown) {
   if (topic === "orders/paid") {
     return {
+      orderCurrency: extractShopifyOrderCurrency(payload),
       lineItems: extractShopifyOrderLineItems(payload),
     } satisfies Prisma.JsonObject;
   }
@@ -1082,6 +1084,20 @@ function extractShopifyOrderLineItems(payload: unknown) {
       },
     ];
   });
+}
+
+function extractShopifyOrderCurrency(payload: unknown) {
+  if (!payload || typeof payload !== "object") return null;
+
+  const record = payload as Record<string, unknown>;
+  const moneySet = getRecordField(record, "current_total_price_set");
+  const shopMoney = getRecordField(moneySet, "shop_money");
+
+  return (
+    getStringField(record, "currency") ??
+    getStringField(record, "presentment_currency") ??
+    getStringField(shopMoney, "currency_code")
+  );
 }
 
 function extractShopifyInventoryItemGid(payload: unknown) {
@@ -1897,8 +1913,19 @@ function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
 }
 
-function getStringField(record: Record<string, unknown>, key: string) {
-  const value = record[key];
+function getRecordField(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function getStringField(
+  record: Record<string, unknown> | null | undefined,
+  key: string,
+) {
+  const value = record?.[key];
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);
 
