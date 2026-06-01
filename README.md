@@ -60,7 +60,7 @@ Provisioning minimo creato:
 - Avvio OAuth eBay: `/auth/ebay/start`
 - Callback OAuth eBay: `/auth/ebay/callback`
 - Endpoint eBay account deletion: `/ebay/account-deletion`
-- Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`
+- Webhook Shopify configurati: `/webhooks/app/uninstalled`, `/webhooks/app/scopes_update`, `/webhooks/products/update`, `/webhooks/inventory_levels/update`, `/webhooks/orders/paid`
 
 ## Documenti principali
 
@@ -91,6 +91,6 @@ Provisioning minimo creato:
 ## Prossimi passi
 
 1. Verificare end-to-end su dev store un ciclo sync incrementale con dati eBay cambiati.
-2. Richiedere o abilitare Shopify protected customer data prima di sottoscrivere `orders/paid` e attivare l'update stock eBay automatico da ordine Shopify.
+2. Reautorizzare l'app sul dev store per concedere `read_orders`, poi verificare end-to-end un ordine Shopify pagato su prodotto SyncBay e l'update eBay conseguente.
 3. Estendere diagnostica self-service per rollback e retry per prodotto.
 4. Preparare screenshot e rifiniture microcopy della dashboard operativa.
