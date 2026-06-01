@@ -6,6 +6,26 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.1] — 2026-06-01
+
+### Correzioni
+
+- I webhook Shopify `products/update` e `inventory_levels/update` coalescono i
+  job `DETECT_SHOPIFY_CHANGES` pendenti per risorsa, evitando accumuli massivi
+  durante import o aggiornamenti a raffica.
+- Il runner preleva i job dovuti in ordine di priorità già dalla query,
+  impedendo a una coda vecchia di conflitti Shopify di ritardare i job
+  `UPDATE_EBAY_STOCK`.
+- Il controllo idempotente dei retry `UPDATE_EBAY_STOCK` cerca la riga ordine
+  già processata senza limitarsi agli ultimi snapshot disponibili.
+
+### Sotto il cofano
+
+- Gli script diagnostici Supabase usano `SUPABASE_DB_PASSWORD` o il Portachiavi
+  macOS come fallback sicuro, e `npm run jobs:status` mostra anche la coda
+  complessiva oltre all'ultima run import.
+- `.env.example` allinea gli scope OAuth runtime includendo `read_orders`.
+
 ## [0.20.0] — 2026-06-01
 
 ### Novità
@@ -538,6 +558,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.1]: #0201--2026-06-01
 [0.20.0]: #0200--2026-06-01
 [0.19.1]: #0191--2026-06-01
 [0.19.0]: #0190--2026-06-01

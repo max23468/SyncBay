@@ -872,14 +872,31 @@ export async function recordShopifyWebhookPlaceholder(
       status: SyncJobStatus.PENDING,
       type: jobType,
     };
+    const coalescedJob = await findCoalescedWebhookJob({
+      details,
+      jobType,
+      shopId: shop.id,
+    });
 
-    const jobOperation = idempotencyKey
-      ? prisma.syncJob.upsert({
-          where: { idempotencyKey },
-          create: jobData,
-          update: {},
+    const jobOperation = coalescedJob
+      ? prisma.syncJob.update({
+          where: { id: coalescedJob.id },
+          data: {
+            errorCode: null,
+            errorMessage: null,
+            finishedAt: null,
+            payload: details,
+            runAfter: new Date(),
+            status: SyncJobStatus.PENDING,
+          },
         })
-      : prisma.syncJob.create({ data: jobData });
+      : idempotencyKey
+        ? prisma.syncJob.upsert({
+            where: { idempotencyKey },
+            create: jobData,
+            update: {},
+          })
+        : prisma.syncJob.create({ data: jobData });
 
     await prisma.$transaction([
       jobOperation,
@@ -1767,6 +1784,61 @@ function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
     return scopes.includes("write_locations");
 
   return false;
+}
+
+async function findCoalescedWebhookJob(input: {
+  details: Prisma.JsonObject;
+  jobType: SyncJobType;
+  shopId: string;
+}) {
+  if (input.jobType !== SyncJobType.DETECT_SHOPIFY_CHANGES) return null;
+
+  const matchers = getCoalescedWebhookMatchers(input.details);
+
+  if (matchers.length === 0) return null;
+
+  return prisma.syncJob.findFirst({
+    select: { id: true },
+    orderBy: { createdAt: "desc" },
+    where: {
+      OR: matchers,
+      shopId: input.shopId,
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+      type: input.jobType,
+    },
+  });
+}
+
+function getCoalescedWebhookMatchers(
+  details: Prisma.JsonObject,
+): Prisma.SyncJobWhereInput[] {
+  const topic = getJsonString(details.topic);
+  const resourceId = getJsonString(details.resourceId);
+  const inventoryItemGid = getJsonString(details.inventoryItemGid);
+  const topicMatcher = topic
+    ? { payload: { path: ["topic"], equals: topic } }
+    : null;
+  const matchers: Prisma.SyncJobWhereInput[] = [];
+
+  if (resourceId) {
+    matchers.push({
+      AND: [
+        ...(topicMatcher ? [topicMatcher] : []),
+        { payload: { path: ["resourceId"], equals: resourceId } },
+      ],
+    });
+  }
+
+  if (inventoryItemGid) {
+    matchers.push({
+      AND: [
+        ...(topicMatcher ? [topicMatcher] : []),
+        { payload: { path: ["inventoryItemGid"], equals: inventoryItemGid } },
+      ],
+    });
+  }
+
+  return matchers;
 }
 
 function hasRuntimeValue(value: string | undefined) {

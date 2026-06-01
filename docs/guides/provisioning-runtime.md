@@ -51,7 +51,8 @@ Note:
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
 syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
-query --linked` e stampa solo stato job sanitizzato.
+query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
+quando disponibile e stampa solo stato job sanitizzato.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
