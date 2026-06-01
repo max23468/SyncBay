@@ -119,6 +119,18 @@ Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere con
 - Se la richiesta è ambigua su scope, comportamento atteso, rischio, deploy o pubblicazione, fai domande mirate prima di procedere.
 - Procedi con un'assunzione dichiarata solo per dettagli marginali che non cambiano il risultato sostanziale.
 
+## Skill operative
+
+Usa le skill Superpowers pertinenti per lavori non banali: pianificazione,
+debugging sistematico, worktree, esecuzione di piani, review e verifica finale.
+Le skill non sostituiscono le policy Shopify/eBay, sicurezza, App Store,
+release/deploy o le fonti primarie di SyncBay.
+
+Usa o proponi `grill-me` quando serve stressare architetture, refactor
+trasversali, integrazioni Shopify/eBay/Supabase/Vercel, sicurezza, App Store,
+roadmap o scope ambiguo. Non renderla obbligatoria per refusi, docs-only a
+basso rischio, cleanup o modifiche meccaniche già determinate.
+
 ## Disciplina di scope
 
 - Mantieni le modifiche focalizzate sulla richiesta.
