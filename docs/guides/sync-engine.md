@@ -54,10 +54,12 @@ disponibilità eBay.
 ## Sync incrementale
 
 Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
-50 ItemID eBay attivi letti da Trading API `GetMyeBaySelling`. Questo copre sia
+10 ItemID eBay attivi letti da Trading API `GetMyeBaySelling`. Questo copre sia
 listing già mappati sia nuovi prodotti eBay pubblicati dopo l'import iniziale. I
 batch rileggono i listing via Trading API `GetItem` e riusano il flusso import
-controllato per creare o riallineare Shopify. Se un mapping ha conflitti
+controllato per creare o riallineare Shopify. Se un job più vecchio o un import
+iniziale contiene più di 10 ItemID, il runner lo spezza in sotto-job più piccoli
+prima di fare chiamate Shopify/eBay pesanti. Se un mapping ha conflitti
 Shopify aperti, il prodotto viene saltato finché il negoziante sceglie un'azione
 guidata.
 

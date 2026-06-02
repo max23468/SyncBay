@@ -18,6 +18,10 @@ import {
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
+import {
+  buildEbayItemJobSplitPayloads,
+  isSchedulableSyncJob,
+} from "../lib/syncbay-job-scheduling";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import {
   isEbayStockDryRunEnabled,
@@ -101,7 +105,8 @@ const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
-const INCREMENTAL_SYNC_BATCH_SIZE = 50;
+const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
+const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
@@ -167,6 +172,7 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
       orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
       take: remainingLimit,
       where: {
+        ...getSchedulableSyncJobWhere(),
         runAfter: { lte: input.now },
         status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
         type,
@@ -206,6 +212,15 @@ async function runDueSyncJobGroup(
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
+  if (
+    !isSchedulableSyncJob({
+      idempotencyKey: job.idempotencyKey,
+      payload: job.payload,
+    })
+  ) {
+    return null;
+  }
+
   return prisma.$transaction(async (tx) => {
     await lockShopForUpdate(tx, job.shopId);
 
@@ -222,6 +237,7 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
         id: { not: job.id },
         shopId: job.shopId,
         status: SyncJobStatus.RUNNING,
+        ...getSchedulableSyncJobWhere(),
         type: { in: getRunnableSyncJobTypes() },
       },
     });
@@ -241,6 +257,7 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
         runAfter: { lte: now },
         shopId: job.shopId,
         status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        ...getSchedulableSyncJobWhere(),
         type: { in: getRunnableSyncJobTypes() },
       },
     });
@@ -312,6 +329,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
     const activeJob = await prisma.syncJob.findFirst({
       select: { id: true },
       where: {
+        ...getSchedulableSyncJobWhere(),
         shopId: shop.id,
         status: {
           in: [
@@ -519,10 +537,28 @@ function getStaleRunningSyncJobWhere(
   shopId?: string,
 ): Prisma.SyncJobWhereInput {
   return {
-    OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
+    AND: [
+      getSchedulableSyncJobWhere(),
+      { OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }] },
+    ],
     shopId,
     status: SyncJobStatus.RUNNING,
     type: { in: getRecoverableRunningSyncJobTypes(getRunnableSyncJobTypes()) },
+  };
+}
+
+function getSchedulableSyncJobWhere(): Prisma.SyncJobWhereInput {
+  return {
+    OR: [
+      { idempotencyKey: null },
+      {
+        NOT: {
+          idempotencyKey: {
+            startsWith: "draft-import:",
+          },
+        },
+      },
+    ],
   };
 }
 
@@ -570,6 +606,14 @@ async function runImportCatalogJob(job: DueSyncJob) {
 
   if (ebayItemIds.length === 0) {
     throw new Error("Job import senza eBay ItemID da riprendere.");
+  }
+
+  if (await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds)) {
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
   }
 
   const connection = await prisma.ebayConnection.findUnique({
@@ -666,6 +710,14 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   if (ebayItemIds.length === 0) {
     throw new Error("Job sync incrementale senza eBay ItemID.");
+  }
+
+  if (await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds)) {
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
   }
 
   const openConflictItemIds = new Set(
@@ -1406,6 +1458,67 @@ async function markJobSucceeded(input: {
       },
     }),
   ]);
+}
+
+async function splitOversizedEbayItemJobIfNeeded(
+  job: DueSyncJob,
+  ebayItemIds: string[],
+) {
+  if (ebayItemIds.length <= RUNNER_EBAY_ITEM_BATCH_SIZE) return false;
+
+  const payload = getJsonObject(job.payload);
+
+  if (!payload) return false;
+
+  const splitPayloads = buildEbayItemJobSplitPayloads({
+    ebayItemIds,
+    maxItems: RUNNER_EBAY_ITEM_BATCH_SIZE,
+    parentJobId: job.id,
+    payload,
+  });
+  const now = new Date();
+  const result = {
+    requestedCount: ebayItemIds.length,
+    splitBatchSize: RUNNER_EBAY_ITEM_BATCH_SIZE,
+    splitJobCount: splitPayloads.length,
+  } satisfies Prisma.JsonObject;
+
+  await prisma.$transaction([
+    prisma.syncJob.createMany({
+      data: splitPayloads.map((splitPayload, index) => ({
+        attempts: 0,
+        idempotencyKey: `split:${job.id}:${index + 1}`,
+        maxAttempts: job.maxAttempts,
+        payload: splitPayload as Prisma.JsonObject,
+        runAfter: now,
+        shopId: job.shopId,
+        status: SyncJobStatus.PENDING,
+        type: job.type,
+      })),
+      skipDuplicates: true,
+    }),
+    prisma.syncJob.update({
+      data: {
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: now,
+        result,
+        status: SyncJobStatus.SUCCEEDED,
+      },
+      where: { id: job.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: result,
+        message:
+          "Job SyncBay spezzato in batch più piccoli per il runner automatico.",
+        shopId: job.shopId,
+        type: AuditEventType.SYNC_JOB_SUCCEEDED,
+      },
+    }),
+  ]);
+
+  return true;
 }
 
 function filterPreviewResultByItemIds(
