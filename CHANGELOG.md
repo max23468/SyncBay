@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.11] — 2026-06-02
+
+### Correzioni
+
+- Il detector dei conflitti descrizione conserva come baseline valida anche una
+  descrizione Shopify volutamente vuota, ignorando solo gli snapshot stock
+  parziali quando cerca la baseline descrizione più recente.
+
 ## [0.20.10] — 2026-06-02
 
 ### Correzioni
@@ -659,6 +667,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.11]: #02011--2026-06-02
 [0.20.10]: #02010--2026-06-02
 [0.20.9]: #0209--2026-06-02
 [0.20.8]: #0208--2026-06-02

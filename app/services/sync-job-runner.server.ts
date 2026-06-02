@@ -995,9 +995,7 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
     quantitySnapshot,
     titleSnapshot,
   ] = await Promise.all([
-    findLatestSyncBaySnapshotWithField(mappingId, {
-      descriptionHash: { not: null },
-    }),
+    findLatestSyncBayDescriptionBaseline(mappingId),
     findLatestSyncBaySnapshotWithField(mappingId, { imageCount: { not: null } }),
     findLatestSyncBaySnapshotWithField(mappingId, {
       priceAmount: { not: null },
@@ -1040,6 +1038,30 @@ async function findLatestSyncBaySnapshotWithField(
       mappingId,
       source: ProductSnapshotSource.SYNCBAY,
       ...fieldWhere,
+    },
+  });
+}
+
+async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    where: {
+      mappingId,
+      NOT: [
+        {
+          payload: {
+            path: ["updatedEbayFromShopifyOrder"],
+            equals: true,
+          },
+        },
+        {
+          payload: {
+            path: ["restoredEbayAfterTest"],
+            equals: true,
+          },
+        },
+      ],
+      source: ProductSnapshotSource.SYNCBAY,
     },
   });
 }
