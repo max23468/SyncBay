@@ -36,9 +36,7 @@ if (!Number.isInteger(targetQuantity) || targetQuantity < 0) {
 }
 
 loadDotEnv(".env");
-process.env.TOKEN_ENCRYPTION_KEY = readKeychainSecret(
-  TOKEN_ENCRYPTION_KEYCHAIN_SERVICE,
-);
+ensureTokenEncryptionKey();
 
 const supabaseEnv = {
   ...process.env,
@@ -100,6 +98,11 @@ const verifiedAvailableQuantity =
   (verifiedQuantity !== null && verifiedQuantitySold !== null
     ? verifiedQuantity - verifiedQuantitySold
     : null);
+assertVerifiedAvailableQuantity({
+  itemId: args.itemId,
+  targetQuantity,
+  verifiedAvailableQuantity,
+});
 const snapshot = createRestoreSnapshot({
   itemId: args.itemId,
   latest: state.latest,
@@ -197,6 +200,8 @@ function loadDotEnv(path) {
 }
 
 function readKeychainSecret(service) {
+  if (process.platform !== "darwin") return null;
+
   const result = spawnSync("security", [
     "find-generic-password",
     "-s",
@@ -206,11 +211,23 @@ function readKeychainSecret(service) {
     encoding: "utf8",
   });
 
-  if (result.status !== 0) {
-    throw new Error(`Segreto Portachiavi mancante: ${service}.`);
-  }
+  if (result.status !== 0) return null;
 
   return result.stdout.replace(/\r?\n$/, "");
+}
+
+function ensureTokenEncryptionKey() {
+  if (process.env.TOKEN_ENCRYPTION_KEY) return;
+
+  const keychainSecret = readKeychainSecret(TOKEN_ENCRYPTION_KEYCHAIN_SERVICE);
+  if (keychainSecret) {
+    process.env.TOKEN_ENCRYPTION_KEY = keychainSecret;
+    return;
+  }
+
+  throw new Error(
+    `TOKEN_ENCRYPTION_KEY non configurata e segreto Portachiavi mancante: ${TOKEN_ENCRYPTION_KEYCHAIN_SERVICE}.`,
+  );
 }
 
 function getRestoreState(itemId) {
@@ -306,8 +323,8 @@ returning id, quantity, currency, "capturedAt";
 
 function querySupabaseJson(sql) {
   const result = spawnSync(
-    "supabase",
-    ["db", "query", "--linked", "--output", "json", sql],
+    "npx",
+    ["supabase", "db", "query", "--linked", "--output", "json", sql],
     {
       encoding: "utf8",
       env: supabaseEnv,
@@ -320,6 +337,19 @@ function querySupabaseJson(sql) {
   }
 
   return JSON.parse(result.stdout).rows;
+}
+
+function assertVerifiedAvailableQuantity(input) {
+  if (input.verifiedAvailableQuantity === input.targetQuantity) return;
+
+  const actual =
+    input.verifiedAvailableQuantity === null
+      ? "non verificabile"
+      : input.verifiedAvailableQuantity;
+
+  throw new Error(
+    `Ripristino eBay non confermato per item ${input.itemId}: disponibilità verificata ${actual}, attesa ${input.targetQuantity}. Snapshot SyncBay non scritto.`,
+  );
 }
 
 function sqlQuote(value) {

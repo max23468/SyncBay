@@ -75,8 +75,6 @@ type ShopifyProductForConflictResponse = {
   };
   errors?: Array<{ message: string }>;
 };
-type SyncBayConflictSnapshot =
-  Prisma.ProductSnapshotGetPayload<Record<string, never>>;
 
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
@@ -985,50 +983,61 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
 }
 
 async function getLatestSyncBayConflictBaseline(mappingId: string) {
-  const snapshots = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    take: 50,
-    where: {
-      mappingId,
-      source: ProductSnapshotSource.SYNCBAY,
-    },
-  });
+  const [
+    descriptionSnapshot,
+    imageSnapshot,
+    priceSnapshot,
+    statusSnapshot,
+    quantitySnapshot,
+    titleSnapshot,
+  ] = await Promise.all([
+    findLatestSyncBaySnapshotWithField(mappingId, {
+      descriptionHash: { not: null },
+    }),
+    findLatestSyncBaySnapshotWithField(mappingId, { imageCount: { not: null } }),
+    findLatestSyncBaySnapshotWithField(mappingId, {
+      priceAmount: { not: null },
+    }),
+    findLatestSyncBaySnapshotWithField(mappingId, {
+      productStatus: { not: null },
+    }),
+    findLatestSyncBaySnapshotWithField(mappingId, { quantity: { not: null } }),
+    findLatestSyncBaySnapshotWithField(mappingId, { title: { not: null } }),
+  ]);
 
-  if (snapshots.length === 0) return null;
+  if (
+    !descriptionSnapshot &&
+    !imageSnapshot &&
+    !priceSnapshot &&
+    !statusSnapshot &&
+    !quantitySnapshot &&
+    !titleSnapshot
+  ) {
+    return null;
+  }
 
   return {
-    descriptionHash: findLatestSnapshotValue(
-      snapshots,
-      (snapshot) => snapshot.descriptionHash,
-    ),
-    imageCount: findLatestSnapshotValue(
-      snapshots,
-      (snapshot) => snapshot.imageCount,
-    ),
-    priceAmount: findLatestSnapshotValue(
-      snapshots,
-      (snapshot) => snapshot.priceAmount,
-    ),
-    productStatus: findLatestSnapshotValue(
-      snapshots,
-      (snapshot) => snapshot.productStatus,
-    ),
-    quantity: findLatestSnapshotValue(snapshots, (snapshot) => snapshot.quantity),
-    title: findLatestSnapshotValue(snapshots, (snapshot) => snapshot.title),
+    descriptionHash: descriptionSnapshot?.descriptionHash ?? null,
+    imageCount: imageSnapshot?.imageCount ?? null,
+    priceAmount: priceSnapshot?.priceAmount ?? null,
+    productStatus: statusSnapshot?.productStatus ?? null,
+    quantity: quantitySnapshot?.quantity ?? null,
+    title: titleSnapshot?.title ?? null,
   };
 }
 
-function findLatestSnapshotValue<T>(
-  snapshots: SyncBayConflictSnapshot[],
-  select: (snapshot: (typeof snapshots)[number]) => T | null,
+async function findLatestSyncBaySnapshotWithField(
+  mappingId: string,
+  fieldWhere: Prisma.ProductSnapshotWhereInput,
 ) {
-  for (const snapshot of snapshots) {
-    const value = select(snapshot);
-
-    if (value !== null && value !== undefined) return value;
-  }
-
-  return null;
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    where: {
+      mappingId,
+      source: ProductSnapshotSource.SYNCBAY,
+      ...fieldWhere,
+    },
+  });
 }
 
 async function getImportPreviewResultByItemIds(
