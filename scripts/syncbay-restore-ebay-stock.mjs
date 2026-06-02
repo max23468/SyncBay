@@ -5,12 +5,17 @@ import { spawnSync } from "node:child_process";
 
 import { XMLParser } from "fast-xml-parser";
 
+import {
+  parseRestoreEbayStockArgs,
+  shouldCreateRestoreSnapshot,
+} from "./syncbay-restore-ebay-stock-args.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseRestoreEbayStockArgs(process.argv.slice(2));
 
 if (args.help) {
   printUsage();
@@ -103,18 +108,21 @@ assertVerifiedAvailableQuantity({
   targetQuantity,
   verifiedAvailableQuantity,
 });
-const snapshot = createRestoreSnapshot({
-  itemId: args.itemId,
-  latest: state.latest,
-  mapping: state.mapping,
-  quantity: targetQuantity,
-  reason: args.reason ?? "manual_restore_after_real_stock_test",
-});
+const snapshot = shouldCreateRestoreSnapshot(args)
+  ? createRestoreSnapshot({
+      itemId: args.itemId,
+      latest: state.latest,
+      mapping: state.mapping,
+      quantity: targetQuantity,
+      reason: args.reason ?? "manual_restore_after_real_stock_test",
+    })
+  : null;
 
 console.log(
   JSON.stringify({
     itemId: args.itemId,
     ok: true,
+    snapshotSkipped: !shouldCreateRestoreSnapshot(args),
     snapshot,
     targetQuantity,
     tokenRefreshed: refreshed,
@@ -125,45 +133,9 @@ console.log(
   }),
 );
 
-function parseArgs(values) {
-  const parsed = {};
-
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
-
-    if (value === "--help" || value === "-h") {
-      parsed.help = true;
-      continue;
-    }
-    if (value === "--confirm-real-ebay-write") {
-      parsed.confirmRealEbayWrite = true;
-      continue;
-    }
-
-    if (!value.startsWith("--")) {
-      throw new Error(`Argomento non riconosciuto: ${value}`);
-    }
-
-    const key = value.slice(2).replaceAll("-", "_");
-    const nextValue = values[index + 1];
-    if (!nextValue || nextValue.startsWith("--")) {
-      throw new Error(`Valore mancante per ${value}.`);
-    }
-
-    parsed[toCamelCase(key)] = nextValue;
-    index += 1;
-  }
-
-  return parsed;
-}
-
-function toCamelCase(value) {
-  return value.replaceAll(/_([a-z])/g, (_, char) => char.toUpperCase());
-}
-
 function printUsage() {
   console.log(`Uso:
-  npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write [--sku <sku-eBay-reale>] [--reason <motivo>]
+  npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write [--sku <sku-eBay-reale>] [--reason <motivo>] [--skip-snapshot]
 
 Esempio:
   npm run stock:restore-ebay -- --item-id 168148953253 --quantity 19 --confirm-real-ebay-write
@@ -173,7 +145,7 @@ Lo script:
 - usa il token eBay cifrato del runtime e non stampa segreti;
 - chiama Trading API ReviseInventoryStatus;
 - verifica con GetItem;
-- scrive uno snapshot SYNCBAY di ripristino.`);
+- scrive uno snapshot SYNCBAY di ripristino, salvo --skip-snapshot per test eBay esterni controllati.`);
 }
 
 function loadDotEnv(path) {
@@ -217,11 +189,14 @@ function readKeychainSecret(service) {
 }
 
 function ensureTokenEncryptionKey() {
-  if (process.env.TOKEN_ENCRYPTION_KEY) return;
-
   const keychainSecret = readKeychainSecret(TOKEN_ENCRYPTION_KEYCHAIN_SERVICE);
-  if (keychainSecret) {
-    process.env.TOKEN_ENCRYPTION_KEY = keychainSecret;
+  const selected = selectTokenEncryptionKey({
+    envValue: process.env.TOKEN_ENCRYPTION_KEY,
+    keychainValue: keychainSecret,
+  });
+
+  if (selected.value) {
+    process.env.TOKEN_ENCRYPTION_KEY = selected.value;
     return;
   }
 

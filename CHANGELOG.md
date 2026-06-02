@@ -11,6 +11,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Aggiunta la spec operativa per il test end-to-end controllato dei flussi
   eBay -> Shopify e ordine Shopify -> disponibilità eBay, con baseline e
   rollback obbligatori.
+- Documentato l'esito del test controllato: sync quantità eBay -> Shopify
+  verificato con rollback; runner stock Shopify -> eBay verificato con payload
+  ordine sintetico, allowlist singola e rollback; trigger da vendita Shopify
+  reale ancora da provare con scope `write_orders`/token offline.
+- Rafforzato lo script operativo di ripristino stock eBay con parsing argomenti
+  testabile, preferenza Portachiavi per `TOKEN_ENCRYPTION_KEY` e opzione
+  `--skip-snapshot` per simulare modifiche eBay esterne senza inquinare il
+  baseline SyncBay.
 
 ## [0.20.12] — 2026-06-02
 

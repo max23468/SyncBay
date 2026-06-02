@@ -13,8 +13,10 @@ production pronto. La pianificazione import può creare batch fino a 2.000
 listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
 dev store l'import reale ha completato 958 listing. Il runner copre import,
 sync incrementale, update stock eBay da `orders/paid` nel pilota custom e
-rilevazione conflitti Shopify; restano da verificare end-to-end le nuove
-superfici su eventi reali post-deploy.
+rilevazione conflitti Shopify. Il primo cambio quantità reale eBay -> Shopify
+è stato verificato con rollback. Il runner stock Shopify -> eBay è stato
+verificato con payload ordine sintetico e scrittura eBay reale allowlistata;
+resta da verificare il trigger da vendita Shopify reale.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -57,9 +59,19 @@ Note:
   `variant:<variantId>`, `variant:<variantGid>` o
   `<shopDomain>:variant:<variantId>`. Va lasciata vuota fuori dalla finestra di
   test e rimossa/ridotta appena verificato il job.
+- Quando si aggiunge o rimuove `SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST` in
+  Vercel production, ridistribuire production prima di creare il job di test e
+  ridistribuire di nuovo dopo la rimozione. La verifica del 2026-06-02 ha usato
+  una allowlist singola `ebay:<ItemID>`, poi ha confermato da `vercel env ls`
+  che l'allowlist non fosse più presente.
 - Per eBay.it i job `UPDATE_EBAY_STOCK` richiedono ordine Shopify e snapshot
   catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
   saltata e non viene inviata nessuna mutation a eBay.
+- La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
+  `write_orders` e un token offline; `shopify store execute` con il token CLI
+  disponibile non è sufficiente. Finché quello scope non è disponibile, la prova
+  completa del trigger vendita Shopify reale resta separata dalla prova del
+  runner stock.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
@@ -113,6 +125,13 @@ Non salvarla in Git e non stamparla nei log.
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
 - verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
 - `shopify app dev --store syncbay-dev.myshopify.com` con preview Admin caricata e sessione installazione registrata
+- test eBay -> Shopify su ItemID controllato `156986744184`: stock eBay 3 -> 2
+  via Trading API, sync incrementale production, stock Shopify verificato a 2,
+  rollback eBay/Shopify a 3
+- test runner Shopify -> eBay su ItemID controllato `156986744184`: job
+  `UPDATE_EBAY_STOCK` con payload ordine sintetico, `dryRun: true`,
+  allowlist reale singola, `updatedCount: 1`, stock eBay 3 -> 2, rollback a 3,
+  allowlist Vercel rimossa e production ridistribuita
 
 Estensioni Supabase verificate:
 
