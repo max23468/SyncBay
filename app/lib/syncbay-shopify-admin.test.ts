@@ -19,6 +19,7 @@ test("creates an Admin GraphQL client backed by the offline access token", async
       calls.push({ input, init });
 
       return new Response(JSON.stringify({ data: { shop: { name: "SyncBay" } } }), {
+        headers: { "Content-Type": "application/json" },
         status: 200,
       });
     },
@@ -45,4 +46,61 @@ test("creates an Admin GraphQL client backed by the offline access token", async
     query: "query Test($id: ID!) { node(id: $id) { id } }",
     variables: { id: "gid://shopify/Product/1" },
   });
+});
+
+test("retries throttled Admin GraphQL responses", async () => {
+  let callCount = 0;
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () => {
+      callCount += 1;
+
+      if (callCount === 1) {
+        return new Response(
+          JSON.stringify({ errors: [{ message: "Throttled" }] }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        );
+      }
+
+      return new Response(JSON.stringify({ data: { ok: true } }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    },
+    maxAttempts: 2,
+    shopDomain: "syncbay-dev.myshopify.com",
+    throttleRetryDelayMs: 1,
+  });
+
+  const response = await client.graphql("query Test { shop { id } }");
+
+  assert.equal(callCount, 2);
+  assert.deepEqual(await response.json(), { data: { ok: true } });
+});
+
+test("normalizes repeated non-json Admin GraphQL responses", async () => {
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () =>
+      new Response("<html><h1>Temporarily unavailable</h1></html>", {
+        headers: { "Content-Type": "text/html" },
+        status: 200,
+      }),
+    maxAttempts: 2,
+    retryDelayMs: 1,
+    shopDomain: "syncbay-dev.myshopify.com",
+  });
+
+  const response = await client.graphql("query Test { shop { id } }");
+  const json = await response.json();
+
+  assert.equal(response.ok, false);
+  assert.equal(response.status, 502);
+  assert.match(
+    json.errors[0].message,
+    /risposta non JSON/,
+  );
 });
