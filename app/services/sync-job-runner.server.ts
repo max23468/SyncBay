@@ -12,11 +12,13 @@ import {
 
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
+import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
 import {
   buildCatalogReconcilePlan,
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
+import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import {
   isEbayStockDryRunEnabled,
   shouldDryRunEbayStockLine,
@@ -101,10 +103,10 @@ const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const INCREMENTAL_SYNC_BATCH_SIZE = 50;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
-const RUNNING_IMPORT_STALE_AFTER_MS = 15 * 60 * 1000;
-const STALE_RUNNING_IMPORT_ERROR_CODE = "SYNCBAY_RUNNING_IMPORT_STALE";
-const STALE_RUNNING_IMPORT_ERROR_MESSAGE =
-  "Job import rimasto RUNNING oltre la finestra di sicurezza del runner.";
+const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
+const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
+const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
+  "Job SyncBay rimasto RUNNING oltre la finestra di sicurezza del runner.";
 
 export async function runDueSyncJobs(
   input: {
@@ -116,7 +118,7 @@ export async function runDueSyncJobs(
   const limit = normalizeRunDueLimit(input.limit);
 
   await enqueueIncrementalSyncJobs(now);
-  await recoverStaleRunningImportJobsForDueShops({ limit, now });
+  await recoverStaleRunningSyncJobsForDueShops({ limit, now });
 
   const jobs = await findDueSyncJobsByPriority({ limit, now });
   const results = new Array<DueSyncJobRunResult>(jobs.length);
@@ -207,7 +209,7 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
   return prisma.$transaction(async (tx) => {
     await lockShopForUpdate(tx, job.shopId);
 
-    const recoveredStaleJobCount = await recoverStaleRunningImportJobs(tx, {
+    const recoveredStaleJobCount = await recoverStaleRunningSyncJobs(tx, {
       now,
       shopId: job.shopId,
     });
@@ -252,16 +254,16 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
   });
 }
 
-async function recoverStaleRunningImportJobsForDueShops(input: {
+async function recoverStaleRunningSyncJobsForDueShops(input: {
   limit: number;
   now: Date;
 }) {
-  const staleCutoff = getRunningImportStaleCutoff(input.now);
+  const staleCutoff = getRunningSyncJobStaleCutoff(input.now);
   const staleRunningJobs = await prisma.syncJob.findMany({
     orderBy: [{ startedAt: "asc" }, { createdAt: "asc" }],
     select: { shopId: true },
     take: input.limit,
-    where: getStaleRunningImportJobWhere(staleCutoff),
+    where: getStaleRunningSyncJobWhere(staleCutoff),
   });
   const staleShopIds = [...new Set(staleRunningJobs.map((job) => job.shopId))];
 
@@ -269,7 +271,7 @@ async function recoverStaleRunningImportJobsForDueShops(input: {
     staleShopIds.map((shopId) =>
       prisma.$transaction(async (tx) => {
         await lockShopForUpdate(tx, shopId);
-        await recoverStaleRunningImportJobs(tx, {
+        await recoverStaleRunningSyncJobs(tx, {
           now: input.now,
           shopId,
         });
@@ -319,10 +321,11 @@ async function enqueueIncrementalSyncJobs(now: Date) {
           ],
         },
         type: {
-          in: [
-            SyncJobType.SYNC_INCREMENTAL,
-            SyncJobType.ARCHIVE_INACTIVE_LISTING,
-          ],
+          in: getCatalogReconcileBlockingJobTypes({
+            archiveInactiveListing: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+            importCatalog: SyncJobType.IMPORT_CATALOG,
+            syncIncremental: SyncJobType.SYNC_INCREMENTAL,
+          }),
         },
       },
     });
@@ -442,14 +445,14 @@ async function enqueueIncrementalSyncJobs(now: Date) {
   }
 }
 
-async function recoverStaleRunningImportJobs(
+async function recoverStaleRunningSyncJobs(
   tx: Prisma.TransactionClient,
   input: {
     now: Date;
     shopId: string;
   },
 ): Promise<number> {
-  const staleCutoff = getRunningImportStaleCutoff(input.now);
+  const staleCutoff = getRunningSyncJobStaleCutoff(input.now);
   const staleJobs = await tx.syncJob.findMany({
     select: {
       attempts: true,
@@ -457,8 +460,9 @@ async function recoverStaleRunningImportJobs(
       maxAttempts: true,
       runAfter: true,
       startedAt: true,
+      type: true,
     },
-    where: getStaleRunningImportJobWhere(staleCutoff, input.shopId),
+    where: getStaleRunningSyncJobWhere(staleCutoff, input.shopId),
   });
   let recoveredCount = 0;
 
@@ -467,9 +471,10 @@ async function recoverStaleRunningImportJobs(
     const retryAt =
       nextAttempts < staleJob.maxAttempts ? staleJob.runAfter : null;
     const result = {
-      runnerErrorCode: STALE_RUNNING_IMPORT_ERROR_CODE,
-      runnerErrorMessage: STALE_RUNNING_IMPORT_ERROR_MESSAGE,
-      staleAfterSeconds: RUNNING_IMPORT_STALE_AFTER_MS / 1000,
+      recoveredJobType: staleJob.type,
+      runnerErrorCode: STALE_RUNNING_SYNC_JOB_ERROR_CODE,
+      runnerErrorMessage: STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE,
+      staleAfterSeconds: RUNNING_SYNC_JOB_STALE_AFTER_MS / 1000,
       staleStartedAt: staleJob.startedAt?.toISOString() ?? null,
       retryScheduledAt: retryAt?.toISOString() ?? null,
       willRetry: Boolean(retryAt),
@@ -478,8 +483,8 @@ async function recoverStaleRunningImportJobs(
     await tx.syncJob.update({
       data: {
         attempts: { increment: 1 },
-        errorCode: STALE_RUNNING_IMPORT_ERROR_CODE,
-        errorMessage: STALE_RUNNING_IMPORT_ERROR_MESSAGE,
+        errorCode: STALE_RUNNING_SYNC_JOB_ERROR_CODE,
+        errorMessage: STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE,
         finishedAt: input.now,
         result,
         runAfter: retryAt ?? undefined,
@@ -492,8 +497,8 @@ async function recoverStaleRunningImportJobs(
       data: {
         details: result,
         message: retryAt
-          ? "Job import RUNNING stantio recuperato; retry pianificato dal runner."
-          : "Job import RUNNING stantio segnato come fallito dal runner.",
+          ? "Job SyncBay RUNNING stantio recuperato; retry pianificato dal runner."
+          : "Job SyncBay RUNNING stantio segnato come fallito dal runner.",
         shopId: input.shopId,
         type: AuditEventType.SYNC_JOB_FAILED,
       },
@@ -505,11 +510,11 @@ async function recoverStaleRunningImportJobs(
   return recoveredCount;
 }
 
-function getRunningImportStaleCutoff(now: Date) {
-  return new Date(now.getTime() - RUNNING_IMPORT_STALE_AFTER_MS);
+function getRunningSyncJobStaleCutoff(now: Date) {
+  return new Date(now.getTime() - RUNNING_SYNC_JOB_STALE_AFTER_MS);
 }
 
-function getStaleRunningImportJobWhere(
+function getStaleRunningSyncJobWhere(
   staleCutoff: Date,
   shopId?: string,
 ): Prisma.SyncJobWhereInput {
@@ -517,7 +522,7 @@ function getStaleRunningImportJobWhere(
     OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
     shopId,
     status: SyncJobStatus.RUNNING,
-    type: SyncJobType.IMPORT_CATALOG,
+    type: { in: getRecoverableRunningSyncJobTypes(getRunnableSyncJobTypes()) },
   };
 }
 
