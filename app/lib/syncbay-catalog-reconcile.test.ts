@@ -37,7 +37,7 @@ test("deduplicates active item ids before batching", () => {
   );
 });
 
-test("does not archive mappings when the active scan is empty", () => {
+test("archives mappings when a complete active scan is empty", () => {
   assert.deepEqual(
     buildCatalogReconcilePlan({
       activeEbayItemIds: [],
@@ -46,7 +46,7 @@ test("does not archive mappings when the active scan is empty", () => {
       mappedEbayItemIds: ["1", "2"],
     }),
     {
-      inactiveEbayItemIds: [],
+      inactiveEbayItemIds: ["1", "2"],
       syncBatches: [],
     },
   );
@@ -105,6 +105,24 @@ test("marks an eBay active scan complete only when it covers the available catal
       maxProducts: 1,
       readCount: 1,
       totalAvailable: 2,
+    }),
+    false,
+  );
+  assert.equal(
+    isCatalogReconcileScanComplete({
+      itemIds: [],
+      maxProducts: 2000,
+      readCount: 0,
+      totalAvailable: 0,
+    }),
+    true,
+  );
+  assert.equal(
+    isCatalogReconcileScanComplete({
+      itemIds: Array.from({ length: 2000 }, (_, index) => String(index + 1)),
+      maxProducts: 2000,
+      readCount: 2000,
+      totalAvailable: null,
     }),
     false,
   );

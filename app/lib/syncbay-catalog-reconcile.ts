@@ -14,9 +14,9 @@ export function buildCatalogReconcilePlan(input: {
 
   return {
     inactiveEbayItemIds:
-      activeEbayItemIds.length === 0 || !input.activeScanComplete
-        ? []
-        : mappedEbayItemIds.filter((itemId) => !activeSet.has(itemId)),
+      input.activeScanComplete
+        ? mappedEbayItemIds.filter((itemId) => !activeSet.has(itemId))
+        : [],
     syncBatches: chunkArray(activeEbayItemIds, input.batchSize),
   };
 }
@@ -27,11 +27,12 @@ export function isCatalogReconcileScanComplete(input: {
   readCount: number;
   totalAvailable: number | null;
 }) {
-  if (input.itemIds.length === 0) return false;
   if (!Number.isInteger(input.maxProducts) || input.maxProducts <= 0) {
     return false;
   }
-  if (input.totalAvailable === null) return input.readCount > 0;
+  if (input.totalAvailable === null) {
+    return input.itemIds.length > 0 && input.readCount < input.maxProducts;
+  }
 
   return (
     input.totalAvailable <= input.maxProducts &&
