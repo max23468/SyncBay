@@ -31,6 +31,8 @@ Schema iniziale:
 - stato installazione;
 - scope Shopify concessi;
 - location Shopify predefinita;
+- stato prodotto predefinito per import/sync;
+- policy pubblicazione canali Shopify e, quando serve, GID canali selezionati;
 - flag sync abilitato;
 - target sync in secondi;
 - timestamp installazione/disinstallazione.

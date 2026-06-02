@@ -125,9 +125,11 @@ Scope iniziali previsti:
 - `write_inventory`
 - `read_locations`
 - `write_locations`
+- `read_publications`
+- `write_publications`
 - `read_orders` per il webhook `orders/paid`, da attivare solo dopo
   approvazione Shopify protected customer data per la protezione disponibilità.
-- scope necessari per file/media e webhook, da confermare in fase scaffold in base alla versione API Shopify usata.
+- `read_files` e `write_files` per media prodotto.
 
 Webhook Shopify MVP:
 
@@ -177,19 +179,22 @@ Flusso iniziale:
 2. Connessione eBay.it via OAuth.
 3. Scelta location Shopify predefinita.
 4. Scelta stato import iniziale: `draft` o pubblicato.
-5. Scelta modalità descrizione.
-6. Lettura listing attivi eBay in pagine.
-7. Recupero dettagli completi per listing.
-8. Normalizzazione dati in modello interno.
-9. Preview import con conteggi, errori e campioni prodotto.
-10. Import in stato `draft` o pubblicato, secondo impostazione del negoziante.
-11. Upload immagini su Shopify con deduplica.
-12. Creazione mapping stabile e snapshot.
-13. Avvio sync periodico.
+5. Scelta canali Shopify per i prodotti pubblicati: tutti, selezionati o nessuno.
+6. Scelta modalità descrizione.
+7. Lettura listing attivi eBay in pagine.
+8. Recupero dettagli completi per listing.
+9. Normalizzazione dati in modello interno.
+10. Preview import con conteggi, errori e campioni prodotto.
+11. Import in stato `draft` o pubblicato, secondo impostazione del negoziante.
+12. Upload immagini su Shopify con deduplica.
+13. Creazione mapping stabile e snapshot.
+14. Avvio sync periodico.
 
 Default consigliato:
 
 - import iniziale in `pubblicato`, con possibilità di usare `draft` da Impostazioni;
+- pubblicazione su tutti i canali Shopify disponibili, configurabile a soli
+  canali selezionati o nessuna pubblicazione automatica;
 - publish massivo solo dopo preview;
 - copia fisica delle immagini su Shopify, non dipendenza permanente dagli URL eBay;
 - location Shopify predefinita selezionata durante onboarding.

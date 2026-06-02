@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import {
   AuditEventType,
   EbayConnectionStatus,
+  ProductPublicationMode as PrismaProductPublicationMode,
   Prisma,
   ProductMappingStatus,
   ProductSnapshotSource,
@@ -21,6 +22,16 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
+import {
+  loadShopifyProductPublications,
+  type ShopifyProductPublication,
+} from "../lib/syncbay-product-publication";
+import {
+  normalizeProductPublicationMode,
+  parseProductPublicationGids,
+  serializeProductPublicationGids,
+  type ProductPublicationMode,
+} from "../lib/syncbay-product-publication-settings";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -40,6 +51,13 @@ import {
 interface ShopifySessionLike {
   shop: string;
   scope?: string | null;
+}
+
+interface ShopifyAdminGraphqlClient {
+  graphql: (
+    query: string,
+    options?: { variables?: Record<string, unknown> },
+  ) => Promise<Response>;
 }
 
 interface WebhookRecordInput {
@@ -71,6 +89,8 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "read_locations",
   "write_locations",
   "read_orders",
+  "read_publications",
+  "write_publications",
   "read_files",
   "write_files",
 ];
@@ -761,7 +781,10 @@ export async function getImportWizardState(session: ShopifySessionLike) {
   };
 }
 
-export async function getShopSettingsState(session: ShopifySessionLike) {
+export async function getShopSettingsState(
+  session: ShopifySessionLike,
+  admin?: ShopifyAdminGraphqlClient,
+) {
   const shop = await ensureShopForSession(session);
   const [ebayConnection, activeMappingCount] = await prisma.$transaction([
     prisma.ebayConnection.findUnique({
@@ -786,8 +809,23 @@ export async function getShopSettingsState(session: ShopifySessionLike) {
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     requestedSyncEnabled: true,
   });
+  const publicationMode = normalizeProductPublicationMode(
+    shop.productPublicationMode,
+  );
+  const selectedPublicationIds = parseProductPublicationGids(
+    shop.productPublicationGids,
+  );
+  const publicationState = admin
+    ? await loadShopSettingsPublications(admin)
+    : { availablePublications: [], errorMessage: null };
 
   return {
+    productPublications: {
+      availablePublications: publicationState.availablePublications,
+      errorMessage: publicationState.errorMessage,
+      mode: publicationMode,
+      selectedPublicationIds,
+    },
     shop: {
       defaultProductStatus: normalizeImportProductStatus(
         shop.defaultProductStatus,
@@ -801,6 +839,22 @@ export async function getShopSettingsState(session: ShopifySessionLike) {
       canEnable: syncBlockers.length === 0,
       enablementBlockers: syncBlockers,
     },
+  };
+}
+
+async function loadShopSettingsPublications(admin: ShopifyAdminGraphqlClient) {
+  const publications = await loadShopifyProductPublications(admin);
+
+  if ("errorMessage" in publications) {
+    return {
+      availablePublications: [] as ShopifyProductPublication[],
+      errorMessage: publications.errorMessage,
+    };
+  }
+
+  return {
+    availablePublications: publications,
+    errorMessage: null,
   };
 }
 
@@ -925,6 +979,66 @@ export async function updateDefaultImportProductStatus(
   ]);
 
   return normalizedStatus;
+}
+
+export async function updateProductPublicationSettings(
+  session: ShopifySessionLike,
+  input: {
+    availablePublications: ShopifyProductPublication[];
+    mode: string;
+    selectedPublicationIds: string[];
+  },
+) {
+  const mode = normalizeProductPublicationMode(input.mode);
+  const availablePublicationIds = new Set(
+    input.availablePublications.map((publication) => publication.id),
+  );
+  const selectedPublicationIds = input.selectedPublicationIds.filter(
+    (publicationId) => availablePublicationIds.has(publicationId),
+  );
+
+  if (mode === "SELECTED" && selectedPublicationIds.length === 0) {
+    return {
+      blockers: ["seleziona almeno un canale Shopify disponibile"],
+      mode,
+      selectedPublicationIds,
+      status: "blocked" as const,
+    };
+  }
+
+  const shop = await ensureShopForSession(session);
+  const serializedPublicationIds =
+    mode === "SELECTED"
+      ? serializeProductPublicationGids(selectedPublicationIds)
+      : null;
+
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: {
+        productPublicationGids: serializedPublicationIds,
+        productPublicationMode: mode as PrismaProductPublicationMode,
+      },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          productPublicationGids: serializedPublicationIds,
+          productPublicationMode: mode,
+        },
+        message: `Policy pubblicazione canali Shopify aggiornata: ${getProductPublicationModeLabel(mode)}.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ]);
+
+  return {
+    blockers: [],
+    mode,
+    selectedPublicationIds,
+    status: "saved" as const,
+  };
 }
 
 export async function updateShopSyncEnabled(
@@ -1514,6 +1628,13 @@ function getShopifyReadinessDetail(input: {
   }
 
   return "Installazione, scope minimi concessi e webhook pilota predisposti.";
+}
+
+function getProductPublicationModeLabel(mode: ProductPublicationMode) {
+  if (mode === "NONE") return "non pubblicare automaticamente";
+  if (mode === "SELECTED") return "solo canali selezionati";
+
+  return "tutti i canali disponibili";
 }
 
 function getComplianceReadiness() {

@@ -54,6 +54,9 @@ Infrastruttura MVP: Vercel + Supabase.
 - Supabase Storage: staging privato temporaneo immagini quando serve.
 - Shopify scope media/file: `read_files` e `write_files` sono richiesti per
   riallineare i media prodotto e rimuovere media precedenti gestiti da SyncBay.
+- Shopify publication: `read_publications` e `write_publications` sono richiesti
+  per leggere i canali disponibili e pubblicare i prodotti attivi secondo la
+  policy impostata dal negoziante.
 - Vercel Web Analytics e Speed Insights: baseline osservabilità.
 - Versioning locale corrente: `app/lib/version.ts` + `npm run release`.
   Tag `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali
@@ -70,7 +73,7 @@ Provisioning minimo:
 - eBay keyset: usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti.
 - eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
-- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, riallinea lo stato dei prodotti Shopify riusati al default dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
+- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, riallinea lo stato dei prodotti Shopify riusati al default dello shop, pubblica i prodotti attivi secondo la policy canali Shopify dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
 - Sync catalogo eBay -> Shopify: dopo l'import, il polling incrementale resta
   controllato da `syncEnabled` e target `300` secondi. Le Impostazioni embedded
   permettono di attivare/disattivare il sync automatico solo quando eBay è
