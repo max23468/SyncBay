@@ -25,6 +25,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Aggiunto il controllo embedded in Impostazioni per attivare o disattivare il
   sync catalogo automatico, con blocco dell'attivazione finché mancano account
   eBay collegato, location Shopify predefinita o prodotti importati.
+- Aggiunta diagnostica dashboard per il sync catalogo incrementale: stato
+  fresco/in corso/in ritardo, ultimo completamento e prossima finestra target.
 
 ## [0.20.12] — 2026-06-02
 

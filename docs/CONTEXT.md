@@ -74,7 +74,9 @@ Provisioning minimo:
 - Sync catalogo eBay -> Shopify: dopo l'import, il polling incrementale resta
   controllato da `syncEnabled` e target `300` secondi. Le Impostazioni embedded
   permettono di attivare/disattivare il sync automatico solo quando eBay è
-  collegato, la location Shopify è impostata e ci sono prodotti importati.
+  collegato, la location Shopify è impostata e ci sono prodotti importati. La
+  dashboard mostra stato freschezza del sync, ultimo completamento e prossima
+  finestra target.
 - Stock eBay da ordini Shopify: il pilota custom riceve `orders/paid` e crea
   job prioritari `UPDATE_EBAY_STOCK`. `SYNCBAY_EBAY_STOCK_DRY_RUN=true` pianifica
   le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per

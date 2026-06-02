@@ -22,6 +22,7 @@ import {
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
+import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
@@ -94,6 +95,8 @@ export async function getDashboardState(session: ShopifySessionLike) {
     openConflictCount,
     openConflicts,
     snapshotCount,
+    latestIncrementalJob,
+    activeIncrementalJobCount,
   ] = await prisma.$transaction([
     prisma.ebayConnection.findUnique({
       where: {
@@ -145,6 +148,26 @@ export async function getDashboardState(session: ShopifySessionLike) {
     }),
     prisma.productSnapshot.count({
       where: { shopId: shop.id },
+    }),
+    prisma.syncJob.findFirst({
+      orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+      where: {
+        shopId: shop.id,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    }),
+    prisma.syncJob.count({
+      where: {
+        shopId: shop.id,
+        status: {
+          in: [
+            SyncJobStatus.PENDING,
+            SyncJobStatus.RETRYING,
+            SyncJobStatus.RUNNING,
+          ],
+        },
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
     }),
   ]);
   const latestImportRun = await getLatestImportRunSummary(shop.id);
@@ -247,6 +270,22 @@ export async function getDashboardState(session: ShopifySessionLike) {
         status: job.status,
         type: job.type,
       })),
+      catalogHealth: {
+        ...formatCatalogSyncHealth(
+          getCatalogSyncHealth({
+            activeIncrementalJobCount,
+            latestIncrementalFinishedAt:
+              latestIncrementalJob?.finishedAt ?? null,
+            now: new Date(),
+            syncEnabled: shop.syncEnabled,
+            syncTargetSeconds: shop.syncTargetSeconds,
+          }),
+        ),
+        activeIncrementalJobCount,
+        latestIncrementalFinishedAt:
+          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalStatus: latestIncrementalJob?.status ?? null,
+      },
     },
     audit: recentAuditLogs.map((log) => ({
       createdAt: log.createdAt.toISOString(),
@@ -1793,6 +1832,16 @@ function normalizeConflictResolution(value: string) {
   }
 
   throw new Response("Risoluzione conflitto non supportata.", { status: 400 });
+}
+
+function formatCatalogSyncHealth(
+  health: ReturnType<typeof getCatalogSyncHealth>,
+) {
+  return {
+    nextDueAt: health.nextDueAt?.toISOString() ?? null,
+    secondsUntilDue: health.secondsUntilDue,
+    status: health.status,
+  };
 }
 
 function summarizeJobsByStatus(

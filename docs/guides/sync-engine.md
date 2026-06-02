@@ -79,6 +79,10 @@ Runtime previsto:
 
 ## Diagnostica
 
+La dashboard deve mostrare se il sync catalogo incrementale è disattivato,
+aggiornato, in corso o in ritardo rispetto al target configurato, includendo
+ultimo completamento e prossima finestra prevista.
+
 Ogni job fallito deve conservare:
 
 - provider;
