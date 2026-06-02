@@ -24,6 +24,10 @@ import {
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
+import {
+  createShopifyAdminGraphqlClient,
+  getOfflineShopifySessionId,
+} from "../lib/syncbay-shopify-admin";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import {
   isEbayStockDryRunEnabled,
@@ -31,7 +35,6 @@ import {
   validateEbayStockCurrency,
   validateEbayStockOrderCurrency,
 } from "../lib/syncbay-stock-guard";
-import { unauthenticated } from "../shopify.server";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import {
   getEbayTradingCandidatesByItemIds,
@@ -723,8 +726,8 @@ async function runImportCatalogJob(job: DueSyncJob) {
     throw new Error("Connessione eBay non collegata per il job import.");
   }
 
-  const [{ admin, session }, previewResult] = await Promise.all([
-    unauthenticated.admin(job.shop.shopDomain),
+  const [admin, previewResult] = await Promise.all([
+    getShopifyAdminGraphqlClient(job.shop.shopDomain),
     getImportPreviewResultByItemIds(connection, ebayItemIds),
   ]);
   const filteredPreviewResult = filterPreviewResultByItemIds(
@@ -751,7 +754,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
-    shopDomain: session.shop,
+    shopDomain: job.shop.shopDomain,
   });
 
   if (result.status === "blocked") {
@@ -858,8 +861,8 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   }
 
   const connection = await getConnectedEbayConnection(job);
-  const [{ admin, session }, previewResult] = await Promise.all([
-    unauthenticated.admin(job.shop.shopDomain),
+  const [admin, previewResult] = await Promise.all([
+    getShopifyAdminGraphqlClient(job.shop.shopDomain),
     getImportPreviewResultByItemIds(connection, syncableItemIds),
   ]);
   const filteredPreviewResult = filterPreviewResultByItemIds(
@@ -872,7 +875,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
-    shopDomain: session.shop,
+    shopDomain: job.shop.shopDomain,
   });
 
   if (result.status === "blocked" || result.status === "failed") {
@@ -1162,7 +1165,7 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
   }
 
   if (mapping.shopifyProductGid) {
-    const { admin } = await unauthenticated.admin(job.shop.shopDomain);
+    const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
     await archiveShopifyProduct(admin, mapping.shopifyProductGid);
   }
 
@@ -1217,6 +1220,24 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
     status: "succeeded" as const,
     type: job.type,
   };
+}
+
+async function getShopifyAdminGraphqlClient(shopDomain: string) {
+  const session = await prisma.session.findUnique({
+    select: { accessToken: true },
+    where: { id: getOfflineShopifySessionId(shopDomain) },
+  });
+
+  if (!session?.accessToken) {
+    throw new Error(
+      "Sessione offline Shopify non disponibile per il runner automatico.",
+    );
+  }
+
+  return createShopifyAdminGraphqlClient({
+    accessToken: session.accessToken,
+    shopDomain,
+  });
 }
 
 async function archiveShopifyProduct(
@@ -1306,7 +1327,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     };
   }
 
-  const { admin } = await unauthenticated.admin(job.shop.shopDomain);
+  const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
   const [product, snapshot] = await Promise.all([
     getShopifyProductForConflict(
       admin,
