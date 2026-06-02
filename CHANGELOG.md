@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.12] — 2026-06-02
+
+### Correzioni
+
+- Gli snapshot creati da `KEEP_SHOPIFY` non ereditano più marker di stock
+  parziali e restano baseline descrizione valide anche dopo aggiornamenti stock
+  Shopify.
+
 ## [0.20.11] — 2026-06-02
 
 ### Correzioni
@@ -667,6 +675,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.12]: #02012--2026-06-02
 [0.20.11]: #02011--2026-06-02
 [0.20.10]: #02010--2026-06-02
 [0.20.9]: #0209--2026-06-02
