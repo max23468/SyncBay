@@ -64,12 +64,17 @@ read_inventory
 write_inventory
 read_locations
 write_locations
+read_publications
+write_publications
 read_files
 write_files
 ```
 
 Da verificare durante l'evoluzione runtime:
 
+- mantenere `read_publications` e `write_publications` finché SyncBay legge i
+  canali disponibili e pubblica automaticamente i prodotti attivi secondo la
+  policy dello shop;
 - mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
   prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;

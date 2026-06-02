@@ -16,6 +16,16 @@ import {
   type ImportProductStatus,
 } from "../lib/import-product-status";
 import {
+  loadShopifyProductPublicationIds,
+  syncShopifyProductPublications,
+  type ShopifyProductPublicationSyncResult,
+} from "../lib/syncbay-product-publication";
+import {
+  normalizeProductPublicationMode,
+  parseProductPublicationGids,
+  resolveProductPublicationIds,
+} from "../lib/syncbay-product-publication-settings";
+import {
   getSyncBayDescriptionHash,
   hashNullableText,
 } from "../lib/syncbay-description-hash";
@@ -245,6 +255,9 @@ type DraftImportPersistenceResult = {
   mediaStagedCount: number;
   mediaSyncedCount: number;
   managedCount: number;
+  publicationPublishedCount: number;
+  publicationSkippedCount: number;
+  publicationSyncedCount: number;
   reusedCount: number;
 };
 const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
@@ -318,8 +331,14 @@ type ShopifyDraftProductResult =
   | (Extract<ShopifyDraftProductCreateResult, { status: "created" }> & {
       inventorySync: ShopifyInventorySyncResult;
       mediaSync: ShopifyMediaSyncResult;
+      publicationSync: ShopifyProductPublicationSyncResult;
     })
   | Extract<ShopifyDraftProductCreateResult, { status: "failed" }>;
+
+type DraftImportPublicationOptions = {
+  disabled?: boolean;
+  publicationIds?: string[];
+};
 
 function createShopifyAdminGraphqlClientWithBackoff(
   admin: ShopifyAdminGraphqlClient,
@@ -524,6 +543,24 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     };
   }
 
+  const publicationOptions = await resolveDraftImportPublicationOptions(admin, {
+    importProductStatus,
+    productPublicationGids: shop.productPublicationGids,
+    productPublicationMode: shop.productPublicationMode,
+  });
+
+  if (publicationOptions.status === "failed") {
+    return {
+      createdProducts: [],
+      jobId: null,
+      readiness: {
+        ...readiness,
+        blockers: [...readiness.blockers, publicationOptions.errorMessage],
+      },
+      status: "blocked" as const,
+    };
+  }
+
   const draftProducts = buildShopifyDraftProductInputs(
     input.previewResult,
     importProductStatus,
@@ -543,6 +580,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
       createShopifyDraftProductSafely(admin, product, {
         defaultLocationGid: input.defaultLocationGid ?? null,
         jobId: job.id,
+        publicationOptions: publicationOptions.options,
         shopId: shop.id,
       }),
   );
@@ -632,6 +670,66 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   };
 }
 
+async function resolveDraftImportPublicationOptions(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    importProductStatus: ImportProductStatus;
+    productPublicationGids: string | null;
+    productPublicationMode: string | null;
+  },
+): Promise<
+  | {
+      options?: DraftImportPublicationOptions;
+      status: "ready";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  if (input.importProductStatus !== "ACTIVE") {
+    return { status: "ready" };
+  }
+
+  const mode = normalizeProductPublicationMode(input.productPublicationMode);
+
+  if (mode === "NONE") {
+    return {
+      options: { disabled: true },
+      status: "ready",
+    };
+  }
+
+  const availablePublicationIds = await loadShopifyProductPublicationIds(admin);
+
+  if ("errorMessage" in availablePublicationIds) {
+    return {
+      errorMessage: availablePublicationIds.errorMessage,
+      status: "failed",
+    };
+  }
+
+  const resolution = resolveProductPublicationIds({
+    availablePublicationIds,
+    mode,
+    selectedPublicationIds: parseProductPublicationGids(
+      input.productPublicationGids,
+    ),
+  });
+
+  if (resolution.status === "failed") {
+    return resolution;
+  }
+
+  return {
+    options:
+      resolution.status === "disabled"
+        ? { disabled: true }
+        : { publicationIds: resolution.publicationIds },
+    status: "ready",
+  };
+}
+
 async function createShopifyDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
@@ -679,6 +777,7 @@ async function createShopifyDraftProductSafely(
   context: {
     defaultLocationGid: string | null;
     jobId: string;
+    publicationOptions?: DraftImportPublicationOptions;
     shopId: string;
   },
 ): Promise<ShopifyDraftProductResult> {
@@ -713,6 +812,19 @@ async function createShopifyDraftProductSafely(
       draftProduct,
       context,
     );
+    const publicationSync = await syncShopifyProductPublications(
+      admin,
+      commercialFieldsSync.product,
+      context.publicationOptions,
+    );
+
+    if (publicationSync.status === "failed") {
+      return {
+        errorMessage: `Pubblicazione prodotto Shopify sui canali non completata: ${publicationSync.errorMessage}`,
+        status: "failed",
+      };
+    }
+
     const inventoryWarnings =
       inventorySync.status === "skipped" ||
       inventorySync.status === "failed" ||
@@ -721,16 +833,23 @@ async function createShopifyDraftProductSafely(
         : [];
     const mediaWarnings =
       mediaSync.status === "failed" ? [getMediaSyncWarning(mediaSync)] : [];
+    const publicationWarnings =
+      publicationSync.status === "skipped" &&
+      publicationSync.reason === "no_publications"
+        ? [publicationSync.message]
+        : [];
 
     return {
       ...result,
       product: commercialFieldsSync.product,
       inventorySync,
       mediaSync,
+      publicationSync,
       warnings: [
         ...(result.warnings ?? []),
         ...mediaWarnings,
         ...inventoryWarnings,
+        ...publicationWarnings,
       ],
     };
   } catch (error) {
@@ -2496,6 +2615,20 @@ async function recordDraftImportPersistence(input: {
       (pair) => pair.result.mediaSync.status === "synced",
     ).length,
     managedCount: successfulPairs.length,
+    publicationPublishedCount: successfulPairs.reduce(
+      (total, pair) =>
+        total +
+        (pair.result.publicationSync.status === "synced"
+          ? pair.result.publicationSync.publicationCount
+          : 0),
+      0,
+    ),
+    publicationSkippedCount: successfulPairs.filter(
+      (pair) => pair.result.publicationSync.status === "skipped",
+    ).length,
+    publicationSyncedCount: successfulPairs.filter(
+      (pair) => pair.result.publicationSync.status === "synced",
+    ).length,
     reusedCount: successfulPairs.filter(
       (pair) => pair.result.resultType === "reused",
     ).length,
@@ -2551,6 +2684,10 @@ async function finishDraftImportJob(input: {
     mediaImageCreatedCount: input.persistenceResult.mediaImageCreatedCount,
     mediaStagedCount: input.persistenceResult.mediaStagedCount,
     mediaSyncedCount: input.persistenceResult.mediaSyncedCount,
+    publicationPublishedCount:
+      input.persistenceResult.publicationPublishedCount,
+    publicationSkippedCount: input.persistenceResult.publicationSkippedCount,
+    publicationSyncedCount: input.persistenceResult.publicationSyncedCount,
     requestedCount: input.products.length,
     reusedCount: input.persistenceResult.reusedCount,
     warnings: [...new Set(input.warnings)],
@@ -2656,6 +2793,7 @@ function buildSyncBayProductSnapshot(input: {
       importJobId: input.jobId,
       inventorySync: input.result.inventorySync,
       mediaSync: input.result.mediaSync,
+      publicationSync: input.result.publicationSync,
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
     } satisfies Prisma.JsonObject,

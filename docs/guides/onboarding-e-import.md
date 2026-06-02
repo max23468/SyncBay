@@ -141,7 +141,8 @@ La preview import resta bloccata finché non sono disponibili:
 
 ## Default consigliati
 
-- Prodotti iniziali in `pubblicato`, con fallback opzionale `bozza`.
+- Prodotti iniziali in `pubblicato`, pubblicati secondo la policy canali Shopify
+  scelta in Impostazioni, con fallback opzionale `bozza`.
 - Tutte le immagini copiate su Shopify.
 - Nessuna cancellazione automatica delle immagini Shopify se eBay non restituisce
   immagini per un listing durante una lettura incompleta.

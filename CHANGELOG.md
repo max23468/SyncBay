@@ -6,6 +6,26 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.0] — 2026-06-02
+
+### Novità
+
+- I prodotti Shopify importati o riallineati come `ACTIVE` seguono una nuova
+  policy canali in Impostazioni: tutti i canali disponibili, solo canali
+  selezionati o nessuna pubblicazione automatica; la pubblicazione usa
+  `publishablePublish` e le bozze restano non pubblicate.
+
+### Sotto il cofano
+
+- Aggiunti gli scope Shopify `read_publications` e `write_publications` alla
+  configurazione runtime, alla readiness dashboard e alla documentazione
+  provisioning.
+- Aggiunta la migration Prisma per salvare modalità e canali Shopify selezionati
+  per singolo shop.
+- Aggiunto lo script operativo `products:publish-channel` per pubblicare una
+  tantum i prodotti SyncBay attivi su un canale Shopify specifico e salvare la
+  policy canali dello shop.
+
 ## [0.21.1] — 2026-06-02
 
 ### Correzioni
@@ -724,6 +744,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.0]: #0220--2026-06-02
 [0.21.1]: #0211--2026-06-02
 [0.21.0]: #0210--2026-06-02
 [0.20.12]: #02012--2026-06-02

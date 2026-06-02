@@ -60,6 +60,12 @@ enum ProductSnapshotSource {
   SYNCBAY
 }
 
+enum ProductPublicationMode {
+  ALL
+  SELECTED
+  NONE
+}
+
 enum SyncConflictStatus {
   OPEN
   RESOLVED
@@ -125,6 +131,8 @@ model Shop {
   shopifyScopes      String?
   defaultLocationGid String?
   defaultProductStatus String               @default("ACTIVE")
+  productPublicationMode ProductPublicationMode @default(ALL)
+  productPublicationGids String?
   syncEnabled        Boolean                @default(false)
   syncTargetSeconds  Int                    @default(300)
   installedAt        DateTime               @default(now())

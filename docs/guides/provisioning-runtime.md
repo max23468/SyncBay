@@ -158,6 +158,8 @@ Scope Shopify richiesti dal pilota runtime:
 - `read_products`, `write_products`;
 - `read_inventory`, `write_inventory`;
 - `read_locations`, `write_locations`;
+- `read_publications`, `write_publications` per leggere i canali disponibili e
+  pubblicare i prodotti attivi secondo la policy canali dello shop;
 - `read_files`, `write_files` per riallineare media prodotto e rimuovere media
   precedenti gestiti da SyncBay.
 - `read_orders` per ricevere `orders/paid` nel pilota custom e creare job
@@ -166,6 +168,17 @@ Scope Shopify richiesti dal pilota runtime:
 La schedule Cron attuale richiama il runner `/api/jobs/run-due`, che drena
 import catalogo, sync incrementale, rilevazione conflitti Shopify e job stock
 eBay secondo priorità.
+
+Per riallineare una tantum prodotti già mappati verso un canale Shopify
+specifico usare:
+
+```bash
+npm run products:publish-channel -- --shop syncbay-dev.myshopify.com --publication-title "Online Store" --configure-settings
+```
+
+Eseguire prima con `--dry-run`; il comando usa `publishablePublish` sui
+`ProductMapping` attivi e, con `--configure-settings`, salva la policy canali
+dello shop su `SELECTED`.
 
 ## Cosa resta da fare
 
