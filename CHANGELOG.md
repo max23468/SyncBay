@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.9] — 2026-06-02
+
+### Correzioni
+
+- Lo script di ripristino stock eBay conserva `TOKEN_ENCRYPTION_KEY` già
+  configurata, usa Supabase CLI via `npx` e scrive lo snapshot SyncBay solo dopo
+  aver verificato che eBay esponga la disponibilità richiesta.
+- Il detector dei conflitti Shopify cerca la baseline SyncBay più recente per
+  singolo campo senza fermarsi ai primi 50 snapshot parziali, evitando falsi
+  conflitti dopo molte variazioni stock.
+
 ## [0.20.8] — 2026-06-02
 
 ### Correzioni
@@ -640,6 +651,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.9]: #0209--2026-06-02
 [0.20.8]: #0208--2026-06-02
 [0.20.7]: #0207--2026-06-02
 [0.20.6]: #0206--2026-06-02
