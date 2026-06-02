@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.6] — 2026-06-03
+
+### Sotto il cofano
+
+- Lo script operativo `products:publish-channel` salta i prodotti già pubblicati
+  sul canale target e applica retry/backoff quando Shopify rallenta le mutation.
+
 ## [0.22.5] — 2026-06-03
 
 ### Correzioni
@@ -791,6 +798,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.6]: #0226--2026-06-03
 [0.22.5]: #0225--2026-06-03
 [0.22.4]: #0224--2026-06-03
 [0.22.3]: #0223--2026-06-03
