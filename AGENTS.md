@@ -272,7 +272,8 @@ Mappa il rischio prima dei comandi:
 - documenti operativi critici, workflow o config: review mirata e check del
   file eseguibile modificato;
 - test-only, runtime piccolo, UI localizzata o microcopy: test/check mirati
-  (`npm run typecheck`, `npm run lint`, `npm run build` quando pertinenti);
+  (`npm run test:lib`, `npm run coverage:lib`, `npm run typecheck`,
+  `npm run lint`, `npm run build` quando pertinenti);
 - runtime condiviso, Prisma/database, provider/API, auth, deploy/config,
   release/versioning o UI sostanziale: gate completi proporzionati, smoke UI,
   `npm run db:verify` o React Doctor quando applicabili.
@@ -285,6 +286,8 @@ Comandi runtime attuali:
 - `npm run lint`
 - `npm run build`
 - `npm run smoke:ui`
+- `npm run test:lib`
+- `npm run coverage:lib`
 - `npm run prisma:validate`
 - `npm run db:verify`
 - `npm run quality:react-doctor`

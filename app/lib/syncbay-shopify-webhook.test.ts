@@ -4,6 +4,10 @@ import test from "node:test";
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { getShopifyWebhookJobPayload } from "./syncbay-shopify-webhook.ts";
 
+test("returns an empty payload for unsupported Shopify webhook topics", () => {
+  assert.deepEqual(getShopifyWebhookJobPayload("orders/create", {}), {});
+});
+
 test("extracts paid order currency and line items for eBay stock jobs", () => {
   const payload = getShopifyWebhookJobPayload("orders/paid", {
     currency: "EUR",
@@ -69,6 +73,38 @@ test("drops invalid paid order lines before queueing stock work", () => {
       null,
       "not-a-line",
     ],
+  });
+
+  assert.deepEqual(payload, {
+    lineItems: [],
+    orderCurrency: "EUR",
+  });
+});
+
+test("drops paid order lines when Shopify sends a non-numeric quantity", () => {
+  const payload = getShopifyWebhookJobPayload("orders/paid", {
+    line_items: [
+      {
+        id: 99,
+        product_id: 10,
+        quantity: "2",
+        variant_id: 20,
+      },
+    ],
+  });
+
+  assert.deepEqual(payload, {
+    lineItems: [],
+    orderCurrency: null,
+  });
+});
+
+test("falls back to shop money currency for paid orders when presentment is absent", () => {
+  const payload = getShopifyWebhookJobPayload("orders/paid", {
+    current_total_price_set: {
+      shop_money: { currency_code: "eur" },
+    },
+    line_items: [],
   });
 
   assert.deepEqual(payload, {

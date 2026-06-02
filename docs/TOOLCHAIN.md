@@ -57,6 +57,8 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Lint                     | `npm run lint`                                                                          |
 | Build                    | `npm run build`                                                                         |
 | Smoke UI                 | `npm run smoke:ui`                                                                      |
+| Test librerie pure       | `npm run test:lib`                                                                      |
+| Coverage moduli puri     | `npm run coverage:lib`                                                                  |
 | Validazione Prisma       | `npm run prisma:validate`                                                               |
 | Advisor Supabase         | `npm run db:verify`                                                                     |
 | Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
@@ -73,6 +75,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 `npm run import:verify` usa Supabase CLI linked più Shopify CLI store execute in sola lettura per confrontare un campione dell'ultima run import tra snapshot eBay/SyncBay, mapping e prodotto Shopify live.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
+`npm run coverage:lib` usa solo il test runner nativo di Node e limita la coverage ai moduli puri `app/lib` già isolabili dal runtime live; la soglia Atlas corrente è `>=75%` linee e `>=65%` branch su quel perimetro.
 `npm run build` esegue sempre `prisma generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
 
 ## Verifiche per tipo di modifica
@@ -81,6 +84,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Docs-only                                                           | Review contenuto e `git diff --check`                                           |
 | Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                            |
+| Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest`              |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
 | Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |

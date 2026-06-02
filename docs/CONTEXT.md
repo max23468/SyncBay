@@ -109,6 +109,8 @@ Provisioning minimo:
 - `npm run lint`
 - `npm run build`
 - `npm run smoke:ui`
+- `npm run test:lib`
+- `npm run coverage:lib`
 - `npm run prisma:validate`
 - `npm run db:verify`
 - `npm run release:dry-run`
