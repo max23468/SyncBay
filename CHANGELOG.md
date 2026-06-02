@@ -16,6 +16,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   mapping non più attivi solo quando la scansione eBay è completa entro il
   limite MVP.
 
+### Correzioni
+
+- Le risoluzioni `KEEP_SHOPIFY` su conflitti non descrizione preservano la
+  baseline descrizione reale più recente, evitando falsi conflitti descrizione
+  quando lo snapshot scelto è uno snapshot stock parziale.
+
 ### Sotto il cofano
 
 - Aggiunta la spec operativa per il test end-to-end controllato dei flussi

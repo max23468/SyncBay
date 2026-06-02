@@ -21,6 +21,7 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
+import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
@@ -382,16 +383,24 @@ export async function resolveSyncConflict(
       status: SyncConflictStatus.OPEN,
     },
   });
-  const baselineSnapshot =
-    resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId
-      ? await prisma.productSnapshot.findFirst({
-          orderBy: { capturedAt: "desc" },
-          where: {
-            mappingId: conflict.mappingId,
-            source: ProductSnapshotSource.SYNCBAY,
-          },
-        })
-      : null;
+  let baselineSnapshot: Prisma.ProductSnapshotGetPayload<
+    Record<string, never>
+  > | null = null;
+  let descriptionBaselineSnapshot: Prisma.ProductSnapshotGetPayload<
+    Record<string, never>
+  > | null = null;
+  if (resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId) {
+    [baselineSnapshot, descriptionBaselineSnapshot] = await Promise.all([
+      prisma.productSnapshot.findFirst({
+        orderBy: { capturedAt: "desc" },
+        where: {
+          mappingId: conflict.mappingId,
+          source: ProductSnapshotSource.SYNCBAY,
+        },
+      }),
+      findLatestKeepShopifyDescriptionBaseline(conflict.mappingId),
+    ]);
+  }
 
   if (!conflict) {
     throw new Response("Conflitto SyncBay non trovato.", { status: 404 });
@@ -429,6 +438,8 @@ export async function resolveSyncConflict(
       prisma.productSnapshot.create({
         data: buildKeepShopifyBaselineSnapshot({
           conflict,
+          latestDescriptionBaselineHash:
+            descriptionBaselineSnapshot?.descriptionHash ?? null,
           snapshot: baselineSnapshot,
         }),
       }),
@@ -466,6 +477,7 @@ export async function resolveSyncConflict(
 
 function buildKeepShopifyBaselineSnapshot(input: {
   conflict: Prisma.SyncConflictGetPayload<Record<string, never>>;
+  latestDescriptionBaselineHash: string | null;
   snapshot: Prisma.ProductSnapshotGetPayload<Record<string, never>>;
 }) {
   const shopifyValue = input.conflict.shopifyValue;
@@ -473,10 +485,12 @@ function buildKeepShopifyBaselineSnapshot(input: {
 
   return {
     currency: input.snapshot.currency,
-    descriptionHash:
-      input.conflict.field === "description"
-        ? getJsonStringValue(shopifyValue)
-        : input.snapshot.descriptionHash,
+    descriptionHash: getKeepShopifyDescriptionHash({
+      conflictField: input.conflict.field,
+      latestDescriptionBaselineHash: input.latestDescriptionBaselineHash,
+      shopifyValue,
+      snapshotDescriptionHash: input.snapshot.descriptionHash,
+    }),
     ebayItemId: input.snapshot.ebayItemId,
     imageCount:
       input.conflict.field === "images"
@@ -522,6 +536,50 @@ function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
   delete payload.restoredEbayAfterTest;
 
   return payload;
+}
+
+async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    where: {
+      mappingId,
+      NOT: [
+        {
+          AND: [
+            {
+              payload: {
+                path: ["updatedEbayFromShopifyOrder"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+        {
+          AND: [
+            {
+              payload: {
+                path: ["restoredEbayAfterTest"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+      ],
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
 }
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {
