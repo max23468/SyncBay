@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, selectEbayTradingInventorySku, selectShopifyOrderCurrency, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
+import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, isEbayStockRealWriteAllowed, selectEbayTradingInventorySku, selectShopifyOrderCurrency, shouldDryRunEbayStockLine, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
   assert.equal(getExpectedMarketplaceCurrency("EBAY_IT"), "EUR");
@@ -15,11 +15,12 @@ test("enables stock dry-run only for explicit true", () => {
   assert.equal(isEbayStockDryRunEnabled(undefined), false);
 });
 
-test("omits SyncBay fallback SKU from eBay Trading stock updates", () => {
+test("omits generated SyncBay fallback SKU from eBay Trading stock updates", () => {
   assert.equal(
     selectEbayTradingInventorySku({
       itemId: "168148953253",
       sku: "EBAY-168148953253",
+      skuGenerated: true,
     }),
     null,
   );
@@ -27,15 +28,88 @@ test("omits SyncBay fallback SKU from eBay Trading stock updates", () => {
     selectEbayTradingInventorySku({
       itemId: "168148953253",
       sku: " ebay-168148953253 ",
+      skuGenerated: true,
     }),
     null,
+  );
+});
+
+test("preserves real seller SKU even when it matches SyncBay fallback shape", () => {
+  assert.equal(
+    selectEbayTradingInventorySku({
+      itemId: "168148953253",
+      sku: "EBAY-168148953253",
+      skuGenerated: false,
+    }),
+    "EBAY-168148953253",
+  );
+  assert.equal(
+    selectEbayTradingInventorySku({
+      itemId: "168148953253",
+      sku: "EBAY-168148953253",
+    }),
+    "EBAY-168148953253",
   );
   assert.equal(
     selectEbayTradingInventorySku({
       itemId: "168148953253",
       sku: "SELLER-SKU-1",
+      skuGenerated: false,
     }),
     "SELLER-SKU-1",
+  );
+});
+
+test("keeps stock writes in dry-run unless a line is explicitly allowlisted", () => {
+  const line = {
+    ebayItemId: "168148953253",
+    shopDomain: "syncbay-dev.myshopify.com",
+    shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
+    stockDryRunEnabled: true,
+  };
+
+  assert.equal(shouldDryRunEbayStockLine(line), true);
+  assert.equal(
+    shouldDryRunEbayStockLine({
+      ...line,
+      allowlist: "syncbay-dev.myshopify.com:168148953253",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldDryRunEbayStockLine({
+      ...line,
+      allowlist: "variant:48298582016222",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldDryRunEbayStockLine({
+      ...line,
+      stockDryRunEnabled: false,
+    }),
+    false,
+  );
+});
+
+test("matches stock real-write allowlist tokens narrowly", () => {
+  assert.equal(
+    isEbayStockRealWriteAllowed({
+      allowlist: "ebay:168148953253 syncbay-dev.myshopify.com:variant:48298582016222",
+      ebayItemId: "168148953253",
+      shopDomain: "syncbay-dev.myshopify.com",
+      shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
+    }),
+    true,
+  );
+  assert.equal(
+    isEbayStockRealWriteAllowed({
+      allowlist: "168148953254 syncbay-dev.myshopify.com:variant:48298582016223",
+      ebayItemId: "168148953253",
+      shopDomain: "syncbay-dev.myshopify.com",
+      shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
+    }),
+    false,
   );
 });
 

@@ -15,6 +15,7 @@ import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import {
   isEbayStockDryRunEnabled,
+  shouldDryRunEbayStockLine,
   validateEbayStockCurrency,
   validateEbayStockOrderCurrency,
 } from "../lib/syncbay-stock-guard";
@@ -684,9 +685,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const stockDryRun = isEbayStockDryRunEnabled(
     process.env.SYNCBAY_EBAY_STOCK_DRY_RUN,
   );
-  const accessToken = stockDryRun
-    ? null
-    : (await getUsableEbayAccessToken(connection)).accessToken;
+  let accessToken: string | null = null;
   const planned: Prisma.JsonObject[] = [];
   const updated: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
@@ -754,6 +753,16 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         mappingId: mapping.id,
       },
     });
+    const latestSkuPolicySnapshot = await prisma.productSnapshot.findFirst({
+      orderBy: { capturedAt: "desc" },
+      where: {
+        mappingId: mapping.id,
+        payload: {
+          path: ["skuGenerated"],
+          not: Prisma.JsonNull,
+        },
+      },
+    });
     const currencyValidation = validateEbayStockCurrency({
       marketplaceId: mapping.marketplaceId,
       snapshotCurrency: latestSnapshot?.currency ?? null,
@@ -773,8 +782,15 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
 
     const previousQuantity = latestSnapshot?.quantity ?? 0;
     const nextQuantity = Math.max(0, previousQuantity - lineItem.quantity);
+    const lineDryRun = shouldDryRunEbayStockLine({
+      allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
+      ebayItemId: mapping.ebayItemId,
+      shopDomain: job.shop.shopDomain,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+      stockDryRunEnabled: stockDryRun,
+    });
 
-    if (stockDryRun) {
+    if (lineDryRun) {
       planned.push({
         currency: currencyValidation.snapshotCurrency,
         dryRun: true,
@@ -788,6 +804,8 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
+    accessToken ??= (await getUsableEbayAccessToken(connection)).accessToken;
+
     if (!accessToken) {
       throw new Error("Token eBay non disponibile per aggiornare lo stock.");
     }
@@ -798,6 +816,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       itemId: mapping.ebayItemId,
       quantity: nextQuantity,
       sku: mapping.sku,
+      skuGenerated: getSnapshotSkuGenerated(latestSkuPolicySnapshot?.payload),
     });
     await prisma.productSnapshot.create({
       data: {
@@ -829,6 +848,9 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       nextQuantity,
       orderedQuantity: lineItem.quantity,
       previousQuantity,
+      reason: stockDryRun
+        ? "stock_real_write_allowlisted"
+        : "stock_dry_run_disabled",
     });
   }
 
@@ -839,6 +861,9 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       dryRun: stockDryRun,
       planned,
       plannedCount: planned.length,
+      realWriteAllowlistEnabled: Boolean(
+        process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST?.trim(),
+      ),
       skipped,
       skippedCount: skipped.length,
       updated,
@@ -855,6 +880,16 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     status: "succeeded" as const,
     type: job.type,
   };
+}
+
+function getSnapshotSkuGenerated(payload: Prisma.JsonValue | null | undefined) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+
+  const value = payload.skuGenerated;
+
+  return typeof value === "boolean" ? value : null;
 }
 
 async function runDetectShopifyChangesJob(job: DueSyncJob) {
