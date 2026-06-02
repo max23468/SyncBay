@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Aggiunta la spec operativa per il test end-to-end controllato dei flussi
+  eBay -> Shopify e ordine Shopify -> disponibilità eBay, con baseline e
+  rollback obbligatori.
+
 ## [0.20.12] — 2026-06-02
 
 ### Correzioni
