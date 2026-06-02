@@ -36,6 +36,7 @@ async function main() {
 
   const actualProducts = await loadShopifyProducts(
     expected.rows.map((row) => row.shopifyProductGid).filter(Boolean),
+    expected.defaultLocationGid,
   );
   const checks = expected.rows.map((row) =>
     verifySampleRow(row, actualProducts.get(row.shopifyProductGid)),
@@ -132,6 +133,12 @@ sample_rows as (
   limit ${sampleLimit}
 )
 select jsonb_build_object(
+  'defaultLocationGid', (
+    select s."defaultLocationGid"
+    from "Shop" s
+    where s."shopDomain" = ${sqlString(shopDomain)}
+    limit 1
+  ),
   'runId', (select run_id from latest_run),
   'rows', coalesce((select jsonb_agg(to_jsonb(sample_rows)) from sample_rows), '[]'::jsonb)
 ) as result;
@@ -140,15 +147,54 @@ select jsonb_build_object(
   const payload = diagnostics.rows?.[0]?.result;
 
   return {
+    defaultLocationGid: payload?.defaultLocationGid ?? null,
     rows: payload?.rows ?? [],
     runId: payload?.runId ?? null,
   };
 }
 
-async function loadShopifyProducts(productGids) {
+async function loadShopifyProducts(productGids, defaultLocationGid) {
   if (productGids.length === 0) return new Map();
 
-  const graphql = `query SyncBayVerifyProducts($ids: [ID!]!) {
+  const graphql = defaultLocationGid
+    ? `query SyncBayVerifyProducts($ids: [ID!]!, $locationId: ID!) {
+  nodes(ids: $ids) {
+    ... on Product {
+      id
+      title
+      handle
+      status
+      totalInventory
+      media(first: 50) {
+        nodes {
+          mediaContentType
+          preview {
+            status
+          }
+        }
+      }
+      variants(first: 1) {
+        nodes {
+          id
+          sku
+          price
+          inventoryQuantity
+          inventoryItem {
+            sku
+            tracked
+            inventoryLevel(locationId: $locationId) {
+              quantities(names: ["available"]) {
+                name
+                quantity
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`
+    : `query SyncBayVerifyProducts($ids: [ID!]!) {
   nodes(ids: $ids) {
     ... on Product {
       id
@@ -192,7 +238,11 @@ async function loadShopifyProducts(productGids) {
       "--query",
       graphql,
       "--variables",
-      JSON.stringify({ ids: productGids }),
+      JSON.stringify(
+        defaultLocationGid
+          ? { ids: productGids, locationId: defaultLocationGid }
+          : { ids: productGids },
+      ),
     ],
     {
       cwd: process.cwd(),
@@ -213,6 +263,8 @@ async function loadShopifyProducts(productGids) {
 
 function verifySampleRow(row, product) {
   const variant = product?.variants?.nodes?.[0] ?? null;
+  const locationQuantity = getVariantLocationQuantity(variant);
+  const actualQuantity = locationQuantity ?? variant?.inventoryQuantity ?? null;
   const mediaNodes = product?.media?.nodes ?? [];
   const readyImageCount = mediaNodes.filter(
     (media) =>
@@ -232,13 +284,14 @@ function verifySampleRow(row, product) {
       : null,
     product &&
     expectedQuantity !== null &&
+    locationQuantity === null &&
     product.totalInventory !== expectedQuantity
       ? `totalInventory ${product.totalInventory}, atteso ${expectedQuantity}`
       : null,
     variant &&
     expectedQuantity !== null &&
-    variant.inventoryQuantity !== expectedQuantity
-      ? `inventoryQuantity ${variant.inventoryQuantity}, atteso ${expectedQuantity}`
+    actualQuantity !== expectedQuantity
+      ? `${locationQuantity === null ? "inventoryQuantity" : "locationQuantity"} ${actualQuantity}, atteso ${expectedQuantity}`
       : null,
     variant && !variant.inventoryItem?.tracked
       ? "tracking inventario non attivo"
@@ -259,7 +312,8 @@ function verifySampleRow(row, product) {
   return {
     actualImageReadyCount: readyImageCount,
     actualPrice,
-    actualQuantity: variant?.inventoryQuantity ?? null,
+    actualQuantity,
+    actualQuantitySource: locationQuantity === null ? "variant" : "default_location",
     ebayImageCount: normalizeNumber(row.ebayImageCount),
     ebayItemId: row.ebayItemId,
     expectedImageCount,
@@ -272,6 +326,14 @@ function verifySampleRow(row, product) {
     status: failures.length > 0 ? "failed" : "ok",
     title: product?.title ?? row.title,
   };
+}
+
+function getVariantLocationQuantity(variant) {
+  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities
+    ?.find((quantity) => quantity.name === "available")
+    ?.quantity;
+
+  return typeof availableQuantity === "number" ? availableQuantity : null;
 }
 
 function normalizeProductStatus(value) {
