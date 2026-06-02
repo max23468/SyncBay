@@ -10,16 +10,69 @@ export function isEbayStockDryRunEnabled(value: string | undefined) {
   return value?.trim().toLowerCase() === "true";
 }
 
+export function shouldDryRunEbayStockLine(input: {
+  allowlist?: string | null;
+  ebayItemId: string;
+  shopDomain?: string | null;
+  shopifyVariantGid?: string | null;
+  stockDryRunEnabled: boolean;
+}) {
+  if (!input.stockDryRunEnabled) return false;
+
+  return !isEbayStockRealWriteAllowed(input);
+}
+
+export function isEbayStockRealWriteAllowed(input: {
+  allowlist?: string | null;
+  ebayItemId: string;
+  shopDomain?: string | null;
+  shopifyVariantGid?: string | null;
+}) {
+  const tokens = getStockRealWriteAllowlistTokens(input.allowlist);
+  if (tokens.length === 0) return false;
+
+  const shopDomain = input.shopDomain?.trim().toLowerCase() ?? "";
+  const ebayItemId = input.ebayItemId.trim().toLowerCase();
+  const variantGid = input.shopifyVariantGid?.trim().toLowerCase() ?? "";
+  const variantId = variantGid.split("/").filter(Boolean).at(-1) ?? "";
+  const candidates = new Set(
+    [
+      ebayItemId,
+      `ebay:${ebayItemId}`,
+      shopDomain ? `shop:${shopDomain}` : null,
+      shopDomain ? `${shopDomain}:${ebayItemId}` : null,
+      variantGid ? `variant:${variantGid}` : null,
+      variantId ? `variant:${variantId}` : null,
+      shopDomain && variantId ? `${shopDomain}:variant:${variantId}` : null,
+    ].filter((value): value is string => Boolean(value)),
+  );
+
+  return tokens.some((token) => candidates.has(token));
+}
+
+function getStockRealWriteAllowlistTokens(value: string | null | undefined) {
+  return (
+    value
+      ?.split(/[\s,]+/)
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean) ?? []
+  );
+}
+
 export function selectEbayTradingInventorySku(input: {
   itemId: string;
   sku?: string | null;
+  skuGenerated?: boolean | null;
 }) {
   const sku = input.sku?.trim();
   if (!sku) return null;
 
   const fallbackSku = `EBAY-${input.itemId}`;
 
-  return sku.toUpperCase() === fallbackSku.toUpperCase() ? null : sku;
+  return input.skuGenerated === true &&
+    sku.toUpperCase() === fallbackSku.toUpperCase()
+    ? null
+    : sku;
 }
 
 export function normalizeCurrency(value: string | null | undefined) {

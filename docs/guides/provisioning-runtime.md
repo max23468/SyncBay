@@ -51,6 +51,12 @@ Note:
   del job, senza modificare la disponibilità eBay e senza scrivere snapshot di
   stock fittizi. In produzione pilota resta utile per ordini di prova; va
   riportato a `false` solo quando store, valuta e dati di test sono coerenti.
+- `SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST` permette test reali mirati lasciando
+  `SYNCBAY_EBAY_STOCK_DRY_RUN=true` per tutto il resto. Accetta token separati
+  da virgola o spazio: `ebay:<ItemID>`, `<shopDomain>:<ItemID>`,
+  `variant:<variantId>`, `variant:<variantGid>` o
+  `<shopDomain>:variant:<variantId>`. Va lasciata vuota fuori dalla finestra di
+  test e rimossa/ridotta appena verificato il job.
 - Per eBay.it i job `UPDATE_EBAY_STOCK` richiedono ordine Shopify e snapshot
   catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
   saltata e non viene inviata nessuna mutation a eBay.
@@ -61,6 +67,11 @@ Note:
 syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
 query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
 quando disponibile e stampa solo stato job sanitizzato.
+- Per ripristinare lo stock eBay dopo un test reale mirato usa
+  `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write`.
+  Lo script rifiuta l'esecuzione se ci sono job stock/sync attivi, usa il token
+  eBay cifrato senza stamparlo, verifica con Trading API `GetItem` e registra
+  uno snapshot `SYNCBAY` di ripristino.
 - Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 

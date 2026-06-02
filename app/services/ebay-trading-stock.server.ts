@@ -9,6 +9,7 @@ export async function reviseEbayTradingInventoryQuantity(input: {
   itemId: string;
   quantity: number;
   sku?: string | null;
+  skuGenerated?: boolean | null;
 }) {
   await fetchTradingXml({
     accessToken: input.accessToken,
@@ -29,6 +30,7 @@ export function buildReviseInventoryStatusRequest(input: {
   itemId: string;
   quantity: number;
   sku?: string | null;
+  skuGenerated?: boolean | null;
 }) {
   const sku = selectEbayTradingInventorySku(input);
 

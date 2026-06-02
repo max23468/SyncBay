@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.6] — 2026-06-02
+
+### Correzioni
+
+- Il dry-run stock eBay può restare attivo globalmente mentre una allowlist
+  runtime abilita scritture reali mirate per singolo shop, item eBay o variante
+  Shopify durante i test controllati.
+- Gli aggiornamenti stock Trading API conservano gli SKU eBay reali anche quando
+  coincidono con il formato fallback `EBAY-<ItemID>`, omettendo lo SKU solo se
+  lo snapshot segnala che è stato generato da SyncBay.
+
 ## [0.20.5] — 2026-06-02
 
 ### Correzioni
@@ -605,6 +616,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.6]: #0206--2026-06-02
 [0.20.5]: #0205--2026-06-02
 [0.20.4]: #0204--2026-06-01
 [0.20.3]: #0203--2026-06-01
