@@ -2,6 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -18,6 +19,7 @@ const args = parseArgs(process.argv.slice(2));
 const shopDomain =
   args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
 const sampleLimit = args.sample ?? DEFAULT_SAMPLE_LIMIT;
+const importRunScopeSql = buildImportRunScopeSql("j");
 
 await main().catch((error) => {
   console.error(`Verifica import non riuscita: ${formatCliError(error)}`);
@@ -71,7 +73,7 @@ async function main() {
 async function loadExpectedSample() {
   const sql = `
 with latest_run as (
-  select j.payload->>'catalogImportRunId' as run_id
+  select ${importRunScopeSql} as run_id
   from "SyncJob" j
   join "Shop" s on s.id = j."shopId"
   where s."shopDomain" = ${sqlString(shopDomain)}
@@ -97,7 +99,7 @@ latest_syncbay as (
   from "ProductSnapshot" ps
   join "Shop" s on s.id = ps."shopId"
   join "SyncJob" j on j.id = ps.payload->>'importJobId'
-  join latest_run lr on lr.run_id = j.payload->>'catalogImportRunId'
+  join latest_run lr on lr.run_id = ${importRunScopeSql}
   where s."shopDomain" = ${sqlString(shopDomain)}
     and ps.source = 'SYNCBAY'
     and ps."shopifyProductGid" is not null
