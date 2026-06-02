@@ -119,7 +119,11 @@ Non salvarla in Git e non stamparla nei log.
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
 - schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni minuto tramite `pg_net` e secret in Supabase Vault
 - retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
-- batch reale da 50 prodotti verificato sul dev store: job `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti i 50 `ItemID`
+- batch reale storico da 50 prodotti verificato sul dev store: job
+  `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24
+  riusi senza duplicati e mapping presenti per tutti i 50 `ItemID`; il runner
+  automatico corrente spezza comunque i job eBay -> Shopify sopra 10 ItemID per
+  restare compatibile con la finestra cron/serverless.
 - warning storico Supabase `extension_in_public` chiuso: `pg_net` ricreata nello schema `extensions`, funzioni `net.http_get`/`net.http_post` ancora disponibili e schedule `syncbay-run-due-jobs` ancora attiva
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine

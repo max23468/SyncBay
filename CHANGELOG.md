@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.2] — 2026-06-03
+
+### Correzioni
+
+- Il runner automatico spezza i job eBay -> Shopify troppo grandi in batch da
+  10 ItemID e non tratta più i job interni di import Shopify come lavori
+  schedulabili, riducendo timeout e blocchi della coda cron.
+- La pubblicazione automatica sui canali Shopify parte solo dopo un sync scorte
+  Shopify riuscito per i prodotti `ACTIVE`, evitando prodotti visibili con
+  disponibilità non confermata.
+
 ## [0.22.1] — 2026-06-03
 
 ### Correzioni
@@ -756,6 +767,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.2]: #0222--2026-06-03
 [0.22.1]: #0221--2026-06-03
 [0.22.0]: #0220--2026-06-02
 [0.21.1]: #0211--2026-06-02

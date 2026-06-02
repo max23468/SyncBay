@@ -20,6 +20,7 @@ import {
   syncShopifyProductPublications,
   type ShopifyProductPublicationSyncResult,
 } from "../lib/syncbay-product-publication";
+import { canPublishProductAfterInventorySync } from "../lib/syncbay-product-publication-gate";
 import {
   normalizeProductPublicationMode,
   parseProductPublicationGids,
@@ -812,6 +813,19 @@ async function createShopifyDraftProductSafely(
       draftProduct,
       context,
     );
+
+    if (
+      !canPublishProductAfterInventorySync({
+        inventorySyncStatus: inventorySync.status,
+        productStatus: commercialFieldsSync.product.status,
+      })
+    ) {
+      return {
+        errorMessage: `Pubblicazione prodotto Shopify rinviata: ${getInventorySyncWarning(inventorySync)}`,
+        status: "failed",
+      };
+    }
+
     const publicationSync = await syncShopifyProductPublications(
       admin,
       commercialFieldsSync.product,
@@ -2949,6 +2963,7 @@ function buildDraftImportJobPayload(input: {
     previewMode: input.previewMode,
     requestedCount: input.products.length,
     shopId: input.shopId,
+    source: "shopify_import",
   } satisfies Prisma.JsonObject;
 }
 
