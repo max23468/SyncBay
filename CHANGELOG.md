@@ -6,7 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+### Novità
+
+- Il runner automatico ora riconcilia il catalogo attivo eBay via Trading API
+  a ogni finestra incrementale: pianifica batch `SYNC_INCREMENTAL` anche per
+  nuovi listing non ancora mappati e crea job `ARCHIVE_INACTIVE_LISTING` per i
+  mapping non più attivi solo quando la scansione eBay è completa entro il
+  limite MVP.
+
+### Sotto il cofano
 
 - Aggiunta la spec operativa per il test end-to-end controllato dei flussi
   eBay -> Shopify e ordine Shopify -> disponibilità eBay, con baseline e
