@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.8] — 2026-06-02
+
+### Correzioni
+
+- La verifica import e il detector dei conflitti stock confrontano la quantità
+  Shopify sulla location predefinita SyncBay, evitando falsi disallineamenti
+  quando l'inventario aggregato Shopify differisce dalla location gestita.
+
 ## [0.20.7] — 2026-06-02
 
 ### Sotto il cofano
@@ -632,6 +640,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.8]: #0208--2026-06-02
 [0.20.7]: #0207--2026-06-02
 [0.20.6]: #0206--2026-06-02
 [0.20.5]: #0205--2026-06-02

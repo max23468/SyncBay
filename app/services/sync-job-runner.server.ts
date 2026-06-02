@@ -56,6 +56,12 @@ type ShopifyProductForConflict = {
   variants?: {
     nodes?: Array<{
       inventoryItem?: {
+        inventoryLevel?: {
+          quantities?: Array<{
+            name?: string | null;
+            quantity?: number | null;
+          }> | null;
+        } | null;
         tracked?: boolean | null;
       } | null;
       inventoryQuantity?: number | null;
@@ -925,7 +931,11 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
 
   const { admin } = await unauthenticated.admin(job.shop.shopDomain);
   const [product, snapshot] = await Promise.all([
-    getShopifyProductForConflict(admin, mapping.shopifyProductGid),
+    getShopifyProductForConflict(
+      admin,
+      mapping.shopifyProductGid,
+      job.shop.defaultLocationGid,
+    ),
     getLatestSyncBayConflictBaseline(mapping.id),
   ]);
 
@@ -1333,9 +1343,44 @@ async function getShopifyProductForConflict(
     ) => Promise<Response>;
   },
   productGid: string,
+  defaultLocationGid: string | null,
 ) {
-  const response = await admin.graphql(
-    `#graphql
+  const query = defaultLocationGid
+    ? `#graphql
+    query SyncBayProductForConflict($id: ID!, $locationId: ID!) {
+      node(id: $id) {
+        ... on Product {
+          id
+          descriptionHtml
+          media(first: 50) {
+            nodes {
+              mediaContentType
+              preview {
+                status
+              }
+            }
+          }
+          status
+          title
+          variants(first: 1) {
+            nodes {
+              inventoryQuantity
+              price
+              inventoryItem {
+                tracked
+                inventoryLevel(locationId: $locationId) {
+                  quantities(names: ["available"]) {
+                    name
+                    quantity
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }`
+    : `#graphql
     query SyncBayProductForConflict($id: ID!) {
       node(id: $id) {
         ... on Product {
@@ -1362,8 +1407,13 @@ async function getShopifyProductForConflict(
           }
         }
       }
-    }`,
-    { variables: { id: productGid } },
+    }`;
+  const variables = defaultLocationGid
+    ? { id: productGid, locationId: defaultLocationGid }
+    : { id: productGid };
+  const response = await admin.graphql(
+    query,
+    { variables },
   );
 
   if (!response.ok) return null;
@@ -1387,6 +1437,7 @@ function getDetectedShopifyConflicts(
   },
 ) {
   const variant = product.variants?.nodes?.[0] ?? null;
+  const variantLocationQuantity = getVariantLocationQuantity(variant);
   const readyImageCount =
     product.media?.nodes?.filter(
       (media) =>
@@ -1405,7 +1456,11 @@ function getDetectedShopifyConflicts(
       snapshot.priceAmount?.toFixed(2) ?? null,
       variant?.price ?? null,
     ),
-    buildConflict("quantity", snapshot.quantity, variant?.inventoryQuantity),
+    buildConflict(
+      "quantity",
+      snapshot.quantity,
+      variantLocationQuantity ?? variant?.inventoryQuantity,
+    ),
     buildConflict("images", snapshot.imageCount, readyImageCount),
   ];
 
@@ -1419,6 +1474,20 @@ function getDetectedShopifyConflicts(
       shopifyValue: Prisma.JsonValue;
     } => Boolean(field),
   );
+}
+
+function getVariantLocationQuantity(
+  variant:
+    | NonNullable<
+        NonNullable<ShopifyProductForConflict["variants"]>["nodes"]
+      >[number]
+    | null,
+) {
+  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities
+    ?.find((quantity) => quantity.name === "available")
+    ?.quantity;
+
+  return typeof availableQuantity === "number" ? availableQuantity : null;
 }
 
 function buildConflict(
