@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.21.0] — 2026-06-02
+
 ### Novità
 
 - Il runner automatico ora riconcilia il catalogo attivo eBay via Trading API
@@ -705,6 +707,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.21.0]: #0210--2026-06-02
 [0.20.12]: #02012--2026-06-02
 [0.20.11]: #02011--2026-06-02
 [0.20.10]: #02010--2026-06-02
