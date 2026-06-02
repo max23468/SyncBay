@@ -9,10 +9,10 @@ import {
   SyncJobStatus,
   SyncJobType,
 } from "@prisma/client";
-import { createHash } from "node:crypto";
 
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
+import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
   isEbayStockDryRunEnabled,
   shouldDryRunEbayStockLine,
@@ -69,6 +69,8 @@ type ShopifyProductForConflictResponse = {
   };
   errors?: Array<{ message: string }>;
 };
+type SyncBayConflictSnapshot =
+  Prisma.ProductSnapshotGetPayload<Record<string, never>>;
 
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
@@ -924,13 +926,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
   const { admin } = await unauthenticated.admin(job.shop.shopDomain);
   const [product, snapshot] = await Promise.all([
     getShopifyProductForConflict(admin, mapping.shopifyProductGid),
-    prisma.productSnapshot.findFirst({
-      orderBy: { capturedAt: "desc" },
-      where: {
-        mappingId: mapping.id,
-        source: ProductSnapshotSource.SYNCBAY,
-      },
-    }),
+    getLatestSyncBayConflictBaseline(mapping.id),
   ]);
 
   if (!product || !snapshot) {
@@ -976,6 +972,53 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     status: "succeeded" as const,
     type: job.type,
   };
+}
+
+async function getLatestSyncBayConflictBaseline(mappingId: string) {
+  const snapshots = await prisma.productSnapshot.findMany({
+    orderBy: { capturedAt: "desc" },
+    take: 50,
+    where: {
+      mappingId,
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+
+  if (snapshots.length === 0) return null;
+
+  return {
+    descriptionHash: findLatestSnapshotValue(
+      snapshots,
+      (snapshot) => snapshot.descriptionHash,
+    ),
+    imageCount: findLatestSnapshotValue(
+      snapshots,
+      (snapshot) => snapshot.imageCount,
+    ),
+    priceAmount: findLatestSnapshotValue(
+      snapshots,
+      (snapshot) => snapshot.priceAmount,
+    ),
+    productStatus: findLatestSnapshotValue(
+      snapshots,
+      (snapshot) => snapshot.productStatus,
+    ),
+    quantity: findLatestSnapshotValue(snapshots, (snapshot) => snapshot.quantity),
+    title: findLatestSnapshotValue(snapshots, (snapshot) => snapshot.title),
+  };
+}
+
+function findLatestSnapshotValue<T>(
+  snapshots: SyncBayConflictSnapshot[],
+  select: (snapshot: (typeof snapshots)[number]) => T | null,
+) {
+  for (const snapshot of snapshots) {
+    const value = select(snapshot);
+
+    if (value !== null && value !== undefined) return value;
+  }
+
+  return null;
 }
 
 async function getImportPreviewResultByItemIds(
@@ -1502,10 +1545,4 @@ function normalizeConflictValue(value: Prisma.JsonValue | undefined) {
   if (typeof value === "string") return value.trim();
 
   return value;
-}
-
-function hashNullableText(value: string | null) {
-  if (!value) return null;
-
-  return createHash("sha256").update(value).digest("hex");
 }

@@ -2,6 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -13,10 +14,11 @@ const args = parseArgs(process.argv.slice(2));
 const shopDomain =
   args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
 const recentLimit = args.limit ?? DEFAULT_RECENT_LIMIT;
+const importRunScopeSql = buildImportRunScopeSql("j");
 
 const diagnosticsSql = `
 with latest_run as (
-  select j.payload->>'catalogImportRunId' as run_id
+  select ${importRunScopeSql} as run_id
   from "SyncJob" j
   join "Shop" s on s.id = j."shopId"
   where s."shopDomain" = ${sqlString(shopDomain)}
@@ -36,7 +38,7 @@ run_jobs as (
     nullif(j.payload->>'batchCount', '')::int as batch_count,
     jsonb_array_length(coalesce(j.payload->'ebayItemIds', '[]'::jsonb)) as item_count
   from "SyncJob" j
-  join latest_run lr on lr.run_id = j.payload->>'catalogImportRunId'
+  join latest_run lr on lr.run_id = ${importRunScopeSql}
 ),
 status_rows as (
   select

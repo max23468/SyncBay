@@ -15,6 +15,10 @@ import {
   normalizeImportProductStatus,
   type ImportProductStatus,
 } from "../lib/import-product-status";
+import {
+  getSyncBayDescriptionHash,
+  hashNullableText,
+} from "../lib/syncbay-description-hash";
 import type {
   ImportPreviewItem,
   ImportPreviewResult,
@@ -75,6 +79,7 @@ interface ShopifyProductMediaNode {
 }
 
 interface ShopifyDraftProductNode {
+  descriptionHtml?: string | null;
   id: string;
   media?: {
     nodes?: ShopifyProductMediaNode[];
@@ -745,6 +750,7 @@ async function createShopifyDraftProductRequest(
     mutation SyncBayCreateDraftProduct($media: [CreateMediaInput!], $product: ProductCreateInput!) {
       productCreate(product: $product, media: $media) {
         product {
+          descriptionHtml
           id
           media(first: 250) {
             nodes {
@@ -852,6 +858,7 @@ async function findExistingSyncBayDraftProduct(
     `#graphql
     query SyncBayFindDraftProduct($handle: String!) {
       productByHandle(handle: $handle) {
+        descriptionHtml
         id
         media(first: 250) {
           nodes {
@@ -929,6 +936,7 @@ async function findMappedSyncBayDraftProduct(
     query SyncBayFindMappedProduct($id: ID!) {
       node(id: $id) {
         ... on Product {
+          descriptionHtml
           id
           media(first: 250) {
             nodes {
@@ -987,6 +995,7 @@ async function findExistingSyncBayDraftProductByMetafieldScan(
       query SyncBayFindDraftProductByMetafield($query: String!, $cursor: String) {
         products(first: 250, query: $query, after: $cursor) {
           nodes {
+            descriptionHtml
             id
             media(first: 250) {
               nodes {
@@ -1188,6 +1197,7 @@ async function updateShopifyProductFromEbay(
     mutation SyncBayUpdateProductStatus($product: ProductUpdateInput!) {
       productUpdate(product: $product) {
         product {
+          descriptionHtml
           id
           media(first: 250) {
             nodes {
@@ -2634,7 +2644,10 @@ function buildSyncBayProductSnapshot(input: {
 
   return {
     currency: item.normalized.currency,
-    descriptionHash: hashNullableText(item.normalized.descriptionHtml),
+    descriptionHash: getSyncBayDescriptionHash({
+      fallbackDescriptionHtml: item.normalized.descriptionHtml,
+      shopifyDescriptionHtml: input.result.product.descriptionHtml,
+    }),
     ebayItemId: item.itemId,
     imageCount: input.result.mediaSync.createdCount,
     mappingId: input.mappingId,
@@ -2833,12 +2846,6 @@ function buildDraftImportJobIdempotencyKey(input: {
     .slice(0, 20);
 
   return `draft-import:${input.shopId}:${hash}`;
-}
-
-function hashNullableText(value: string | null) {
-  if (!value) return null;
-
-  return createHash("sha256").update(value).digest("hex");
 }
 
 function getErrorMessage(error: unknown) {

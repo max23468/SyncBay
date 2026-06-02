@@ -6,6 +6,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.20.7] — 2026-06-02
+
+### Sotto il cofano
+
+- Gli script diagnostici `jobs:status` e `import:verify` riconoscono anche le
+  run import in cui `catalogImportRunId` è nullo, usando l'id del job import
+  come fallback.
+- Gli snapshot SyncBay salvano la baseline descrizione dall'HTML restituito da
+  Shopify, evitando falsi conflitti quando Shopify normalizza la descrizione
+  importata.
+- Il detector dei conflitti Shopify usa l'ultima baseline non vuota per campo,
+  evitando falsi conflitti su stato, immagini o altri campi quando l'ultimo
+  snapshot SyncBay è parziale.
+- Aggiunto lo script `npm run conflicts:repair-description` per riparare in
+  modo controllato i falsi conflitti descrizione già aperti.
+
 ## [0.20.6] — 2026-06-02
 
 ### Correzioni
@@ -616,6 +632,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.20.7]: #0207--2026-06-02
 [0.20.6]: #0206--2026-06-02
 [0.20.5]: #0205--2026-06-02
 [0.20.4]: #0204--2026-06-01
