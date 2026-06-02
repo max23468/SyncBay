@@ -4,6 +4,7 @@ import {
   AuditEventType,
   EbayConnectionStatus,
   Prisma,
+  ProductMappingStatus,
   ProductSnapshotSource,
   ShopInstallationStatus,
   SyncConflictResolution,
@@ -21,6 +22,7 @@ import {
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
+import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -664,6 +666,29 @@ export async function getImportWizardState(session: ShopifySessionLike) {
 
 export async function getShopSettingsState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
+  const [ebayConnection, activeMappingCount] = await prisma.$transaction([
+    prisma.ebayConnection.findUnique({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      },
+    }),
+    prisma.productMapping.count({
+      where: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+  ]);
+  const syncBlockers = getSyncEnablementBlockers({
+    activeMappingCount,
+    ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    requestedSyncEnabled: true,
+  });
 
   return {
     shop: {
@@ -671,6 +696,13 @@ export async function getShopSettingsState(session: ShopifySessionLike) {
         shop.defaultProductStatus,
       ),
       domain: shop.shopDomain,
+      syncEnabled: shop.syncEnabled,
+      syncTargetSeconds: shop.syncTargetSeconds,
+    },
+    sync: {
+      activeMappingCount,
+      canEnable: syncBlockers.length === 0,
+      enablementBlockers: syncBlockers,
     },
   };
 }
@@ -796,6 +828,70 @@ export async function updateDefaultImportProductStatus(
   ]);
 
   return normalizedStatus;
+}
+
+export async function updateShopSyncEnabled(
+  session: ShopifySessionLike,
+  requestedSyncEnabled: boolean,
+) {
+  const shop = await ensureShopForSession(session);
+  const [ebayConnection, activeMappingCount] = await prisma.$transaction([
+    prisma.ebayConnection.findUnique({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      },
+    }),
+    prisma.productMapping.count({
+      where: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+  ]);
+  const blockers = getSyncEnablementBlockers({
+    activeMappingCount,
+    ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    requestedSyncEnabled,
+  });
+
+  if (blockers.length > 0) {
+    return {
+      blockers,
+      status: "blocked" as const,
+      syncEnabled: shop.syncEnabled,
+    };
+  }
+
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: { syncEnabled: requestedSyncEnabled },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          activeMappingCount,
+          syncEnabled: requestedSyncEnabled,
+        },
+        message: requestedSyncEnabled
+          ? "Sync catalogo automatico attivato dalle impostazioni."
+          : "Sync catalogo automatico disattivato dalle impostazioni.",
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ]);
+
+  return {
+    blockers: [],
+    status: "saved" as const,
+    syncEnabled: requestedSyncEnabled,
+  };
 }
 
 export async function markShopUninstalled(shopDomain: string) {
