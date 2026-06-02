@@ -428,6 +428,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
   snapshot: Prisma.ProductSnapshotGetPayload<Record<string, never>>;
 }) {
   const shopifyValue = input.conflict.shopifyValue;
+  const snapshotPayload = getKeepShopifyBaselinePayload(input.snapshot.payload);
 
   return {
     currency: input.snapshot.currency,
@@ -442,7 +443,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
         : input.snapshot.imageCount,
     mappingId: input.snapshot.mappingId,
     payload: {
-      ...(getJsonObject(input.snapshot.payload) ?? {}),
+      ...snapshotPayload,
       conflictResolution: {
         conflictId: input.conflict.id,
         field: input.conflict.field,
@@ -471,6 +472,15 @@ function buildKeepShopifyBaselineSnapshot(input: {
         ? getJsonStringValue(shopifyValue)
         : input.snapshot.title,
   };
+}
+
+function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
+  const payload = { ...(getJsonObject(value) ?? {}) };
+
+  delete payload.updatedEbayFromShopifyOrder;
+  delete payload.restoredEbayAfterTest;
+
+  return payload;
 }
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {

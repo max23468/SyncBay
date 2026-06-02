@@ -1049,16 +1049,36 @@ async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
       mappingId,
       NOT: [
         {
-          payload: {
-            path: ["updatedEbayFromShopifyOrder"],
-            equals: true,
-          },
+          AND: [
+            {
+              payload: {
+                path: ["updatedEbayFromShopifyOrder"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
         },
         {
-          payload: {
-            path: ["restoredEbayAfterTest"],
-            equals: true,
-          },
+          AND: [
+            {
+              payload: {
+                path: ["restoredEbayAfterTest"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
         },
       ],
       source: ProductSnapshotSource.SYNCBAY,
