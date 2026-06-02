@@ -156,6 +156,34 @@ test("allows EBAY_IT stock updates when snapshot currency is EUR", () => {
   );
 });
 
+test("allows marketplaces without a configured stock currency guard", () => {
+  assert.deepEqual(
+    validateEbayStockCurrency({
+      marketplaceId: "EBAY_DE",
+      snapshotCurrency: undefined,
+    }),
+    {
+      expectedCurrency: null,
+      ok: true,
+      reason: null,
+      snapshotCurrency: null,
+    },
+  );
+
+  assert.deepEqual(
+    validateEbayStockOrderCurrency({
+      marketplaceId: "EBAY_DE",
+      orderCurrency: undefined,
+    }),
+    {
+      expectedCurrency: null,
+      ok: true,
+      orderCurrency: null,
+      reason: null,
+    },
+  );
+});
+
 test("blocks EBAY_IT stock updates when order currency is missing or not EUR", () => {
   assert.deepEqual(
     validateEbayStockOrderCurrency({
@@ -207,5 +235,11 @@ test("selects Shopify presentment currency before shop currency", () => {
       shopMoneyCurrency: "USD",
     }),
     "EUR",
+  );
+  assert.equal(
+    selectShopifyOrderCurrency({
+      shopMoneyCurrency: "usd",
+    }),
+    "USD",
   );
 });

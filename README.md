@@ -43,6 +43,8 @@ Provisioning minimo creato:
 - Lint: `npm run lint`
 - Build: `npm run build`
 - Smoke UI: `npm run smoke:ui`
+- Test librerie pure: `npm run test:lib`
+- Coverage moduli puri target Atlas: `npm run coverage:lib`
 - React Doctor: `npm run quality:react-doctor`
 - Prisma/setup runtime locale: `npm run setup`
 - Validazione Prisma: `npm run prisma:validate`

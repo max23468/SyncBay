@@ -76,3 +76,17 @@ test("ignores non-runnable or non-running jobs", () => {
     false,
   );
 });
+
+test("ignores running jobs when the stale threshold is invalid", () => {
+  assert.equal(
+    isStaleRunningSyncJob({
+      now,
+      runnableTypes,
+      staleAfterMs: 0,
+      startedAt: null,
+      status: "RUNNING",
+      type: "SYNC_INCREMENTAL",
+    }),
+    false,
+  );
+});
