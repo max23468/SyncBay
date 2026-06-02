@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
 
@@ -14,6 +16,25 @@ export function isSchedulableSyncJob(input: {
   }
 
   return getStringField(input.payload, "source") !== SHOPIFY_IMPORT_JOB_SOURCE;
+}
+
+export function isStaleInternalShopifyImportJob(input: {
+  idempotencyKey?: string | null;
+  now: Date;
+  staleAfterMs: number;
+  startedAt: Date | null;
+  status: string;
+}) {
+  if (input.status !== "RUNNING") return false;
+  if (!input.idempotencyKey?.startsWith(SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX)) {
+    return false;
+  }
+  if (!Number.isFinite(input.staleAfterMs) || input.staleAfterMs <= 0) {
+    return false;
+  }
+  if (!input.startedAt) return true;
+
+  return input.startedAt.getTime() <= input.now.getTime() - input.staleAfterMs;
 }
 
 export function buildEbayItemJobSplitPayloads(input: {
@@ -33,6 +54,23 @@ export function buildEbayItemJobSplitPayloads(input: {
     splitCount: chunks.length,
     splitIndex: index + 1,
   }));
+}
+
+export function buildEbayItemJobSplitIdempotencyKey(input: {
+  parentJobId: string;
+  payload: EbayItemJobPayload;
+  splitIndex: number;
+}) {
+  const runIdentity =
+    getStringField(input.payload, "catalogImportRunId") ??
+    getStringField(input.payload, "runId") ??
+    stableStringify(input.payload);
+  const hash = createHash("sha256")
+    .update(runIdentity)
+    .digest("hex")
+    .slice(0, 20);
+
+  return `split:${input.parentJobId}:${hash}:${input.splitIndex}`;
 }
 
 function normalizeMaxItems(maxItems: number) {
@@ -57,4 +95,19 @@ function getStringField(value: unknown, key: string) {
   const field = (value as Record<string, unknown>)[key];
 
   return typeof field === "string" ? field : null;
+}
+
+function stableStringify(value: unknown) {
+  return JSON.stringify(sortJsonValue(value));
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortJsonValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, field]) => [key, sortJsonValue(field)]),
+  );
 }

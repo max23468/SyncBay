@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.3] — 2026-06-03
+
+### Correzioni
+
+- Il runner chiude come fallite le tracce interne `draft-import` rimaste
+  `RUNNING` oltre la finestra stale, evitando diagnostiche live bloccate da
+  sotto-operazioni già abbandonate.
+
 ## [0.22.2] — 2026-06-03
 
 ### Correzioni
@@ -767,6 +775,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.3]: #0223--2026-06-03
 [0.22.2]: #0222--2026-06-03
 [0.22.1]: #0221--2026-06-03
 [0.22.0]: #0220--2026-06-02

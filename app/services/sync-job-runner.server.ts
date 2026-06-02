@@ -19,8 +19,10 @@ import {
 } from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
+  buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   isSchedulableSyncJob,
+  isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import {
@@ -112,6 +114,10 @@ const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
 const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
   "Job SyncBay rimasto RUNNING oltre la finestra di sicurezza del runner.";
+const STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE =
+  "SYNCBAY_INTERNAL_IMPORT_STALE";
+const STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE =
+  "Traccia interna import Shopify rimasta RUNNING oltre la finestra di sicurezza del runner.";
 
 export async function runDueSyncJobs(
   input: {
@@ -124,6 +130,8 @@ export async function runDueSyncJobs(
 
   await enqueueIncrementalSyncJobs(now);
   await recoverStaleRunningSyncJobsForDueShops({ limit, now });
+  const cleanedInternalImportJobCount =
+    await markStaleInternalShopifyImportJobsFailed({ limit, now });
 
   const jobs = await findDueSyncJobsByPriority({ limit, now });
   const results = new Array<DueSyncJobRunResult>(jobs.length);
@@ -152,6 +160,7 @@ export async function runDueSyncJobs(
     skippedCount: completedResults.filter(
       (result) => result.status === "skipped",
     ).length,
+    cleanedInternalImportJobCount,
     succeededCount: completedResults.filter(
       (result) => result.status === "succeeded",
     ).length,
@@ -295,6 +304,91 @@ async function recoverStaleRunningSyncJobsForDueShops(input: {
       }),
     ),
   );
+}
+
+async function markStaleInternalShopifyImportJobsFailed(input: {
+  limit: number;
+  now: Date;
+}) {
+  const staleCutoff = getRunningSyncJobStaleCutoff(input.now);
+  const internalJobs = await prisma.syncJob.findMany({
+    orderBy: [{ startedAt: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      idempotencyKey: true,
+      shopId: true,
+      startedAt: true,
+      status: true,
+    },
+    take: input.limit,
+    where: {
+      idempotencyKey: { startsWith: "draft-import:" },
+      OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
+      status: SyncJobStatus.RUNNING,
+      type: SyncJobType.IMPORT_CATALOG,
+    },
+  });
+  let cleanedCount = 0;
+
+  for (const job of internalJobs) {
+    if (
+      !isStaleInternalShopifyImportJob({
+        idempotencyKey: job.idempotencyKey,
+        now: input.now,
+        staleAfterMs: RUNNING_SYNC_JOB_STALE_AFTER_MS,
+        startedAt: job.startedAt,
+        status: job.status,
+      })
+    ) {
+      continue;
+    }
+
+    const result = {
+      internalJobKind: "shopify_import",
+      runnerErrorCode: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE,
+      runnerErrorMessage: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE,
+      staleAfterSeconds: RUNNING_SYNC_JOB_STALE_AFTER_MS / 1000,
+      staleStartedAt: job.startedAt?.toISOString() ?? null,
+      willRetry: false,
+    } satisfies Prisma.JsonObject;
+
+    const cleaned = await prisma.$transaction(async (tx) => {
+      const updated = await tx.syncJob.updateMany({
+        data: {
+          errorCode: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE,
+          errorMessage: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE,
+          finishedAt: input.now,
+          result,
+          status: SyncJobStatus.FAILED,
+        },
+        where: {
+          id: job.id,
+          idempotencyKey: job.idempotencyKey,
+          startedAt: job.startedAt,
+          status: SyncJobStatus.RUNNING,
+          type: SyncJobType.IMPORT_CATALOG,
+        },
+      });
+
+      if (updated.count !== 1) return false;
+
+      await tx.auditLog.create({
+        data: {
+          details: result,
+          message:
+            "Traccia interna import Shopify stantia chiusa dal runner.",
+          shopId: job.shopId,
+          type: AuditEventType.SYNC_JOB_FAILED,
+        },
+      });
+
+      return true;
+    });
+
+    if (cleaned) cleanedCount += 1;
+  }
+
+  return cleanedCount;
 }
 
 async function lockShopForUpdate(tx: Prisma.TransactionClient, shopId: string) {
@@ -1487,7 +1581,11 @@ async function splitOversizedEbayItemJobIfNeeded(
     prisma.syncJob.createMany({
       data: splitPayloads.map((splitPayload, index) => ({
         attempts: 0,
-        idempotencyKey: `split:${job.id}:${index + 1}`,
+        idempotencyKey: buildEbayItemJobSplitIdempotencyKey({
+          parentJobId: job.id,
+          payload,
+          splitIndex: index + 1,
+        }),
         maxAttempts: job.maxAttempts,
         payload: splitPayload as Prisma.JsonObject,
         runAfter: now,
