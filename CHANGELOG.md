@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.1] — 2026-06-03
+
+### Correzioni
+
+- La lettura dei canali Shopify usa `catalog.title` quando disponibile e ricade
+  su `Publication.name` quando Shopify non espone un titolo catalogo, così
+  `Online Store` resta selezionabile nelle Impostazioni e negli script
+  operativi.
+- Lo script `products:publish-channel` usa il token offline dell'app installata
+  invece dell'autenticazione Shopify CLI, evitando falsi blocchi sugli scope
+  publication dopo il re-consenso dello store.
+
 ## [0.22.0] — 2026-06-02
 
 ### Novità
@@ -744,6 +756,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.1]: #0221--2026-06-03
 [0.22.0]: #0220--2026-06-02
 [0.21.1]: #0211--2026-06-02
 [0.21.0]: #0210--2026-06-02

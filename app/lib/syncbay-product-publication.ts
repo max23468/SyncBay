@@ -10,6 +10,7 @@ type ShopifyPublicationNode = {
     title?: string | null;
   } | null;
   id?: string | null;
+  name?: string | null;
 };
 
 export type ShopifyProductPublication = {
@@ -240,6 +241,7 @@ async function fetchShopifyPublications(admin: ShopifyAdminGraphqlClient) {
               title
             }
             id
+            name
           }
           pageInfo {
             endCursor
@@ -291,7 +293,12 @@ function getUniquePublicationIds(publications: ShopifyProductPublication[]) {
 }
 
 function getPublicationTitle(publication: ShopifyPublicationNode) {
-  return publication.catalog?.title?.trim() || publication.id || "Canale Shopify";
+  return (
+    publication.catalog?.title?.trim() ||
+    publication.name?.trim() ||
+    publication.id ||
+    "Canale Shopify"
+  );
 }
 
 function formatShopifyErrors(errors: ShopifyGraphqlError[]) {

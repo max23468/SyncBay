@@ -178,6 +178,35 @@ test("loads publication labels from catalog titles", async () => {
   ]);
 });
 
+test("falls back to publication names when catalog titles are missing", async () => {
+  const admin = {
+    async graphql() {
+      return jsonResponse({
+        data: {
+          publications: {
+            nodes: [
+              {
+                catalog: null,
+                id: "gid://shopify/Publication/1",
+                name: "Online Store",
+              },
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  assert.deepEqual(await loadShopifyProductPublications(admin), [
+    {
+      id: "gid://shopify/Publication/1",
+      title: "Online Store",
+    },
+  ]);
+});
+
+
 test("can explicitly skip sales channel publication", async () => {
   let graphqlCalls = 0;
   const admin = {

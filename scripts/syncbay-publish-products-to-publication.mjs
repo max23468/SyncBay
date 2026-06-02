@@ -10,10 +10,6 @@ const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_PUBLICATION_TITLE = "Online Store";
 const DEFAULT_BATCH_SIZE = 20;
 const SHOPIFY_API_VERSION = "2026-04";
-const SHOPIFY_AGENT_ENV = {
-  SHOPIFY_CLI_AGENT_IDS: "s:syncbay|r:publish-products|i:codex",
-  SHOPIFY_CLI_AGENT_INFO: "n:codex|v:gpt-5|p:openai",
-};
 
 const args = parseArgs(process.argv.slice(2));
 const shopDomain =
@@ -27,14 +23,11 @@ await main().catch((error) => {
 });
 
 async function main() {
-  const [publication, target] = await Promise.all([
-    findPublicationByTitle(publicationTitle),
-    loadTargetProducts(),
-  ]);
-
-  if (!publication) {
-    throw new Error(`Publication Shopify non trovata: ${publicationTitle}.`);
-  }
+  const target = await loadTargetProducts();
+  const publication = await findPublicationByTitle(
+    target.accessToken,
+    publicationTitle,
+  );
 
   if (target.productGids.length === 0) {
     console.log(`Nessun prodotto SyncBay attivo da pubblicare per ${shopDomain}.`);
@@ -64,7 +57,11 @@ async function main() {
 
   for (let index = 0; index < target.productGids.length; index += batchSize) {
     const batch = target.productGids.slice(index, index + batchSize);
-    const result = await publishProductBatch(batch, publication.id);
+    const result = await publishProductBatch(
+      target.accessToken,
+      batch,
+      publication.id,
+    );
 
     failures.push(...result.failures);
     publishedCount += result.publishedCount;
@@ -83,54 +80,52 @@ async function main() {
   console.log(`Pubblicazione completata: ${publishedCount} prodotti.`);
 }
 
-async function findPublicationByTitle(title) {
+async function findPublicationByTitle(accessToken, title) {
   const query = `query SyncBayFindPublication {
     publications(first: 100) {
       nodes {
         id
+        name
         catalog {
           title
         }
       }
     }
   }`;
-  const { stdout } = await execFileAsync(
-    "shopify",
-    [
-      "store",
-      "execute",
-      "--store",
-      shopDomain,
-      "--version",
-      SHOPIFY_API_VERSION,
-      "--json",
-      "--query",
-      query,
-    ],
-    {
-      cwd: process.cwd(),
-      env: { ...process.env, ...SHOPIFY_AGENT_ENV },
-      maxBuffer: 1024 * 1024 * 5,
-      timeout: 60_000,
-    },
-  );
-  const parsed = JSON.parse(stdout.slice(findJsonStart(stdout)));
+  const parsed = await shopifyGraphql(accessToken, query);
   const publications = parsed.publications?.nodes ?? [];
 
-  return (
-    publications
-      .map((publication) => ({
-        id: publication.id,
-        title: publication.catalog?.title ?? publication.id,
-      }))
-      .find((publication) => publication.title === title) ?? null
+  const normalizedPublications = publications.map((publication) => ({
+    id: publication.id,
+    title: publication.catalog?.title ?? publication.name ?? publication.id,
+  }));
+  const selected = normalizedPublications.find(
+    (publication) => publication.title === title,
   );
+
+  if (!selected) {
+    throw new Error(
+      `Publication Shopify non trovata: ${title}. Disponibili: ${normalizedPublications
+        .map((publication) => publication.title)
+        .join(", ")}`,
+    );
+  }
+
+  return selected;
 }
 
 async function loadTargetProducts() {
   const sql = `
 select jsonb_build_object(
   'shopId', s.id,
+  'accessToken', (
+    select sess."accessToken"
+    from "Session" sess
+    where sess.shop = s."shopDomain"
+      and sess."isOnline" = false
+    order by sess.expires nulls first, sess.id desc
+    limit 1
+  ),
   'productGids', coalesce(
     jsonb_agg(distinct pm."shopifyProductGid")
       filter (where pm."shopifyProductGid" is not null),
@@ -151,7 +146,12 @@ limit 1;
     throw new Error(`Shop non trovato in SyncBay: ${shopDomain}.`);
   }
 
+  if (!payload.accessToken) {
+    throw new Error(`Token offline Shopify non trovato per ${shopDomain}.`);
+  }
+
   return {
+    accessToken: payload.accessToken,
     productGids: payload.productGids ?? [],
     shopId: payload.shopId,
   };
@@ -183,7 +183,7 @@ values (
   await querySupabaseJson(sql);
 }
 
-async function publishProductBatch(productGids, publicationId) {
+async function publishProductBatch(accessToken, productGids, publicationId) {
   const variableDeclarations = ["$input: [PublicationInput!]!"];
   const mutationFields = [];
   const variables = {
@@ -209,30 +209,7 @@ async function publishProductBatch(productGids, publicationId) {
   const mutation = `mutation SyncBayPublishProducts(${variableDeclarations.join(", ")}) {
     ${mutationFields.join("\n")}
   }`;
-  const { stdout } = await execFileAsync(
-    "shopify",
-    [
-      "store",
-      "execute",
-      "--store",
-      shopDomain,
-      "--version",
-      SHOPIFY_API_VERSION,
-      "--json",
-      "--allow-mutations",
-      "--query",
-      mutation,
-      "--variables",
-      JSON.stringify(variables),
-    ],
-    {
-      cwd: process.cwd(),
-      env: { ...process.env, ...SHOPIFY_AGENT_ENV },
-      maxBuffer: 1024 * 1024 * 20,
-      timeout: 120_000,
-    },
-  );
-  const parsed = JSON.parse(stdout.slice(findJsonStart(stdout)));
+  const parsed = await shopifyGraphql(accessToken, mutation, variables);
   const failures = [];
 
   productGids.forEach((productGid, index) => {
@@ -259,6 +236,33 @@ async function publishProductBatch(productGids, publicationId) {
     failures,
     publishedCount: productGids.length - failures.length,
   };
+}
+
+async function shopifyGraphql(accessToken, query, variables = {}) {
+  const response = await fetch(
+    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+    {
+      body: JSON.stringify({ query, variables }),
+      headers: {
+        "content-type": "application/json",
+        "x-shopify-access-token": accessToken,
+      },
+      method: "POST",
+    },
+  );
+  const json = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Shopify Admin API HTTP ${response.status}.`);
+  }
+
+  if (json.errors?.length) {
+    throw new Error(
+      json.errors.map((error) => error.message).filter(Boolean).join("; "),
+    );
+  }
+
+  return json.data ?? {};
 }
 
 async function querySupabaseJson(sql) {
