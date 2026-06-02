@@ -6,6 +6,44 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.21.0] — 2026-06-02
+
+### Novità
+
+- Il runner automatico ora riconcilia il catalogo attivo eBay via Trading API
+  a ogni finestra incrementale: pianifica batch `SYNC_INCREMENTAL` anche per
+  nuovi listing non ancora mappati e crea job `ARCHIVE_INACTIVE_LISTING` per i
+  mapping non più attivi solo quando la scansione eBay è completa entro il
+  limite MVP.
+
+### Correzioni
+
+- Le risoluzioni `KEEP_SHOPIFY` su conflitti non descrizione preservano la
+  baseline descrizione reale più recente, evitando falsi conflitti descrizione
+  quando lo snapshot scelto è uno snapshot stock parziale.
+
+### Sotto il cofano
+
+- Aggiunta la spec operativa per il test end-to-end controllato dei flussi
+  eBay -> Shopify e ordine Shopify -> disponibilità eBay, con baseline e
+  rollback obbligatori.
+- Documentato l'esito del test controllato: sync quantità eBay -> Shopify
+  verificato con rollback; runner stock Shopify -> eBay verificato con payload
+  ordine sintetico, allowlist singola e rollback; trigger da vendita Shopify
+  reale ancora da provare con scope `write_orders`/token offline.
+- Rafforzato lo script operativo di ripristino stock eBay con parsing argomenti
+  testabile, preferenza Portachiavi per `TOKEN_ENCRYPTION_KEY` e opzione
+  `--skip-snapshot` per simulare modifiche eBay esterne senza inquinare il
+  baseline SyncBay.
+- Estratto e testato il parser dei webhook Shopify `orders/paid` e
+  `inventory_levels/update`, così la trasformazione payload -> job stock eBay
+  resta coperta anche senza ripetere subito un ordine Shopify reale.
+- Aggiunto il controllo embedded in Impostazioni per attivare o disattivare il
+  sync catalogo automatico, con blocco dell'attivazione finché mancano account
+  eBay collegato, location Shopify predefinita o prodotti importati.
+- Aggiunta diagnostica dashboard per il sync catalogo incrementale: stato
+  fresco/in corso/in ritardo, ultimo completamento e prossima finestra target.
+
 ## [0.20.12] — 2026-06-02
 
 ### Correzioni
@@ -675,6 +713,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.21.0]: #0210--2026-06-02
 [0.20.12]: #02012--2026-06-02
 [0.20.11]: #02011--2026-06-02
 [0.20.10]: #02010--2026-06-02

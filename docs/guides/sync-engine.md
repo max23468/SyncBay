@@ -54,10 +54,18 @@ disponibilità eBay.
 ## Sync incrementale
 
 Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
-50 mapping attivi. I batch rileggono i listing via Trading API `GetItem` e
-riusano il flusso import controllato per riallineare Shopify. Se un mapping ha
-conflitti Shopify aperti, il prodotto viene saltato finché il negoziante sceglie
-un'azione guidata.
+50 ItemID eBay attivi letti da Trading API `GetMyeBaySelling`. Questo copre sia
+listing già mappati sia nuovi prodotti eBay pubblicati dopo l'import iniziale. I
+batch rileggono i listing via Trading API `GetItem` e riusano il flusso import
+controllato per creare o riallineare Shopify. Se un mapping ha conflitti
+Shopify aperti, il prodotto viene saltato finché il negoziante sceglie un'azione
+guidata.
+
+Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
+prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
+SyncBay ancora attivi ma non più presenti tra i listing eBay attivi. Se la
+scansione è vuota, incompleta o troncata dal limite MVP, SyncBay sincronizza i
+listing letti ma non archivia prodotti Shopify per evitare falsi positivi.
 
 ## Conflitti Shopify
 
@@ -78,6 +86,10 @@ Runtime previsto:
 - batch piccoli e riprendibili, non funzioni lunghe monolitiche.
 
 ## Diagnostica
+
+La dashboard deve mostrare se il sync catalogo incrementale è disattivato,
+aggiornato, in corso o in ritardo rispetto al target configurato, includendo
+ultimo completamento e prossima finestra prevista.
 
 Ogni job fallito deve conservare:
 

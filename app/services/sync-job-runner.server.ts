@@ -12,6 +12,10 @@ import {
 
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
+import {
+  buildCatalogReconcilePlan,
+  isCatalogReconcileScanComplete,
+} from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
   isEbayStockDryRunEnabled,
@@ -21,7 +25,10 @@ import {
 } from "../lib/syncbay-stock-guard";
 import { unauthenticated } from "../shopify.server";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
-import { getEbayTradingCandidatesByItemIds } from "./ebay-trading-preview.server";
+import {
+  getEbayTradingCandidatesByItemIds,
+  getEbayTradingCatalogImportPlan,
+} from "./ebay-trading-preview.server";
 import { reviseEbayTradingInventoryQuantity } from "./ebay-trading-stock.server";
 import type {
   ImportPreviewItem,
@@ -75,10 +82,23 @@ type ShopifyProductForConflictResponse = {
   };
   errors?: Array<{ message: string }>;
 };
+type ShopifyProductArchiveResponse = {
+  data?: {
+    productUpdate?: {
+      product?: {
+        id: string;
+        status?: string | null;
+      } | null;
+      userErrors?: Array<{ field?: string[] | null; message: string }>;
+    } | null;
+  };
+  errors?: Array<{ message: string }>;
+};
 
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
+const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const INCREMENTAL_SYNC_BATCH_SIZE = 50;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_IMPORT_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -298,7 +318,12 @@ async function enqueueIncrementalSyncJobs(now: Date) {
             SyncJobStatus.RUNNING,
           ],
         },
-        type: SyncJobType.SYNC_INCREMENTAL,
+        type: {
+          in: [
+            SyncJobType.SYNC_INCREMENTAL,
+            SyncJobType.ARCHIVE_INACTIVE_LISTING,
+          ],
+        },
       },
     });
 
@@ -321,41 +346,99 @@ async function enqueueIncrementalSyncJobs(now: Date) {
 
     if (nextRunAfter > now) continue;
 
-    const mappings = await prisma.productMapping.findMany({
-      orderBy: { updatedAt: "asc" },
-      select: { ebayItemId: true },
-      where: {
-        marketplaceId: DEFAULT_MARKETPLACE_ID,
-        shopId: shop.id,
-        status: ProductMappingStatus.ACTIVE,
-      },
-    });
-    const batches = chunkArray(
-      mappings.map((mapping) => mapping.ebayItemId),
-      INCREMENTAL_SYNC_BATCH_SIZE,
-    );
+    try {
+      const connection = shop.ebayConnections[0];
+      const { accessToken } = await getUsableEbayAccessToken(connection);
+      const activeCatalogPlan = await getEbayTradingCatalogImportPlan({
+        accessToken,
+        connection,
+        maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+      });
+      const mappings = await prisma.productMapping.findMany({
+        orderBy: { updatedAt: "asc" },
+        select: { ebayItemId: true },
+        where: {
+          marketplaceId: DEFAULT_MARKETPLACE_ID,
+          shopId: shop.id,
+          status: ProductMappingStatus.ACTIVE,
+        },
+      });
+      const activeScanComplete = isCatalogReconcileScanComplete({
+        itemIds: activeCatalogPlan.itemIds,
+        maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+        readCount: activeCatalogPlan.readCount,
+        totalAvailable: activeCatalogPlan.totalAvailable,
+      });
+      const reconcilePlan = buildCatalogReconcilePlan({
+        activeEbayItemIds: activeCatalogPlan.itemIds,
+        activeScanComplete,
+        batchSize: INCREMENTAL_SYNC_BATCH_SIZE,
+        mappedEbayItemIds: mappings.map((mapping) => mapping.ebayItemId),
+      });
 
-    if (batches.length === 0) continue;
+      if (
+        reconcilePlan.syncBatches.length === 0 &&
+        reconcilePlan.inactiveEbayItemIds.length === 0
+      ) {
+        continue;
+      }
 
-    const runId = `incremental:${shop.id}:${now.toISOString()}`;
-
-    await prisma.syncJob.createMany({
-      data: batches.map((ebayItemIds, index) => ({
+      const runId = `incremental:${shop.id}:${now.toISOString()}`;
+      const syncJobs = reconcilePlan.syncBatches.map((ebayItemIds, index) => ({
         maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
         payload: {
-          batchCount: batches.length,
+          activeCatalogReadCount: activeCatalogPlan.readCount,
+          activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+          activeScanComplete,
+          batchCount: reconcilePlan.syncBatches.length,
           batchIndex: index + 1,
           ebayItemIds,
           marketplaceId: DEFAULT_MARKETPLACE_ID,
           runId,
-          source: "trading_api",
+          source: "catalog_reconcile",
         } satisfies Prisma.JsonObject,
         runAfter: now,
         shopId: shop.id,
         status: SyncJobStatus.PENDING,
         type: SyncJobType.SYNC_INCREMENTAL,
-      })),
-    });
+      }));
+      const archiveJobs = reconcilePlan.inactiveEbayItemIds.map(
+        (ebayItemId) => ({
+          idempotencyKey: `archive-inactive:${shop.id}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
+          maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+          payload: {
+            activeCatalogReadCount: activeCatalogPlan.readCount,
+            activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+            ebayItemId,
+            marketplaceId: DEFAULT_MARKETPLACE_ID,
+            runId,
+            source: "catalog_reconcile",
+          } satisfies Prisma.JsonObject,
+          runAfter: now,
+          shopId: shop.id,
+          status: SyncJobStatus.PENDING,
+          type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+        }),
+      );
+
+      await prisma.syncJob.createMany({
+        data: [...syncJobs, ...archiveJobs],
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      await prisma.auditLog.create({
+        data: {
+          details: {
+            runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+            runnerErrorMessage: getErrorMessage(error),
+          } satisfies Prisma.JsonObject,
+          message:
+            "Pianificazione sync catalogo incrementale non completata; il runner continuerà con i job già in coda.",
+          shopId: shop.id,
+          type: AuditEventType.SYNC_JOB_FAILED,
+        },
+      });
+    }
   }
 }
 
@@ -448,6 +531,9 @@ async function runDueSyncJob(job: DueSyncJob) {
     }
     if (job.type === SyncJobType.UPDATE_EBAY_STOCK) {
       return await runUpdateEbayStockJob(job);
+    }
+    if (job.type === SyncJobType.ARCHIVE_INACTIVE_LISTING) {
+      return await runArchiveInactiveListingJob(job);
     }
     if (job.type === SyncJobType.DETECT_SHOPIFY_CHANGES) {
       return await runDetectShopifyChangesJob(job);
@@ -888,6 +974,148 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   };
 }
 
+async function runArchiveInactiveListingJob(job: DueSyncJob) {
+  const ebayItemId = getArchiveEbayItemId(job.payload);
+
+  if (!ebayItemId) {
+    throw new Error("Job archivio listing inattivo senza eBay ItemID.");
+  }
+
+  const marketplaceId = getEbayMarketplaceId(job.payload);
+  const mapping = await prisma.productMapping.findFirst({
+    where: {
+      ebayItemId,
+      marketplaceId,
+      shopId: job.shopId,
+      status: ProductMappingStatus.ACTIVE,
+    },
+  });
+
+  if (!mapping) {
+    await markJobSucceeded({
+      delegatedJobId: null,
+      job,
+      result: {
+        archivedCount: 0,
+        ebayItemId,
+        skippedReason: "active_mapping_not_found",
+      },
+      warnings: ["Archivio saltato: mapping attivo non trovato."],
+    });
+
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
+  }
+
+  if (mapping.shopifyProductGid) {
+    const { admin } = await unauthenticated.admin(job.shop.shopDomain);
+    await archiveShopifyProduct(admin, mapping.shopifyProductGid);
+  }
+
+  const now = new Date();
+
+  await prisma.$transaction([
+    prisma.productMapping.update({
+      data: {
+        lastErrorCode: null,
+        lastErrorMessage: null,
+        lastSyncedAt: now,
+        status: ProductMappingStatus.ARCHIVED,
+      },
+      where: { id: mapping.id },
+    }),
+    prisma.productSnapshot.create({
+      data: {
+        ebayItemId: mapping.ebayItemId,
+        mappingId: mapping.id,
+        payload: {
+          archivedShopifyProduct: Boolean(mapping.shopifyProductGid),
+          reason: "ebay_listing_inactive",
+          syncJobId: job.id,
+        } satisfies Prisma.JsonObject,
+        productStatus: "ARCHIVED",
+        quantity: 0,
+        shopId: job.shopId,
+        shopifyProductGid: mapping.shopifyProductGid,
+        shopifyVariantGid: mapping.shopifyVariantGid,
+        sku: mapping.sku,
+        source: ProductSnapshotSource.SYNCBAY,
+      },
+    }),
+  ]);
+
+  await markJobSucceeded({
+    delegatedJobId: null,
+    job,
+    result: {
+      archivedCount: 1,
+      archivedShopifyProduct: Boolean(mapping.shopifyProductGid),
+      ebayItemId,
+      shopifyProductGid: mapping.shopifyProductGid,
+    },
+    warnings: mapping.shopifyProductGid
+      ? []
+      : ["Mapping archiviato senza prodotto Shopify collegato."],
+  });
+
+  return {
+    jobId: job.id,
+    status: "succeeded" as const,
+    type: job.type,
+  };
+}
+
+async function archiveShopifyProduct(
+  admin: {
+    graphql: (
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) => Promise<Response>;
+  },
+  productGid: string,
+) {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayArchiveInactiveProduct($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product {
+          id
+          status
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        product: {
+          id: productGid,
+          status: "ARCHIVED",
+        },
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Shopify non ha accettato la richiesta di archivio.");
+  }
+
+  const json = (await response.json()) as ShopifyProductArchiveResponse;
+  const graphQLError = json.errors?.[0]?.message;
+  const userError = json.data?.productUpdate?.userErrors?.[0]?.message;
+
+  if (graphQLError || userError) {
+    throw new Error(
+      graphQLError ?? userError ?? "Archivio prodotto Shopify non riuscito.",
+    );
+  }
+}
+
 function getSnapshotSkuGenerated(payload: Prisma.JsonValue | null | undefined) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return null;
@@ -1222,6 +1450,14 @@ function getEbayItemIds(payload: Prisma.JsonValue | null) {
         (itemId): itemId is string => typeof itemId === "string",
       )
     : [];
+}
+
+function getArchiveEbayItemId(payload: Prisma.JsonValue | null) {
+  const ebayItemId = getStringFromPayload(payload, "ebayItemId");
+
+  if (ebayItemId?.trim()) return ebayItemId.trim();
+
+  return getEbayItemIds(payload)[0] ?? null;
 }
 
 function getEbayMarketplaceId(payload: Prisma.JsonValue | null) {
@@ -1653,19 +1889,10 @@ function getRunnableSyncJobTypes() {
   return [
     SyncJobType.UPDATE_EBAY_STOCK,
     SyncJobType.SYNC_INCREMENTAL,
+    SyncJobType.ARCHIVE_INACTIVE_LISTING,
     SyncJobType.DETECT_SHOPIFY_CHANGES,
     SyncJobType.IMPORT_CATALOG,
   ];
-}
-
-function chunkArray<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-
-  return chunks;
 }
 
 function normalizeConflictValue(value: Prisma.JsonValue | undefined) {

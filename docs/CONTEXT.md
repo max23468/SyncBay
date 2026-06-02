@@ -41,7 +41,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run MVP, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nel pilota custom e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. La dashboard mostra avanzamento import, diagnostica job e conflitti con azioni guidate. Restano da verificare end-to-end su dev store il primo ciclo incrementale dopo una modifica reale eBay e un ordine Shopify pagato reale con update eBay conseguente.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run MVP, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nel pilota custom e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. La dashboard mostra avanzamento import, diagnostica job e conflitti con azioni guidate. Il primo ciclo incrementale reale eBay -> Shopify è stato verificato su ItemID `156986744184` con cambio quantità 3 -> 2 e rollback a 3. Il runner stock Shopify -> eBay è stato verificato sullo stesso item con job `UPDATE_EBAY_STOCK` sintetico, allowlist temporanea e scrittura Trading API reale 3 -> 2, poi rollback a 3. Resta da verificare il trigger vendita Shopify reale: `orderCreate` via Admin GraphQL è stato bloccato perché il token CLI disponibile non ha `write_orders` e Shopify richiede un token offline con quello scope.
 
 ## Runtime deciso
 
@@ -71,11 +71,24 @@ Provisioning minimo:
 - eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
 - Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, riallinea lo stato dei prodotti Shopify riusati al default dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nella dashboard, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
+- Sync catalogo eBay -> Shopify: dopo l'import, il polling incrementale resta
+  controllato da `syncEnabled` e target `300` secondi. Le Impostazioni embedded
+  permettono di attivare/disattivare il sync automatico solo quando eBay è
+  collegato, la location Shopify è impostata e ci sono prodotti importati. A
+  ogni finestra il runner legge i listing eBay attivi via Trading API, pianifica
+  batch `SYNC_INCREMENTAL` anche per nuovi prodotti e crea job
+  `ARCHIVE_INACTIVE_LISTING` per mapping non più attivi solo quando la scansione
+  eBay è completa entro il limite MVP di 2.000 prodotti. La dashboard mostra
+  stato freschezza del sync, ultimo completamento e prossima finestra target.
 - Stock eBay da ordini Shopify: il pilota custom riceve `orders/paid` e crea
   job prioritari `UPDATE_EBAY_STOCK`. `SYNCBAY_EBAY_STOCK_DRY_RUN=true` pianifica
   le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per
   marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot
-  catalogo in `EUR` e salta righe con valuta mancante o diversa.
+  catalogo in `EUR` e salta righe con valuta mancante o diversa. Il runner è
+  stato verificato con payload ordine sintetico e allowlist singola; il parser
+  payload `orders/paid` -> job stock è coperto da test locali. Manca ancora la
+  prova del trigger da ordine Shopify reale, che resta gate pre-pilota ma non
+  blocca lo sviluppo corrente.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata

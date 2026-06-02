@@ -4,6 +4,7 @@ import {
   AuditEventType,
   EbayConnectionStatus,
   Prisma,
+  ProductMappingStatus,
   ProductSnapshotSource,
   ShopInstallationStatus,
   SyncConflictResolution,
@@ -20,7 +21,10 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
-import { selectShopifyOrderCurrency } from "../lib/syncbay-stock-guard";
+import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
+import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
+import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
+import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -92,6 +96,8 @@ export async function getDashboardState(session: ShopifySessionLike) {
     openConflictCount,
     openConflicts,
     snapshotCount,
+    latestIncrementalJob,
+    activeIncrementalJobCount,
   ] = await prisma.$transaction([
     prisma.ebayConnection.findUnique({
       where: {
@@ -143,6 +149,26 @@ export async function getDashboardState(session: ShopifySessionLike) {
     }),
     prisma.productSnapshot.count({
       where: { shopId: shop.id },
+    }),
+    prisma.syncJob.findFirst({
+      orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+      where: {
+        shopId: shop.id,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    }),
+    prisma.syncJob.count({
+      where: {
+        shopId: shop.id,
+        status: {
+          in: [
+            SyncJobStatus.PENDING,
+            SyncJobStatus.RETRYING,
+            SyncJobStatus.RUNNING,
+          ],
+        },
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
     }),
   ]);
   const latestImportRun = await getLatestImportRunSummary(shop.id);
@@ -245,6 +271,22 @@ export async function getDashboardState(session: ShopifySessionLike) {
         status: job.status,
         type: job.type,
       })),
+      catalogHealth: {
+        ...formatCatalogSyncHealth(
+          getCatalogSyncHealth({
+            activeIncrementalJobCount,
+            latestIncrementalFinishedAt:
+              latestIncrementalJob?.finishedAt ?? null,
+            now: new Date(),
+            syncEnabled: shop.syncEnabled,
+            syncTargetSeconds: shop.syncTargetSeconds,
+          }),
+        ),
+        activeIncrementalJobCount,
+        latestIncrementalFinishedAt:
+          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalStatus: latestIncrementalJob?.status ?? null,
+      },
     },
     audit: recentAuditLogs.map((log) => ({
       createdAt: log.createdAt.toISOString(),
@@ -341,16 +383,24 @@ export async function resolveSyncConflict(
       status: SyncConflictStatus.OPEN,
     },
   });
-  const baselineSnapshot =
-    resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId
-      ? await prisma.productSnapshot.findFirst({
-          orderBy: { capturedAt: "desc" },
-          where: {
-            mappingId: conflict.mappingId,
-            source: ProductSnapshotSource.SYNCBAY,
-          },
-        })
-      : null;
+  let baselineSnapshot: Prisma.ProductSnapshotGetPayload<
+    Record<string, never>
+  > | null = null;
+  let descriptionBaselineSnapshot: Prisma.ProductSnapshotGetPayload<
+    Record<string, never>
+  > | null = null;
+  if (resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId) {
+    [baselineSnapshot, descriptionBaselineSnapshot] = await Promise.all([
+      prisma.productSnapshot.findFirst({
+        orderBy: { capturedAt: "desc" },
+        where: {
+          mappingId: conflict.mappingId,
+          source: ProductSnapshotSource.SYNCBAY,
+        },
+      }),
+      findLatestKeepShopifyDescriptionBaseline(conflict.mappingId),
+    ]);
+  }
 
   if (!conflict) {
     throw new Response("Conflitto SyncBay non trovato.", { status: 404 });
@@ -388,6 +438,8 @@ export async function resolveSyncConflict(
       prisma.productSnapshot.create({
         data: buildKeepShopifyBaselineSnapshot({
           conflict,
+          latestDescriptionBaselineHash:
+            descriptionBaselineSnapshot?.descriptionHash ?? null,
           snapshot: baselineSnapshot,
         }),
       }),
@@ -425,6 +477,7 @@ export async function resolveSyncConflict(
 
 function buildKeepShopifyBaselineSnapshot(input: {
   conflict: Prisma.SyncConflictGetPayload<Record<string, never>>;
+  latestDescriptionBaselineHash: string | null;
   snapshot: Prisma.ProductSnapshotGetPayload<Record<string, never>>;
 }) {
   const shopifyValue = input.conflict.shopifyValue;
@@ -432,10 +485,12 @@ function buildKeepShopifyBaselineSnapshot(input: {
 
   return {
     currency: input.snapshot.currency,
-    descriptionHash:
-      input.conflict.field === "description"
-        ? getJsonStringValue(shopifyValue)
-        : input.snapshot.descriptionHash,
+    descriptionHash: getKeepShopifyDescriptionHash({
+      conflictField: input.conflict.field,
+      latestDescriptionBaselineHash: input.latestDescriptionBaselineHash,
+      shopifyValue,
+      snapshotDescriptionHash: input.snapshot.descriptionHash,
+    }),
     ebayItemId: input.snapshot.ebayItemId,
     imageCount:
       input.conflict.field === "images"
@@ -481,6 +536,50 @@ function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
   delete payload.restoredEbayAfterTest;
 
   return payload;
+}
+
+async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    where: {
+      mappingId,
+      NOT: [
+        {
+          AND: [
+            {
+              payload: {
+                path: ["updatedEbayFromShopifyOrder"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+        {
+          AND: [
+            {
+              payload: {
+                path: ["restoredEbayAfterTest"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+      ],
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
 }
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {
@@ -664,6 +763,29 @@ export async function getImportWizardState(session: ShopifySessionLike) {
 
 export async function getShopSettingsState(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
+  const [ebayConnection, activeMappingCount] = await prisma.$transaction([
+    prisma.ebayConnection.findUnique({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      },
+    }),
+    prisma.productMapping.count({
+      where: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+  ]);
+  const syncBlockers = getSyncEnablementBlockers({
+    activeMappingCount,
+    ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    requestedSyncEnabled: true,
+  });
 
   return {
     shop: {
@@ -671,6 +793,13 @@ export async function getShopSettingsState(session: ShopifySessionLike) {
         shop.defaultProductStatus,
       ),
       domain: shop.shopDomain,
+      syncEnabled: shop.syncEnabled,
+      syncTargetSeconds: shop.syncTargetSeconds,
+    },
+    sync: {
+      activeMappingCount,
+      canEnable: syncBlockers.length === 0,
+      enablementBlockers: syncBlockers,
     },
   };
 }
@@ -796,6 +925,70 @@ export async function updateDefaultImportProductStatus(
   ]);
 
   return normalizedStatus;
+}
+
+export async function updateShopSyncEnabled(
+  session: ShopifySessionLike,
+  requestedSyncEnabled: boolean,
+) {
+  const shop = await ensureShopForSession(session);
+  const [ebayConnection, activeMappingCount] = await prisma.$transaction([
+    prisma.ebayConnection.findUnique({
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      },
+    }),
+    prisma.productMapping.count({
+      where: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+  ]);
+  const blockers = getSyncEnablementBlockers({
+    activeMappingCount,
+    ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+    hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    requestedSyncEnabled,
+  });
+
+  if (blockers.length > 0) {
+    return {
+      blockers,
+      status: "blocked" as const,
+      syncEnabled: shop.syncEnabled,
+    };
+  }
+
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: { syncEnabled: requestedSyncEnabled },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: {
+          activeMappingCount,
+          syncEnabled: requestedSyncEnabled,
+        },
+        message: requestedSyncEnabled
+          ? "Sync catalogo automatico attivato dalle impostazioni."
+          : "Sync catalogo automatico disattivato dalle impostazioni.",
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ]);
+
+  return {
+    blockers: [],
+    status: "saved" as const,
+    syncEnabled: requestedSyncEnabled,
+  };
 }
 
 export async function markShopUninstalled(shopDomain: string) {
@@ -1045,83 +1238,7 @@ function getPlaceholderJobType(topic: string) {
 }
 
 function getWebhookJobPayload(topic: string, payload: unknown) {
-  if (topic === "orders/paid") {
-    return {
-      orderCurrency: extractShopifyOrderCurrency(payload),
-      lineItems: extractShopifyOrderLineItems(payload),
-    } satisfies Prisma.JsonObject;
-  }
-
-  if (topic === "inventory_levels/update") {
-    return {
-      inventoryItemGid: extractShopifyInventoryItemGid(payload),
-    } satisfies Prisma.JsonObject;
-  }
-
-  return {};
-}
-
-function extractShopifyOrderLineItems(payload: unknown) {
-  if (!payload || typeof payload !== "object") return [];
-
-  const record = payload as Record<string, unknown>;
-  const rawLineItems = Array.isArray(record.line_items)
-    ? record.line_items
-    : [];
-
-  return rawLineItems.flatMap((lineItem, index) => {
-    if (!lineItem || typeof lineItem !== "object") return [];
-
-    const lineItemRecord = lineItem as Record<string, unknown>;
-    const lineItemId = getStringField(lineItemRecord, "id");
-    const quantity = getNumberField(lineItemRecord, "quantity");
-    const productId = getStringField(lineItemRecord, "product_id");
-    const variantId = getStringField(lineItemRecord, "variant_id");
-
-    if (!quantity || quantity <= 0) return [];
-
-    return [
-      {
-        lineItemKey:
-          lineItemId ??
-          `${productId ?? "no-product"}:${variantId ?? "no-variant"}:${index}`,
-        quantity,
-        shopifyProductGid: productId
-          ? `gid://shopify/Product/${productId}`
-          : null,
-        shopifyVariantGid: variantId
-          ? `gid://shopify/ProductVariant/${variantId}`
-          : null,
-      },
-    ];
-  });
-}
-
-function extractShopifyOrderCurrency(payload: unknown) {
-  if (!payload || typeof payload !== "object") return null;
-
-  const record = payload as Record<string, unknown>;
-  const moneySet = getRecordField(record, "current_total_price_set");
-  const presentmentMoney = getRecordField(moneySet, "presentment_money");
-  const shopMoney = getRecordField(moneySet, "shop_money");
-
-  return selectShopifyOrderCurrency({
-    currency: getStringField(record, "currency"),
-    presentmentCurrency: getStringField(record, "presentment_currency"),
-    presentmentMoneyCurrency: getStringField(presentmentMoney, "currency_code"),
-    shopMoneyCurrency: getStringField(shopMoney, "currency_code"),
-  });
-}
-
-function extractShopifyInventoryItemGid(payload: unknown) {
-  if (!payload || typeof payload !== "object") return null;
-
-  const record = payload as Record<string, unknown>;
-  const inventoryItemId = getStringField(record, "inventory_item_id");
-
-  return inventoryItemId
-    ? `gid://shopify/InventoryItem/${inventoryItemId}`
-    : null;
+  return getShopifyWebhookJobPayload(topic, payload) satisfies Prisma.JsonObject;
 }
 
 function normalizeShopifyWebhookTopic(topic: string) {
@@ -1775,6 +1892,16 @@ function normalizeConflictResolution(value: string) {
   throw new Response("Risoluzione conflitto non supportata.", { status: 400 });
 }
 
+function formatCatalogSyncHealth(
+  health: ReturnType<typeof getCatalogSyncHealth>,
+) {
+  return {
+    nextDueAt: health.nextDueAt?.toISOString() ?? null,
+    secondsUntilDue: health.secondsUntilDue,
+    status: health.status,
+  };
+}
+
 function summarizeJobsByStatus(
   jobs: Array<{
     status: SyncJobStatus;
@@ -1926,14 +2053,6 @@ function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
 }
 
-function getRecordField(record: Record<string, unknown> | null, key: string) {
-  const value = record?.[key];
-
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
 function getStringField(
   record: Record<string, unknown> | null | undefined,
   key: string,
@@ -1941,18 +2060,6 @@ function getStringField(
   const value = record?.[key];
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);
-
-  return null;
-}
-
-function getNumberField(record: Record<string, unknown>, key: string) {
-  const value = record[key];
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value);
-
-    return Number.isFinite(parsed) ? parsed : null;
-  }
 
   return null;
 }

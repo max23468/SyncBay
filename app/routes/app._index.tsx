@@ -220,6 +220,23 @@ export default function Index() {
           <s-list-item>
             Job riusciti: {dashboard.sync.jobsByStatus.SUCCEEDED}
           </s-list-item>
+          <s-list-item>
+            Sync catalogo:{" "}
+            {formatCatalogSyncHealthStatus(
+              dashboard.sync.catalogHealth.status,
+            )}
+            {dashboard.sync.catalogHealth.latestIncrementalFinishedAt
+              ? `, ultimo ${formatDateTime(
+                  dashboard.sync.catalogHealth.latestIncrementalFinishedAt,
+                )}`
+              : ""}
+          </s-list-item>
+          <s-list-item>
+            Prossimo sync:{" "}
+            {dashboard.sync.catalogHealth.nextDueAt
+              ? formatDateTime(dashboard.sync.catalogHealth.nextDueAt)
+              : "non pianificato"}
+          </s-list-item>
         </s-unordered-list>
         {lastJobs.length > 0 ? (
           <s-unordered-list>
@@ -468,6 +485,16 @@ function formatRunId(value: string) {
 
 function formatImportJobKind(value: string) {
   return value === "catalog_batch" ? "Batch catalogo" : "Import Shopify";
+}
+
+function formatCatalogSyncHealthStatus(value: string) {
+  if (value === "disabled") return "non attivo";
+  if (value === "due") return "da eseguire";
+  if (value === "fresh") return "aggiornato";
+  if (value === "overdue") return "in ritardo";
+  if (value === "running") return "in corso";
+
+  return value;
 }
 
 function formatConflictValue(value: unknown) {
