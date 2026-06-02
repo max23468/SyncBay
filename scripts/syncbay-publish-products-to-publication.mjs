@@ -9,6 +9,10 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_PUBLICATION_TITLE = "Online Store";
 const DEFAULT_BATCH_SIZE = 20;
+const DEFAULT_CHECK_BATCH_SIZE = 50;
+const DEFAULT_BATCH_DELAY_MS = 750;
+const DEFAULT_THROTTLE_RETRY_MS = 20_000;
+const MAX_SHOPIFY_GRAPHQL_ATTEMPTS = 5;
 const SHOPIFY_API_VERSION = "2026-04";
 
 const args = parseArgs(process.argv.slice(2));
@@ -52,11 +56,27 @@ async function main() {
     return;
   }
 
+  const productGids = await filterUnpublishedProductGids(
+    target.accessToken,
+    target.productGids,
+    publication.id,
+  );
+  const alreadyPublishedCount = target.productGids.length - productGids.length;
+
+  if (alreadyPublishedCount > 0) {
+    console.log(`Prodotti già pubblicati: ${alreadyPublishedCount}.`);
+  }
+
+  if (productGids.length === 0) {
+    console.log("Tutti i prodotti attivi SyncBay risultano già pubblicati.");
+    return;
+  }
+
   const failures = [];
   let publishedCount = 0;
 
-  for (let index = 0; index < target.productGids.length; index += batchSize) {
-    const batch = target.productGids.slice(index, index + batchSize);
+  for (let index = 0; index < productGids.length; index += batchSize) {
+    const batch = productGids.slice(index, index + batchSize);
     const result = await publishProductBatch(
       target.accessToken,
       batch,
@@ -68,6 +88,10 @@ async function main() {
     console.log(
       `Batch ${Math.floor(index / batchSize) + 1}: ${result.publishedCount}/${batch.length} pubblicati.`,
     );
+
+    if (index + batchSize < productGids.length) {
+      await sleep(DEFAULT_BATCH_DELAY_MS);
+    }
   }
 
   if (failures.length > 0) {
@@ -78,6 +102,51 @@ async function main() {
   }
 
   console.log(`Pubblicazione completata: ${publishedCount} prodotti.`);
+}
+
+async function filterUnpublishedProductGids(
+  accessToken,
+  productGids,
+  publicationId,
+) {
+  const unpublishedProductGids = [];
+
+  for (
+    let index = 0;
+    index < productGids.length;
+    index += DEFAULT_CHECK_BATCH_SIZE
+  ) {
+    const batch = productGids.slice(index, index + DEFAULT_CHECK_BATCH_SIZE);
+    const parsed = await shopifyGraphql(
+      accessToken,
+      `query SyncBayPublishedProducts($ids: [ID!]!, $publicationId: ID!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            publishedOnPublication(publicationId: $publicationId)
+          }
+        }
+      }`,
+      { ids: batch, publicationId },
+    );
+    const publishedByProductId = new Map(
+      (parsed.nodes ?? [])
+        .filter((node) => node?.id)
+        .map((node) => [node.id, Boolean(node.publishedOnPublication)]),
+    );
+
+    for (const productGid of batch) {
+      if (!publishedByProductId.get(productGid)) {
+        unpublishedProductGids.push(productGid);
+      }
+    }
+
+    if (index + DEFAULT_CHECK_BATCH_SIZE < productGids.length) {
+      await sleep(DEFAULT_BATCH_DELAY_MS);
+    }
+  }
+
+  return unpublishedProductGids;
 }
 
 async function findPublicationByTitle(accessToken, title) {
@@ -239,30 +308,67 @@ async function publishProductBatch(accessToken, productGids, publicationId) {
 }
 
 async function shopifyGraphql(accessToken, query, variables = {}) {
-  const response = await fetch(
-    `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
-    {
-      body: JSON.stringify({ query, variables }),
-      headers: {
-        "content-type": "application/json",
-        "x-shopify-access-token": accessToken,
+  for (let attempt = 1; attempt <= MAX_SHOPIFY_GRAPHQL_ATTEMPTS; attempt += 1) {
+    const response = await fetch(
+      `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`,
+      {
+        body: JSON.stringify({ query, variables }),
+        headers: {
+          "content-type": "application/json",
+          "x-shopify-access-token": accessToken,
+        },
+        method: "POST",
       },
-      method: "POST",
-    },
-  );
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`Shopify Admin API HTTP ${response.status}.`);
-  }
-
-  if (json.errors?.length) {
-    throw new Error(
-      json.errors.map((error) => error.message).filter(Boolean).join("; "),
     );
+    const text = await response.text();
+    const json = parseJsonResponse(text);
+    const errorMessage = getShopifyGraphqlErrorMessage(json);
+    const shouldRetry =
+      attempt < MAX_SHOPIFY_GRAPHQL_ATTEMPTS &&
+      (response.status === 429 || errorMessage.includes("Throttled"));
+
+    if (shouldRetry) {
+      const waitMs = DEFAULT_THROTTLE_RETRY_MS * attempt;
+      console.log(
+        `Shopify ha rallentato la richiesta, retry ${attempt}/${MAX_SHOPIFY_GRAPHQL_ATTEMPTS} tra ${Math.round(
+          waitMs / 1000,
+        )}s.`,
+      );
+      await sleep(waitMs);
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Shopify Admin API HTTP ${response.status}.`);
+    }
+
+    if (errorMessage) {
+      throw new Error(errorMessage);
+    }
+
+    return json.data ?? {};
   }
 
-  return json.data ?? {};
+  throw new Error("Shopify Admin API non disponibile dopo retry throttle.");
+}
+
+function parseJsonResponse(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+function getShopifyGraphqlErrorMessage(json) {
+  return (json.errors ?? [])
+    .map((error) => error.message)
+    .filter(Boolean)
+    .join("; ");
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function querySupabaseJson(sql) {
