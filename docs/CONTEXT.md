@@ -76,8 +76,10 @@ Provisioning minimo:
   le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per
   marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot
   catalogo in `EUR` e salta righe con valuta mancante o diversa. Il runner è
-  stato verificato con payload ordine sintetico e allowlist singola; manca
-  ancora la prova del trigger da ordine Shopify reale.
+  stato verificato con payload ordine sintetico e allowlist singola; il parser
+  payload `orders/paid` -> job stock è coperto da test locali. Manca ancora la
+  prova del trigger da ordine Shopify reale, che resta gate pre-pilota ma non
+  blocca lo sviluppo corrente.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata

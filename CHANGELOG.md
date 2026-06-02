@@ -19,6 +19,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   testabile, preferenza Portachiavi per `TOKEN_ENCRYPTION_KEY` e opzione
   `--skip-snapshot` per simulare modifiche eBay esterne senza inquinare il
   baseline SyncBay.
+- Estratto e testato il parser dei webhook Shopify `orders/paid` e
+  `inventory_levels/update`, così la trasformazione payload -> job stock eBay
+  resta coperta anche senza ripetere subito un ordine Shopify reale.
 
 ## [0.20.12] — 2026-06-02
 
