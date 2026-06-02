@@ -955,7 +955,11 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     };
   }
 
-  const conflicts = getDetectedShopifyConflicts(product, snapshot);
+  const conflicts = getDetectedShopifyConflicts(
+    product,
+    snapshot,
+    Boolean(job.shop.defaultLocationGid),
+  );
 
   for (const conflict of conflicts) {
     await upsertOpenConflict({
@@ -1444,9 +1448,13 @@ function getDetectedShopifyConflicts(
     quantity: number | null;
     title: string | null;
   },
+  hasManagedLocation: boolean,
 ) {
   const variant = product.variants?.nodes?.[0] ?? null;
   const variantLocationQuantity = getVariantLocationQuantity(variant);
+  const shopifyQuantity = hasManagedLocation
+    ? variantLocationQuantity
+    : (variantLocationQuantity ?? variant?.inventoryQuantity);
   const readyImageCount =
     product.media?.nodes?.filter(
       (media) =>
@@ -1468,7 +1476,7 @@ function getDetectedShopifyConflicts(
     buildConflict(
       "quantity",
       snapshot.quantity,
-      variantLocationQuantity ?? variant?.inventoryQuantity,
+      shopifyQuantity,
     ),
     buildConflict("images", snapshot.imageCount, readyImageCount),
   ];

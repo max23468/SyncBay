@@ -39,7 +39,9 @@ async function main() {
     expected.defaultLocationGid,
   );
   const checks = expected.rows.map((row) =>
-    verifySampleRow(row, actualProducts.get(row.shopifyProductGid)),
+    verifySampleRow(row, actualProducts.get(row.shopifyProductGid), {
+      hasManagedLocation: Boolean(expected.defaultLocationGid),
+    }),
   );
   const failedChecks = checks.filter((check) => check.status === "failed");
 
@@ -261,10 +263,12 @@ async function loadShopifyProducts(productGids, defaultLocationGid) {
   return products;
 }
 
-function verifySampleRow(row, product) {
+function verifySampleRow(row, product, options = {}) {
   const variant = product?.variants?.nodes?.[0] ?? null;
   const locationQuantity = getVariantLocationQuantity(variant);
-  const actualQuantity = locationQuantity ?? variant?.inventoryQuantity ?? null;
+  const actualQuantity = options.hasManagedLocation
+    ? locationQuantity
+    : (locationQuantity ?? variant?.inventoryQuantity ?? null);
   const mediaNodes = product?.media?.nodes ?? [];
   const readyImageCount = mediaNodes.filter(
     (media) =>
@@ -284,14 +288,22 @@ function verifySampleRow(row, product) {
       : null,
     product &&
     expectedQuantity !== null &&
+    !options.hasManagedLocation &&
     locationQuantity === null &&
     product.totalInventory !== expectedQuantity
       ? `totalInventory ${product.totalInventory}, atteso ${expectedQuantity}`
       : null,
     variant &&
     expectedQuantity !== null &&
+    options.hasManagedLocation &&
+    locationQuantity === null
+      ? "location predefinita senza inventory level disponibile"
+      : null,
+    variant &&
+    expectedQuantity !== null &&
+    !(options.hasManagedLocation && locationQuantity === null) &&
     actualQuantity !== expectedQuantity
-      ? `${locationQuantity === null ? "inventoryQuantity" : "locationQuantity"} ${actualQuantity}, atteso ${expectedQuantity}`
+      ? `${locationQuantity === null ? "inventoryQuantity" : "locationQuantity"} ${actualQuantity ?? "assente"}, atteso ${expectedQuantity}`
       : null,
     variant && !variant.inventoryItem?.tracked
       ? "tracking inventario non attivo"
@@ -313,7 +325,10 @@ function verifySampleRow(row, product) {
     actualImageReadyCount: readyImageCount,
     actualPrice,
     actualQuantity,
-    actualQuantitySource: locationQuantity === null ? "variant" : "default_location",
+    actualQuantitySource: getActualQuantitySource({
+      hasManagedLocation: Boolean(options.hasManagedLocation),
+      locationQuantity,
+    }),
     ebayImageCount: normalizeNumber(row.ebayImageCount),
     ebayItemId: row.ebayItemId,
     expectedImageCount,
@@ -326,6 +341,12 @@ function verifySampleRow(row, product) {
     status: failures.length > 0 ? "failed" : "ok",
     title: product?.title ?? row.title,
   };
+}
+
+function getActualQuantitySource(input) {
+  if (input.locationQuantity !== null) return "default_location";
+
+  return input.hasManagedLocation ? "default_location_missing" : "variant";
 }
 
 function getVariantLocationQuantity(variant) {
