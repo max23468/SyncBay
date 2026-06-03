@@ -122,3 +122,28 @@ test("keeps orders/paid readiness green when Shopify, eBay, queue and mappings a
   assert.deepEqual(report.webhookRuntimeBlockers, []);
   assert.equal(report.adminOrderCreateTestReady, true);
 });
+
+test("blocks the Admin orderCreate test while an eBay Trading cooldown is active", () => {
+  const report = buildReadinessReport(
+    {
+      ...basePayload,
+      tradingApiCooldown: {
+        errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+        id: "job-1",
+        retryScheduledAt: "2026-06-04T07:05:00.000Z",
+        runAfter: "2026-06-04T07:05:00.000Z",
+        type: "SYNC_INCREMENTAL",
+      },
+    },
+    { shopDomain: "syncbay-dev.myshopify.com" },
+  );
+
+  assert.equal(report.webhookRuntimeReady, true);
+  assert.equal(report.adminOrderCreateTestReady, false);
+  assert.match(report.adminOrderCreateBlockers.join("\n"), /Trading API eBay/);
+  assert.equal(report.ebayTradingCooldown.active, true);
+  assert.equal(
+    report.ebayTradingCooldown.retryAt,
+    "2026-06-04T07:05:00.000Z",
+  );
+});

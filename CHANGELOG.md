@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.25] — 2026-06-03
+
+### Sotto il cofano
+
+- La readiness `orders:paid-readiness` segnala i cooldown Trading API eBay
+  registrati nei job SyncBay e blocca il test Admin `orderCreate` finché la
+  finestra di retry non è raggiunta.
+
 ## [0.22.24] — 2026-06-03
 
 ### Sotto il cofano
@@ -962,6 +970,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.25]: #02225--2026-06-03
 [0.22.24]: #02224--2026-06-03
 [0.22.19]: #02219--2026-06-03
 [0.22.18]: #02218--2026-06-03
