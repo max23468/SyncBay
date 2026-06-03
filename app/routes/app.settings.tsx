@@ -16,6 +16,10 @@ import {
   PRODUCT_PUBLICATION_MODES,
   type ProductPublicationMode,
 } from "../lib/syncbay-product-publication-settings";
+import {
+  getEbayConnectionStatusLabel,
+  getProductPublicationModeSummaryLabel,
+} from "../lib/syncbay-ui-state";
 import { authenticate } from "../shopify.server";
 import {
   getShopSettingsState,
@@ -159,8 +163,13 @@ export default function SettingsRoute() {
 
   return (
     <s-page heading="Impostazioni">
+      <div className="syncbay-page syncbay-stack syncbay-settings-stack">
       <s-section heading="Sync catalogo">
-        <s-paragraph>Negozio: {settings.shop.domain}.</s-paragraph>
+        <p className="syncbay-section-intro">
+          Negozio: {settings.shop.domain}. Il catalogo resta eBay verso
+          Shopify; la disponibilità eBay viene aggiornata solo dagli ordini
+          Shopify pagati.
+        </p>
         <s-unordered-list>
           <s-list-item>
             Stato: {currentSyncEnabled ? "attiva" : "non attiva"}
@@ -224,7 +233,7 @@ export default function SettingsRoute() {
             ))}
           </select>
           <s-button type="submit" disabled={isSaving}>
-            {isSaving ? "Salvataggio..." : "Salva impostazioni"}
+            {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
           </s-button>
         </Form>
       </s-section>
@@ -234,6 +243,14 @@ export default function SettingsRoute() {
           I prodotti attivi creati o riusati seguono questa policy di
           pubblicazione Shopify.
         </s-paragraph>
+        <p className="syncbay-section-intro">
+          Policy attuale:{" "}
+          {getProductPublicationModeSummaryLabel(
+            currentPublicationMode,
+            selectedPublicationIds.length,
+          )}
+          .
+        </p>
         {settings.productPublications.errorMessage ? (
           <s-paragraph>{settings.productPublications.errorMessage}</s-paragraph>
         ) : null}
@@ -284,10 +301,80 @@ export default function SettingsRoute() {
         </Form>
       </s-section>
 
-      <s-section heading="Collegamenti rapidi">
-        <s-button href="/app">Torna alla dashboard</s-button>
-        <s-button href="/app/import-preview">Apri preview import</s-button>
+      <s-section heading="Avanzate">
+        <p className="syncbay-section-intro">
+          Collegamenti e dettagli tecnici restano qui, separati dalle
+          impostazioni operative più frequenti.
+        </p>
+        <ul className="syncbay-status-list">
+          <StatusRow
+            detail={`Marketplace ${settings.ebay.marketplaceId}. ${
+              settings.ebay.connectedAt
+                ? `Collegato il ${formatDateTime(settings.ebay.connectedAt)}.`
+                : "Collegamento non completato."
+            }`}
+            label={getEbayConnectionStatusLabel(settings.ebay.status)}
+            tone={
+              settings.ebay.status === "CONNECTED" ? "success" : "warning"
+            }
+            title="Collegamento eBay"
+          />
+          <StatusRow
+            detail={`${settings.shopify.missingScopes.length} scope Shopify mancanti; ${settings.shopify.missingConfiguredScopes.length} scope configurati mancanti.`}
+            label={
+              settings.shopify.missingScopes.length === 0 &&
+              settings.shopify.missingConfiguredScopes.length === 0
+                ? "Completi"
+                : "Da controllare"
+            }
+            tone={
+              settings.shopify.missingScopes.length === 0 &&
+              settings.shopify.missingConfiguredScopes.length === 0
+                ? "success"
+                : "warning"
+            }
+            title="Permessi Shopify"
+          />
+          <StatusRow
+            detail={settings.shopify.webhookTopics.join(", ")}
+            label={`${settings.shopify.webhookTopics.length} topic`}
+            tone="info"
+            title="Webhook"
+          />
+        </ul>
+        <div className="syncbay-inline-actions">
+          {settings.ebay.oauthEnabled && settings.ebay.oauthReady ? (
+            <s-button href="/auth/ebay/start">
+              {settings.ebay.status === "CONNECTED"
+                ? "Ricollega eBay"
+                : "Collega eBay"}
+            </s-button>
+          ) : null}
+          <s-button href="/app/activity">Apri attività</s-button>
+          <s-button href="/app/import-preview">Apri importazione</s-button>
+          <s-button href="/app">Torna alla Panoramica</s-button>
+        </div>
+        <details className="syncbay-details">
+          <summary>Apri dettagli tecnici</summary>
+          <div className="syncbay-details__content">
+            <s-unordered-list>
+              <s-list-item>
+                Scope Shopify attivi:{" "}
+                {settings.shopify.scopes.length > 0
+                  ? settings.shopify.scopes.join(", ")
+                  : "nessuno"}
+              </s-list-item>
+              <s-list-item>
+                Scope richiesti dalla configurazione:{" "}
+                {settings.shopify.configuredScopes.length > 0
+                  ? settings.shopify.configuredScopes.join(", ")
+                  : "nessuno"}
+              </s-list-item>
+            </s-unordered-list>
+          </div>
+        </details>
       </s-section>
+      </div>
     </s-page>
   );
 }
@@ -295,6 +382,38 @@ export default function SettingsRoute() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+
+const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "Europe/Rome",
+});
+
+function StatusRow({
+  detail,
+  label,
+  title,
+  tone,
+}: {
+  detail: string;
+  label: string;
+  title: string;
+  tone: "critical" | "info" | "success" | "warning";
+}) {
+  return (
+    <li className="syncbay-status-row">
+      <div>
+        <p className="syncbay-status-row__title">{title}</p>
+        <p className="syncbay-status-row__detail">{detail}</p>
+      </div>
+      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
+    </li>
+  );
+}
+
+function formatDateTime(value: string) {
+  return itDateTimeFormatter.format(new Date(value));
+}
 
 function getProductPublicationModeLabel(mode: ProductPublicationMode) {
   if (mode === "NONE") return "Non pubblicare automaticamente";

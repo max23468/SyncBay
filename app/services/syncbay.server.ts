@@ -23,6 +23,11 @@ import {
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
 import {
+  getCatalogRowStatus,
+  type CatalogAvailabilityKind,
+  type CatalogStatusKind,
+} from "../lib/syncbay-ui-state";
+import {
   loadShopifyProductPublications,
   type ShopifyProductPublication,
 } from "../lib/syncbay-product-publication";
@@ -315,6 +320,116 @@ export async function getDashboardState(session: ShopifySessionLike) {
       message: log.message,
       type: log.type,
     })),
+  };
+}
+
+export async function getCatalogPageState(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const mappings = await prisma.productMapping.findMany({
+    include: {
+      conflicts: {
+        select: {
+          field: true,
+          id: true,
+        },
+        where: { status: SyncConflictStatus.OPEN },
+      },
+      snapshots: {
+        orderBy: { capturedAt: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+    take: 200,
+    where: {
+      marketplaceId: getEbayMarketplaceId(),
+      shopId: shop.id,
+    },
+  });
+
+  const rows = mappings.map((mapping) =>
+    formatCatalogPageRow({
+      mapping,
+      now: new Date(),
+      syncTargetSeconds: shop.syncTargetSeconds,
+    }),
+  );
+
+  return {
+    filters: [
+      "all",
+      "linked",
+      "fresh",
+      "needs_check",
+      "conflicts",
+      "not_updated",
+      "archived",
+    ] as const,
+    rows,
+    shop: {
+      domain: shop.shopDomain,
+      syncTargetSeconds: shop.syncTargetSeconds,
+    },
+    summary: {
+      archivedCount: rows.filter((row) => row.status === "archived").length,
+      conflictCount: rows.filter((row) => row.status === "open_conflict")
+        .length,
+      freshCount: rows.filter((row) => row.status === "active_fresh").length,
+      needsCheckCount: rows.filter(
+        (row) =>
+          row.status === "stale_sync" ||
+          row.status === "mapping_error" ||
+          row.availability !== "aligned",
+      ).length,
+      totalCount: rows.length,
+    },
+  };
+}
+
+export async function getConflictsPageState(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const conflicts = await prisma.syncConflict.findMany({
+    include: {
+      mapping: {
+        include: {
+          snapshots: {
+            orderBy: { capturedAt: "desc" },
+            take: 1,
+          },
+        },
+      },
+    },
+    orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
+    take: 120,
+    where: {
+      shopId: shop.id,
+      status: {
+        in: [
+          SyncConflictStatus.OPEN,
+          SyncConflictStatus.RESOLVED,
+          SyncConflictStatus.IGNORED,
+        ],
+      },
+    },
+  });
+  const rows = conflicts.map(formatConflictPageRow);
+
+  return {
+    filters: ["open", "resolved", "all"] as const,
+    rows,
+    shop: {
+      domain: shop.shopDomain,
+    },
+    summary: {
+      openCount: rows.filter((row) => row.status === SyncConflictStatus.OPEN)
+        .length,
+      resolvedCount: rows.filter(
+        (row) =>
+          row.status === SyncConflictStatus.RESOLVED ||
+          row.status === SyncConflictStatus.IGNORED,
+      ).length,
+      totalCount: rows.length,
+    },
   };
 }
 
@@ -724,6 +839,12 @@ export async function getImportWizardState(session: ShopifySessionLike) {
   const defaultProductStatus = normalizeImportProductStatus(
     shop.defaultProductStatus,
   );
+  const productPublicationMode = normalizeProductPublicationMode(
+    shop.productPublicationMode,
+  );
+  const selectedPublicationIds = parseProductPublicationGids(
+    shop.productPublicationGids,
+  );
   const ebayConnection = await prisma.ebayConnection.findUnique({
     where: {
       shopId_marketplaceId: {
@@ -769,6 +890,11 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       source: preview.source,
       totalAvailable: preview.totalAvailable,
     },
+    productPublications: {
+      mode: productPublicationMode,
+      selectedCount: selectedPublicationIds.length,
+      selectedPublicationIds,
+    },
     runtimePhases: getRuntimePhaseReadiness({
       defaultProductStatus,
       ebayConnected,
@@ -805,6 +931,9 @@ export async function getShopSettingsState(
       },
     }),
   ]);
+  const ebayRuntime = getEbayRuntimeReadiness();
+  const shopifyScopes = splitScopes(shop.shopifyScopes);
+  const shopifyReadiness = getShopifyReadiness(shopifyScopes);
   const syncBlockers = getSyncEnablementBlockers({
     activeMappingCount,
     ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
@@ -822,11 +951,25 @@ export async function getShopSettingsState(
     : { availablePublications: [], errorMessage: null };
 
   return {
+    ebay: {
+      connectedAt: ebayConnection?.connectedAt?.toISOString() ?? null,
+      marketplaceId: getEbayMarketplaceId(),
+      oauthEnabled: ebayRuntime.oauthEnabled,
+      oauthReady: ebayRuntime.ready,
+      status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
+    },
     productPublications: {
       availablePublications: publicationState.availablePublications,
       errorMessage: publicationState.errorMessage,
       mode: publicationMode,
       selectedPublicationIds,
+    },
+    shopify: {
+      configuredScopes: getConfiguredShopifyScopes(),
+      missingConfiguredScopes: shopifyReadiness.missingConfiguredScopes,
+      missingScopes: shopifyReadiness.missingScopes,
+      scopes: shopifyScopes,
+      webhookTopics: SHOPIFY_WEBHOOK_TOPICS,
     },
     shop: {
       defaultProductStatus: normalizeImportProductStatus(
@@ -1812,6 +1955,197 @@ function getRuntimePhaseReadiness(input: {
       status: "preparabile",
     },
   ];
+}
+
+function formatCatalogPageRow(input: {
+  mapping: Prisma.ProductMappingGetPayload<{
+    include: {
+      conflicts: {
+        select: {
+          field: true;
+          id: true;
+        };
+      };
+      snapshots: true;
+    };
+  }>;
+  now: Date;
+  syncTargetSeconds: number;
+}) {
+  const latestSnapshot = input.mapping.snapshots[0] ?? null;
+  const lastSyncedAt = input.mapping.lastSyncedAt?.toISOString() ?? null;
+  const status = getCatalogRowStatus({
+    lastErrorCode: input.mapping.lastErrorCode,
+    lastSyncedAt,
+    mappingStatus: input.mapping.status,
+    openConflictCount: input.mapping.conflicts.length,
+    stale: isCatalogMappingStale({
+      lastSyncedAt: input.mapping.lastSyncedAt,
+      mappingStatus: input.mapping.status,
+      now: input.now,
+      syncTargetSeconds: input.syncTargetSeconds,
+    }),
+  });
+  const availability = getCatalogAvailability({
+    openConflictFields: input.mapping.conflicts.map((conflict) => conflict.field),
+    quantity: latestSnapshot?.quantity ?? null,
+    status,
+  });
+
+  return {
+    availability,
+    conflictIds: input.mapping.conflicts.map((conflict) => conflict.id),
+    ebayItemId: input.mapping.ebayItemId,
+    id: input.mapping.id,
+    lastErrorCode: input.mapping.lastErrorCode,
+    lastErrorMessage: input.mapping.lastErrorMessage,
+    lastSyncedAt,
+    mappingStatus: input.mapping.status,
+    openConflictCount: input.mapping.conflicts.length,
+    price: latestSnapshot?.priceAmount
+      ? {
+          amount: latestSnapshot.priceAmount.toString(),
+          currency: latestSnapshot.currency ?? null,
+        }
+      : null,
+    productStatus: latestSnapshot?.productStatus ?? null,
+    quantity: latestSnapshot?.quantity ?? null,
+    shopifyProductGid: input.mapping.shopifyProductGid,
+    sku: latestSnapshot?.sku ?? input.mapping.sku,
+    snapshotCapturedAt: latestSnapshot?.capturedAt.toISOString() ?? null,
+    status,
+    thumbnailUrl: getSnapshotThumbnailUrl(latestSnapshot?.payload),
+    title:
+      latestSnapshot?.title ??
+      input.mapping.sku ??
+      `Inserzione eBay ${input.mapping.ebayItemId}`,
+  };
+}
+
+function formatConflictPageRow(
+  conflict: Prisma.SyncConflictGetPayload<{
+    include: {
+      mapping: {
+        include: {
+          snapshots: true;
+        };
+      };
+    };
+  }>,
+) {
+  const latestSnapshot = conflict.mapping?.snapshots[0] ?? null;
+
+  return {
+    detectedAt: conflict.detectedAt.toISOString(),
+    ebayItemId: conflict.mapping?.ebayItemId ?? null,
+    field: conflict.field,
+    id: conflict.id,
+    product: {
+      shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
+      sku: latestSnapshot?.sku ?? conflict.mapping?.sku ?? null,
+      thumbnailUrl: getSnapshotThumbnailUrl(latestSnapshot?.payload),
+      title:
+        latestSnapshot?.title ??
+        conflict.mapping?.sku ??
+        (conflict.mapping?.ebayItemId
+          ? `Inserzione eBay ${conflict.mapping.ebayItemId}`
+          : "Prodotto non collegato"),
+    },
+    resolution: conflict.resolution,
+    resolvedAt: conflict.resolvedAt?.toISOString() ?? null,
+    shopifyValue: formatJsonValueForDisplay(conflict.shopifyValue),
+    sourceValue: formatJsonValueForDisplay(
+      conflict.ebayValue ?? conflict.lastSyncBayValue,
+    ),
+    status: conflict.status,
+  };
+}
+
+function isCatalogMappingStale(input: {
+  lastSyncedAt: Date | null;
+  mappingStatus: ProductMappingStatus;
+  now: Date;
+  syncTargetSeconds: number;
+}) {
+  if (input.mappingStatus === ProductMappingStatus.PAUSED) return true;
+  if (!input.lastSyncedAt) return true;
+
+  const targetMs = Math.max(input.syncTargetSeconds, 60) * 1000;
+  return input.now.getTime() - input.lastSyncedAt.getTime() > targetMs * 2;
+}
+
+function getCatalogAvailability(input: {
+  openConflictFields: string[];
+  quantity: number | null;
+  status: CatalogStatusKind;
+}): CatalogAvailabilityKind {
+  if (input.status === "mapping_error") return "blocked";
+  if (input.openConflictFields.includes("quantity")) return "needs_check";
+  if (input.quantity === null) return "unknown";
+
+  return "aligned";
+}
+
+function getSnapshotThumbnailUrl(value: Prisma.JsonValue | null | undefined) {
+  const payload = getJsonObject(value);
+  const imageUrls = getJsonArray(payload?.imageUrls);
+  const firstImageUrl = imageUrls
+    ?.map((item) => getJsonString(item))
+    .find((url): url is string => Boolean(url && isSafeImageUrl(url)));
+  const directUrl =
+    getJsonString(payload?.imageUrl) ??
+    getJsonString(payload?.thumbnailUrl) ??
+    getJsonString(payload?.galleryUrl) ??
+    getJsonString(payload?.GalleryURL);
+
+  if (firstImageUrl) return firstImageUrl;
+  if (directUrl && isSafeImageUrl(directUrl)) return directUrl;
+
+  return null;
+}
+
+function isSafeImageUrl(value: string) {
+  try {
+    const url = new URL(value);
+
+    return (
+      (url.protocol === "https:" || url.protocol === "http:") &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
+}
+
+function formatJsonValueForDisplay(value: Prisma.JsonValue | null) {
+  if (value === null) return "Non disponibile";
+  if (typeof value === "string") return truncateDisplayValue(value);
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "Nessun valore";
+
+    return `${value.length} valori`;
+  }
+
+  const object = getJsonObject(value);
+  const knownValue =
+    getJsonString(object?.title) ??
+    getJsonString(object?.name) ??
+    getJsonString(object?.value) ??
+    getJsonString(object?.amount);
+
+  return knownValue ? truncateDisplayValue(knownValue) : "Valore strutturato";
+}
+
+function truncateDisplayValue(value: string) {
+  const trimmedValue = value.trim();
+
+  return trimmedValue.length > 96
+    ? `${trimmedValue.slice(0, 93).trimEnd()}...`
+    : trimmedValue;
 }
 
 async function getLatestImportRunSummary(shopId: string) {

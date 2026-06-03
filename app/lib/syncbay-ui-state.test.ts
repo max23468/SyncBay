@@ -1,0 +1,212 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+// @ts-expect-error Node --experimental-strip-types resolves this test import.
+import { getCatalogAvailabilityLabel, getCatalogRowStatus, getCatalogStatusLabel, getConflictActionLabel, getConflictFieldLabel, getConflictImpactText, getEbayConnectionStatusLabel, getNextAction, getProductPublicationModeSummaryLabel, getTimelineCategoryLabel } from "./syncbay-ui-state.ts";
+
+test("prioritizes missing eBay connection before other dashboard issues", () => {
+  const action = getNextAction({
+    catalogHealthStatus: "overdue",
+    ebayOauthEnabled: true,
+    ebayOauthReady: true,
+    ebayStatus: "EXPIRED",
+    importIncomplete: true,
+    openConflictCount: 4,
+    quantityIssueCount: 7,
+    settingsMissing: true,
+  });
+
+  assert.deepEqual(action, {
+    body: "Ricollega l'account eBay per riprendere import, aggiornamenti e controlli sulle disponibilità.",
+    kind: "ebay_connection",
+    primaryActionHref: "/auth/ebay/start",
+    primaryActionLabel: "Ricollega eBay",
+    title: "Collegamento eBay mancante o scaduto",
+    tone: "critical",
+  });
+});
+
+test("prioritizes quantity checks after eBay is connected", () => {
+  const action = getNextAction({
+    catalogHealthStatus: "overdue",
+    ebayStatus: "CONNECTED",
+    openConflictCount: 4,
+    quantityIssueCount: 2,
+  });
+
+  assert.equal(action.kind, "quantity_check");
+  assert.equal(action.title, "Quantità da verificare");
+  assert.equal(action.primaryActionHref, "/app/activity");
+});
+
+test("prioritizes open conflicts after quantity checks", () => {
+  const action = getNextAction({
+    catalogHealthStatus: "overdue",
+    ebayStatus: "CONNECTED",
+    openConflictCount: 3,
+  });
+
+  assert.equal(action.kind, "open_conflicts");
+  assert.equal(action.title, "Conflitti aperti");
+  assert.equal(action.primaryActionHref, "/app/conflicts");
+});
+
+test("reports overdue catalog sync before import and settings issues", () => {
+  const action = getNextAction({
+    catalogHealthStatus: "overdue",
+    ebayStatus: "CONNECTED",
+    importIncomplete: true,
+    settingsMissing: true,
+  });
+
+  assert.equal(action.kind, "catalog_overdue");
+  assert.equal(action.title, "Aggiornamento catalogo in ritardo");
+  assert.equal(action.primaryActionHref, "/app/activity");
+});
+
+test("reports import incomplete before settings issues", () => {
+  const action = getNextAction({
+    ebayStatus: "CONNECTED",
+    importIncomplete: true,
+    settingsMissing: true,
+  });
+
+  assert.equal(action.kind, "import_incomplete");
+  assert.equal(action.title, "Importazione incompleta");
+  assert.equal(action.primaryActionHref, "/app/import-preview");
+});
+
+test("reports missing settings before all clear", () => {
+  const action = getNextAction({
+    ebayStatus: "CONNECTED",
+    settingsMissing: true,
+  });
+
+  assert.equal(action.kind, "settings_missing");
+  assert.equal(action.title, "Impostazioni mancanti");
+  assert.equal(action.primaryActionHref, "/app/settings");
+});
+
+test("reports all clear when no action is needed", () => {
+  const action = getNextAction({
+    catalogHealthStatus: "fresh",
+    ebayStatus: "CONNECTED",
+  });
+
+  assert.deepEqual(action, {
+    body: "SyncBay non richiede interventi in questo momento.",
+    kind: "all_clear",
+    primaryActionHref: "/app/activity",
+    primaryActionLabel: "Vedi attività",
+    title: "Tutto sotto controllo",
+    tone: "success",
+  });
+});
+
+test("maps conflict action labels", () => {
+  assert.equal(getConflictActionLabel("REALIGN_FROM_EBAY"), "Usa valore eBay");
+  assert.equal(getConflictActionLabel("KEEP_SHOPIFY"), "Mantieni Shopify");
+  assert.equal(getConflictActionLabel("IGNORE_FIELD"), "Ignora campo");
+});
+
+test("maps catalog status labels", () => {
+  assert.equal(getCatalogStatusLabel("active_fresh"), "Aggiornato");
+  assert.equal(getCatalogStatusLabel("open_conflict"), "Conflitto");
+  assert.equal(getCatalogStatusLabel("mapping_error"), "Errore");
+  assert.equal(getCatalogStatusLabel("stale_sync"), "Da controllare");
+  assert.equal(getCatalogStatusLabel("archived"), "Archiviato");
+});
+
+test("computes catalog row status from mapping health", () => {
+  assert.equal(
+    getCatalogRowStatus({
+      mappingStatus: "ARCHIVED",
+      openConflictCount: 3,
+      stale: true,
+    }),
+    "archived",
+  );
+  assert.equal(
+    getCatalogRowStatus({
+      lastErrorCode: "shopify_write_failed",
+      mappingStatus: "ACTIVE",
+    }),
+    "mapping_error",
+  );
+  assert.equal(
+    getCatalogRowStatus({
+      mappingStatus: "ACTIVE",
+      openConflictCount: 1,
+    }),
+    "open_conflict",
+  );
+  assert.equal(
+    getCatalogRowStatus({
+      mappingStatus: "ACTIVE",
+      stale: true,
+    }),
+    "stale_sync",
+  );
+  assert.equal(
+    getCatalogRowStatus({
+      lastSyncedAt: "2026-06-03T10:00:00.000Z",
+      mappingStatus: "ACTIVE",
+    }),
+    "active_fresh",
+  );
+});
+
+test("maps catalog availability labels", () => {
+  assert.equal(getCatalogAvailabilityLabel("aligned"), "Allineata");
+  assert.equal(getCatalogAvailabilityLabel("needs_check"), "Da verificare");
+  assert.equal(getCatalogAvailabilityLabel("unknown"), "Non letta");
+  assert.equal(getCatalogAvailabilityLabel("blocked"), "Bloccata");
+});
+
+test("maps conflict fields and impact text for merchant decisions", () => {
+  assert.equal(getConflictFieldLabel("quantity"), "Quantità");
+  assert.equal(getConflictFieldLabel("price"), "Prezzo");
+  assert.equal(getConflictFieldLabel("title"), "Titolo");
+  assert.equal(getConflictFieldLabel("description"), "Descrizione");
+  assert.equal(getConflictFieldLabel("unknown_field"), "unknown_field");
+  assert.match(getConflictImpactText("quantity"), /disponibilità/i);
+  assert.match(getConflictImpactText("price"), /prezzo/i);
+  assert.match(getConflictImpactText("images"), /immagini/i);
+});
+
+test("maps product publication policy summaries", () => {
+  assert.equal(
+    getProductPublicationModeSummaryLabel("ALL", 0),
+    "Tutti i canali disponibili",
+  );
+  assert.equal(
+    getProductPublicationModeSummaryLabel("NONE", 0),
+    "Non pubblicare automaticamente",
+  );
+  assert.equal(
+    getProductPublicationModeSummaryLabel("SELECTED", 2),
+    "2 canali selezionati",
+  );
+  assert.equal(
+    getProductPublicationModeSummaryLabel("SELECTED", 0),
+    "Nessun canale selezionato",
+  );
+});
+
+test("maps eBay connection status labels", () => {
+  assert.equal(getEbayConnectionStatusLabel("CONNECTED"), "Collegato");
+  assert.equal(getEbayConnectionStatusLabel("EXPIRED"), "Da ricollegare");
+  assert.equal(getEbayConnectionStatusLabel("REVOKED"), "Revocato");
+  assert.equal(
+    getEbayConnectionStatusLabel("NOT_CONNECTED"),
+    "Non collegato",
+  );
+});
+
+test("maps timeline category labels", () => {
+  assert.equal(getTimelineCategoryLabel("IMPORT_CATALOG"), "Importazioni");
+  assert.equal(getTimelineCategoryLabel("SYNC_INCREMENTAL"), "Aggiornamenti");
+  assert.equal(getTimelineCategoryLabel("UPDATE_EBAY_STOCK"), "Disponibilità");
+  assert.equal(getTimelineCategoryLabel("CONFLICT"), "Conflitti");
+  assert.equal(getTimelineCategoryLabel("FAILED_JOB"), "Errori");
+});

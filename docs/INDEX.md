@@ -30,29 +30,36 @@ docs/
   glossario.md
   syncbay-product-technical-plan.md
   structure.md
-    decisions/
-      template.md
-      0001-stack.md
-      0002-branding.md
-      0003-git-pubblicazione-versioning.md
-      0004-runtime-ci-release-future.md
-      0005-runtime-infrastructure.md
-      0006-versioning-runtime-locale.md
-      0008-tag-e-github-release.md
-      0009-shopify-token-offline-a-scadenza.md
-    guides/
-      architettura.md
-      git-e-pubblicazione.md
-      onboarding-e-import.md
-      pre-scaffold-checklist.md
-      provisioning-runtime.md
-      prerequisiti-account.md
-      service-governance.md
-      sicurezza-privacy.md
-      sync-engine.md
-      versioning-e-release.md
+  assets/
+    ui-concepts/
+      2026-06-03/
+  decisions/
+    template.md
+    0001-stack.md
+    0002-branding.md
+    0003-git-pubblicazione-versioning.md
+    0004-runtime-ci-release-future.md
+    0005-runtime-infrastructure.md
+    0006-versioning-runtime-locale.md
+    0008-tag-e-github-release.md
+    0009-shopify-token-offline-a-scadenza.md
+  guides/
+    architettura.md
+    git-e-pubblicazione.md
+    onboarding-e-import.md
+    pre-scaffold-checklist.md
+    provisioning-runtime.md
+    prerequisiti-account.md
+    service-governance.md
+    sicurezza-privacy.md
+    sync-engine.md
+    ui-concepts-handoff.md
+    versioning-e-release.md
   market/
     shopify-ebay-app-benchmark.md
+  superpowers/
+    plans/
+      2026-06-03-syncbay-ui-redesign.md
 ```
 
 ## Quando consultare cosa
@@ -81,6 +88,8 @@ docs/
 | Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
+| Recuperare decisioni, concept UI e trascrizione dei thread del redesign embedded | `guides/ui-concepts-handoff.md` |
+| Implementare il redesign UI embedded deciso nei thread | `superpowers/plans/2026-06-03-syncbay-ui-redesign.md` |
 | Capire limiti e governance del servizio | `guides/service-governance.md` |
 | Capire dati e entità | `data-model.md` |
 | Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |

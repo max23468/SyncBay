@@ -2,18 +2,104 @@ import fs from "node:fs";
 
 const checks = [
   {
+    file: "app/routes/app.tsx",
+    needles: [
+      "NavMenu",
+      "Panoramica",
+      "Catalogo",
+      "Conflitti",
+      "Importazione",
+      "Attività",
+      "Impostazioni",
+    ],
+  },
+  {
+    file: "app/root.tsx",
+    needles: ["syncbay-embedded.css?url"],
+  },
+  {
+    file: "app/lib/syncbay-ui-state.ts",
+    needles: [
+      "Collegamento eBay mancante o scaduto",
+      "Quantità da verificare",
+      "Conflitti aperti",
+      "Aggiornamento catalogo in ritardo",
+      "Importazione incompleta",
+      "Impostazioni mancanti",
+      "Tutto sotto controllo",
+      "Usa valore eBay",
+      "Mantieni Shopify",
+      "Ignora campo",
+    ],
+  },
+  {
     file: "app/routes/app._index.tsx",
-    needles: ["Stato connessioni", "Apri preview import", "Scope Shopify"],
+    needles: [
+      "Panoramica",
+      "Centro operativo",
+      "getNextAction",
+      "Quantità da verificare",
+      "nextAction.title",
+      "Dettagli tecnici",
+    ],
+  },
+  {
+    file: "app/routes/app.catalog.tsx",
+    needles: [
+      "Catalogo",
+      "Prodotto",
+      "Collegamento",
+      "Disponibilità",
+      "Stato",
+      "Origine catalogo: eBay",
+    ],
+  },
+  {
+    file: "app/routes/app.conflicts.tsx",
+    needles: [
+      "Conflitti",
+      "getConflictActionLabel",
+      "Decisioni aperte",
+    ],
+  },
+  {
+    file: "app/routes/app.activity.tsx",
+    needles: [
+      "Attività",
+      "Coda operativa",
+      "Timeline",
+      "retryJob",
+      "Controlli rapidi",
+    ],
   },
   {
     file: "app/routes/app.import-preview.tsx",
     needles: [
-      "Preview mock pronta",
-      "Preview live pronta",
+      "Importazione",
+      "Collegamento eBay",
+      "Preparazione Shopify",
+      "Anteprima catalogo",
+      "Dopo l'import",
+      "Pronti da importare",
+      "Da reimportare",
+      "Modifica impostazioni",
+      "Vai al catalogo",
       "Rinomina location",
-      "Fasi Shopify",
-      "Trading API",
       "Pianifica import catalogo",
+    ],
+  },
+  {
+    file: "app/routes/app.settings.tsx",
+    needles: [
+      "Sync catalogo",
+      "Import prodotti",
+      "Canali di vendita",
+      "Avanzate",
+      "Salva sync catalogo",
+      "Salva stato prodotto default",
+      "Salva canali",
+      "Collega eBay",
+      "Torna alla Panoramica",
     ],
   },
   {
@@ -39,4 +125,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("Smoke UI passato: dashboard, preview import e gestione location presenti.");
+console.log(
+  "Smoke UI passato: nav, Panoramica, Catalogo, Conflitti, Attività, Importazione, Impostazioni e gestione location presenti.",
+);

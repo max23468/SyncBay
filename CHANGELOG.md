@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Avviata la Fase 1 del redesign UI SyncBay: nuova navigazione embedded,
+  sistema visivo condiviso e Panoramica centrata sulla prossima azione operativa.
+- Avviata la Fase 2 del redesign UI SyncBay con nuove pagine Catalogo e
+  Conflitti collegate a selector Prisma reali e azioni di risoluzione esistenti.
+- Avviata la Fase 3 del redesign UI SyncBay con Importazione riorganizzata in
+  step progressivi e Impostazioni divise nei quattro box confermati.
+- Aggiunta la pagina Attività del redesign UI SyncBay con timeline di job,
+  audit recenti, filtri e retry dei job falliti.
+
 ### Non versionato
 
 - Registrata nel backlog la futura valutazione di un modulo storefront per
