@@ -546,18 +546,44 @@ async function enqueueIncrementalSyncJobs(now: Date) {
         skipDuplicates: true,
       });
     } catch (error) {
-      await prisma.auditLog.create({
-        data: {
-          details: {
-            runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
-            runnerErrorMessage: getErrorMessage(error),
-          } satisfies Prisma.JsonObject,
-          message:
-            "Pianificazione sync catalogo incrementale non completata; il runner continuerà con i job già in coda.",
-          shopId: shop.id,
-          type: AuditEventType.SYNC_JOB_FAILED,
-        },
-      });
+      const errorMessage = getErrorMessage(error);
+      const result = {
+        failedBeforeEnqueue: true,
+        runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+        runnerErrorMessage: errorMessage,
+        retryScheduledAt: null,
+        willRetry: false,
+      } satisfies Prisma.JsonObject;
+
+      await prisma.$transaction([
+        prisma.syncJob.create({
+          data: {
+            attempts: 1,
+            errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+            errorMessage,
+            finishedAt: now,
+            maxAttempts: 1,
+            payload: {
+              marketplaceId: DEFAULT_MARKETPLACE_ID,
+              source: "catalog_reconcile_enqueue",
+            } satisfies Prisma.JsonObject,
+            result,
+            runAfter: now,
+            shopId: shop.id,
+            status: SyncJobStatus.FAILED,
+            type: SyncJobType.SYNC_INCREMENTAL,
+          },
+        }),
+        prisma.auditLog.create({
+          data: {
+            details: result,
+            message:
+              "Pianificazione sync catalogo incrementale non completata; il runner continuerà con i job già in coda.",
+            shopId: shop.id,
+            type: AuditEventType.SYNC_JOB_FAILED,
+          },
+        }),
+      ]);
     }
   }
 }
