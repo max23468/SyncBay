@@ -57,6 +57,9 @@ Infrastruttura MVP: Vercel + Supabase.
 - Shopify publication: `read_publications` e `write_publications` sono richiesti
   per leggere i canali disponibili e pubblicare i prodotti attivi secondo la
   policy impostata dal negoziante.
+- Shopify token offline: i job automatici usano sessioni offline a scadenza con
+  refresh token; le sessioni legacy senza `expires` vanno migrate riaprendo
+  l'app Shopify, non usate come fallback a durata illimitata.
 - Vercel Web Analytics e Speed Insights: baseline osservabilità.
 - Versioning locale corrente: `app/lib/version.ts` + `npm run release`.
   Tag `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali

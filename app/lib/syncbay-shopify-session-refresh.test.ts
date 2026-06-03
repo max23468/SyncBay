@@ -4,13 +4,13 @@ import test from "node:test";
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { shouldRefreshOfflineShopifySession } from "./syncbay-shopify-session-refresh.ts";
 
-test("keeps non-expiring offline Shopify sessions usable", () => {
+test("refreshes non-expiring offline Shopify sessions for Shopify 2027 readiness", () => {
   assert.equal(
     shouldRefreshOfflineShopifySession(
       null,
       new Date("2026-06-03T10:00:00.000Z"),
     ),
-    false,
+    true,
   );
 });
 
