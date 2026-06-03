@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.24] — 2026-06-03
+
+### Sotto il cofano
+
+- Aggiunto un endpoint diagnostico interno Shopify Admin protetto da
+  `APP_SECRET` e usato da `import:verify`, così la verifica campione import non
+  dipende più dall'OAuth volatile di `shopify store auth`.
+
 ## [0.22.23] — 2026-06-03
 
 ### Correzioni
@@ -954,6 +962,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.24]: #02224--2026-06-03
 [0.22.19]: #02219--2026-06-03
 [0.22.18]: #02218--2026-06-03
 [0.22.17]: #02217--2026-06-03

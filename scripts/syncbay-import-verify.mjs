@@ -9,6 +9,9 @@ const execFileAsync = promisify(execFile);
 
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_SAMPLE_LIMIT = 10;
+const DEFAULT_RUNTIME_URL = "https://syncbay.vercel.app";
+const INTERNAL_APP_SECRET_KEYCHAIN_SERVICE = "syncbay-app-secret";
+const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
 const SHOPIFY_API_VERSION = "2026-04";
 const SHOPIFY_AGENT_ENV = {
   SHOPIFY_CLI_AGENT_IDS: "s:syncbay|r:import-verify|i:codex",
@@ -19,6 +22,10 @@ const args = parseArgs(process.argv.slice(2));
 const shopDomain =
   args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
 const sampleLimit = args.sample ?? DEFAULT_SAMPLE_LIMIT;
+const shopifySource =
+  args.shopifySource ?? process.env.SYNCBAY_SHOPIFY_VERIFY_SOURCE ?? "runtime";
+const runtimeUrl =
+  args.runtimeUrl ?? process.env.SYNCBAY_RUNTIME_URL ?? DEFAULT_RUNTIME_URL;
 const importRunScopeSql = buildImportRunScopeSql("j");
 
 await main().catch((error) => {
@@ -53,6 +60,7 @@ async function main() {
           runId: expected.runId,
           sampleCount: checks.length,
           shopDomain,
+          shopifySource,
           checks,
         },
         null,
@@ -65,6 +73,7 @@ async function main() {
       failedCount: failedChecks.length,
       runId: expected.runId,
       shopDomain,
+      shopifySource,
     });
   }
 
@@ -158,6 +167,62 @@ select jsonb_build_object(
 async function loadShopifyProducts(productGids, defaultLocationGid) {
   if (productGids.length === 0) return new Map();
 
+  if (shopifySource === "runtime") {
+    return loadShopifyProductsFromRuntime(productGids, defaultLocationGid);
+  }
+
+  if (shopifySource !== "cli") {
+    throw new Error(
+      `Sorgente Shopify non supportata: ${shopifySource}. Usa runtime oppure cli.`,
+    );
+  }
+
+  return loadShopifyProductsFromCli(productGids, defaultLocationGid);
+}
+
+async function loadShopifyProductsFromRuntime(productGids, defaultLocationGid) {
+  const secret = await readInternalAppSecret();
+
+  if (!secret) {
+    throw new Error(
+      `APP_SECRET non disponibile. Configura SYNCBAY_INTERNAL_APP_SECRET, APP_SECRET o il Portachiavi macOS ${INTERNAL_APP_SECRET_KEYCHAIN_SERVICE}.`,
+    );
+  }
+
+  const products = new Map();
+
+  for (const batch of chunkArray(productGids, MAX_RUNTIME_PRODUCT_BATCH_SIZE)) {
+    const endpoint = new URL("/api/diagnostics/shopify-admin", runtimeUrl);
+    const response = await fetch(endpoint, {
+      body: JSON.stringify({
+        defaultLocationGid,
+        productGids: batch,
+        shopDomain,
+      }),
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    const text = await response.text();
+    const payload = parseJsonObject(text);
+
+    if (!response.ok || !payload?.ok) {
+      throw new Error(
+        `diagnostica runtime Shopify non disponibile (HTTP ${response.status}). Deploya l'endpoint SyncBay o usa --shopify-source cli solo per una verifica manuale locale.`,
+      );
+    }
+
+    for (const node of payload.products ?? []) {
+      if (node?.id) products.set(node.id, node);
+    }
+  }
+
+  return products;
+}
+
+async function loadShopifyProductsFromCli(productGids, defaultLocationGid) {
   const graphql = defaultLocationGid
     ? `query SyncBayVerifyProducts($ids: [ID!]!, $locationId: ID!) {
   nodes(ids: $ids) {
@@ -261,6 +326,28 @@ async function loadShopifyProducts(productGids, defaultLocationGid) {
   }
 
   return products;
+}
+
+async function readInternalAppSecret() {
+  const envSecret =
+    process.env.SYNCBAY_INTERNAL_APP_SECRET?.trim() ||
+    process.env.APP_SECRET?.trim();
+
+  if (envSecret) return envSecret;
+  if (process.platform !== "darwin") return null;
+
+  try {
+    const { stdout } = await execFileAsync("security", [
+      "find-generic-password",
+      "-s",
+      INTERNAL_APP_SECRET_KEYCHAIN_SERVICE,
+      "-w",
+    ]);
+
+    return stdout.replace(/\r?\n$/, "");
+  } catch {
+    return null;
+  }
 }
 
 function verifySampleRow(row, product, options = {}) {
@@ -393,9 +480,26 @@ function findJsonStart(value) {
   return Math.min(objectStart, arrayStart);
 }
 
+function parseJsonObject(value) {
+  const jsonStart = findJsonStart(value);
+
+  if (jsonStart < 0) return null;
+
+  try {
+    const parsed = JSON.parse(value.slice(jsonStart));
+
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function printSummary(input) {
   console.log(`Shop: ${input.shopDomain}`);
   console.log(`Run: ${input.runId}`);
+  console.log(`Shopify live: ${input.shopifySource}`);
   console.log(
     `Campione: ${input.checks.length} prodotti, ${input.failedCount} con problemi`,
   );
@@ -476,12 +580,29 @@ function parseArgs(rawArgs) {
       continue;
     }
 
+    if (arg === "--shopify-source") {
+      const source = rawArgs[index + 1];
+      if (!["runtime", "cli"].includes(source)) {
+        throw new Error("--shopify-source supporta solo runtime oppure cli.");
+      }
+      parsed.shopifySource = source;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--runtime-url") {
+      parsed.runtimeUrl = rawArgs[index + 1];
+      index += 1;
+      continue;
+    }
+
     if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run import:verify -- [--shop dominio.myshopify.com] [--sample 10] [--json]
+      console.log(`Uso: npm run import:verify -- [--shop dominio.myshopify.com] [--sample 10] [--shopify-source runtime|cli] [--runtime-url https://syncbay.vercel.app] [--json]
 
 Confronta un campione dell'ultima run import tra snapshot eBay/SyncBay,
-mapping ProductMapping e prodotti Shopify live tramite Shopify CLI.
-Usa Supabase CLI linked, non richiede DATABASE_URL locale e non stampa segreti.`);
+mapping ProductMapping e prodotti Shopify live tramite endpoint runtime SyncBay.
+Usa Supabase CLI linked, non richiede DATABASE_URL locale e non stampa segreti.
+La sorgente cli resta disponibile solo come fallback manuale esplicito.`);
       process.exit(0);
     }
 
@@ -493,4 +614,14 @@ Usa Supabase CLI linked, non richiede DATABASE_URL locale e non stampa segreti.`
 
 function sqlString(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function chunkArray(values, size) {
+  const chunks = [];
+
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
 }
