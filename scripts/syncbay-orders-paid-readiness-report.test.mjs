@@ -7,8 +7,12 @@ const basePayload = {
   candidates: [],
   checkedAt: "2026-06-03T12:00:00.000Z",
   ebayConnection: {
+    accessTokenLength: 10,
     marketplaceId: "EBAY_IT",
+    refreshTokenExpiresAt: "2026-07-03T12:00:00.000Z",
+    refreshTokenLength: 10,
     status: "CONNECTED",
+    tokenExpiresAt: "2026-06-03T13:00:00.000Z",
   },
   latestStockJobs: [],
   mappingCounts: {
@@ -54,6 +58,59 @@ test("blocks orders/paid readiness when the eBay connection is not connected", (
   assert.match(report.webhookRuntimeBlockers.join("\n"), /eBay/);
   assert.match(report.webhookRuntimeBlockers.join("\n"), /RECONNECT_REQUIRED/);
   assert.equal(report.adminOrderCreateTestReady, false);
+});
+
+test("blocks orders/paid readiness when eBay access token refresh is required but refresh token is missing", () => {
+  const report = buildReadinessReport(
+    {
+      ...basePayload,
+      ebayConnection: {
+        ...basePayload.ebayConnection,
+        refreshTokenLength: 0,
+        tokenExpiresAt: "2026-06-03T11:59:00.000Z",
+      },
+    },
+    { shopDomain: "syncbay-dev.myshopify.com" },
+  );
+
+  assert.equal(report.webhookRuntimeReady, false);
+  assert.match(report.webhookRuntimeBlockers.join("\n"), /refresh token eBay/i);
+  assert.equal(report.adminOrderCreateTestReady, false);
+});
+
+test("blocks orders/paid readiness when eBay access token refresh is required but refresh token is expired", () => {
+  const report = buildReadinessReport(
+    {
+      ...basePayload,
+      ebayConnection: {
+        ...basePayload.ebayConnection,
+        refreshTokenExpiresAt: "2026-06-03T11:59:00.000Z",
+        tokenExpiresAt: "2026-06-03T11:59:00.000Z",
+      },
+    },
+    { shopDomain: "syncbay-dev.myshopify.com" },
+  );
+
+  assert.equal(report.webhookRuntimeReady, false);
+  assert.match(report.webhookRuntimeBlockers.join("\n"), /refresh token eBay/i);
+  assert.equal(report.adminOrderCreateTestReady, false);
+});
+
+test("treats Supabase timestamp strings without timezone as UTC", () => {
+  const report = buildReadinessReport(
+    {
+      ...basePayload,
+      ebayConnection: {
+        ...basePayload.ebayConnection,
+        refreshTokenLength: 0,
+        tokenExpiresAt: "2026-06-03T12:06:00.000",
+      },
+    },
+    { shopDomain: "syncbay-dev.myshopify.com" },
+  );
+
+  assert.equal(report.webhookRuntimeReady, true);
+  assert.equal(report.ebayConnection.tokenRefreshRequired, false);
 });
 
 test("keeps orders/paid readiness green when Shopify, eBay, queue and mappings are ready", () => {

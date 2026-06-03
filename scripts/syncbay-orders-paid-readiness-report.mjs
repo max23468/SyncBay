@@ -1,5 +1,6 @@
 const REQUIRED_WEBHOOK_SCOPE = "read_orders";
 const ADMIN_ORDER_CREATE_SCOPE = "write_orders";
+const TOKEN_REFRESH_SAFETY_MS = 5 * 60 * 1000;
 
 export function buildReadinessReport(
   payload,
@@ -10,6 +11,12 @@ export function buildReadinessReport(
   const hasSession = Boolean(payload.session?.id);
   const ebayConnectionStatus = payload.ebayConnection?.status ?? null;
   const ebayConnectionReady = ebayConnectionStatus === "CONNECTED";
+  const ebayAccessTokenExpiresAt = parseDateOrNull(
+    payload.ebayConnection?.tokenExpiresAt,
+  );
+  const ebayRefreshTokenExpiresAt = parseDateOrNull(
+    payload.ebayConnection?.refreshTokenExpiresAt,
+  );
   const sessionExpiresAt = parseDateOrNull(payload.session?.expires);
   const refreshTokenExpiresAt = parseDateOrNull(
     payload.session?.refreshTokenExpires,
@@ -21,6 +28,20 @@ export function buildReadinessReport(
   const refreshTokenExpired =
     Boolean(refreshTokenExpiresAt) &&
     refreshTokenExpiresAt.getTime() <= checkedAt.getTime();
+  const hasEbayAccessToken =
+    Number(payload.ebayConnection?.accessTokenLength ?? 0) > 0;
+  const hasEbayRefreshToken =
+    Number(payload.ebayConnection?.refreshTokenLength ?? 0) > 0;
+  const ebayAccessTokenUsable =
+    hasEbayAccessToken &&
+    Boolean(ebayAccessTokenExpiresAt) &&
+    ebayAccessTokenExpiresAt.getTime() >
+      checkedAt.getTime() + TOKEN_REFRESH_SAFETY_MS;
+  const ebayRefreshTokenExpired =
+    Boolean(ebayRefreshTokenExpiresAt) &&
+    ebayRefreshTokenExpiresAt.getTime() <= checkedAt.getTime();
+  const ebayTokenRefreshRequired =
+    ebayConnectionReady && !ebayAccessTokenUsable;
   const hasRefreshToken = Number(payload.session?.refreshTokenLength ?? 0) > 0;
   const hasAccessToken = Number(payload.session?.accessTokenLength ?? 0) > 0;
   const activeStockJobs = Number(payload.queue?.activeStockJobs ?? 0);
@@ -55,6 +76,12 @@ export function buildReadinessReport(
           `Connessione eBay EBAY_IT non pronta: stato ${ebayConnectionStatus ?? "assente"}.`,
         ]
       : []),
+    ...(ebayTokenRefreshRequired && !hasEbayRefreshToken
+      ? ["Refresh token eBay assente: ricollega eBay."]
+      : []),
+    ...(ebayTokenRefreshRequired && ebayRefreshTokenExpired
+      ? ["Refresh token eBay scaduto: ricollega eBay."]
+      : []),
     ...(activeStockJobs > 0
       ? [`Ci sono ${activeStockJobs} job UPDATE_EBAY_STOCK attivi.`]
       : []),
@@ -78,8 +105,15 @@ export function buildReadinessReport(
     checkedAt: checkedAt.toISOString(),
     candidates: payload.candidates ?? [],
     ebayConnection: {
+      hasAccessToken: hasEbayAccessToken,
+      hasRefreshToken: hasEbayRefreshToken,
       marketplaceId: payload.ebayConnection?.marketplaceId ?? "EBAY_IT",
+      refreshTokenExpired: ebayRefreshTokenExpired,
+      refreshTokenExpiresAt:
+        payload.ebayConnection?.refreshTokenExpiresAt ?? null,
       status: ebayConnectionStatus,
+      tokenExpiresAt: payload.ebayConnection?.tokenExpiresAt ?? null,
+      tokenRefreshRequired: ebayTokenRefreshRequired,
     },
     latestStockJobs: payload.latestStockJobs ?? [],
     mappingCounts: payload.mappingCounts,
@@ -125,6 +159,10 @@ function hasScope(scopes, requiredScope) {
 function parseDateOrNull(value) {
   if (!value) return null;
 
-  const parsed = new Date(value);
+  const source = String(value);
+  const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/.test(source)
+    ? source
+    : `${source}Z`;
+  const parsed = new Date(normalized);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
