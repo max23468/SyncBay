@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.9] — 2026-06-03
+
+### Correzioni
+
+- Il backoff GraphQL Shopify tollera envelope `errors` non conformi e non
+  manda più in errore il runner quando Shopify restituisce una risposta
+  inattesa.
+
 ## [0.22.8] — 2026-06-03
 
 ### Correzioni
@@ -816,6 +824,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.9]: #0229--2026-06-03
 [0.22.8]: #0228--2026-06-03
 [0.22.7]: #0227--2026-06-03
 [0.22.6]: #0226--2026-06-03

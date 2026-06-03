@@ -26,6 +26,7 @@ import {
   parseProductPublicationGids,
   resolveProductPublicationIds,
 } from "../lib/syncbay-product-publication-settings";
+import { isShopifyGraphqlThrottleResponse } from "../lib/shopify-graphql-throttle";
 import {
   getSyncBayDescriptionHash,
   hashNullableText,
@@ -387,12 +388,9 @@ function isShopifyGraphqlThrottled(
   response: Response,
   envelope: ShopifyGraphqlResponseEnvelope | null,
 ) {
-  if (response.status === 429) return true;
-
-  return (envelope?.errors ?? []).some((error) => {
-    const code = error.extensions?.code?.toUpperCase();
-
-    return code === "THROTTLED" || error.message.toLowerCase() === "throttled";
+  return isShopifyGraphqlThrottleResponse({
+    envelope,
+    status: response.status,
   });
 }
 

@@ -136,12 +136,9 @@ function toJsonResponse(response: ShopifyGraphqlFetchResponse | null) {
 }
 
 function getRetryReason(response: ShopifyGraphqlFetchResponse) {
-  const errorMessage = getGraphqlErrorMessage(response.json);
-
   if (
     response.status === 429 ||
-    errorMessage.includes("Throttled") ||
-    hasGraphqlThrottleCode(response.json)
+    hasGraphqlThrottleSignal(response.json)
   ) {
     return "throttled" as const;
   }
@@ -166,33 +163,26 @@ function getRetryDelayMs(
   return base * attempt;
 }
 
-function getGraphqlErrorMessage(json: Record<string, unknown> | null) {
-  const errors = Array.isArray(json?.errors) ? json.errors : [];
-
-  return errors
-    .map((error) =>
-      error && typeof error === "object" && "message" in error
-        ? String(error.message)
-        : "",
-    )
-    .filter(Boolean)
-    .join("; ");
-}
-
-function hasGraphqlThrottleCode(json: Record<string, unknown> | null) {
+function hasGraphqlThrottleSignal(json: Record<string, unknown> | null) {
   const errors = Array.isArray(json?.errors) ? json.errors : [];
 
   return errors.some((error) => {
-    if (!error || typeof error !== "object" || !("extensions" in error)) {
-      return false;
-    }
+    if (!error || typeof error !== "object") return false;
 
-    const extensions = error.extensions;
+    const message =
+      "message" in error ? String(error.message).toLowerCase() : "";
+    const extensions =
+      "extensions" in error &&
+      error.extensions &&
+      typeof error.extensions === "object"
+        ? error.extensions
+        : null;
+    const code =
+      extensions && "code" in extensions
+        ? String(extensions.code).toUpperCase()
+        : "";
 
-    if (!extensions || typeof extensions !== "object") return false;
-    if (!("code" in extensions)) return false;
-
-    return String(extensions.code).toUpperCase() === "THROTTLED";
+    return code === "THROTTLED" || message.includes("throttled");
   });
 }
 
