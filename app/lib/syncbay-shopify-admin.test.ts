@@ -81,6 +81,46 @@ test("retries throttled Admin GraphQL responses", async () => {
   assert.deepEqual(await response.json(), { data: { ok: true } });
 });
 
+test("retries Admin GraphQL responses with throttled extension codes", async () => {
+  let callCount = 0;
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () => {
+      callCount += 1;
+
+      if (callCount === 1) {
+        return new Response(
+          JSON.stringify({
+            errors: [
+              {
+                extensions: { code: "THROTTLED" },
+                message: "Request cost exceeded currently available points",
+              },
+            ],
+          }),
+          {
+            headers: { "Content-Type": "application/json" },
+            status: 200,
+          },
+        );
+      }
+
+      return new Response(JSON.stringify({ data: { ok: true } }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    },
+    maxAttempts: 2,
+    shopDomain: "syncbay-dev.myshopify.com",
+    throttleRetryDelayMs: 1,
+  });
+
+  const response = await client.graphql("query Test { shop { id } }");
+
+  assert.equal(callCount, 2);
+  assert.deepEqual(await response.json(), { data: { ok: true } });
+});
+
 test("normalizes repeated non-json Admin GraphQL responses", async () => {
   const client = createShopifyAdminGraphqlClient({
     accessToken: "shpat_test",

@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.8] — 2026-06-03
+
+### Correzioni
+
+- Il runner chiude come fallite anche le tracce interne `draft-import` rimaste
+  `RETRYING` oltre la finestra stale, evitando residui non schedulabili nella
+  coda import.
+- Il client Admin GraphQL offline riconosce anche `extensions.code:
+  "THROTTLED"` come segnale di throttling Shopify e applica il backoff.
+
 ## [0.22.7] — 2026-06-03
 
 ### Correzioni
@@ -806,6 +816,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.8]: #0228--2026-06-03
 [0.22.7]: #0227--2026-06-03
 [0.22.6]: #0226--2026-06-03
 [0.22.5]: #0225--2026-06-03

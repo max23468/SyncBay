@@ -138,7 +138,11 @@ function toJsonResponse(response: ShopifyGraphqlFetchResponse | null) {
 function getRetryReason(response: ShopifyGraphqlFetchResponse) {
   const errorMessage = getGraphqlErrorMessage(response.json);
 
-  if (response.status === 429 || errorMessage.includes("Throttled")) {
+  if (
+    response.status === 429 ||
+    errorMessage.includes("Throttled") ||
+    hasGraphqlThrottleCode(response.json)
+  ) {
     return "throttled" as const;
   }
 
@@ -173,6 +177,23 @@ function getGraphqlErrorMessage(json: Record<string, unknown> | null) {
     )
     .filter(Boolean)
     .join("; ");
+}
+
+function hasGraphqlThrottleCode(json: Record<string, unknown> | null) {
+  const errors = Array.isArray(json?.errors) ? json.errors : [];
+
+  return errors.some((error) => {
+    if (!error || typeof error !== "object" || !("extensions" in error)) {
+      return false;
+    }
+
+    const extensions = error.extensions;
+
+    if (!extensions || typeof extensions !== "object") return false;
+    if (!("code" in extensions)) return false;
+
+    return String(extensions.code).toUpperCase() === "THROTTLED";
+  });
 }
 
 function parseJsonObject(text: string) {
