@@ -59,6 +59,8 @@ delta recente, overlap di 2 minuti e buffer finale di 2 minuti: le candidate
 lette dagli eventi vengono salvate nel payload del job e riusano il flusso
 import controllato senza rileggere ogni listing via `GetItem`. Gli eventi che
 indicano listing conclusi o inattivi generano job `ARCHIVE_INACTIVE_LISTING`.
+Una finestra composta solo da archiviazioni avanza il watermark seller-events
+solo dopo il completamento dei relativi job archivio.
 
 `GetMyeBaySelling` resta la riconciliazione completa periodica per coprire drift,
 eventi persi e nuovi stati non emersi nei delta. L'intervallo predefinito è

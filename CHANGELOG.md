@@ -12,6 +12,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.21] — 2026-06-03
+
+### Correzioni
+
+- Il watermark dei delta `GetSellerEvents` usa la sorgente riuscita più recente
+  tra riconciliazione completa e delta eBay.
+- Le finestre seller-events con soli listing da archiviare avanzano il
+  watermark solo dopo il completamento dei job `ARCHIVE_INACTIVE_LISTING`.
+
 ## [0.22.20] — 2026-06-03
 
 ### Sotto il cofano
