@@ -134,6 +134,17 @@ npm run jobs:status -- --shop syncbay-dev.myshopify.com
 
 Expected: sanitized output only. There must be no active `UPDATE_EBAY_STOCK` or `SYNC_INCREMENTAL` job for the selected shop before baseline capture.
 
+```bash
+npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com
+```
+
+Expected: sanitized output only. `Runtime webhook orders/paid` must be `pronto`;
+`Test Admin orderCreate` is `pronto` only when the offline session also has
+`write_orders`. If only `write_orders` is missing, ask the maintainer to
+authorize the new scope, deploy the updated app configuration, then reopen the
+Shopify app to refresh the offline session before attempting the Admin GraphQL
+order creation path.
+
 ### Task 3: Select One Safe Test Mapping
 
 **Files:**

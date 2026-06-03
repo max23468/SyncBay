@@ -129,6 +129,9 @@ Scope iniziali previsti:
 - `write_publications`
 - `read_orders` per il webhook `orders/paid`, da attivare solo dopo
   approvazione Shopify protected customer data per la protezione disponibilità.
+- `write_orders` per la prova automatica controllata del trigger ordine pagato
+  via Admin `orderCreate` sul dev store, da mantenere solo se resta necessario
+  al gate pre-pilota.
 - `read_files` e `write_files` per media prodotto.
 - token offline Shopify a scadenza con refresh automatico per i job automatici,
   in linea con ADR `0009-shopify-token-offline-a-scadenza.md` e con il

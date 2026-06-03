@@ -68,6 +68,8 @@ read_publications
 write_publications
 read_files
 write_files
+read_orders
+write_orders
 ```
 
 Da verificare durante l'evoluzione runtime:
@@ -78,8 +80,10 @@ Da verificare durante l'evoluzione runtime:
 - mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
   prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
-- `read_orders` serve per il webhook `orders/paid` nel pilota custom e richiede
-  reautorizzazione dello store dopo il deploy della nuova versione;
+- `read_orders` serve per il webhook `orders/paid` nel pilota custom;
+- `write_orders` serve solo per generare una prova automatica `orderCreate`
+  via Admin API sul dev store e richiede reautorizzazione dello store dopo il
+  deploy della nuova configurazione scope;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
 Regola: chiedere solo scope necessari al flusso MVP.

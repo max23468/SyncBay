@@ -89,6 +89,7 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "read_locations",
   "write_locations",
   "read_orders",
+  "write_orders",
   "read_publications",
   "write_publications",
   "read_files",
@@ -2071,6 +2072,7 @@ function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
     return scopes.includes("write_inventory");
   if (requiredScope === "read_locations")
     return scopes.includes("write_locations");
+  if (requiredScope === "read_orders") return scopes.includes("write_orders");
 
   return false;
 }
