@@ -27,6 +27,15 @@ export interface EbayTradingCatalogImportPlan {
   totalAvailable: number | null;
 }
 
+export interface EbayTradingSellerEventsDelta {
+  candidates: ImportPreviewListingCandidate[];
+  inactiveItemIds: string[];
+  readCount: number;
+  timeFrom: string;
+  timeTo: string;
+  truncated: boolean;
+}
+
 type XmlRecord = Record<string, unknown>;
 
 const EBAY_TRADING_URLS = {
@@ -187,6 +196,53 @@ export async function getEbayTradingCandidatesByItemIds(input: {
   );
 }
 
+export async function getEbayTradingSellerEventsDelta(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  maxEvents: number;
+  modTimeFrom: Date;
+  modTimeTo: Date;
+}): Promise<EbayTradingSellerEventsDelta> {
+  const body = await fetchTradingXml({
+    accessToken: input.accessToken,
+    callName: "GetSellerEvents",
+    connection: input.connection,
+    requestXml: buildGetSellerEventsRequest({
+      modTimeFrom: input.modTimeFrom,
+      modTimeTo: input.modTimeTo,
+    }),
+  });
+  const allItems = getTradingItems(body);
+  const items = allItems.slice(0, input.maxEvents);
+  const candidates: ImportPreviewListingCandidate[] = [];
+  const inactiveItemIds: string[] = [];
+
+  for (const item of items) {
+    const itemId = getString(item, "ItemID");
+    if (!itemId) continue;
+
+    if (isInactiveTradingItem(item)) {
+      inactiveItemIds.push(itemId);
+      continue;
+    }
+
+    const candidate = mapTradingItemToCandidate(
+      item,
+      input.connection.marketplaceId,
+    );
+    if (candidate) candidates.push(withFallbackSku(candidate));
+  }
+
+  return {
+    candidates,
+    inactiveItemIds: [...new Set(inactiveItemIds)],
+    readCount: allItems.length,
+    timeFrom: input.modTimeFrom.toISOString(),
+    timeTo: input.modTimeTo.toISOString(),
+    truncated: allItems.length > input.maxEvents,
+  };
+}
+
 class EbayTradingPreviewError extends Error {
   constructor(message: string) {
     super(message);
@@ -250,7 +306,11 @@ async function getTradingItemDetail(
 
 export async function fetchTradingXml(input: {
   accessToken: string;
-  callName: "GetItem" | "GetMyeBaySelling" | "ReviseInventoryStatus";
+  callName:
+    | "GetItem"
+    | "GetMyeBaySelling"
+    | "GetSellerEvents"
+    | "ReviseInventoryStatus";
   connection: EbayConnection;
   requestXml: string;
 }) {
@@ -326,13 +386,45 @@ function buildGetItemRequest(itemId: string) {
 </GetItemRequest>`;
 }
 
-function getTradingItems(activeList: XmlRecord | null) {
-  const itemArray = asRecord(activeList?.ItemArray);
+function buildGetSellerEventsRequest(input: {
+  modTimeFrom: Date;
+  modTimeTo: Date;
+}) {
+  return `<?xml version="1.0" encoding="utf-8"?>
+<GetSellerEventsRequest xmlns="urn:ebay:apis:eBLBaseComponents">
+  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
+  <DetailLevel>ReturnAll</DetailLevel>
+  <ErrorLanguage>${TRADING_API_ERROR_LANGUAGE}</ErrorLanguage>
+  <WarningLevel>High</WarningLevel>
+  <ModTimeFrom>${input.modTimeFrom.toISOString()}</ModTimeFrom>
+  <ModTimeTo>${input.modTimeTo.toISOString()}</ModTimeTo>
+  <NewItemFilter>true</NewItemFilter>
+  <HideVariations>false</HideVariations>
+</GetSellerEventsRequest>`;
+}
+
+function getTradingItems(container: XmlRecord | null) {
+  const itemArray = asRecord(container?.ItemArray);
 
   return asArray(itemArray?.Item).flatMap((item) => {
     const record = asRecord(item);
     return record ? [record] : [];
   });
+}
+
+function isInactiveTradingItem(item: XmlRecord) {
+  const status =
+    getString(asRecord(item.SellingStatus), "ListingStatus") ??
+    getString(item, "ListingStatus");
+  if (!status) return false;
+
+  return [
+    "Completed",
+    "Ended",
+    "EndedWithSales",
+    "EndedWithoutSales",
+    "Inactive",
+  ].includes(status);
 }
 
 function mapTradingItemToCandidate(

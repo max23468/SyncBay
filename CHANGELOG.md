@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.18] — 2026-06-03
+
+### Sotto il cofano
+
+- Il runner incrementale usa Trading API `GetSellerEvents` per i delta recenti
+  e conserva `GetMyeBaySelling` come riconciliazione completa periodica,
+  riducendo il consumo di `GetItem` nei cicli ordinari.
+
 ## [0.22.17] — 2026-06-03
 
 ### Sotto il cofano
@@ -903,6 +911,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.18]: #02218--2026-06-03
 [0.22.17]: #02217--2026-06-03
 [0.22.16]: #02216--2026-06-03
 [0.22.15]: #02215--2026-06-03

@@ -74,6 +74,11 @@ Note:
   il runner non riprova ogni minuto: crea un marker `SYNC_INCREMENTAL` fallito e
   programma il prossimo enqueue dopo il reset giornaliero osservato, con
   override opzionale tramite `SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS`.
+- `SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS` può ridurre o aumentare la
+  frequenza della riconciliazione completa Trading `GetMyeBaySelling`; se omesso
+  resta giornaliera. Tra due riconciliazioni complete il runner usa
+  `GetSellerEvents` per i delta e salva le candidate lette nel payload dei job,
+  riducendo il consumo di `GetItem`.
 - La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
   `write_orders` e un token offline; `shopify store execute` con il token CLI
   disponibile non è sufficiente. Finché quello scope non è disponibile, la prova

@@ -19,6 +19,10 @@ import {
 } from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
+  getSellerEventsDeltaWindow,
+  isFullCatalogReconcileDue,
+} from "../lib/syncbay-ebay-delta-sync";
+import {
   getNextEbayTradingRateLimitRetryAt,
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
@@ -46,9 +50,11 @@ import { getUsableEbayAccessToken } from "./ebay-token.server";
 import {
   getEbayTradingCandidatesByItemIds,
   getEbayTradingCatalogImportPlan,
+  getEbayTradingSellerEventsDelta,
 } from "./ebay-trading-preview.server";
 import { reviseEbayTradingInventoryQuantity } from "./ebay-trading-stock.server";
 import type {
+  ImportPreviewListingCandidate,
   ImportPreviewItem,
   ImportPreviewResult,
   ImportPreviewSummary,
@@ -473,81 +479,60 @@ async function enqueueIncrementalSyncJobs(now: Date) {
     try {
       const connection = shop.ebayConnections[0];
       const { accessToken } = await getUsableEbayAccessToken(connection);
-      const activeCatalogPlan = await getEbayTradingCatalogImportPlan({
-        accessToken,
-        connection,
-        maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+      const [latestSuccessfulSyncJob, latestFullReconcileJob] =
+        await Promise.all([
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { createdAt: true, finishedAt: true },
+            where: {
+              shopId: shop.id,
+              status: SyncJobStatus.SUCCEEDED,
+              type: SyncJobType.SYNC_INCREMENTAL,
+            },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { createdAt: true, finishedAt: true },
+            where: {
+              payload: { path: ["source"], equals: "catalog_reconcile" },
+              shopId: shop.id,
+              status: SyncJobStatus.SUCCEEDED,
+              type: SyncJobType.SYNC_INCREMENTAL,
+            },
+          }),
+        ]);
+      const fullReconcileDue = isFullCatalogReconcileDue({
+        intervalSecondsValue:
+          process.env.SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS,
+        latestFullReconcileAt: getJobCompletionTime(latestFullReconcileJob),
+        now,
       });
-      const mappings = await prisma.productMapping.findMany({
-        orderBy: { updatedAt: "asc" },
-        select: { ebayItemId: true },
-        where: {
-          marketplaceId: DEFAULT_MARKETPLACE_ID,
-          shopId: shop.id,
-          status: ProductMappingStatus.ACTIVE,
-        },
-      });
-      const activeScanComplete = isCatalogReconcileScanComplete({
-        itemIds: activeCatalogPlan.itemIds,
-        maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
-        readCount: activeCatalogPlan.readCount,
-        totalAvailable: activeCatalogPlan.totalAvailable,
-      });
-      const reconcilePlan = buildCatalogReconcilePlan({
-        activeEbayItemIds: activeCatalogPlan.itemIds,
-        activeScanComplete,
-        batchSize: INCREMENTAL_SYNC_BATCH_SIZE,
-        mappedEbayItemIds: mappings.map((mapping) => mapping.ebayItemId),
-      });
+      const sellerEventsWindow = fullReconcileDue
+        ? null
+        : getSellerEventsDeltaWindow({
+            latestSuccessfulSyncAt: getJobCompletionTime(
+              latestSuccessfulSyncJob,
+            ),
+            now,
+          });
 
-      if (
-        reconcilePlan.syncBatches.length === 0 &&
-        reconcilePlan.inactiveEbayItemIds.length === 0
-      ) {
+      if (sellerEventsWindow) {
+        await enqueueSellerEventsDeltaSyncJobs({
+          accessToken,
+          connection,
+          modTimeFrom: sellerEventsWindow.modTimeFrom,
+          modTimeTo: sellerEventsWindow.modTimeTo,
+          now,
+          shopId: shop.id,
+        });
         continue;
       }
 
-      const runId = `incremental:${shop.id}:${now.toISOString()}`;
-      const syncJobs = reconcilePlan.syncBatches.map((ebayItemIds, index) => ({
-        maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
-        payload: {
-          activeCatalogReadCount: activeCatalogPlan.readCount,
-          activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
-          activeScanComplete,
-          batchCount: reconcilePlan.syncBatches.length,
-          batchIndex: index + 1,
-          ebayItemIds,
-          marketplaceId: DEFAULT_MARKETPLACE_ID,
-          runId,
-          source: "catalog_reconcile",
-        } satisfies Prisma.JsonObject,
-        runAfter: now,
+      await enqueueFullCatalogReconcileSyncJobs({
+        accessToken,
+        connection,
+        now,
         shopId: shop.id,
-        status: SyncJobStatus.PENDING,
-        type: SyncJobType.SYNC_INCREMENTAL,
-      }));
-      const archiveJobs = reconcilePlan.inactiveEbayItemIds.map(
-        (ebayItemId) => ({
-          idempotencyKey: `archive-inactive:${shop.id}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
-          maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
-          payload: {
-            activeCatalogReadCount: activeCatalogPlan.readCount,
-            activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
-            ebayItemId,
-            marketplaceId: DEFAULT_MARKETPLACE_ID,
-            runId,
-            source: "catalog_reconcile",
-          } satisfies Prisma.JsonObject,
-          runAfter: now,
-          shopId: shop.id,
-          status: SyncJobStatus.PENDING,
-          type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
-        }),
-      );
-
-      await prisma.syncJob.createMany({
-        data: [...syncJobs, ...archiveJobs],
-        skipDuplicates: true,
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -602,6 +587,259 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       ]);
     }
   }
+}
+
+async function enqueueFullCatalogReconcileSyncJobs(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  now: Date;
+  shopId: string;
+}) {
+  const activeCatalogPlan = await getEbayTradingCatalogImportPlan({
+    accessToken: input.accessToken,
+    connection: input.connection,
+    maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+  });
+  const mappings = await prisma.productMapping.findMany({
+    orderBy: { updatedAt: "asc" },
+    select: { ebayItemId: true },
+    where: {
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      shopId: input.shopId,
+      status: ProductMappingStatus.ACTIVE,
+    },
+  });
+  const activeScanComplete = isCatalogReconcileScanComplete({
+    itemIds: activeCatalogPlan.itemIds,
+    maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+    readCount: activeCatalogPlan.readCount,
+    totalAvailable: activeCatalogPlan.totalAvailable,
+  });
+  const reconcilePlan = buildCatalogReconcilePlan({
+    activeEbayItemIds: activeCatalogPlan.itemIds,
+    activeScanComplete,
+    batchSize: INCREMENTAL_SYNC_BATCH_SIZE,
+    mappedEbayItemIds: mappings.map((mapping) => mapping.ebayItemId),
+  });
+
+  if (
+    reconcilePlan.syncBatches.length === 0 &&
+    reconcilePlan.inactiveEbayItemIds.length === 0
+  ) {
+    await createIncrementalNoopMarker({
+      now: input.now,
+      payload: {
+        activeCatalogReadCount: activeCatalogPlan.readCount,
+        activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+        activeScanComplete,
+        marketplaceId: DEFAULT_MARKETPLACE_ID,
+        source: "catalog_reconcile",
+      },
+      result: {
+        activeCatalogReadCount: activeCatalogPlan.readCount,
+        activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+        noWork: true,
+        source: "catalog_reconcile",
+      },
+      shopId: input.shopId,
+    });
+    return;
+  }
+
+  const runId = `incremental:${input.shopId}:${input.now.toISOString()}`;
+  const syncJobs = reconcilePlan.syncBatches.map((ebayItemIds, index) => ({
+    maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+    payload: {
+      activeCatalogReadCount: activeCatalogPlan.readCount,
+      activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+      activeScanComplete,
+      batchCount: reconcilePlan.syncBatches.length,
+      batchIndex: index + 1,
+      ebayItemIds,
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      runId,
+      source: "catalog_reconcile",
+    } satisfies Prisma.JsonObject,
+    runAfter: input.now,
+    shopId: input.shopId,
+    status: SyncJobStatus.PENDING,
+    type: SyncJobType.SYNC_INCREMENTAL,
+  }));
+  const archiveJobs = reconcilePlan.inactiveEbayItemIds.map((ebayItemId) => ({
+    idempotencyKey: `archive-inactive:${input.shopId}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
+    maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+    payload: {
+      activeCatalogReadCount: activeCatalogPlan.readCount,
+      activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
+      ebayItemId,
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      runId,
+      source: "catalog_reconcile",
+    } satisfies Prisma.JsonObject,
+    runAfter: input.now,
+    shopId: input.shopId,
+    status: SyncJobStatus.PENDING,
+    type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+  }));
+
+  await prisma.syncJob.createMany({
+    data: [...syncJobs, ...archiveJobs],
+    skipDuplicates: true,
+  });
+}
+
+async function enqueueSellerEventsDeltaSyncJobs(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  modTimeFrom: Date;
+  modTimeTo: Date;
+  now: Date;
+  shopId: string;
+}) {
+  const delta = await getEbayTradingSellerEventsDelta({
+    accessToken: input.accessToken,
+    connection: input.connection,
+    maxEvents: CATALOG_RECONCILE_MAX_PRODUCTS,
+    modTimeFrom: input.modTimeFrom,
+    modTimeTo: input.modTimeTo,
+  });
+
+  if (delta.truncated) {
+    await enqueueFullCatalogReconcileSyncJobs(input);
+    return;
+  }
+
+  const candidates = dedupePreviewCandidates(delta.candidates);
+  const candidateBatches = chunkArray(candidates, INCREMENTAL_SYNC_BATCH_SIZE);
+  const runId = `seller-events:${input.shopId}:${input.now.toISOString()}`;
+
+  if (candidateBatches.length === 0 && delta.inactiveItemIds.length === 0) {
+    await createIncrementalNoopMarker({
+      now: input.now,
+      payload: {
+        eventReadCount: delta.readCount,
+        marketplaceId: DEFAULT_MARKETPLACE_ID,
+        modTimeFrom: delta.timeFrom,
+        modTimeTo: delta.timeTo,
+        source: "seller_events_delta",
+      },
+      result: {
+        eventReadCount: delta.readCount,
+        noWork: true,
+        source: "seller_events_delta",
+      },
+      shopId: input.shopId,
+    });
+    return;
+  }
+
+  const syncJobs = candidateBatches.map((batch, index) => ({
+    maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+    payload: {
+      batchCount: candidateBatches.length,
+      batchIndex: index + 1,
+      ebayItemIds: batch.map((candidate) => candidate.itemId),
+      eventReadCount: delta.readCount,
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      modTimeFrom: delta.timeFrom,
+      modTimeTo: delta.timeTo,
+      previewCandidates: batch.map(serializePreviewCandidate),
+      runId,
+      source: "seller_events_delta",
+    } satisfies Prisma.JsonObject,
+    runAfter: input.now,
+    shopId: input.shopId,
+    status: SyncJobStatus.PENDING,
+    type: SyncJobType.SYNC_INCREMENTAL,
+  }));
+  const archiveJobs = delta.inactiveItemIds.map((ebayItemId) => ({
+    idempotencyKey: `archive-inactive:${input.shopId}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
+    maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+    payload: {
+      ebayItemId,
+      eventReadCount: delta.readCount,
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      modTimeFrom: delta.timeFrom,
+      modTimeTo: delta.timeTo,
+      runId,
+      source: "seller_events_delta",
+    } satisfies Prisma.JsonObject,
+    runAfter: input.now,
+    shopId: input.shopId,
+    status: SyncJobStatus.PENDING,
+    type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+  }));
+
+  await prisma.syncJob.createMany({
+    data: [...syncJobs, ...archiveJobs],
+    skipDuplicates: true,
+  });
+}
+
+async function createIncrementalNoopMarker(input: {
+  now: Date;
+  payload: Prisma.JsonObject;
+  result: Prisma.JsonObject;
+  shopId: string;
+}) {
+  await prisma.syncJob.create({
+    data: {
+      attempts: 1,
+      finishedAt: input.now,
+      maxAttempts: 1,
+      payload: input.payload,
+      result: input.result,
+      runAfter: input.now,
+      shopId: input.shopId,
+      status: SyncJobStatus.SUCCEEDED,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+}
+
+function getJobCompletionTime(
+  job: { createdAt: Date; finishedAt: Date | null } | null,
+) {
+  return job ? (job.finishedAt ?? job.createdAt) : null;
+}
+
+function chunkArray<T>(items: T[], size: number) {
+  if (size <= 0) return [items];
+
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function dedupePreviewCandidates(
+  candidates: ImportPreviewListingCandidate[],
+) {
+  const candidatesById = new Map<string, ImportPreviewListingCandidate>();
+
+  for (const candidate of candidates) {
+    candidatesById.set(candidate.itemId, candidate);
+  }
+
+  return [...candidatesById.values()];
+}
+
+function serializePreviewCandidate(candidate: ImportPreviewListingCandidate) {
+  return {
+    currency: candidate.currency ?? null,
+    descriptionHtml: candidate.descriptionHtml ?? null,
+    imageUrls: candidate.imageUrls ?? [],
+    itemId: candidate.itemId,
+    priceAmount: candidate.priceAmount ?? null,
+    quantity: candidate.quantity ?? null,
+    sku: candidate.sku ?? null,
+    skuGenerated: candidate.skuGenerated ?? null,
+    title: candidate.title ?? null,
+    variantCount: candidate.variantCount ?? null,
+  } satisfies Prisma.JsonObject;
 }
 
 async function recoverStaleRunningSyncJobs(
@@ -727,14 +965,34 @@ async function runDueSyncJob(job: DueSyncJob) {
       type: job.type,
     };
   } catch (error) {
+    const errorMessage = getErrorMessage(error);
+    const tradingRateLimitRetryAt = isEbayTradingUsageLimitError(errorMessage)
+      ? getNextEbayTradingRateLimitRetryAt({
+          cooldownSecondsValue:
+            process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
+          now: new Date(),
+        })
+      : null;
+
     await markJobFailedOrRetrying({
-      errorCode: "SYNCBAY_JOB_RUNNER_FAILED",
-      errorMessage: getErrorMessage(error),
+      errorCode: tradingRateLimitRetryAt
+        ? "EBAY_TRADING_RATE_LIMITED"
+        : "SYNCBAY_JOB_RUNNER_FAILED",
+      errorMessage,
       job,
+      result:
+        tradingRateLimitRetryAt === null
+          ? undefined
+          : {
+              rateLimitCooldownSeconds: Math.ceil(
+                (tradingRateLimitRetryAt.getTime() - Date.now()) / 1000,
+              ),
+            },
+      retryAtOverride: tradingRateLimitRetryAt,
     });
 
     return {
-      errorMessage: getErrorMessage(error),
+      errorMessage,
       jobId: job.id,
       status: "failed" as const,
       type: job.type,
@@ -904,10 +1162,9 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
-  const connection = await getConnectedEbayConnection(job);
   const [admin, previewResult] = await Promise.all([
     getShopifyAdminGraphqlClient(job.shop.shopDomain),
-    getImportPreviewResultByItemIds(connection, syncableItemIds),
+    getIncrementalPreviewResult(job, syncableItemIds),
   ]);
   const filteredPreviewResult = filterPreviewResultByItemIds(
     previewResult,
@@ -1683,15 +1940,83 @@ async function getImportPreviewResultByItemIds(
   return buildImportPreview(candidates, "live");
 }
 
+async function getIncrementalPreviewResult(
+  job: DueSyncJob,
+  ebayItemIds: string[],
+) {
+  const payloadCandidates = getPreviewCandidates(job.payload);
+
+  if (payloadCandidates.length > 0) {
+    return buildImportPreview(payloadCandidates, "live");
+  }
+
+  const connection = await getConnectedEbayConnection(job);
+
+  return getImportPreviewResultByItemIds(connection, ebayItemIds);
+}
+
+function getPreviewCandidates(payload: Prisma.JsonValue | null) {
+  const object = getJsonObject(payload);
+  const candidates = object?.previewCandidates;
+
+  return Array.isArray(candidates)
+    ? candidates.flatMap((candidate) => {
+        const normalized = getPreviewCandidate(candidate);
+        return normalized ? [normalized] : [];
+      })
+    : [];
+}
+
+function getPreviewCandidate(
+  value: unknown,
+): ImportPreviewListingCandidate | null {
+  const object =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  if (!object) return null;
+
+  const itemId = typeof object?.itemId === "string" ? object.itemId : null;
+  if (!itemId) return null;
+
+  return {
+    currency: getNullableString(object.currency),
+    descriptionHtml: getNullableString(object.descriptionHtml),
+    imageUrls: Array.isArray(object.imageUrls)
+      ? object.imageUrls.filter((url): url is string => typeof url === "string")
+      : [],
+    itemId,
+    priceAmount: getNullableNumber(object.priceAmount),
+    quantity: getNullableNumber(object.quantity),
+    sku: getNullableString(object.sku),
+    skuGenerated:
+      typeof object.skuGenerated === "boolean" ? object.skuGenerated : false,
+    title: getNullableString(object.title),
+    variantCount: getNullableNumber(object.variantCount) ?? 1,
+  };
+}
+
+function getNullableString(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function getNullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 async function markJobFailedOrRetrying(input: {
   errorCode: string;
   errorMessage: string;
   job: DueSyncJob;
+  result?: Prisma.JsonObject;
+  retryAtOverride?: Date | null;
 }) {
   const nextAttempts = input.job.attempts + 1;
   const retryAt =
-    nextAttempts < input.job.maxAttempts ? getRetryAfter(nextAttempts) : null;
+    input.retryAtOverride ??
+    (nextAttempts < input.job.maxAttempts ? getRetryAfter(nextAttempts) : null);
   const result = {
+    ...(input.result ?? {}),
     runnerErrorCode: input.errorCode,
     runnerErrorMessage: input.errorMessage,
     retryScheduledAt: retryAt?.toISOString() ?? null,
