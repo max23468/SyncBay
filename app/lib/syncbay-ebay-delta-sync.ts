@@ -58,7 +58,8 @@ export function getSellerEventsDeltaWindow(input: {
 }
 
 export function getSellerEventsWatermarkAt(input: {
-  latestFullReconcileAt: Date | null;
+  latestFullReconcileCompletedAt?: Date | null;
+  latestFullReconcileWatermarkAt: Date | null;
   latestSellerEventsCompletedAt: Date | null;
   latestSellerEventsModTimeToValue?: string | null;
 }) {
@@ -66,7 +67,7 @@ export function getSellerEventsWatermarkAt(input: {
     parseDate(input.latestSellerEventsModTimeToValue) ??
     input.latestSellerEventsCompletedAt;
 
-  return maxDate(sellerEventsWatermark, input.latestFullReconcileAt);
+  return maxDate(sellerEventsWatermark, input.latestFullReconcileWatermarkAt);
 }
 
 export function shouldAdvanceSellerEventsArchiveWatermark(input: {
