@@ -305,6 +305,11 @@ Comandi runtime attuali:
   - `refactor:` solo per ristrutturazioni senza cambio funzionale;
   - `test:` per soli test;
   - `ci:` per workflow/CI.
+- Quando Codex crea una PR, non usare il nome branch `codex/<tema>` come titolo:
+  passa sempre un titolo PR Conventional Commit esplicito, per esempio
+  `gh pr create --title "docs: update SyncBay governance"`, oppure correggi
+  subito una PR già aperta con `gh pr edit --title "docs: ..."` prima di
+  dichiararla pronta o pubblicata.
 - Prima di commit o PR, fai self-review del diff.
 - GitHub è la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
 - Non aggiungere nuovi workflow GitHub Actions, policy deploy o release flow fuori
