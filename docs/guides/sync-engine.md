@@ -54,14 +54,19 @@ disponibilità eBay.
 ## Sync incrementale
 
 Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
-10 ItemID eBay attivi letti da Trading API `GetMyeBaySelling`. Questo copre sia
-listing già mappati sia nuovi prodotti eBay pubblicati dopo l'import iniziale. I
-batch rileggono i listing via Trading API `GetItem` e riusano il flusso import
-controllato per creare o riallineare Shopify. Se un job più vecchio o un import
+10 ItemID. Nei cicli ordinari usa Trading API `GetSellerEvents` con una finestra
+delta recente, overlap di 2 minuti e buffer finale di 2 minuti: le candidate
+lette dagli eventi vengono salvate nel payload del job e riusano il flusso
+import controllato senza rileggere ogni listing via `GetItem`. Gli eventi che
+indicano listing conclusi o inattivi generano job `ARCHIVE_INACTIVE_LISTING`.
+
+`GetMyeBaySelling` resta la riconciliazione completa periodica per coprire drift,
+eventi persi e nuovi stati non emersi nei delta. L'intervallo predefinito è
+giornaliero ed è configurabile con
+`SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS`. Se un job più vecchio o un import
 iniziale contiene più di 10 ItemID, il runner lo spezza in sotto-job più piccoli
-prima di fare chiamate Shopify/eBay pesanti. Se un mapping ha conflitti
-Shopify aperti, il prodotto viene saltato finché il negoziante sceglie un'azione
-guidata.
+prima di fare chiamate Shopify/eBay pesanti. Se un mapping ha conflitti Shopify
+aperti, il prodotto viene saltato finché il negoziante sceglie un'azione guidata.
 
 Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
 prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
@@ -78,7 +83,8 @@ prezzo, quantità e immagini quando rileva drift.
 
 ## Riconciliazione
 
-Il polling incrementale deve essere affiancato da riconciliazione completa periodica per correggere drift, eventi persi e notifiche non ricevute.
+Il polling delta deve essere affiancato da riconciliazione completa periodica
+per correggere drift, eventi persi e notifiche non ricevute.
 
 Runtime previsto:
 
