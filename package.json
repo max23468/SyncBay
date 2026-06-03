@@ -27,6 +27,7 @@
     "db:advisors:performance": "npx supabase db advisors --linked --type performance",
     "db:push:dry-run": "npx supabase db push --linked --dry-run",
     "db:verify": "npm run db:advisors:security && npm run db:advisors:performance",
+    "ebay:rate-limits": "node scripts/syncbay-ebay-rate-limits.mjs",
     "import:repair-commercial-fields": "node scripts/syncbay-import-repair-commercial-fields.mjs",
     "import:verify": "node scripts/syncbay-import-verify.mjs",
     "products:publish-channel": "node scripts/syncbay-publish-products-to-publication.mjs",

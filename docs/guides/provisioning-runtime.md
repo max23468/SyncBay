@@ -67,6 +67,13 @@ Note:
 - Per eBay.it i job `UPDATE_EBAY_STOCK` richiedono ordine Shopify e snapshot
   catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
   saltata e non viene inviata nessuna mutation a eBay.
+- Per misurare la quota reale eBay Trading usa
+  `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`. Il comando
+  legge i limiti applicativi e utente via Analytics API e mostra `limit`,
+  `remaining`, `reset` e `timeWindow`. Se eBay segnala quota Trading esaurita,
+  il runner non riprova ogni minuto: crea un marker `SYNC_INCREMENTAL` fallito e
+  programma il prossimo enqueue dopo il reset giornaliero osservato, con
+  override opzionale tramite `SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS`.
 - La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
   `write_orders` e un token offline; `shopify store execute` con il token CLI
   disponibile non è sufficiente. Finché quello scope non è disponibile, la prova

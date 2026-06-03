@@ -19,6 +19,11 @@ import {
 } from "../lib/syncbay-catalog-reconcile";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
+  getNextEbayTradingRateLimitRetryAt,
+  isEbayTradingUsageLimitError,
+} from "../lib/syncbay-ebay-rate-limit";
+import { getNextIncrementalEnqueueAt } from "../lib/syncbay-incremental-schedule";
+import {
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   isSchedulableSyncJob,
@@ -451,18 +456,17 @@ async function enqueueIncrementalSyncJobs(now: Date) {
 
     const lastJob = await prisma.syncJob.findFirst({
       orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-      select: { finishedAt: true, createdAt: true },
+      select: { createdAt: true, finishedAt: true, runAfter: true },
       where: {
         shopId: shop.id,
         type: SyncJobType.SYNC_INCREMENTAL,
       },
     });
-    const nextRunAfter = lastJob
-      ? new Date(
-          (lastJob.finishedAt ?? lastJob.createdAt).getTime() +
-            shop.syncTargetSeconds * 1000,
-        )
-      : now;
+    const nextRunAfter = getNextIncrementalEnqueueAt({
+      latestJob: lastJob,
+      now,
+      syncTargetSeconds: shop.syncTargetSeconds,
+    });
 
     if (nextRunAfter > now) continue;
 
@@ -547,12 +551,24 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
+      const retryScheduledAt =
+        isEbayTradingUsageLimitError(errorMessage)
+          ? getNextEbayTradingRateLimitRetryAt({
+              cooldownSecondsValue:
+                process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
+              now,
+            })
+          : null;
+      const rateLimitCooldownSeconds = retryScheduledAt
+        ? Math.ceil((retryScheduledAt.getTime() - now.getTime()) / 1000)
+        : 0;
       const result = {
         failedBeforeEnqueue: true,
+        rateLimitCooldownSeconds,
         runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
         runnerErrorMessage: errorMessage,
-        retryScheduledAt: null,
-        willRetry: false,
+        retryScheduledAt: retryScheduledAt?.toISOString() ?? null,
+        willRetry: Boolean(retryScheduledAt),
       } satisfies Prisma.JsonObject;
 
       await prisma.$transaction([
@@ -568,7 +584,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
               source: "catalog_reconcile_enqueue",
             } satisfies Prisma.JsonObject,
             result,
-            runAfter: now,
+            runAfter: retryScheduledAt ?? now,
             shopId: shop.id,
             status: SyncJobStatus.FAILED,
             type: SyncJobType.SYNC_INCREMENTAL,

@@ -62,6 +62,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Validazione Prisma       | `npm run prisma:validate`                                                               |
 | Advisor Supabase         | `npm run db:verify`                                                                     |
 | Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
+| Limiti eBay Trading      | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                          |
 | Readiness ordini pagati  | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                     |
 | Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
 | Riparazione prezzo/SKU   | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run` |
@@ -73,6 +74,10 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
 `npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS `syncbay-supabase-db-password` quando disponibile. Evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
+`npm run ebay:rate-limits` legge i limiti eBay Trading reali via Analytics API
+per applicazione e utente, usando token eBay cifrati dal database e
+client-credentials per la quota applicativa; non stampa segreti e non modifica
+eBay.
 `npm run orders:paid-readiness` usa lo stesso accesso Supabase in sola lettura
 per verificare sessione offline Shopify, scope `read_orders`/`write_orders`,
 coda stock/sync e mapping candidati con snapshot `EUR` prima di una prova reale
