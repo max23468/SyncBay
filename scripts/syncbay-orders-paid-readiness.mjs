@@ -68,7 +68,9 @@ ebay_connection_row as (
     ec."connectedAt",
     ec."tokenExpiresAt",
     ec."refreshTokenExpiresAt",
-    ec.scopes
+    ec.scopes,
+    length(coalesce(ec."encryptedAccessToken", '')) as "accessTokenLength",
+    length(coalesce(ec."encryptedRefreshToken", '')) as "refreshTokenLength"
   from "EbayConnection" ec
   join shop_row s on s.id = ec."shopId"
   where ec."marketplaceId" = 'EBAY_IT'
@@ -255,6 +257,18 @@ function printReport(report) {
   console.log("Connessione eBay:");
   console.log(`- marketplace: ${report.ebayConnection.marketplaceId}`);
   console.log(`- status: ${report.ebayConnection.status ?? "assente"}`);
+  console.log(
+    `- accessToken: ${report.ebayConnection.hasAccessToken ? "presente" : "assente"}`,
+  );
+  console.log(
+    `- tokenExpiresAt: ${report.ebayConnection.tokenExpiresAt ?? "assente"}`,
+  );
+  console.log(
+    `- refreshToken: ${report.ebayConnection.hasRefreshToken ? "presente" : "assente"}`,
+  );
+  console.log(
+    `- refreshTokenExpiresAt: ${report.ebayConnection.refreshTokenExpiresAt ?? "assente"}`,
+  );
   console.log("");
   console.log("Coda:");
   console.log(`- job attivi: ${report.queue?.activeJobs ?? 0}`);

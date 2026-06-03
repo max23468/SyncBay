@@ -87,8 +87,8 @@ Note:
 - Prima di una prova reale `orders/paid`, usa
   `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`: il
   comando controlla in sola lettura sessione offline Shopify, scope
-  `read_orders`/`write_orders`, connessione eBay `EBAY_IT`, coda stock/sync e
-  candidati con snapshot `EUR`.
+  `read_orders`/`write_orders`, connessione eBay `EBAY_IT`, token eBay
+  utilizzabili, coda stock/sync e candidati con snapshot `EUR`.
   Se segnala solo `write_orders` mancante, il runtime webhook può ricevere
   `orders/paid`, ma il test automatico via Admin `orderCreate` richiede
   reautorizzazione con quello scope o un ordine manuale nel dev store.
