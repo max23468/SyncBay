@@ -2,14 +2,13 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { buildReadinessReport } from "./syncbay-orders-paid-readiness-report.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
 
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_CANDIDATE_LIMIT = 5;
-const REQUIRED_WEBHOOK_SCOPE = "read_orders";
-const ADMIN_ORDER_CREATE_SCOPE = "write_orders";
 const ACTIVE_JOB_STATUSES = ["PENDING", "RUNNING", "RETRYING"];
 
 const args = parseArgs(process.argv.slice(2));
@@ -30,7 +29,7 @@ async function main() {
     throw new Error("Supabase non ha restituito diagnostics.");
   }
 
-  const report = buildReadinessReport(payload);
+  const report = buildReadinessReport(payload, { shopDomain });
 
   if (args.json) {
     console.log(JSON.stringify(report, null, 2));
@@ -38,95 +37,6 @@ async function main() {
   }
 
   printReport(report);
-}
-
-function buildReadinessReport(payload) {
-  const scopes = splitScopes(payload.session?.scope);
-  const hasShop = Boolean(payload.shop?.id);
-  const hasSession = Boolean(payload.session?.id);
-  const sessionExpiresAt = parseDateOrNull(payload.session?.expires);
-  const refreshTokenExpiresAt = parseDateOrNull(
-    payload.session?.refreshTokenExpires,
-  );
-  const checkedAt = parseDateOrNull(payload.checkedAt) ?? new Date();
-  const sessionIsLegacy = hasSession && !sessionExpiresAt;
-  const sessionExpired =
-    Boolean(sessionExpiresAt) && sessionExpiresAt.getTime() <= checkedAt.getTime();
-  const refreshTokenExpired =
-    Boolean(refreshTokenExpiresAt) &&
-    refreshTokenExpiresAt.getTime() <= checkedAt.getTime();
-  const hasRefreshToken = Number(payload.session?.refreshTokenLength ?? 0) > 0;
-  const hasAccessToken = Number(payload.session?.accessTokenLength ?? 0) > 0;
-  const activeStockJobs = Number(payload.queue?.activeStockJobs ?? 0);
-  const activeSyncJobs = Number(payload.queue?.activeSyncJobs ?? 0);
-  const eligibleCandidateCount = Number(
-    payload.mappingCounts?.eligibleQuantityPositive ?? 0,
-  );
-
-  const webhookRuntimeBlockers = [
-    ...(!hasShop ? ["Shop SyncBay non trovato."] : []),
-    ...(!hasSession ? ["Sessione offline Shopify non trovata."] : []),
-    ...(payload.session?.isOnline
-      ? ["La sessione trovata è online; serve sessione offline."]
-      : []),
-    ...(hasSession && !hasAccessToken
-      ? ["Access token Shopify offline assente."]
-      : []),
-    ...(sessionIsLegacy
-      ? ["Sessione Shopify offline legacy senza scadenza: riaprire l'app per migrare ai token a scadenza."]
-      : []),
-    ...(hasSession && !hasRefreshToken
-      ? ["Refresh token Shopify offline assente."]
-      : []),
-    ...(refreshTokenExpired
-      ? ["Refresh token Shopify offline scaduto: riaprire l'app Shopify."]
-      : []),
-    ...(!hasScope(scopes, REQUIRED_WEBHOOK_SCOPE)
-      ? [`Scope Shopify mancante: ${REQUIRED_WEBHOOK_SCOPE}.`]
-      : []),
-    ...(activeStockJobs > 0
-      ? [`Ci sono ${activeStockJobs} job UPDATE_EBAY_STOCK attivi.`]
-      : []),
-    ...(activeSyncJobs > 0
-      ? [`Ci sono ${activeSyncJobs} job SYNC_INCREMENTAL attivi.`]
-      : []),
-    ...(eligibleCandidateCount === 0
-      ? ["Nessun mapping attivo con variante Shopify, snapshot EUR e quantità positiva."]
-      : []),
-  ];
-  const adminOrderCreateBlockers = [
-    ...webhookRuntimeBlockers,
-    ...(!hasScope(scopes, ADMIN_ORDER_CREATE_SCOPE)
-      ? [`Scope Shopify mancante per test Admin orderCreate: ${ADMIN_ORDER_CREATE_SCOPE}.`]
-      : []),
-  ];
-
-  return {
-    adminOrderCreateTestReady: adminOrderCreateBlockers.length === 0,
-    adminOrderCreateBlockers,
-    checkedAt: checkedAt.toISOString(),
-    candidates: payload.candidates ?? [],
-    latestStockJobs: payload.latestStockJobs ?? [],
-    mappingCounts: payload.mappingCounts,
-    queue: payload.queue,
-    session: {
-      expires: payload.session?.expires ?? null,
-      hasAccessToken,
-      hasRefreshToken,
-      id: payload.session?.id ?? null,
-      isLegacy: sessionIsLegacy,
-      isOnline: Boolean(payload.session?.isOnline),
-      refreshTokenExpires: payload.session?.refreshTokenExpires ?? null,
-      scopeMissingForAdminOrderCreate: !hasScope(scopes, ADMIN_ORDER_CREATE_SCOPE),
-      scopeMissingForWebhook: !hasScope(scopes, REQUIRED_WEBHOOK_SCOPE),
-      scopes,
-      tokenExpired: sessionExpired,
-    },
-    shop: payload.shop,
-    shopDomain,
-    webhookRuntimeBlockers,
-    webhookRuntimeReady: webhookRuntimeBlockers.length === 0,
-  };
 }
 
 function buildReadinessSql() {
@@ -149,6 +59,19 @@ session_row as (
     length(coalesce(sess."refreshToken", '')) as "refreshTokenLength"
   from "Session" sess
   where sess.id = 'offline_' || ${sqlString(shopDomain)}
+  limit 1
+),
+ebay_connection_row as (
+  select
+    ec."marketplaceId",
+    ec.status,
+    ec."connectedAt",
+    ec."tokenExpiresAt",
+    ec."refreshTokenExpiresAt",
+    ec.scopes
+  from "EbayConnection" ec
+  join shop_row s on s.id = ec."shopId"
+  where ec."marketplaceId" = 'EBAY_IT'
   limit 1
 ),
 latest_snapshot as (
@@ -265,6 +188,7 @@ select jsonb_build_object(
     from shop_row
   ),
   'session', (select to_jsonb(session_row) from session_row),
+  'ebayConnection', (select to_jsonb(ebay_connection_row) from ebay_connection_row),
   'mappingCounts', (select to_jsonb(mapping_counts) from mapping_counts),
   'candidates', coalesce((select rows from candidate_rows), '[]'::jsonb),
   'queue', (select to_jsonb(queue_counts) from queue_counts),
@@ -327,6 +251,10 @@ function printReport(report) {
   console.log(
     `- scope: ${report.session.scopes.length > 0 ? report.session.scopes.join(", ") : "assenti"}`,
   );
+  console.log("");
+  console.log("Connessione eBay:");
+  console.log(`- marketplace: ${report.ebayConnection.marketplaceId}`);
+  console.log(`- status: ${report.ebayConnection.status ?? "assente"}`);
   console.log("");
   console.log("Coda:");
   console.log(`- job attivi: ${report.queue?.activeJobs ?? 0}`);
@@ -394,31 +322,6 @@ function printReport(report) {
       "Prossima azione: il runtime può ricevere orders/paid, ma il test automatico via Admin API richiede write_orders. Usa un checkout/admin order manuale sul dev store oppure aggiungi lo scope e riapri l'app Shopify per ottenere una sessione offline aggiornata.",
     );
   }
-}
-
-function splitScopes(value) {
-  return String(value ?? "")
-    .split(/[,\s]+/)
-    .map((scope) => scope.trim())
-    .filter(Boolean);
-}
-
-function hasScope(scopes, requiredScope) {
-  if (scopes.includes(requiredScope)) return true;
-
-  if (requiredScope.startsWith("read_")) {
-    const writeEquivalent = requiredScope.replace(/^read_/, "write_");
-    return scopes.includes(writeEquivalent);
-  }
-
-  return false;
-}
-
-function parseDateOrNull(value) {
-  if (!value) return null;
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function parseArgs(rawArgs) {

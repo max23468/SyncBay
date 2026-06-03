@@ -80,8 +80,9 @@ client-credentials per la quota applicativa; non stampa segreti e non modifica
 eBay.
 `npm run orders:paid-readiness` usa lo stesso accesso Supabase in sola lettura
 per verificare sessione offline Shopify, scope `read_orders`/`write_orders`,
-coda stock/sync e mapping candidati con snapshot `EUR` prima di una prova reale
-`orders/paid`; non stampa token, segreti o dati cliente.
+connessione eBay `EBAY_IT`, coda stock/sync e mapping candidati con snapshot
+`EUR` prima di una prova reale `orders/paid`; non stampa token, segreti o dati
+cliente.
 `npm run import:verify` usa Supabase CLI linked più Shopify CLI store execute in sola lettura per confrontare un campione dell'ultima run import tra snapshot eBay/SyncBay, mapping e prodotto Shopify live.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
