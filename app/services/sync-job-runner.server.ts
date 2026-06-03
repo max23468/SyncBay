@@ -1266,6 +1266,12 @@ async function getUsableOfflineShopifySession(shopDomain: string) {
       }
 
       if (!session.refreshToken) {
+        if (!session.expires) {
+          throw new Error(
+            "Sessione offline Shopify legacy senza scadenza e senza refresh token: riapri l'app Shopify per migrare ai token offline a scadenza richiesti dalle public app Shopify dal 2027.",
+          );
+        }
+
         throw new Error(
           "Sessione offline Shopify scaduta senza refresh token: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
         );

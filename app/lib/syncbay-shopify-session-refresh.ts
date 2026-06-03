@@ -4,7 +4,7 @@ export function shouldRefreshOfflineShopifySession(
   expires: Date | null,
   now: Date,
 ) {
-  if (!expires) return false;
+  if (!expires) return true;
 
   return (
     expires.getTime() <=

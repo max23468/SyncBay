@@ -21,6 +21,7 @@ Usa un ADR quando una scelta:
 - `0006-versioning-runtime-locale.md`: versioning SemVer locale in linea con Pratix.
 - `0007-privacy-provvisoria-pilota.md`: privacy policy provvisoria per RuName eBay e pilota controllato.
 - `0008-tag-e-github-release.md`: policy per tag `vX.Y.Z` e GitHub Release.
+- `0009-shopify-token-offline-a-scadenza.md`: token offline Shopify a scadenza e refresh come requisito per i job automatici.
 
 ## Convenzioni
 

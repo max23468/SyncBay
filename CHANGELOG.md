@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.12] — 2026-06-03
+
+### Correzioni
+
+- Il runner non considera più sane le sessioni offline Shopify legacy senza
+  scadenza: i job automatici richiedono token offline a scadenza con refresh,
+  in linea con il requisito Shopify public app 2027.
+
+### Sotto il cofano
+
+- Aggiunto l'ADR sui token offline Shopify a scadenza come requisito operativo
+  per import, sync e archiviazioni automatiche.
+
 ## [0.22.11] — 2026-06-03
 
 ### Correzioni
@@ -839,6 +852,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.12]: #02212--2026-06-03
 [0.22.11]: #02211--2026-06-03
 [0.22.10]: #02210--2026-06-03
 [0.22.9]: #0229--2026-06-03

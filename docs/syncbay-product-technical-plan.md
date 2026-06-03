@@ -130,6 +130,9 @@ Scope iniziali previsti:
 - `read_orders` per il webhook `orders/paid`, da attivare solo dopo
   approvazione Shopify protected customer data per la protezione disponibilità.
 - `read_files` e `write_files` per media prodotto.
+- token offline Shopify a scadenza con refresh automatico per i job automatici,
+  in linea con ADR `0009-shopify-token-offline-a-scadenza.md` e con il
+  requisito Shopify public app dal 1 gennaio 2027.
 
 Webhook Shopify MVP:
 

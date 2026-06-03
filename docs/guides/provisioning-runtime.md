@@ -72,6 +72,12 @@ Note:
   disponibile non è sufficiente. Finché quello scope non è disponibile, la prova
   completa del trigger vendita Shopify reale resta separata dalla prova del
   runner stock.
+- Il runner automatico richiede sessioni Shopify offline a scadenza con
+  `refreshToken`: le sessioni legacy senza `expires` non sono considerate sane
+  perché le public app Shopify dovranno usare token offline a scadenza dal 1
+  gennaio 2027. Se il refresh token manca o scade, riaprire l'app Shopify per
+  ripetere il flusso di autorizzazione/migrazione; non usare token offline a
+  durata illimitata come workaround.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
