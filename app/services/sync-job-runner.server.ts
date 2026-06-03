@@ -30,6 +30,7 @@ import {
 } from "../lib/syncbay-shopify-admin";
 import { shouldRefreshOfflineShopifySession } from "../lib/syncbay-shopify-session-refresh";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
+import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
   isEbayStockDryRunEnabled,
   shouldDryRunEbayStockLine,
@@ -984,7 +985,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
-    if (await hasCompletedStockUpdateForLine(job, mapping.id, lineItem)) {
+    if (
+      await hasCompletedStockUpdateForLine({
+        ebayItemId: mapping.ebayItemId,
+        job,
+        lineItem,
+        mappingId: mapping.id,
+      })
+    ) {
       skipped.push({
         ebayItemId: mapping.ebayItemId,
         lineItemKey: lineItem.lineItemKey,
@@ -1932,24 +1940,25 @@ async function findProductMappingForOrderLine(
   });
 }
 
-async function hasCompletedStockUpdateForLine(
-  job: DueSyncJob,
-  mappingId: string,
+async function hasCompletedStockUpdateForLine(input: {
+  ebayItemId: string;
+  job: DueSyncJob;
   lineItem: {
     lineItemKey: string | null;
-  },
-) {
-  if (!lineItem.lineItemKey) return false;
+  };
+  mappingId: string;
+}) {
+  if (!input.lineItem.lineItemKey) return false;
 
   const snapshot = await prisma.productSnapshot.findFirst({
     select: { id: true },
     where: {
       AND: [
-        { payload: { path: ["syncJobId"], equals: job.id } },
+        { payload: { path: ["syncJobId"], equals: input.job.id } },
         {
           payload: {
             path: ["orderLineItemKey"],
-            equals: lineItem.lineItemKey,
+            equals: input.lineItem.lineItemKey,
           },
         },
         {
@@ -1959,13 +1968,35 @@ async function hasCompletedStockUpdateForLine(
           },
         },
       ],
-      mappingId,
-      shopId: job.shopId,
+      mappingId: input.mappingId,
+      shopId: input.job.shopId,
       source: ProductSnapshotSource.SYNCBAY,
     },
   });
 
-  return Boolean(snapshot);
+  if (snapshot) return true;
+
+  const previousJobs = await prisma.syncJob.findMany({
+    orderBy: { updatedAt: "desc" },
+    select: { result: true },
+    take: 50,
+    where: {
+      id: { not: input.job.id },
+      shopId: input.job.shopId,
+      status: SyncJobStatus.SUCCEEDED,
+      type: SyncJobType.UPDATE_EBAY_STOCK,
+    },
+  });
+
+  return hasProcessedStockLineInJobResults({
+    ebayItemId: input.ebayItemId,
+    lineItemKey: input.lineItem.lineItemKey,
+    results: previousJobs.flatMap((job) => {
+      const result = getJsonObject(job.result);
+
+      return result ? [result] : [];
+    }),
+  });
 }
 
 async function findMappingByInventoryItemGid(
