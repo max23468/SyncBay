@@ -1011,9 +1011,18 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
+    const lineDryRun = shouldDryRunEbayStockLine({
+      allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
+      ebayItemId: mapping.ebayItemId,
+      shopDomain: job.shop.shopDomain,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+      stockDryRunEnabled: stockDryRun,
+    });
+
     if (
       await hasCompletedStockUpdateForLine({
         ebayItemId: mapping.ebayItemId,
+        includeDryRunPlans: lineDryRun,
         job,
         lineItem,
         mappingId: mapping.id,
@@ -1063,13 +1072,6 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
 
     const previousQuantity = latestSnapshot?.quantity ?? 0;
     const nextQuantity = Math.max(0, previousQuantity - lineItem.quantity);
-    const lineDryRun = shouldDryRunEbayStockLine({
-      allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
-      ebayItemId: mapping.ebayItemId,
-      shopDomain: job.shop.shopDomain,
-      shopifyVariantGid: mapping.shopifyVariantGid,
-      stockDryRunEnabled: stockDryRun,
-    });
 
     if (lineDryRun) {
       planned.push({
@@ -1968,6 +1970,7 @@ async function findProductMappingForOrderLine(
 
 async function hasCompletedStockUpdateForLine(input: {
   ebayItemId: string;
+  includeDryRunPlans: boolean;
   job: DueSyncJob;
   lineItem: {
     lineItemKey: string | null;
@@ -2016,6 +2019,7 @@ async function hasCompletedStockUpdateForLine(input: {
 
   return hasProcessedStockLineInJobResults({
     ebayItemId: input.ebayItemId,
+    includeDryRunPlans: input.includeDryRunPlans,
     lineItemKey: input.lineItem.lineItemKey,
     results: previousJobs.flatMap((job) => {
       const result = getJsonObject(job.result);

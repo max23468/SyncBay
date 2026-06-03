@@ -28,6 +28,7 @@ test("detects duplicate stock lines already planned by a dry-run job", () => {
   assert.equal(
     hasProcessedStockLineInJobResults({
       ebayItemId: "168056372240",
+      includeDryRunPlans: true,
       lineItemKey: "line-1",
       results: [
         {
@@ -44,10 +45,32 @@ test("detects duplicate stock lines already planned by a dry-run job", () => {
   );
 });
 
+test("does not dedupe real stock writes against dry-run plans", () => {
+  assert.equal(
+    hasProcessedStockLineInJobResults({
+      ebayItemId: "168056372240",
+      includeDryRunPlans: false,
+      lineItemKey: "line-1",
+      results: [
+        {
+          planned: [
+            {
+              ebayItemId: "168056372240",
+              lineItemKey: "line-1",
+            },
+          ],
+        },
+      ],
+    }),
+    false,
+  );
+});
+
 test("ignores different line items and listings", () => {
   assert.equal(
     hasProcessedStockLineInJobResults({
       ebayItemId: "168056372240",
+      includeDryRunPlans: true,
       lineItemKey: "line-1",
       results: [
         {
