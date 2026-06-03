@@ -99,6 +99,13 @@ Note:
   ripetere il flusso di autorizzazione/migrazione; non usare token offline a
   durata illimitata come workaround.
 - `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
+- `/api/diagnostics/shopify-admin` è l'endpoint diagnostico interno per verificare
+  Shopify Admin usando la sessione offline SyncBay e il refresh token lato
+  runtime, senza passare da `shopify store auth`. È protetto da `APP_SECRET`
+  via `Authorization: Bearer` o header `x-syncbay-app-secret`, non accetta
+  query GraphQL arbitrarie e limita la verifica prodotti a batch di massimo 20
+  GID Shopify per richiesta. Lo script `npm run import:verify` lo usa come
+  sorgente Shopify predefinita.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
