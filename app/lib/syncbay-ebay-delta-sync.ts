@@ -62,11 +62,29 @@ export function getSellerEventsWatermarkAt(input: {
   latestSellerEventsCompletedAt: Date | null;
   latestSellerEventsModTimeToValue?: string | null;
 }) {
-  return (
+  const sellerEventsWatermark =
     parseDate(input.latestSellerEventsModTimeToValue) ??
-    input.latestSellerEventsCompletedAt ??
-    input.latestFullReconcileAt
+    input.latestSellerEventsCompletedAt;
+
+  return maxDate(sellerEventsWatermark, input.latestFullReconcileAt);
+}
+
+export function shouldAdvanceSellerEventsArchiveWatermark(input: {
+  archiveOnly: boolean;
+  statuses: string[];
+}) {
+  return (
+    input.archiveOnly &&
+    input.statuses.length > 0 &&
+    input.statuses.every((status) => status === "SUCCEEDED")
   );
+}
+
+function maxDate(first: Date | null, second: Date | null) {
+  if (!first) return second;
+  if (!second) return first;
+
+  return first.getTime() >= second.getTime() ? first : second;
 }
 
 function parseDate(value?: string | null) {

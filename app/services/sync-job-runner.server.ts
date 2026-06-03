@@ -22,6 +22,7 @@ import {
   getSellerEventsDeltaWindow,
   getSellerEventsWatermarkAt,
   isFullCatalogReconcileDue,
+  shouldAdvanceSellerEventsArchiveWatermark,
 } from "../lib/syncbay-ebay-delta-sync";
 import {
   getNextEbayTradingRateLimitRetryAt,
@@ -768,6 +769,7 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
     idempotencyKey: `archive-inactive:${input.shopId}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
     maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
     payload: {
+      archiveOnly: syncJobs.length === 0,
       ebayItemId,
       eventReadCount: delta.readCount,
       marketplaceId: DEFAULT_MARKETPLACE_ID,
@@ -781,38 +783,8 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
     status: SyncJobStatus.PENDING,
     type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
   }));
-  const progressJobs =
-    syncJobs.length === 0
-      ? [
-          {
-            attempts: 1,
-            finishedAt: input.now,
-            maxAttempts: 1,
-            payload: {
-              archivedEventCount: delta.inactiveItemIds.length,
-              eventReadCount: delta.readCount,
-              marketplaceId: DEFAULT_MARKETPLACE_ID,
-              modTimeFrom: delta.timeFrom,
-              modTimeTo: delta.timeTo,
-              runId,
-              source: "seller_events_delta",
-            } satisfies Prisma.JsonObject,
-            result: {
-              archivedEventCount: delta.inactiveItemIds.length,
-              eventReadCount: delta.readCount,
-              source: "seller_events_delta",
-              watermarkAdvanced: true,
-            } satisfies Prisma.JsonObject,
-            runAfter: input.now,
-            shopId: input.shopId,
-            status: SyncJobStatus.SUCCEEDED,
-            type: SyncJobType.SYNC_INCREMENTAL,
-          },
-        ]
-      : [];
-
   await prisma.syncJob.createMany({
-    data: [...syncJobs, ...archiveJobs, ...progressJobs],
+    data: [...syncJobs, ...archiveJobs],
     skipDuplicates: true,
   });
 }
@@ -1507,6 +1479,7 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
       },
       warnings: ["Archivio saltato: mapping attivo non trovato."],
     });
+    await maybeMarkSellerEventsArchiveWindowSucceeded(job);
 
     return {
       jobId: job.id,
@@ -1565,12 +1538,78 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
       ? []
       : ["Mapping archiviato senza prodotto Shopify collegato."],
   });
+  await maybeMarkSellerEventsArchiveWindowSucceeded(job);
 
   return {
     jobId: job.id,
     status: "succeeded" as const,
     type: job.type,
   };
+}
+
+async function maybeMarkSellerEventsArchiveWindowSucceeded(job: DueSyncJob) {
+  const payload = getJsonObject(job.payload);
+  const archiveOnly = payload?.archiveOnly === true;
+  const source = getStringFromPayload(job.payload, "source");
+  const runId = getStringFromPayload(job.payload, "runId");
+  const marketplaceId = getEbayMarketplaceId(job.payload);
+  const modTimeFrom = getStringFromPayload(job.payload, "modTimeFrom");
+  const modTimeTo = getStringFromPayload(job.payload, "modTimeTo");
+
+  if (source !== "seller_events_delta" || !runId || !modTimeTo) return;
+
+  const archiveJobs = await prisma.syncJob.findMany({
+    select: { status: true },
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "seller_events_delta" } },
+        { payload: { path: ["runId"], equals: runId } },
+      ],
+      shopId: job.shopId,
+      type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+    },
+  });
+
+  if (
+    !shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly,
+      statuses: archiveJobs.map((archiveJob) => archiveJob.status),
+    })
+  ) {
+    return;
+  }
+
+  const finishedAt = new Date();
+  const archivedEventCount = archiveJobs.length;
+
+  await prisma.syncJob.createMany({
+    data: [
+      {
+        attempts: 1,
+        finishedAt,
+        idempotencyKey: `seller-events-archive-progress:${job.shopId}:${marketplaceId}:${runId}`,
+        maxAttempts: 1,
+        payload: {
+          archivedEventCount,
+          marketplaceId,
+          modTimeFrom,
+          modTimeTo,
+          runId,
+          source: "seller_events_delta",
+        } satisfies Prisma.JsonObject,
+        result: {
+          archivedEventCount,
+          source: "seller_events_delta",
+          watermarkAdvanced: true,
+        } satisfies Prisma.JsonObject,
+        runAfter: finishedAt,
+        shopId: job.shopId,
+        status: SyncJobStatus.SUCCEEDED,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    ],
+    skipDuplicates: true,
+  });
 }
 
 async function getShopifyAdminGraphqlClient(shopDomain: string) {

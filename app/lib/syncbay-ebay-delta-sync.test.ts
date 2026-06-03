@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getSellerEventsDeltaWindow, getSellerEventsWatermarkAt, isFullCatalogReconcileDue } from "./syncbay-ebay-delta-sync.ts";
+import { getSellerEventsDeltaWindow, getSellerEventsWatermarkAt, isFullCatalogReconcileDue, shouldAdvanceSellerEventsArchiveWatermark } from "./syncbay-ebay-delta-sync.ts";
 
 test("uses a seller-events window with documented overlap and current-time buffer", () => {
   assert.deepEqual(
@@ -87,5 +87,54 @@ test("falls back to the full reconcile when seller-events watermark is absent", 
       latestSellerEventsCompletedAt: null,
     }),
     new Date("2026-06-03T10:00:00.000Z"),
+  );
+});
+
+test("prefers a newer full reconcile over an older seller-events watermark", () => {
+  assert.deepEqual(
+    getSellerEventsWatermarkAt({
+      latestFullReconcileAt: new Date("2026-06-03T11:00:00.000Z"),
+      latestSellerEventsCompletedAt: new Date("2026-06-03T10:20:00.000Z"),
+      latestSellerEventsModTimeToValue: "2026-06-03T10:03:00.000Z",
+    }),
+    new Date("2026-06-03T11:00:00.000Z"),
+  );
+});
+
+test("advances archive-only seller-events watermark only after every archive job succeeds", () => {
+  assert.equal(
+    shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly: true,
+      statuses: ["SUCCEEDED", "SUCCEEDED"],
+    }),
+    true,
+  );
+  assert.equal(
+    shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly: true,
+      statuses: ["SUCCEEDED", "PENDING"],
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly: true,
+      statuses: ["SUCCEEDED", "FAILED"],
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly: true,
+      statuses: [],
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAdvanceSellerEventsArchiveWatermark({
+      archiveOnly: false,
+      statuses: ["SUCCEEDED", "SUCCEEDED"],
+    }),
+    false,
   );
 });
