@@ -20,6 +20,7 @@ import {
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
   getSellerEventsDeltaWindow,
+  getSellerEventsWatermarkAt,
   isFullCatalogReconcileDue,
 } from "../lib/syncbay-ebay-delta-sync";
 import {
@@ -479,12 +480,13 @@ async function enqueueIncrementalSyncJobs(now: Date) {
     try {
       const connection = shop.ebayConnections[0];
       const { accessToken } = await getUsableEbayAccessToken(connection);
-      const [latestSuccessfulSyncJob, latestFullReconcileJob] =
+      const [latestSellerEventsSyncJob, latestFullReconcileJob] =
         await Promise.all([
           prisma.syncJob.findFirst({
             orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { createdAt: true, finishedAt: true },
+            select: { createdAt: true, finishedAt: true, payload: true },
             where: {
+              payload: { path: ["source"], equals: "seller_events_delta" },
               shopId: shop.id,
               status: SyncJobStatus.SUCCEEDED,
               type: SyncJobType.SYNC_INCREMENTAL,
@@ -501,18 +503,28 @@ async function enqueueIncrementalSyncJobs(now: Date) {
             },
           }),
         ]);
+      const latestFullReconcileAt = getJobCompletionTime(
+        latestFullReconcileJob,
+      );
       const fullReconcileDue = isFullCatalogReconcileDue({
         intervalSecondsValue:
           process.env.SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS,
-        latestFullReconcileAt: getJobCompletionTime(latestFullReconcileJob),
+        latestFullReconcileAt,
         now,
       });
       const sellerEventsWindow = fullReconcileDue
         ? null
         : getSellerEventsDeltaWindow({
-            latestSuccessfulSyncAt: getJobCompletionTime(
-              latestSuccessfulSyncJob,
-            ),
+            latestSuccessfulSyncAt: getSellerEventsWatermarkAt({
+              latestFullReconcileAt,
+              latestSellerEventsCompletedAt: getJobCompletionTime(
+                latestSellerEventsSyncJob,
+              ),
+              latestSellerEventsModTimeToValue: getStringFromPayload(
+                latestSellerEventsSyncJob?.payload ?? null,
+                "modTimeTo",
+              ),
+            }),
             now,
           });
 
@@ -769,9 +781,38 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
     status: SyncJobStatus.PENDING,
     type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
   }));
+  const progressJobs =
+    syncJobs.length === 0
+      ? [
+          {
+            attempts: 1,
+            finishedAt: input.now,
+            maxAttempts: 1,
+            payload: {
+              archivedEventCount: delta.inactiveItemIds.length,
+              eventReadCount: delta.readCount,
+              marketplaceId: DEFAULT_MARKETPLACE_ID,
+              modTimeFrom: delta.timeFrom,
+              modTimeTo: delta.timeTo,
+              runId,
+              source: "seller_events_delta",
+            } satisfies Prisma.JsonObject,
+            result: {
+              archivedEventCount: delta.inactiveItemIds.length,
+              eventReadCount: delta.readCount,
+              source: "seller_events_delta",
+              watermarkAdvanced: true,
+            } satisfies Prisma.JsonObject,
+            runAfter: input.now,
+            shopId: input.shopId,
+            status: SyncJobStatus.SUCCEEDED,
+            type: SyncJobType.SYNC_INCREMENTAL,
+          },
+        ]
+      : [];
 
   await prisma.syncJob.createMany({
-    data: [...syncJobs, ...archiveJobs],
+    data: [...syncJobs, ...archiveJobs, ...progressJobs],
     skipDuplicates: true,
   });
 }

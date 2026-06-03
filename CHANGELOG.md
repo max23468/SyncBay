@@ -12,6 +12,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.19] — 2026-06-03
+
+### Correzioni
+
+- Il watermark dei delta eBay avanza dal `ModTimeTo` processato, non dal tempo
+  di completamento del job, evitando buchi tra finestre `GetSellerEvents`.
+- I delta eBay composti solo da listing inattivi registrano un marker
+  `SYNC_INCREMENTAL` riuscito, evitando archiviazioni duplicate della stessa
+  finestra.
+
 ## [0.22.18] — 2026-06-03
 
 ### Sotto il cofano
@@ -911,6 +921,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.19]: #02219--2026-06-03
 [0.22.18]: #02218--2026-06-03
 [0.22.17]: #02217--2026-06-03
 [0.22.16]: #02216--2026-06-03

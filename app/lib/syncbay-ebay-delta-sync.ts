@@ -56,3 +56,23 @@ export function getSellerEventsDeltaWindow(input: {
     modTimeTo,
   };
 }
+
+export function getSellerEventsWatermarkAt(input: {
+  latestFullReconcileAt: Date | null;
+  latestSellerEventsCompletedAt: Date | null;
+  latestSellerEventsModTimeToValue?: string | null;
+}) {
+  return (
+    parseDate(input.latestSellerEventsModTimeToValue) ??
+    input.latestSellerEventsCompletedAt ??
+    input.latestFullReconcileAt
+  );
+}
+
+function parseDate(value?: string | null) {
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  return Number.isFinite(date.getTime()) ? date : null;
+}
