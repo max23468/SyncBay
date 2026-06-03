@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.16] — 2026-06-03
+
+### Correzioni
+
+- La dashboard usa solo l'ultimo `SYNC_INCREMENTAL` riuscito per calcolare la
+  freschezza del catalogo, così un marker di cooldown fallito non appare come
+  sync recente.
+
 ## [0.22.15] — 2026-06-03
 
 ### Correzioni
@@ -881,6 +889,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.16]: #02216--2026-06-03
 [0.22.15]: #02215--2026-06-03
 [0.22.14]: #02214--2026-06-03
 [0.22.13]: #02213--2026-06-03
