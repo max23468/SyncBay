@@ -176,6 +176,32 @@ latest_stock_jobs as (
     order by j."updatedAt" desc
     limit 5
   ) stock_jobs
+),
+trading_api_cooldown as (
+  select jsonb_build_object(
+    'id', j.id,
+    'type', j.type,
+    'status', j.status,
+    'errorCode', j."errorCode",
+    'runAfter', j."runAfter",
+    'retryScheduledAt', j.result->>'retryScheduledAt',
+    'rateLimitCooldownSeconds', j.result->>'rateLimitCooldownSeconds'
+  ) as payload
+  from "SyncJob" j
+  join shop_row s on s.id = j."shopId"
+  where j."runAfter" > now()
+    and j.type in (
+      'IMPORT_CATALOG',
+      'SYNC_INCREMENTAL',
+      'UPDATE_EBAY_STOCK',
+      'ARCHIVE_INACTIVE_LISTING'
+    )
+    and j."errorCode" in (
+      'EBAY_TRADING_RATE_LIMITED',
+      'SYNCBAY_INCREMENTAL_ENQUEUE_FAILED'
+    )
+  order by j."runAfter" asc, j."updatedAt" desc
+  limit 1
 )
 select jsonb_build_object(
   'checkedAt', now(),
@@ -194,7 +220,8 @@ select jsonb_build_object(
   'mappingCounts', (select to_jsonb(mapping_counts) from mapping_counts),
   'candidates', coalesce((select rows from candidate_rows), '[]'::jsonb),
   'queue', (select to_jsonb(queue_counts) from queue_counts),
-  'latestStockJobs', coalesce((select rows from latest_stock_jobs), '[]'::jsonb)
+  'latestStockJobs', coalesce((select rows from latest_stock_jobs), '[]'::jsonb),
+  'tradingApiCooldown', (select payload from trading_api_cooldown)
 ) as diagnostics;
 `;
 }

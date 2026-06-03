@@ -49,6 +49,18 @@ export function buildReadinessReport(
   const eligibleCandidateCount = Number(
     payload.mappingCounts?.eligibleQuantityPositive ?? 0,
   );
+  const ebayTradingCooldownRetryAt = parseDateOrNull(
+    payload.tradingApiCooldown?.retryScheduledAt ??
+      payload.tradingApiCooldown?.runAfter,
+  );
+  const ebayTradingCooldownActive =
+    Boolean(ebayTradingCooldownRetryAt) &&
+    ebayTradingCooldownRetryAt.getTime() > checkedAt.getTime();
+  const ebayTradingCooldownBlockers = ebayTradingCooldownActive
+    ? [
+        `Trading API eBay in cooldown fino a ${ebayTradingCooldownRetryAt.toISOString()}: rimanda il test Admin orderCreate.`,
+      ]
+    : [];
 
   const webhookRuntimeBlockers = [
     ...(!hasShop ? ["Shop SyncBay non trovato."] : []),
@@ -97,6 +109,7 @@ export function buildReadinessReport(
     ...(!hasScope(scopes, ADMIN_ORDER_CREATE_SCOPE)
       ? [`Scope Shopify mancante per test Admin orderCreate: ${ADMIN_ORDER_CREATE_SCOPE}.`]
       : []),
+    ...ebayTradingCooldownBlockers,
   ];
 
   return {
@@ -114,6 +127,14 @@ export function buildReadinessReport(
       status: ebayConnectionStatus,
       tokenExpiresAt: payload.ebayConnection?.tokenExpiresAt ?? null,
       tokenRefreshRequired: ebayTokenRefreshRequired,
+    },
+    ebayTradingCooldown: {
+      active: ebayTradingCooldownActive,
+      errorCode: payload.tradingApiCooldown?.errorCode ?? null,
+      jobId: payload.tradingApiCooldown?.id ?? null,
+      jobType: payload.tradingApiCooldown?.type ?? null,
+      retryAt: ebayTradingCooldownRetryAt?.toISOString() ?? null,
+      status: payload.tradingApiCooldown?.status ?? null,
     },
     latestStockJobs: payload.latestStockJobs ?? [],
     mappingCounts: payload.mappingCounts,
