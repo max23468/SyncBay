@@ -94,10 +94,10 @@ Provisioning minimo:
   stato verificato con payload ordine sintetico e allowlist singola; il parser
   payload `orders/paid` -> job stock è coperto da test locali. La readiness
   operativa si controlla con `npm run orders:paid-readiness -- --shop
-  syncbay-dev.myshopify.com`. `write_orders` viene richiesto per generare una
-  prova automatica controllata via Admin `orderCreate`; finché la sessione
-  offline non viene reautorizzata con quello scope, manca ancora la prova del
-  trigger da ordine Shopify reale.
+  syncbay-dev.myshopify.com` e include sessione Shopify, scope ordini,
+  connessione eBay `EBAY_IT`, coda stock/sync e candidati. La sessione offline
+  del dev store ora include `write_orders`; manca ancora la prova del trigger
+  da ordine Shopify reale via Admin `orderCreate`.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata

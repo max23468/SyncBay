@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.20] — 2026-06-03
+
+### Sotto il cofano
+
+- La readiness `orders:paid-readiness` controlla anche la connessione eBay
+  `EBAY_IT`, evitando di dichiarare pronto un test `orders/paid` quando lo
+  stock runner fallirebbe prima di aggiornare eBay.
+
 ## [0.22.19] — 2026-06-03
 
 ### Correzioni
