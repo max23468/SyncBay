@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.13] — 2026-06-03
+
+### Sotto il cofano
+
+- Aggiunta la readiness operativa `orders:paid-readiness` per controllare
+  sessione offline Shopify, scope ordini, coda stock/sync e candidati con
+  snapshot `EUR` prima della prova reale `orders/paid`.
+- La configurazione Shopify richiede anche `write_orders` per abilitare una
+  prova automatica controllata via Admin `orderCreate` sul dev store.
+
 ## [0.22.12] — 2026-06-03
 
 ### Correzioni
@@ -852,6 +862,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.13]: #02213--2026-06-03
 [0.22.12]: #02212--2026-06-03
 [0.22.11]: #02211--2026-06-03
 [0.22.10]: #02210--2026-06-03

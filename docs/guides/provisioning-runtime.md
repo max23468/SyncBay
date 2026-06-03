@@ -72,6 +72,13 @@ Note:
   disponibile non è sufficiente. Finché quello scope non è disponibile, la prova
   completa del trigger vendita Shopify reale resta separata dalla prova del
   runner stock.
+- Prima di una prova reale `orders/paid`, usa
+  `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`: il
+  comando controlla in sola lettura sessione offline Shopify, scope
+  `read_orders`/`write_orders`, coda stock/sync e candidati con snapshot `EUR`.
+  Se segnala solo `write_orders` mancante, il runtime webhook può ricevere
+  `orders/paid`, ma il test automatico via Admin `orderCreate` richiede
+  reautorizzazione con quello scope o un ordine manuale nel dev store.
 - Il runner automatico richiede sessioni Shopify offline a scadenza con
   `refreshToken`: le sessioni legacy senza `expires` non sono considerate sane
   perché le public app Shopify dovranno usare token offline a scadenza dal 1
@@ -174,6 +181,9 @@ Scope Shopify richiesti dal pilota runtime:
   precedenti gestiti da SyncBay.
 - `read_orders` per ricevere `orders/paid` nel pilota custom e creare job
   prioritari `UPDATE_EBAY_STOCK`.
+- `write_orders` per creare una prova automatica controllata via Admin
+  `orderCreate` sul dev store; se manca dalla sessione offline, riaprire e
+  autorizzare l'app Shopify dopo il deploy degli scope aggiornati.
 
 La schedule Cron attuale richiama il runner `/api/jobs/run-due`, che drena
 import catalogo, sync incrementale, rilevazione conflitti Shopify e job stock

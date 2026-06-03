@@ -62,6 +62,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Validazione Prisma       | `npm run prisma:validate`                                                               |
 | Advisor Supabase         | `npm run db:verify`                                                                     |
 | Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
+| Readiness ordini pagati  | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                     |
 | Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
 | Riparazione prezzo/SKU   | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run` |
 | Ripristino stock eBay    | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
@@ -72,6 +73,10 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
 `npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS `syncbay-supabase-db-password` quando disponibile. Evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
+`npm run orders:paid-readiness` usa lo stesso accesso Supabase in sola lettura
+per verificare sessione offline Shopify, scope `read_orders`/`write_orders`,
+coda stock/sync e mapping candidati con snapshot `EUR` prima di una prova reale
+`orders/paid`; non stampa token, segreti o dati cliente.
 `npm run import:verify` usa Supabase CLI linked più Shopify CLI store execute in sola lettura per confrontare un campione dell'ultima run import tra snapshot eBay/SyncBay, mapping e prodotto Shopify live.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.

@@ -92,9 +92,12 @@ Provisioning minimo:
   marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot
   catalogo in `EUR` e salta righe con valuta mancante o diversa. Il runner è
   stato verificato con payload ordine sintetico e allowlist singola; il parser
-  payload `orders/paid` -> job stock è coperto da test locali. Manca ancora la
-  prova del trigger da ordine Shopify reale, che resta gate pre-pilota ma non
-  blocca lo sviluppo corrente.
+  payload `orders/paid` -> job stock è coperto da test locali. La readiness
+  operativa si controlla con `npm run orders:paid-readiness -- --shop
+  syncbay-dev.myshopify.com`. `write_orders` viene richiesto per generare una
+  prova automatica controllata via Admin `orderCreate`; finché la sessione
+  offline non viene reautorizzata con quello scope, manca ancora la prova del
+  trigger da ordine Shopify reale.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata
