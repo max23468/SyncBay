@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.14] — 2026-06-03
+
+### Correzioni
+
+- I job `UPDATE_EBAY_STOCK` riconoscono come già gestite anche le righe ordine
+  pianificate in dry-run da job riusciti precedenti, evitando doppie
+  pianificazioni quando Shopify consegna `orders/paid` duplicati.
+
 ## [0.22.13] — 2026-06-03
 
 ### Sotto il cofano
@@ -862,6 +870,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.14]: #02214--2026-06-03
 [0.22.13]: #02213--2026-06-03
 [0.22.12]: #02212--2026-06-03
 [0.22.11]: #02211--2026-06-03
