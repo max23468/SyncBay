@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.17] — 2026-06-03
+
+### Sotto il cofano
+
+- Aggiunta la diagnostica `ebay:rate-limits` per misurare i limiti reali eBay
+  Trading applicativi e per utente; il runner ora programma il retry dopo il
+  reset giornaliero Trading quando eBay segnala quota esaurita.
+
 ## [0.22.16] — 2026-06-03
 
 ### Correzioni
@@ -889,6 +897,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.17]: #02217--2026-06-03
 [0.22.16]: #02216--2026-06-03
 [0.22.15]: #02215--2026-06-03
 [0.22.14]: #02214--2026-06-03
