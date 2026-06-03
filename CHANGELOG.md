@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Registrata nel backlog la futura valutazione di un modulo storefront per
+  comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
+  file core dei temi Shopify.
+
 ## [0.22.17] — 2026-06-03
 
 ### Sotto il cofano

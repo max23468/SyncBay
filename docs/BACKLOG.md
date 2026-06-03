@@ -14,9 +14,39 @@ Questo documento raccoglie idee, debiti e attività non ancora promosse nella ro
 | Voce | Stato | Nota |
 | --- | --- | --- |
 | Quality score import/listing | Idea | Da valutare solo se spiega rischi concreti al negoziante senza introdurre metriche opache. |
+| Comunicazione sconti/prezzi storefront | Idea | Modulo futuro per comunicare sconti o prezzi promozionali prima del carrello, preferibilmente con theme app extension, app block o app embed. Non è core MVP e non autorizza patch dirette a Liquid/CSS/JS dei temi. |
 | Multi-marketplace | Idea | Fuori scope finché eBay.it-first non è consolidato. |
 | Support policy pubblica | Da definire | Serve prima dell'app pubblica Shopify App Store; default attuale: self-service first. |
 | Billing | Da definire | Fuori dalla custom app pilota; necessario prima di una distribuzione pubblica. |
+
+### Comunicazione sconti/prezzi storefront
+
+Contesto: durante il go-live controllato Numisleo su Shopify è emersa una
+differenza tra un tema legacy 2.x, che comunicava uno sconto già su prodotto,
+collezioni e ricerca tramite logica Liquid del tema, e il tema target Galleria
+4, che lascia il prezzo pieno prima del carrello e mostra/applica lo sconto solo
+nel carrello o checkout. Per preservare gli auto-update del tema, la decisione
+operativa Numisleo è stata di non replicare quella logica con patch custom a
+Liquid, CSS o JavaScript del tema.
+
+Possibile evoluzione SyncBay: valutare un modulo storefront per permettere al
+negoziante di comunicare in modo coerente sconti o prezzi promozionali prima
+del carrello senza modificare direttamente i file core del tema.
+
+Vincoli da rispettare prima di promuoverla:
+
+- distinguere prezzo reale Shopify, `compare-at price`, sconti carrello o
+  checkout e messaggi promozionali pre-carrello;
+- non inventare prezzi, non simulare sconti non applicati e non creare
+  incoerenze legali o commerciali;
+- preferire una Shopify theme app extension con app block/app embed o un modulo
+  storefront dedicato;
+- evitare patch dirette a Liquid, CSS o JavaScript dei temi quando il requisito
+  è mantenere gli auto-update;
+- valutare impatto su scope Shopify, review App Store, accessi richiesti,
+  microcopy e test storefront;
+- creare un piano dedicato e, se entra in scope stabile, un ADR prima di
+  implementare.
 
 ## Debiti tecnici e operativi
 

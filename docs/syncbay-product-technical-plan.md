@@ -542,6 +542,10 @@ Azioni rollback MVP:
 Feature future da valutare:
 
 - quality score import/listing, solo se utile a spiegare rischi concreti senza appesantire il flusso del negoziante.
+- comunicazione sconti/prezzi storefront pre-carrello, solo dopo valutazione
+  dedicata di scope Shopify, App Store, theme app extension, coerenza tra prezzo
+  reale Shopify, compare-at price, sconti carrello/checkout e messaggi
+  promozionali.
 
 ## Verifiche di accettazione
 
