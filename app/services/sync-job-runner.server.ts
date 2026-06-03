@@ -495,7 +495,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
           }),
           prisma.syncJob.findFirst({
             orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { createdAt: true, finishedAt: true },
+            select: { createdAt: true, finishedAt: true, payload: true },
             where: {
               payload: { path: ["source"], equals: "catalog_reconcile" },
               shopId: shop.id,
@@ -507,6 +507,13 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       const latestFullReconcileAt = getJobCompletionTime(
         latestFullReconcileJob,
       );
+      const latestFullReconcileWatermarkAt =
+        getDateFromPayload(
+          latestFullReconcileJob?.payload ?? null,
+          "activeCatalogReadAt",
+        ) ??
+        latestFullReconcileJob?.createdAt ??
+        latestFullReconcileAt;
       const fullReconcileDue = isFullCatalogReconcileDue({
         intervalSecondsValue:
           process.env.SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS,
@@ -517,7 +524,8 @@ async function enqueueIncrementalSyncJobs(now: Date) {
         ? null
         : getSellerEventsDeltaWindow({
             latestSuccessfulSyncAt: getSellerEventsWatermarkAt({
-              latestFullReconcileAt,
+              latestFullReconcileCompletedAt: latestFullReconcileAt,
+              latestFullReconcileWatermarkAt,
               latestSellerEventsCompletedAt: getJobCompletionTime(
                 latestSellerEventsSyncJob,
               ),
@@ -608,6 +616,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
   now: Date;
   shopId: string;
 }) {
+  const activeCatalogReadAt = new Date();
   const activeCatalogPlan = await getEbayTradingCatalogImportPlan({
     accessToken: input.accessToken,
     connection: input.connection,
@@ -642,6 +651,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     await createIncrementalNoopMarker({
       now: input.now,
       payload: {
+        activeCatalogReadAt: activeCatalogReadAt.toISOString(),
         activeCatalogReadCount: activeCatalogPlan.readCount,
         activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
         activeScanComplete,
@@ -649,6 +659,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
         source: "catalog_reconcile",
       },
       result: {
+        activeCatalogReadAt: activeCatalogReadAt.toISOString(),
         activeCatalogReadCount: activeCatalogPlan.readCount,
         activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
         noWork: true,
@@ -663,6 +674,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
   const syncJobs = reconcilePlan.syncBatches.map((ebayItemIds, index) => ({
     maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
     payload: {
+      activeCatalogReadAt: activeCatalogReadAt.toISOString(),
       activeCatalogReadCount: activeCatalogPlan.readCount,
       activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
       activeScanComplete,
@@ -682,6 +694,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     idempotencyKey: `archive-inactive:${input.shopId}:${DEFAULT_MARKETPLACE_ID}:${ebayItemId}:${runId}`,
     maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
     payload: {
+      activeCatalogReadAt: activeCatalogReadAt.toISOString(),
       activeCatalogReadCount: activeCatalogPlan.readCount,
       activeCatalogTotalAvailable: activeCatalogPlan.totalAvailable,
       ebayItemId,
@@ -2715,6 +2728,14 @@ function getJsonString(value: Prisma.JsonValue | undefined) {
 
 function getStringFromPayload(payload: Prisma.JsonValue | null, key: string) {
   return getJsonString(getJsonObject(payload)?.[key]);
+}
+
+function getDateFromPayload(payload: Prisma.JsonValue | null, key: string) {
+  const value = getStringFromPayload(payload, key);
+  if (!value) return null;
+
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
 }
 
 function getRetryAfter(attempts: number, from = new Date()) {

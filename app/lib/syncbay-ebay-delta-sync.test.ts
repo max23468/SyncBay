@@ -72,7 +72,7 @@ test("uses seller-events delta while the full reconcile interval is still fresh"
 test("advances seller-events delta from the processed ModTimeTo watermark", () => {
   assert.deepEqual(
     getSellerEventsWatermarkAt({
-      latestFullReconcileAt: new Date("2026-06-03T10:00:00.000Z"),
+      latestFullReconcileWatermarkAt: new Date("2026-06-03T10:00:00.000Z"),
       latestSellerEventsCompletedAt: new Date("2026-06-03T10:10:00.000Z"),
       latestSellerEventsModTimeToValue: "2026-06-03T10:03:00.000Z",
     }),
@@ -83,7 +83,7 @@ test("advances seller-events delta from the processed ModTimeTo watermark", () =
 test("falls back to the full reconcile when seller-events watermark is absent", () => {
   assert.deepEqual(
     getSellerEventsWatermarkAt({
-      latestFullReconcileAt: new Date("2026-06-03T10:00:00.000Z"),
+      latestFullReconcileWatermarkAt: new Date("2026-06-03T10:00:00.000Z"),
       latestSellerEventsCompletedAt: null,
     }),
     new Date("2026-06-03T10:00:00.000Z"),
@@ -93,11 +93,23 @@ test("falls back to the full reconcile when seller-events watermark is absent", 
 test("prefers a newer full reconcile over an older seller-events watermark", () => {
   assert.deepEqual(
     getSellerEventsWatermarkAt({
-      latestFullReconcileAt: new Date("2026-06-03T11:00:00.000Z"),
+      latestFullReconcileWatermarkAt: new Date("2026-06-03T11:00:00.000Z"),
       latestSellerEventsCompletedAt: new Date("2026-06-03T10:20:00.000Z"),
       latestSellerEventsModTimeToValue: "2026-06-03T10:03:00.000Z",
     }),
     new Date("2026-06-03T11:00:00.000Z"),
+  );
+});
+
+test("does not use full reconcile finish time as the seller-events watermark", () => {
+  assert.deepEqual(
+    getSellerEventsWatermarkAt({
+      latestFullReconcileCompletedAt: new Date("2026-06-03T11:00:00.000Z"),
+      latestFullReconcileWatermarkAt: new Date("2026-06-03T10:04:00.000Z"),
+      latestSellerEventsCompletedAt: new Date("2026-06-03T10:20:00.000Z"),
+      latestSellerEventsModTimeToValue: "2026-06-03T10:03:00.000Z",
+    }),
+    new Date("2026-06-03T10:04:00.000Z"),
   );
 });
 

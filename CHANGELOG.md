@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.22.23] — 2026-06-03
+
+### Correzioni
+
+- I delta `GetSellerEvents` successivi a una riconciliazione completa usano il
+  timestamp di lettura catalogo eBay come watermark, non il tempo di
+  completamento del job locale.
+
 ## [0.22.22] — 2026-06-03
 
 ### Sotto il cofano

@@ -65,10 +65,13 @@ solo dopo il completamento dei relativi job archivio.
 `GetMyeBaySelling` resta la riconciliazione completa periodica per coprire drift,
 eventi persi e nuovi stati non emersi nei delta. L'intervallo predefinito è
 giornaliero ed è configurabile con
-`SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS`. Se un job più vecchio o un import
-iniziale contiene più di 10 ItemID, il runner lo spezza in sotto-job più piccoli
-prima di fare chiamate Shopify/eBay pesanti. Se un mapping ha conflitti Shopify
-aperti, il prodotto viene saltato finché il negoziante sceglie un'azione guidata.
+`SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS`. Dopo una riconciliazione
+completa, il watermark dei delta seller-events riparte dal timestamp della
+lettura catalogo eBay, non dal completamento dei job locali. Se un job più
+vecchio o un import iniziale contiene più di 10 ItemID, il runner lo spezza in
+sotto-job più piccoli prima di fare chiamate Shopify/eBay pesanti. Se un mapping
+ha conflitti Shopify aperti, il prodotto viene saltato finché il negoziante
+sceglie un'azione guidata.
 
 Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
 prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
