@@ -81,6 +81,33 @@ export function resolveProductPublicationIds(input: {
   };
 }
 
+export function resolveStoredSelectedProductPublicationIds(input: {
+  selectedPublicationIds: string[];
+}):
+  | {
+      publicationIds: string[];
+      status: "ready";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    } {
+  const publicationIds = dedupePublicationIds(input.selectedPublicationIds);
+
+  if (publicationIds.length === 0) {
+    return {
+      errorMessage:
+        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      status: "failed",
+    };
+  }
+
+  return {
+    publicationIds,
+    status: "ready",
+  };
+}
+
 function dedupePublicationIds(publicationIds: string[]) {
   return [
     ...new Set(

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.10] — 2026-06-03
+
+### Correzioni
+
+- L'import di prodotti `ACTIVE` con pubblicazione canali `SELECTED` usa i GID
+  canale salvati nelle impostazioni SyncBay senza ricaricare le publications
+  Shopify a ogni job runner.
+
 ## [0.22.9] — 2026-06-03
 
 ### Correzioni
@@ -824,6 +832,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.10]: #02210--2026-06-03
 [0.22.9]: #0229--2026-06-03
 [0.22.8]: #0228--2026-06-03
 [0.22.7]: #0227--2026-06-03

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { normalizeProductPublicationMode, parseProductPublicationGids, resolveProductPublicationIds, serializeProductPublicationGids } from "./syncbay-product-publication-settings.ts";
+import { normalizeProductPublicationMode, parseProductPublicationGids, resolveProductPublicationIds, resolveStoredSelectedProductPublicationIds, serializeProductPublicationGids } from "./syncbay-product-publication-settings.ts";
 
 test("normalizes unknown publication modes to all channels", () => {
   assert.equal(normalizeProductPublicationMode("ALL"), "ALL");
@@ -75,6 +75,34 @@ test("blocks selected-channel mode when no selected publication is available", (
       availablePublicationIds: ["gid://shopify/Publication/1"],
       mode: "SELECTED",
       selectedPublicationIds: ["gid://shopify/Publication/missing"],
+    }),
+    {
+      errorMessage:
+        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      status: "failed",
+    },
+  );
+});
+
+test("resolves stored selected publication ids without live availability", () => {
+  assert.deepEqual(
+    resolveStoredSelectedProductPublicationIds({
+      selectedPublicationIds: [
+        " gid://shopify/Publication/2 ",
+        "gid://shopify/Publication/2",
+      ],
+    }),
+    {
+      publicationIds: ["gid://shopify/Publication/2"],
+      status: "ready",
+    },
+  );
+});
+
+test("blocks stored selected publication mode when no id is saved", () => {
+  assert.deepEqual(
+    resolveStoredSelectedProductPublicationIds({
+      selectedPublicationIds: [],
     }),
     {
       errorMessage:

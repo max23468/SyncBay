@@ -25,6 +25,7 @@ import {
   normalizeProductPublicationMode,
   parseProductPublicationGids,
   resolveProductPublicationIds,
+  resolveStoredSelectedProductPublicationIds,
 } from "../lib/syncbay-product-publication-settings";
 import { isShopifyGraphqlThrottleResponse } from "../lib/shopify-graphql-throttle";
 import {
@@ -699,6 +700,25 @@ async function resolveDraftImportPublicationOptions(
     };
   }
 
+  const selectedPublicationIds = parseProductPublicationGids(
+    input.productPublicationGids,
+  );
+
+  if (mode === "SELECTED") {
+    const resolution = resolveStoredSelectedProductPublicationIds({
+      selectedPublicationIds,
+    });
+
+    if (resolution.status === "failed") {
+      return resolution;
+    }
+
+    return {
+      options: { publicationIds: resolution.publicationIds },
+      status: "ready",
+    };
+  }
+
   const availablePublicationIds = await loadShopifyProductPublicationIds(admin);
 
   if ("errorMessage" in availablePublicationIds) {
@@ -711,9 +731,7 @@ async function resolveDraftImportPublicationOptions(
   const resolution = resolveProductPublicationIds({
     availablePublicationIds,
     mode,
-    selectedPublicationIds: parseProductPublicationGids(
-      input.productPublicationGids,
-    ),
+    selectedPublicationIds,
   });
 
   if (resolution.status === "failed") {
