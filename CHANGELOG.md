@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.15] — 2026-06-03
+
+### Correzioni
+
+- Le pianificazioni incrementali eBay fallite prima della creazione dei batch
+  registrano un job `SYNC_INCREMENTAL` fallito, così il runner rispetta il
+  cooldown configurato e non richiama eBay ogni minuto durante un rate limit.
+- La deduplica dei job `UPDATE_EBAY_STOCK` considera i risultati `planned`
+  precedenti solo per righe ancora in dry-run, evitando di bloccare una futura
+  scrittura reale contro una vecchia simulazione.
+
 ## [0.22.14] — 2026-06-03
 
 ### Correzioni
@@ -870,6 +881,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.15]: #02215--2026-06-03
 [0.22.14]: #02214--2026-06-03
 [0.22.13]: #02213--2026-06-03
 [0.22.12]: #02212--2026-06-03

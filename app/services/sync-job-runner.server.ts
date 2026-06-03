@@ -546,18 +546,44 @@ async function enqueueIncrementalSyncJobs(now: Date) {
         skipDuplicates: true,
       });
     } catch (error) {
-      await prisma.auditLog.create({
-        data: {
-          details: {
-            runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
-            runnerErrorMessage: getErrorMessage(error),
-          } satisfies Prisma.JsonObject,
-          message:
-            "Pianificazione sync catalogo incrementale non completata; il runner continuerà con i job già in coda.",
-          shopId: shop.id,
-          type: AuditEventType.SYNC_JOB_FAILED,
-        },
-      });
+      const errorMessage = getErrorMessage(error);
+      const result = {
+        failedBeforeEnqueue: true,
+        runnerErrorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+        runnerErrorMessage: errorMessage,
+        retryScheduledAt: null,
+        willRetry: false,
+      } satisfies Prisma.JsonObject;
+
+      await prisma.$transaction([
+        prisma.syncJob.create({
+          data: {
+            attempts: 1,
+            errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+            errorMessage,
+            finishedAt: now,
+            maxAttempts: 1,
+            payload: {
+              marketplaceId: DEFAULT_MARKETPLACE_ID,
+              source: "catalog_reconcile_enqueue",
+            } satisfies Prisma.JsonObject,
+            result,
+            runAfter: now,
+            shopId: shop.id,
+            status: SyncJobStatus.FAILED,
+            type: SyncJobType.SYNC_INCREMENTAL,
+          },
+        }),
+        prisma.auditLog.create({
+          data: {
+            details: result,
+            message:
+              "Pianificazione sync catalogo incrementale non completata; il runner continuerà con i job già in coda.",
+            shopId: shop.id,
+            type: AuditEventType.SYNC_JOB_FAILED,
+          },
+        }),
+      ]);
     }
   }
 }
@@ -985,9 +1011,18 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
+    const lineDryRun = shouldDryRunEbayStockLine({
+      allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
+      ebayItemId: mapping.ebayItemId,
+      shopDomain: job.shop.shopDomain,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+      stockDryRunEnabled: stockDryRun,
+    });
+
     if (
       await hasCompletedStockUpdateForLine({
         ebayItemId: mapping.ebayItemId,
+        includeDryRunPlans: lineDryRun,
         job,
         lineItem,
         mappingId: mapping.id,
@@ -1037,13 +1072,6 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
 
     const previousQuantity = latestSnapshot?.quantity ?? 0;
     const nextQuantity = Math.max(0, previousQuantity - lineItem.quantity);
-    const lineDryRun = shouldDryRunEbayStockLine({
-      allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
-      ebayItemId: mapping.ebayItemId,
-      shopDomain: job.shop.shopDomain,
-      shopifyVariantGid: mapping.shopifyVariantGid,
-      stockDryRunEnabled: stockDryRun,
-    });
 
     if (lineDryRun) {
       planned.push({
@@ -1942,6 +1970,7 @@ async function findProductMappingForOrderLine(
 
 async function hasCompletedStockUpdateForLine(input: {
   ebayItemId: string;
+  includeDryRunPlans: boolean;
   job: DueSyncJob;
   lineItem: {
     lineItemKey: string | null;
@@ -1990,6 +2019,7 @@ async function hasCompletedStockUpdateForLine(input: {
 
   return hasProcessedStockLineInJobResults({
     ebayItemId: input.ebayItemId,
+    includeDryRunPlans: input.includeDryRunPlans,
     lineItemKey: input.lineItem.lineItemKey,
     results: previousJobs.flatMap((job) => {
       const result = getJsonObject(job.result);

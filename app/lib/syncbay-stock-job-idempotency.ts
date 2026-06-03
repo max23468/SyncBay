@@ -5,13 +5,17 @@ type StockJobResult = {
 
 export function hasProcessedStockLineInJobResults(input: {
   ebayItemId: string;
+  includeDryRunPlans?: boolean;
   lineItemKey: string | null;
   results: StockJobResult[];
 }) {
   if (!input.lineItemKey) return false;
 
   return input.results.some((result) =>
-    [...getStockResultRows(result.updated), ...getStockResultRows(result.planned)].some(
+    [
+      ...getStockResultRows(result.updated),
+      ...(input.includeDryRunPlans ? getStockResultRows(result.planned) : []),
+    ].some(
       (row) =>
         getStringField(row, "lineItemKey") === input.lineItemKey &&
         getStringField(row, "ebayItemId") === input.ebayItemId,
