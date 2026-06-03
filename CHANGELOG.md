@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.22.11] — 2026-06-03
+
+### Correzioni
+
+- Il runner aggiorna automaticamente i token offline Shopify a scadenza usando
+  il refresh token salvato, evitando blocchi 401 nelle attività automatiche.
+
 ## [0.22.10] — 2026-06-03
 
 ### Correzioni
@@ -832,6 +839,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.22.11]: #02211--2026-06-03
 [0.22.10]: #02210--2026-06-03
 [0.22.9]: #0229--2026-06-03
 [0.22.8]: #0228--2026-06-03
