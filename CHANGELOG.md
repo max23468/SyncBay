@@ -12,6 +12,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
   file core dei temi Shopify.
 
+## [0.23.0] — 2026-06-04
+
+### Novità
+
+- Avviata la Fase 1 del redesign UI SyncBay: nuova navigazione embedded,
+  sistema visivo condiviso e Panoramica centrata sulla prossima azione operativa.
+- Avviata la Fase 2 del redesign UI SyncBay con nuove pagine Catalogo e
+  Conflitti collegate a selector Prisma reali e azioni di risoluzione esistenti.
+- Avviata la Fase 3 del redesign UI SyncBay con Importazione riorganizzata in
+  step progressivi e Impostazioni divise nei quattro box confermati.
+- Aggiunta la pagina Attività del redesign UI SyncBay con timeline di job,
+  audit recenti, filtri e retry dei job falliti.
+
 ## [0.22.25] — 2026-06-03
 
 ### Sotto il cofano
@@ -970,6 +983,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.0]: #0230--2026-06-04
 [0.22.25]: #02225--2026-06-03
 [0.22.24]: #02224--2026-06-03
 [0.22.19]: #02219--2026-06-03

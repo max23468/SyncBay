@@ -3,32 +3,25 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import {
-  Form,
-  useActionData,
-  useLoaderData,
-  useNavigation,
-} from "react-router";
+import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
-import { authenticate } from "../shopify.server";
+
+import { getNextAction } from "../lib/syncbay-ui-state";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import {
   getDashboardState,
   requestSyncJobRetry,
   resolveSyncConflict,
 } from "../services/syncbay.server";
+import { authenticate } from "../shopify.server";
 
-type DashboardActionData =
-  | {
-      intent: "retryJob";
-      message: string;
-      status: "queued";
-    }
-  | {
-      intent: "resolveConflict";
-      message: string;
-      status: "resolved";
-    };
+type Dashboard = Awaited<ReturnType<typeof getDashboardState>>;
+type RecentActivity = {
+  detail: string;
+  id: string;
+  tone: "critical" | "info" | "success" | "warning";
+  title: string;
+};
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   timeZone: "Europe/Rome",
@@ -56,13 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Response("Job SyncBay mancante.", { status: 400 });
     }
 
-    const result = await requestSyncJobRetry(session, jobId);
-
-    return Response.json({
-      intent,
-      message: result.message,
-      status: result.status,
-    } satisfies DashboardActionData);
+    return Response.json(await requestSyncJobRetry(session, jobId));
   }
 
   if (intent === "resolveConflict") {
@@ -73,396 +60,200 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Response("Conflitto SyncBay mancante.", { status: 400 });
     }
 
-    const result = await resolveSyncConflict(session, {
-      conflictId,
-      resolution,
-    });
-
-    return Response.json({
-      intent,
-      message: result.message,
-      status: result.status,
-    } satisfies DashboardActionData);
+    return Response.json(
+      await resolveSyncConflict(session, {
+        conflictId,
+        resolution,
+      }),
+    );
   }
 
-  throw new Response("Azione dashboard non supportata.", { status: 400 });
+  throw new Response("Azione Panoramica non supportata.", { status: 400 });
 };
 
 export default function Index() {
   const dashboard = useLoaderData<typeof loader>();
-  const actionData = useActionData() as DashboardActionData | undefined;
-  const navigation = useNavigation();
-  const ebayStatus = dashboard.ebay.oauthReady
-    ? dashboard.ebay.oauthStatus
-    : "In attesa configurazione";
-  const ebayConnected = dashboard.ebay.status === "CONNECTED";
-  const syncStatus = dashboard.shop.syncEnabled ? "Attiva" : "Non attiva";
-  const lastJobs = dashboard.sync.lastJobs;
-  const latestImportRun = dashboard.imports.latestRun;
-  const retryingJobId =
-    navigation.formData?.get("intent") === "retryJob"
-      ? String(navigation.formData.get("jobId") ?? "")
-      : null;
-  const resolvingConflictId =
-    navigation.formData?.get("intent") === "resolveConflict"
-      ? String(navigation.formData.get("conflictId") ?? "")
-      : null;
+  const quantityIssueCount = getQuantityIssueCount(dashboard);
+  const settingsMissing = getSettingsMissing(dashboard);
+  const importIncomplete = getImportIncomplete(dashboard);
+  const nextAction = getNextAction({
+    catalogHealthStatus: dashboard.sync.catalogHealth.status,
+    ebayOauthEnabled: dashboard.ebay.oauthEnabled,
+    ebayOauthReady: dashboard.ebay.oauthReady,
+    ebayStatus: dashboard.ebay.status,
+    importBlockerCount: dashboard.importPreview.blockers.length,
+    importIncomplete,
+    openConflictCount: dashboard.conflicts.openCount,
+    quantityIssueCount,
+    settingsMissing,
+  });
+  const recentActivity = getRecentActivity(dashboard);
 
   return (
-    <s-page heading="SyncBay">
-      <s-section heading="Stato connessioni">
-        <s-paragraph>
-          Shop collegato: {dashboard.shop.domain}. Fase: custom app pilota.
-        </s-paragraph>
-        <s-unordered-list>
-          {dashboard.readiness.map((item) => (
-            <s-list-item key={item.label}>
-              {item.label}: {item.status} - {item.detail}
-            </s-list-item>
-          ))}
-        </s-unordered-list>
-      </s-section>
+    <s-page heading="Panoramica">
+      <div className="syncbay-page syncbay-stack">
+        <s-section heading="Centro operativo">
+          <p className="syncbay-section-intro">
+            Negozio: {dashboard.shop.domain}. Sync catalogo{" "}
+            {dashboard.shop.syncEnabled ? "attivo" : "non attivo"}.
+          </p>
+          <div
+            className={`syncbay-action-panel syncbay-action-panel--${nextAction.tone}`}
+          >
+            <div>
+              <p className="syncbay-action-panel__eyebrow">Prossima azione</p>
+              <h2 className="syncbay-action-panel__title">
+                {nextAction.title}
+              </h2>
+              <p className="syncbay-action-panel__body">{nextAction.body}</p>
+            </div>
+            <div className="syncbay-action-panel__actions">
+              <s-button href={nextAction.primaryActionHref} variant="primary">
+                {nextAction.primaryActionLabel}
+              </s-button>
+            </div>
+          </div>
+        </s-section>
 
-      <s-section heading="Shopify">
-        <s-unordered-list>
-          <s-list-item>Installazione: collegata</s-list-item>
-          <s-list-item>
-            Scope richiesti: {dashboard.shopify.configuredScopes.join(", ")}
-          </s-list-item>
-          <s-list-item>
-            Scope mancanti:{" "}
-            {dashboard.shopify.missingScopes.length > 0
-              ? dashboard.shopify.missingScopes.join(", ")
-              : "nessuno"}
-          </s-list-item>
-          <s-list-item>
-            Scope mancanti nella configurazione app:{" "}
-            {dashboard.shopify.missingConfiguredScopes.length > 0
-              ? dashboard.shopify.missingConfiguredScopes.join(", ")
-              : "nessuno"}
-          </s-list-item>
-          <s-list-item>
-            Webhook pilota: {dashboard.shopify.webhookTopics.join(", ")}
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
+        <s-section heading="Stato rapido">
+          <div className="syncbay-metric-grid">
+            <MetricCard
+              detail="Prodotti Shopify collegati a inserzioni eBay."
+              label="Prodotti collegati"
+              value={formatNumber(dashboard.imports.mappingCount)}
+            />
+            <MetricCard
+              detail="Richiedono una scelta prima del prossimo allineamento."
+              label="Conflitti aperti"
+              value={formatNumber(dashboard.conflicts.openCount)}
+            />
+            <MetricCard
+              detail={
+                quantityIssueCount > 0
+                  ? "Controlli stock emersi dalle ultime attività."
+                  : "Nessun controllo stock in evidenza."
+              }
+              label="Quantità da verificare"
+              value={formatNumber(quantityIssueCount)}
+            />
+            <MetricCard
+              detail={getCatalogHealthDetail(dashboard)}
+              label="Ultimo aggiornamento"
+              value={getCatalogHealthValue(dashboard)}
+            />
+          </div>
+        </s-section>
 
-      <s-section heading="eBay e privacy">
-        <s-unordered-list>
-          <s-list-item>
-            eBay {dashboard.ebay.marketplaceId}: {dashboard.ebay.status}
-          </s-list-item>
-          <s-list-item>OAuth eBay: {ebayStatus}</s-list-item>
-          <s-list-item>
-            Account deletion endpoint:{" "}
-            {dashboard.ebay.accountDeletion.endpointConfigured
-              ? "predisposto"
-              : "da configurare"}
-          </s-list-item>
-          <s-list-item>
-            Notifiche account deletion:{" "}
-            {dashboard.ebay.accountDeletion.notificationsEnabled
-              ? "abilitate"
-              : "non abilitate"}
-          </s-list-item>
-          <s-list-item>Sync catalogo: {syncStatus}</s-list-item>
-        </s-unordered-list>
-        {dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled ? (
-          <s-button href="/auth/ebay/start">
-            {ebayConnected ? "Ricollega eBay" : "Collega eBay"}
-          </s-button>
-        ) : null}
-      </s-section>
-
-      <s-section heading="Onboarding e preview">
-        <s-unordered-list>
-          {dashboard.ebay.missingRequirements.length > 0 ? (
-            <s-list-item>
-              Completa: {dashboard.ebay.missingRequirements.join(", ")}.
-            </s-list-item>
-          ) : !dashboard.ebay.oauthEnabled ? (
-            <s-list-item>
-              Abilita il flag runtime OAuth eBay quando vuoi testare il
-              consenso.
-            </s-list-item>
-          ) : (
-            <s-list-item>Avvia connessione OAuth eBay.</s-list-item>
-          )}
-          <s-list-item>Conferma location Shopify predefinita.</s-list-item>
-          <s-list-item>
-            Default prodotti: {dashboard.onboarding.defaults.productStatus}
-          </s-list-item>
-          <s-list-item>
-            Default descrizioni: {dashboard.onboarding.defaults.descriptionMode}
-          </s-list-item>
-          <s-list-item>
-            Preview import:{" "}
-            {dashboard.importPreview.blockers.length > 0
-              ? dashboard.importPreview.blockers.join(", ")
-              : "pronta"}
-          </s-list-item>
-        </s-unordered-list>
-        <s-button href="/app/import-preview">Apri preview import</s-button>
-        <s-button href="/app/settings">Apri impostazioni</s-button>
-      </s-section>
-
-      <s-section heading="Attività recenti">
-        <s-unordered-list>
-          <s-list-item>
-            Job pending: {dashboard.sync.jobsByStatus.PENDING}
-          </s-list-item>
-          <s-list-item>
-            Job in esecuzione: {dashboard.sync.jobsByStatus.RUNNING}
-          </s-list-item>
-          <s-list-item>
-            Job falliti: {dashboard.sync.jobsByStatus.FAILED}
-          </s-list-item>
-          <s-list-item>
-            Job riusciti: {dashboard.sync.jobsByStatus.SUCCEEDED}
-          </s-list-item>
-          <s-list-item>
-            Sync catalogo:{" "}
-            {formatCatalogSyncHealthStatus(
-              dashboard.sync.catalogHealth.status,
-            )}
-            {dashboard.sync.catalogHealth.latestIncrementalFinishedAt
-              ? `, ultimo ${formatDateTime(
-                  dashboard.sync.catalogHealth.latestIncrementalFinishedAt,
-                )}`
-              : ""}
-          </s-list-item>
-          <s-list-item>
-            Prossimo sync:{" "}
-            {dashboard.sync.catalogHealth.nextDueAt
-              ? formatDateTime(dashboard.sync.catalogHealth.nextDueAt)
-              : "non pianificato"}
-          </s-list-item>
-        </s-unordered-list>
-        {lastJobs.length > 0 ? (
-          <s-unordered-list>
-            {lastJobs.map((job) => (
-              <s-list-item key={`${job.type}-${job.createdAt}`}>
-                {job.type}: {job.status}, tentativi {job.attempts}
-                {job.errorMessage ? ` - ${job.errorMessage}` : ""}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun job SyncBay registrato.</s-paragraph>
-        )}
-      </s-section>
-
-      <s-section heading="Import controllato">
-        <s-unordered-list>
-          <s-list-item>
-            Mapping eBay {"->"} Shopify registrati:{" "}
-            {dashboard.imports.mappingCount}
-          </s-list-item>
-          <s-list-item>
-            Snapshot prodotto salvati: {dashboard.imports.snapshotCount}
-          </s-list-item>
-        </s-unordered-list>
-        {latestImportRun ? (
-          <>
-            <s-paragraph>
-              Ultima run: {formatRunId(latestImportRun.runId)}. Avanzamento{" "}
-              {latestImportRun.completedItemCount}/
-              {latestImportRun.plannedItemCount} item, batch{" "}
-              {latestImportRun.batchCount}, job attivi{" "}
-              {latestImportRun.activeJobCount}, job falliti{" "}
-              {latestImportRun.failedJobCount}.
-            </s-paragraph>
-            <s-unordered-list>
-              {latestImportRun.statusRows.map((row) => (
-                <s-list-item key={`${row.jobKind}-${row.status}`}>
-                  {formatImportJobKind(row.jobKind)} {row.status}:{" "}
-                  {row.jobCount} job, {row.itemCount} item
-                  {row.firstBatch && row.lastBatch
-                    ? `, batch ${row.firstBatch}-${row.lastBatch}/${row.batchCount}`
-                    : ""}
-                </s-list-item>
-              ))}
-            </s-unordered-list>
-            {latestImportRun.recentProblemJobs.length > 0 ? (
-              <s-unordered-list>
-                {latestImportRun.recentProblemJobs.map((job) => (
-                  <s-list-item key={job.id}>
-                    {formatImportJobKind(job.jobKind)}
-                    {job.batchIndex ? ` batch ${job.batchIndex}` : ""}:{" "}
-                    {job.status}, tentativi {job.attempts}/{job.maxAttempts}
-                    {job.errorMessage ? ` - ${job.errorMessage}` : ""}
-                    {job.status === "RETRYING"
-                      ? ` - retry da ${formatDateTime(job.runAfter)}`
-                      : ""}
-                  </s-list-item>
-                ))}
-              </s-unordered-list>
+        <s-section heading="Azioni consigliate">
+          <div className="syncbay-inline-actions">
+            {dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled ? (
+              <s-button href="/auth/ebay/start">
+                {dashboard.ebay.status === "CONNECTED"
+                  ? "Ricollega eBay"
+                  : "Collega eBay"}
+              </s-button>
             ) : null}
-          </>
-        ) : null}
-        {actionData?.intent === "retryJob" ? (
-          <s-paragraph>{actionData.message}</s-paragraph>
-        ) : null}
-        {dashboard.imports.recentJobs.length > 0 ? (
-          <s-unordered-list>
-            {dashboard.imports.recentJobs.map((job) => (
-              <s-list-item key={job.id}>
-                Import {formatDateTime(job.createdAt)}: {job.status}, gestiti{" "}
-                {job.managedCount}/{job.requestedCount}, riusati{" "}
-                {job.reusedCount}, falliti {job.failedCount}, tentativi{" "}
-                {job.attempts}/{job.maxAttempts}
-                {job.errorMessage ? ` - ${job.errorMessage}` : ""}
-                {job.willRetry
-                  ? ` - retry pianificato da ${formatDateTime(job.runAfter)}`
-                  : ""}
-                {job.canRequestRetry ? (
-                  <Form method="post">
-                    <input type="hidden" name="intent" value="retryJob" />
-                    <input type="hidden" name="jobId" value={job.id} />
-                    <s-button type="submit" disabled={retryingJobId === job.id}>
-                      {retryingJobId === job.id
-                        ? "Riprogrammazione..."
-                        : "Rimetti in coda"}
-                    </s-button>
-                  </Form>
-                ) : null}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun import controllato registrato.</s-paragraph>
-        )}
-      </s-section>
+            <s-button href="/app/import-preview">Apri importazione</s-button>
+            <s-button href="/app/catalog">Apri catalogo</s-button>
+            {dashboard.conflicts.openCount > 0 ? (
+              <s-button href="/app/conflicts">Risolvi conflitti</s-button>
+            ) : null}
+            <s-button href="/app/settings">Apri impostazioni</s-button>
+          </div>
+        </s-section>
 
-      <s-section heading="Conflitti Shopify">
-        <s-paragraph>
-          Conflitti aperti: {dashboard.conflicts.openCount}. I prodotti con
-          conflitti aperti vengono esclusi dal sync incrementale finché scegli
-          un&apos;azione.
-        </s-paragraph>
-        {actionData?.intent === "resolveConflict" ? (
-          <s-paragraph>{actionData.message}</s-paragraph>
-        ) : null}
-        {dashboard.conflicts.recent.length > 0 ? (
-          <s-unordered-list>
-            {dashboard.conflicts.recent.map((conflict) => (
-              <s-list-item key={conflict.id}>
-                {conflict.ebayItemId ?? "Prodotto Shopify"} - {conflict.field}:{" "}
-                Shopify {formatConflictValue(conflict.shopifyValue)}, SyncBay{" "}
-                {formatConflictValue(conflict.syncbayValue)}
-                <Form method="post">
-                  <input type="hidden" name="intent" value="resolveConflict" />
-                  <input type="hidden" name="conflictId" value={conflict.id} />
-                  <input
-                    type="hidden"
-                    name="resolution"
-                    value="REALIGN_FROM_EBAY"
-                  />
-                  <s-button
-                    type="submit"
-                    disabled={resolvingConflictId === conflict.id}
+        <s-section heading="Catalogo">
+          <ul className="syncbay-status-list">
+            <StatusRow
+              detail={getEbayDetail(dashboard)}
+              label={getEbayStatusLabel(dashboard)}
+              tone={dashboard.ebay.status === "CONNECTED" ? "success" : "critical"}
+              title={`eBay ${dashboard.ebay.marketplaceId}`}
+            />
+            <StatusRow
+              detail={getSyncHealthDetail(dashboard)}
+              label={getCatalogHealthBadge(dashboard)}
+              tone={getCatalogHealthTone(dashboard)}
+              title="Aggiornamento catalogo"
+            />
+            <StatusRow
+              detail={getImportStatusDetail(dashboard)}
+              label={importIncomplete ? "Da completare" : "Pronta"}
+              tone={importIncomplete ? "warning" : "success"}
+              title="Importazione"
+            />
+          </ul>
+        </s-section>
+
+        <s-section heading="Attività recenti">
+          {recentActivity.length > 0 ? (
+            <ul className="syncbay-activity-list">
+              {recentActivity.map((activity) => (
+                <li className="syncbay-activity-row" key={activity.id}>
+                  <div>
+                    <p className="syncbay-activity-row__title">
+                      {activity.title}
+                    </p>
+                    <p className="syncbay-activity-row__detail">
+                      {activity.detail}
+                    </p>
+                  </div>
+                  <span
+                    className={`syncbay-badge syncbay-badge--${activity.tone}`}
                   >
-                    Riallinea da eBay
-                  </s-button>
-                </Form>
-                <Form method="post">
-                  <input type="hidden" name="intent" value="resolveConflict" />
-                  <input type="hidden" name="conflictId" value={conflict.id} />
-                  <input type="hidden" name="resolution" value="KEEP_SHOPIFY" />
-                  <s-button
-                    type="submit"
-                    disabled={resolvingConflictId === conflict.id}
-                  >
-                    Mantieni Shopify
-                  </s-button>
-                </Form>
-                <Form method="post">
-                  <input type="hidden" name="intent" value="resolveConflict" />
-                  <input type="hidden" name="conflictId" value={conflict.id} />
-                  <input type="hidden" name="resolution" value="IGNORE_FIELD" />
-                  <s-button
-                    type="submit"
-                    disabled={resolvingConflictId === conflict.id}
-                  >
-                    Ignora campo
-                  </s-button>
-                </Form>
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun conflitto Shopify aperto.</s-paragraph>
-        )}
-      </s-section>
-
-      <s-section heading="Diagnostica job">
-        {dashboard.sync.failedJobs.length > 0 ? (
-          <s-unordered-list>
-            {dashboard.sync.failedJobs.map((job) => (
-              <s-list-item key={`${job.type}-${job.createdAt}`}>
-                {job.type}: {job.errorCode ?? "errore"} -{" "}
-                {job.errorMessage ?? "azione richiesta in dashboard"}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun job fallito negli ultimi eventi.</s-paragraph>
-        )}
-      </s-section>
-
-      <s-section heading="Audit">
-        {dashboard.audit.length > 0 ? (
-          <s-unordered-list>
-            {dashboard.audit.map((event) => (
-              <s-list-item key={`${event.type}-${event.createdAt}`}>
-                {event.message}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : (
-          <s-paragraph>Nessun evento operativo registrato.</s-paragraph>
-        )}
-      </s-section>
-
-      <s-section slot="aside" heading="Base tecnica">
-        <s-unordered-list>
-          <s-list-item>Distribuzione Shopify: custom app pilota</s-list-item>
-          <s-list-item>
-            Target sync: {dashboard.shop.syncTargetSeconds} secondi
-          </s-list-item>
-          <s-list-item>Storage sessioni e dominio: Prisma</s-list-item>
-          <s-list-item>
-            Queue/Cron:{" "}
-            {dashboard.supabase.queueProviderReady &&
-            dashboard.supabase.schedulerProviderReady
-              ? "Supabase predisposto"
-              : "da allineare"}
-          </s-list-item>
-          <s-list-item>
-            Storage staging: {dashboard.supabase.storageBucket}
-          </s-list-item>
-          <s-list-item>
-            URL pubblico: {dashboard.vercel.publicUrl ?? "non configurato"}
-          </s-list-item>
-          <s-list-item>
-            Osservabilità: Vercel Analytics e Speed Insights
-          </s-list-item>
-          <s-list-item>Versione app: {APP_VERSION}</s-list-item>
-          <s-list-item>Data build: {BUILD_DATE}</s-list-item>
-        </s-unordered-list>
-      </s-section>
-
-      <s-section slot="aside" heading="Scope Shopify">
-        <s-unordered-list>
-          {dashboard.shopify.scopes.length > 0 ? (
-            dashboard.shopify.scopes.map((scope) => (
-              <s-list-item key={scope}>{scope}</s-list-item>
-            ))
+                    {getToneLabel(activity.tone)}
+                  </span>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <s-list-item>Scope non ancora letti dalla sessione.</s-list-item>
+            <p className="syncbay-section-intro">
+              Nessuna attività registrata. Quando SyncBay importerà o aggiornerà
+              il catalogo, gli eventi appariranno qui.
+            </p>
           )}
-        </s-unordered-list>
-      </s-section>
+        </s-section>
+
+        <s-section heading="Dettagli tecnici">
+          <details className="syncbay-details">
+            <summary>Apri dettagli tecnici</summary>
+            <div className="syncbay-details__content">
+              <s-unordered-list>
+                <s-list-item>
+                  Shop collegato: {dashboard.shop.domain}
+                </s-list-item>
+                <s-list-item>
+                  Target sync: {dashboard.shop.syncTargetSeconds} secondi
+                </s-list-item>
+                <s-list-item>
+                  Scope Shopify mancanti:{" "}
+                  {dashboard.shopify.missingScopes.length > 0
+                    ? dashboard.shopify.missingScopes.join(", ")
+                    : "nessuno"}
+                </s-list-item>
+                <s-list-item>
+                  Scope configurazione mancanti:{" "}
+                  {dashboard.shopify.missingConfiguredScopes.length > 0
+                    ? dashboard.shopify.missingConfiguredScopes.join(", ")
+                    : "nessuno"}
+                </s-list-item>
+                <s-list-item>
+                  Queue/Cron:{" "}
+                  {dashboard.supabase.queueProviderReady &&
+                  dashboard.supabase.schedulerProviderReady
+                    ? "predisposto"
+                    : "da allineare"}
+                </s-list-item>
+                <s-list-item>
+                  URL pubblico: {dashboard.vercel.publicUrl ?? "non configurato"}
+                </s-list-item>
+                <s-list-item>Versione app: {APP_VERSION}</s-list-item>
+                <s-list-item>Data build: {BUILD_DATE}</s-list-item>
+              </s-unordered-list>
+            </div>
+          </details>
+        </s-section>
+      </div>
     </s-page>
   );
 }
@@ -471,35 +262,216 @@ export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
 
+function MetricCard({
+  detail,
+  label,
+  value,
+}: {
+  detail: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="syncbay-metric">
+      <p className="syncbay-metric__label">{label}</p>
+      <p className="syncbay-metric__value">{value}</p>
+      <p className="syncbay-metric__detail">{detail}</p>
+    </div>
+  );
+}
+
+function StatusRow({
+  detail,
+  label,
+  title,
+  tone,
+}: {
+  detail: string;
+  label: string;
+  title: string;
+  tone: "critical" | "info" | "success" | "warning";
+}) {
+  return (
+    <li className="syncbay-status-row">
+      <div>
+        <p className="syncbay-status-row__title">{title}</p>
+        <p className="syncbay-status-row__detail">{detail}</p>
+      </div>
+      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
+    </li>
+  );
+}
+
+function getQuantityIssueCount(dashboard: Dashboard) {
+  return dashboard.sync.failedJobs.filter(
+    (job) => job.type === "UPDATE_EBAY_STOCK",
+  ).length;
+}
+
+function getSettingsMissing(dashboard: Dashboard) {
+  return (
+    !dashboard.shop.defaultLocationGid ||
+    dashboard.shopify.missingScopes.length > 0 ||
+    dashboard.shopify.missingConfiguredScopes.length > 0 ||
+    (dashboard.imports.mappingCount > 0 && !dashboard.shop.syncEnabled)
+  );
+}
+
+function getImportIncomplete(dashboard: Dashboard) {
+  return (
+    dashboard.imports.mappingCount === 0 ||
+    dashboard.importPreview.blockers.length > 0
+  );
+}
+
+function getRecentActivity(dashboard: Dashboard): RecentActivity[] {
+  const jobActivity = dashboard.sync.lastJobs.slice(0, 3).map((job) => ({
+    detail: `${formatJobStatus(job.status)}${
+      job.errorMessage ? `, ${job.errorMessage}` : ""
+    }. ${formatDateTime(job.createdAt)}.`,
+    id: `job-${job.id}`,
+    title: getJobTitle(job.type),
+    tone: getJobTone(job.status),
+  }));
+  const auditActivity = dashboard.audit.slice(0, 2).map((event) => ({
+    detail: formatDateTime(event.createdAt),
+    id: `audit-${event.type}-${event.createdAt}`,
+    title: event.message,
+    tone: "info" as const,
+  }));
+
+  return [...jobActivity, ...auditActivity].slice(0, 4);
+}
+
+function getEbayStatusLabel(dashboard: Dashboard) {
+  if (dashboard.ebay.status === "CONNECTED") return "Collegato";
+  if (dashboard.ebay.status === "EXPIRED") return "Scaduto";
+  if (dashboard.ebay.status === "REVOKED") return "Revocato";
+  if (dashboard.ebay.status === "RECONNECT_REQUIRED") return "Da ricollegare";
+
+  return "Da collegare";
+}
+
+function getEbayDetail(dashboard: Dashboard) {
+  if (dashboard.ebay.status === "CONNECTED" && dashboard.ebay.connectedAt) {
+    return `Collegato dal ${formatDateTime(dashboard.ebay.connectedAt)}.`;
+  }
+
+  if (dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled) {
+    return "Puoi collegare o ricollegare l'account eBay da SyncBay.";
+  }
+
+  if (dashboard.ebay.missingRequirements.length > 0) {
+    return `Mancano ${dashboard.ebay.missingRequirements.length} requisiti di configurazione eBay.`;
+  }
+
+  return "Collegamento eBay predisposto, ma non ancora attivo.";
+}
+
+function getCatalogHealthBadge(dashboard: Dashboard) {
+  const status = dashboard.sync.catalogHealth.status;
+
+  if (status === "disabled") return "Non attivo";
+  if (status === "due") return "Da eseguire";
+  if (status === "fresh") return "Aggiornato";
+  if (status === "overdue") return "In ritardo";
+  if (status === "running") return "In corso";
+
+  return "Da controllare";
+}
+
+function getCatalogHealthTone(dashboard: Dashboard) {
+  const status = dashboard.sync.catalogHealth.status;
+
+  if (status === "fresh") return "success";
+  if (status === "overdue") return "warning";
+  if (status === "disabled") return "info";
+
+  return "info";
+}
+
+function getCatalogHealthValue(dashboard: Dashboard) {
+  const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
+
+  return latest ? formatDateTime(latest) : getCatalogHealthBadge(dashboard);
+}
+
+function getCatalogHealthDetail(dashboard: Dashboard) {
+  const nextDueAt = dashboard.sync.catalogHealth.nextDueAt;
+
+  if (nextDueAt) return `Prossimo controllo: ${formatDateTime(nextDueAt)}.`;
+
+  return "Nessun aggiornamento incrementale completato.";
+}
+
+function getSyncHealthDetail(dashboard: Dashboard) {
+  const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
+  const next = dashboard.sync.catalogHealth.nextDueAt;
+
+  if (latest && next) {
+    return `Ultimo aggiornamento ${formatDateTime(latest)}, prossimo controllo ${formatDateTime(next)}.`;
+  }
+
+  if (latest) return `Ultimo aggiornamento ${formatDateTime(latest)}.`;
+
+  return "Nessun aggiornamento catalogo completato finora.";
+}
+
+function getImportStatusDetail(dashboard: Dashboard) {
+  if (dashboard.importPreview.blockers.length > 0) {
+    return dashboard.importPreview.blockers.join(", ");
+  }
+
+  if (dashboard.imports.mappingCount === 0) {
+    return "Nessun prodotto collegato: avvia l'importazione quando eBay è pronto.";
+  }
+
+  return `${formatNumber(dashboard.imports.mappingCount)} prodotti collegati.`;
+}
+
+function getJobTitle(type: string) {
+  if (type === "IMPORT_CATALOG") return "Importazione catalogo";
+  if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
+  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata";
+  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
+  if (type === "ARCHIVE_INACTIVE_LISTING") return "Inserzione non attiva";
+
+  return "Attività SyncBay";
+}
+
+function formatJobStatus(status: string) {
+  if (status === "PENDING") return "In coda";
+  if (status === "RUNNING") return "In corso";
+  if (status === "SUCCEEDED") return "Completata";
+  if (status === "FAILED") return "Errore";
+  if (status === "RETRYING") return "Riproverà automaticamente";
+  if (status === "CANCELLED") return "Annullata";
+
+  return status;
+}
+
+function getJobTone(status: string): RecentActivity["tone"] {
+  if (status === "SUCCEEDED") return "success";
+  if (status === "FAILED") return "critical";
+  if (status === "RETRYING") return "warning";
+
+  return "info";
+}
+
+function getToneLabel(tone: RecentActivity["tone"]) {
+  if (tone === "success") return "Ok";
+  if (tone === "critical") return "Errore";
+  if (tone === "warning") return "Attenzione";
+
+  return "Info";
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("it-IT").format(value);
+}
+
 function formatDateTime(value: string | null) {
-  if (!value) return "non concluso";
+  if (!value) return "non disponibile";
 
   return itDateTimeFormatter.format(new Date(value));
-}
-
-function formatRunId(value: string) {
-  const parts = value.split(":");
-
-  return parts[parts.length - 1]?.slice(0, 8) ?? value.slice(0, 8);
-}
-
-function formatImportJobKind(value: string) {
-  return value === "catalog_batch" ? "Batch catalogo" : "Import Shopify";
-}
-
-function formatCatalogSyncHealthStatus(value: string) {
-  if (value === "disabled") return "non attivo";
-  if (value === "due") return "da eseguire";
-  if (value === "fresh") return "aggiornato";
-  if (value === "overdue") return "in ritardo";
-  if (value === "running") return "in corso";
-
-  return value;
-}
-
-function formatConflictValue(value: unknown) {
-  if (value === null || value === undefined || value === "") return "assente";
-  if (typeof value === "string" || typeof value === "number") return value;
-
-  return JSON.stringify(value);
 }

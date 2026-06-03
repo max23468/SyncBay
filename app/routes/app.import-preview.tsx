@@ -17,6 +17,10 @@ import {
   getImportedProductsLabel,
   getImportedProductSingularLabel,
 } from "../lib/import-product-status";
+import {
+  getEbayConnectionStatusLabel,
+  getProductPublicationModeSummaryLabel,
+} from "../lib/syncbay-ui-state";
 import { authenticate } from "../shopify.server";
 import {
   getLocationRenameReadiness,
@@ -232,6 +236,9 @@ export default function ImportPreview() {
   const locationRenameStatus = searchParams.get(
     "locationRename",
   ) as ShopifyLocationRenameStatus | null;
+  const activePreviewFilter = getImportPreviewFilter(
+    searchParams.get("previewFilter"),
+  );
   const visibleRuntimePhases = wizard.runtimePhases.filter(
     (phase) =>
       !phase.label.toLowerCase().includes("ebay") &&
@@ -239,49 +246,50 @@ export default function ImportPreview() {
   );
 
   return (
-    <s-page heading="Preview import">
-      <PreparationSection
-        locationRenameStatus={locationRenameStatus}
-        previewSource={wizard.previewSource}
-        searchParams={searchParams}
-        shopDomain={wizard.shop.domain}
-      />
-      <LocationShopifySection
-        locationError={locationError}
-        locationRename={locationRename}
-        locationUiState={{
-          canWriteLocations,
-          isRenamingLocation,
-          isSaving,
-          isSavingLocation,
-        }}
-        locations={locations}
-        selectedLocation={selectedLocation}
-        wizard={wizard}
-      />
-      <DefaultImportSection wizard={wizard} />
-      <PreviewStatusSection wizard={wizard} />
-      <DryRunSection
-        previewModeLabel={previewModeLabel}
-        previewReadLabel={previewReadLabel}
-        wizard={wizard}
-      />
-      <PreviewExamplesSection wizard={wizard} />
-      <DraftImportSection
-        draftCount={draftActionData?.count ?? searchParams.get("count")}
-        draftMessage={draftActionData?.message ?? searchParams.get("message")}
-        draftStatus={draftStatus}
-        isCreatingDrafts={isCreatingDrafts}
-        isSaving={isSaving}
-        wizard={wizard}
-      />
-      <ValidationSection wizard={wizard} />
-      <AsideSections
-        previewModeLabel={previewModeLabel}
-        selectedLocation={selectedLocation}
-        visibleRuntimePhases={visibleRuntimePhases}
-        wizard={wizard}
-      />
+    <s-page heading="Importazione">
+      <div className="syncbay-page syncbay-stack">
+        <PreparationSection
+          locationRenameStatus={locationRenameStatus}
+          previewSource={wizard.previewSource}
+          searchParams={searchParams}
+          shopDomain={wizard.shop.domain}
+          wizard={wizard}
+        />
+        <LocationShopifySection
+          locationError={locationError}
+          locationRename={locationRename}
+          locationUiState={{
+            canWriteLocations,
+            isRenamingLocation,
+            isSaving,
+            isSavingLocation,
+          }}
+          locations={locations}
+          selectedLocation={selectedLocation}
+          wizard={wizard}
+        />
+        <PreviewStatusSection
+          activeFilter={activePreviewFilter}
+          previewModeLabel={previewModeLabel}
+          previewReadLabel={previewReadLabel}
+          wizard={wizard}
+        />
+        <DraftImportSection
+          draftCount={draftActionData?.count ?? searchParams.get("count")}
+          draftMessage={draftActionData?.message ?? searchParams.get("message")}
+          draftStatus={draftStatus}
+          isCreatingDrafts={isCreatingDrafts}
+          isSaving={isSaving}
+          wizard={wizard}
+        />
+        <AfterImportSection wizard={wizard} />
+        <ImportTechnicalDetails
+          previewModeLabel={previewModeLabel}
+          selectedLocation={selectedLocation}
+          visibleRuntimePhases={visibleRuntimePhases}
+          wizard={wizard}
+        />
+      </div>
     </s-page>
   );
 }
@@ -295,23 +303,57 @@ type WizardState = LoaderData["wizard"];
 type PreviewSourceState = WizardState["previewSource"];
 type LocationRenameState = LoaderData["locationRename"];
 type RuntimePhaseState = WizardState["runtimePhases"][number];
+type ImportPreviewFilter =
+  | "all"
+  | "error"
+  | "imported"
+  | "importing"
+  | "ready"
+  | "reimport";
+
+const IMPORT_PREVIEW_FILTERS: Array<{
+  label: string;
+  value: ImportPreviewFilter;
+}> = [
+  { label: "Tutti", value: "all" },
+  { label: "Pronti da importare", value: "ready" },
+  { label: "Importazione in corso", value: "importing" },
+  { label: "Già importati", value: "imported" },
+  { label: "Da reimportare", value: "reimport" },
+  { label: "Errore", value: "error" },
+];
 
 function PreparationSection({
   locationRenameStatus,
   previewSource,
   searchParams,
   shopDomain,
+  wizard,
 }: {
   locationRenameStatus: ShopifyLocationRenameStatus | null;
   previewSource: PreviewSourceState;
   searchParams: URLSearchParams;
   shopDomain: string;
+  wizard: WizardState;
 }) {
   return (
-    <s-section heading="Preparazione">
-      <s-paragraph>
-        Negozio: {shopDomain}. {getPreviewIntro(previewSource.source)}
-      </s-paragraph>
+    <s-section heading="Collegamento eBay">
+      <p className="syncbay-step-kicker">Step 1</p>
+      <p className="syncbay-section-intro">
+        Negozio: {shopDomain}. Stato eBay:{" "}
+        {getEbayConnectionStatusLabel(wizard.ebay.status)}.
+      </p>
+      <div className="syncbay-inline-actions">
+        <s-button
+          href="/auth/ebay/start"
+          variant={wizard.ebay.status === "CONNECTED" ? undefined : "primary"}
+        >
+          {wizard.ebay.status === "CONNECTED" ? "Ricollega eBay" : "Collega eBay"}
+        </s-button>
+      </div>
+      <p className="syncbay-section-intro">
+        {getPreviewIntro(previewSource.source)}
+      </p>
       {searchParams.get("updated") === "location" ? (
         <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
       ) : null}
@@ -355,7 +397,12 @@ function LocationShopifySection({
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Location Shopify">
+    <s-section heading="Preparazione Shopify">
+      <p className="syncbay-step-kicker">Step 2</p>
+      <p className="syncbay-section-intro">
+        Conferma la location e controlla i default di importazione. La
+        configurazione completa resta in Impostazioni.
+      </p>
       {locationError ? (
         <s-paragraph>{locationError}</s-paragraph>
       ) : locations.length > 0 ? (
@@ -379,6 +426,32 @@ function LocationShopifySection({
           selectedLocation={selectedLocation}
         />
       ) : null}
+      <ul className="syncbay-status-list">
+        <StatusRow
+          detail="Default usato per i nuovi prodotti creati dai prossimi import."
+          label={wizard.importPreview.defaults.productStatus}
+          tone="info"
+          title="Stato prodotti"
+        />
+        <StatusRow
+          detail="Policy canali salvata nelle impostazioni SyncBay."
+          label={getProductPublicationModeSummaryLabel(
+            wizard.productPublications.mode,
+            wizard.productPublications.selectedCount,
+          )}
+          tone="info"
+          title="Canali di vendita"
+        />
+        <StatusRow
+          detail={`${wizard.importPreview.defaults.imageImport}; ${wizard.importPreview.defaults.descriptionMode}.`}
+          label={`${wizard.previewPlan.limits.maxProducts} prodotti max`}
+          tone="info"
+          title="Regole MVP"
+        />
+      </ul>
+      <div className="syncbay-inline-actions">
+        <s-button href="/app/settings">Modifica impostazioni</s-button>
+      </div>
     </s-section>
   );
 }
@@ -461,119 +534,167 @@ function LocationRenameForm({
   );
 }
 
-function DefaultImportSection({ wizard }: { wizard: WizardState }) {
-  return (
-    <s-section heading="Default import">
-      <s-unordered-list>
-        <s-list-item>
-          Stato prodotti: {wizard.importPreview.defaults.productStatus}
-        </s-list-item>
-        <s-list-item>
-          Immagini: {wizard.importPreview.defaults.imageImport}
-        </s-list-item>
-        <s-list-item>
-          Descrizioni: {wizard.importPreview.defaults.descriptionMode}
-        </s-list-item>
-        <s-list-item>
-          Limite MVP: {wizard.previewPlan.limits.maxProducts} prodotti per shop
-        </s-list-item>
-      </s-unordered-list>
-      <s-button href="/app/settings">Apri impostazioni</s-button>
-    </s-section>
-  );
-}
-
-function PreviewStatusSection({ wizard }: { wizard: WizardState }) {
-  return (
-    <s-section heading="Stato preview">
-      <s-paragraph>{getPreviewStatusMessage(wizard.previewSource)}</s-paragraph>
-      <s-paragraph>{wizard.previewSource.coverageNote}</s-paragraph>
-      {wizard.importPreview.blockers.length > 0 ? (
-        <s-paragraph>
-          Blocchi: {wizard.importPreview.blockers.join(", ")}.
-        </s-paragraph>
-      ) : null}
-    </s-section>
-  );
-}
-
-function DryRunSection({
+function PreviewStatusSection({
+  activeFilter,
   previewModeLabel,
   previewReadLabel,
   wizard,
 }: {
+  activeFilter: ImportPreviewFilter;
   previewModeLabel: string;
   previewReadLabel: string;
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Dry-run">
-      <s-paragraph>
-        Modalità: {previewModeLabel}. Nessun prodotto viene creato su Shopify.
-      </s-paragraph>
-      <s-unordered-list>
-        <s-list-item>
-          {previewReadLabel}: {wizard.previewSource.readCount}
-        </s-list-item>
-        {wizard.previewSource.source !== "mock" ? (
-          <>
-            <s-list-item>
-              Inventory API letti:{" "}
-              {wizard.previewSource.readCounts.inventoryApi}
-            </s-list-item>
-            <s-list-item>
-              Trading API letti: {wizard.previewSource.readCounts.tradingApi}
-            </s-list-item>
-          </>
-        ) : null}
-        <s-list-item>
-          Elementi in preview: {wizard.previewResult.summary.totalCount}
-        </s-list-item>
-        {wizard.previewSource.totalAvailable !== null ? (
-          <s-list-item>
-            Totale disponibile dalla fonte:{" "}
-            {wizard.previewSource.totalAvailable}
-          </s-list-item>
-        ) : null}
-        <s-list-item>
-          Fonte: {formatPreviewSource(wizard.previewSource.source)}
-        </s-list-item>
-        <s-list-item>
-          Importabili: {wizard.previewResult.summary.importableCount}
-        </s-list-item>
-        <s-list-item>
-          Saltati: {wizard.previewResult.summary.skippedCount}
-        </s-list-item>
-        <s-list-item>
-          Errori: {wizard.previewResult.summary.errorCount}
-        </s-list-item>
-        <s-list-item>
-          Warning: {wizard.previewResult.summary.warningCount}
-        </s-list-item>
-      </s-unordered-list>
+    <s-section heading="Anteprima catalogo">
+      <p className="syncbay-step-kicker">Step 3</p>
+      <p className="syncbay-section-intro">
+        {getPreviewStatusMessage(wizard.previewSource)}
+      </p>
+      <p className="syncbay-section-intro">
+        Modalità: {previewModeLabel}. {wizard.previewSource.coverageNote}
+      </p>
+      {wizard.importPreview.blockers.length > 0 ? (
+        <s-paragraph>
+          Blocchi: {wizard.importPreview.blockers.join(", ")}.
+        </s-paragraph>
+      ) : null}
+      <div className="syncbay-metric-grid syncbay-metric-grid--compact">
+        <MetricCard
+          detail={previewReadLabel}
+          label="Letti"
+          value={formatNumber(wizard.previewSource.readCount)}
+        />
+        <MetricCard
+          detail="Elementi in anteprima."
+          label="Totale"
+          value={formatNumber(wizard.previewResult.summary.totalCount)}
+        />
+        <MetricCard
+          detail="Possono entrare nel primo import."
+          label="Importabili"
+          value={formatNumber(wizard.previewResult.summary.importableCount)}
+        />
+        <MetricCard
+          detail="Da correggere o saltare."
+          label="Errori"
+          value={formatNumber(wizard.previewResult.summary.errorCount)}
+        />
+      </div>
+      <ImportPreviewFilterNav activeFilter={activeFilter} />
+      <PreviewExamplesSection activeFilter={activeFilter} wizard={wizard} />
     </s-section>
   );
 }
 
-function PreviewExamplesSection({ wizard }: { wizard: WizardState }) {
+function PreviewExamplesSection({
+  activeFilter,
+  wizard,
+}: {
+  activeFilter: ImportPreviewFilter;
+  wizard: WizardState;
+}) {
+  const visibleItems = filterPreviewItems(
+    wizard.previewResult.items,
+    activeFilter,
+  );
+
   return (
-    <s-section heading="Esempi preview">
-      {wizard.previewResult.items.length > 0 ? (
-        <s-unordered-list>
-          {wizard.previewResult.items.map((item) => (
-            <s-list-item key={item.itemId}>
-              {item.normalized.title}: {formatPreviewStatus(item.status)} - SKU{" "}
-              {item.normalized.sku ?? "mancante"} - immagini{" "}
-              {item.normalized.imageCount} - {formatPreviewIssues(item.issues)}
-            </s-list-item>
-          ))}
-        </s-unordered-list>
+    <div className="syncbay-preview-list">
+      {visibleItems.length > 0 ? (
+        visibleItems.map((item) => (
+          <div className="syncbay-preview-row" key={item.itemId}>
+            <div>
+              <p className="syncbay-preview-row__title">
+                {item.normalized.title}
+              </p>
+              <p className="syncbay-preview-row__detail">
+                SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
+                {item.normalized.imageCount} ·{" "}
+                {formatPreviewIssues(item.issues)}
+              </p>
+            </div>
+            <span
+              className={`syncbay-badge syncbay-badge--${getPreviewStatusTone(
+                item.status,
+              )}`}
+            >
+              {formatPreviewStatus(item.status)}
+            </span>
+          </div>
+        ))
       ) : (
-        <s-paragraph>
-          Nessun elemento letto dalla fonte preview corrente.
-        </s-paragraph>
+        <div className="syncbay-empty-state">
+          <h2>Nessun elemento in questa vista</h2>
+          <p>Prova con il filtro Tutti o completa i prerequisiti di lettura.</p>
+        </div>
       )}
-    </s-section>
+    </div>
+  );
+}
+
+function ImportPreviewFilterNav({
+  activeFilter,
+}: {
+  activeFilter: ImportPreviewFilter;
+}) {
+  return (
+    <nav aria-label="Filtri anteprima import" className="syncbay-filter-nav">
+      {IMPORT_PREVIEW_FILTERS.map((filter) => (
+        <a
+          aria-current={activeFilter === filter.value ? "page" : undefined}
+          className="syncbay-filter-nav__item"
+          href={
+            filter.value === "all"
+              ? "/app/import-preview"
+              : `/app/import-preview?previewFilter=${filter.value}`
+          }
+          key={filter.value}
+        >
+          {filter.label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+function StatusRow({
+  detail,
+  label,
+  title,
+  tone,
+}: {
+  detail: string;
+  label: string;
+  title: string;
+  tone: "critical" | "info" | "success" | "warning";
+}) {
+  return (
+    <li className="syncbay-status-row">
+      <div>
+        <p className="syncbay-status-row__title">{title}</p>
+        <p className="syncbay-status-row__detail">{detail}</p>
+      </div>
+      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
+    </li>
+  );
+}
+
+function MetricCard({
+  detail,
+  label,
+  value,
+}: {
+  detail: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="syncbay-metric">
+      <p className="syncbay-metric__label">{label}</p>
+      <p className="syncbay-metric__value">{value}</p>
+      <p className="syncbay-metric__detail">{detail}</p>
+    </div>
   );
 }
 
@@ -593,7 +714,12 @@ function DraftImportSection({
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Import Shopify">
+    <s-section heading="Importazione">
+      <p className="syncbay-step-kicker">Step 4</p>
+      <p className="syncbay-section-intro">
+        Pianifica la creazione o il riuso dei prodotti Shopify dopo aver
+        controllato anteprima, location e impostazioni.
+      </p>
       {draftStatus === "created" ? (
         <s-paragraph>
           Operazione completata:{" "}
@@ -663,6 +789,89 @@ function DraftImportSection({
   );
 }
 
+function AfterImportSection({ wizard }: { wizard: WizardState }) {
+  return (
+    <s-section heading="Dopo l'import">
+      <p className="syncbay-step-kicker">Step 5</p>
+      <p className="syncbay-section-intro">
+        Dopo la pianificazione puoi controllare i prodotti collegati nel
+        Catalogo e completare eventuali canali o default dalle Impostazioni.
+      </p>
+      <div className="syncbay-inline-actions">
+        <s-button href="/app/catalog" variant="primary">
+          Vai al catalogo
+        </s-button>
+        <s-button href="/app/settings">Modifica impostazioni</s-button>
+      </div>
+      <ul className="syncbay-status-list">
+        <StatusRow
+          detail="La tabella mostra mapping, disponibilità, prezzo e stato unico."
+          label="Controllo prodotti"
+          tone="info"
+          title="Catalogo"
+        />
+        <StatusRow
+          detail={`Default prodotti: ${wizard.importPreview.defaults.productStatus}. Canali: ${getProductPublicationModeSummaryLabel(
+            wizard.productPublications.mode,
+            wizard.productPublications.selectedCount,
+          )}.`}
+          label="Riepilogo"
+          tone="info"
+          title="Impostazioni import"
+        />
+      </ul>
+    </s-section>
+  );
+}
+
+function ImportTechnicalDetails({
+  previewModeLabel,
+  selectedLocation,
+  visibleRuntimePhases,
+  wizard,
+}: {
+  previewModeLabel: string;
+  selectedLocation?: ShopifyLocation;
+  visibleRuntimePhases: RuntimePhaseState[];
+  wizard: WizardState;
+}) {
+  return (
+    <s-section heading="Dettagli tecnici">
+      <details className="syncbay-details">
+        <summary>Apri dettagli importazione</summary>
+        <div className="syncbay-details__content">
+          <s-unordered-list>
+            <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
+            <s-list-item>
+              Fonte: {formatPreviewSource(wizard.previewSource.source)}
+            </s-list-item>
+            <s-list-item>
+              Location salvata: {selectedLocation?.name ?? "non confermata"}
+            </s-list-item>
+            <s-list-item>
+              Scritture Shopify: solo dopo conferma esplicita
+            </s-list-item>
+          </s-unordered-list>
+          <s-unordered-list>
+            {wizard.validationRules.map((rule) => (
+              <s-list-item key={rule.code}>
+                {rule.label}: {rule.severity}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+          <s-unordered-list>
+            {visibleRuntimePhases.map((phase) => (
+              <s-list-item key={phase.label}>
+                {phase.label}: {phase.status} - {phase.detail}
+              </s-list-item>
+            ))}
+          </s-unordered-list>
+        </div>
+      </details>
+    </s-section>
+  );
+}
+
 function formatCatalogImportQueuedMessage(result: {
   batchCount: number;
   createdJobCount: number;
@@ -694,76 +903,6 @@ function formatDraftImportCount(
   }
 
   return `${normalizedCount} ${getImportedProductsLabel(importProductStatus)} gestiti dalla preview.`;
-}
-
-function ValidationSection({ wizard }: { wizard: WizardState }) {
-  return (
-    <s-section heading="Validazioni MVP">
-      <s-unordered-list>
-        {wizard.validationRules.map((rule) => (
-          <s-list-item key={rule.code}>
-            {rule.label}: {rule.severity}
-          </s-list-item>
-        ))}
-      </s-unordered-list>
-    </s-section>
-  );
-}
-
-function AsideSections({
-  previewModeLabel,
-  selectedLocation,
-  visibleRuntimePhases,
-  wizard,
-}: {
-  previewModeLabel: string;
-  selectedLocation?: ShopifyLocation;
-  visibleRuntimePhases: RuntimePhaseState[];
-  wizard: WizardState;
-}) {
-  return (
-    <>
-      <s-section slot="aside" heading="Riepilogo">
-        <s-unordered-list>
-          <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
-          <s-list-item>
-            Fonte: {formatPreviewSource(wizard.previewSource.source)}
-          </s-list-item>
-          <s-list-item>
-            Location salvata: {selectedLocation?.name ?? "non confermata"}
-          </s-list-item>
-          <s-list-item>
-            Scritture Shopify: solo dopo conferma esplicita
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
-      <s-section slot="aside" heading="Sequenza preview">
-        <s-unordered-list>
-          <s-list-item>
-            {getPreviewFirstStep(wizard.previewSource.source)}
-          </s-list-item>
-          <s-list-item>
-            Validare SKU, immagini, prezzo e disponibilità.
-          </s-list-item>
-          <s-list-item>
-            Mostrare prodotti importabili, errori e warning.
-          </s-list-item>
-          <s-list-item>
-            Tenere ogni scrittura Shopify dietro conferma.
-          </s-list-item>
-        </s-unordered-list>
-      </s-section>
-      <s-section slot="aside" heading="Fasi Shopify">
-        <s-unordered-list>
-          {visibleRuntimePhases.map((phase) => (
-            <s-list-item key={phase.label}>
-              {phase.label}: {phase.status} - {phase.detail}
-            </s-list-item>
-          ))}
-        </s-unordered-list>
-      </s-section>
-    </>
-  );
 }
 
 async function fetchShopifyLocations(
@@ -835,6 +974,43 @@ function formatPreviewStatus(status: string) {
   return status;
 }
 
+function getImportPreviewFilter(value: string | null): ImportPreviewFilter {
+  if (
+    value === "error" ||
+    value === "imported" ||
+    value === "importing" ||
+    value === "ready" ||
+    value === "reimport"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
+function filterPreviewItems(
+  items: WizardState["previewResult"]["items"],
+  filter: ImportPreviewFilter,
+) {
+  if (filter === "ready") {
+    return items.filter((item) => item.status === "importable");
+  }
+  if (filter === "error") {
+    return items.filter((item) => item.status === "error");
+  }
+
+  if (filter === "all") return items;
+
+  return [];
+}
+
+function getPreviewStatusTone(status: string) {
+  if (status === "importable") return "success";
+  if (status === "error") return "critical";
+
+  return "warning";
+}
+
 function getPreviewIntro(source: string) {
   if (source === "inventory_api" || source === "trading_api") {
     return "La preview live legge eBay in sola lettura e non scrive su Shopify senza conferma esplicita.";
@@ -887,16 +1063,8 @@ function getPreviewStatusMessage(source: {
   return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";
 }
 
-function getPreviewFirstStep(source: string) {
-  if (source === "inventory_api") {
-    return "Leggere inventory item e offer pubblicate da eBay.";
-  }
-
-  if (source === "trading_api") {
-    return "Leggere listing attivi con fallback Trading API.";
-  }
-
-  return "Leggere dati dimostrativi fittizi.";
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("it-IT").format(value);
 }
 
 function formatPreviewIssues(

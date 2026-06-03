@@ -1,6 +1,13 @@
+import type { LinksFunction } from "react-router";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+
+import syncbayEmbeddedStyles from "./styles/syncbay-embedded.css?url";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: syncbayEmbeddedStyles },
+];
 
 export default function App() {
   return (
