@@ -105,6 +105,16 @@ test("detects stale internal Shopify import traces", () => {
       idempotencyKey: "draft-import:shop-1:abc",
       now,
       staleAfterMs,
+      startedAt: new Date("2026-06-03T00:04:59.000Z"),
+      status: "RETRYING",
+    }),
+    true,
+  );
+  assert.equal(
+    isStaleInternalShopifyImportJob({
+      idempotencyKey: "draft-import:shop-1:abc",
+      now,
+      staleAfterMs,
       startedAt: new Date("2026-06-03T00:10:00.000Z"),
       status: "RUNNING",
     }),

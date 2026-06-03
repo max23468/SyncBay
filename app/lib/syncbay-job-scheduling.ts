@@ -25,7 +25,7 @@ export function isStaleInternalShopifyImportJob(input: {
   startedAt: Date | null;
   status: string;
 }) {
-  if (input.status !== "RUNNING") return false;
+  if (input.status !== "RUNNING" && input.status !== "RETRYING") return false;
   if (!input.idempotencyKey?.startsWith(SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX)) {
     return false;
   }

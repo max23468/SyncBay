@@ -327,7 +327,7 @@ async function markStaleInternalShopifyImportJobsFailed(input: {
     where: {
       idempotencyKey: { startsWith: "draft-import:" },
       OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
-      status: SyncJobStatus.RUNNING,
+      status: { in: [SyncJobStatus.RUNNING, SyncJobStatus.RETRYING] },
       type: SyncJobType.IMPORT_CATALOG,
     },
   });
