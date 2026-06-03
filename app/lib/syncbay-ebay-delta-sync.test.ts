@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getSellerEventsDeltaWindow, isFullCatalogReconcileDue } from "./syncbay-ebay-delta-sync.ts";
+import { getSellerEventsDeltaWindow, getSellerEventsWatermarkAt, isFullCatalogReconcileDue } from "./syncbay-ebay-delta-sync.ts";
 
 test("uses a seller-events window with documented overlap and current-time buffer", () => {
   assert.deepEqual(
@@ -66,5 +66,26 @@ test("uses seller-events delta while the full reconcile interval is still fresh"
       now: new Date("2026-06-03T10:05:00.000Z"),
     }),
     false,
+  );
+});
+
+test("advances seller-events delta from the processed ModTimeTo watermark", () => {
+  assert.deepEqual(
+    getSellerEventsWatermarkAt({
+      latestFullReconcileAt: new Date("2026-06-03T10:00:00.000Z"),
+      latestSellerEventsCompletedAt: new Date("2026-06-03T10:10:00.000Z"),
+      latestSellerEventsModTimeToValue: "2026-06-03T10:03:00.000Z",
+    }),
+    new Date("2026-06-03T10:03:00.000Z"),
+  );
+});
+
+test("falls back to the full reconcile when seller-events watermark is absent", () => {
+  assert.deepEqual(
+    getSellerEventsWatermarkAt({
+      latestFullReconcileAt: new Date("2026-06-03T10:00:00.000Z"),
+      latestSellerEventsCompletedAt: null,
+    }),
+    new Date("2026-06-03T10:00:00.000Z"),
   );
 });
