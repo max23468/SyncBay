@@ -175,6 +175,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
       where: {
         shopId: shop.id,
+        status: SyncJobStatus.SUCCEEDED,
         type: SyncJobType.SYNC_INCREMENTAL,
       },
     }),
