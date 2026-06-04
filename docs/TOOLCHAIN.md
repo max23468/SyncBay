@@ -68,7 +68,10 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Coverage moduli puri     | `npm run coverage:lib`                                                                  |
 | Validazione Prisma       | `npm run prisma:validate`                                                               |
 | Advisor Supabase         | `npm run db:verify`                                                                     |
+| Doctor locale            | `npm run doctor:local`                                                                  |
+| Preflight pubblicazione  | `npm run publish:preflight -- --remote`                                                 |
 | Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
+| Doctor conflitti/stale   | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                          |
 | Limiti eBay Trading      | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                          |
 | Readiness ordini pagati  | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                     |
 | Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
@@ -80,7 +83,18 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Release locale           | `npm run release`                                                                       |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
+`npm run doctor:local` verifica toolchain Node/npm, `engine-strict`, file base
+e presenza delle env SyncBay senza stampare valori sensibili. Usa
+`--strict-env` quando stai preparando runtime live locale e vuoi bloccare anche
+su env mancanti.
+`npm run publish:preflight` controlla branch, worktree, changelog e script
+minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e
+`Codex feedback inbox`.
 `npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS `syncbay-supabase-db-password` quando disponibile. Evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
+`npm run conflicts:doctor` usa Supabase CLI linked in sola lettura per
+distinguere conflitti aperti, conflitti stale, falsi positivi description
+riparabili e cooldown eBay che bloccano il retry; non stampa valori prodotto o
+descrizioni.
 `npm run ebay:rate-limits` legge i limiti eBay Trading reali via Analytics API
 per applicazione e utente, usando token eBay cifrati dal database e
 client-credentials per la quota applicativa; non stampa segreti e non modifica
@@ -103,6 +117,7 @@ token, segreti o dati cliente.
 | Docs-only                                                           | Review contenuto e `git diff --check`                                           |
 | Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                            |
 | Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti |
+| Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest`              |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
 | Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
