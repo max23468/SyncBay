@@ -2,6 +2,7 @@ import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
+  MetaFunction,
 } from "react-router";
 import {
   Form,
@@ -18,6 +19,7 @@ import {
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
 } from "../lib/syncbay-ui-state";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
   getDashboardState,
   requestSyncJobRetry,
@@ -67,6 +69,8 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   timeStyle: "short",
   timeZone: "Europe/Rome",
 });
+
+export const meta: MetaFunction = () => getSyncBayMeta("Attività");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

@@ -2,6 +2,7 @@ import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
+  MetaFunction,
 } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -21,6 +22,7 @@ import {
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 import {
   getShopSettingsState,
@@ -51,6 +53,8 @@ type SettingsActionData =
       status: "blocked" | "saved";
       syncEnabled: boolean;
     };
+
+export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);

@@ -2,9 +2,22 @@ import fs from "node:fs";
 
 const checks = [
   {
+    file: "app/lib/syncbay-brand.ts",
+    needles: [
+      "SyncBay",
+      "Dal tuo negozio eBay a Shopify, pronto a vendere.",
+      "/syncbay-logo-horizontal.png",
+      "getSyncBayPageTitle",
+    ],
+  },
+  {
     file: "app/routes/app.tsx",
     needles: [
       "NavMenu",
+      "TitleBar",
+      "SYNCBAY_APP_NAME",
+      "syncbay-app-brand",
+      "syncbay-app-brand__logo",
       "Panoramica",
       "Catalogo",
       "Conflitti",
@@ -15,7 +28,12 @@ const checks = [
   },
   {
     file: "app/root.tsx",
-    needles: ["syncbay-embedded.css?url"],
+    needles: [
+      "getSyncBayMeta",
+      "syncbay-embedded.css?url",
+      "SYNCBAY_BRAND_ASSETS.faviconIco",
+      "SYNCBAY_BRAND_ASSETS.appleTouchIcon",
+    ],
   },
   {
     file: "app/lib/syncbay-ui-state.ts",
@@ -111,9 +129,51 @@ const checks = [
   },
 ];
 
+const publicFiles = [
+  "public/apple-touch-icon.png",
+  "public/favicon.ico",
+  "public/syncbay-icon-192.png",
+  "public/syncbay-logo-horizontal.png",
+];
+
+const navMenuContent = fs.existsSync("app/routes/app.tsx")
+  ? fs.readFileSync("app/routes/app.tsx", "utf8")
+  : "";
+
+const visibleOverviewLink = /<a\s+href="\/app">\s*Panoramica\s*<\/a>/.test(
+  navMenuContent,
+);
+
+const hiddenHomeLink = /<a\s+href="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/a>/.test(
+  navMenuContent,
+);
+
 const failures = [];
 
+for (const file of publicFiles) {
+  if (!fs.existsSync(file)) {
+    failures.push(`${file}: file pubblico brand mancante`);
+  }
+}
+
+if (!hiddenHomeLink) {
+  failures.push(
+    'app/routes/app.tsx: manca il link home tecnico nascosto href="/app" rel="home"',
+  );
+}
+
+if (!visibleOverviewLink) {
+  failures.push(
+    'app/routes/app.tsx: manca la voce menu visibile href="/app">Panoramica</a>',
+  );
+}
+
 for (const check of checks) {
+  if (!fs.existsSync(check.file)) {
+    failures.push(`${check.file}: file mancante`);
+    continue;
+  }
+
   const content = fs.readFileSync(check.file, "utf8");
   for (const needle of check.needles) {
     if (!content.includes(needle)) {

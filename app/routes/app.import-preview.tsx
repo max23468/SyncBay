@@ -2,6 +2,7 @@ import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
+  MetaFunction,
 } from "react-router";
 import {
   Form,
@@ -27,6 +28,7 @@ import {
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 import {
   getLocationRenameReadiness,
@@ -76,6 +78,8 @@ type ImportPreviewActionData =
       message: string;
       status: "blocked";
     };
+
+export const meta: MetaFunction = () => getSyncBayMeta("Importazione");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
