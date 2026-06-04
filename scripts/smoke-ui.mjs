@@ -49,6 +49,23 @@ const checks = [
     ],
   },
   {
+    file: "app/lib/syncbay-conflict-actions.ts",
+    needles: [
+      "Batch sicuro",
+      "Da rivedere",
+      "Manuale",
+      "getSafeBatchConflictResolutions",
+    ],
+  },
+  {
+    file: "app/lib/syncbay-job-diagnostics.ts",
+    needles: [
+      "Disponibilità eBay non aggiornata",
+      "Attendi eBay",
+      "cooldown",
+    ],
+  },
+  {
     file: "app/routes/app._index.tsx",
     needles: [
       "Panoramica",
@@ -75,7 +92,9 @@ const checks = [
     needles: [
       "Conflitti",
       "getConflictActionLabel",
+      "Batch sicuri",
       "Decisioni aperte",
+      "syncbay-decision-action",
     ],
   },
   {
@@ -87,6 +106,7 @@ const checks = [
       "Conflitti",
       "Eventi",
       "Nota operativa",
+      "getSyncJobDiagnostic",
       "retryJob",
       "Controlli rapidi",
     ],
@@ -124,6 +144,15 @@ const checks = [
   {
     file: "app/services/shopify-location.server.ts",
     needles: ["locationEdit", "write_locations", "nome location"],
+  },
+  {
+    file: "scripts/syncbay-repair-description-conflicts.mjs",
+    needles: [
+      "latest_description_syncbay",
+      "current_field_baselines",
+      "updatedEbayFromShopifyOrder",
+      "restoredEbayAfterTest",
+    ],
   },
 ];
 

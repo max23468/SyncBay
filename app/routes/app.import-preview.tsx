@@ -23,12 +23,12 @@ import {
   getPageWindow,
   normalizePage,
 } from "../lib/syncbay-pagination";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
   getEbayConnectionAction,
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
-import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 import {
   getLocationRenameReadiness,

@@ -394,7 +394,7 @@
 .syncbay-conflict-item__body {
   display: grid;
   gap: var(--syncbay-space-3);
-  grid-template-columns: minmax(160px, 0.7fr) minmax(220px, 1fr) minmax(280px, 1.4fr);
+  grid-template-columns: minmax(140px, 0.6fr) minmax(200px, 0.9fr) minmax(200px, 1fr) minmax(280px, 1.4fr);
 }
 
 .syncbay-conflict-item__body p {
@@ -421,6 +421,19 @@
   border-radius: var(--syncbay-radius);
   min-width: 0;
   padding: var(--syncbay-space-3);
+}
+
+.syncbay-conflict-guidance {
+  color: var(--syncbay-slate);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  margin-top: var(--syncbay-space-2) !important;
+}
+
+.syncbay-decision-action {
+  display: grid;
+  gap: var(--syncbay-space-1);
+  justify-items: start;
 }
 
 .syncbay-empty-state {

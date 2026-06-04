@@ -7,11 +7,12 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
-- Classificare i conflitti Shopify aperti e distinguere azioni batch sicure da
-  decisioni manuali per il negoziante.
-- Estendere la diagnostica self-service per retry e rollback per prodotto.
-- Preparare screenshot prodotto e raffinamento microcopy dell'app embedded ora
-  che le sei superfici operative sono stabili.
+- Verificare in produzione pilota le nuove classificazioni dei conflitti su
+  coda reale: `Batch sicuri`, `Da rivedere`, `Manuali`.
+- Raccogliere screenshot prodotto puliti delle sei superfici embedded, usando
+  dati reali o fixture sintetiche realistiche senza dati personali.
+- Estendere la diagnostica self-service verso rollback per prodotto dopo il
+  primo pass su impatto job, prossima azione e retry sicuro.
 - Tenere sotto controllo sicurezza e dati: cifratura token, webhook GDPR,
   audit log, rate limit/retry e rollback import restano superfici prioritarie.
 
@@ -48,6 +49,8 @@ esteso della vecchia roadmap di fondazione sta in
   e ripristinati dopo il test.
 - Il redesign embedded a sei superfici è stato implementato, pubblicato e
   rivisto post-publish contro i concept finali.
+- La UI embedded classifica i conflitti per sicurezza operativa e la timeline
+  Attività spiega impatto, prossima azione e retry sicuro dei job.
 
 ## Regole
 

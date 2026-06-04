@@ -6,6 +6,24 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.10] — 2026-06-05
+
+### Correzioni
+
+- La pagina Conflitti classifica le decisioni aperte tra `Batch sicuri`, `Da
+  rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
+- La pagina Attività mostra impatto, prossima azione e riferimento tecnico dei
+  job, bloccando il retry manuale quando eBay ha imposto un cooldown.
+- La diagnostica retry riconosce anche i cooldown eBay registrati come
+  fallimento di enqueue incrementale.
+- La repair CLI dei conflitti descrizione conserva le baseline correnti degli
+  altri campi quando crea una nuova baseline descrizione.
+
+### Sotto il cofano
+
+- Brand e handoff UI includono regole di microcopy e sequenza screenshot
+  prodotto per le sei superfici embedded.
+
 ## [0.23.9] — 2026-06-05
 
 ### Correzioni
@@ -1068,6 +1086,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.10]: #02310--2026-06-05
 [0.23.9]: #0239--2026-06-05
 [0.23.8]: #0238--2026-06-05
 [0.23.7]: #0237--2026-06-05

@@ -156,6 +156,22 @@ Esempi:
 - Errori leggibili.
 - Riprova sicura dove possibile.
 - Nessuna sovrascrittura silenziosa.
+- Conflitti classificati per rischio: batch sicuro solo quando non cambia
+  prezzo, disponibilità, stato prodotto o mapping.
+- Retry spiegato con impatto sul prodotto, prossima azione e riferimento
+  tecnico, senza scaricare sul negoziante dettagli interni inutili.
+
+### Per screenshot prodotto
+
+- Usare dati reali o fixture sintetiche realistiche, mai dati personali o
+  listing di negozianti non autorizzati.
+- Mostrare le sei superfici embedded solo quando sono coerenti con dati reali:
+  `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`,
+  `Impostazioni`.
+- Preferire schermate con azione successiva chiara: conflitti classificati,
+  retry sicuro, import pronto o catalogo aggiornato.
+- Evitare screenshot dove SyncBay sembra una suite marketplace bidirezionale,
+  un prodotto ufficiale eBay/Shopify o un support desk umano.
 
 ### Per pagine tecniche/docs
 

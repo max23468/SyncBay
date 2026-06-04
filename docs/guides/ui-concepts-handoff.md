@@ -149,6 +149,32 @@ questo ambiente; la review visuale è stata condotta su Safari/Computer Use e
 annotata qui. I sei PNG concept sono stati comunque riaperti con `view_image`
 prima della chiusura.
 
+## Readiness screenshot e microcopy 2026-06-05
+
+Obiettivo: preparare l'app embedded per screenshot prodotto e review commerciale
+senza introdurre schermate finte o dati di negozianti non autorizzati.
+
+Sequenza consigliata screenshot:
+
+1. `Panoramica`: prossima azione e stato sync visibili.
+2. `Catalogo`: tabella con immagini, disponibilità e origine eBay chiara.
+3. `Conflitti`: KPI `Batch sicuri`, `Da rivedere`, `Manuali` e decision card.
+4. `Attività`: timeline con impatto, prossima azione e retry sicuro.
+5. `Importazione`: step progressivi e preview paginata.
+6. `Impostazioni`: quattro box verticali confermati.
+
+Regole copy per screenshot:
+
+- usare italiano operativo, frasi brevi e niente allarmismi;
+- mostrare `Batch sicuro` solo per decisioni che non toccano prezzo,
+  disponibilità, stato prodotto o mapping;
+- mostrare `Attendi eBay` quando il retry manuale anticiperebbe un cooldown
+  provider;
+- preferire riferimenti tecnici sintetici come codici errore, non payload o
+  token;
+- non usare screenshot con dati personali, ordini reali, customer data,
+  credenziali o listing di negozianti non autorizzati.
+
 ## Decisione prodotto
 
 SyncBay resta una app Shopify embedded per negozianti italiani che partono da
