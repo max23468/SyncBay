@@ -10,6 +10,29 @@
 
 ---
 
+## Execution Result - 2026-06-04
+
+**Outcome:** `PASS`.
+
+- The true Shopify Admin `orderCreate` path was verified with the offline
+  session that now includes `write_orders`: Shopify delivered `orders/paid` to
+  SyncBay and the production runner created `UPDATE_EBAY_STOCK` jobs.
+- The first Admin order created with `financialStatus=PAID` was delivered with
+  a delay; a second order using a documented `SALE/SUCCESS` transaction was
+  created while investigating the delay. The two webhook jobs converged safely:
+  one real allowlisted Trading API stock write changed eBay quantity `3 -> 2`,
+  and the other job skipped the same line with `already_processed`.
+- Rollback completed: eBay stock was restored to `3` with `GetItem`
+  verification, Shopify stock on the SyncBay location was verified at `3`, the
+  Vercel production allowlist was removed and production was redeployed, and no
+  active `UPDATE_EBAY_STOCK` or `SYNC_INCREMENTAL` job remained.
+
+**Follow-up:** no provider blocker remains for the MVP stock loop. Future tests
+should create one paid Admin order with a `SALE/SUCCESS` transaction and wait
+for webhook delivery before attempting a second order.
+
+---
+
 ## Execution Result - 2026-06-02
 
 **Outcome:** `PARTIAL_WITH_ROLLBACK`.
@@ -33,7 +56,9 @@ currency = EUR
 price = 49.99
 ```
 
-**Follow-up required:** test the true Shopify sale path through either a real dev-store checkout/Admin order flow or an offline app token with `write_orders`, then verify that the resulting `orders/paid` webhook creates the same `UPDATE_EBAY_STOCK` job shape that was proven by the synthetic payload.
+**Follow-up completed 2026-06-04:** the true Shopify Admin `orderCreate` path now
+creates `orders/paid` webhook jobs and the allowlisted stock write was verified
+with rollback.
 
 ---
 

@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Verificato il trigger reale `orders/paid` via Shopify Admin `orderCreate` sul
+  dev store: il job `UPDATE_EBAY_STOCK` allowlistato aggiorna eBay e il rollback
+  ripristina eBay, Shopify e configurazione Vercel.
+
 ## [0.23.4] — 2026-06-04
 
 ### Correzioni

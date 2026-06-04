@@ -15,8 +15,9 @@ dev store l'import reale ha completato 958 listing. Il runner copre import,
 sync incrementale, update stock eBay da `orders/paid` nel pilota custom e
 rilevazione conflitti Shopify. Il primo cambio quantità reale eBay -> Shopify
 è stato verificato con rollback. Il runner stock Shopify -> eBay è stato
-verificato con payload ordine sintetico e scrittura eBay reale allowlistata;
-resta da verificare il trigger da vendita Shopify reale.
+verificato con payload ordine sintetico e con trigger reale `orders/paid` da
+ordine Shopify Admin pagato; entrambi i test hanno usato scrittura eBay reale
+allowlistata e rollback completo.
 
 Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione eBay, state OAuth eBay, job applicativi, audit log, mapping prodotto, snapshot prodotto e conflitti Shopify. Le migration sono tracciate in `prisma/migrations/`.
 
@@ -63,7 +64,9 @@ Note:
   Vercel production, ridistribuire production prima di creare il job di test e
   ridistribuire di nuovo dopo la rimozione. La verifica del 2026-06-02 ha usato
   una allowlist singola `ebay:<ItemID>`, poi ha confermato da `vercel env ls`
-  che l'allowlist non fosse più presente.
+  che l'allowlist non fosse più presente. La verifica reale `orders/paid` del
+  2026-06-04 ha ripetuto lo stesso pattern: allowlist singola, redeploy prima
+  dell'ordine, restore stock, rimozione allowlist e redeploy finale.
 - Per eBay.it i job `UPDATE_EBAY_STOCK` richiedono ordine Shopify e snapshot
   catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
   saltata e non viene inviata nessuna mutation a eBay.
@@ -81,9 +84,9 @@ Note:
   riducendo il consumo di `GetItem`.
 - La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
   `write_orders` e un token offline; `shopify store execute` con il token CLI
-  disponibile non è sufficiente. Finché quello scope non è disponibile, la prova
-  completa del trigger vendita Shopify reale resta separata dalla prova del
-  runner stock.
+  disponibile non è sufficiente. Sul dev store la sessione offline include
+  `write_orders` e il trigger reale è stato verificato con `orderCreate` usando
+  una transazione `SALE/SUCCESS`.
 - Prima di una prova reale `orders/paid`, usa
   `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`: il
   comando controlla in sola lettura sessione offline Shopify, scope
@@ -169,6 +172,12 @@ Non salvarla in Git e non stamparla nei log.
   `UPDATE_EBAY_STOCK` con payload ordine sintetico, `dryRun: true`,
   allowlist reale singola, `updatedCount: 1`, stock eBay 3 -> 2, rollback a 3,
   allowlist Vercel rimossa e production ridistribuita
+- test reale `orders/paid` su ItemID controllato `156986744184`: ordine Shopify
+  Admin pagato con variante collegata, webhook production, job
+  `UPDATE_EBAY_STOCK` `dryRun=true` con allowlist reale singola,
+  `updatedCount: 1`, stock eBay 3 -> 2, secondo job duplicato saltato con
+  `already_processed`, rollback eBay/Shopify a 3, allowlist Vercel rimossa e
+  production ridistribuita
 
 Estensioni Supabase verificate:
 

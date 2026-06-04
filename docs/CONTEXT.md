@@ -41,7 +41,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run MVP, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nel pilota custom e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. La dashboard mostra avanzamento import, diagnostica job e conflitti con azioni guidate. Il primo ciclo incrementale reale eBay -> Shopify è stato verificato su ItemID `156986744184` con cambio quantità 3 -> 2 e rollback a 3. Il runner stock Shopify -> eBay è stato verificato sullo stesso item con job `UPDATE_EBAY_STOCK` sintetico, allowlist temporanea e scrittura Trading API reale 3 -> 2, poi rollback a 3. Resta da verificare il trigger vendita Shopify reale: `orderCreate` via Admin GraphQL è stato bloccato perché il token CLI disponibile non ha `write_orders` e Shopify richiede un token offline con quello scope.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti, wizard import preview con validazioni dry-run MVP, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nel pilota custom e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. La dashboard mostra avanzamento import, diagnostica job e conflitti con azioni guidate. Il primo ciclo incrementale reale eBay -> Shopify è stato verificato su ItemID `156986744184` con cambio quantità 3 -> 2 e rollback a 3. Il runner stock Shopify -> eBay è stato verificato sullo stesso item prima con job `UPDATE_EBAY_STOCK` sintetico e poi con trigger reale `orders/paid` da Shopify Admin `orderCreate`: la scrittura Trading API allowlistata ha ridotto eBay 3 -> 2, un secondo job duplicato è stato saltato con `already_processed`, poi eBay e Shopify sono stati ripristinati a 3 e l'allowlist Vercel è stata rimossa.
 
 ## Runtime deciso
 
@@ -91,14 +91,15 @@ Provisioning minimo:
   le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per
   marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot
   catalogo in `EUR` e salta righe con valuta mancante o diversa. Il runner è
-  stato verificato con payload ordine sintetico e allowlist singola; il parser
-  payload `orders/paid` -> job stock è coperto da test locali. La readiness
+  stato verificato con payload ordine sintetico e con ordine Shopify Admin reale
+  pagato tramite `orderCreate` + transazione `SALE/SUCCESS`; il parser payload
+  `orders/paid` -> job stock è coperto da test locali. La readiness
   operativa si controlla con `npm run orders:paid-readiness -- --shop
   syncbay-dev.myshopify.com` e include sessione Shopify, scope ordini,
   connessione eBay `EBAY_IT`, token eBay utilizzabili, coda stock/sync e
-  candidati. La sessione offline del dev store ora include `write_orders`;
-  manca ancora la prova del trigger da ordine Shopify reale via Admin
-  `orderCreate`.
+  candidati. La sessione offline del dev store include `write_orders`; per
+  nuovi test crea un solo ordine Admin con transazione `SALE/SUCCESS`, aspetta
+  la consegna webhook e ripristina sempre stock e allowlist.
 - Dettagli: `guides/provisioning-runtime.md`.
 
 ## Pubblicazione proporzionata
