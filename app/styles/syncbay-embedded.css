@@ -170,6 +170,12 @@
   overflow-x: auto;
 }
 
+.syncbay-pagination {
+  display: grid;
+  gap: var(--syncbay-space-2);
+  margin-top: var(--syncbay-space-4);
+}
+
 .syncbay-table {
   border-collapse: collapse;
   font-size: 0.9rem;
