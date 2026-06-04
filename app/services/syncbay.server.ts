@@ -27,6 +27,13 @@ import {
   type CatalogPageFilter,
   getCatalogPageWindow,
 } from "../lib/syncbay-catalog-page";
+import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
+import {
+  CONFLICT_PAGE_SIZE,
+  type ConflictFilter,
+  getConflictStatusFilter,
+} from "../lib/syncbay-conflicts-page";
+import { getPageWindow } from "../lib/syncbay-pagination";
 import {
   getCatalogRowStatus,
   type CatalogAvailabilityKind,
@@ -445,8 +452,53 @@ export async function getCatalogPageState(
   };
 }
 
-export async function getConflictsPageState(session: ShopifySessionLike) {
+export async function getConflictsPageState(
+  session: ShopifySessionLike,
+  input: { filter?: ConflictFilter; page?: number } = {},
+) {
   const shop = await ensureShopForSession(session);
+  const activeFilter = input.filter ?? "open";
+  const statusFilter = [
+    ...getConflictStatusFilter(activeFilter),
+  ] as SyncConflictStatus[];
+  const allStatuses = [
+    ...getConflictStatusFilter("all"),
+  ] as SyncConflictStatus[];
+  const resolvedStatuses = [
+    ...getConflictStatusFilter("resolved"),
+  ] as SyncConflictStatus[];
+  const [openCount, resolvedCount, totalCount, filteredCount] =
+    await prisma.$transaction([
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: { in: resolvedStatuses },
+        },
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: { in: allStatuses },
+        },
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: { in: statusFilter },
+        },
+      }),
+    ]);
+  const pagination = getPageWindow({
+    page: input.page ?? 1,
+    pageSize: CONFLICT_PAGE_SIZE,
+    totalRows: filteredCount,
+  });
   const conflicts = await prisma.syncConflict.findMany({
     include: {
       mapping: {
@@ -459,16 +511,11 @@ export async function getConflictsPageState(session: ShopifySessionLike) {
       },
     },
     orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
-    take: 120,
+    skip: pagination.offset,
+    take: pagination.pageSize,
     where: {
       shopId: shop.id,
-      status: {
-        in: [
-          SyncConflictStatus.OPEN,
-          SyncConflictStatus.RESOLVED,
-          SyncConflictStatus.IGNORED,
-        ],
-      },
+      status: { in: statusFilter },
     },
   });
   const thumbnailPayloadByMappingId =
@@ -513,20 +560,16 @@ export async function getConflictsPageState(session: ShopifySessionLike) {
 
   return {
     filters: ["open", "resolved", "all"] as const,
+    pagination,
     rows: rowsWithThumbnails,
     shop: {
       domain: shop.shopDomain,
     },
     summary: {
-      openCount: rowsWithThumbnails.filter(
-        (row) => row.status === SyncConflictStatus.OPEN,
-      ).length,
-      resolvedCount: rowsWithThumbnails.filter(
-        (row) =>
-          row.status === SyncConflictStatus.RESOLVED ||
-          row.status === SyncConflictStatus.IGNORED,
-      ).length,
-      totalCount: rowsWithThumbnails.length,
+      filteredCount,
+      openCount,
+      resolvedCount,
+      totalCount,
     },
   };
 }
@@ -2314,10 +2357,14 @@ function formatConflictPageRow(
     },
     resolution: conflict.resolution,
     resolvedAt: conflict.resolvedAt?.toISOString() ?? null,
-    shopifyValue: formatJsonValueForDisplay(conflict.shopifyValue),
-    sourceValue: formatJsonValueForDisplay(
-      conflict.ebayValue ?? conflict.lastSyncBayValue,
-    ),
+    shopifyValue: formatConflictValueForDisplay({
+      field: conflict.field,
+      value: conflict.shopifyValue,
+    }),
+    sourceValue: formatConflictValueForDisplay({
+      field: conflict.field,
+      value: conflict.ebayValue ?? conflict.lastSyncBayValue,
+    }),
     status: conflict.status,
   };
 }
@@ -2345,36 +2392,6 @@ function getCatalogAvailability(input: {
   if (input.quantity === null) return "unknown";
 
   return "aligned";
-}
-
-function formatJsonValueForDisplay(value: Prisma.JsonValue | null) {
-  if (value === null) return "Non disponibile";
-  if (typeof value === "string") return truncateDisplayValue(value);
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "Nessun valore";
-
-    return `${value.length} valori`;
-  }
-
-  const object = getJsonObject(value);
-  const knownValue =
-    getJsonString(object?.title) ??
-    getJsonString(object?.name) ??
-    getJsonString(object?.value) ??
-    getJsonString(object?.amount);
-
-  return knownValue ? truncateDisplayValue(knownValue) : "Valore strutturato";
-}
-
-function truncateDisplayValue(value: string) {
-  const trimmedValue = value.trim();
-
-  return trimmedValue.length > 96
-    ? `${trimmedValue.slice(0, 93).trimEnd()}...`
-    : trimmedValue;
 }
 
 async function getLatestImportRunSummary(shopId: string) {

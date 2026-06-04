@@ -11,6 +11,7 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   type ImportProductStatus,
 } from "../lib/import-product-status";
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { loadShopifyProductPublications } from "../lib/syncbay-product-publication";
 import {
   PRODUCT_PUBLICATION_MODES,
@@ -178,7 +179,7 @@ export default function SettingsRoute() {
             Intervallo target: {settings.shop.syncTargetSeconds} secondi
           </s-list-item>
           <s-list-item>
-            Prodotti collegati: {settings.sync.activeMappingCount}
+            Prodotti attivi collegati: {settings.sync.activeMappingCount}
           </s-list-item>
         </s-unordered-list>
         {settings.sync.enablementBlockers.length > 0 ? (
@@ -380,7 +381,7 @@ export default function SettingsRoute() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {

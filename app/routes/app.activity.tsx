@@ -12,6 +12,7 @@ import {
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
@@ -201,7 +202,7 @@ export default function ActivityRoute() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 function ActivityTimelineRow({

@@ -7,6 +7,7 @@ import {
   normalizeCatalogPage,
   normalizeCatalogPageFilter,
 } from "../lib/syncbay-catalog-page";
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   getCatalogAvailabilityLabel,
   getCatalogStatusLabel,
@@ -122,7 +123,7 @@ export default function CatalogRoute() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 function CatalogTableRow({ row }: { row: CatalogRow }) {
