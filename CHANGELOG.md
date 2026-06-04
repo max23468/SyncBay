@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.6] — 2026-06-05
+
+### Correzioni
+
+- La Panoramica non propone più `Ricollega eBay` tra le azioni consigliate
+  quando l'account eBay risulta già collegato.
+- La pagina Attività espone `Conflitti` come filtro operativo, include i
+  conflitti recenti nella timeline e riduce i residui `Audit` visibili al
+  negoziante.
+
 ## [0.23.5] — 2026-06-04
 
 ### Correzioni
@@ -1032,6 +1042,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.6]: #0236--2026-06-05
 [0.23.5]: #0235--2026-06-04
 [0.23.4]: #0234--2026-06-04
 [0.23.3]: #0233--2026-06-04

@@ -14,6 +14,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  getConflictFieldLabel,
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
 } from "../lib/syncbay-ui-state";
@@ -24,10 +25,18 @@ import {
 import { authenticate } from "../shopify.server";
 
 type Activity = Awaited<ReturnType<typeof getDashboardState>>;
+type ActivityConflict = Activity["conflicts"]["recent"][number];
 type ActivityJob = Activity["sync"]["lastJobs"][number];
-type ActivityFilter = "all" | "audit" | "errors" | "import" | "stock" | "sync";
+type ActivityFilter =
+  | "all"
+  | "conflicts"
+  | "errors"
+  | "import"
+  | "stock"
+  | "sync";
 type ActivityRow = {
   category: TimelineCategoryKind | "AUDIT";
+  conflict?: ActivityConflict;
   detail: string;
   id: string;
   job?: ActivityJob;
@@ -35,7 +44,7 @@ type ActivityRow = {
   timestamp: string;
   title: string;
   tone: "critical" | "info" | "success" | "warning";
-  type: "audit" | "job";
+  type: "audit" | "conflict" | "job";
 };
 
 type ActivityActionData = {
@@ -46,11 +55,11 @@ type ActivityActionData = {
 
 const ACTIVITY_FILTERS: Array<{ label: string; value: ActivityFilter }> = [
   { label: "Tutte", value: "all" },
-  { label: "Errori", value: "errors" },
   { label: "Importazioni", value: "import" },
   { label: "Aggiornamenti", value: "sync" },
   { label: "Disponibilità", value: "stock" },
-  { label: "Audit", value: "audit" },
+  { label: "Conflitti", value: "conflicts" },
+  { label: "Errori", value: "errors" },
 ];
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
@@ -105,8 +114,8 @@ export default function ActivityRoute() {
       <div className="syncbay-page syncbay-stack">
         <s-section heading="Coda operativa">
           <p className="syncbay-section-intro">
-            Qui controlli job, errori e audit recenti senza uscire dalla
-            dashboard. La sorgente catalogo resta eBay; gli ordini Shopify
+            Qui controlli attività, errori e note operative senza uscire
+            dall&apos;app. La sorgente catalogo resta eBay; gli ordini Shopify
             aggiornano solo la disponibilità eBay.
           </p>
           <div className="syncbay-metric-grid syncbay-metric-grid--compact">
@@ -121,8 +130,8 @@ export default function ActivityRoute() {
               value={formatNumber(failedJobs)}
             />
             <MetricCard
-              detail="Eventi tecnici registrati."
-              label="Audit"
+              detail="Note operative registrate."
+              label="Eventi"
               value={formatNumber(activity.audit.length)}
             />
             <MetricCard
@@ -318,14 +327,27 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
     category: "AUDIT" as const,
     detail: event.message,
     id: `audit-${event.type}-${event.createdAt}`,
-    meta: `Audit · ${event.type}`,
+    meta: "Sistema",
     timestamp: event.createdAt,
-    title: "Evento SyncBay",
+    title: "Nota operativa",
     tone: "info" as const,
     type: "audit" as const,
   }));
+  const conflictRows = activity.conflicts.recent.map((conflict) => ({
+    category: "CONFLICT" as const,
+    conflict,
+    detail: conflict.ebayItemId
+      ? `ItemID ${conflict.ebayItemId} richiede una decisione prima del prossimo allineamento.`
+      : "Un prodotto collegato richiede una decisione prima del prossimo allineamento.",
+    id: `conflict-${conflict.id}`,
+    meta: `${getTimelineCategoryLabel("CONFLICT")} · Aperto`,
+    timestamp: conflict.detectedAt,
+    title: `Conflitto ${getConflictFieldLabel(conflict.field)}`,
+    tone: "warning" as const,
+    type: "conflict" as const,
+  }));
 
-  return [...jobRows, ...auditRows].sort(
+  return [...jobRows, ...conflictRows, ...auditRows].sort(
     (first, second) =>
       new Date(second.timestamp).getTime() - new Date(first.timestamp).getTime(),
   );
@@ -333,9 +355,11 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
 
 function filterActivityRows(rows: ActivityRow[], filter: ActivityFilter) {
   if (filter === "all") return rows;
-  if (filter === "audit") return rows.filter((row) => row.type === "audit");
   if (filter === "errors") {
     return rows.filter((row) => row.tone === "critical");
+  }
+  if (filter === "conflicts") {
+    return rows.filter((row) => row.category === "CONFLICT");
   }
   if (filter === "import") {
     return rows.filter((row) => row.category === "IMPORT_CATALOG");
@@ -349,7 +373,7 @@ function filterActivityRows(rows: ActivityRow[], filter: ActivityFilter) {
 
 function getActivityFilter(value: string | null): ActivityFilter {
   if (
-    value === "audit" ||
+    value === "conflicts" ||
     value === "errors" ||
     value === "import" ||
     value === "stock" ||
