@@ -3,6 +3,11 @@ import { useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
+  type CatalogPageFilter,
+  normalizeCatalogPage,
+  normalizeCatalogPageFilter,
+} from "../lib/syncbay-catalog-page";
+import {
   getCatalogAvailabilityLabel,
   getCatalogStatusLabel,
 } from "../lib/syncbay-ui-state";
@@ -11,16 +16,8 @@ import { getCatalogPageState } from "../services/syncbay.server";
 
 type Catalog = Awaited<ReturnType<typeof getCatalogPageState>>;
 type CatalogRow = Catalog["rows"][number];
-type CatalogFilter =
-  | "all"
-  | "archived"
-  | "conflicts"
-  | "fresh"
-  | "linked"
-  | "needs_check"
-  | "not_updated";
 
-const CATALOG_FILTERS: Array<{ label: string; value: CatalogFilter }> = [
+const CATALOG_FILTERS: Array<{ label: string; value: CatalogPageFilter }> = [
   { label: "Tutti", value: "all" },
   { label: "Collegati", value: "linked" },
   { label: "Aggiornati", value: "fresh" },
@@ -38,15 +35,19 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
 
-  return getCatalogPageState(session);
+  return getCatalogPageState(session, {
+    filter: normalizeCatalogPageFilter(url.searchParams.get("filter")),
+    page: normalizeCatalogPage(url.searchParams.get("page")),
+  });
 };
 
 export default function CatalogRoute() {
   const catalog = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
-  const activeFilter = getCatalogFilter(searchParams.get("filter"));
-  const rows = filterCatalogRows(catalog.rows, activeFilter);
+  const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));
+  const rows = catalog.rows;
 
   return (
     <s-page heading="Catalogo">
@@ -106,6 +107,10 @@ export default function CatalogRoute() {
                   ))}
                 </tbody>
               </table>
+              <CatalogPagination
+                activeFilter={activeFilter}
+                catalog={catalog}
+              />
             </div>
           ) : (
             <EmptyCatalogState activeFilter={activeFilter} />
@@ -149,7 +154,9 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
         </span>
       </td>
       <td className="syncbay-table__number">
-        {row.price ? `${row.price.amount} ${row.price.currency ?? ""}` : "Non letto"}
+        {row.price
+          ? `${row.price.amount} ${row.price.currency ?? ""}`
+          : "Non letto"}
       </td>
       <td>
         <span>{formatDateTime(row.lastSyncedAt)}</span>
@@ -181,20 +188,67 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
   );
 }
 
-function FilterNav({ activeFilter }: { activeFilter: CatalogFilter }) {
+function FilterNav({ activeFilter }: { activeFilter: CatalogPageFilter }) {
   return (
     <nav aria-label="Filtri catalogo" className="syncbay-filter-nav">
       {CATALOG_FILTERS.map((filter) => (
         <a
           aria-current={activeFilter === filter.value ? "page" : undefined}
           className="syncbay-filter-nav__item"
-          href={filter.value === "all" ? "/app/catalog" : `/app/catalog?filter=${filter.value}`}
+          href={getCatalogHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
         </a>
       ))}
     </nav>
+  );
+}
+
+function CatalogPagination({
+  activeFilter,
+  catalog,
+}: {
+  activeFilter: CatalogPageFilter;
+  catalog: Catalog;
+}) {
+  const pagination = catalog.pagination;
+
+  return (
+    <div className="syncbay-pagination">
+      <p className="syncbay-section-intro">
+        Mostrati {formatNumber(pagination.currentStart)}-
+        {formatNumber(pagination.currentEnd)} di{" "}
+        {formatNumber(pagination.totalRows)} risultati
+        {activeFilter === "all" ? "" : " per questo filtro"}. Catalogo totale:{" "}
+        {formatNumber(catalog.summary.totalCount)}.
+      </p>
+      {pagination.cappedAtMaxProducts ? (
+        <p className="syncbay-section-intro">
+          SyncBay carica al massimo {formatNumber(pagination.maxProducts)}{" "}
+          mapping per questa vista. Il resto del catalogo resta preservato e
+          verrà incluso quando la paginazione estesa sarà attiva.
+        </p>
+      ) : null}
+      <div className="syncbay-inline-actions">
+        {pagination.hasPreviousPage && pagination.previousPage ? (
+          <s-button
+            href={getCatalogHref(activeFilter, pagination.previousPage)}
+          >
+            Precedente
+          </s-button>
+        ) : null}
+        <span className="syncbay-table__subtext">
+          Pagina {formatNumber(pagination.page)} di{" "}
+          {formatNumber(pagination.totalPages)}
+        </span>
+        {pagination.hasNextPage && pagination.nextPage ? (
+          <s-button href={getCatalogHref(activeFilter, pagination.nextPage)}>
+            Successiva
+          </s-button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -210,7 +264,9 @@ function ProductThumbnail({ row }: { row: CatalogRow }) {
     );
   }
 
-  return <span aria-hidden className="syncbay-thumbnail syncbay-thumbnail--empty" />;
+  return (
+    <span aria-hidden className="syncbay-thumbnail syncbay-thumbnail--empty" />
+  );
 }
 
 function MetricCard({
@@ -234,7 +290,7 @@ function MetricCard({
 function EmptyCatalogState({
   activeFilter,
 }: {
-  activeFilter: CatalogFilter;
+  activeFilter: CatalogPageFilter;
 }) {
   if (activeFilter === "all") {
     return (
@@ -260,47 +316,15 @@ function EmptyCatalogState({
   );
 }
 
-function getCatalogFilter(value: string | null): CatalogFilter {
-  if (
-    value === "archived" ||
-    value === "conflicts" ||
-    value === "fresh" ||
-    value === "linked" ||
-    value === "needs_check" ||
-    value === "not_updated"
-  ) {
-    return value;
-  }
+function getCatalogHref(filter: CatalogPageFilter, page = 1) {
+  const params = new URLSearchParams();
 
-  return "all";
-}
+  if (filter !== "all") params.set("filter", filter);
+  if (page > 1) params.set("page", String(page));
 
-function filterCatalogRows(rows: CatalogRow[], filter: CatalogFilter) {
-  if (filter === "linked") {
-    return rows.filter((row) => row.shopifyProductGid);
-  }
-  if (filter === "fresh") {
-    return rows.filter((row) => row.status === "active_fresh");
-  }
-  if (filter === "needs_check") {
-    return rows.filter(
-      (row) =>
-        row.availability !== "aligned" ||
-        row.status === "mapping_error" ||
-        row.status === "stale_sync",
-    );
-  }
-  if (filter === "conflicts") {
-    return rows.filter((row) => row.status === "open_conflict");
-  }
-  if (filter === "not_updated") {
-    return rows.filter((row) => !row.lastSyncedAt);
-  }
-  if (filter === "archived") {
-    return rows.filter((row) => row.status === "archived");
-  }
+  const query = params.toString();
 
-  return rows;
+  return query ? `/app/catalog?${query}` : "/app/catalog";
 }
 
 function getStatusTone(row: CatalogRow) {

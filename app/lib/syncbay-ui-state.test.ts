@@ -2,7 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getCatalogAvailabilityLabel, getCatalogRowStatus, getCatalogStatusLabel, getConflictActionLabel, getConflictFieldLabel, getConflictImpactText, getEbayConnectionStatusLabel, getNextAction, getProductPublicationModeSummaryLabel, getTimelineCategoryLabel } from "./syncbay-ui-state.ts";
+import * as uiState from "./syncbay-ui-state.ts";
+
+const {
+  getCatalogAvailabilityLabel,
+  getCatalogRowStatus,
+  getCatalogStatusLabel,
+  getConflictActionLabel,
+  getConflictFieldLabel,
+  getConflictImpactText,
+  getEbayConnectionAction,
+  getEbayConnectionStatusLabel,
+  getNextAction,
+  getProductPublicationModeSummaryLabel,
+  getTimelineCategoryLabel,
+} = uiState;
 
 test("prioritizes missing eBay connection before other dashboard issues", () => {
   const action = getNextAction({
@@ -37,6 +51,38 @@ test("prioritizes quantity checks after eBay is connected", () => {
   assert.equal(action.kind, "quantity_check");
   assert.equal(action.title, "Quantità da verificare");
   assert.equal(action.primaryActionHref, "/app/activity");
+});
+
+test("builds eBay connection actions only when OAuth is startable", () => {
+  assert.deepEqual(
+    getEbayConnectionAction({
+      oauthEnabled: true,
+      oauthReady: true,
+      status: "NOT_CONNECTED",
+    }),
+    {
+      blockerText: null,
+      href: "/auth/ebay/start",
+      label: "Collega eBay",
+      variant: "primary",
+    },
+  );
+
+  assert.deepEqual(
+    getEbayConnectionAction({
+      missingRequirementCount: 2,
+      oauthEnabled: false,
+      oauthReady: false,
+      status: "NOT_CONNECTED",
+    }),
+    {
+      blockerText:
+        "Collegamento eBay non disponibile: mancano 2 requisiti di configurazione.",
+      href: null,
+      label: "Collega eBay",
+      variant: undefined,
+    },
+  );
 });
 
 test("prioritizes open conflicts after quantity checks", () => {
@@ -197,10 +243,7 @@ test("maps eBay connection status labels", () => {
   assert.equal(getEbayConnectionStatusLabel("CONNECTED"), "Collegato");
   assert.equal(getEbayConnectionStatusLabel("EXPIRED"), "Da ricollegare");
   assert.equal(getEbayConnectionStatusLabel("REVOKED"), "Revocato");
-  assert.equal(
-    getEbayConnectionStatusLabel("NOT_CONNECTED"),
-    "Non collegato",
-  );
+  assert.equal(getEbayConnectionStatusLabel("NOT_CONNECTED"), "Non collegato");
 });
 
 test("maps timeline category labels", () => {

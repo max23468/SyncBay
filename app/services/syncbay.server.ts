@@ -23,6 +23,11 @@ import {
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
 import {
+  CATALOG_PAGE_SIZE,
+  type CatalogPageFilter,
+  getCatalogPageWindow,
+} from "../lib/syncbay-catalog-page";
+import {
   getCatalogRowStatus,
   type CatalogAvailabilityKind,
   type CatalogStatusKind,
@@ -329,35 +334,42 @@ export async function getDashboardState(session: ShopifySessionLike) {
   };
 }
 
-export async function getCatalogPageState(session: ShopifySessionLike) {
+export async function getCatalogPageState(
+  session: ShopifySessionLike,
+  input: { filter?: CatalogPageFilter; page?: number } = {},
+) {
   const shop = await ensureShopForSession(session);
-  const mappings = await prisma.productMapping.findMany({
-    include: {
-      conflicts: {
-        select: {
-          field: true,
-          id: true,
+  const where = {
+    marketplaceId: getEbayMarketplaceId(),
+    shopId: shop.id,
+  };
+  const [mappings, totalAvailableCount] = await prisma.$transaction([
+    prisma.productMapping.findMany({
+      include: {
+        conflicts: {
+          select: {
+            field: true,
+            id: true,
+          },
+          where: { status: SyncConflictStatus.OPEN },
         },
-        where: { status: SyncConflictStatus.OPEN },
+        snapshots: {
+          orderBy: { capturedAt: "desc" },
+          take: 1,
+        },
       },
-      snapshots: {
-        orderBy: { capturedAt: "desc" },
-        take: 1,
-      },
-    },
-    orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-    take: 200,
-    where: {
-      marketplaceId: getEbayMarketplaceId(),
-      shopId: shop.id,
-    },
-  });
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+      take: CATALOG_IMPORT_MAX_PRODUCTS,
+      where,
+    }),
+    prisma.productMapping.count({ where }),
+  ]);
   const thumbnailPayloadByMappingId =
     await getLatestThumbnailPayloadByMappingId(
       mappings.map((mapping) => mapping.id),
     );
 
-  const rows = mappings.map((mapping) =>
+  const allRows = mappings.map((mapping) =>
     formatCatalogPageRow({
       mapping,
       now: new Date(),
@@ -365,14 +377,25 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       thumbnailPayload: thumbnailPayloadByMappingId.get(mapping.id) ?? null,
     }),
   );
+  const activeFilter = input.filter ?? "all";
+  const filteredRows = filterCatalogPageRows(allRows, activeFilter);
+  const pagination = getCatalogPageWindow({
+    page: input.page ?? 1,
+    pageSize: CATALOG_PAGE_SIZE,
+    totalRows: filteredRows.length,
+  });
+  const pageRows = filteredRows.slice(
+    pagination.offset,
+    pagination.offset + pagination.pageSize,
+  );
   const shopifyThumbnailUrlByProductGid =
     await getShopifyThumbnailUrlByProductGid({
-      productGids: rows
+      productGids: pageRows
         .filter((row) => !row.thumbnailUrl && row.shopifyProductGid)
         .map((row) => row.shopifyProductGid as string),
       shopDomain: shop.shopDomain,
     });
-  const rowsWithThumbnails = rows.map((row) =>
+  const rowsWithThumbnails = pageRows.map((row) =>
     row.thumbnailUrl
       ? row
       : {
@@ -394,28 +417,30 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       "not_updated",
       "archived",
     ] as const,
+    pagination: {
+      ...pagination,
+      cappedAtMaxProducts: totalAvailableCount > mappings.length,
+      maxLoadedRows: mappings.length,
+      maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+      totalAvailableCount,
+    },
     rows: rowsWithThumbnails,
     shop: {
       domain: shop.shopDomain,
       syncTargetSeconds: shop.syncTargetSeconds,
     },
     summary: {
-      archivedCount: rowsWithThumbnails.filter(
-        (row) => row.status === "archived",
-      ).length,
-      conflictCount: rowsWithThumbnails.filter(
-        (row) => row.status === "open_conflict",
-      ).length,
-      freshCount: rowsWithThumbnails.filter(
-        (row) => row.status === "active_fresh",
-      ).length,
-      needsCheckCount: rowsWithThumbnails.filter(
+      archivedCount: allRows.filter((row) => row.status === "archived").length,
+      conflictCount: allRows.filter((row) => row.status === "open_conflict")
+        .length,
+      freshCount: allRows.filter((row) => row.status === "active_fresh").length,
+      needsCheckCount: allRows.filter(
         (row) =>
           row.status === "stale_sync" ||
           row.status === "mapping_error" ||
           row.availability !== "aligned",
       ).length,
-      totalCount: rowsWithThumbnails.length,
+      totalCount: totalAvailableCount,
     },
   };
 }
@@ -926,6 +951,7 @@ export async function getImportWizardState(session: ShopifySessionLike) {
       },
     },
   });
+  const ebayRuntime = getEbayRuntimeReadiness();
   const ebayConnected =
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const preview =
@@ -949,6 +975,9 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     }),
     ebay: {
       marketplaceId: getEbayMarketplaceId(),
+      missingRequirements: ebayRuntime.missingRequirements,
+      oauthEnabled: ebayRuntime.oauthEnabled,
+      oauthReady: ebayRuntime.ready,
       status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
     },
     importPreview,
@@ -2145,6 +2174,39 @@ type ShopifyProductThumbnailsResponse = {
   };
   errors?: Array<unknown>;
 };
+
+type CatalogPageRow = ReturnType<typeof formatCatalogPageRow>;
+
+function filterCatalogPageRows(
+  rows: CatalogPageRow[],
+  filter: CatalogPageFilter,
+) {
+  if (filter === "linked") {
+    return rows.filter((row) => row.shopifyProductGid);
+  }
+  if (filter === "fresh") {
+    return rows.filter((row) => row.status === "active_fresh");
+  }
+  if (filter === "needs_check") {
+    return rows.filter(
+      (row) =>
+        row.availability !== "aligned" ||
+        row.status === "mapping_error" ||
+        row.status === "stale_sync",
+    );
+  }
+  if (filter === "conflicts") {
+    return rows.filter((row) => row.status === "open_conflict");
+  }
+  if (filter === "not_updated") {
+    return rows.filter((row) => !row.lastSyncedAt);
+  }
+  if (filter === "archived") {
+    return rows.filter((row) => row.status === "archived");
+  }
+
+  return rows;
+}
 
 function formatCatalogPageRow(input: {
   mapping: Prisma.ProductMappingGetPayload<{

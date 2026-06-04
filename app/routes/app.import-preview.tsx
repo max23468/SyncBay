@@ -18,6 +18,7 @@ import {
   getImportedProductSingularLabel,
 } from "../lib/import-product-status";
 import {
+  getEbayConnectionAction,
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
@@ -336,6 +337,13 @@ function PreparationSection({
   shopDomain: string;
   wizard: WizardState;
 }) {
+  const ebayAction = getEbayConnectionAction({
+    missingRequirementCount: wizard.ebay.missingRequirements.length,
+    oauthEnabled: wizard.ebay.oauthEnabled,
+    oauthReady: wizard.ebay.oauthReady,
+    status: wizard.ebay.status,
+  });
+
   return (
     <s-section heading="Collegamento eBay">
       <p className="syncbay-step-kicker">Step 1</p>
@@ -344,13 +352,15 @@ function PreparationSection({
         {getEbayConnectionStatusLabel(wizard.ebay.status)}.
       </p>
       <div className="syncbay-inline-actions">
-        <s-button
-          href="/auth/ebay/start"
-          variant={wizard.ebay.status === "CONNECTED" ? undefined : "primary"}
-        >
-          {wizard.ebay.status === "CONNECTED" ? "Ricollega eBay" : "Collega eBay"}
-        </s-button>
+        {ebayAction.href ? (
+          <s-button href={ebayAction.href} variant={ebayAction.variant}>
+            {ebayAction.label}
+          </s-button>
+        ) : null}
       </div>
+      {ebayAction.blockerText ? (
+        <p className="syncbay-section-intro">{ebayAction.blockerText}</p>
+      ) : null}
       <p className="syncbay-section-intro">
         {getPreviewIntro(previewSource.source)}
       </p>

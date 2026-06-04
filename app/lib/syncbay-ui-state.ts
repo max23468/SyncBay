@@ -31,6 +31,20 @@ export interface NextAction {
   tone: Tone;
 }
 
+export interface EbayConnectionActionInput {
+  missingRequirementCount?: number;
+  oauthEnabled?: boolean;
+  oauthReady?: boolean;
+  status?: string | null;
+}
+
+export interface EbayConnectionAction {
+  blockerText: string | null;
+  href: string | null;
+  label: string;
+  variant?: "primary";
+}
+
 export type ConflictResolution =
   | "REALIGN_FROM_EBAY"
   | "KEEP_SHOPIFY"
@@ -71,8 +85,12 @@ export function getNextAction(input: NextActionInput): NextAction {
     return {
       body: "Ricollega l'account eBay per riprendere import, aggiornamenti e controlli sulle disponibilità.",
       kind: "ebay_connection",
-      primaryActionHref: canStartOAuth ? "/auth/ebay/start" : "/app/import-preview",
-      primaryActionLabel: canStartOAuth ? "Ricollega eBay" : "Apri importazione",
+      primaryActionHref: canStartOAuth
+        ? "/auth/ebay/start"
+        : "/app/import-preview",
+      primaryActionLabel: canStartOAuth
+        ? "Ricollega eBay"
+        : "Apri importazione",
       title: "Collegamento eBay mancante o scaduto",
       tone: "critical",
     };
@@ -140,6 +158,34 @@ export function getNextAction(input: NextActionInput): NextAction {
     primaryActionLabel: "Vedi attività",
     title: "Tutto sotto controllo",
     tone: "success",
+  };
+}
+
+export function getEbayConnectionAction(
+  input: EbayConnectionActionInput,
+): EbayConnectionAction {
+  const connected = input.status === "CONNECTED";
+  const label = connected ? "Ricollega eBay" : "Collega eBay";
+
+  if (input.oauthEnabled && input.oauthReady) {
+    return {
+      blockerText: null,
+      href: "/auth/ebay/start",
+      label,
+      variant: connected ? undefined : "primary",
+    };
+  }
+
+  const missingRequirementCount = input.missingRequirementCount ?? 0;
+
+  return {
+    blockerText:
+      missingRequirementCount > 0
+        ? `Collegamento eBay non disponibile: mancano ${missingRequirementCount} requisiti di configurazione.`
+        : "Collegamento eBay predisposto, ma non ancora attivo in questo ambiente.",
+    href: null,
+    label,
+    variant: undefined,
   };
 }
 
@@ -232,7 +278,9 @@ export function getProductPublicationModeSummaryLabel(
   return "Tutti i canali disponibili";
 }
 
-export function getEbayConnectionStatusLabel(status: string | null | undefined) {
+export function getEbayConnectionStatusLabel(
+  status: string | null | undefined,
+) {
   if (status === "CONNECTED") return "Collegato";
   if (status === "EXPIRED") return "Da ricollegare";
   if (status === "REVOKED") return "Revocato";
