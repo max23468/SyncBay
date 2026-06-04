@@ -17,6 +17,11 @@ import {
   getImportedProductsLabel,
   getImportedProductSingularLabel,
 } from "../lib/import-product-status";
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  getPageWindow,
+  normalizePage,
+} from "../lib/syncbay-pagination";
 import {
   getEbayConnectionAction,
   getEbayConnectionStatusLabel,
@@ -240,6 +245,7 @@ export default function ImportPreview() {
   const activePreviewFilter = getImportPreviewFilter(
     searchParams.get("previewFilter"),
   );
+  const activePreviewPage = normalizePage(searchParams.get("previewPage"));
   const visibleRuntimePhases = wizard.runtimePhases.filter(
     (phase) =>
       !phase.label.toLowerCase().includes("ebay") &&
@@ -271,6 +277,7 @@ export default function ImportPreview() {
         />
         <PreviewStatusSection
           activeFilter={activePreviewFilter}
+          activePage={activePreviewPage}
           previewModeLabel={previewModeLabel}
           previewReadLabel={previewReadLabel}
           wizard={wizard}
@@ -296,7 +303,7 @@ export default function ImportPreview() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 type LoaderData = Awaited<ReturnType<typeof loader>>;
@@ -323,6 +330,7 @@ const IMPORT_PREVIEW_FILTERS: Array<{
   { label: "Da reimportare", value: "reimport" },
   { label: "Errore", value: "error" },
 ];
+const IMPORT_PREVIEW_PAGE_SIZE = 10;
 
 function PreparationSection({
   locationRenameStatus,
@@ -546,11 +554,13 @@ function LocationRenameForm({
 
 function PreviewStatusSection({
   activeFilter,
+  activePage,
   previewModeLabel,
   previewReadLabel,
   wizard,
 }: {
   activeFilter: ImportPreviewFilter;
+  activePage: number;
   previewModeLabel: string;
   previewReadLabel: string;
   wizard: WizardState;
@@ -592,53 +602,122 @@ function PreviewStatusSection({
         />
       </div>
       <ImportPreviewFilterNav activeFilter={activeFilter} />
-      <PreviewExamplesSection activeFilter={activeFilter} wizard={wizard} />
+      <PreviewExamplesSection
+        activeFilter={activeFilter}
+        activePage={activePage}
+        wizard={wizard}
+      />
     </s-section>
   );
 }
 
 function PreviewExamplesSection({
   activeFilter,
+  activePage,
   wizard,
 }: {
   activeFilter: ImportPreviewFilter;
+  activePage: number;
   wizard: WizardState;
 }) {
-  const visibleItems = filterPreviewItems(
+  const filteredItems = filterPreviewItems(
     wizard.previewResult.items,
     activeFilter,
+  );
+  const pagination = getPageWindow({
+    page: activePage,
+    pageSize: IMPORT_PREVIEW_PAGE_SIZE,
+    totalRows: filteredItems.length,
+  });
+  const visibleItems = filteredItems.slice(
+    pagination.offset,
+    pagination.offset + pagination.pageSize,
   );
 
   return (
     <div className="syncbay-preview-list">
       {visibleItems.length > 0 ? (
-        visibleItems.map((item) => (
-          <div className="syncbay-preview-row" key={item.itemId}>
-            <div>
-              <p className="syncbay-preview-row__title">
-                {item.normalized.title}
-              </p>
-              <p className="syncbay-preview-row__detail">
-                SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
-                {item.normalized.imageCount} ·{" "}
-                {formatPreviewIssues(item.issues)}
-              </p>
+        <>
+          {visibleItems.map((item) => (
+            <div className="syncbay-preview-row" key={item.itemId}>
+              <div>
+                <p className="syncbay-preview-row__title">
+                  {item.normalized.title}
+                </p>
+                <p className="syncbay-preview-row__detail">
+                  SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
+                  {item.normalized.imageCount} ·{" "}
+                  {formatPreviewIssues(item.issues)}
+                </p>
+              </div>
+              <span
+                className={`syncbay-badge syncbay-badge--${getPreviewStatusTone(
+                  item.status,
+                )}`}
+              >
+                {formatPreviewStatus(item.status)}
+              </span>
             </div>
-            <span
-              className={`syncbay-badge syncbay-badge--${getPreviewStatusTone(
-                item.status,
-              )}`}
-            >
-              {formatPreviewStatus(item.status)}
-            </span>
-          </div>
-        ))
+          ))}
+          <ImportPreviewPagination
+            activeFilter={activeFilter}
+            pagination={pagination}
+            totalCatalogRows={wizard.previewResult.summary.totalCount}
+          />
+        </>
       ) : (
         <div className="syncbay-empty-state">
           <h2>Nessun elemento in questa vista</h2>
           <p>Prova con il filtro Tutti o completa i prerequisiti di lettura.</p>
         </div>
       )}
+    </div>
+  );
+}
+
+function ImportPreviewPagination({
+  activeFilter,
+  pagination,
+  totalCatalogRows,
+}: {
+  activeFilter: ImportPreviewFilter;
+  pagination: ReturnType<typeof getPageWindow>;
+  totalCatalogRows: number;
+}) {
+  if (pagination.totalRows === 0) return null;
+
+  return (
+    <div className="syncbay-pagination">
+      <p className="syncbay-section-intro">
+        Mostrati {formatNumber(pagination.currentStart)}-
+        {formatNumber(pagination.currentEnd)} di{" "}
+        {formatNumber(pagination.totalRows)} elementi
+        {activeFilter === "all" ? "" : " per questo filtro"}. Anteprima
+        totale: {formatNumber(totalCatalogRows)}.
+      </p>
+      <div className="syncbay-inline-actions">
+        {pagination.hasPreviousPage && pagination.previousPage ? (
+          <s-button
+            href={getImportPreviewHref(
+              activeFilter,
+              pagination.previousPage,
+            )}
+          >
+            Precedente
+          </s-button>
+        ) : null}
+        <span className="syncbay-table__subtext">
+          Pagina {formatNumber(pagination.page)} di{" "}
+          {formatNumber(pagination.totalPages)}
+        </span>
+        {pagination.hasNextPage && pagination.nextPage ? (
+          <s-button
+            href={getImportPreviewHref(activeFilter, pagination.nextPage)}
+          >
+            Successiva
+          </s-button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -654,11 +733,7 @@ function ImportPreviewFilterNav({
         <a
           aria-current={activeFilter === filter.value ? "page" : undefined}
           className="syncbay-filter-nav__item"
-          href={
-            filter.value === "all"
-              ? "/app/import-preview"
-              : `/app/import-preview?previewFilter=${filter.value}`
-          }
+          href={getImportPreviewHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
@@ -666,6 +741,19 @@ function ImportPreviewFilterNav({
       ))}
     </nav>
   );
+}
+
+function getImportPreviewHref(filter: ImportPreviewFilter, page = 1) {
+  const params = new URLSearchParams();
+
+  if (filter !== "all") params.set("previewFilter", filter);
+  if (page > 1) params.set("previewPage", String(page));
+
+  const queryString = params.toString();
+
+  return queryString
+    ? `/app/import-preview?${queryString}`
+    : "/app/import-preview";
 }
 
 function StatusRow({

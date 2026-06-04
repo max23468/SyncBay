@@ -18,6 +18,12 @@ import {
   getConflictImpactText,
   type ConflictResolution,
 } from "../lib/syncbay-ui-state";
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  type ConflictFilter,
+  normalizeConflictFilter,
+} from "../lib/syncbay-conflicts-page";
+import { normalizePage } from "../lib/syncbay-pagination";
 import { authenticate } from "../shopify.server";
 import {
   getConflictsPageState,
@@ -26,7 +32,6 @@ import {
 
 type Conflicts = Awaited<ReturnType<typeof getConflictsPageState>>;
 type ConflictRow = Conflicts["rows"][number];
-type ConflictFilter = "all" | "open" | "resolved";
 
 const CONFLICT_FILTERS: Array<{ label: string; value: ConflictFilter }> = [
   { label: "Aperti", value: "open" },
@@ -54,8 +59,12 @@ type ConflictActionData = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
 
-  return getConflictsPageState(session);
+  return getConflictsPageState(session, {
+    filter: normalizeConflictFilter(url.searchParams.get("filter")),
+    page: normalizePage(url.searchParams.get("page")),
+  });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -87,8 +96,8 @@ export default function ConflictsRoute() {
   const actionData = useActionData() as ConflictActionData | undefined;
   const navigation = useNavigation();
   const [searchParams] = useSearchParams();
-  const activeFilter = getConflictFilter(searchParams.get("filter"));
-  const rows = filterConflictRows(conflicts.rows, activeFilter);
+  const activeFilter = normalizeConflictFilter(searchParams.get("filter"));
+  const rows = conflicts.rows;
   const isSaving = navigation.state !== "idle";
 
   return (
@@ -111,7 +120,7 @@ export default function ConflictsRoute() {
               value={formatNumber(conflicts.summary.resolvedCount)}
             />
             <MetricCard
-              detail="Nel periodo letto dalla dashboard."
+              detail="Totale reale della coda conflitti."
               label="Totale"
               value={formatNumber(conflicts.summary.totalCount)}
             />
@@ -136,6 +145,10 @@ export default function ConflictsRoute() {
           ) : (
             <EmptyConflictState activeFilter={activeFilter} />
           )}
+          <ConflictPagination
+            activeFilter={activeFilter}
+            conflicts={conflicts}
+          />
         </s-section>
       </div>
     </s-page>
@@ -143,7 +156,7 @@ export default function ConflictsRoute() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 function ConflictItem({
@@ -245,17 +258,55 @@ function FilterNav({ activeFilter }: { activeFilter: ConflictFilter }) {
         <a
           aria-current={activeFilter === filter.value ? "page" : undefined}
           className="syncbay-filter-nav__item"
-          href={
-            filter.value === "open"
-              ? "/app/conflicts"
-              : `/app/conflicts?filter=${filter.value}`
-          }
+          href={getConflictHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
         </a>
       ))}
     </nav>
+  );
+}
+
+function ConflictPagination({
+  activeFilter,
+  conflicts,
+}: {
+  activeFilter: ConflictFilter;
+  conflicts: Conflicts;
+}) {
+  const pagination = conflicts.pagination;
+
+  if (pagination.totalRows === 0) return null;
+
+  return (
+    <div className="syncbay-pagination">
+      <p className="syncbay-section-intro">
+        Mostrati {formatNumber(pagination.currentStart)}-
+        {formatNumber(pagination.currentEnd)} di{" "}
+        {formatNumber(pagination.totalRows)} risultati
+        {activeFilter === "all" ? "" : " per questo filtro"}. Coda totale:{" "}
+        {formatNumber(conflicts.summary.totalCount)}.
+      </p>
+      <div className="syncbay-inline-actions">
+        {pagination.hasPreviousPage && pagination.previousPage ? (
+          <s-button
+            href={getConflictHref(activeFilter, pagination.previousPage)}
+          >
+            Precedente
+          </s-button>
+        ) : null}
+        <span className="syncbay-table__subtext">
+          Pagina {formatNumber(pagination.page)} di{" "}
+          {formatNumber(pagination.totalPages)}
+        </span>
+        {pagination.hasNextPage && pagination.nextPage ? (
+          <s-button href={getConflictHref(activeFilter, pagination.nextPage)}>
+            Successiva
+          </s-button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -316,19 +367,15 @@ function EmptyConflictState({
   );
 }
 
-function getConflictFilter(value: string | null): ConflictFilter {
-  if (value === "all" || value === "resolved") return value;
+function getConflictHref(filter: ConflictFilter, page = 1) {
+  const params = new URLSearchParams();
 
-  return "open";
-}
+  if (filter !== "open") params.set("filter", filter);
+  if (page > 1) params.set("page", String(page));
 
-function filterConflictRows(rows: ConflictRow[], filter: ConflictFilter) {
-  if (filter === "resolved") {
-    return rows.filter((row) => row.status !== "OPEN");
-  }
-  if (filter === "all") return rows;
+  const queryString = params.toString();
 
-  return rows.filter((row) => row.status === "OPEN");
+  return queryString ? `/app/conflicts?${queryString}` : "/app/conflicts";
 }
 
 function formatDateTime(value: string) {

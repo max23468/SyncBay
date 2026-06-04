@@ -6,11 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.23.5] — 2026-06-04
 
-- Verificato il trigger reale `orders/paid` via Shopify Admin `orderCreate` sul
-  dev store: il job `UPDATE_EBAY_STOCK` allowlistato aggiorna eBay e il rollback
-  ripristina eBay, Shopify e configurazione Vercel.
+### Correzioni
+
+- Le pagine embedded Catalogo, Conflitti, Attività, Importazione e Impostazioni
+  inviano header `no-store`, evitando risposte stale su dati negoziante
+  autenticati.
+- La pagina Conflitti usa conteggi reali per aperti, risolti e totale coda,
+  mostra 25 decisioni per pagina e non espone hash descrizione come valori
+  leggibili dal negoziante.
+- L'anteprima Importazione mostra 10 elementi per pagina e preserva i filtri
+  senza creare una lista troppo lunga da revisionare.
+- Impostazioni chiarisce che il conteggio mostrato è quello dei prodotti attivi
+  collegati.
 
 ## [0.23.4] — 2026-06-04
 
@@ -20,6 +29,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   reale dei mapping, evitando di nascondere prodotti oltre la prima pagina.
 - L'Importazione mostra il collegamento eBay solo quando l'OAuth è configurato
   e abilitato, sostituendo il link non avviabile con un blocco operativo.
+
+## Note interne non versionate
+
+### 2026-06-04
+
+- Verificato il trigger reale `orders/paid` via Shopify Admin `orderCreate` sul
+  dev store: il job `UPDATE_EBAY_STOCK` allowlistato aggiorna eBay e il rollback
+  ripristina eBay, Shopify e configurazione Vercel.
 
 ## [0.23.3] — 2026-06-04
 
@@ -1015,6 +1032,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.5]: #0235--2026-06-04
 [0.23.4]: #0234--2026-06-04
 [0.23.3]: #0233--2026-06-04
 [0.23.2]: #0232--2026-06-04
