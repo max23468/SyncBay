@@ -10,6 +10,24 @@
 
 ---
 
+## Execution Status
+
+Status on 2026-06-05: Phases 0-4 are implemented and published in the pilot
+Vercel production app. Phase 5 is the active closeout pass: update canonical
+docs, review the six embedded pages post-publish, remove customer-visible legacy
+UI residues, run local gates, classify the release and publish the final patch.
+
+Post-publish review found two material residues:
+
+- `Panoramica` still offered `Ricollega eBay` in the recommended action row even
+  when eBay was already connected. The action should appear only when the
+  connection is missing, expired, revoked or requires reconnect.
+- `Attività` exposed `Audit` as a customer-facing filter/metric and did not make
+  recent conflicts a first-class timeline filter. The page should surface
+  `Conflitti` and keep technical audit details secondary.
+
+No provider, schema, worker or integration change is part of this closeout.
+
 ## Source Inputs
 
 - Decision handoff and full transcript: `docs/guides/ui-concepts-handoff.md`.
@@ -177,7 +195,11 @@ These are review units, not necessarily separate PRs. Phase 1 should stay separa
 5. **Phase 4: Attività**
    - Operational timeline and secondary diagnostics from jobs/audit/conflict events.
 6. **Phase 5: QA finale**
-   - Local gates, smoke checks, browser visual QA and docs/release classification.
+   - Local gates, smoke checks, browser visual QA and docs/release
+     classification.
+   - Status 2026-06-05: in chiusura post-publish; review production eseguita
+     contro le sei superfici e i sei concept, con correzioni runtime limitate a
+     Panoramica e Attività.
 
 ## Phase 0 Data Contracts
 

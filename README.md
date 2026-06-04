@@ -6,7 +6,7 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 Fase corrente: import iniziale controllato.
 
-Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, dashboard embedded SyncBay, area Impostazioni embedded per il default stato prodotti e la policy canali Shopify, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase e flusso OAuth eBay verificato end-to-end. L'import controllato registra mapping, product/variant GID, snapshot, job e audit per prodotti creati o riusati; dopo creazione o riuso aggiorna titolo, descrizione, prezzo, SKU, stato, media e inventario Shopify dai dati eBay e pubblica i prodotti attivi secondo la policy canali scelta dal negoziante. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner HTTP protetto `/api/jobs/run-due`, collegato a Supabase Cron ogni minuto, riprende import, pianifica sync incrementali eBay -> Shopify per shop con sync attivo, aggiorna disponibilità eBay da ordini Shopify pagati e rileva conflitti Shopify da webhook product/inventory. La dashboard espone storico import, avanzamento ultima run, conflitti Shopify con azioni guidate, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili.
+Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Prisma, app embedded SyncBay con le sei superfici `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività` e `Impostazioni`, area Impostazioni embedded per il default stato prodotti e la policy canali Shopify, wizard import preview con validazioni dry-run, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase e flusso OAuth eBay verificato end-to-end. L'import controllato registra mapping, product/variant GID, snapshot, job e audit per prodotti creati o riusati; dopo creazione o riuso aggiorna titolo, descrizione, prezzo, SKU, stato, media e inventario Shopify dai dati eBay e pubblica i prodotti attivi secondo la policy canali scelta dal negoziante. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner HTTP protetto `/api/jobs/run-due`, collegato a Supabase Cron ogni minuto, riprende import, pianifica sync incrementali eBay -> Shopify per shop con sync attivo, aggiorna disponibilità eBay da ordini Shopify pagati e rileva conflitti Shopify da webhook product/inventory. L'app embedded espone storico import, avanzamento ultima run, catalogo paginato, conflitti Shopify con azioni guidate, timeline attività, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili.
 
 ## Direzione prodotto
 
@@ -56,7 +56,7 @@ Provisioning minimo creato:
 ## Endpoint scaffold SyncBay
 
 - About pubblico per branding eBay: `/about`
-- Dashboard embedded: `/app`
+- Panoramica embedded: `/app`
 - Impostazioni embedded: `/app/settings`
 - Wizard import preview: `/app/import-preview`
 - Avvio OAuth eBay: `/auth/ebay/start`
@@ -92,7 +92,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Verificare end-to-end su dev store un ciclo sync incrementale con dati eBay cambiati.
-2. Reautorizzare l'app sul dev store per concedere `read_orders`, poi verificare end-to-end un ordine Shopify pagato su prodotto SyncBay e l'update eBay conseguente.
-3. Estendere diagnostica self-service per rollback e retry per prodotto.
-4. Preparare screenshot e rifiniture microcopy della dashboard operativa.
+1. Classificare i conflitti Shopify aperti e distinguere azioni batch sicure da decisioni manuali.
+2. Estendere diagnostica self-service per rollback e retry per prodotto.
+3. Preparare screenshot prodotto e microcopy commerciale dell'app embedded ora stabilizzata.
+4. Continuare hardening sicurezza/privacy/token/GDPR/rate limit prima di App Store e billing.

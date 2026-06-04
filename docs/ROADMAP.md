@@ -7,22 +7,19 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
-- Verificare end-to-end sul dev store il primo ciclo sync incrementale
-  eBay -> Shopify dopo una modifica reale su eBay.
-- Verificare end-to-end un ordine Shopify pagato su prodotto SyncBay e
-  l'aggiornamento disponibilità eBay generato dal job prioritario.
-- Consolidare la dashboard operativa su stato connessioni, job recenti, storico
-  import, conflitti Shopify, conteggi mapping/snapshot e rimessa in coda
-  manuale.
+- Classificare i conflitti Shopify aperti e distinguere azioni batch sicure da
+  decisioni manuali per il negoziante.
+- Estendere la diagnostica self-service per retry e rollback per prodotto.
+- Preparare screenshot prodotto e raffinamento microcopy dell'app embedded ora
+  che le sei superfici operative sono stabili.
 - Tenere sotto controllo sicurezza e dati: cifratura token, webhook GDPR,
   audit log, rate limit/retry e rollback import restano superfici prioritarie.
 
 ## Prossimo
 
-- Estendere diagnostica self-service per retry e rollback per prodotto.
 - Aggiungere regole prezzo Shopify-only e pulizia descrizioni eBay più profonda.
-- Preparare screenshot prodotto e raffinamento microcopy quando la dashboard è
-  abbastanza stabile.
+- Rafforzare la vista Attività con dettagli operativi progressivi quando i
+  volumi reali rendono chiari i pattern di errore.
 
 ## Più avanti
 
@@ -46,6 +43,11 @@ esteso della vecchia roadmap di fondazione sta in
   Supabase di osservabilità/coda/storage sono predisposti.
 - Connessione Shopify custom app, OAuth eBay.it, onboarding guidato, import
   pilota idempotente e account deletion eBay sono verificati.
+- Il primo ciclo incrementale reale eBay -> Shopify e il flusso ordine Shopify
+  pagato -> aggiornamento disponibilità eBay sono stati verificati sul dev store
+  e ripristinati dopo il test.
+- Il redesign embedded a sei superfici è stato implementato, pubblicato e
+  rivisto post-publish contro i concept finali.
 
 ## Regole
 
