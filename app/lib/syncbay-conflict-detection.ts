@@ -1,0 +1,66 @@
+import { Prisma, ProductSnapshotSource } from "@prisma/client";
+
+export const SYNCBAY_MONITORED_CONFLICT_FIELDS = [
+  "title",
+  "description",
+  "status",
+  "price",
+  "quantity",
+  "images",
+] as const;
+
+export function getLatestSyncBayDescriptionBaselineWhere(
+  mappingId: string,
+): Prisma.ProductSnapshotWhereInput {
+  return {
+    descriptionHash: { not: null },
+    mappingId,
+    NOT: [
+      {
+        AND: [
+          {
+            payload: {
+              path: ["updatedEbayFromShopifyOrder"],
+              equals: true,
+            },
+          },
+          {
+            payload: {
+              path: ["conflictResolution"],
+              equals: Prisma.DbNull,
+            },
+          },
+        ],
+      },
+      {
+        AND: [
+          {
+            payload: {
+              path: ["restoredEbayAfterTest"],
+              equals: true,
+            },
+          },
+          {
+            payload: {
+              path: ["conflictResolution"],
+              equals: Prisma.DbNull,
+            },
+          },
+        ],
+      },
+    ],
+    source: ProductSnapshotSource.SYNCBAY,
+  };
+}
+
+export function getAlignedOpenConflictFields(input: {
+  detectedConflictFields: string[];
+  openConflictFields: string[];
+}) {
+  const monitoredFields = new Set<string>(SYNCBAY_MONITORED_CONFLICT_FIELDS);
+  const detectedFields = new Set(input.detectedConflictFields);
+
+  return [...new Set(input.openConflictFields)].filter(
+    (field) => monitoredFields.has(field) && !detectedFields.has(field),
+  );
+}

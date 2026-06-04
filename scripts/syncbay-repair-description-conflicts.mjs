@@ -42,9 +42,10 @@ with latest_syncbay as (
   where s."shopDomain" = ${sqlString(shopDomain)}
     and ps.source = 'SYNCBAY'
     and ps."mappingId" is not null
+    and ps."descriptionHash" is not null
   order by ps."mappingId", ps."capturedAt" desc
 ),
-target_conflicts as (
+baseline_repairable_conflicts as (
   select sc.id
   from "SyncConflict" sc
   join "Shop" s on s.id = sc."shopId"
@@ -54,6 +55,18 @@ target_conflicts as (
     and sc.field = 'description'
     and sc."shopifyValue" #>> '{}' is not null
     and ls."descriptionHash" = sc."lastSyncBayValue" #>> '{}'
+    and ls."descriptionHash" is distinct from sc."shopifyValue" #>> '{}'
+),
+aligned_conflicts as (
+  select sc.id
+  from "SyncConflict" sc
+  join "Shop" s on s.id = sc."shopId"
+  join latest_syncbay ls on ls."mappingId" = sc."mappingId"
+  where s."shopDomain" = ${sqlString(shopDomain)}
+    and sc.status = 'OPEN'
+    and sc.field = 'description'
+    and sc."shopifyValue" #>> '{}' is not null
+    and ls."descriptionHash" = sc."shopifyValue" #>> '{}'
 )
 select jsonb_build_object(
   'mode', 'dry-run',
@@ -66,7 +79,12 @@ select jsonb_build_object(
       and sc.status = 'OPEN'
       and sc.field = 'description'
   ),
-  'repairableConflictCount', (select count(*)::int from target_conflicts)
+  'baselineRepairableConflictCount', (select count(*)::int from baseline_repairable_conflicts),
+  'alignedConflictCount', (select count(*)::int from aligned_conflicts),
+  'repairableConflictCount', (
+    (select count(*)::int from baseline_repairable_conflicts) +
+    (select count(*)::int from aligned_conflicts)
+  )
 ) as result;
 `;
 }
@@ -81,9 +99,10 @@ with latest_syncbay as (
   where s."shopDomain" = ${sqlString(shopDomain)}
     and ps.source = 'SYNCBAY'
     and ps."mappingId" is not null
+    and ps."descriptionHash" is not null
   order by ps."mappingId", ps."capturedAt" desc
 ),
-target_conflicts as (
+baseline_repairable_conflicts as (
   select
     sc.id,
     sc."shopId",
@@ -97,6 +116,18 @@ target_conflicts as (
     and sc.field = 'description'
     and sc."shopifyValue" #>> '{}' is not null
     and ls."descriptionHash" = sc."lastSyncBayValue" #>> '{}'
+    and ls."descriptionHash" is distinct from sc."shopifyValue" #>> '{}'
+),
+aligned_conflicts as (
+  select sc.id, sc."shopId"
+  from "SyncConflict" sc
+  join "Shop" s on s.id = sc."shopId"
+  join latest_syncbay ls on ls."mappingId" = sc."mappingId"
+  where s."shopDomain" = ${sqlString(shopDomain)}
+    and sc.status = 'OPEN'
+    and sc.field = 'description'
+    and sc."shopifyValue" #>> '{}' is not null
+    and ls."descriptionHash" = sc."shopifyValue" #>> '{}'
 ),
 inserted_snapshots as (
   insert into "ProductSnapshot" (
@@ -142,18 +173,27 @@ inserted_snapshots as (
       )
     ),
     now()
-  from target_conflicts tc
+  from baseline_repairable_conflicts tc
   join latest_syncbay ls on ls."mappingId" = tc."mappingId"
   returning id
 ),
-updated_conflicts as (
+updated_baseline_conflicts as (
   update "SyncConflict" sc
   set
     status = 'RESOLVED',
     resolution = 'KEEP_SHOPIFY',
     "resolvedAt" = now(),
     "updatedAt" = now()
-  where sc.id in (select id from target_conflicts)
+  where sc.id in (select id from baseline_repairable_conflicts)
+  returning sc.id, sc."shopId"
+),
+updated_aligned_conflicts as (
+  update "SyncConflict" sc
+  set
+    status = 'RESOLVED',
+    "resolvedAt" = now(),
+    "updatedAt" = now()
+  where sc.id in (select id from aligned_conflicts)
   returning sc.id, sc."shopId"
 ),
 audit as (
@@ -165,17 +205,27 @@ audit as (
     'Falsi conflitti descrizione riparati con baseline Shopify.',
     jsonb_build_object(
       'repair', 'description_conflict_baseline',
-      'resolvedConflictCount', (select count(*)::int from updated_conflicts),
+      'baselineResolvedConflictCount', (select count(*)::int from updated_baseline_conflicts),
+      'alignedResolvedConflictCount', (select count(*)::int from updated_aligned_conflicts),
+      'resolvedConflictCount',
+        (select count(*)::int from updated_baseline_conflicts) +
+        (select count(*)::int from updated_aligned_conflicts),
       'insertedSnapshotCount', (select count(*)::int from inserted_snapshots)
     ),
     now()
-  where (select count(*) from updated_conflicts) > 0
+  where
+    (select count(*) from updated_baseline_conflicts) > 0 or
+    (select count(*) from updated_aligned_conflicts) > 0
   returning id
 )
 select jsonb_build_object(
   'mode', 'apply',
   'shopDomain', ${sqlString(shopDomain)},
-  'resolvedConflictCount', (select count(*)::int from updated_conflicts),
+  'baselineResolvedConflictCount', (select count(*)::int from updated_baseline_conflicts),
+  'alignedResolvedConflictCount', (select count(*)::int from updated_aligned_conflicts),
+  'resolvedConflictCount',
+    (select count(*)::int from updated_baseline_conflicts) +
+    (select count(*)::int from updated_aligned_conflicts),
   'insertedSnapshotCount', (select count(*)::int from inserted_snapshots),
   'auditLogCount', (select count(*)::int from audit)
 ) as result;
@@ -224,6 +274,12 @@ function printSummary(result, applied) {
 
   if (applied) {
     console.log(`Conflitti risolti: ${result.resolvedConflictCount}`);
+    console.log(
+      `Conflitti già allineati chiusi: ${result.alignedResolvedConflictCount}`,
+    );
+    console.log(
+      `Conflitti con baseline riparata: ${result.baselineResolvedConflictCount}`,
+    );
     console.log(`Snapshot baseline creati: ${result.insertedSnapshotCount}`);
     console.log(`Audit log creati: ${result.auditLogCount}`);
     return;
@@ -234,6 +290,12 @@ function printSummary(result, applied) {
     `Conflitti descrizione aperti: ${result.openDescriptionConflictCount}`,
   );
   console.log(`Conflitti riparabili: ${result.repairableConflictCount}`);
+  console.log(
+    `Già allineati da chiudere: ${result.alignedConflictCount}`,
+  );
+  console.log(
+    `Da riparare creando baseline: ${result.baselineRepairableConflictCount}`,
+  );
   console.log("");
   console.log("Per applicare: npm run conflicts:repair-description -- --apply");
 }
@@ -279,8 +341,9 @@ function parseArgs(rawArgs) {
     if (arg === "--help" || arg === "-h") {
       console.log(`Uso: npm run conflicts:repair-description -- [--shop dominio.myshopify.com] [--apply] [--json]
 
-Dry-run predefinito. Con --apply risolve i falsi conflitti aperti sul campo
-description creando una nuova baseline SyncBay con l'hash Shopify già rilevato.
+Dry-run predefinito. Con --apply chiude i falsi conflitti description già
+allineati alla baseline SyncBay più recente e crea una baseline solo quando
+serve conservare l'hash Shopify rilevato.
 Non stampa dati prodotto o valori descrizione.`);
       process.exit(0);
     }
