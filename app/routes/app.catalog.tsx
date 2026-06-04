@@ -1,4 +1,8 @@
-import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
+import type {
+  HeadersFunction,
+  LoaderFunctionArgs,
+  MetaFunction,
+} from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
@@ -12,6 +16,7 @@ import {
   getCatalogAvailabilityLabel,
   getCatalogStatusLabel,
 } from "../lib/syncbay-ui-state";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 import { getCatalogPageState } from "../services/syncbay.server";
 
@@ -33,6 +38,8 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   timeStyle: "short",
   timeZone: "Europe/Rome",
 });
+
+export const meta: MetaFunction = () => getSyncBayMeta("Catalogo");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

@@ -1,9 +1,12 @@
-import type { LoaderFunctionArgs } from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, Form, useLoaderData } from "react-router";
 
+import { getSyncBayMeta } from "../../lib/syncbay-brand";
 import { login } from "../../shopify.server";
 
 import styles from "./styles.module.css";
+
+export const meta: MetaFunction = () => getSyncBayMeta("Accesso");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);

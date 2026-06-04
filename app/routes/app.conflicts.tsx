@@ -2,6 +2,7 @@ import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
+  MetaFunction,
 } from "react-router";
 import {
   Form,
@@ -23,6 +24,7 @@ import {
   type ConflictFilter,
   normalizeConflictFilter,
 } from "../lib/syncbay-conflicts-page";
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { normalizePage } from "../lib/syncbay-pagination";
 import { authenticate } from "../shopify.server";
 import {
@@ -56,6 +58,8 @@ type ConflictActionData = {
   message: string;
   status: "resolved";
 };
+
+export const meta: MetaFunction = () => getSyncBayMeta("Conflitti");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

@@ -2,10 +2,12 @@ import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
+  MetaFunction,
 } from "react-router";
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getNextAction } from "../lib/syncbay-ui-state";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import {
@@ -28,6 +30,8 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   dateStyle: "short",
   timeStyle: "short",
 });
+
+export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);

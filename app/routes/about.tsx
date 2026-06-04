@@ -1,3 +1,9 @@
+import type { MetaFunction } from "react-router";
+
+import { getSyncBayMeta } from "../lib/syncbay-brand";
+
+export const meta: MetaFunction = () => getSyncBayMeta("Informazioni");
+
 export default function About() {
   return (
     <main
