@@ -37,6 +37,7 @@ import {
   serializeProductPublicationGids,
   type ProductPublicationMode,
 } from "../lib/syncbay-product-publication-settings";
+import { getProductSnapshotThumbnailUrl } from "../lib/syncbay-product-snapshot-payload";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -2014,7 +2015,7 @@ function formatCatalogPageRow(input: {
     sku: latestSnapshot?.sku ?? input.mapping.sku,
     snapshotCapturedAt: latestSnapshot?.capturedAt.toISOString() ?? null,
     status,
-    thumbnailUrl: getSnapshotThumbnailUrl(latestSnapshot?.payload),
+    thumbnailUrl: getProductSnapshotThumbnailUrl(latestSnapshot?.payload),
     title:
       latestSnapshot?.title ??
       input.mapping.sku ??
@@ -2043,7 +2044,7 @@ function formatConflictPageRow(
     product: {
       shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
       sku: latestSnapshot?.sku ?? conflict.mapping?.sku ?? null,
-      thumbnailUrl: getSnapshotThumbnailUrl(latestSnapshot?.payload),
+      thumbnailUrl: getProductSnapshotThumbnailUrl(latestSnapshot?.payload),
       title:
         latestSnapshot?.title ??
         conflict.mapping?.sku ??
@@ -2084,38 +2085,6 @@ function getCatalogAvailability(input: {
   if (input.quantity === null) return "unknown";
 
   return "aligned";
-}
-
-function getSnapshotThumbnailUrl(value: Prisma.JsonValue | null | undefined) {
-  const payload = getJsonObject(value);
-  const imageUrls = getJsonArray(payload?.imageUrls);
-  const firstImageUrl = imageUrls
-    ?.map((item) => getJsonString(item))
-    .find((url): url is string => Boolean(url && isSafeImageUrl(url)));
-  const directUrl =
-    getJsonString(payload?.imageUrl) ??
-    getJsonString(payload?.thumbnailUrl) ??
-    getJsonString(payload?.galleryUrl) ??
-    getJsonString(payload?.GalleryURL);
-
-  if (firstImageUrl) return firstImageUrl;
-  if (directUrl && isSafeImageUrl(directUrl)) return directUrl;
-
-  return null;
-}
-
-function isSafeImageUrl(value: string) {
-  try {
-    const url = new URL(value);
-
-    return (
-      (url.protocol === "https:" || url.protocol === "http:") &&
-      !url.username &&
-      !url.password
-    );
-  } catch {
-    return false;
-  }
 }
 
 function formatJsonValueForDisplay(value: Prisma.JsonValue | null) {
