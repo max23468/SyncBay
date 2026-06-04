@@ -12,25 +12,32 @@ in calce la trascrizione testuale dei due thread recuperati.
 
 ## Stato del lavoro
 
-- Il lavoro era ancora in fase di concept, non di implementazione.
+- Il recupero iniziale del 2026-06-03 era ancora in fase di concept; dal
+  2026-06-04 il redesign è stato implementato e pubblicato nel pilota Vercel.
 - I PNG statici costruiti manualmente con logo reale sono stati scartati dal
   maintainer e non vanno usati come base.
-- La base finale da recuperare è Image Gen, con correzioni successive.
+- La base finale recuperata è Image Gen, con correzioni successive e copia
+  versionabile nella repo.
 - Il logo generato da Image Gen può essere impreciso: in implementazione va
   sostituito con gli asset reali SyncBay in `brand/assets/svg/` o
   `brand/assets/png/`.
-- Revisione successiva del 2026-06-03: i sei concept sono reference
-  direzionali, non specifiche pixel-perfect. Il piano scritto, i componenti
-  Shopify reali e i contratti dati prevalgono sui dettagli generati.
-- Prima di toccare codice UI è stata aggiunta una Fase 0 documentale sui
-  contratti dati: loader, action, dati disponibili, dati mancanti, stati vuoti
-  e rischi per ogni pagina.
-- Implementazione avviata sul branch `codex/syncbay-ui-phase-1`:
+- I sei concept sono reference direzionali, non specifiche pixel-perfect. Il
+  piano scritto, i componenti Shopify reali e i contratti dati prevalgono sui
+  dettagli generati.
+- La Fase 0 documentale sui contratti dati è stata completata prima delle
+  modifiche runtime: loader, action, dati disponibili, dati mancanti, stati
+  vuoti e rischi sono mappati nel piano UI.
+- Le fasi 1-4 sono state implementate e pubblicate:
   - Fase 1: nav embedded, sistema visivo condiviso e `Panoramica`;
   - Fase 2: nuove route `Catalogo` e `Conflitti`, collegate a selector Prisma
     reali e all'action esistente di risoluzione conflitti;
   - Fase 3: `Importazione` riorganizzata in step progressivi e `Impostazioni`
-    rese coerenti con i quattro box verticali confermati.
+    rese coerenti con i quattro box verticali confermati;
+  - Fase 4: `Attività` introdotta come timeline operativa con diagnostica
+    secondaria.
+- Fase 5, revisione post-publish del 2026-06-05: QA/documentale e controllo
+  contro i sei concept completati; i residui visibili rilevati sono da chiudere
+  nella correzione runtime successiva.
 
 ## Note implementative
 
@@ -45,8 +52,10 @@ in calce la trascrizione testuale dei due thread recuperati.
 - `Importazione` mantiene le action esistenti per location, rinomina location e
   pianificazione import catalogo; `Impostazioni` mantiene i salvataggi sync,
   default prodotto e canali.
-- La QA visuale browser resta da fare in ambiente Shopify configurato: l'avvio
-  standalone richiede le variabili app Shopify complete.
+- La QA visuale post-publish è stata eseguita nel contesto Shopify Admin
+  production del dev store con Safari/Computer Use sulle sei route embedded.
+  L'avvio standalone resta utile solo per debug locale: le superfici embedded
+  vanno giudicate dentro Shopify Admin.
 
 ## Fonti recuperate
 
@@ -77,6 +86,68 @@ Questi sono i sei concept finali da considerare reference operativo.
 | Importazione | `docs/assets/ui-concepts/2026-06-03/04-importazione.png` | Stepper e anteprima coerenti, default `Bozza`/`Attivo` e canali visibili come riepilogo. |
 | Attività | `docs/assets/ui-concepts/2026-06-03/05-attivita.png` | Timeline prima, diagnostica dopo. In implementazione rimuovere o ridimensionare eventuali azioni larghe tipo `Sincronizza tutto`. |
 | Impostazioni | `docs/assets/ui-concepts/2026-06-03/06-impostazioni.png` | Rigenerato nel thread ponte: i quattro box sono uno sotto l'altro, non in una riga. |
+
+## Revisione post-publish 2026-06-05
+
+Route production verificate dentro Shopify Admin:
+
+| Pagina | URL embedded | Esito |
+| --- | --- | --- |
+| Panoramica | `/app` | Struttura corretta, metriche reali e prossima azione visibile. Rilevato residuo da correggere: `Ricollega eBay` appare tra le azioni consigliate anche con account già collegato. |
+| Catalogo | `/app/catalog` | Table-first, thumbnail visibili, filtri separati, una sola colonna `Stato`, paginazione reale. Nessun export o segnale bidirezionale. |
+| Conflitti | `/app/conflicts` | Default su conflitti aperti, azioni `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`, descrizioni leggibili e paginazione reale. |
+| Importazione | `/app/import-preview` | Step progressivi, collegamento eBay nel punto corretto, default/canali riassunti, anteprima paginata e azione di import preservata. |
+| Attività | `/app/activity` | Timeline e controlli rapidi presenti. Rilevato residuo legacy da correggere: filtro cliente `Audit` al posto di `Conflitti` e conflitti recenti non abbastanza visibili nella timeline. |
+| Impostazioni | `/app/settings` | Quattro box verticali confermati: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Nessun quinto box `Account`. |
+
+Copertura dei cinque rilievi della review production precedente:
+
+1. Catalogo conteggi/paginazione: production successiva ha mostrato totale
+   reale, miniature prodotto e paginazione `1-100` / `101-200`; il codice usa
+   conteggio reale e pagina server-side.
+2. Conflitti KPI: i conteggi `Aperti`, `Risolti` e `Totale` sono calcolati con
+   query dedicate, non più sul sottoinsieme caricato.
+3. Importazione densità: la preview resta ricca, ma ora è paginata a 10 righe e
+   separa filtri/step senza trasformarsi in un muro di 50 elementi.
+4. Conflitti valori/hash: la pagina non espone hash descrizione come valori
+   leggibili dal negoziante; le decisioni restano guidate dai campi e
+   dall'impatto.
+5. Attività e Impostazioni: entrambe caricano in produzione senza crash; la
+   review chiede di rimuovere il filtro cliente `Audit`, mentre Impostazioni
+   conferma i quattro box verticali.
+
+Confronto concept/implementazione:
+
+- copy: nav e label primarie corrispondono alla IA confermata;
+- layout: implementazione più Shopify-native dei mockup, con route reali invece
+  di tavole statiche;
+- densità: Catalogo e Conflitti restano compatti e revisionabili su dati reali;
+- colore: palette SyncBay sobria, niente viola o gradienti inventati;
+- anatomia: tabella per Catalogo, decision card per Conflitti, stepper per
+  Importazione, timeline per Attività, form verticali per Impostazioni;
+- dettagli tecnici: visibili solo come disclosure, controlli rapidi o sezioni
+  avanzate, non come voce nav primaria.
+
+Deviazioni intenzionali dai PNG:
+
+- i mockup non sono pixel-perfect spec e mostrano dati fittizi; l'app usa dati
+  reali del dev store;
+- il logo dei concept non è fonte di verità quando Image Gen lo reinterpreta;
+- Panoramica può mostrare conflitti reali invece di uno stato `Tutto sotto
+  controllo`;
+- Catalogo non implementa ricerca/salvataggio viste del concept, fuori dal
+  perimetro MVP corrente;
+- Conflitti non usa un pannello helper laterale permanente: le decisioni
+  restano nella lista per ridurre complessità;
+- Attività non espone `Sincronizza tutto`, perché è ambiguo rispetto al sync
+  eBay -> Shopify e agli ordini Shopify -> eBay stock;
+- Impostazioni mantiene i quattro box verticali senza creare `Account` come
+  quinto box.
+
+Nota di evidenza: il comando shell `screencapture` non ha prodotto immagini in
+questo ambiente; la review visuale è stata condotta su Safari/Computer Use e
+annotata qui. I sei PNG concept sono stati comunque riaperti con `view_image`
+prima della chiusura.
 
 ## Decisione prodotto
 
@@ -497,15 +568,17 @@ incluse:
   account/ricollegamento e dettagli tecnici stanno nel quarto box
   `Impostazioni > Avanzate`.
 
-Tranche di implementazione previste:
+Tranche di implementazione:
 
-0. contratti dati, solo documento/plan;
-1. helper UI, shell/nav e `Panoramica`;
-2. `Catalogo` e `Conflitti`;
-3. `Importazione` e `Impostazioni`;
-4. `Attività`;
+0. contratti dati, solo documento/plan - chiusa;
+1. helper UI, shell/nav e `Panoramica` - chiusa;
+2. `Catalogo` e `Conflitti` - chiusa;
+3. `Importazione` e `Impostazioni` - chiusa;
+4. `Attività` - chiusa;
 5. smoke check, browser QA e confronto visuale contro i sei concept in
-   `docs/assets/ui-concepts/2026-06-03/`.
+   `docs/assets/ui-concepts/2026-06-03/` - review post-publish completata il
+   2026-06-05; correzioni runtime e gate finali da pubblicare nello step
+   successivo.
 
 ## Appendice - Trascrizione dei thread
 

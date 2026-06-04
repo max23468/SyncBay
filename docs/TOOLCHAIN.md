@@ -16,6 +16,13 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 
 Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`. Il package manager canonico è dichiarato in `package.json` come `npm@11.14.1`.
 
+Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
+toolchain coerente con `.node-version`, non dal Node Homebrew globale. Sulla
+postazione Codex attuale l'allineamento persistente passa dagli shim `mise`; se
+un comando mostra Node 26.x, fermarsi e verificare prima `command -v node`,
+`node --version`, `mise current` e l'attivazione degli shim nella shell, senza
+forzare installazioni o downgrade dentro la repo.
+
 ## Stack applicativo
 
 | Area                        | Tool                                  |
