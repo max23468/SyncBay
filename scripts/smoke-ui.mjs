@@ -16,8 +16,6 @@ const checks = [
       "NavMenu",
       "TitleBar",
       "SYNCBAY_APP_NAME",
-      "syncbay-app-brand",
-      "syncbay-app-brand__logo",
       "Panoramica",
       "Catalogo",
       "Conflitti",
@@ -136,6 +134,22 @@ const publicFiles = [
   "public/syncbay-logo-horizontal.png",
 ];
 
+const forbiddenChecks = [
+  {
+    file: "app/routes/app.tsx",
+    needles: [
+      "SYNCBAY_BRAND_ASSETS",
+      "logoHorizontal",
+      "syncbay-app-brand",
+      "syncbay-app-shell",
+    ],
+  },
+  {
+    file: "app/styles/syncbay-embedded.css",
+    needles: ["syncbay-app-brand", "syncbay-app-shell"],
+  },
+];
+
 const navMenuContent = fs.existsSync("app/routes/app.tsx")
   ? fs.readFileSync("app/routes/app.tsx", "utf8")
   : "";
@@ -178,6 +192,20 @@ for (const check of checks) {
   for (const needle of check.needles) {
     if (!content.includes(needle)) {
       failures.push(`${check.file}: manca "${needle}"`);
+    }
+  }
+}
+
+for (const check of forbiddenChecks) {
+  if (!fs.existsSync(check.file)) {
+    failures.push(`${check.file}: file mancante`);
+    continue;
+  }
+
+  const content = fs.readFileSync(check.file, "utf8");
+  for (const needle of check.needles) {
+    if (content.includes(needle)) {
+      failures.push(`${check.file}: non deve contenere "${needle}"`);
     }
   }
 }

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.9] — 2026-06-05
+
+### Correzioni
+
+- Rimossa la barra brand aggiunta sopra l'app embedded: SyncBay resta esposto
+  nei titoli, nelle icone e nella navigazione nativa senza comprimere il logo
+  orizzontale dentro una shell custom.
+
 ## [0.23.8] — 2026-06-05
 
 ### Correzioni
@@ -1060,6 +1068,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.9]: #0239--2026-06-05
 [0.23.8]: #0238--2026-06-05
 [0.23.7]: #0237--2026-06-05
 [0.23.6]: #0236--2026-06-05
