@@ -14,6 +14,10 @@ import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
 import {
+  getAlignedOpenConflictFields,
+  getLatestSyncBayDescriptionBaselineWhere,
+} from "../lib/syncbay-conflict-detection";
+import {
   buildCatalogReconcilePlan,
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
@@ -1749,6 +1753,11 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
       shopId: job.shopId,
     });
   }
+  const resolvedConflictCount = await resolveAlignedOpenConflicts({
+    detectedConflictFields: conflicts.map((conflict) => conflict.field),
+    mappingId: mapping.id,
+    shopId: job.shopId,
+  });
 
   await markJobSucceeded({
     delegatedJobId: null,
@@ -1756,6 +1765,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     result: {
       conflictCount: conflicts.length,
       fields: conflicts.map((conflict) => conflict.field),
+      resolvedConflictCount,
     },
     warnings: [],
   });
@@ -1826,44 +1836,7 @@ async function findLatestSyncBaySnapshotWithField(
 async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
   return prisma.productSnapshot.findFirst({
     orderBy: { capturedAt: "desc" },
-    where: {
-      mappingId,
-      NOT: [
-        {
-          AND: [
-            {
-              payload: {
-                path: ["updatedEbayFromShopifyOrder"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-        {
-          AND: [
-            {
-              payload: {
-                path: ["restoredEbayAfterTest"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-      ],
-      source: ProductSnapshotSource.SYNCBAY,
-    },
+    where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
   });
 }
 
@@ -2554,6 +2527,42 @@ async function upsertOpenConflict(input: {
       shopifyValue: toNullableJsonInput(input.shopifyValue),
     },
   });
+}
+
+async function resolveAlignedOpenConflicts(input: {
+  detectedConflictFields: string[];
+  mappingId: string;
+  shopId: string;
+}) {
+  const openConflicts = await prisma.syncConflict.findMany({
+    select: { field: true },
+    where: {
+      mappingId: input.mappingId,
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+  const alignedFields = getAlignedOpenConflictFields({
+    detectedConflictFields: input.detectedConflictFields,
+    openConflictFields: openConflicts.map((conflict) => conflict.field),
+  });
+
+  if (alignedFields.length === 0) return 0;
+
+  const result = await prisma.syncConflict.updateMany({
+    data: {
+      resolvedAt: new Date(),
+      status: SyncConflictStatus.RESOLVED,
+    },
+    where: {
+      field: { in: alignedFields },
+      mappingId: input.mappingId,
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+
+  return result.count;
 }
 
 function getJsonObject(value: Prisma.JsonValue | null) {
