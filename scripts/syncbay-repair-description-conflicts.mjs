@@ -91,7 +91,7 @@ select jsonb_build_object(
 
 function buildApplySql() {
   return `
-with latest_syncbay as (
+with latest_description_syncbay as (
   select distinct on (ps."mappingId")
     ps.*
   from "ProductSnapshot" ps
@@ -102,6 +102,72 @@ with latest_syncbay as (
     and ps."descriptionHash" is not null
   order by ps."mappingId", ps."capturedAt" desc
 ),
+latest_syncbay as (
+  select distinct on (ps."mappingId")
+    ps.*
+  from "ProductSnapshot" ps
+  join "Shop" s on s.id = ps."shopId"
+  where s."shopDomain" = ${sqlString(shopDomain)}
+    and ps.source = 'SYNCBAY'
+    and ps."mappingId" is not null
+  order by ps."mappingId", ps."capturedAt" desc
+),
+current_field_baselines as (
+  select
+    ls.*,
+    title_snapshot.title as current_title,
+    price_snapshot."priceAmount" as current_price_amount,
+    price_snapshot.currency as current_currency,
+    quantity_snapshot.quantity as current_quantity,
+    status_snapshot."productStatus" as current_product_status,
+    image_snapshot."imageCount" as current_image_count
+  from latest_syncbay ls
+  left join lateral (
+    select ps.title
+    from "ProductSnapshot" ps
+    where ps."mappingId" = ls."mappingId"
+      and ps.source = 'SYNCBAY'
+      and ps.title is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) title_snapshot on true
+  left join lateral (
+    select ps."priceAmount", ps.currency
+    from "ProductSnapshot" ps
+    where ps."mappingId" = ls."mappingId"
+      and ps.source = 'SYNCBAY'
+      and ps."priceAmount" is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) price_snapshot on true
+  left join lateral (
+    select ps.quantity
+    from "ProductSnapshot" ps
+    where ps."mappingId" = ls."mappingId"
+      and ps.source = 'SYNCBAY'
+      and ps.quantity is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) quantity_snapshot on true
+  left join lateral (
+    select ps."productStatus"
+    from "ProductSnapshot" ps
+    where ps."mappingId" = ls."mappingId"
+      and ps.source = 'SYNCBAY'
+      and ps."productStatus" is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) status_snapshot on true
+  left join lateral (
+    select ps."imageCount"
+    from "ProductSnapshot" ps
+    where ps."mappingId" = ls."mappingId"
+      and ps.source = 'SYNCBAY'
+      and ps."imageCount" is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) image_snapshot on true
+),
 baseline_repairable_conflicts as (
   select
     sc.id,
@@ -110,7 +176,7 @@ baseline_repairable_conflicts as (
     sc."shopifyValue" #>> '{}' as shopify_hash
   from "SyncConflict" sc
   join "Shop" s on s.id = sc."shopId"
-  join latest_syncbay ls on ls."mappingId" = sc."mappingId"
+  join latest_description_syncbay ls on ls."mappingId" = sc."mappingId"
   where s."shopDomain" = ${sqlString(shopDomain)}
     and sc.status = 'OPEN'
     and sc.field = 'description'
@@ -122,7 +188,7 @@ aligned_conflicts as (
   select sc.id, sc."shopId"
   from "SyncConflict" sc
   join "Shop" s on s.id = sc."shopId"
-  join latest_syncbay ls on ls."mappingId" = sc."mappingId"
+  join latest_description_syncbay ls on ls."mappingId" = sc."mappingId"
   where s."shopDomain" = ${sqlString(shopDomain)}
     and sc.status = 'OPEN'
     and sc.field = 'description'
@@ -151,21 +217,21 @@ inserted_snapshots as (
   )
   select
     gen_random_uuid()::text,
-    ls."shopId",
-    ls."mappingId",
-    ls.source,
-    ls."ebayItemId",
-    ls."shopifyProductGid",
-    ls."shopifyVariantGid",
-    ls.sku,
-    ls.title,
-    ls."priceAmount",
-    ls.currency,
-    ls.quantity,
-    ls."productStatus",
+    cb."shopId",
+    cb."mappingId",
+    cb.source,
+    cb."ebayItemId",
+    cb."shopifyProductGid",
+    cb."shopifyVariantGid",
+    cb.sku,
+    cb.current_title,
+    cb.current_price_amount,
+    cb.current_currency,
+    cb.current_quantity,
+    cb.current_product_status,
     tc.shopify_hash,
-    ls."imageCount",
-    coalesce(ls.payload, '{}'::jsonb) || jsonb_build_object(
+    cb.current_image_count,
+    (coalesce(cb.payload, '{}'::jsonb) - 'updatedEbayFromShopifyOrder' - 'restoredEbayAfterTest') || jsonb_build_object(
       'descriptionBaselineRepair',
       jsonb_build_object(
         'conflictId', tc.id,
@@ -174,7 +240,8 @@ inserted_snapshots as (
     ),
     now()
   from baseline_repairable_conflicts tc
-  join latest_syncbay ls on ls."mappingId" = tc."mappingId"
+  join current_field_baselines cb on cb."mappingId" = tc."mappingId"
+    and cb."shopId" = tc."shopId"
   returning id
 ),
 updated_baseline_conflicts as (

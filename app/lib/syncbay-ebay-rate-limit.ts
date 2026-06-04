@@ -4,6 +4,7 @@ export const DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_GRACE_SECONDS = 5 * 60;
 const RATE_LIMIT_PATTERNS = [
   /superato il limite di utilizzo/i,
   /exceeded the usage limit/i,
+  /usage limit/i,
   /call limit/i,
   /rate limit/i,
 ];

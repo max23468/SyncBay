@@ -92,7 +92,7 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Classificare i conflitti Shopify aperti e distinguere azioni batch sicure da decisioni manuali.
-2. Estendere diagnostica self-service per rollback e retry per prodotto.
-3. Preparare screenshot prodotto e microcopy commerciale dell'app embedded ora stabilizzata.
+1. Verificare in produzione pilota le classificazioni conflitti su coda reale.
+2. Raccogliere screenshot prodotto puliti delle sei superfici embedded.
+3. Estendere la diagnostica self-service verso rollback per prodotto.
 4. Continuare hardening sicurezza/privacy/token/GDPR/rate limit prima di App Store e billing.

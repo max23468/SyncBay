@@ -28,6 +28,7 @@ import {
   getCatalogPageWindow,
 } from "../lib/syncbay-catalog-page";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
+import { summarizeConflictDecisionModes } from "../lib/syncbay-conflict-actions";
 import {
   CONFLICT_PAGE_SIZE,
   type ConflictFilter,
@@ -58,6 +59,7 @@ import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-basel
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
+import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -310,8 +312,10 @@ export async function getDashboardState(session: ShopifySessionLike) {
       lastJobs: recentJobs.map((job) => ({
         attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
+        errorCode: job.errorCode,
         errorMessage: job.errorMessage,
         id: job.id,
+        maxAttempts: job.maxAttempts,
         runAfter: job.runAfter.toISOString(),
         status: job.status,
         type: job.type,
@@ -467,7 +471,13 @@ export async function getConflictsPageState(
   const resolvedStatuses = [
     ...getConflictStatusFilter("resolved"),
   ] as SyncConflictStatus[];
-  const [openCount, resolvedCount, totalCount, filteredCount] =
+  const [
+    openCount,
+    resolvedCount,
+    totalCount,
+    filteredCount,
+    openConflictFields,
+  ] =
     await prisma.$transaction([
       prisma.syncConflict.count({
         where: {
@@ -493,7 +503,20 @@ export async function getConflictsPageState(
           status: { in: statusFilter },
         },
       }),
+      prisma.syncConflict.findMany({
+        select: { field: true },
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
     ]);
+  const decisionModeCounts = summarizeConflictDecisionModes(
+    openConflictFields.map((conflict) => ({
+      count: 1,
+      field: conflict.field,
+    })),
+  );
   const pagination = getPageWindow({
     page: input.page ?? 1,
     pageSize: CONFLICT_PAGE_SIZE,
@@ -566,6 +589,7 @@ export async function getConflictsPageState(
       domain: shop.shopDomain,
     },
     summary: {
+      ...decisionModeCounts,
       filteredCount,
       openCount,
       resolvedCount,
@@ -599,6 +623,23 @@ export async function requestSyncJobRetry(
   }
 
   const now = new Date();
+  const retryState = getManualRetryState(
+    {
+      attempts: job.attempts,
+      errorCode: job.errorCode,
+      errorMessage: job.errorMessage,
+      maxAttempts: job.maxAttempts,
+      runAfter: job.runAfter,
+      status: job.status,
+      type: job.type,
+    },
+    now,
+  );
+
+  if (!retryState.canRetry) {
+    throw new Response(retryState.reason, { status: 400 });
+  }
+
   const details = {
     jobId: job.id,
     previousAttempts: job.attempts,

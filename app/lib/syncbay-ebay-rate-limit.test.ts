@@ -22,6 +22,13 @@ test("detects English eBay Trading call limit errors", () => {
   );
 });
 
+test("detects English eBay Trading usage limit errors", () => {
+  assert.equal(
+    isEbayTradingUsageLimitError("Call usage limit has been reached."),
+    true,
+  );
+});
+
 test("ignores unrelated eBay Trading errors", () => {
   assert.equal(
     isEbayTradingUsageLimitError(

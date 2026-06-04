@@ -14,6 +14,7 @@ import {
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
 import {
   getConflictFieldLabel,
   getTimelineCategoryLabel,
@@ -225,7 +226,8 @@ function ActivityTimelineRow({
   isSaving: boolean;
   row: ActivityRow;
 }) {
-  const canRetry = row.job ? row.job.status === "FAILED" : false;
+  const diagnostic = row.job ? getSyncJobDiagnostic(row.job) : null;
+  const canRetry = diagnostic?.retry.canRetry ?? false;
 
   return (
     <li className="syncbay-activity-row">
@@ -245,9 +247,13 @@ function ActivityTimelineRow({
             <input type="hidden" name="intent" value="retryJob" />
             <input type="hidden" name="jobId" value={row.job.id} />
             <s-button type="submit" disabled={isSaving}>
-              Riprova
+              {diagnostic?.retry.label ?? "Riprova"}
             </s-button>
           </Form>
+        ) : row.job && diagnostic ? (
+          <span className="syncbay-table__subtext">
+            {diagnostic.retry.label}
+          </span>
         ) : null}
       </div>
     </li>
@@ -316,17 +322,22 @@ function StatusRow({
 }
 
 function buildActivityRows(activity: Activity): ActivityRow[] {
-  const jobRows = activity.sync.lastJobs.map((job) => ({
-    category: getTimelineCategoryFromJobType(job.type),
-    detail: getJobDetail(job),
-    id: `job-${job.id}`,
-    job,
-    meta: `${getTimelineCategoryLabel(getTimelineCategoryFromJobType(job.type))} · ${formatJobStatus(job.status)}`,
-    timestamp: job.createdAt,
-    title: getJobTitle(job.type),
-    tone: getJobTone(job.status),
-    type: "job" as const,
-  }));
+  const jobRows = activity.sync.lastJobs.map((job) => {
+    const category = getTimelineCategoryFromJobType(job.type);
+    const diagnostic = getSyncJobDiagnostic(job);
+
+    return {
+      category,
+      detail: getJobDetail(job, diagnostic),
+      id: `job-${job.id}`,
+      job,
+      meta: `${getTimelineCategoryLabel(category)} · ${formatJobStatus(job.status)} · ${diagnostic.technicalReference}`,
+      timestamp: job.createdAt,
+      title: getJobTitle(job.type),
+      tone: getJobTone(job.status),
+      type: "job" as const,
+    };
+  });
   const auditRows = activity.audit.map((event) => ({
     category: "AUDIT" as const,
     detail: event.message,
@@ -413,10 +424,14 @@ function getJobTitle(type: string) {
   return "Attività SyncBay";
 }
 
-function getJobDetail(job: ActivityJob) {
+function getJobDetail(
+  job: ActivityJob,
+  diagnostic: ReturnType<typeof getSyncJobDiagnostic>,
+) {
   const pieces = [
-    `Stato: ${formatJobStatus(job.status)}`,
-    `tentativi ${job.attempts}`,
+    diagnostic.impact,
+    diagnostic.nextAction,
+    `Tentativi ${job.attempts}/${job.maxAttempts}`,
     `prossima esecuzione ${formatDateTime(job.runAfter)}`,
   ];
 

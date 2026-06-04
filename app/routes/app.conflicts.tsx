@@ -19,6 +19,12 @@ import {
   getConflictImpactText,
   type ConflictResolution,
 } from "../lib/syncbay-ui-state";
+import {
+  getConflictDecisionModeDetail,
+  getConflictDecisionModeLabel,
+  getConflictFieldDecisionMode,
+  getConflictResolutionSafety,
+} from "../lib/syncbay-conflict-actions";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   type ConflictFilter,
@@ -119,9 +125,19 @@ export default function ConflictsRoute() {
               value={formatNumber(conflicts.summary.openCount)}
             />
             <MetricCard
-              detail="Già gestiti o ignorati."
-              label="Risolti"
-              value={formatNumber(conflicts.summary.resolvedCount)}
+              detail="Solo descrizioni da mantenere su Shopify."
+              label="Batch sicuri"
+              value={formatNumber(conflicts.summary.batchSafeCount)}
+            />
+            <MetricCard
+              detail="Titoli e immagini da rivedere prima di applicare in serie."
+              label="Da rivedere"
+              value={formatNumber(conflicts.summary.guardedCount)}
+            />
+            <MetricCard
+              detail="Prezzi, quantità, stato, SKU o campi non classificati."
+              label="Manuali"
+              value={formatNumber(conflicts.summary.manualOnlyCount)}
             />
             <MetricCard
               detail="Totale reale della coda conflitti."
@@ -171,6 +187,7 @@ function ConflictItem({
   row: ConflictRow;
 }) {
   const isOpen = row.status === "OPEN";
+  const decisionMode = getConflictFieldDecisionMode(row.field);
 
   return (
     <article className="syncbay-conflict-item">
@@ -201,6 +218,17 @@ function ConflictItem({
           <p className="syncbay-conflict-item__label">Impatto</p>
           <p>{getConflictImpactText(row.field)}</p>
         </div>
+        <div>
+          <p className="syncbay-conflict-item__label">Gestione</p>
+          <span
+            className={`syncbay-badge syncbay-badge--${getDecisionModeTone(decisionMode)}`}
+          >
+            {getConflictDecisionModeLabel(decisionMode)}
+          </span>
+          <p className="syncbay-conflict-guidance">
+            {getConflictDecisionModeDetail(row.field, decisionMode)}
+          </p>
+        </div>
         <div className="syncbay-conflict-comparison">
           <div>
             <p className="syncbay-conflict-item__label">Valore eBay</p>
@@ -224,6 +252,7 @@ function ConflictItem({
               <ResolveConflictForm
                 conflictId={row.id}
                 disabled={isSaving}
+                field={row.field}
                 key={resolution}
                 resolution={resolution}
               />
@@ -238,19 +267,24 @@ function ConflictItem({
 function ResolveConflictForm({
   conflictId,
   disabled,
+  field,
   resolution,
 }: {
   conflictId: string;
   disabled: boolean;
+  field: string;
   resolution: ConflictResolution;
 }) {
+  const safety = getConflictResolutionSafety(field, resolution);
+
   return (
-    <Form method="post">
+    <Form className="syncbay-decision-action" method="post">
       <input type="hidden" name="conflictId" value={conflictId} />
       <input type="hidden" name="resolution" value={resolution} />
       <s-button type="submit" disabled={disabled}>
         {getConflictActionLabel(resolution)}
       </s-button>
+      <span className="syncbay-table__subtext">{safety.label}</span>
     </Form>
   );
 }
@@ -388,4 +422,13 @@ function formatDateTime(value: string) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("it-IT").format(value);
+}
+
+function getDecisionModeTone(
+  mode: ReturnType<typeof getConflictFieldDecisionMode>,
+) {
+  if (mode === "batch_safe") return "success";
+  if (mode === "guarded") return "warning";
+
+  return "critical";
 }
