@@ -41,6 +41,7 @@ import {
   getProductSnapshotThumbnailUrl,
   getProductSnapshotThumbnailUrlFromPayloads,
 } from "../lib/syncbay-product-snapshot-payload";
+import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -56,6 +57,7 @@ import {
   getDraftImportLimit,
   getDraftImportReadiness,
 } from "./shopify-draft-import.server";
+import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
 
 interface ShopifySessionLike {
   shop: string;
@@ -350,9 +352,10 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       shopId: shop.id,
     },
   });
-  const thumbnailPayloadByMappingId = await getLatestThumbnailPayloadByMappingId(
-    mappings.map((mapping) => mapping.id),
-  );
+  const thumbnailPayloadByMappingId =
+    await getLatestThumbnailPayloadByMappingId(
+      mappings.map((mapping) => mapping.id),
+    );
 
   const rows = mappings.map((mapping) =>
     formatCatalogPageRow({
@@ -361,6 +364,24 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       syncTargetSeconds: shop.syncTargetSeconds,
       thumbnailPayload: thumbnailPayloadByMappingId.get(mapping.id) ?? null,
     }),
+  );
+  const shopifyThumbnailUrlByProductGid =
+    await getShopifyThumbnailUrlByProductGid({
+      productGids: rows
+        .filter((row) => !row.thumbnailUrl && row.shopifyProductGid)
+        .map((row) => row.shopifyProductGid as string),
+      shopDomain: shop.shopDomain,
+    });
+  const rowsWithThumbnails = rows.map((row) =>
+    row.thumbnailUrl
+      ? row
+      : {
+          ...row,
+          thumbnailUrl:
+            (row.shopifyProductGid
+              ? shopifyThumbnailUrlByProductGid.get(row.shopifyProductGid)
+              : null) ?? null,
+        },
   );
 
   return {
@@ -373,23 +394,28 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       "not_updated",
       "archived",
     ] as const,
-    rows,
+    rows: rowsWithThumbnails,
     shop: {
       domain: shop.shopDomain,
       syncTargetSeconds: shop.syncTargetSeconds,
     },
     summary: {
-      archivedCount: rows.filter((row) => row.status === "archived").length,
-      conflictCount: rows.filter((row) => row.status === "open_conflict")
-        .length,
-      freshCount: rows.filter((row) => row.status === "active_fresh").length,
-      needsCheckCount: rows.filter(
+      archivedCount: rowsWithThumbnails.filter(
+        (row) => row.status === "archived",
+      ).length,
+      conflictCount: rowsWithThumbnails.filter(
+        (row) => row.status === "open_conflict",
+      ).length,
+      freshCount: rowsWithThumbnails.filter(
+        (row) => row.status === "active_fresh",
+      ).length,
+      needsCheckCount: rowsWithThumbnails.filter(
         (row) =>
           row.status === "stale_sync" ||
           row.status === "mapping_error" ||
           row.availability !== "aligned",
       ).length,
-      totalCount: rows.length,
+      totalCount: rowsWithThumbnails.length,
     },
   };
 }
@@ -420,11 +446,12 @@ export async function getConflictsPageState(session: ShopifySessionLike) {
       },
     },
   });
-  const thumbnailPayloadByMappingId = await getLatestThumbnailPayloadByMappingId(
-    conflicts.flatMap((conflict) =>
-      conflict.mapping?.id ? [conflict.mapping.id] : [],
-    ),
-  );
+  const thumbnailPayloadByMappingId =
+    await getLatestThumbnailPayloadByMappingId(
+      conflicts.flatMap((conflict) =>
+        conflict.mapping?.id ? [conflict.mapping.id] : [],
+      ),
+    );
   const rows = conflicts.map((conflict) =>
     formatConflictPageRow(conflict, {
       thumbnailPayload:
@@ -433,22 +460,48 @@ export async function getConflictsPageState(session: ShopifySessionLike) {
           : null) ?? null,
     }),
   );
+  const shopifyThumbnailUrlByProductGid =
+    await getShopifyThumbnailUrlByProductGid({
+      productGids: rows
+        .filter(
+          (row) => !row.product.thumbnailUrl && row.product.shopifyProductGid,
+        )
+        .map((row) => row.product.shopifyProductGid as string),
+      shopDomain: shop.shopDomain,
+    });
+  const rowsWithThumbnails = rows.map((row) =>
+    row.product.thumbnailUrl
+      ? row
+      : {
+          ...row,
+          product: {
+            ...row.product,
+            thumbnailUrl:
+              (row.product.shopifyProductGid
+                ? shopifyThumbnailUrlByProductGid.get(
+                    row.product.shopifyProductGid,
+                  )
+                : null) ?? null,
+          },
+        },
+  );
 
   return {
     filters: ["open", "resolved", "all"] as const,
-    rows,
+    rows: rowsWithThumbnails,
     shop: {
       domain: shop.shopDomain,
     },
     summary: {
-      openCount: rows.filter((row) => row.status === SyncConflictStatus.OPEN)
-        .length,
-      resolvedCount: rows.filter(
+      openCount: rowsWithThumbnails.filter(
+        (row) => row.status === SyncConflictStatus.OPEN,
+      ).length,
+      resolvedCount: rowsWithThumbnails.filter(
         (row) =>
           row.status === SyncConflictStatus.RESOLVED ||
           row.status === SyncConflictStatus.IGNORED,
       ).length,
-      totalCount: rows.length,
+      totalCount: rowsWithThumbnails.length,
     },
   };
 }
@@ -2019,6 +2072,79 @@ async function getLatestThumbnailPayloadByMappingId(mappingIds: string[]) {
 
   return payloadByMappingId;
 }
+
+async function getShopifyThumbnailUrlByProductGid(input: {
+  productGids: string[];
+  shopDomain: string;
+}) {
+  const uniqueProductGids = [...new Set(input.productGids)];
+  const thumbnailUrlByProductGid = new Map<string, string>();
+
+  if (uniqueProductGids.length === 0) return thumbnailUrlByProductGid;
+
+  try {
+    const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
+
+    for (const productGidBatch of chunkArray(uniqueProductGids, 50)) {
+      const response = await admin.graphql(
+        `#graphql
+        query SyncBayCatalogProductThumbnails($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on Product {
+              id
+              media(first: 10) {
+                nodes {
+                  mediaContentType
+                  preview {
+                    status
+                    image {
+                      url
+                    }
+                  }
+                  ... on MediaImage {
+                    image {
+                      url
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`,
+        { variables: { ids: productGidBatch } },
+      );
+      const json = (await response
+        .json()
+        .catch(() => null)) as ShopifyProductThumbnailsResponse | null;
+
+      if (!response.ok || json?.errors?.length) continue;
+
+      for (const node of json?.data?.nodes ?? []) {
+        if (!node?.id) continue;
+
+        const thumbnailUrl = getShopifyProductThumbnailUrl(node);
+
+        if (thumbnailUrl) thumbnailUrlByProductGid.set(node.id, thumbnailUrl);
+      }
+    }
+  } catch {
+    return thumbnailUrlByProductGid;
+  }
+
+  return thumbnailUrlByProductGid;
+}
+
+type ShopifyProductThumbnailsResponse = {
+  data?: {
+    nodes?: Array<{
+      id?: string | null;
+      media?: {
+        nodes?: unknown[];
+      } | null;
+    } | null>;
+  };
+  errors?: Array<unknown>;
+};
 
 function formatCatalogPageRow(input: {
   mapping: Prisma.ProductMappingGetPayload<{

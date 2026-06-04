@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.3] — 2026-06-04
+
+### Correzioni
+
+- Il Catalogo e la pagina Conflitti usano le immagini READY già presenti su
+  Shopify come fallback quando gli snapshot SyncBay non contengono URL media,
+  evitando placeholder vuoti per prodotti già importati con immagini.
+
 ## [0.23.2] — 2026-06-04
 
 ### Correzioni
@@ -992,6 +1000,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.3]: #0233--2026-06-04
 [0.23.2]: #0232--2026-06-04
 [0.23.1]: #0231--2026-06-04
 [0.23.0]: #0230--2026-06-04
