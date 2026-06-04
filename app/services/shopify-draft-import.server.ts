@@ -32,6 +32,7 @@ import {
   getSyncBayDescriptionHash,
   hashNullableText,
 } from "../lib/syncbay-description-hash";
+import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import type {
   ImportPreviewItem,
   ImportPreviewResult,
@@ -2840,12 +2841,13 @@ function buildSyncBayProductSnapshot(input: {
 }
 
 function buildEbaySnapshotPayload(item: ImportPreviewItem) {
-  return {
+  return buildEbayProductSnapshotPayload({
     descriptionMode: item.normalized.descriptionMode,
+    imageUrls: item.normalized.imageUrls,
     issueCodes: item.issues.map((issue) => issue.code),
     skuGenerated: item.normalized.skuGenerated,
     status: item.status,
-  } satisfies Prisma.JsonObject;
+  });
 }
 
 function getInventoryFailedResults(input: {

@@ -6,11 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.23.1] — 2026-06-04
 
-- Registrata nel backlog la futura valutazione di un modulo storefront per
-  comunicare sconti o prezzi promozionali pre-carrello senza patch dirette ai
-  file core dei temi Shopify.
+### Correzioni
+
+- Il Catalogo embedded legge le miniature prodotto dai payload snapshot e
+  conserva gli URL immagine eBay negli snapshot import, evitando placeholder
+  vuoti quando l'import ha già letto immagini valide.
 
 ## [0.23.0] — 2026-06-04
 
@@ -983,6 +985,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.1]: #0231--2026-06-04
 [0.23.0]: #0230--2026-06-04
 [0.22.25]: #02225--2026-06-03
 [0.22.24]: #02224--2026-06-03
