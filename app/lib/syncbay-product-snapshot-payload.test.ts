@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayProductSnapshotPayload, getProductSnapshotThumbnailUrl } from "./syncbay-product-snapshot-payload.ts";
+import { buildEbayProductSnapshotPayload, getProductSnapshotThumbnailUrl, getProductSnapshotThumbnailUrlFromPayloads } from "./syncbay-product-snapshot-payload.ts";
 
 test("persists eBay image URLs in snapshot payloads", () => {
   assert.deepEqual(
@@ -60,5 +60,19 @@ test("rejects credentialed thumbnail URLs", () => {
       thumbnailUrl: "ftp://example.com/product.jpg",
     }),
     null,
+  );
+});
+
+test("falls back to older payloads when the latest snapshot has no image", () => {
+  assert.equal(
+    getProductSnapshotThumbnailUrlFromPayloads([
+      { reason: "stock_update" },
+      {
+        mediaSync: {
+          sourceImageUrls: ["https://i.ebayimg.example/older.jpg"],
+        },
+      },
+    ]),
+    "https://i.ebayimg.example/older.jpg",
   );
 });

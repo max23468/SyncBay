@@ -37,7 +37,10 @@ import {
   serializeProductPublicationGids,
   type ProductPublicationMode,
 } from "../lib/syncbay-product-publication-settings";
-import { getProductSnapshotThumbnailUrl } from "../lib/syncbay-product-snapshot-payload";
+import {
+  getProductSnapshotThumbnailUrl,
+  getProductSnapshotThumbnailUrlFromPayloads,
+} from "../lib/syncbay-product-snapshot-payload";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -347,12 +350,16 @@ export async function getCatalogPageState(session: ShopifySessionLike) {
       shopId: shop.id,
     },
   });
+  const thumbnailPayloadByMappingId = await getLatestThumbnailPayloadByMappingId(
+    mappings.map((mapping) => mapping.id),
+  );
 
   const rows = mappings.map((mapping) =>
     formatCatalogPageRow({
       mapping,
       now: new Date(),
       syncTargetSeconds: shop.syncTargetSeconds,
+      thumbnailPayload: thumbnailPayloadByMappingId.get(mapping.id) ?? null,
     }),
   );
 
@@ -413,7 +420,19 @@ export async function getConflictsPageState(session: ShopifySessionLike) {
       },
     },
   });
-  const rows = conflicts.map(formatConflictPageRow);
+  const thumbnailPayloadByMappingId = await getLatestThumbnailPayloadByMappingId(
+    conflicts.flatMap((conflict) =>
+      conflict.mapping?.id ? [conflict.mapping.id] : [],
+    ),
+  );
+  const rows = conflicts.map((conflict) =>
+    formatConflictPageRow(conflict, {
+      thumbnailPayload:
+        (conflict.mapping?.id
+          ? thumbnailPayloadByMappingId.get(conflict.mapping.id)
+          : null) ?? null,
+    }),
+  );
 
   return {
     filters: ["open", "resolved", "all"] as const,
@@ -1958,6 +1977,49 @@ function getRuntimePhaseReadiness(input: {
   ];
 }
 
+async function getLatestThumbnailPayloadByMappingId(mappingIds: string[]) {
+  const uniqueMappingIds = [...new Set(mappingIds)];
+  const payloadByMappingId = new Map<string, Prisma.JsonValue | null>();
+
+  if (uniqueMappingIds.length === 0) return payloadByMappingId;
+
+  const snapshots = await prisma.productSnapshot.findMany({
+    orderBy: { capturedAt: "desc" },
+    select: {
+      mappingId: true,
+      payload: true,
+    },
+    where: {
+      mappingId: { in: uniqueMappingIds },
+      OR: [
+        { payload: { path: ["imageUrls"], not: Prisma.JsonNull } },
+        {
+          payload: {
+            path: ["mediaSync", "sourceImageUrls"],
+            not: Prisma.JsonNull,
+          },
+        },
+        { payload: { path: ["imageUrl"], not: Prisma.JsonNull } },
+        { payload: { path: ["thumbnailUrl"], not: Prisma.JsonNull } },
+        { payload: { path: ["galleryUrl"], not: Prisma.JsonNull } },
+        { payload: { path: ["GalleryURL"], not: Prisma.JsonNull } },
+      ],
+    },
+  });
+
+  for (const snapshot of snapshots) {
+    if (!snapshot.mappingId || payloadByMappingId.has(snapshot.mappingId)) {
+      continue;
+    }
+
+    if (!getProductSnapshotThumbnailUrl(snapshot.payload)) continue;
+
+    payloadByMappingId.set(snapshot.mappingId, snapshot.payload);
+  }
+
+  return payloadByMappingId;
+}
+
 function formatCatalogPageRow(input: {
   mapping: Prisma.ProductMappingGetPayload<{
     include: {
@@ -1972,6 +2034,7 @@ function formatCatalogPageRow(input: {
   }>;
   now: Date;
   syncTargetSeconds: number;
+  thumbnailPayload: Prisma.JsonValue | null;
 }) {
   const latestSnapshot = input.mapping.snapshots[0] ?? null;
   const lastSyncedAt = input.mapping.lastSyncedAt?.toISOString() ?? null;
@@ -2015,7 +2078,10 @@ function formatCatalogPageRow(input: {
     sku: latestSnapshot?.sku ?? input.mapping.sku,
     snapshotCapturedAt: latestSnapshot?.capturedAt.toISOString() ?? null,
     status,
-    thumbnailUrl: getProductSnapshotThumbnailUrl(latestSnapshot?.payload),
+    thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([
+      latestSnapshot?.payload,
+      input.thumbnailPayload,
+    ]),
     title:
       latestSnapshot?.title ??
       input.mapping.sku ??
@@ -2033,6 +2099,9 @@ function formatConflictPageRow(
       };
     };
   }>,
+  input: {
+    thumbnailPayload: Prisma.JsonValue | null;
+  },
 ) {
   const latestSnapshot = conflict.mapping?.snapshots[0] ?? null;
 
@@ -2044,7 +2113,10 @@ function formatConflictPageRow(
     product: {
       shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
       sku: latestSnapshot?.sku ?? conflict.mapping?.sku ?? null,
-      thumbnailUrl: getProductSnapshotThumbnailUrl(latestSnapshot?.payload),
+      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([
+        latestSnapshot?.payload,
+        input.thumbnailPayload,
+      ]),
       title:
         latestSnapshot?.title ??
         conflict.mapping?.sku ??
