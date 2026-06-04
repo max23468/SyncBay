@@ -34,6 +34,16 @@ export function getProductSnapshotThumbnailUrl(value: unknown) {
   return firstImageUrl ?? directImageUrl ?? null;
 }
 
+export function getProductSnapshotThumbnailUrlFromPayloads(values: unknown[]) {
+  for (const value of values) {
+    const thumbnailUrl = getProductSnapshotThumbnailUrl(value);
+
+    if (thumbnailUrl) return thumbnailUrl;
+  }
+
+  return null;
+}
+
 function normalizeImageUrls(imageUrls: string[]) {
   return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
     Boolean,
