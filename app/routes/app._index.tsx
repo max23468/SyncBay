@@ -146,11 +146,13 @@ export default function Index() {
 
         <s-section heading="Azioni consigliate">
           <div className="syncbay-inline-actions">
-            {dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled ? (
+            {dashboard.ebay.oauthReady &&
+            dashboard.ebay.oauthEnabled &&
+            dashboard.ebay.status !== "CONNECTED" ? (
               <s-button href="/auth/ebay/start">
-                {dashboard.ebay.status === "CONNECTED"
-                  ? "Ricollega eBay"
-                  : "Collega eBay"}
+                {dashboard.ebay.status === "NOT_CONNECTED"
+                  ? "Collega eBay"
+                  : "Ricollega eBay"}
               </s-button>
             ) : null}
             <s-button href="/app/import-preview">Apri importazione</s-button>
