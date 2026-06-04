@@ -12,19 +12,20 @@
 
 ## Execution Status
 
-Status on 2026-06-05: Phases 0-4 are implemented and published in the pilot
-Vercel production app. Phase 5 is the active closeout pass: update canonical
-docs, review the six embedded pages post-publish, remove customer-visible legacy
-UI residues, run local gates, classify the release and publish the final patch.
+Status on 2026-06-05: Phases 0-5 are implemented and published in the pilot
+Vercel production app. The closeout pass updated canonical docs, reviewed the
+six embedded pages post-publish, removed the customer-visible legacy UI
+residues found during review, ran local gates, classified the release and
+published the final patch.
 
-Post-publish review found two material residues:
+Post-publish review found two material residues, both closed in `0.23.6`:
 
-- `Panoramica` still offered `Ricollega eBay` in the recommended action row even
-  when eBay was already connected. The action should appear only when the
-  connection is missing, expired, revoked or requires reconnect.
-- `Attività` exposed `Audit` as a customer-facing filter/metric and did not make
-  recent conflicts a first-class timeline filter. The page should surface
-  `Conflitti` and keep technical audit details secondary.
+- `Panoramica` no longer offers `Ricollega eBay` in the recommended action row
+  when eBay is already connected. The action appears only when the connection is
+  missing, expired, revoked or requires reconnect.
+- `Attività` now exposes `Conflitti` as a customer-facing timeline filter,
+  includes recent conflicts in the timeline and keeps technical audit details
+  secondary.
 
 No provider, schema, worker or integration change is part of this closeout.
 

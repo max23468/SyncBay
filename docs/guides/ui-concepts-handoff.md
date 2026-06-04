@@ -36,8 +36,8 @@ in calce la trascrizione testuale dei due thread recuperati.
   - Fase 4: `Attività` introdotta come timeline operativa con diagnostica
     secondaria.
 - Fase 5, revisione post-publish del 2026-06-05: QA/documentale e controllo
-  contro i sei concept completati; i residui visibili rilevati sono da chiudere
-  nella correzione runtime successiva.
+  contro i sei concept completati; i residui visibili rilevati sono stati
+  chiusi nella patch runtime `0.23.6`.
 
 ## Note implementative
 
@@ -93,11 +93,11 @@ Route production verificate dentro Shopify Admin:
 
 | Pagina | URL embedded | Esito |
 | --- | --- | --- |
-| Panoramica | `/app` | Struttura corretta, metriche reali e prossima azione visibile. Rilevato residuo da correggere: `Ricollega eBay` appare tra le azioni consigliate anche con account già collegato. |
+| Panoramica | `/app` | Struttura corretta, metriche reali e prossima azione visibile. La review aveva rilevato `Ricollega eBay` tra le azioni consigliate anche con account già collegato; corretto in `0.23.6`. |
 | Catalogo | `/app/catalog` | Table-first, thumbnail visibili, filtri separati, una sola colonna `Stato`, paginazione reale. Nessun export o segnale bidirezionale. |
 | Conflitti | `/app/conflicts` | Default su conflitti aperti, azioni `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`, descrizioni leggibili e paginazione reale. |
 | Importazione | `/app/import-preview` | Step progressivi, collegamento eBay nel punto corretto, default/canali riassunti, anteprima paginata e azione di import preservata. |
-| Attività | `/app/activity` | Timeline e controlli rapidi presenti. Rilevato residuo legacy da correggere: filtro cliente `Audit` al posto di `Conflitti` e conflitti recenti non abbastanza visibili nella timeline. |
+| Attività | `/app/activity` | Timeline e controlli rapidi presenti. La review aveva rilevato il filtro cliente `Audit` al posto di `Conflitti` e conflitti recenti non abbastanza visibili nella timeline; corretto in `0.23.6`. |
 | Impostazioni | `/app/settings` | Quattro box verticali confermati: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Nessun quinto box `Account`. |
 
 Copertura dei cinque rilievi della review production precedente:
@@ -112,9 +112,9 @@ Copertura dei cinque rilievi della review production precedente:
 4. Conflitti valori/hash: la pagina non espone hash descrizione come valori
    leggibili dal negoziante; le decisioni restano guidate dai campi e
    dall'impatto.
-5. Attività e Impostazioni: entrambe caricano in produzione senza crash; la
-   review chiede di rimuovere il filtro cliente `Audit`, mentre Impostazioni
-   conferma i quattro box verticali.
+5. Attività e Impostazioni: entrambe caricano in produzione senza crash;
+   `0.23.6` rimuove il filtro cliente `Audit`, promuove `Conflitti` nella
+   timeline e Impostazioni conferma i quattro box verticali.
 
 Confronto concept/implementazione:
 
