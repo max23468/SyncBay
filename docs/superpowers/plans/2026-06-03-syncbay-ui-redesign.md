@@ -65,7 +65,7 @@ This plan integrates these decisions from the recovered threads:
 | `Dashboard` label is rejected. Use `Panoramica`. | All plan labels use `Panoramica`. |
 | eBay remains catalog source of truth, Shopify is destination, except Shopify paid orders update eBay stock. | Non-scope and copy guardrails prohibit export/bidirectional catalog UI. |
 | Avoid `Esporta`, bidirectional arrows and broad `Sincronizza tutto`. | Tasks 4, 5 and 8 explicitly remove those patterns. |
-| Use updated Shopify-native components, not legacy Polaris React. | Task 2 uses App Bridge `NavMenu`; Task 3 keeps `s-*` components and lightweight CSS. |
+| Use updated Shopify-native components, not legacy Polaris React. | Task 2 uses App Bridge `NavMenu`; Task 3 is Polaris Web Components first and keeps CSS only for documented exceptions. |
 | Visual direction: 75% Shopify-native, 25% SyncBay. | Task 3 defines tokens, compact surfaces and restrained accents from `BRAND.md`. |
 | Use real SyncBay logo in implementation, not generated logos. | Task 3 uses repo assets or an inline component derived from approved assets; concepts are references, not logo sources. |
 | eBay/Shopify marks are allowed only as sober indicators, not co-branding. | Task 3 includes this as a visual guardrail. |
@@ -107,6 +107,7 @@ Do not build:
 - Bidirectional catalog sync.
 - Billing, Shopify App Store publishing or public release flow.
 - Polaris React legacy migration.
+- Custom replacements for Shopify primitives when a suitable `s-*` component exists.
 - A fully custom design system detached from Shopify Admin.
 - Mobile-first redesign. Mobile must not break, but desktop Shopify Admin is the primary target.
 
@@ -395,8 +396,18 @@ Decision:
 - Use real SyncBay logo assets from `brand/assets/` or an inline component derived from approved SVG content.
 - Keep product surface in Italian.
 - Keep code identifiers in English where consistent with the repo.
-- Prefer Shopify/App Bridge/web components already in the app. Add no new dependency unless a concrete missing primitive blocks implementation.
+- Prefer Shopify App Bridge and Polaris Web Components already in the app. Use
+  native primitives such as `s-box`, `s-stack`, `s-grid`, `s-table`, `s-badge`,
+  `s-button`, `s-select`, `s-switch`, `s-checkbox`, `s-clickable-chip` and
+  `s-thumbnail`/`s-image` before writing custom markup/CSS.
+- Keep the SyncBay identity layer native: real logo asset, tagline, page
+  accessory badges and recurring operational microcopy. Do not bring back a
+  custom embedded shell or custom-colored component system for brand presence.
 - Do not introduce `@shopify/polaris` React components for this redesign.
+- CSS custom is allowed only for SyncBay brand shell/logo, technical details or
+  page-specific compositions not covered by Shopify components. The current
+  embedded UI keeps custom CSS only for minimal native `details/summary`
+  disclosure styling; document any future structural exception.
 - Keep every technical detail sanitized: no secrets, raw payloads, customer data or real merchant data in logs, screenshots, docs or fixtures.
 - Cards are allowed for functional panels, repeated items, conflicts and modals. Do not nest cards.
 - Keep table rows compact and scan-friendly.

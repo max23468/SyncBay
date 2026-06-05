@@ -59,13 +59,17 @@ export default function CatalogRoute() {
 
   return (
     <s-page heading="Catalogo">
-      <div className="syncbay-page syncbay-stack">
+      <s-badge slot="accessory" tone="info">Origine eBay.it</s-badge>
+      <s-stack gap="base">
         <s-section heading="Prodotti collegati">
-          <p className="syncbay-section-intro">
-            Origine catalogo: eBay. Qui controlli i prodotti Shopify già
-            collegati, senza modificare schede o creare un flusso inverso.
-          </p>
-          <div className="syncbay-metric-grid syncbay-metric-grid--compact">
+          <s-text color="subdued">
+            Origine catalogo: eBay.it. Shopify riceve un catalogo ordinato,
+            con disponibilità protette e senza creare un flusso inverso.
+          </s-text>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
+          >
             <MetricCard
               detail="Mapping eBay verso Shopify presenti."
               label="Totale"
@@ -86,45 +90,41 @@ export default function CatalogRoute() {
               label="Archiviati"
               value={formatNumber(catalog.summary.archivedCount)}
             />
-          </div>
+          </s-grid>
         </s-section>
 
         <s-section heading="Controllo catalogo">
           <FilterNav activeFilter={activeFilter} />
           {rows.length > 0 ? (
-            <div className="syncbay-table-wrap">
-              <table className="syncbay-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Prodotto</th>
-                    <th scope="col">Collegamento</th>
-                    <th className="syncbay-table__number" scope="col">
-                      Disponibilità
-                    </th>
-                    <th className="syncbay-table__number" scope="col">
-                      Prezzo
-                    </th>
-                    <th scope="col">Aggiornamento</th>
-                    <th scope="col">Stato</th>
-                    <th scope="col">Azione</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <>
+              <s-table>
+                <s-table-header-row>
+                  <s-table-header>Prodotto</s-table-header>
+                  <s-table-header>Collegamento</s-table-header>
+                  <s-table-header format="numeric">
+                    Disponibilità
+                  </s-table-header>
+                  <s-table-header format="numeric">Prezzo</s-table-header>
+                  <s-table-header>Aggiornamento</s-table-header>
+                  <s-table-header>Stato</s-table-header>
+                  <s-table-header>Azione</s-table-header>
+                </s-table-header-row>
+                <s-table-body>
                   {rows.map((row) => (
                     <CatalogTableRow key={row.id} row={row} />
                   ))}
-                </tbody>
-              </table>
+                </s-table-body>
+              </s-table>
               <CatalogPagination
                 activeFilter={activeFilter}
                 catalog={catalog}
               />
-            </div>
+            </>
           ) : (
             <EmptyCatalogState activeFilter={activeFilter} />
           )}
         </s-section>
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -135,81 +135,87 @@ export const headers: HeadersFunction = (headersArgs) => {
 
 function CatalogTableRow({ row }: { row: CatalogRow }) {
   return (
-    <tr>
-      <td>
-        <div className="syncbay-product-cell">
+    <s-table-row>
+      <s-table-cell>
+        <s-stack direction="inline" gap="base" alignItems="center">
           <ProductThumbnail row={row} />
-          <div>
-            <p className="syncbay-product-cell__title">{row.title}</p>
-            <p className="syncbay-product-cell__meta">
+          <s-stack gap="small-200">
+            <s-text type="strong">{row.title}</s-text>
+            <s-text color="subdued">
               SKU {row.sku ?? "non letto"} · ItemID {row.ebayItemId}
-            </p>
-          </div>
-        </div>
-      </td>
-      <td>
-        <span>Collegato a eBay</span>
-        <span className="syncbay-table__subtext">
-          {row.shopifyProductGid
-            ? "Prodotto Shopify collegato"
-            : "Prodotto Shopify non collegato"}
-        </span>
-      </td>
-      <td className="syncbay-table__number">
-        <span>{getCatalogAvailabilityLabel(row.availability)}</span>
-        <span className="syncbay-table__subtext">
-          {row.quantity === null ? "Quantità non letta" : `${row.quantity} pz`}
-        </span>
-      </td>
-      <td className="syncbay-table__number">
+            </s-text>
+          </s-stack>
+        </s-stack>
+      </s-table-cell>
+      <s-table-cell>
+        <s-stack gap="small-200">
+          <s-text>Collegato a eBay</s-text>
+          <s-text color="subdued">
+            {row.shopifyProductGid
+              ? "Prodotto Shopify collegato"
+              : "Prodotto Shopify non collegato"}
+          </s-text>
+        </s-stack>
+      </s-table-cell>
+      <s-table-cell>
+        <s-stack gap="small-200">
+          <s-text>{getCatalogAvailabilityLabel(row.availability)}</s-text>
+          <s-text color="subdued">
+            {row.quantity === null ? "Quantità non letta" : `${row.quantity} pz`}
+          </s-text>
+        </s-stack>
+      </s-table-cell>
+      <s-table-cell>
         {row.price
           ? `${row.price.amount} ${row.price.currency ?? ""}`
           : "Non letto"}
-      </td>
-      <td>
-        <span>{formatDateTime(row.lastSyncedAt)}</span>
-        <span className="syncbay-table__subtext">
-          Snapshot {formatDateTime(row.snapshotCapturedAt)}
-        </span>
-      </td>
-      <td>
-        <span className={`syncbay-badge syncbay-badge--${getStatusTone(row)}`}>
+      </s-table-cell>
+      <s-table-cell>
+        <s-stack gap="small-200">
+          <s-text>{formatDateTime(row.lastSyncedAt)}</s-text>
+          <s-text color="subdued">
+            Snapshot {formatDateTime(row.snapshotCapturedAt)}
+          </s-text>
+        </s-stack>
+      </s-table-cell>
+      <s-table-cell>
+        <s-badge tone={getStatusTone(row)}>
           {getCatalogStatusLabel(row.status)}
-        </span>
-      </td>
-      <td>
+        </s-badge>
+      </s-table-cell>
+      <s-table-cell>
         {row.openConflictCount > 0 ? (
           <s-button href="/app/conflicts?filter=open">Risolvi</s-button>
         ) : (
           <details className="syncbay-row-details">
             <summary>Dettagli</summary>
-            <p>
+            <s-text>
               Stato mapping: {row.mappingStatus}.{" "}
               {row.lastErrorMessage
                 ? `Ultimo errore: ${row.lastErrorMessage}`
                 : "Nessun errore recente."}
-            </p>
+            </s-text>
           </details>
         )}
-      </td>
-    </tr>
+      </s-table-cell>
+    </s-table-row>
   );
 }
 
 function FilterNav({ activeFilter }: { activeFilter: CatalogPageFilter }) {
   return (
-    <nav aria-label="Filtri catalogo" className="syncbay-filter-nav">
+    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {CATALOG_FILTERS.map((filter) => (
-        <a
+        <s-clickable-chip
           aria-current={activeFilter === filter.value ? "page" : undefined}
-          className="syncbay-filter-nav__item"
+          color={activeFilter === filter.value ? "strong" : "base"}
           href={getCatalogHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
-        </a>
+        </s-clickable-chip>
       ))}
-    </nav>
+    </s-stack>
   );
 }
 
@@ -223,22 +229,22 @@ function CatalogPagination({
   const pagination = catalog.pagination;
 
   return (
-    <div className="syncbay-pagination">
-      <p className="syncbay-section-intro">
+    <s-stack gap="small-200">
+      <s-text color="subdued">
         Mostrati {formatNumber(pagination.currentStart)}-
         {formatNumber(pagination.currentEnd)} di{" "}
         {formatNumber(pagination.totalRows)} risultati
         {activeFilter === "all" ? "" : " per questo filtro"}. Catalogo totale:{" "}
         {formatNumber(catalog.summary.totalCount)}.
-      </p>
+      </s-text>
       {pagination.cappedAtMaxProducts ? (
-        <p className="syncbay-section-intro">
+        <s-text color="subdued">
           SyncBay carica al massimo {formatNumber(pagination.maxProducts)}{" "}
           mapping per questa vista. Il resto del catalogo resta preservato e
           verrà incluso quando la paginazione estesa sarà attiva.
-        </p>
+        </s-text>
       ) : null}
-      <div className="syncbay-inline-actions">
+      <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
           <s-button
             href={getCatalogHref(activeFilter, pagination.previousPage)}
@@ -246,34 +252,39 @@ function CatalogPagination({
             Precedente
           </s-button>
         ) : null}
-        <span className="syncbay-table__subtext">
+        <s-text color="subdued">
           Pagina {formatNumber(pagination.page)} di{" "}
           {formatNumber(pagination.totalPages)}
-        </span>
+        </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
           <s-button href={getCatalogHref(activeFilter, pagination.nextPage)}>
             Successiva
           </s-button>
         ) : null}
-      </div>
-    </div>
+      </s-stack>
+    </s-stack>
   );
 }
 
 function ProductThumbnail({ row }: { row: CatalogRow }) {
   if (row.thumbnailUrl) {
     return (
-      <img
+      <s-thumbnail
         alt=""
-        className="syncbay-thumbnail"
-        loading="lazy"
+        size="large"
         src={row.thumbnailUrl}
       />
     );
   }
 
   return (
-    <span aria-hidden className="syncbay-thumbnail syncbay-thumbnail--empty" />
+    <s-box
+      accessibilityVisibility="hidden"
+      background="subdued"
+      blockSize="64px"
+      borderRadius="base"
+      inlineSize="64px"
+    />
   );
 }
 
@@ -287,11 +298,13 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="syncbay-metric">
-      <p className="syncbay-metric__label">{label}</p>
-      <p className="syncbay-metric__value">{value}</p>
-      <p className="syncbay-metric__detail">{detail}</p>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-text color="subdued">{label}</s-text>
+        <s-heading>{value}</s-heading>
+        <s-text color="subdued">{detail}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -302,25 +315,29 @@ function EmptyCatalogState({
 }) {
   if (activeFilter === "all") {
     return (
-      <div className="syncbay-empty-state">
-        <h2>Nessun prodotto collegato</h2>
-        <p>
-          Completa l&apos;importazione iniziale per creare i collegamenti tra
-          inserzioni eBay e prodotti Shopify.
-        </p>
-        <s-button href="/app/import-preview" variant="primary">
-          Apri importazione
-        </s-button>
-      </div>
+      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-stack gap="base">
+          <s-heading>Nessun prodotto collegato</s-heading>
+          <s-text>
+            Completa l&apos;importazione iniziale per creare i collegamenti tra
+            inserzioni eBay e prodotti Shopify.
+          </s-text>
+          <s-button href="/app/import-preview" variant="primary">
+            Apri importazione
+          </s-button>
+        </s-stack>
+      </s-box>
     );
   }
 
   return (
-    <div className="syncbay-empty-state">
-      <h2>Nessun risultato per questo filtro</h2>
-      <p>Prova con il filtro Tutti o torna alla Panoramica.</p>
-      <s-button href="/app/catalog">Mostra tutti</s-button>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="base">
+        <s-heading>Nessun risultato per questo filtro</s-heading>
+        <s-text>Prova con il filtro Tutti o torna alla Panoramica.</s-text>
+        <s-button href="/app/catalog">Mostra tutti</s-button>
+      </s-stack>
+    </s-box>
   );
 }
 

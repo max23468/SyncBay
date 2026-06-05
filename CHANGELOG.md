@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.14] — 2026-06-05
+
+### Correzioni
+
+- Le superfici embedded usano Polaris Web Components per badge, metriche,
+  filtri, tabelle, stati vuoti e controlli form, riducendo il CSS custom
+  SyncBay al solo styling minimo dei dettagli tecnici nativi `details/summary`.
+- Reintrodotti segnali brand SyncBay nel perimetro nativo Shopify: pannello con
+  logo reale e tagline in Panoramica/pagine pubbliche, badge accessori
+  `s-page` e microcopy operativo ricorrente.
+- Le pagine pubbliche Accesso, Informazioni e Privacy usano Polaris Web
+  Components non embedded invece di CSS module, inline style e controlli HTML
+  custom.
+
 ## [0.23.13] — 2026-06-05
 
 ### Correzioni
@@ -1116,6 +1130,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.14]: #02314--2026-06-05
 [0.23.13]: #02313--2026-06-05
 [0.23.12]: #02312--2026-06-05
 [0.23.11]: #02311--2026-06-05

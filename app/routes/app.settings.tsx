@@ -168,13 +168,15 @@ export default function SettingsRoute() {
 
   return (
     <s-page heading="Impostazioni">
-      <div className="syncbay-page syncbay-stack syncbay-settings-stack">
+      <s-badge slot="accessory" tone="info">Controllo operativo</s-badge>
+      <s-stack gap="base">
       <s-section heading="Sync catalogo">
-        <p className="syncbay-section-intro">
+        <s-text color="subdued">
           Negozio: {settings.shop.domain}. Il catalogo resta eBay verso
           Shopify; la disponibilità eBay viene aggiornata solo dagli ordini
-          Shopify pagati.
-        </p>
+          Shopify pagati. Qui decidi quanto lasciare SyncBay lavorare in
+          autonomia.
+        </s-text>
         <s-unordered-list>
           <s-list-item>
             Stato: {currentSyncEnabled ? "attiva" : "non attiva"}
@@ -199,16 +201,13 @@ export default function SettingsRoute() {
         <Form method="post">
           <input type="hidden" name="intent" value="saveSyncSettings" />
           <input type="hidden" name="syncEnabled" value="false" />
-          <label htmlFor="syncEnabled">
-            <input
-              defaultChecked={currentSyncEnabled}
-              id="syncEnabled"
-              name="syncEnabled"
-              type="checkbox"
-              value="true"
-            />{" "}
-            Sync automatico eBay verso Shopify
-          </label>
+          <s-switch
+            defaultChecked={currentSyncEnabled}
+            id="syncEnabled"
+            label="Sync automatico eBay verso Shopify"
+            name="syncEnabled"
+            value="true"
+          />
           <s-button type="submit" disabled={isSaving}>
             {isSaving ? "Salvataggio..." : "Salva sync catalogo"}
           </s-button>
@@ -225,18 +224,18 @@ export default function SettingsRoute() {
         ) : null}
         <Form method="post">
           <input type="hidden" name="intent" value="saveImportDefaults" />
-          <label htmlFor="defaultProductStatus">Stato prodotti di default</label>
-          <select
-            defaultValue={currentStatus}
-            id="defaultProductStatus"
-            name="defaultProductStatus"
-          >
+            <s-select
+              id="defaultProductStatus"
+              label="Stato prodotti di default"
+              name="defaultProductStatus"
+              value={currentStatus}
+            >
             {IMPORT_PRODUCT_STATUS_VALUES.map((status) => (
-              <option key={status} value={status}>
+              <s-option key={status} value={status}>
                 {getImportProductStatusLabelCapitalized(status)}
-              </option>
+              </s-option>
             ))}
-          </select>
+          </s-select>
           <s-button type="submit" disabled={isSaving}>
             {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
           </s-button>
@@ -248,14 +247,14 @@ export default function SettingsRoute() {
           I prodotti attivi creati o riusati seguono questa policy di
           pubblicazione Shopify.
         </s-paragraph>
-        <p className="syncbay-section-intro">
+        <s-text color="subdued">
           Policy attuale:{" "}
           {getProductPublicationModeSummaryLabel(
             currentPublicationMode,
             selectedPublicationIds.length,
           )}
           .
-        </p>
+        </s-text>
         {settings.productPublications.errorMessage ? (
           <s-paragraph>{settings.productPublications.errorMessage}</s-paragraph>
         ) : null}
@@ -264,39 +263,35 @@ export default function SettingsRoute() {
         ) : null}
         <Form method="post">
           <input type="hidden" name="intent" value="saveProductPublications" />
-          <label htmlFor="productPublicationMode">Pubblicazione prodotti</label>
-          <select
-            defaultValue={currentPublicationMode}
-            id="productPublicationMode"
-            name="productPublicationMode"
-          >
+            <s-select
+              id="productPublicationMode"
+              label="Pubblicazione prodotti"
+              name="productPublicationMode"
+              value={currentPublicationMode}
+            >
             {PRODUCT_PUBLICATION_MODES.map((mode) => (
-              <option key={mode} value={mode}>
+              <s-option key={mode} value={mode}>
                 {getProductPublicationModeLabel(mode)}
-              </option>
+              </s-option>
             ))}
-          </select>
+          </s-select>
           {settings.productPublications.availablePublications.length > 0 ? (
-            <s-unordered-list>
+            <s-stack gap="small-200">
               {settings.productPublications.availablePublications.map(
                 (publication) => (
-                  <s-list-item key={publication.id}>
-                    <label htmlFor={`publication-${publication.id}`}>
-                      <input
-                        defaultChecked={selectedPublicationIds.includes(
-                          publication.id,
-                        )}
-                        id={`publication-${publication.id}`}
-                        name="productPublicationGids"
-                        type="checkbox"
-                        value={publication.id}
-                      />{" "}
-                      {publication.title}
-                    </label>
-                  </s-list-item>
+                  <s-checkbox
+                    defaultChecked={selectedPublicationIds.includes(
+                      publication.id,
+                    )}
+                    id={`publication-${publication.id}`}
+                    key={publication.id}
+                    label={publication.title}
+                    name="productPublicationGids"
+                    value={publication.id}
+                  />
                 ),
               )}
-            </s-unordered-list>
+            </s-stack>
           ) : (
             <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
           )}
@@ -307,11 +302,11 @@ export default function SettingsRoute() {
       </s-section>
 
       <s-section heading="Avanzate">
-        <p className="syncbay-section-intro">
+        <s-text color="subdued">
           Collegamenti e dettagli tecnici restano qui, separati dalle
           impostazioni operative più frequenti.
-        </p>
-        <ul className="syncbay-status-list">
+        </s-text>
+        <s-stack gap="base">
           <StatusRow
             detail={`Marketplace ${settings.ebay.marketplaceId}. ${
               settings.ebay.connectedAt
@@ -346,8 +341,8 @@ export default function SettingsRoute() {
             tone="info"
             title="Webhook"
           />
-        </ul>
-        <div className="syncbay-inline-actions">
+        </s-stack>
+        <s-stack direction="inline" gap="small-200">
           {settings.ebay.oauthEnabled && settings.ebay.oauthReady ? (
             <s-button href="/auth/ebay/start">
               {settings.ebay.status === "CONNECTED"
@@ -358,10 +353,10 @@ export default function SettingsRoute() {
           <s-button href="/app/activity">Apri attività</s-button>
           <s-button href="/app/import-preview">Apri importazione</s-button>
           <s-button href="/app">Torna alla Panoramica</s-button>
-        </div>
+        </s-stack>
         <details className="syncbay-details">
           <summary>Apri dettagli tecnici</summary>
-          <div className="syncbay-details__content">
+          <s-stack gap="base">
             <s-unordered-list>
               <s-list-item>
                 Scope Shopify attivi:{" "}
@@ -373,13 +368,13 @@ export default function SettingsRoute() {
                 Scope richiesti dalla configurazione:{" "}
                 {settings.shopify.configuredScopes.length > 0
                   ? settings.shopify.configuredScopes.join(", ")
-                  : "nessuno"}
+                : "nessuno"}
               </s-list-item>
             </s-unordered-list>
-          </div>
+          </s-stack>
         </details>
       </s-section>
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -406,13 +401,15 @@ function StatusRow({
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
-    <li className="syncbay-status-row">
-      <div>
-        <p className="syncbay-status-row__title">{title}</p>
-        <p className="syncbay-status-row__detail">{detail}</p>
-      </div>
-      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
-    </li>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack gap="small-200">
+          <s-heading>{title}</s-heading>
+          <s-text color="subdued">{detail}</s-text>
+        </s-stack>
+        <s-badge tone={tone}>{label}</s-badge>
+      </s-stack>
+    </s-box>
   );
 }
 

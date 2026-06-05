@@ -171,7 +171,24 @@ basso rischio, cleanup o modifiche meccaniche già determinate.
   che prevale su AGENTS, ADR o documentazione SyncBay.
 - Prima di fissare scope o webhook, verifica la documentazione Shopify aggiornata.
 - Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilità e vetrina Shopify.
-- Per modifiche future alla UI embedded, usa pattern coerenti con Shopify Admin e Polaris/App Bridge quando saranno introdotti.
+- Per modifiche alla UI embedded, usa App Bridge e Polaris Web Components
+  Shopify come base effettiva (`s-page`, `s-section`, `s-box`, `s-stack`,
+  `s-grid`, `s-table`, `s-badge`, `s-button`, `s-select`, `s-switch`,
+  `s-checkbox`, `s-clickable-chip`, `s-thumbnail`, `s-image`, ecc.).
+- Non introdurre o migrare a `@shopify/polaris` React legacy senza decisione
+  esplicita del maintainer e ADR: per App Home la direzione corrente sono i
+  Web Components Shopify.
+- Prima di aggiungere markup o CSS custom per bottoni, form, sezioni, nav,
+  badge, tabelle, card/pannelli, stati vuoti, stack/grid o miniature, verifica
+  se esiste una primitiva `s-*` adatta e usala.
+- CSS custom nella UI embedded è ammesso solo per identità minima SyncBay,
+  shell/logo, disclosure tecnici nativi `details/summary`, microcopy/layout
+  compositi non coperti dai componenti Shopify o vincoli dimostrabili di
+  impaginazione. Se lo usi, dichiaralo nel riepilogo; se è strutturale, aggiorna
+  la documentazione.
+- Il 25% di identità SyncBay nella UI embedded va mantenuto con asset reali,
+  tagline, badge nativi e microcopy operativo ricorrente, senza ricreare una
+  shell custom o colorare sistematicamente i componenti Shopify.
 
 ### eBay
 

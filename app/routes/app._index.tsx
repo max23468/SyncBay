@@ -7,6 +7,7 @@ import type {
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { SyncBayBrandPanel } from "../components/SyncBayBrandPanel";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getNextAction } from "../lib/syncbay-ui-state";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
@@ -95,32 +96,45 @@ export default function Index() {
 
   return (
     <s-page heading="Panoramica">
-      <div className="syncbay-page syncbay-stack">
+      <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
+      <s-stack gap="base">
         <s-section heading="Centro operativo">
-          <p className="syncbay-section-intro">
+          <SyncBayBrandPanel
+            detail="Il catalogo resta eBay.it verso Shopify: SyncBay protegge disponibilità, anteprima e conflitti prima di scrivere."
+          />
+          <s-text color="subdued">
             Negozio: {dashboard.shop.domain}. Sync catalogo{" "}
             {dashboard.shop.syncEnabled ? "attivo" : "non attivo"}.
-          </p>
-          <div
-            className={`syncbay-action-panel syncbay-action-panel--${nextAction.tone}`}
+          </s-text>
+          <s-box
+            background="subdued"
+            border="base"
+            borderColor="base"
+            borderRadius="base"
+            padding="base"
           >
-            <div>
-              <p className="syncbay-action-panel__eyebrow">Prossima azione</p>
-              <h2 className="syncbay-action-panel__title">
-                {nextAction.title}
-              </h2>
-              <p className="syncbay-action-panel__body">{nextAction.body}</p>
-            </div>
-            <div className="syncbay-action-panel__actions">
+            <s-stack
+              direction="inline"
+              gap="base"
+              justifyContent="space-between"
+            >
+              <s-stack gap="small-200">
+                <s-text color="subdued">Prossima azione</s-text>
+                <s-heading>{nextAction.title}</s-heading>
+                <s-text>{nextAction.body}</s-text>
+              </s-stack>
               <s-button href={nextAction.primaryActionHref} variant="primary">
                 {nextAction.primaryActionLabel}
               </s-button>
-            </div>
-          </div>
+            </s-stack>
+          </s-box>
         </s-section>
 
         <s-section heading="Stato rapido">
-          <div className="syncbay-metric-grid">
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(4, minmax(0, 1fr))"
+          >
             <MetricCard
               detail="Prodotti Shopify collegati a inserzioni eBay."
               label="Prodotti collegati"
@@ -145,11 +159,11 @@ export default function Index() {
               label="Ultimo aggiornamento"
               value={getCatalogHealthValue(dashboard)}
             />
-          </div>
+          </s-grid>
         </s-section>
 
         <s-section heading="Azioni consigliate">
-          <div className="syncbay-inline-actions">
+          <s-stack direction="inline" gap="small-200">
             {dashboard.ebay.oauthReady &&
             dashboard.ebay.oauthEnabled &&
             dashboard.ebay.status !== "CONNECTED" ? (
@@ -165,11 +179,11 @@ export default function Index() {
               <s-button href="/app/conflicts">Risolvi conflitti</s-button>
             ) : null}
             <s-button href="/app/settings">Apri impostazioni</s-button>
-          </div>
+          </s-stack>
         </s-section>
 
         <s-section heading="Catalogo">
-          <ul className="syncbay-status-list">
+          <s-stack gap="base">
             <StatusRow
               detail={getEbayDetail(dashboard)}
               label={getEbayStatusLabel(dashboard)}
@@ -188,42 +202,48 @@ export default function Index() {
               tone={importIncomplete ? "warning" : "success"}
               title="Importazione"
             />
-          </ul>
+          </s-stack>
         </s-section>
 
         <s-section heading="Attività recenti">
           {recentActivity.length > 0 ? (
-            <ul className="syncbay-activity-list">
+            <s-stack gap="base">
               {recentActivity.map((activity) => (
-                <li className="syncbay-activity-row" key={activity.id}>
-                  <div>
-                    <p className="syncbay-activity-row__title">
-                      {activity.title}
-                    </p>
-                    <p className="syncbay-activity-row__detail">
-                      {activity.detail}
-                    </p>
-                  </div>
-                  <span
-                    className={`syncbay-badge syncbay-badge--${activity.tone}`}
+                <s-box
+                  border="base"
+                  borderColor="base"
+                  borderRadius="base"
+                  key={activity.id}
+                  padding="base"
+                >
+                  <s-stack
+                    direction="inline"
+                    gap="base"
+                    justifyContent="space-between"
                   >
-                    {getToneLabel(activity.tone)}
-                  </span>
-                </li>
+                    <s-stack gap="small-200">
+                      <s-heading>{activity.title}</s-heading>
+                      <s-text color="subdued">{activity.detail}</s-text>
+                    </s-stack>
+                    <s-badge tone={activity.tone}>
+                      {getToneLabel(activity.tone)}
+                    </s-badge>
+                  </s-stack>
+                </s-box>
               ))}
-            </ul>
+            </s-stack>
           ) : (
-            <p className="syncbay-section-intro">
+            <s-text color="subdued">
               Nessuna attività registrata. Quando SyncBay importerà o aggiornerà
               il catalogo, gli eventi appariranno qui.
-            </p>
+            </s-text>
           )}
         </s-section>
 
         <s-section heading="Dettagli tecnici">
           <details className="syncbay-details">
             <summary>Apri dettagli tecnici</summary>
-            <div className="syncbay-details__content">
+            <s-stack gap="base">
               <s-unordered-list>
                 <s-list-item>
                   Shop collegato: {dashboard.shop.domain}
@@ -256,10 +276,10 @@ export default function Index() {
                 <s-list-item>Versione app: {APP_VERSION}</s-list-item>
                 <s-list-item>Data build: {BUILD_DATE}</s-list-item>
               </s-unordered-list>
-            </div>
+            </s-stack>
           </details>
         </s-section>
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -278,11 +298,13 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="syncbay-metric">
-      <p className="syncbay-metric__label">{label}</p>
-      <p className="syncbay-metric__value">{value}</p>
-      <p className="syncbay-metric__detail">{detail}</p>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-text color="subdued">{label}</s-text>
+        <s-heading>{value}</s-heading>
+        <s-text color="subdued">{detail}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -298,13 +320,15 @@ function StatusRow({
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
-    <li className="syncbay-status-row">
-      <div>
-        <p className="syncbay-status-row__title">{title}</p>
-        <p className="syncbay-status-row__detail">{detail}</p>
-      </div>
-      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
-    </li>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack gap="small-200">
+          <s-heading>{title}</s-heading>
+          <s-text color="subdued">{detail}</s-text>
+        </s-stack>
+        <s-badge tone={tone}>{label}</s-badge>
+      </s-stack>
+    </s-box>
   );
 }
 
