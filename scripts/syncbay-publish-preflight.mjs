@@ -74,6 +74,12 @@ function buildReport() {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
+  if (args.remote && pr && !inbox?.readable) {
+    failures.push(
+      "Codex feedback inbox non leggibile: verificare autenticazione GitHub e issue #2 prima della pubblicazione.",
+    );
+  }
+
   if (pr && !isConventionalTitle(pr.title)) {
     failures.push(`Titolo PR non Conventional Commit: ${pr.title}`);
   }
@@ -82,7 +88,11 @@ function buildReport() {
     warnings.push(`Merge state PR: ${pr.mergeStateStatus}.`);
   }
 
-  if (inbox?.actionable) {
+  if (inbox?.globalActionable) {
+    failures.push(
+      "Codex feedback inbox segnala thread actionable nella sezione Da risolvere ora.",
+    );
+  } else if (inbox?.actionable) {
     failures.push(
       `Codex feedback inbox segnala thread actionable su PR #${pr.number}.`,
     );
@@ -223,21 +233,39 @@ function readCodexInbox(prNumber) {
     "body,updatedAt,url",
   ]);
 
-  if (!output) return null;
+  if (!output) {
+    return {
+      actionable: null,
+      readable: false,
+    };
+  }
 
   const parsed = JSON.parse(output);
   const body = parsed.body ?? "";
+  const actionableSectionMatch = body.match(
+    /## Da risolvere ora\s*(?<body>[\s\S]*?)(?=\n## |$)/,
+  );
+  const actionableSection = actionableSectionMatch?.groups?.body ?? "";
   const prSectionMatch = body.match(
     new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"),
   );
   const prSection = prSectionMatch?.[0] ?? "";
 
   return {
-    actionable:
-      prSection.includes("resolved=no") || /- \[ \]/.test(prSection),
+    actionable: hasActionableThreads(prSection),
+    globalActionable: hasActionableThreads(actionableSection),
+    readable: true,
     updatedAt: parsed.updatedAt,
     url: parsed.url,
   };
+}
+
+function hasActionableThreads(markdown) {
+  return (
+    /Thread actionable totali:\s*[1-9]\d*/.test(markdown) ||
+    markdown.includes("resolved=no") ||
+    /- \[ \]/.test(markdown)
+  );
 }
 
 function getUnreleasedState() {
