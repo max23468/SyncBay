@@ -112,13 +112,18 @@ export default function ConflictsRoute() {
 
   return (
     <s-page heading="Conflitti">
-      <div className="syncbay-page syncbay-stack">
+      <s-badge slot="accessory" tone="warning">Scelte esplicite</s-badge>
+      <s-stack gap="base">
         <s-section heading="Decisioni aperte">
-          <p className="syncbay-section-intro">
-            SyncBay non sovrascrive modifiche Shopify senza conferma. Scegli
-            quale valore mantenere per far ripartire l&apos;allineamento.
-          </p>
-          <div className="syncbay-metric-grid syncbay-metric-grid--compact">
+          <s-text color="subdued">
+            Nessuna sovrascrittura silenziosa: SyncBay non modifica Shopify
+            senza conferma. Scegli quale valore mantenere per far ripartire
+            l&apos;allineamento.
+          </s-text>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(5, minmax(140px, 1fr))"
+          >
             <MetricCard
               detail="Richiedono una scelta."
               label="Aperti"
@@ -144,16 +149,16 @@ export default function ConflictsRoute() {
               label="Totale"
               value={formatNumber(conflicts.summary.totalCount)}
             />
-          </div>
+          </s-grid>
           {actionData ? (
-            <p className="syncbay-section-intro">{actionData.message}</p>
+            <s-text color="subdued">{actionData.message}</s-text>
           ) : null}
         </s-section>
 
         <s-section heading="Coda conflitti">
           <FilterNav activeFilter={activeFilter} />
           {rows.length > 0 ? (
-            <div className="syncbay-conflict-list">
+            <s-stack gap="base">
               {rows.map((row) => (
                 <ConflictItem
                   isSaving={isSaving}
@@ -161,7 +166,7 @@ export default function ConflictsRoute() {
                   row={row}
                 />
               ))}
-            </div>
+            </s-stack>
           ) : (
             <EmptyConflictState activeFilter={activeFilter} />
           )}
@@ -170,7 +175,7 @@ export default function ConflictsRoute() {
             conflicts={conflicts}
           />
         </s-section>
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -190,77 +195,103 @@ function ConflictItem({
   const decisionMode = getConflictFieldDecisionMode(row.field);
 
   return (
-    <article className="syncbay-conflict-item">
-      <div className="syncbay-conflict-item__header">
-        <div className="syncbay-product-cell">
-          <ProductThumbnail row={row} />
-          <div>
-            <p className="syncbay-product-cell__title">{row.product.title}</p>
-            <p className="syncbay-product-cell__meta">
-              {row.product.sku ? `SKU ${row.product.sku} · ` : ""}
-              {row.ebayItemId ? `ItemID ${row.ebayItemId}` : "Mapping assente"}
-            </p>
-          </div>
-        </div>
-        <span
-          className={`syncbay-badge syncbay-badge--${isOpen ? "warning" : "info"}`}
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="base">
+        <s-stack
+          direction="inline"
+          gap="base"
+          justifyContent="space-between"
         >
-          {isOpen ? "Aperto" : "Risolto"}
-        </span>
-      </div>
+          <s-stack direction="inline" gap="base" alignItems="center">
+            <ProductThumbnail row={row} />
+            <s-stack gap="small-200">
+              <s-text type="strong">{row.product.title}</s-text>
+              <s-text color="subdued">
+                {row.product.sku ? `SKU ${row.product.sku} · ` : ""}
+                {row.ebayItemId
+                  ? `ItemID ${row.ebayItemId}`
+                  : "Mapping assente"}
+              </s-text>
+            </s-stack>
+          </s-stack>
+          <s-badge tone={isOpen ? "warning" : "info"}>
+            {isOpen ? "Aperto" : "Risolto"}
+          </s-badge>
+        </s-stack>
 
-      <div className="syncbay-conflict-item__body">
-        <div>
-          <p className="syncbay-conflict-item__label">Campo</p>
-          <p>{getConflictFieldLabel(row.field)}</p>
-        </div>
-        <div>
-          <p className="syncbay-conflict-item__label">Impatto</p>
-          <p>{getConflictImpactText(row.field)}</p>
-        </div>
-        <div>
-          <p className="syncbay-conflict-item__label">Gestione</p>
-          <span
-            className={`syncbay-badge syncbay-badge--${getDecisionModeTone(decisionMode)}`}
+        <s-grid gap="base" gridTemplateColumns="repeat(3, minmax(0, 1fr))">
+          <s-stack gap="small-200">
+            <s-text color="subdued" type="strong">Campo</s-text>
+            <s-text>{getConflictFieldLabel(row.field)}</s-text>
+          </s-stack>
+          <s-stack gap="small-200">
+            <s-text color="subdued" type="strong">Impatto</s-text>
+            <s-text>{getConflictImpactText(row.field)}</s-text>
+          </s-stack>
+          <s-stack gap="small-200">
+            <s-text color="subdued" type="strong">Gestione</s-text>
+            <s-stack gap="small-200">
+              <s-badge tone={getDecisionModeTone(decisionMode)}>
+                {getConflictDecisionModeLabel(decisionMode)}
+              </s-badge>
+              <s-text color="subdued">
+                {getConflictDecisionModeDetail(row.field, decisionMode)}
+              </s-text>
+            </s-stack>
+          </s-stack>
+        </s-grid>
+
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
+        >
+          <s-box
+            border="base"
+            borderColor="base"
+            borderRadius="base"
+            padding="base"
           >
-            {getConflictDecisionModeLabel(decisionMode)}
-          </span>
-          <p className="syncbay-conflict-guidance">
-            {getConflictDecisionModeDetail(row.field, decisionMode)}
-          </p>
-        </div>
-        <div className="syncbay-conflict-comparison">
-          <div>
-            <p className="syncbay-conflict-item__label">Valore eBay</p>
-            <p>{row.sourceValue}</p>
-          </div>
-          <div>
-            <p className="syncbay-conflict-item__label">Valore Shopify</p>
-            <p>{row.shopifyValue}</p>
-          </div>
-        </div>
-      </div>
+            <s-stack gap="small-200">
+              <s-text color="subdued">Valore eBay</s-text>
+              <s-text>{row.sourceValue}</s-text>
+            </s-stack>
+          </s-box>
+          <s-box
+            border="base"
+            borderColor="base"
+            borderRadius="base"
+            padding="base"
+          >
+            <s-stack gap="small-200">
+              <s-text color="subdued">Valore Shopify</s-text>
+              <s-text>{row.shopifyValue}</s-text>
+            </s-stack>
+          </s-box>
+        </s-grid>
 
-      <div className="syncbay-conflict-item__footer">
-        <span className="syncbay-table__subtext">
-          Rilevato {formatDateTime(row.detectedAt)}
-          {row.resolvedAt ? ` · Risolto ${formatDateTime(row.resolvedAt)}` : ""}
-        </span>
-        {isOpen ? (
-          <div className="syncbay-inline-actions">
-            {CONFLICT_RESOLUTIONS.map((resolution) => (
-              <ResolveConflictForm
-                conflictId={row.id}
-                disabled={isSaving}
-                field={row.field}
-                key={resolution}
-                resolution={resolution}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </article>
+        <s-stack direction="inline" gap="base" justifyContent="space-between">
+          <s-text color="subdued">
+            Rilevato {formatDateTime(row.detectedAt)}
+            {row.resolvedAt
+              ? ` · Risolto ${formatDateTime(row.resolvedAt)}`
+              : ""}
+          </s-text>
+          {isOpen ? (
+            <s-stack direction="inline" gap="small-200">
+              {CONFLICT_RESOLUTIONS.map((resolution) => (
+                <ResolveConflictForm
+                  conflictId={row.id}
+                  disabled={isSaving}
+                  field={row.field}
+                  key={resolution}
+                  resolution={resolution}
+                />
+              ))}
+            </s-stack>
+          ) : null}
+        </s-stack>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -278,31 +309,33 @@ function ResolveConflictForm({
   const safety = getConflictResolutionSafety(field, resolution);
 
   return (
-    <Form className="syncbay-decision-action" method="post">
+    <Form method="post">
       <input type="hidden" name="conflictId" value={conflictId} />
       <input type="hidden" name="resolution" value={resolution} />
-      <s-button type="submit" disabled={disabled}>
-        {getConflictActionLabel(resolution)}
-      </s-button>
-      <span className="syncbay-table__subtext">{safety.label}</span>
+      <s-stack gap="small-200" alignItems="start">
+        <s-button type="submit" disabled={disabled}>
+          {getConflictActionLabel(resolution)}
+        </s-button>
+        <s-text color="subdued">{safety.label}</s-text>
+      </s-stack>
     </Form>
   );
 }
 
 function FilterNav({ activeFilter }: { activeFilter: ConflictFilter }) {
   return (
-    <nav aria-label="Filtri conflitti" className="syncbay-filter-nav">
+    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {CONFLICT_FILTERS.map((filter) => (
-        <a
+        <s-clickable-chip
           aria-current={activeFilter === filter.value ? "page" : undefined}
-          className="syncbay-filter-nav__item"
+          color={activeFilter === filter.value ? "strong" : "base"}
           href={getConflictHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
-        </a>
+        </s-clickable-chip>
       ))}
-    </nav>
+    </s-stack>
   );
 }
 
@@ -318,15 +351,15 @@ function ConflictPagination({
   if (pagination.totalRows === 0) return null;
 
   return (
-    <div className="syncbay-pagination">
-      <p className="syncbay-section-intro">
+    <s-stack gap="small-200">
+      <s-text color="subdued">
         Mostrati {formatNumber(pagination.currentStart)}-
         {formatNumber(pagination.currentEnd)} di{" "}
         {formatNumber(pagination.totalRows)} risultati
         {activeFilter === "all" ? "" : " per questo filtro"}. Coda totale:{" "}
         {formatNumber(conflicts.summary.totalCount)}.
-      </p>
-      <div className="syncbay-inline-actions">
+      </s-text>
+      <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
           <s-button
             href={getConflictHref(activeFilter, pagination.previousPage)}
@@ -334,33 +367,40 @@ function ConflictPagination({
             Precedente
           </s-button>
         ) : null}
-        <span className="syncbay-table__subtext">
+        <s-text color="subdued">
           Pagina {formatNumber(pagination.page)} di{" "}
           {formatNumber(pagination.totalPages)}
-        </span>
+        </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
           <s-button href={getConflictHref(activeFilter, pagination.nextPage)}>
             Successiva
           </s-button>
         ) : null}
-      </div>
-    </div>
+      </s-stack>
+    </s-stack>
   );
 }
 
 function ProductThumbnail({ row }: { row: ConflictRow }) {
   if (row.product.thumbnailUrl) {
     return (
-      <img
+      <s-thumbnail
         alt=""
-        className="syncbay-thumbnail"
-        loading="lazy"
+        size="large"
         src={row.product.thumbnailUrl}
       />
     );
   }
 
-  return <span aria-hidden className="syncbay-thumbnail syncbay-thumbnail--empty" />;
+  return (
+    <s-box
+      accessibilityVisibility="hidden"
+      background="subdued"
+      blockSize="64px"
+      borderRadius="base"
+      inlineSize="64px"
+    />
+  );
 }
 
 function MetricCard({
@@ -373,11 +413,13 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="syncbay-metric">
-      <p className="syncbay-metric__label">{label}</p>
-      <p className="syncbay-metric__value">{value}</p>
-      <p className="syncbay-metric__detail">{detail}</p>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-text color="subdued">{label}</s-text>
+        <s-heading>{value}</s-heading>
+        <s-text color="subdued">{detail}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -388,20 +430,26 @@ function EmptyConflictState({
 }) {
   if (activeFilter === "open") {
     return (
-      <div className="syncbay-empty-state">
-        <h2>Nessun conflitto aperto</h2>
-        <p>Le modifiche Shopify non richiedono decisioni in questo momento.</p>
-        <s-button href="/app/catalog">Apri catalogo</s-button>
-      </div>
+      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-stack gap="base">
+          <s-heading>Nessun conflitto aperto</s-heading>
+          <s-text>
+            Le modifiche Shopify non richiedono decisioni in questo momento.
+          </s-text>
+          <s-button href="/app/catalog">Apri catalogo</s-button>
+        </s-stack>
+      </s-box>
     );
   }
 
   return (
-    <div className="syncbay-empty-state">
-      <h2>Nessun conflitto in questa vista</h2>
-      <p>Prova con il filtro Tutti o torna ai conflitti aperti.</p>
-      <s-button href="/app/conflicts">Mostra aperti</s-button>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="base">
+        <s-heading>Nessun conflitto in questa vista</s-heading>
+        <s-text>Prova con il filtro Tutti o torna ai conflitti aperti.</s-text>
+        <s-button href="/app/conflicts">Mostra aperti</s-button>
+      </s-stack>
+    </s-box>
   );
 }
 

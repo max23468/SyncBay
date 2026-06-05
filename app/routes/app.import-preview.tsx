@@ -258,7 +258,8 @@ export default function ImportPreview() {
 
   return (
     <s-page heading="Importazione">
-      <div className="syncbay-page syncbay-stack">
+      <s-badge slot="accessory" tone="info">Anteprima prima</s-badge>
+      <s-stack gap="base">
         <PreparationSection
           locationRenameStatus={locationRenameStatus}
           previewSource={wizard.previewSource}
@@ -301,7 +302,7 @@ export default function ImportPreview() {
           visibleRuntimePhases={visibleRuntimePhases}
           wizard={wizard}
         />
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -358,24 +359,25 @@ function PreparationSection({
 
   return (
     <s-section heading="Collegamento eBay">
-      <p className="syncbay-step-kicker">Step 1</p>
-      <p className="syncbay-section-intro">
+      <s-badge tone="info">Step 1</s-badge>
+      <s-text color="subdued">
         Negozio: {shopDomain}. Stato eBay:{" "}
-        {getEbayConnectionStatusLabel(wizard.ebay.status)}.
-      </p>
-      <div className="syncbay-inline-actions">
+        {getEbayConnectionStatusLabel(wizard.ebay.status)}. SyncBay mostra
+        l&apos;anteprima prima di scrivere sul catalogo Shopify.
+      </s-text>
+      <s-stack direction="inline" gap="small-200">
         {ebayAction.href ? (
           <s-button href={ebayAction.href} variant={ebayAction.variant}>
             {ebayAction.label}
           </s-button>
         ) : null}
-      </div>
+      </s-stack>
       {ebayAction.blockerText ? (
-        <p className="syncbay-section-intro">{ebayAction.blockerText}</p>
+        <s-text color="subdued">{ebayAction.blockerText}</s-text>
       ) : null}
-      <p className="syncbay-section-intro">
+      <s-text color="subdued">
         {getPreviewIntro(previewSource.source)}
-      </p>
+      </s-text>
       {searchParams.get("updated") === "location" ? (
         <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
       ) : null}
@@ -420,11 +422,11 @@ function LocationShopifySection({
 }) {
   return (
     <s-section heading="Preparazione Shopify">
-      <p className="syncbay-step-kicker">Step 2</p>
-      <p className="syncbay-section-intro">
+      <s-badge tone="info">Step 2</s-badge>
+      <s-text color="subdued">
         Conferma la location e controlla i default di importazione. La
         configurazione completa resta in Impostazioni.
-      </p>
+      </s-text>
       {locationError ? (
         <s-paragraph>{locationError}</s-paragraph>
       ) : locations.length > 0 ? (
@@ -448,7 +450,7 @@ function LocationShopifySection({
           selectedLocation={selectedLocation}
         />
       ) : null}
-      <ul className="syncbay-status-list">
+      <s-stack gap="base">
         <StatusRow
           detail="Default usato per i nuovi prodotti creati dai prossimi import."
           label={wizard.importPreview.defaults.productStatus}
@@ -470,10 +472,10 @@ function LocationShopifySection({
           tone="info"
           title="Regole MVP"
         />
-      </ul>
-      <div className="syncbay-inline-actions">
+      </s-stack>
+      <s-stack direction="inline" gap="small-200">
         <s-button href="/app/settings">Modifica impostazioni</s-button>
-      </div>
+      </s-stack>
     </s-section>
   );
 }
@@ -492,22 +494,22 @@ function LocationSaveForm({
   return (
     <Form method="post">
       <input type="hidden" name="intent" value="saveLocation" />
-      <label htmlFor="defaultLocationGid">Location predefinita</label>
-      <select
-        defaultValue={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
+      <s-select
         id="defaultLocationGid"
+        label="Location predefinita"
         name="defaultLocationGid"
+        value={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
       >
         {locations.map((location) => (
-          <option key={location.id} value={location.id}>
+          <s-option key={location.id} value={location.id}>
             {location.name}
             {location.isActive ? "" : " - non attiva"}
             {location.fulfillsOnlineOrders
               ? ""
               : " - fulfillment online non attivo"}
-          </option>
+          </s-option>
         ))}
-      </select>
+      </s-select>
       <s-button type="submit" disabled={isSaving}>
         {isSavingLocation ? "Salvataggio..." : "Salva location"}
       </s-button>
@@ -532,12 +534,11 @@ function LocationRenameForm({
     <Form method="post">
       <input type="hidden" name="intent" value="renameLocation" />
       <input type="hidden" name="locationGid" value={selectedLocation.id} />
-      <label htmlFor="locationName">Nome location</label>
-      <input
-        aria-label="Nome location Shopify"
+      <s-text-field
         defaultValue={selectedLocation.name}
         disabled={!locationRename.canRename || isSaving}
         id="locationName"
+        label="Nome location"
         maxLength={80}
         name="locationName"
         required
@@ -571,19 +572,22 @@ function PreviewStatusSection({
 }) {
   return (
     <s-section heading="Anteprima catalogo">
-      <p className="syncbay-step-kicker">Step 3</p>
-      <p className="syncbay-section-intro">
+      <s-badge tone="info">Step 3</s-badge>
+      <s-text color="subdued">
         {getPreviewStatusMessage(wizard.previewSource)}
-      </p>
-      <p className="syncbay-section-intro">
+      </s-text>
+      <s-text color="subdued">
         Modalità: {previewModeLabel}. {wizard.previewSource.coverageNote}
-      </p>
+      </s-text>
       {wizard.importPreview.blockers.length > 0 ? (
         <s-paragraph>
           Blocchi: {wizard.importPreview.blockers.join(", ")}.
         </s-paragraph>
       ) : null}
-      <div className="syncbay-metric-grid syncbay-metric-grid--compact">
+      <s-grid
+        gap="base"
+        gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
+      >
         <MetricCard
           detail={previewReadLabel}
           label="Letti"
@@ -604,7 +608,7 @@ function PreviewStatusSection({
           label="Errori"
           value={formatNumber(wizard.previewResult.summary.errorCount)}
         />
-      </div>
+      </s-grid>
       <ImportPreviewFilterNav activeFilter={activeFilter} />
       <PreviewExamplesSection
         activeFilter={activeFilter}
@@ -639,29 +643,35 @@ function PreviewExamplesSection({
   );
 
   return (
-    <div className="syncbay-preview-list">
+    <s-stack gap="base">
       {visibleItems.length > 0 ? (
         <>
           {visibleItems.map((item) => (
-            <div className="syncbay-preview-row" key={item.itemId}>
-              <div>
-                <p className="syncbay-preview-row__title">
-                  {item.normalized.title}
-                </p>
-                <p className="syncbay-preview-row__detail">
-                  SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
-                  {item.normalized.imageCount} ·{" "}
-                  {formatPreviewIssues(item.issues)}
-                </p>
-              </div>
-              <span
-                className={`syncbay-badge syncbay-badge--${getPreviewStatusTone(
-                  item.status,
-                )}`}
+            <s-box
+              border="base"
+              borderColor="base"
+              borderRadius="base"
+              key={item.itemId}
+              padding="base"
+            >
+              <s-stack
+                direction="inline"
+                gap="base"
+                justifyContent="space-between"
               >
-                {formatPreviewStatus(item.status)}
-              </span>
-            </div>
+                <s-stack gap="small-200">
+                  <s-text type="strong">{item.normalized.title}</s-text>
+                  <s-text color="subdued">
+                    SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
+                    {item.normalized.imageCount} ·{" "}
+                    {formatPreviewIssues(item.issues)}
+                  </s-text>
+                </s-stack>
+                <s-badge tone={getPreviewStatusTone(item.status)}>
+                  {formatPreviewStatus(item.status)}
+                </s-badge>
+              </s-stack>
+            </s-box>
           ))}
           <ImportPreviewPagination
             activeFilter={activeFilter}
@@ -670,12 +680,16 @@ function PreviewExamplesSection({
           />
         </>
       ) : (
-        <div className="syncbay-empty-state">
-          <h2>Nessun elemento in questa vista</h2>
-          <p>Prova con il filtro Tutti o completa i prerequisiti di lettura.</p>
-        </div>
+        <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+          <s-stack gap="base">
+            <s-heading>Nessun elemento in questa vista</s-heading>
+            <s-text>
+              Prova con il filtro Tutti o completa i prerequisiti di lettura.
+            </s-text>
+          </s-stack>
+        </s-box>
       )}
-    </div>
+    </s-stack>
   );
 }
 
@@ -691,15 +705,15 @@ function ImportPreviewPagination({
   if (pagination.totalRows === 0) return null;
 
   return (
-    <div className="syncbay-pagination">
-      <p className="syncbay-section-intro">
+    <s-stack gap="small-200">
+      <s-text color="subdued">
         Mostrati {formatNumber(pagination.currentStart)}-
         {formatNumber(pagination.currentEnd)} di{" "}
         {formatNumber(pagination.totalRows)} elementi
         {activeFilter === "all" ? "" : " per questo filtro"}. Anteprima
         totale: {formatNumber(totalCatalogRows)}.
-      </p>
-      <div className="syncbay-inline-actions">
+      </s-text>
+      <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
           <s-button
             href={getImportPreviewHref(
@@ -710,10 +724,10 @@ function ImportPreviewPagination({
             Precedente
           </s-button>
         ) : null}
-        <span className="syncbay-table__subtext">
+        <s-text color="subdued">
           Pagina {formatNumber(pagination.page)} di{" "}
           {formatNumber(pagination.totalPages)}
-        </span>
+        </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
           <s-button
             href={getImportPreviewHref(activeFilter, pagination.nextPage)}
@@ -721,8 +735,8 @@ function ImportPreviewPagination({
             Successiva
           </s-button>
         ) : null}
-      </div>
-    </div>
+      </s-stack>
+    </s-stack>
   );
 }
 
@@ -732,18 +746,18 @@ function ImportPreviewFilterNav({
   activeFilter: ImportPreviewFilter;
 }) {
   return (
-    <nav aria-label="Filtri anteprima import" className="syncbay-filter-nav">
+    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {IMPORT_PREVIEW_FILTERS.map((filter) => (
-        <a
+        <s-clickable-chip
           aria-current={activeFilter === filter.value ? "page" : undefined}
-          className="syncbay-filter-nav__item"
+          color={activeFilter === filter.value ? "strong" : "base"}
           href={getImportPreviewHref(filter.value)}
           key={filter.value}
         >
           {filter.label}
-        </a>
+        </s-clickable-chip>
       ))}
-    </nav>
+    </s-stack>
   );
 }
 
@@ -772,13 +786,15 @@ function StatusRow({
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
-    <li className="syncbay-status-row">
-      <div>
-        <p className="syncbay-status-row__title">{title}</p>
-        <p className="syncbay-status-row__detail">{detail}</p>
-      </div>
-      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
-    </li>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack gap="small-200">
+          <s-heading>{title}</s-heading>
+          <s-text color="subdued">{detail}</s-text>
+        </s-stack>
+        <s-badge tone={tone}>{label}</s-badge>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -792,11 +808,13 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="syncbay-metric">
-      <p className="syncbay-metric__label">{label}</p>
-      <p className="syncbay-metric__value">{value}</p>
-      <p className="syncbay-metric__detail">{detail}</p>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-text color="subdued">{label}</s-text>
+        <s-heading>{value}</s-heading>
+        <s-text color="subdued">{detail}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -817,11 +835,11 @@ function DraftImportSection({
 }) {
   return (
     <s-section heading="Importazione">
-      <p className="syncbay-step-kicker">Step 4</p>
-      <p className="syncbay-section-intro">
+      <s-badge tone="info">Step 4</s-badge>
+      <s-text color="subdued">
         Pianifica la creazione o il riuso dei prodotti Shopify dopo aver
         controllato anteprima, location e impostazioni.
-      </p>
+      </s-text>
       {draftStatus === "created" ? (
         <s-paragraph>
           Operazione completata:{" "}
@@ -894,18 +912,18 @@ function DraftImportSection({
 function AfterImportSection({ wizard }: { wizard: WizardState }) {
   return (
     <s-section heading="Dopo l'import">
-      <p className="syncbay-step-kicker">Step 5</p>
-      <p className="syncbay-section-intro">
+      <s-badge tone="info">Step 5</s-badge>
+      <s-text color="subdued">
         Dopo la pianificazione puoi controllare i prodotti collegati nel
         Catalogo e completare eventuali canali o default dalle Impostazioni.
-      </p>
-      <div className="syncbay-inline-actions">
+      </s-text>
+      <s-stack direction="inline" gap="small-200">
         <s-button href="/app/catalog" variant="primary">
           Vai al catalogo
         </s-button>
         <s-button href="/app/settings">Modifica impostazioni</s-button>
-      </div>
-      <ul className="syncbay-status-list">
+      </s-stack>
+      <s-stack gap="base">
         <StatusRow
           detail="La tabella mostra mapping, disponibilità, prezzo e stato unico."
           label="Controllo prodotti"
@@ -921,7 +939,7 @@ function AfterImportSection({ wizard }: { wizard: WizardState }) {
           tone="info"
           title="Impostazioni import"
         />
-      </ul>
+      </s-stack>
     </s-section>
   );
 }
@@ -941,7 +959,7 @@ function ImportTechnicalDetails({
     <s-section heading="Dettagli tecnici">
       <details className="syncbay-details">
         <summary>Apri dettagli importazione</summary>
-        <div className="syncbay-details__content">
+        <s-stack gap="base">
           <s-unordered-list>
             <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
             <s-list-item>
@@ -968,7 +986,7 @@ function ImportTechnicalDetails({
               </s-list-item>
             ))}
           </s-unordered-list>
-        </div>
+        </s-stack>
       </details>
     </s-section>
   );

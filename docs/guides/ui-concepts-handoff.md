@@ -218,15 +218,24 @@ Regole nav:
 
 ## Stack e componenti
 
-Il repo usa app embedded Shopify con React Router, App Bridge e web components
-Shopify (`s-page`, `s-section`, `s-button`, ecc.). La direzione decisa è:
+Il repo usa app embedded Shopify con React Router, App Bridge e Polaris Web
+Components Shopify (`s-page`, `s-section`, `s-box`, `s-stack`, `s-grid`,
+`s-table`, `s-badge`, `s-button`, `s-select`, `s-switch`, `s-checkbox`,
+`s-clickable-chip`, `s-thumbnail`, `s-image`, ecc.). La direzione decisa è:
 
-- usare App Bridge e Polaris/web components come base;
+- usare App Bridge e Polaris Web Components come base effettiva, non solo come
+  ispirazione visiva;
 - non introdurre Polaris React legacy solo per il redesign;
-- usare componenti nativi per bottoni, form, sezioni, nav e icone dove possibile;
-- aggiungere CSS custom leggero solo dove serve chiarezza SyncBay:
-  home operativa, righe prodotto con thumbnail, badge, pannelli prossima azione,
-  timeline attività, confronto conflitti.
+- usare componenti nativi per bottoni, form, sezioni, nav, badge, tabelle,
+  pannelli/card, stati vuoti, stack/grid e miniature quando esiste una primitiva
+  Shopify adatta;
+- mantenere il 25% di identità SyncBay con asset reali, tagline, badge nativi
+  nello slot accessorio delle pagine e microcopy ricorrente, non con una shell o
+  palette custom sui componenti;
+- aggiungere CSS custom leggero solo per identità minima SyncBay, shell/logo,
+  dettagli tecnici o composizioni non coperte dai componenti Shopify; allo stato
+  attuale della UI embedded l'eccezione custom residua è lo styling minimo dei
+  disclosure tecnici nativi `details/summary`.
 
 ## Regole visual
 

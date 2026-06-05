@@ -116,14 +116,19 @@ export default function ActivityRoute() {
 
   return (
     <s-page heading="Attività">
-      <div className="syncbay-page syncbay-stack">
+      <s-badge slot="accessory" tone="info">Diagnostica guidata</s-badge>
+      <s-stack gap="base">
         <s-section heading="Coda operativa">
-          <p className="syncbay-section-intro">
+          <s-text color="subdued">
             Qui controlli attività, errori e note operative senza uscire
             dall&apos;app. La sorgente catalogo resta eBay; gli ordini Shopify
-            aggiornano solo la disponibilità eBay.
-          </p>
-          <div className="syncbay-metric-grid syncbay-metric-grid--compact">
+            aggiornano solo la disponibilità eBay. Gli errori restano leggibili
+            e riprovabili dove possibile.
+          </s-text>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
+          >
             <MetricCard
               detail="Job non ancora completati."
               label="In coda"
@@ -144,16 +149,16 @@ export default function ActivityRoute() {
               label="Catalogo"
               value={getCatalogHealthLabel(activity)}
             />
-          </div>
+          </s-grid>
           {actionData ? (
-            <p className="syncbay-section-intro">{actionData.message}</p>
+            <s-text color="subdued">{actionData.message}</s-text>
           ) : null}
         </s-section>
 
         <s-section heading="Timeline">
           <ActivityFilterNav activeFilter={activeFilter} />
           {rows.length > 0 ? (
-            <ul className="syncbay-activity-list">
+            <s-stack gap="base">
               {rows.map((row) => (
                 <ActivityTimelineRow
                   isSaving={isSaving}
@@ -161,21 +166,23 @@ export default function ActivityRoute() {
                   row={row}
                 />
               ))}
-            </ul>
+            </s-stack>
           ) : (
-            <div className="syncbay-empty-state">
-              <h2>Nessuna attività per questo filtro</h2>
-              <p>
-                Torna a Tutte oppure avvia l&apos;importazione quando eBay e
-                Shopify sono pronti.
-              </p>
-              <s-button href="/app/activity">Mostra tutte</s-button>
-            </div>
+            <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+              <s-stack gap="base">
+                <s-heading>Nessuna attività per questo filtro</s-heading>
+                <s-text>
+                  Torna a Tutte oppure avvia l&apos;importazione quando eBay e
+                  Shopify sono pronti.
+                </s-text>
+                <s-button href="/app/activity">Mostra tutte</s-button>
+              </s-stack>
+            </s-box>
           )}
         </s-section>
 
         <s-section heading="Controlli rapidi">
-          <ul className="syncbay-status-list">
+          <s-stack gap="base">
             <StatusRow
               detail={getCatalogHealthDetail(activity)}
               label={getCatalogHealthLabel(activity)}
@@ -208,9 +215,9 @@ export default function ActivityRoute() {
               tone={activity.conflicts.openCount > 0 ? "warning" : "success"}
               title="Conflitti Shopify"
             />
-          </ul>
+          </s-stack>
         </s-section>
-      </div>
+      </s-stack>
     </s-page>
   );
 }
@@ -230,18 +237,17 @@ function ActivityTimelineRow({
   const canRetry = diagnostic?.retry.canRetry ?? false;
 
   return (
-    <li className="syncbay-activity-row">
-      <div>
-        <p className="syncbay-activity-row__title">{row.title}</p>
-        <p className="syncbay-activity-row__detail">{row.detail}</p>
-        <p className="syncbay-activity-row__meta">
-          {row.meta} · {formatDateTime(row.timestamp)}
-        </p>
-      </div>
-      <div className="syncbay-activity-row__actions">
-        <span className={`syncbay-badge syncbay-badge--${row.tone}`}>
-          {getActivityToneLabel(row.tone)}
-        </span>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack gap="small-200">
+          <s-heading>{row.title}</s-heading>
+          <s-text>{row.detail}</s-text>
+          <s-text color="subdued">
+            {row.meta} · {formatDateTime(row.timestamp)}
+          </s-text>
+        </s-stack>
+        <s-stack gap="small-200" alignItems="end">
+          <s-badge tone={row.tone}>{getActivityToneLabel(row.tone)}</s-badge>
         {canRetry && row.job ? (
           <Form method="post">
             <input type="hidden" name="intent" value="retryJob" />
@@ -251,22 +257,21 @@ function ActivityTimelineRow({
             </s-button>
           </Form>
         ) : row.job && diagnostic ? (
-          <span className="syncbay-table__subtext">
-            {diagnostic.retry.label}
-          </span>
+          <s-text color="subdued">{diagnostic.retry.label}</s-text>
         ) : null}
-      </div>
-    </li>
+        </s-stack>
+      </s-stack>
+    </s-box>
   );
 }
 
 function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
   return (
-    <nav aria-label="Filtri attività" className="syncbay-filter-nav">
+    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {ACTIVITY_FILTERS.map((filter) => (
-        <a
+        <s-clickable-chip
           aria-current={activeFilter === filter.value ? "page" : undefined}
-          className="syncbay-filter-nav__item"
+          color={activeFilter === filter.value ? "strong" : "base"}
           href={
             filter.value === "all"
               ? "/app/activity"
@@ -275,9 +280,9 @@ function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
           key={filter.value}
         >
           {filter.label}
-        </a>
+        </s-clickable-chip>
       ))}
-    </nav>
+    </s-stack>
   );
 }
 
@@ -291,11 +296,13 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="syncbay-metric">
-      <p className="syncbay-metric__label">{label}</p>
-      <p className="syncbay-metric__value">{value}</p>
-      <p className="syncbay-metric__detail">{detail}</p>
-    </div>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-text color="subdued">{label}</s-text>
+        <s-heading>{value}</s-heading>
+        <s-text color="subdued">{detail}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
 
@@ -311,13 +318,15 @@ function StatusRow({
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
-    <li className="syncbay-status-row">
-      <div>
-        <p className="syncbay-status-row__title">{title}</p>
-        <p className="syncbay-status-row__detail">{detail}</p>
-      </div>
-      <span className={`syncbay-badge syncbay-badge--${tone}`}>{label}</span>
-    </li>
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack gap="small-200">
+          <s-heading>{title}</s-heading>
+          <s-text color="subdued">{detail}</s-text>
+        </s-stack>
+        <s-badge tone={tone}>{label}</s-badge>
+      </s-stack>
+    </s-box>
   );
 }
 

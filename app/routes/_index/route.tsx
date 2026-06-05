@@ -1,10 +1,10 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, Form, useLoaderData } from "react-router";
+import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
+import { SyncBayBrandPanel } from "../../components/SyncBayBrandPanel";
 import { getSyncBayMeta } from "../../lib/syncbay-brand";
 import { login } from "../../shopify.server";
-
-import styles from "./styles.module.css";
 
 export const meta: MetaFunction = () => getSyncBayMeta("Accesso");
 
@@ -22,45 +22,64 @@ export default function App() {
   const { showForm } = useLoaderData<typeof loader>();
 
   return (
-    <div className={styles.index}>
-      <div className={styles.content}>
-        <h1 className={styles.heading}>SyncBay</h1>
-        <p className={styles.text}>
-          Dal tuo negozio eBay a Shopify, pronto a vendere.
-        </p>
+    <AppProvider embedded={false}>
+      <s-page heading="SyncBay">
+        <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
+        <s-section heading="Accesso">
+          <s-stack gap="base">
+            <SyncBayBrandPanel
+              detail="Collega il negozio Shopify al pilota SyncBay e porta il catalogo eBay.it in un flusso controllato."
+            />
         {showForm && (
-          <Form className={styles.form} method="post" action="/auth/login">
-            <label className={styles.label} htmlFor="shop">
-              <span>Dominio shop</span>
-              <input
-                aria-label="Dominio shop Shopify"
-                className={styles.input}
+          <Form method="post" action="/auth/login">
+            <s-stack gap="base">
+              <s-text-field
                 id="shop"
+                label="Dominio shop"
                 name="shop"
-                type="text"
+                placeholder="my-shop-domain.myshopify.com"
+                required
               />
-              <span>e.g: my-shop-domain.myshopify.com</span>
-            </label>
-            <button className={styles.button} type="submit">
+              <s-button type="submit" variant="primary">
               Accedi
-            </button>
+              </s-button>
+            </s-stack>
           </Form>
         )}
-        <ul className={styles.list}>
-          <li>
-            <strong>Catalogo eBay.</strong> Import guidato dei listing attivi in
-            Shopify.
-          </li>
-          <li>
-            <strong>Disponibilità protetta.</strong> Aggiornamento stock e retry
-            prioritari.
-          </li>
-          <li>
-            <strong>Controllo operativo.</strong> Conflitti, diagnostica e log
-            pensati per il negoziante.
-          </li>
-        </ul>
-      </div>
-    </div>
+          </s-stack>
+        </s-section>
+
+        <s-section heading="Pilota controllato">
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(3, minmax(0, 1fr))"
+          >
+            <InfoBox
+              body="Import guidato dei listing attivi in Shopify."
+              title="Catalogo eBay"
+            />
+            <InfoBox
+              body="Aggiornamento stock e retry prioritari."
+              title="Disponibilità protetta"
+            />
+            <InfoBox
+              body="Conflitti, diagnostica e log pensati per il negoziante."
+              title="Controllo operativo"
+            />
+          </s-grid>
+        </s-section>
+      </s-page>
+    </AppProvider>
+  );
+}
+
+function InfoBox({ body, title }: { body: string; title: string }) {
+  return (
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack gap="small-200">
+        <s-heading>{title}</s-heading>
+        <s-text color="subdued">{body}</s-text>
+      </s-stack>
+    </s-box>
   );
 }
