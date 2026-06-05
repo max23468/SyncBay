@@ -9,7 +9,7 @@ const REQUIRED_ENV_GROUPS = [
   { key: "SHOPIFY_API_KEY" },
   { key: "SHOPIFY_API_SECRET" },
   { aliases: ["SCOPES"], key: "SHOPIFY_SCOPES" },
-  { aliases: ["APP_URL"], key: "SHOPIFY_APP_URL" },
+  { key: "SHOPIFY_APP_URL" },
   { key: "APP_SECRET" },
   { key: "TOKEN_ENCRYPTION_KEY" },
 ];
