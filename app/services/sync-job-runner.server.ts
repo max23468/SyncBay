@@ -16,6 +16,7 @@ import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reco
 import {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  shouldSkipQuantityConflictForArchivedProduct,
 } from "../lib/syncbay-conflict-detection";
 import {
   buildCatalogReconcilePlan,
@@ -2422,6 +2423,13 @@ function getDetectedShopifyConflicts(
       (media) =>
         media.mediaContentType === "IMAGE" && media.preview?.status === "READY",
     ).length ?? 0;
+  const quantityConflict = shouldSkipQuantityConflictForArchivedProduct({
+    shopifyProductStatus: product.status ?? null,
+    syncBayProductStatus: snapshot.productStatus,
+    syncBayQuantity: snapshot.quantity,
+  })
+    ? null
+    : buildConflict("quantity", snapshot.quantity, shopifyQuantity);
   const fields = [
     buildConflict("title", snapshot.title, product.title),
     buildConflict(
@@ -2435,11 +2443,7 @@ function getDetectedShopifyConflicts(
       snapshot.priceAmount?.toFixed(2) ?? null,
       variant?.price ?? null,
     ),
-    buildConflict(
-      "quantity",
-      snapshot.quantity,
-      shopifyQuantity,
-    ),
+    quantityConflict,
     buildConflict("images", snapshot.imageCount, readyImageCount),
   ];
 

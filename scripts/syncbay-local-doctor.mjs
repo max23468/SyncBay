@@ -3,15 +3,15 @@
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const REQUIRED_ENV_KEYS = [
-  "DATABASE_URL",
-  "DATABASE_DIRECT_URL",
-  "SHOPIFY_API_KEY",
-  "SHOPIFY_API_SECRET",
-  "SCOPES",
-  "APP_URL",
-  "APP_SECRET",
-  "TOKEN_ENCRYPTION_KEY",
+const REQUIRED_ENV_GROUPS = [
+  { key: "DATABASE_URL" },
+  { key: "DATABASE_DIRECT_URL" },
+  { key: "SHOPIFY_API_KEY" },
+  { key: "SHOPIFY_API_SECRET" },
+  { aliases: ["SCOPES"], key: "SHOPIFY_SCOPES" },
+  { aliases: ["APP_URL"], key: "SHOPIFY_APP_URL" },
+  { key: "APP_SECRET" },
+  { key: "TOKEN_ENCRYPTION_KEY" },
 ];
 
 const args = parseArgs(process.argv.slice(2));
@@ -36,10 +36,17 @@ function buildReport() {
   const packageJson = readJson("package.json");
   const npmrc = readText(".npmrc") ?? "";
   const dotenvKeys = readDotEnvKeys(".env");
-  const requiredEnv = REQUIRED_ENV_KEYS.map((key) => ({
-    configured: Boolean(process.env[key]) || dotenvKeys.has(key),
-    key,
-  }));
+  const requiredEnv = REQUIRED_ENV_GROUPS.map((group) => {
+    const names = getEnvGroupNames(group);
+
+    return {
+      aliases: group.aliases ?? [],
+      configured: names.some(
+        (key) => Boolean(process.env[key]) || dotenvKeys.has(key),
+      ),
+      key: group.key,
+    };
+  });
   const failures = [];
   const warnings = [];
 
@@ -89,7 +96,7 @@ function buildReport() {
 
   const missingEnv = requiredEnv
     .filter((entry) => !entry.configured)
-    .map((entry) => entry.key);
+    .map(formatEnvRequirement);
 
   if (missingEnv.length > 0) {
     const message = `Variabili locali non configurate in env/.env: ${missingEnv.join(", ")}.`;
@@ -210,6 +217,16 @@ function readDotEnvKeys(filePath) {
   }
 
   return keys;
+}
+
+function getEnvGroupNames(group) {
+  return [group.key, ...(group.aliases ?? [])];
+}
+
+function formatEnvRequirement(entry) {
+  if (entry.aliases.length === 0) return entry.key;
+
+  return `${entry.key} (fallback: ${entry.aliases.join(", ")})`;
 }
 
 function runOptional(command, commandArgs) {

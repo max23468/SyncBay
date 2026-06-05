@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.12] — 2026-06-05
+
+### Correzioni
+
+- I prodotti già archiviati sia in SyncBay sia in Shopify non aprono più
+  conflitti quantità quando la baseline eBay è 0 ma Shopify conserva una
+  disponibilità residua non vendibile.
+
+### Sotto il cofano
+
+- Il doctor locale riconosce `SHOPIFY_APP_URL` e `SHOPIFY_SCOPES` come env
+  Shopify primarie, mantenendo `APP_URL` e `SCOPES` come fallback compatibili.
+- Il preflight remoto fallisce se non riesce a leggere la Codex feedback inbox
+  o se la sezione `Da risolvere ora` contiene thread actionable.
+
 ## [0.23.11] — 2026-06-05
 
 ### Sotto il cofano
@@ -1094,6 +1109,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.12]: #02312--2026-06-05
 [0.23.11]: #02311--2026-06-05
 [0.23.10]: #02310--2026-06-05
 [0.23.9]: #0239--2026-06-05

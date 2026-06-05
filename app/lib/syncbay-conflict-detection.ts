@@ -64,3 +64,15 @@ export function getAlignedOpenConflictFields(input: {
     (field) => monitoredFields.has(field) && !detectedFields.has(field),
   );
 }
+
+export function shouldSkipQuantityConflictForArchivedProduct(input: {
+  shopifyProductStatus: string | null;
+  syncBayProductStatus: string | null;
+  syncBayQuantity: number | null;
+}) {
+  return (
+    input.syncBayProductStatus === "ARCHIVED" &&
+    input.shopifyProductStatus === "ARCHIVED" &&
+    input.syncBayQuantity === 0
+  );
+}
