@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.13] — 2026-06-05
+
+### Correzioni
+
+- Il doctor locale richiede `SHOPIFY_APP_URL` per allinearsi al runtime
+  Shopify, senza accettare `APP_URL` come fallback non usato dall'app.
+
 ## [0.23.12] — 2026-06-05
 
 ### Correzioni
@@ -1109,6 +1116,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.13]: #02313--2026-06-05
 [0.23.12]: #02312--2026-06-05
 [0.23.11]: #02311--2026-06-05
 [0.23.10]: #02310--2026-06-05
