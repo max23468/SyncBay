@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.15] — 2026-06-07
+
+### Correzioni
+
+- Il rilevatore conflitti non apre più un conflitto `images` quando la baseline
+  SyncBay registra zero immagini eBay e Shopify ne conserva delle proprie:
+  evita rumore sistemico nella coda Conflitti coerentemente con la regola
+  "eBay sorgente di verità".
+
 ## [0.23.14] — 2026-06-05
 
 ### Correzioni
@@ -1130,6 +1139,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.15]: #02315--2026-06-07
 [0.23.14]: #02314--2026-06-05
 [0.23.13]: #02313--2026-06-05
 [0.23.12]: #02312--2026-06-05
