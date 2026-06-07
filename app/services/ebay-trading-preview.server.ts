@@ -1,6 +1,7 @@
 import type { EbayConnection } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 
+import { getEbayStorefrontMetadata } from "../lib/syncbay-ebay-storefront";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { ImportPreviewListingCandidate } from "./import-preview.server";
 
@@ -264,6 +265,8 @@ async function getEnrichedTradingCandidate(
   if (!detailItem) return withFallbackSku(listCandidate);
   const detailVariations = getTradingVariations(detailItem);
 
+  const detailStorefront = getEbayStorefrontMetadata(detailItem.Storefront);
+
   return withFallbackSku({
     currency:
       getTradingCurrency(detailItem, detailVariations) ??
@@ -280,6 +283,12 @@ async function getEnrichedTradingCandidate(
       getTradingQuantity(detailItem, detailVariations) ??
       listCandidate.quantity,
     sku: getTradingSku(detailItem, detailVariations) ?? listCandidate.sku,
+    storeCategoryId:
+      detailStorefront.storeCategoryId ?? listCandidate.storeCategoryId ?? null,
+    storeCategoryName:
+      detailStorefront.storeCategoryName ??
+      listCandidate.storeCategoryName ??
+      null,
     title: getString(detailItem, "Title") ?? listCandidate.title,
     variantCount: Math.max(
       detailVariations.length,
@@ -435,6 +444,7 @@ function mapTradingItemToCandidate(
   if (!itemId) return null;
 
   const variations = getTradingVariations(item);
+  const storefront = getEbayStorefrontMetadata(item.Storefront);
 
   return {
     currency:
@@ -446,6 +456,8 @@ function mapTradingItemToCandidate(
     priceAmount: getTradingPrice(item, variations),
     quantity: getTradingQuantity(item, variations),
     sku: getTradingSku(item, variations),
+    storeCategoryId: storefront.storeCategoryId,
+    storeCategoryName: storefront.storeCategoryName,
     title: getString(item, "Title"),
     variantCount: Math.max(variations.length, 1),
   };

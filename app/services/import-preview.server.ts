@@ -10,6 +10,8 @@ export interface ImportPreviewListingCandidate {
   quantity?: number | null;
   sku?: string | null;
   skuGenerated?: boolean;
+  storeCategoryId?: string | null;
+  storeCategoryName?: string | null;
   title?: string | null;
   variantCount?: number;
 }
@@ -34,6 +36,8 @@ export interface ImportPreviewItem {
     quantity: number | null;
     sku: string | null;
     skuGenerated: boolean;
+    storeCategoryId: string | null;
+    storeCategoryName: string | null;
     title: string;
   };
   status: ImportPreviewStatus;
@@ -192,6 +196,8 @@ function buildPreviewItem(
       quantity: normalizeInteger(candidate.quantity),
       sku: normalizeText(candidate.sku),
       skuGenerated: Boolean(candidate.skuGenerated),
+      storeCategoryId: normalizeText(candidate.storeCategoryId),
+      storeCategoryName: normalizeText(candidate.storeCategoryName),
       title: normalizeText(candidate.title) ?? "Titolo non disponibile",
     },
     status: hasErrors ? "error" : "importable",

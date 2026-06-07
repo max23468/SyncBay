@@ -2847,6 +2847,8 @@ function buildEbaySnapshotPayload(item: ImportPreviewItem) {
     issueCodes: item.issues.map((issue) => issue.code),
     skuGenerated: item.normalized.skuGenerated,
     status: item.status,
+    storeCategoryId: item.normalized.storeCategoryId,
+    storeCategoryName: item.normalized.storeCategoryName,
   });
 }
 
