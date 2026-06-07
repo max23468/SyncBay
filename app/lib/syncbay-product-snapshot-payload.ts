@@ -4,6 +4,8 @@ export function buildEbayProductSnapshotPayload(input: {
   issueCodes: string[];
   skuGenerated: boolean;
   status: string;
+  storeCategoryId?: string | null;
+  storeCategoryName?: string | null;
 }) {
   return {
     descriptionMode: input.descriptionMode,
@@ -11,6 +13,12 @@ export function buildEbayProductSnapshotPayload(input: {
     issueCodes: input.issueCodes,
     skuGenerated: input.skuGenerated,
     status: input.status,
+    ...(input.storeCategoryId
+      ? { storeCategoryId: input.storeCategoryId }
+      : {}),
+    ...(input.storeCategoryName
+      ? { storeCategoryName: input.storeCategoryName }
+      : {}),
   };
 }
 

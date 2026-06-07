@@ -30,6 +30,44 @@ test("persists eBay image URLs in snapshot payloads", () => {
   );
 });
 
+test("persists eBay store category metadata when assigned", () => {
+  assert.deepEqual(
+    buildEbayProductSnapshotPayload({
+      descriptionMode: "pulita",
+      imageUrls: [],
+      issueCodes: [],
+      skuGenerated: false,
+      status: "ready",
+      storeCategoryId: "1234567890",
+      storeCategoryName: "Monete italiane",
+    }),
+    {
+      descriptionMode: "pulita",
+      imageUrls: [],
+      issueCodes: [],
+      skuGenerated: false,
+      status: "ready",
+      storeCategoryId: "1234567890",
+      storeCategoryName: "Monete italiane",
+    },
+  );
+});
+
+test("omits eBay store category fields when missing", () => {
+  const payload = buildEbayProductSnapshotPayload({
+    descriptionMode: "pulita",
+    imageUrls: [],
+    issueCodes: [],
+    skuGenerated: false,
+    status: "ready",
+    storeCategoryId: null,
+    storeCategoryName: null,
+  });
+
+  assert.equal("storeCategoryId" in payload, false);
+  assert.equal("storeCategoryName" in payload, false);
+});
+
 test("reads thumbnails from eBay snapshot image URLs", () => {
   assert.equal(
     getProductSnapshotThumbnailUrl({

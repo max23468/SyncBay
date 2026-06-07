@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.16] — 2026-06-07
+
+### Sotto il cofano
+
+- Gli snapshot eBay (`ProductSnapshot.payload`) registrano `storeCategoryId` e
+  `storeCategoryName` quando il listing eBay è assegnato a una categoria del
+  negozio, normalizzando i placeholder eBay `0`/`-999` a "nessuna categoria".
+  Abilita diagnostiche del tipo "quali listing attivi non sono nella vetrina
+  pubblica eBay" senza dover interrogare di nuovo Trading API.
+
 ## [0.23.15] — 2026-06-07
 
 ### Correzioni
@@ -1139,6 +1149,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.16]: #02316--2026-06-07
 [0.23.15]: #02315--2026-06-07
 [0.23.14]: #02314--2026-06-05
 [0.23.13]: #02313--2026-06-05
