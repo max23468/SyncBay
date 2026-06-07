@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getAlignedOpenConflictFields, getLatestSyncBayDescriptionBaselineWhere, shouldSkipQuantityConflictForArchivedProduct } from "./syncbay-conflict-detection.ts";
+import { getAlignedOpenConflictFields, getLatestSyncBayDescriptionBaselineWhere, shouldSkipImagesConflictWhenEbayHasNoImages, shouldSkipQuantityConflictForArchivedProduct } from "./syncbay-conflict-detection.ts";
 
 test("builds a description baseline query that skips null description hashes", () => {
   const where = getLatestSyncBayDescriptionBaselineWhere("mapping-1");
@@ -57,6 +57,40 @@ test("keeps quantity conflicts active for sellable or mismatched products", () =
       shopifyProductStatus: "ARCHIVED",
       syncBayProductStatus: "ARCHIVED",
       syncBayQuantity: 1,
+    }),
+    false,
+  );
+});
+
+test("skips images conflicts when eBay has no media but Shopify does", () => {
+  assert.equal(
+    shouldSkipImagesConflictWhenEbayHasNoImages({
+      syncBayImageCount: 0,
+      shopifyImageCount: 2,
+    }),
+    true,
+  );
+});
+
+test("keeps images conflicts when eBay has media or both sides are empty", () => {
+  assert.equal(
+    shouldSkipImagesConflictWhenEbayHasNoImages({
+      syncBayImageCount: 3,
+      shopifyImageCount: 2,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipImagesConflictWhenEbayHasNoImages({
+      syncBayImageCount: 0,
+      shopifyImageCount: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipImagesConflictWhenEbayHasNoImages({
+      syncBayImageCount: null,
+      shopifyImageCount: 2,
     }),
     false,
   );

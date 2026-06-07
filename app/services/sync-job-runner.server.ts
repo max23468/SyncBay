@@ -16,6 +16,7 @@ import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reco
 import {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
 } from "../lib/syncbay-conflict-detection";
 import {
@@ -2430,6 +2431,12 @@ function getDetectedShopifyConflicts(
   })
     ? null
     : buildConflict("quantity", snapshot.quantity, shopifyQuantity);
+  const imagesConflict = shouldSkipImagesConflictWhenEbayHasNoImages({
+    syncBayImageCount: snapshot.imageCount,
+    shopifyImageCount: readyImageCount,
+  })
+    ? null
+    : buildConflict("images", snapshot.imageCount, readyImageCount);
   const fields = [
     buildConflict("title", snapshot.title, product.title),
     buildConflict(
@@ -2444,7 +2451,7 @@ function getDetectedShopifyConflicts(
       variant?.price ?? null,
     ),
     quantityConflict,
-    buildConflict("images", snapshot.imageCount, readyImageCount),
+    imagesConflict,
   ];
 
   return fields.filter(

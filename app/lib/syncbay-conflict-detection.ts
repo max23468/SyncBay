@@ -76,3 +76,10 @@ export function shouldSkipQuantityConflictForArchivedProduct(input: {
     input.syncBayQuantity === 0
   );
 }
+
+export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
+  syncBayImageCount: number | null;
+  shopifyImageCount: number;
+}) {
+  return input.syncBayImageCount === 0 && input.shopifyImageCount > 0;
+}

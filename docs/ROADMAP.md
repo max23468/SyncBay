@@ -51,6 +51,9 @@ esteso della vecchia roadmap di fondazione sta in
   rivisto post-publish contro i concept finali.
 - La UI embedded classifica i conflitti per sicurezza operativa e la timeline
   Attività spiega impatto, prossima azione e retry sicuro dei job.
+- Coda conflitti pilota verificata e ripulita: 933 falsi positivi `description`
+  riallineati con repair script e 41 falsi positivi `images` chiusi dalla nuova
+  regola che ignora il conflitto quando eBay non ha media e Shopify sì.
 
 ## Regole
 
