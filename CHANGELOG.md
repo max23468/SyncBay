@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.23.18] — 2026-06-07
+
+### Sotto il cofano
+
+- Aggiunto `npm run ebay:store-category-orphans`, diagnostica in sola lettura
+  che per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing
+  attivi senza categoria del negozio (non visibili nella vetrina pubblica eBay).
+  Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato
+  se scaduto.
+
 ## [0.23.17] — 2026-06-07
 
 ### Correzioni
@@ -1159,6 +1169,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.23.18]: #02318--2026-06-07
 [0.23.17]: #02317--2026-06-07
 [0.23.16]: #02316--2026-06-07
 [0.23.15]: #02315--2026-06-07
