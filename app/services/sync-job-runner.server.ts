@@ -20,6 +20,10 @@ import {
   shouldSkipQuantityConflictForArchivedProduct,
 } from "../lib/syncbay-conflict-detection";
 import {
+  deserializeIncrementalPreviewCandidate,
+  serializeIncrementalPreviewCandidate,
+} from "../lib/syncbay-incremental-preview-candidate";
+import {
   buildCatalogReconcilePlan,
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
@@ -856,18 +860,7 @@ function dedupePreviewCandidates(
 }
 
 function serializePreviewCandidate(candidate: ImportPreviewListingCandidate) {
-  return {
-    currency: candidate.currency ?? null,
-    descriptionHtml: candidate.descriptionHtml ?? null,
-    imageUrls: candidate.imageUrls ?? [],
-    itemId: candidate.itemId,
-    priceAmount: candidate.priceAmount ?? null,
-    quantity: candidate.quantity ?? null,
-    sku: candidate.sku ?? null,
-    skuGenerated: candidate.skuGenerated ?? null,
-    title: candidate.title ?? null,
-    variantCount: candidate.variantCount ?? null,
-  } satisfies Prisma.JsonObject;
+  return serializeIncrementalPreviewCandidate(candidate);
 }
 
 async function recoverStaleRunningSyncJobs(
@@ -1886,38 +1879,7 @@ function getPreviewCandidates(payload: Prisma.JsonValue | null) {
 function getPreviewCandidate(
   value: unknown,
 ): ImportPreviewListingCandidate | null {
-  const object =
-    value && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
-  if (!object) return null;
-
-  const itemId = typeof object?.itemId === "string" ? object.itemId : null;
-  if (!itemId) return null;
-
-  return {
-    currency: getNullableString(object.currency),
-    descriptionHtml: getNullableString(object.descriptionHtml),
-    imageUrls: Array.isArray(object.imageUrls)
-      ? object.imageUrls.filter((url): url is string => typeof url === "string")
-      : [],
-    itemId,
-    priceAmount: getNullableNumber(object.priceAmount),
-    quantity: getNullableNumber(object.quantity),
-    sku: getNullableString(object.sku),
-    skuGenerated:
-      typeof object.skuGenerated === "boolean" ? object.skuGenerated : false,
-    title: getNullableString(object.title),
-    variantCount: getNullableNumber(object.variantCount) ?? 1,
-  };
-}
-
-function getNullableString(value: unknown) {
-  return typeof value === "string" ? value : null;
-}
-
-function getNullableNumber(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return deserializeIncrementalPreviewCandidate(value);
 }
 
 async function markJobFailedOrRetrying(input: {
