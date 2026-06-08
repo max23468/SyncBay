@@ -40,6 +40,21 @@ Prerequisiti: Supabase locale attivo (`npx supabase start`, richiede Docker) e
 un `.env` con `DATABASE_URL` locale e una sessione installata nel database.
 Output: `preview/shots/<pagina>-live.html` + PNG.
 
+#### Stato "collegato" in locale
+
+Un'installazione locale fresca mostra lo stato vuoto (eBay non collegato, 0
+prodotti). Per vedere la preview nello stato collegato come in produzione:
+
+```bash
+npm run ui:seed-local   # eBay CONNECTED, 992 prodotti, 115 conflitti aperti
+```
+
+`scripts/syncbay-seed-local-preview.sql` riproduce i **conteggi e lo stato reali
+di produzione** (numeri aggregati e date), **senza dati personali del
+negoziante**: nessun token reale, ebayUserId e gid sintetici. È idempotente e
+opera solo su righe `seed-%`. Serve per QA visivo locale, non per test
+funzionali del sync.
+
 Solo la chrome dei componenti `s-*` resta simulata. Tutto il resto — dati,
 componente di route, design layer, gerarchia — è reale. Le pagine vanno cablate
 in `PAGES` man mano che vengono ridisegnate (per ora: `panoramica`).
