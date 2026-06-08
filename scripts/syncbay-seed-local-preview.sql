@@ -52,6 +52,7 @@ BEGIN
     "updatedAt" = now();
 
   -- pulizia seed precedente
+  DELETE FROM "AuditLog" WHERE id LIKE 'seed-%';
   DELETE FROM "SyncConflict" WHERE id LIKE 'seed-%';
   DELETE FROM "SyncJob" WHERE id LIKE 'seed-%';
   DELETE FROM "ProductMapping" WHERE id LIKE 'seed-%';
@@ -76,8 +77,8 @@ BEGIN
      now() - interval '3 hours', now() - interval '170 minutes',
      now() - interval '3 hours', now()),
     ('seed-job-inc', sid, 'SYNC_INCREMENTAL', 'SUCCEEDED', 1, 3,
-     now() - interval '7 minutes', now() - interval '6 minutes',
-     now() - interval '7 minutes', now()),
+     now() - interval '3 minutes', now() - interval '2 minutes',
+     now() - interval '3 minutes', now()),
     ('seed-job-stk', sid, 'UPDATE_EBAY_STOCK', 'SUCCEEDED', 1, 3,
      now() - interval '20 minutes', now() - interval '19 minutes',
      now() - interval '20 minutes', now());

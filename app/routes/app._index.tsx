@@ -205,7 +205,7 @@ export default function Index() {
             <s-stack gap="base">
               <ConnectionCard
                 detail={getEbayDetail(dashboard)}
-                fallbackIcon="store"
+                logo="ebay"
                 name={`eBay ${dashboard.ebay.marketplaceId}`}
                 statusLabel={getEbayConnectionStatusLabel(dashboard.ebay.status)}
                 statusTone={
@@ -214,7 +214,7 @@ export default function Index() {
               />
               <ConnectionCard
                 detail={`Negozio ${dashboard.shop.domain}.`}
-                fallbackIcon="store-online"
+                logo="shopify"
                 name="Shopify"
                 statusLabel="Collegato"
                 statusTone="success"
