@@ -119,7 +119,7 @@ export default function Index() {
 
         <s-grid
           gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(190px, 1fr))"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
         >
           <MetricTile
             detail="Prodotti Shopify collegati a eBay."

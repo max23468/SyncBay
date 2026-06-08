@@ -16,6 +16,8 @@
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "quality:react-doctor": "npx --yes react-doctor@latest --full --fail-on error .",
     "smoke:ui": "node scripts/smoke-ui.mjs",
+    "ui:render": "node scripts/syncbay-ui-render.mjs",
+    "ui:preview-shot": "node scripts/preview-shot.mjs",
     "test:lib": "node --test --experimental-strip-types app/lib/*.test.ts",
     "coverage:lib": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-include='app/lib/*.ts' --test-coverage-exclude='app/lib/*.test.ts' --test-coverage-lines=75 --test-coverage-branches=65 app/lib/*.test.ts",
     "test:stock-guard": "node --test --experimental-strip-types app/lib/syncbay-stock-guard.test.ts",

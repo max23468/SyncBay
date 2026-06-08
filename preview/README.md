@@ -23,15 +23,39 @@ Questo harness aggira il limite con **stand-in neutri** dei componenti `s-*`
 Non valida la resa esatta dei componenti Shopify: per quella restano il pilota
 Vercel e Shopify Admin.
 
-## Uso
+## Due modalità
+
+### 1. Render con DATI REALI (consigliato)
+
+`scripts/syncbay-ui-render.mjs` esegue il **componente di route reale** via Vite
+SSR, alimentato dai **loader veri** letti dalla sessione offline nel database
+locale (Supabase). Nessun browser autenticato, nessun Safari, nessun Shopify
+Admin: i dati sono quelli reali dello shop collegato in locale (dev store).
 
 ```bash
-node scripts/preview-shot.mjs            # screenshot di tutte le pagine
-node scripts/preview-shot.mjs panoramica # solo panoramica.html
+npm run ui:render panoramica   # render dati reali + screenshot desktop/narrow
 ```
 
-I PNG finiscono in `preview/shots/` (desktop 1280 e stretto 390). In
-alternativa apri direttamente i file `.html` in un browser.
+Prerequisiti: Supabase locale attivo (`npx supabase start`, richiede Docker) e
+un `.env` con `DATABASE_URL` locale e una sessione installata nel database.
+Output: `preview/shots/<pagina>-live.html` + PNG.
+
+Solo la chrome dei componenti `s-*` resta simulata. Tutto il resto — dati,
+componente di route, design layer, gerarchia — è reale. Le pagine vanno cablate
+in `PAGES` man mano che vengono ridisegnate (per ora: `panoramica`).
+
+### 2. Harness con dati finti
+
+`scripts/preview-shot.mjs` screenshotta gli HTML statici in `preview/` con dati
+sintetici. Utile quando il database locale non è disponibile.
+
+```bash
+npm run ui:preview-shot            # tutte le pagine statiche
+node scripts/preview-shot.mjs panoramica
+```
+
+I PNG finiscono in `preview/shots/` (desktop e stretto). In alternativa apri
+direttamente i file `.html` in un browser.
 
 ## Fedeltà
 
