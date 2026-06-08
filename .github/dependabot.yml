@@ -20,6 +20,25 @@ updates:
         update-types:
           - minor
           - patch
+    # Major bloccanti: React 19 e ESLint 10 rompono la risoluzione dei peer
+    # (eslint-plugin-import non supporta ESLint 10; React 19 e' una migrazione
+    # major fuori scope MVP). Restano minor/patch.
+    ignore:
+      - dependency-name: react
+        update-types:
+          - version-update:semver-major
+      - dependency-name: react-dom
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@types/react"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@types/react-dom"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
