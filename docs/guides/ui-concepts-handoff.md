@@ -175,6 +175,29 @@ Regole copy per screenshot:
 - non usare screenshot con dati personali, ordini reali, customer data,
   credenziali o listing di negozianti non autorizzati.
 
+## Evoluzione 2026-06-08 - design layer e restyling
+
+Revisione maintainer: la resa pubblicata è ancora percepita piatta rispetto ai
+sei concept. Gerarchia debole, sezioni di peso uguale, vocabolario nativo
+sotto-utilizzato (`s-icon` non usato). Aperto un lavoro di restyling con
+priorità gerarchia/densità, poi coerenza/rifinitura, poi fedeltà ai concept.
+
+Decisioni fissate (vedi ADR `docs/decisions/0010-ui-design-layer-e-marchi-terzi.md`):
+
+- confine: resta "Shopify-native prima", con un design layer minimo a lista
+  chiusa di tre elementi: tile metrica con `s-icon` e sfondo a tinta tenue,
+  pannello connessioni con marchi eBay/Shopify, hero di stato con accento
+  tonale;
+- l'aside permanente "Come scegliere" nei Conflitti resta scartato;
+- griglia condivisa: multi-regione responsiva, hero a tutta larghezza e fasce a
+  due colonne che collassano a una su viewport stretto;
+- marchi eBay/Shopify ufficiali ammessi come indicatori sobri, previa verifica
+  delle brand guideline; fallback a indicatori neutri se non conformi;
+- scope: presentazione, riordino e microcopy, con loader/selector ammessi se la
+  UI lo richiede; quando si tocca un loader la verifica sale a corsia completa;
+- esecuzione: sistema visivo condiviso + Panoramica come pagina-prova con
+  approvazione del maintainer, poi propagazione alle altre cinque superfici.
+
 ## Decisione prodotto
 
 SyncBay resta una app Shopify embedded per negozianti italiani che partono da
