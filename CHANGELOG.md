@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.24.2] — 2026-06-09
+
+### Correzioni
+
+- Panoramica: separazione esplicita tra la fascia delle metriche e le sezioni
+  sottostanti, che restavano visivamente attaccate nonostante l'aumento di gap.
+
 ## [0.24.1] — 2026-06-09
 
 ### Correzioni
@@ -1195,6 +1202,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.24.2]: #0242--2026-06-09
 [0.24.1]: #0241--2026-06-09
 [0.24.0]: #0240--2026-06-09
 [0.23.18]: #02318--2026-06-07
