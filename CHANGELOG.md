@@ -6,6 +6,24 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.24.0] — 2026-06-09
+
+### Novità
+
+- Panoramica ridisegnata come centro operativo: hero di stato con la prossima
+  azione, fascia di metriche con icone, layout multi-regione responsivo e
+  pannello collegamenti con i marchi ufficiali eBay e Shopify come indicatori
+  sobri di sorgente e destinazione.
+- Introdotto un design layer minimo e documentato (ADR 0010) sopra i Polaris
+  Web Components: tile metrica, hero di stato e scheda connessione, con uso di
+  `s-icon` prima assente.
+
+### Sotto il cofano
+
+- Ambiente di preview UI locale: render headless delle superfici embedded con
+  dati reali via Vite SSR (`npm run ui:render`), harness con stand-in dei
+  componenti Polaris e seed locale dello stato collegato (`npm run ui:seed-local`).
+
 ## [0.23.18] — 2026-06-07
 
 ### Sotto il cofano
@@ -1169,6 +1187,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.24.0]: #0240--2026-06-09
 [0.23.18]: #02318--2026-06-07
 [0.23.17]: #02317--2026-06-07
 [0.23.16]: #02316--2026-06-07
