@@ -134,6 +134,58 @@
   align-self: center;
 }
 
+/* Lista azioni consigliate: righe cliccabili con icona, etichetta e dettaglio. */
+.syncbay-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.syncbay-action-list s-clickable {
+  display: block;
+  border-radius: 12px;
+}
+
+.syncbay-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+}
+
+.syncbay-action-list s-clickable:hover .syncbay-action {
+  background: var(--syncbay-cloud);
+  border-color: var(--syncbay-harbor);
+}
+
+.syncbay-action__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 10px;
+  background: var(--syncbay-cloud);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
+.syncbay-action__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.syncbay-action__chevron {
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
 /* Pannello connessioni: marchio sorgente/destinazione + stato. */
 .syncbay-connection {
   display: flex;

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.25.0] — 2026-06-09
+
+### Novità
+
+- Panoramica: "Azioni consigliate" è ora una lista di righe cliccabili con
+  icona, etichetta e breve descrizione (es. conteggio conflitti da rivedere),
+  più chiara e meno spoglia della precedente fila di pulsanti.
+
 ## [0.24.3] — 2026-06-09
 
 ### Correzioni
@@ -1210,6 +1218,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.25.0]: #0250--2026-06-09
 [0.24.3]: #0243--2026-06-09
 [0.24.2]: #0242--2026-06-09
 [0.24.1]: #0241--2026-06-09

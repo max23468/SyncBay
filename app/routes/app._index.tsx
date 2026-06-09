@@ -8,10 +8,12 @@ import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
+  ActionRow,
   ConnectionCard,
   MetricTile,
   StatusHero,
   type SyncBayIcon,
+  type SyncBayTone,
 } from "../components/SyncBayUi";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
@@ -160,23 +162,18 @@ export default function Index() {
           gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
         >
           <s-section heading="Azioni consigliate">
-            <s-stack direction="inline" gap="small-200">
-              {dashboard.ebay.oauthReady &&
-              dashboard.ebay.oauthEnabled &&
-              dashboard.ebay.status !== "CONNECTED" ? (
-                <s-button href="/auth/ebay/start">
-                  {dashboard.ebay.status === "NOT_CONNECTED"
-                    ? "Collega eBay"
-                    : "Ricollega eBay"}
-                </s-button>
-              ) : null}
-              <s-button href="/app/import-preview">Apri importazione</s-button>
-              <s-button href="/app/catalog">Apri catalogo</s-button>
-              {dashboard.conflicts.openCount > 0 ? (
-                <s-button href="/app/conflicts">Risolvi conflitti</s-button>
-              ) : null}
-              <s-button href="/app/settings">Apri impostazioni</s-button>
-            </s-stack>
+            <div className="syncbay-action-list">
+              {getRecommendedActions(dashboard).map((action) => (
+                <ActionRow
+                  description={action.description}
+                  href={action.href}
+                  icon={action.icon}
+                  key={action.label}
+                  label={action.label}
+                  tone={action.tone}
+                />
+              ))}
+            </div>
           </s-section>
 
           <s-section heading="Stato catalogo">
@@ -384,6 +381,71 @@ function getHeroIcon(kind: NextActionKind): SyncBayIcon {
 
 function formatMarketplaceLabel(marketplaceId: string) {
   return marketplaceId.replace(/^EBAY_/, "");
+}
+
+type RecommendedAction = {
+  description: string;
+  href: string;
+  icon: SyncBayIcon;
+  label: string;
+  tone: SyncBayTone;
+};
+
+function getRecommendedActions(dashboard: Dashboard): RecommendedAction[] {
+  const actions: RecommendedAction[] = [];
+
+  if (
+    dashboard.ebay.oauthReady &&
+    dashboard.ebay.oauthEnabled &&
+    dashboard.ebay.status !== "CONNECTED"
+  ) {
+    actions.push({
+      description: "Riattiva import, aggiornamenti e disponibilità.",
+      href: "/auth/ebay/start",
+      icon: "link",
+      label:
+        dashboard.ebay.status === "NOT_CONNECTED"
+          ? "Collega eBay"
+          : "Ricollega eBay",
+      tone: "critical",
+    });
+  }
+
+  actions.push({
+    description: "Porta nuovi listing eBay in Shopify.",
+    href: "/app/import-preview",
+    icon: "import",
+    label: "Importazione",
+    tone: "neutral",
+  });
+
+  actions.push({
+    description: "Sfoglia i prodotti collegati e il loro stato.",
+    href: "/app/catalog",
+    icon: "product",
+    label: "Catalogo",
+    tone: "neutral",
+  });
+
+  if (dashboard.conflicts.openCount > 0) {
+    actions.push({
+      description: `${formatNumber(dashboard.conflicts.openCount)} modifiche da rivedere.`,
+      href: "/app/conflicts",
+      icon: "alert-triangle",
+      label: "Risolvi conflitti",
+      tone: "warning",
+    });
+  }
+
+  actions.push({
+    description: "Sync catalogo, canali e opzioni avanzate.",
+    href: "/app/settings",
+    icon: "settings",
+    label: "Impostazioni",
+    tone: "neutral",
+  });
+
+  return actions;
 }
 
 function getEbayDetail(dashboard: Dashboard) {
