@@ -19,6 +19,7 @@ export type SyncBayIcon =
   | "alert-triangle"
   | "alert-circle"
   | "check-circle"
+  | "chevron-right"
   | "clock"
   | "connect"
   | "import"
@@ -27,6 +28,7 @@ export type SyncBayIcon =
   | "package"
   | "product"
   | "refresh"
+  | "settings"
   | "store"
   | "store-online";
 
@@ -56,6 +58,39 @@ export function MetricTile({
         {detail ? <s-text color="subdued">{detail}</s-text> : null}
       </span>
     </div>
+  );
+}
+
+type ActionRowProps = {
+  description: string;
+  href: string;
+  icon: SyncBayIcon;
+  label: string;
+  tone?: SyncBayTone;
+};
+
+export function ActionRow({
+  description,
+  href,
+  icon,
+  label,
+  tone = "neutral",
+}: ActionRowProps) {
+  return (
+    <s-clickable href={href}>
+      <span className="syncbay-action">
+        <span className="syncbay-action__icon">
+          <s-icon type={icon} tone={tone} size="base" />
+        </span>
+        <span className="syncbay-action__body">
+          <s-text>{label}</s-text>
+          <s-text color="subdued">{description}</s-text>
+        </span>
+        <span className="syncbay-action__chevron">
+          <s-icon type="chevron-right" tone="neutral" size="base" />
+        </span>
+      </span>
+    </s-clickable>
   );
 }
 
