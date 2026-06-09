@@ -36,6 +36,11 @@
    pannello connessioni. Wrapper in light DOM attorno a componenti nativi s-*.
    --------------------------------------------------------------------------- */
 
+/* Fascia metriche: separazione esplicita dalle sezioni successive. */
+.syncbay-metric-row {
+  margin-block-end: 16px;
+}
+
 /* Tile metrica: icona + sfondo a tinta tenue. */
 .syncbay-tile {
   display: flex;

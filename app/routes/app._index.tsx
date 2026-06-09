@@ -106,7 +106,7 @@ export default function Index() {
   return (
     <s-page heading="Panoramica">
       <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
-      <s-stack gap="large-200">
+      <s-stack gap="large">
         <StatusHero
           actionHref={nextAction.primaryActionHref}
           actionLabel={nextAction.primaryActionLabel}
@@ -117,6 +117,7 @@ export default function Index() {
           tone={nextAction.tone}
         />
 
+        <div className="syncbay-metric-row">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -154,6 +155,7 @@ export default function Index() {
             value={getCatalogHealthValue(dashboard)}
           />
         </s-grid>
+        </div>
 
         <s-grid
           gap="base"
