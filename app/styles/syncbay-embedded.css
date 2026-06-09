@@ -1,7 +1,25 @@
 :root {
+  --syncbay-cloud: #f6f8f7;
+  --syncbay-paper: #ffffff;
+  --syncbay-ink: #15202b;
+  --syncbay-slate: #51615f;
+  --syncbay-mist: #d8e0dd;
   --syncbay-harbor: #0f5e6e;
+  --syncbay-current: #1a8f7a;
+  --syncbay-moss: #3f7d4a;
+  --syncbay-amber: #b7791f;
+  --syncbay-coral: #c75c48;
+  --syncbay-steel: #3d6f9f;
+
+  /* Tinte tenui del design layer (ADR 0010): solo sfondi morbidi, mai pieni. */
+  --syncbay-tint-neutral: #eef2f1;
+  --syncbay-tint-info: #eaf1f8;
+  --syncbay-tint-success: #e9f3ea;
+  --syncbay-tint-warning: #f8f0dc;
+  --syncbay-tint-critical: #f8e9e5;
 }
 
+/* Disclosure tecnici nativi: unica eccezione CSS preesistente. */
 .syncbay-row-details {
   max-width: 42ch;
 }
@@ -11,4 +29,159 @@
   color: var(--syncbay-harbor);
   cursor: pointer;
   font-weight: 650;
+}
+
+/* ----------------------------------------------------------------------------
+   Design layer SyncBay (ADR 0010). Lista chiusa: tile metrica, hero di stato,
+   pannello connessioni. Wrapper in light DOM attorno a componenti nativi s-*.
+   --------------------------------------------------------------------------- */
+
+/* Tile metrica: icona + sfondo a tinta tenue. */
+.syncbay-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 12px;
+  background: var(--syncbay-tint-neutral);
+  block-size: 100%;
+}
+
+.syncbay-tile__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 10px;
+  background: var(--syncbay-paper);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
+.syncbay-tile__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.syncbay-tile--info {
+  background: var(--syncbay-tint-info);
+}
+.syncbay-tile--success {
+  background: var(--syncbay-tint-success);
+}
+.syncbay-tile--warning {
+  background: var(--syncbay-tint-warning);
+}
+.syncbay-tile--critical {
+  background: var(--syncbay-tint-critical);
+}
+
+/* Hero di stato: accento tonale a sinistra per dominare la gerarchia. */
+.syncbay-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border: 1px solid var(--syncbay-mist);
+  border-inline-start-width: 4px;
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+}
+
+.syncbay-hero--success {
+  border-inline-start-color: var(--syncbay-moss);
+  background: var(--syncbay-tint-success);
+}
+.syncbay-hero--warning {
+  border-inline-start-color: var(--syncbay-amber);
+  background: var(--syncbay-tint-warning);
+}
+.syncbay-hero--critical {
+  border-inline-start-color: var(--syncbay-coral);
+  background: var(--syncbay-tint-critical);
+}
+.syncbay-hero--info {
+  border-inline-start-color: var(--syncbay-steel);
+  background: var(--syncbay-tint-info);
+}
+
+.syncbay-hero__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 999px;
+  background: var(--syncbay-paper);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
+.syncbay-hero__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.syncbay-hero__actions {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* Pannello connessioni: marchio sorgente/destinazione + stato. */
+.syncbay-connection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+}
+
+.syncbay-connection__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 10px;
+  background: var(--syncbay-cloud);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.syncbay-connection__mark img {
+  inline-size: 28px;
+  block-size: 28px;
+  object-fit: contain;
+}
+
+.syncbay-connection__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.syncbay-connection__status {
+  flex: 0 0 auto;
+}
+
+/* Su viewport stretto l'hero impila azione e testo. */
+@media (max-width: 640px) {
+  .syncbay-hero {
+    flex-direction: column;
+  }
+  .syncbay-hero__actions {
+    align-self: stretch;
+  }
 }

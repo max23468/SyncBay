@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # Coverage
 coverage/
+
+# Screenshot generati dalla preview UI locale
+preview/shots/

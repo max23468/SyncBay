@@ -7,9 +7,18 @@ import type {
 import { useLoaderData } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
-import { SyncBayBrandPanel } from "../components/SyncBayBrandPanel";
+import {
+  ConnectionCard,
+  MetricTile,
+  StatusHero,
+  type SyncBayIcon,
+} from "../components/SyncBayUi";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
-import { getNextAction } from "../lib/syncbay-ui-state";
+import {
+  getEbayConnectionStatusLabel,
+  getNextAction,
+  type NextActionKind,
+} from "../lib/syncbay-ui-state";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import {
   getDashboardState,
@@ -97,148 +106,157 @@ export default function Index() {
   return (
     <s-page heading="Panoramica">
       <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
-      <s-stack gap="base">
-        <s-section heading="Centro operativo">
-          <SyncBayBrandPanel
-            detail="Il catalogo resta eBay.it verso Shopify: SyncBay protegge disponibilità, anteprima e conflitti prima di scrivere."
+      <s-stack gap="large">
+        <StatusHero
+          actionHref={nextAction.primaryActionHref}
+          actionLabel={nextAction.primaryActionLabel}
+          body={nextAction.body}
+          eyebrow={`Centro operativo · ${dashboard.shop.domain}`}
+          icon={getHeroIcon(nextAction.kind)}
+          title={nextAction.title}
+          tone={nextAction.tone}
+        />
+
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        >
+          <MetricTile
+            detail="Prodotti Shopify collegati a eBay."
+            icon="link"
+            label="Prodotti collegati"
+            tone="info"
+            value={formatNumber(dashboard.imports.mappingCount)}
           />
-          <s-text color="subdued">
-            Negozio: {dashboard.shop.domain}. Sync catalogo{" "}
-            {dashboard.shop.syncEnabled ? "attivo" : "non attivo"}.
-          </s-text>
-          <s-box
-            background="subdued"
-            border="base"
-            borderColor="base"
-            borderRadius="base"
-            padding="base"
-          >
-            <s-stack
-              direction="inline"
-              gap="base"
-              justifyContent="space-between"
-            >
-              <s-stack gap="small-200">
-                <s-text color="subdued">Prossima azione</s-text>
-                <s-heading>{nextAction.title}</s-heading>
-                <s-text>{nextAction.body}</s-text>
-              </s-stack>
-              <s-button href={nextAction.primaryActionHref} variant="primary">
-                {nextAction.primaryActionLabel}
-              </s-button>
+          <MetricTile
+            detail="Richiedono una scelta prima dell'allineamento."
+            icon="alert-triangle"
+            label="Conflitti aperti"
+            tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
+            value={formatNumber(dashboard.conflicts.openCount)}
+          />
+          <MetricTile
+            detail={
+              quantityIssueCount > 0
+                ? "Controlli stock emersi dalle attività."
+                : "Nessun controllo stock in evidenza."
+            }
+            icon="inventory"
+            label="Quantità da verificare"
+            tone={quantityIssueCount > 0 ? "warning" : "neutral"}
+            value={formatNumber(quantityIssueCount)}
+          />
+          <MetricTile
+            detail={getCatalogHealthDetail(dashboard)}
+            icon="clock"
+            label="Ultimo aggiornamento"
+            tone="neutral"
+            value={getCatalogHealthValue(dashboard)}
+          />
+        </s-grid>
+
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+        >
+          <s-section heading="Azioni consigliate">
+            <s-stack direction="inline" gap="small-200">
+              {dashboard.ebay.oauthReady &&
+              dashboard.ebay.oauthEnabled &&
+              dashboard.ebay.status !== "CONNECTED" ? (
+                <s-button href="/auth/ebay/start">
+                  {dashboard.ebay.status === "NOT_CONNECTED"
+                    ? "Collega eBay"
+                    : "Ricollega eBay"}
+                </s-button>
+              ) : null}
+              <s-button href="/app/import-preview">Apri importazione</s-button>
+              <s-button href="/app/catalog">Apri catalogo</s-button>
+              {dashboard.conflicts.openCount > 0 ? (
+                <s-button href="/app/conflicts">Risolvi conflitti</s-button>
+              ) : null}
+              <s-button href="/app/settings">Apri impostazioni</s-button>
             </s-stack>
-          </s-box>
-        </s-section>
+          </s-section>
 
-        <s-section heading="Stato rapido">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(4, minmax(0, 1fr))"
-          >
-            <MetricCard
-              detail="Prodotti Shopify collegati a inserzioni eBay."
-              label="Prodotti collegati"
-              value={formatNumber(dashboard.imports.mappingCount)}
-            />
-            <MetricCard
-              detail="Richiedono una scelta prima del prossimo allineamento."
-              label="Conflitti aperti"
-              value={formatNumber(dashboard.conflicts.openCount)}
-            />
-            <MetricCard
-              detail={
-                quantityIssueCount > 0
-                  ? "Controlli stock emersi dalle ultime attività."
-                  : "Nessun controllo stock in evidenza."
-              }
-              label="Quantità da verificare"
-              value={formatNumber(quantityIssueCount)}
-            />
-            <MetricCard
-              detail={getCatalogHealthDetail(dashboard)}
-              label="Ultimo aggiornamento"
-              value={getCatalogHealthValue(dashboard)}
-            />
-          </s-grid>
-        </s-section>
-
-        <s-section heading="Azioni consigliate">
-          <s-stack direction="inline" gap="small-200">
-            {dashboard.ebay.oauthReady &&
-            dashboard.ebay.oauthEnabled &&
-            dashboard.ebay.status !== "CONNECTED" ? (
-              <s-button href="/auth/ebay/start">
-                {dashboard.ebay.status === "NOT_CONNECTED"
-                  ? "Collega eBay"
-                  : "Ricollega eBay"}
-              </s-button>
-            ) : null}
-            <s-button href="/app/import-preview">Apri importazione</s-button>
-            <s-button href="/app/catalog">Apri catalogo</s-button>
-            {dashboard.conflicts.openCount > 0 ? (
-              <s-button href="/app/conflicts">Risolvi conflitti</s-button>
-            ) : null}
-            <s-button href="/app/settings">Apri impostazioni</s-button>
-          </s-stack>
-        </s-section>
-
-        <s-section heading="Catalogo">
-          <s-stack gap="base">
-            <StatusRow
-              detail={getEbayDetail(dashboard)}
-              label={getEbayStatusLabel(dashboard)}
-              tone={dashboard.ebay.status === "CONNECTED" ? "success" : "critical"}
-              title={`eBay ${dashboard.ebay.marketplaceId}`}
-            />
-            <StatusRow
-              detail={getSyncHealthDetail(dashboard)}
-              label={getCatalogHealthBadge(dashboard)}
-              tone={getCatalogHealthTone(dashboard)}
-              title="Aggiornamento catalogo"
-            />
-            <StatusRow
-              detail={getImportStatusDetail(dashboard)}
-              label={importIncomplete ? "Da completare" : "Pronta"}
-              tone={importIncomplete ? "warning" : "success"}
-              title="Importazione"
-            />
-          </s-stack>
-        </s-section>
-
-        <s-section heading="Attività recenti">
-          {recentActivity.length > 0 ? (
+          <s-section heading="Stato catalogo">
             <s-stack gap="base">
-              {recentActivity.map((activity) => (
-                <s-box
-                  border="base"
-                  borderColor="base"
-                  borderRadius="base"
-                  key={activity.id}
-                  padding="base"
-                >
-                  <s-stack
-                    direction="inline"
-                    gap="base"
-                    justifyContent="space-between"
-                  >
-                    <s-stack gap="small-200">
-                      <s-heading>{activity.title}</s-heading>
-                      <s-text color="subdued">{activity.detail}</s-text>
-                    </s-stack>
-                    <s-badge tone={activity.tone}>
-                      {getToneLabel(activity.tone)}
-                    </s-badge>
-                  </s-stack>
-                </s-box>
-              ))}
+              <StatusRow
+                detail={getSyncHealthDetail(dashboard)}
+                label={getCatalogHealthBadge(dashboard)}
+                tone={getCatalogHealthTone(dashboard)}
+                title="Aggiornamento catalogo"
+              />
+              <StatusRow
+                detail={getImportStatusDetail(dashboard)}
+                label={importIncomplete ? "Da completare" : "Pronta"}
+                tone={importIncomplete ? "warning" : "success"}
+                title="Importazione"
+              />
             </s-stack>
-          ) : (
-            <s-text color="subdued">
-              Nessuna attività registrata. Quando SyncBay importerà o aggiornerà
-              il catalogo, gli eventi appariranno qui.
-            </s-text>
-          )}
-        </s-section>
+          </s-section>
+        </s-grid>
+
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+        >
+          <s-section heading="Collegamenti">
+            <s-stack gap="base">
+              <ConnectionCard
+                detail={getEbayDetail(dashboard)}
+                logo="ebay"
+                name={`eBay ${dashboard.ebay.marketplaceId}`}
+                statusLabel={getEbayConnectionStatusLabel(dashboard.ebay.status)}
+                statusTone={
+                  dashboard.ebay.status === "CONNECTED" ? "success" : "critical"
+                }
+              />
+              <ConnectionCard
+                detail={`Negozio ${dashboard.shop.domain}.`}
+                logo="shopify"
+                name="Shopify"
+                statusLabel="Collegato"
+                statusTone="success"
+              />
+            </s-stack>
+          </s-section>
+
+          <s-section heading="Attività recenti">
+            {recentActivity.length > 0 ? (
+              <s-stack gap="base">
+                {recentActivity.map((activity) => (
+                  <s-box
+                    border="base"
+                    borderColor="base"
+                    borderRadius="base"
+                    key={activity.id}
+                    padding="base"
+                  >
+                    <s-stack
+                      direction="inline"
+                      gap="base"
+                      justifyContent="space-between"
+                    >
+                      <s-stack gap="small-200">
+                        <s-heading>{activity.title}</s-heading>
+                        <s-text color="subdued">{activity.detail}</s-text>
+                      </s-stack>
+                      <s-badge tone={activity.tone}>
+                        {getToneLabel(activity.tone)}
+                      </s-badge>
+                    </s-stack>
+                  </s-box>
+                ))}
+              </s-stack>
+            ) : (
+              <s-text color="subdued">
+                Nessuna attività registrata. Quando SyncBay importerà o
+                aggiornerà il catalogo, gli eventi appariranno qui.
+              </s-text>
+            )}
+          </s-section>
+        </s-grid>
 
         <s-section heading="Dettagli tecnici">
           <details className="syncbay-details">
@@ -287,26 +305,6 @@ export default function Index() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
-
-function MetricCard({
-  detail,
-  label,
-  value,
-}: {
-  detail: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="small-200">
-        <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </s-stack>
-    </s-box>
-  );
-}
 
 function StatusRow({
   detail,
@@ -373,13 +371,15 @@ function getRecentActivity(dashboard: Dashboard): RecentActivity[] {
   return [...jobActivity, ...auditActivity].slice(0, 4);
 }
 
-function getEbayStatusLabel(dashboard: Dashboard) {
-  if (dashboard.ebay.status === "CONNECTED") return "Collegato";
-  if (dashboard.ebay.status === "EXPIRED") return "Scaduto";
-  if (dashboard.ebay.status === "REVOKED") return "Revocato";
-  if (dashboard.ebay.status === "RECONNECT_REQUIRED") return "Da ricollegare";
+function getHeroIcon(kind: NextActionKind): SyncBayIcon {
+  if (kind === "ebay_connection") return "link";
+  if (kind === "quantity_check") return "inventory";
+  if (kind === "open_conflicts") return "alert-triangle";
+  if (kind === "catalog_overdue") return "clock";
+  if (kind === "import_incomplete") return "import";
+  if (kind === "settings_missing") return "alert-circle";
 
-  return "Da collegare";
+  return "check-circle";
 }
 
 function getEbayDetail(dashboard: Dashboard) {
