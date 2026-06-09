@@ -117,7 +117,6 @@ export default function Index() {
           tone={nextAction.tone}
         />
 
-        <div className="syncbay-metric-row">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -155,7 +154,6 @@ export default function Index() {
             value={getCatalogHealthValue(dashboard)}
           />
         </s-grid>
-        </div>
 
         <s-grid
           gap="base"
