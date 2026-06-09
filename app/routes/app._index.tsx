@@ -106,7 +106,7 @@ export default function Index() {
   return (
     <s-page heading="Panoramica">
       <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
-      <s-stack gap="large">
+      <s-stack gap="large-200">
         <StatusHero
           actionHref={nextAction.primaryActionHref}
           actionLabel={nextAction.primaryActionLabel}
@@ -206,7 +206,7 @@ export default function Index() {
               <ConnectionCard
                 detail={getEbayDetail(dashboard)}
                 logo="ebay"
-                name={`eBay ${dashboard.ebay.marketplaceId}`}
+                name={`eBay ${formatMarketplaceLabel(dashboard.ebay.marketplaceId)}`}
                 statusLabel={getEbayConnectionStatusLabel(dashboard.ebay.status)}
                 statusTone={
                   dashboard.ebay.status === "CONNECTED" ? "success" : "critical"
@@ -380,6 +380,10 @@ function getHeroIcon(kind: NextActionKind): SyncBayIcon {
   if (kind === "settings_missing") return "alert-circle";
 
   return "check-circle";
+}
+
+function formatMarketplaceLabel(marketplaceId: string) {
+  return marketplaceId.replace(/^EBAY_/, "");
 }
 
 function getEbayDetail(dashboard: Dashboard) {
