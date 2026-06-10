@@ -95,9 +95,15 @@ Schema iniziale:
 - SKU;
 - Shopify product id;
 - Shopify variant id;
-- stato mapping;
+- stato mapping (`ACTIVE`, `OUT_OF_STOCK`, `ARCHIVED`, `PAUSED`, `ERROR`);
 - ultimo sync riuscito;
 - ultima causa errore.
+
+Stato `OUT_OF_STOCK`: il listing eBay è diventato inattivo e il prodotto Shopify
+è mantenuto in vetrina come esaurito (scorta 0, politica `DENY`, tag `esaurito`)
+invece di essere archiviato, per preservarne l'indicizzazione SEO. Esce dalla
+riconciliazione e dal rilevamento conflitti; torna `ACTIVE` se il listing eBay
+viene riattivato. Vedi ADR 0011.
 
 ### Snapshot prodotto
 

@@ -13,6 +13,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   evitando che un blip lato GitHub sulle chiamate GraphQL faccia fallire il job
   della inbox Codex feedback.
 
+## [0.27.0] — 2026-06-10
+
+### Novità
+
+- Catalogo: quando un listing eBay diventa inattivo, il prodotto Shopify non
+  viene più archiviato ma mantenuto in vetrina come esaurito (scorta 0, politica
+  "non vendere a scorta zero", tag `esaurito`), così l'URL e l'indicizzazione SEO
+  della pagina restano. Se il listing eBay torna attivo, il prodotto viene
+  ripristinato (scorta e tag). La corsia catalogo prima chiamata "Archiviati" ora
+  è "Esauriti". Vedi ADR 0011.
+
 ## [0.26.0] — 2026-06-10
 
 ### Novità
@@ -1234,6 +1245,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.27.0]: #0270--2026-06-10
 [0.26.0]: #0260--2026-06-10
 [0.25.0]: #0250--2026-06-09
 [0.24.3]: #0243--2026-06-09

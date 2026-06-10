@@ -530,7 +530,7 @@ function getJobTitle(type: string) {
   if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
   if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata";
   if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Inserzione non attiva";
+  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto messo in esaurito";
 
   return "Attività SyncBay";
 }

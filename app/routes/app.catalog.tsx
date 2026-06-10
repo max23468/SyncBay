@@ -31,7 +31,7 @@ const CATALOG_FILTERS: Array<{ label: string; value: CatalogPageFilter }> = [
   { label: "Da controllare", value: "needs_check" },
   { label: "Conflitti", value: "conflicts" },
   { label: "Non aggiornati", value: "not_updated" },
-  { label: "Archiviati", value: "archived" },
+  { label: "Esauriti", value: "archived" },
 ];
 
 const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
@@ -88,9 +88,9 @@ export default function CatalogRoute() {
             value={formatNumber(catalog.summary.needsCheckCount)}
           />
           <MetricTile
-            detail="Prodotti non più attivi nel catalogo eBay."
+            detail="Listing eBay non più attivo: prodotto in vetrina come esaurito."
             icon="package"
-            label="Archiviati"
+            label="Esauriti"
             tone="neutral"
             value={formatNumber(catalog.summary.archivedCount)}
           />

@@ -428,7 +428,7 @@ function getJobTitle(type: string) {
   if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
   if (type === "UPDATE_EBAY_STOCK") return "Disponibilità eBay";
   if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Archiviazione prodotto";
+  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto messo in esaurito";
 
   return "Attività SyncBay";
 }

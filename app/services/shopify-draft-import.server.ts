@@ -38,6 +38,10 @@ import type {
   ImportPreviewResult,
 } from "./import-preview.server";
 
+// Tag Shopify applicato ai prodotti il cui listing eBay è diventato inattivo:
+// restano in vetrina come esauriti invece di essere archiviati (ADR 0011).
+export const SYNCBAY_SOLD_OUT_TAG = "esaurito";
+
 interface ShopifyAdminGraphqlClient {
   graphql: (
     query: string,
@@ -99,6 +103,7 @@ interface ShopifyDraftProductNode {
     nodes?: ShopifyProductMediaNode[];
   } | null;
   status?: string | null;
+  tags?: string[] | null;
   title: string;
   variants?: {
     nodes?: ShopifyDraftProductVariantNode[];
@@ -184,6 +189,34 @@ interface ShopifyProductUpdateResponse {
   data?: {
     productUpdate?: {
       product?: ShopifyDraftProductNode | null;
+      userErrors?: ShopifyUserError[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyProductSoldOutLookupResponse {
+  data?: {
+    node?: {
+      id: string;
+      variants?: {
+        nodes?: ShopifyDraftProductVariantNode[];
+      } | null;
+    } | null;
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyProductTagsResponse {
+  data?: {
+    tagsAdd?: {
+      userErrors?: ShopifyUserError[];
+    };
+    tagsRemove?: {
       userErrors?: ShopifyUserError[];
     };
   };
@@ -1360,6 +1393,7 @@ async function updateShopifyProductFromEbay(
             }
           }
           status
+          tags
           title
           variants(first: 1) {
             nodes {
@@ -1417,12 +1451,27 @@ async function updateShopifyProductFromEbay(
     };
   }
 
+  const warnings = [
+    "SyncBay ha riallineato titolo, descrizione e stato Shopify dal listing eBay.",
+  ];
+
+  // Rientro: se il prodotto era marcato come esaurito (listing eBay tornato
+  // attivo), rimuovi il tag così non resta segnalato come esaurito. La scorta
+  // viene ripristinata dal normale sync della disponibilità. Vedi ADR 0011.
+  if (updatedProduct.tags?.includes(SYNCBAY_SOLD_OUT_TAG)) {
+    const clearTagResult = await clearShopifySoldOutTag(admin, product.id);
+
+    if (clearTagResult.status === "failed") {
+      warnings.push(
+        `Tag esaurito non rimosso al rientro del listing: ${clearTagResult.errorMessage}`,
+      );
+    }
+  }
+
   return {
     product: updatedProduct,
     status: "synced",
-    warnings: [
-      "SyncBay ha riallineato titolo, descrizione e stato Shopify dal listing eBay.",
-    ],
+    warnings,
   };
 }
 
@@ -2317,6 +2366,270 @@ async function setShopifyInventoryQuantity(
   }
 
   const userErrors = json.data?.inventorySetQuantities?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+/**
+ * Mette un prodotto Shopify nello stato "esaurito" quando il listing eBay
+ * collegato è diventato inattivo: lo stato del prodotto resta ACTIVE (la pagina
+ * e il suo URL restano serviti e indicizzabili), la scorta viene azzerata con
+ * politica DENY e viene applicato il tag `esaurito`. Vedi ADR 0011.
+ *
+ * Non lancia per problemi parziali su scorta o tag: raccoglie avvisi e li
+ * restituisce, così il listing risulta comunque marcato come esaurito.
+ */
+export async function markShopifyProductSoldOut(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    jobId: string;
+    locationGid: string | null;
+    productGid: string;
+  },
+): Promise<{ status: "synced"; warnings: string[] }> {
+  const warnings: string[] = [];
+
+  const lookupResponse = await admin.graphql(
+    `#graphql
+    query SyncBaySoldOutProductLookup($id: ID!) {
+      node(id: $id) {
+        ... on Product {
+          id
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: input.productGid,
+      },
+    },
+  );
+
+  if (!lookupResponse.ok) {
+    throw new Error(
+      `Shopify non ha restituito il prodotto da mettere in esaurito (HTTP ${lookupResponse.status}).`,
+    );
+  }
+
+  const lookupJson =
+    (await lookupResponse.json()) as ShopifyProductSoldOutLookupResponse;
+
+  if (lookupJson.errors?.length) {
+    throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
+  }
+
+  const variant = lookupJson.data?.node?.variants?.nodes?.[0] ?? null;
+  const inventoryItemGid = variant?.inventoryItem?.id ?? null;
+
+  if (variant) {
+    const policyResult = await setShopifyVariantInventoryPolicyDeny(admin, {
+      productGid: input.productGid,
+      variantGid: variant.id,
+    });
+
+    if (policyResult.status === "failed") {
+      warnings.push(policyResult.errorMessage);
+    }
+  } else {
+    warnings.push(
+      "Politica di inventario non aggiornata: variante Shopify non disponibile.",
+    );
+  }
+
+  if (variant && inventoryItemGid && input.locationGid) {
+    const trackingResult = await updateShopifyInventoryItemTracking(
+      admin,
+      inventoryItemGid,
+    );
+
+    if (trackingResult.status === "failed") {
+      warnings.push(trackingResult.errorMessage);
+    } else {
+      const activationResult = await activateShopifyInventoryAtLocation(admin, {
+        inventoryItemGid,
+        locationGid: input.locationGid,
+        quantity: 0,
+      });
+
+      if (activationResult.status === "failed") {
+        warnings.push(activationResult.errorMessage);
+      }
+
+      const quantityResult = await setShopifyInventoryQuantity(admin, {
+        inventoryItemGid,
+        jobId: input.jobId,
+        locationGid: input.locationGid,
+        quantity: 0,
+      });
+
+      if (quantityResult.status === "failed") {
+        warnings.push(quantityResult.errorMessage);
+      }
+    }
+  } else if (!input.locationGid) {
+    warnings.push(
+      "Scorta non azzerata: location Shopify predefinita assente.",
+    );
+  } else if (!inventoryItemGid) {
+    warnings.push(
+      "Scorta non azzerata: inventory item Shopify non disponibile.",
+    );
+  }
+
+  const tagResult = await updateShopifyProductTag(admin, {
+    operation: "add",
+    productGid: input.productGid,
+    tag: SYNCBAY_SOLD_OUT_TAG,
+  });
+
+  if (tagResult.status === "failed") {
+    warnings.push(tagResult.errorMessage);
+  }
+
+  return { status: "synced", warnings };
+}
+
+/**
+ * Rimuove il tag `esaurito` da un prodotto Shopify quando il listing eBay torna
+ * attivo. Idempotente: usata nel percorso di riallineamento dei prodotti già
+ * presenti. Vedi ADR 0011.
+ */
+async function clearShopifySoldOutTag(
+  admin: ShopifyAdminGraphqlClient,
+  productGid: string,
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  return updateShopifyProductTag(admin, {
+    operation: "remove",
+    productGid,
+    tag: SYNCBAY_SOLD_OUT_TAG,
+  });
+}
+
+async function setShopifyVariantInventoryPolicyDeny(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    productGid: string;
+    variantGid: string;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBaySetVariantInventoryPolicyDeny($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        productId: input.productGid,
+        variants: [
+          {
+            id: input.variantGid,
+            inventoryPolicy: "DENY",
+          },
+        ],
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify productVariantsBulkUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  const json =
+    (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productVariantsBulkUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  return { status: "synced" };
+}
+
+async function updateShopifyProductTag(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    operation: "add" | "remove";
+    productGid: string;
+    tag: string;
+  },
+): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+  const mutationName = input.operation === "add" ? "tagsAdd" : "tagsRemove";
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayUpdateProductTag($id: ID!, $tags: [String!]!) {
+      ${mutationName}(id: $id, tags: $tags) {
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: input.productGid,
+        tags: [input.tag],
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify ${mutationName} ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  const json = (await response.json()) as ShopifyProductTagsResponse;
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors =
+    (input.operation === "add"
+      ? json.data?.tagsAdd?.userErrors
+      : json.data?.tagsRemove?.userErrors) ?? [];
 
   if (userErrors.length > 0) {
     return {
