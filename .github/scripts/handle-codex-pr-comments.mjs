@@ -733,7 +733,16 @@ function shouldRetryGitHubRequest(response, text) {
   if (response.status === 429 && isRetryableGitHubRateLimitResponse(response, text)) return true;
   if (response.status === 403 && isRetryableGitHubRateLimitResponse(response, text)) return true;
 
-  return response.status === 401 && text.includes("Bad credentials");
+  return response.status === 401 && isRetryableGitHubAuthResponse(text);
+}
+
+function isRetryableGitHubAuthResponse(text) {
+  const normalizedText = text.toLowerCase();
+
+  return (
+    normalizedText.includes("bad credentials") ||
+    normalizedText.includes("requires authentication")
+  );
 }
 
 function isRetryableGitHubRateLimitResponse(response, text) {
