@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.26.0] — 2026-06-10
+
+### Novità
+
+- Catalogo: stessa lingua visiva della Panoramica — le metriche (Totale,
+  Aggiornati, Da controllare, Archiviati) sono ora tile con icona e tinta
+  semantica, con layout e spaziatura coerenti. La tabella prodotti resta
+  invariata (table-first).
+
 ## [0.25.0] — 2026-06-09
 
 ### Novità
@@ -1218,6 +1227,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.26.0]: #0260--2026-06-10
 [0.25.0]: #0250--2026-06-09
 [0.24.3]: #0243--2026-06-09
 [0.24.2]: #0242--2026-06-09

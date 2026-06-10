@@ -6,6 +6,7 @@ import type {
 import { useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { MetricTile } from "../components/SyncBayUi";
 import {
   type CatalogPageFilter,
   normalizeCatalogPage,
@@ -60,38 +61,40 @@ export default function CatalogRoute() {
   return (
     <s-page heading="Catalogo">
       <s-badge slot="accessory" tone="info">Origine eBay.it</s-badge>
-      <s-stack gap="base">
-        <s-section heading="Prodotti collegati">
-          <s-text color="subdued">
-            Origine catalogo: eBay.it. Shopify riceve un catalogo ordinato,
-            con disponibilità protette e senza creare un flusso inverso.
-          </s-text>
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
-          >
-            <MetricCard
-              detail="Mapping eBay verso Shopify presenti."
-              label="Totale"
-              value={formatNumber(catalog.summary.totalCount)}
-            />
-            <MetricCard
-              detail="Senza conflitti o ritardi evidenti."
-              label="Aggiornati"
-              value={formatNumber(catalog.summary.freshCount)}
-            />
-            <MetricCard
-              detail="Richiedono controllo prima del prossimo allineamento."
-              label="Da controllare"
-              value={formatNumber(catalog.summary.needsCheckCount)}
-            />
-            <MetricCard
-              detail="Prodotti non più attivi nel catalogo eBay."
-              label="Archiviati"
-              value={formatNumber(catalog.summary.archivedCount)}
-            />
-          </s-grid>
-        </s-section>
+      <s-stack gap="large">
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        >
+          <MetricTile
+            detail="Mapping eBay verso Shopify presenti."
+            icon="product"
+            label="Totale"
+            tone="info"
+            value={formatNumber(catalog.summary.totalCount)}
+          />
+          <MetricTile
+            detail="Senza conflitti o ritardi evidenti."
+            icon="check-circle"
+            label="Aggiornati"
+            tone="success"
+            value={formatNumber(catalog.summary.freshCount)}
+          />
+          <MetricTile
+            detail="Da controllare prima del prossimo allineamento."
+            icon="alert-triangle"
+            label="Da controllare"
+            tone={catalog.summary.needsCheckCount > 0 ? "warning" : "neutral"}
+            value={formatNumber(catalog.summary.needsCheckCount)}
+          />
+          <MetricTile
+            detail="Prodotti non più attivi nel catalogo eBay."
+            icon="package"
+            label="Archiviati"
+            tone="neutral"
+            value={formatNumber(catalog.summary.archivedCount)}
+          />
+        </s-grid>
 
         <s-section heading="Controllo catalogo">
           <FilterNav activeFilter={activeFilter} />
@@ -285,26 +288,6 @@ function ProductThumbnail({ row }: { row: CatalogRow }) {
       borderRadius="base"
       inlineSize="64px"
     />
-  );
-}
-
-function MetricCard({
-  detail,
-  label,
-  value,
-}: {
-  detail: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="small-200">
-        <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </s-stack>
-    </s-box>
   );
 }
 
