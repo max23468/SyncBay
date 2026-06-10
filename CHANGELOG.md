@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- CI: il workflow `Codex PR comments` ora ritenta anche i `401` transitori di
+  GitHub con messaggio `Requires authentication` (oltre a `Bad credentials`),
+  evitando che un blip lato GitHub sulle chiamate GraphQL faccia fallire il job
+  della inbox Codex feedback.
+
 ## [0.26.0] — 2026-06-10
 
 ### Novità
