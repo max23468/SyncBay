@@ -21,7 +21,7 @@ Dove il real-time o quasi real-time è tecnicamente possibile senza impatto ecce
 1. Stock dopo ordine Shopify.
 2. Quantità/prezzo eBay -> Shopify.
 3. Titolo/descrizione/immagini.
-4. Archiviazione prodotti chiusi.
+4. Messa in esaurito dei prodotti con listing eBay chiuso.
 5. Riconciliazione completa.
 
 ## Modalità mirror controllato
@@ -58,9 +58,12 @@ Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
 delta recente, overlap di 2 minuti e buffer finale di 2 minuti: le candidate
 lette dagli eventi vengono salvate nel payload del job e riusano il flusso
 import controllato senza rileggere ogni listing via `GetItem`. Gli eventi che
-indicano listing conclusi o inattivi generano job `ARCHIVE_INACTIVE_LISTING`.
-Una finestra composta solo da archiviazioni avanza il watermark seller-events
-solo dopo il completamento dei relativi job archivio.
+indicano listing conclusi o inattivi generano job `ARCHIVE_INACTIVE_LISTING`
+(nome storico): il job non archivia più il prodotto Shopify ma lo mantiene in
+vetrina come esaurito (scorta 0, politica `DENY`, tag `esaurito`, mapping
+`OUT_OF_STOCK`) per preservarne l'indicizzazione SEO. Vedi ADR 0011. Una
+finestra composta solo da messe in esaurito avanza il watermark seller-events
+solo dopo il completamento dei relativi job.
 
 `GetMyeBaySelling` resta la riconciliazione completa periodica per coprire drift,
 eventi persi e nuovi stati non emersi nei delta. L'intervallo predefinito è
@@ -75,9 +78,14 @@ sceglie un'azione guidata.
 
 Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
 prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
-SyncBay ancora attivi ma non più presenti tra i listing eBay attivi. Se la
-scansione è vuota, incompleta o troncata dal limite MVP, SyncBay sincronizza i
-listing letti ma non archivia prodotti Shopify per evitare falsi positivi.
+SyncBay ancora attivi ma non più presenti tra i listing eBay attivi: questi
+prodotti vengono messi in esaurito (non archiviati), il mapping passa a
+`OUT_OF_STOCK` ed esce dalla riconciliazione successiva. Se la scansione è vuota,
+incompleta o troncata dal limite MVP, SyncBay sincronizza i listing letti ma non
+mette in esaurito alcun prodotto Shopify per evitare falsi positivi. Se un
+listing torna attivo, il sync incrementale riusa il prodotto esistente,
+ripristina la scorta, riporta il mapping ad `ACTIVE` e rimuove il tag
+`esaurito`.
 
 ## Conflitti Shopify
 

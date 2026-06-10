@@ -107,7 +107,7 @@ function getJobImpact(type: string) {
     return "Controllo modifiche Shopify non completato: i conflitti potrebbero non essere ancora aggiornati.";
   }
   if (type === "ARCHIVE_INACTIVE_LISTING") {
-    return "Archiviazione non completata: un prodotto chiuso su eBay potrebbe restare attivo su Shopify.";
+    return "Messa in esaurito non completata: un prodotto chiuso su eBay potrebbe restare disponibile su Shopify.";
   }
 
   return "Attività SyncBay non completata: controlla il dettaglio tecnico prima di riprovare.";

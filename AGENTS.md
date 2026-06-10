@@ -30,7 +30,7 @@ La direzione confermata:
 - prima custom app per pilota controllato, poi app pubblica Shopify App Store;
 - sync target entro massimo 5 minuti;
 - scala MVP fino a 2.000 prodotti per shop;
-- prodotti non più attivi su eBay archiviati su Shopify, non cancellati;
+- prodotti non più attivi su eBay mantenuti su Shopify come esauriti (scorta 0, non archiviati né cancellati) per preservarne la SEO (ADR 0011);
 - modifiche manuali Shopify gestite come conflitti visibili, non sovrascritte silenziosamente;
 - prodotto self-service: diagnostica, retry e azioni guidate devono ridurre la dipendenza da supporto umano.
 
@@ -146,7 +146,7 @@ basso rischio, cleanup o modifiche meccaniche già determinate.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
 - Non assumere che Shopify sia la sorgente di verità: per il catalogo MVP la sorgente è eBay.
 - Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilità derivati da ordini Shopify.
-- Non cancellare prodotti Shopify quando un listing eBay sparisce: archiviali.
+- Non cancellare né archiviare prodotti Shopify quando un listing eBay sparisce: mantienili in vetrina come esauriti (scorta 0, politica DENY, tag `esaurito`, mapping `OUT_OF_STOCK`) per preservarne la SEO (ADR 0011).
 - Non sovrascrivere modifiche manuali Shopify senza aprire conflitto.
 - Non dipendere dal supporto umano per errori ordinari: gli errori devono essere comprensibili e azionabili in dashboard.
 - Non dedurre dati eBay non restituiti dalle API. Se un campo non arriva, dichiaralo come assente o non supportato.

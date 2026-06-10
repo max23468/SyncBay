@@ -68,7 +68,10 @@ import type {
   ImportPreviewSummary,
 } from "./import-preview.server";
 import { buildImportPreview } from "./import-preview.server";
-import { createShopifyDraftProductsIfEnabled } from "./shopify-draft-import.server";
+import {
+  createShopifyDraftProductsIfEnabled,
+  markShopifyProductSoldOut,
+} from "./shopify-draft-import.server";
 
 type DueSyncJob = Prisma.SyncJobGetPayload<{ include: { shop: true } }>;
 type DueSyncJobRunResult = {
@@ -114,19 +117,6 @@ type ShopifyProductForConflictResponse = {
   };
   errors?: Array<{ message: string }>;
 };
-type ShopifyProductArchiveResponse = {
-  data?: {
-    productUpdate?: {
-      product?: {
-        id: string;
-        status?: string | null;
-      } | null;
-      userErrors?: Array<{ field?: string[] | null; message: string }>;
-    } | null;
-  };
-  errors?: Array<{ message: string }>;
-};
-
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
@@ -974,7 +964,7 @@ async function runDueSyncJob(job: DueSyncJob) {
       return await runUpdateEbayStockJob(job);
     }
     if (job.type === SyncJobType.ARCHIVE_INACTIVE_LISTING) {
-      return await runArchiveInactiveListingJob(job);
+      return await runMarkInactiveListingSoldOutJob(job);
     }
     if (job.type === SyncJobType.DETECT_SHOPIFY_CHANGES) {
       return await runDetectShopifyChangesJob(job);
@@ -1459,11 +1449,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   };
 }
 
-async function runArchiveInactiveListingJob(job: DueSyncJob) {
+// Job storicamente chiamato ARCHIVE_INACTIVE_LISTING: il listing eBay inattivo
+// non viene più archiviato ma mantenuto su Shopify come esaurito (scorta 0,
+// politica DENY, tag esaurito, mapping OUT_OF_STOCK). Vedi ADR 0011.
+async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   const ebayItemId = getArchiveEbayItemId(job.payload);
 
   if (!ebayItemId) {
-    throw new Error("Job archivio listing inattivo senza eBay ItemID.");
+    throw new Error("Job esaurito listing inattivo senza eBay ItemID.");
   }
 
   const marketplaceId = getEbayMarketplaceId(job.payload);
@@ -1481,11 +1474,11 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
       delegatedJobId: null,
       job,
       result: {
-        archivedCount: 0,
         ebayItemId,
         skippedReason: "active_mapping_not_found",
+        soldOutCount: 0,
       },
-      warnings: ["Archivio saltato: mapping attivo non trovato."],
+      warnings: ["Esaurito saltato: mapping attivo non trovato."],
     });
     await maybeMarkSellerEventsArchiveWindowSucceeded(job);
 
@@ -1496,9 +1489,16 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
     };
   }
 
+  const soldOutWarnings: string[] = [];
+
   if (mapping.shopifyProductGid) {
     const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
-    await archiveShopifyProduct(admin, mapping.shopifyProductGid);
+    const soldOutResult = await markShopifyProductSoldOut(admin, {
+      jobId: job.id,
+      locationGid: job.shop.defaultLocationGid,
+      productGid: mapping.shopifyProductGid,
+    });
+    soldOutWarnings.push(...soldOutResult.warnings);
   }
 
   const now = new Date();
@@ -1509,7 +1509,7 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
         lastErrorCode: null,
         lastErrorMessage: null,
         lastSyncedAt: now,
-        status: ProductMappingStatus.ARCHIVED,
+        status: ProductMappingStatus.OUT_OF_STOCK,
       },
       where: { id: mapping.id },
     }),
@@ -1518,11 +1518,12 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
         ebayItemId: mapping.ebayItemId,
         mappingId: mapping.id,
         payload: {
-          archivedShopifyProduct: Boolean(mapping.shopifyProductGid),
           reason: "ebay_listing_inactive",
+          soldOutShopifyProduct: Boolean(mapping.shopifyProductGid),
           syncJobId: job.id,
         } satisfies Prisma.JsonObject,
-        productStatus: "ARCHIVED",
+        // Il prodotto Shopify resta ACTIVE: è solo esaurito (scorta 0).
+        productStatus: "ACTIVE",
         quantity: 0,
         shopId: job.shopId,
         shopifyProductGid: mapping.shopifyProductGid,
@@ -1537,14 +1538,14 @@ async function runArchiveInactiveListingJob(job: DueSyncJob) {
     delegatedJobId: null,
     job,
     result: {
-      archivedCount: 1,
-      archivedShopifyProduct: Boolean(mapping.shopifyProductGid),
       ebayItemId,
       shopifyProductGid: mapping.shopifyProductGid,
+      soldOutCount: 1,
+      soldOutShopifyProduct: Boolean(mapping.shopifyProductGid),
     },
     warnings: mapping.shopifyProductGid
-      ? []
-      : ["Mapping archiviato senza prodotto Shopify collegato."],
+      ? soldOutWarnings
+      : ["Mapping messo in esaurito senza prodotto Shopify collegato."],
   });
   await maybeMarkSellerEventsArchiveWindowSucceeded(job);
 
@@ -1618,54 +1619,6 @@ async function maybeMarkSellerEventsArchiveWindowSucceeded(job: DueSyncJob) {
     ],
     skipDuplicates: true,
   });
-}
-
-async function archiveShopifyProduct(
-  admin: {
-    graphql: (
-      query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) => Promise<Response>;
-  },
-  productGid: string,
-) {
-  const response = await admin.graphql(
-    `#graphql
-    mutation SyncBayArchiveInactiveProduct($product: ProductUpdateInput!) {
-      productUpdate(product: $product) {
-        product {
-          id
-          status
-        }
-        userErrors {
-          field
-          message
-        }
-      }
-    }`,
-    {
-      variables: {
-        product: {
-          id: productGid,
-          status: "ARCHIVED",
-        },
-      },
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("Shopify non ha accettato la richiesta di archivio.");
-  }
-
-  const json = (await response.json()) as ShopifyProductArchiveResponse;
-  const graphQLError = json.errors?.[0]?.message;
-  const userError = json.data?.productUpdate?.userErrors?.[0]?.message;
-
-  if (graphQLError || userError) {
-    throw new Error(
-      graphQLError ?? userError ?? "Archivio prodotto Shopify non riuscito.",
-    );
-  }
 }
 
 function getSnapshotSkuGenerated(payload: Prisma.JsonValue | null | undefined) {

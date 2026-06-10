@@ -23,6 +23,7 @@ Usa un ADR quando una scelta:
 - `0008-tag-e-github-release.md`: policy per tag `vX.Y.Z` e GitHub Release.
 - `0009-shopify-token-offline-a-scadenza.md`: token offline Shopify a scadenza e refresh come requisito per i job automatici.
 - `0010-ui-design-layer-e-marchi-terzi.md`: design layer UI minimo documentato e uso dei marchi eBay/Shopify.
+- `0011-listing-inattivo-esaurito.md`: listing eBay inattivo mantenuto su Shopify come esaurito invece di archiviato, per preservare la SEO.
 
 ## Convenzioni
 
