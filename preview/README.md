@@ -25,7 +25,23 @@ Vercel e Shopify Admin.
 
 ## Due modalità
 
-### 1. Render con DATI REALI (consigliato)
+### 1. Smoke veloce con fixture sintetica (default design)
+
+Per iterare su layout e regressioni evidenti non serve avviare Supabase o
+aprire Shopify Admin. Il comando renderizza il **componente di route reale**
+con dati sintetici/sanitizzati in memoria e salva HTML + screenshot in
+`preview/shots/`:
+
+```bash
+npm run ui:preview
+npm run ui:preview:catalogo
+npm run ui:preview:panoramica
+```
+
+È il percorso da usare per QA rapido di densità, colonne, responsive, gerarchia,
+testi principali e assenza di rendering rotto.
+
+### 2. Render con DATI REALI
 
 `scripts/syncbay-ui-render.mjs` esegue il **componente di route reale** via Vite
 SSR, alimentato dai **loader veri** letti dalla sessione offline nel database
@@ -34,6 +50,7 @@ Admin: i dati sono quelli reali dello shop collegato in locale (dev store).
 
 ```bash
 npm run ui:render panoramica   # render dati reali + screenshot desktop/narrow
+npm run ui:render catalogo      # render Catalogo con dati reali locali
 ```
 
 Prerequisiti: Supabase locale attivo (`npx supabase start`, richiede Docker) e
@@ -56,10 +73,9 @@ opera solo su righe `seed-%`. Serve per QA visivo locale, non per test
 funzionali del sync.
 
 Solo la chrome dei componenti `s-*` resta simulata. Tutto il resto — dati,
-componente di route, design layer, gerarchia — è reale. Le pagine vanno cablate
-in `PAGES` man mano che vengono ridisegnate (per ora: `panoramica`).
+componente di route, design layer, gerarchia — è reale.
 
-### 2. Harness con dati finti
+### 3. Harness HTML statico
 
 `scripts/preview-shot.mjs` screenshotta gli HTML statici in `preview/` con dati
 sintetici. Utile quando il database locale non è disponibile.

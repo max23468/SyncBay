@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.29.0] — 2026-06-11
+
+### Novità
+
+- Catalogo: controlli compatti con chip per filtri e ordine, 50 prodotti per
+  pagina, link Shopify/eBay come azioni di riga, tabella più larga e colonna
+  Azioni separata dallo Stato.
+- QA UI: il render locale con fixture sintetica supporta Panoramica e Catalogo,
+  genera screenshot senza Supabase o Shopify Admin e resta affiancato al render
+  con dati reali quando serve.
+
 ## [0.28.1] — 2026-06-11
 
 ### Correzioni
@@ -1282,6 +1293,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.0]: #0290--2026-06-11
 [0.28.1]: #0281--2026-06-11
 [0.28.0]: #0280--2026-06-11
 [0.27.0]: #0270--2026-06-10

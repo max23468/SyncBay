@@ -43,7 +43,7 @@ async function findAppFrameSrc(page) {
   const srcs = await page.$$eval("iframe", (frames) =>
     frames.map((f) => f.getAttribute("src") || ""),
   );
-  return srcs.find((s) => /vercel\.app|syncbay/i.test(s)) || null;
+  return srcs.find((s) => /trycloudflare\.com|vercel\.app|syncbay/i.test(s)) || null;
 }
 
 try {
