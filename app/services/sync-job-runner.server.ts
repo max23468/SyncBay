@@ -735,7 +735,7 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
   if (limit === 0) return 0;
 
   const mappings = await prisma.productMapping.findMany({
-    orderBy: [{ updatedAt: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
     select: {
       conflicts: {
         select: { id: true },
@@ -750,7 +750,7 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
         take: CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK,
       },
     },
-    take: Math.min(CATALOG_RECONCILE_MAX_PRODUCTS, limit * 5),
+    take: CATALOG_RECONCILE_MAX_PRODUCTS,
     where: {
       marketplaceId: DEFAULT_MARKETPLACE_ID,
       shopId: input.shopId,

@@ -6,7 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.29.6] — 2026-06-11
+
+### Correzioni
+
+- La riparazione automatica delle thumbnail Catalogo scansiona tutto il
+  perimetro MVP dei mapping attivi prima di applicare il limite giornaliero,
+  evitando di restare bloccata su mapping già coperti da immagini.
+
+### Sotto il cofano
 
 - `publish:preflight --remote` riconosce `main` pulito e allineato come
   controllo post-merge, evitando blocchi falsi dopo una pubblicazione già
@@ -1356,6 +1364,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.6]: #0296--2026-06-11
 [0.29.5]: #0295--2026-06-11
 [0.29.4]: #0294--2026-06-11
 [0.29.3]: #0293--2026-06-11
