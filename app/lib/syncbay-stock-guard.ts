@@ -52,10 +52,11 @@ export function isEbayStockRealWriteAllowed(input: {
 
 function getStockRealWriteAllowlistTokens(value: string | null | undefined) {
   return (
-    value
-      ?.split(/[\s,]+/)
-      .map((token) => token.trim().toLowerCase())
-      .filter(Boolean) ?? []
+    value?.split(/[\s,]+/).flatMap((token) => {
+      const normalized = token.trim().toLowerCase();
+
+      return normalized ? [normalized] : [];
+    }) ?? []
   );
 }
 

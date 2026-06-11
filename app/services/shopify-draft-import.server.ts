@@ -1235,11 +1235,11 @@ async function findExistingSyncBayDraftProductByMetafieldScan(
 
     if (json.errors?.length) return null;
 
-    const product = json.data?.products?.nodes?.find(
-      (node) => node.metafield?.value === draftProduct.source.ebayItemId,
-    );
-
-    if (product) return product;
+    for (const node of json.data?.products?.nodes ?? []) {
+      if (node.metafield?.value === draftProduct.source.ebayItemId) {
+        return node;
+      }
+    }
 
     const pageInfo = json.data?.products?.pageInfo;
 

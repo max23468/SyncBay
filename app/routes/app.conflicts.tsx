@@ -468,8 +468,10 @@ function formatDateTime(value: string) {
   return itDateTimeFormatter.format(new Date(value));
 }
 
+const itNumberFormatter = new Intl.NumberFormat("it-IT");
+
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("it-IT").format(value);
+  return itNumberFormatter.format(value);
 }
 
 function getDecisionModeTone(
