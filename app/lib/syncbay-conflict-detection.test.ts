@@ -9,6 +9,7 @@ const {
   getLatestSyncBayDescriptionBaselineWhere,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
+  shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
 } = conflictDetection;
@@ -80,7 +81,7 @@ test("detects Shopify conflicts only for active mappings", () => {
   assert.equal(shouldDetectShopifyConflictsForMappingStatus(null), false);
 });
 
-test("blocks incremental sync on open conflicts only for active mappings", () => {
+test("blocks incremental sync on open conflicts for sellable or held mappings", () => {
   assert.equal(
     shouldBlockIncrementalSyncForOpenConflictMappingStatus("ACTIVE"),
     true,
@@ -95,16 +96,31 @@ test("blocks incremental sync on open conflicts only for active mappings", () =>
   );
   assert.equal(
     shouldBlockIncrementalSyncForOpenConflictMappingStatus("PAUSED"),
-    false,
+    true,
   );
   assert.equal(
     shouldBlockIncrementalSyncForOpenConflictMappingStatus("ERROR"),
-    false,
+    true,
   );
   assert.equal(
     shouldBlockIncrementalSyncForOpenConflictMappingStatus(null),
     false,
   );
+});
+
+test("resolves open conflicts automatically only for inactive-source mappings", () => {
+  assert.equal(
+    shouldResolveOpenConflictsForInactiveMappingStatus("OUT_OF_STOCK"),
+    true,
+  );
+  assert.equal(
+    shouldResolveOpenConflictsForInactiveMappingStatus("ARCHIVED"),
+    true,
+  );
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"), false);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus(null), false);
 });
 
 test("skips images conflicts when eBay has no media but Shopify does", () => {

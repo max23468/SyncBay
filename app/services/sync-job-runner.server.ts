@@ -18,6 +18,7 @@ import {
   getLatestSyncBayDescriptionBaselineWhere,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
+  shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
 } from "../lib/syncbay-conflict-detection";
@@ -1132,21 +1133,51 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
+  const openConflicts = await prisma.syncConflict.findMany({
+    select: {
+      mapping: {
+        select: { ebayItemId: true, id: true, status: true },
+      },
+    },
+    where: {
+      mapping: { ebayItemId: { in: ebayItemIds } },
+      shopId: job.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+  const reactivationConflictMappingIds = [
+    ...new Set(
+      openConflicts.flatMap((conflict) => {
+        if (
+          !shouldResolveOpenConflictsForInactiveMappingStatus(
+            conflict.mapping?.status ?? null,
+          )
+        ) {
+          return [];
+        }
+
+        return conflict.mapping?.id ? [conflict.mapping.id] : [];
+      }),
+    ),
+  ];
+  const reactivationConflictResolvedCount =
+    reactivationConflictMappingIds.length > 0
+      ? (
+          await prisma.syncConflict.updateMany({
+            data: {
+              resolvedAt: new Date(),
+              status: SyncConflictStatus.RESOLVED,
+            },
+            where: {
+              mappingId: { in: reactivationConflictMappingIds },
+              shopId: job.shopId,
+              status: SyncConflictStatus.OPEN,
+            },
+          })
+        ).count
+      : 0;
   const openConflictItemIds = new Set(
-    (
-      await prisma.syncConflict.findMany({
-        select: {
-          mapping: {
-            select: { ebayItemId: true, status: true },
-          },
-        },
-        where: {
-          mapping: { ebayItemId: { in: ebayItemIds } },
-          shopId: job.shopId,
-          status: SyncConflictStatus.OPEN,
-        },
-      })
-    ).flatMap((conflict) => {
+    openConflicts.flatMap((conflict) => {
       if (
         !shouldBlockIncrementalSyncForOpenConflictMappingStatus(
           conflict.mapping?.status ?? null,
@@ -1168,6 +1199,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       job,
       result: {
         conflictSkippedCount: ebayItemIds.length,
+        reactivationConflictResolvedCount,
         requestedCount: ebayItemIds.length,
         syncedCount: 0,
       },
@@ -1229,6 +1261,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     job,
     result: {
       conflictSkippedCount: openConflictItemIds.size,
+      reactivationConflictResolvedCount,
       requestedCount: ebayItemIds.length,
       syncedCount: syncableItemIds.length,
     },
@@ -1677,10 +1710,13 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
   }
 
   if (!shouldDetectShopifyConflictsForMappingStatus(mapping.status)) {
-    const resolvedConflictCount = await resolveOpenConflictsForInactiveMapping({
-      mappingId: mapping.id,
-      shopId: job.shopId,
-    });
+    const resolvedConflictCount =
+      shouldResolveOpenConflictsForInactiveMappingStatus(mapping.status)
+        ? await resolveOpenConflictsForInactiveMapping({
+            mappingId: mapping.id,
+            shopId: job.shopId,
+          })
+        : 0;
 
     await markJobSucceeded({
       delegatedJobId: null,

@@ -86,7 +86,17 @@ export function shouldDetectShopifyConflictsForMappingStatus(
 export function shouldBlockIncrementalSyncForOpenConflictMappingStatus(
   mappingStatus: string | null,
 ) {
-  return mappingStatus === "ACTIVE";
+  return (
+    mappingStatus === "ACTIVE" ||
+    mappingStatus === "PAUSED" ||
+    mappingStatus === "ERROR"
+  );
+}
+
+export function shouldResolveOpenConflictsForInactiveMappingStatus(
+  mappingStatus: string | null,
+) {
+  return mappingStatus === "OUT_OF_STOCK" || mappingStatus === "ARCHIVED";
 }
 
 export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
