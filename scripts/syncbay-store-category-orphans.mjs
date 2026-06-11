@@ -169,7 +169,7 @@ function getStorefrontCategory(storefront) {
 
   return {
     storeCategoryId: normalizedId,
-    storeCategoryName: name && name.length > 0 ? name : null,
+    storeCategoryName: normalizedId && name && name.length > 0 ? name : null,
   };
 }
 
