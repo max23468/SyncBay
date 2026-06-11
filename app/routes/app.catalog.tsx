@@ -439,6 +439,10 @@ function getCatalogHref(
   if (filter !== "all") params.set("filter", filter);
   if (page > 1) params.set("page", String(page));
   if (orderValue) params.set("order", orderValue);
+  if (!orderValue && sort) {
+    params.set("sort", sort);
+    params.set("dir", sortDir);
+  }
 
   const query = params.toString();
 
