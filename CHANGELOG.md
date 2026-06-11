@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Aggiunto `npm run catalog:backfill-archived-soldout`, backfill una-tantum che
+  porta i prodotti già archiviati per listing eBay inattivo allo stato esaurito
+  di ADR 0011 (prodotto Shopify riattivato con scorta 0, politica DENY e tag
+  `esaurito`; mapping a `OUT_OF_STOCK` con snapshot). Idempotente, con
+  `--dry-run`, eseguito sul pilota per i 132 prodotti archiviati storici.
+
+## [0.28.0] — 2026-06-11
+
 ### Novità
 
 - Catalogo: colonne ordinabili cliccando le intestazioni (Prodotto,
@@ -19,21 +29,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Catalogo: filtri e cambi pagina più veloci — le miniature vengono risolte
   solo per le righe mostrate invece che per tutto il catalogo caricato.
-
-### Sotto il cofano
-
-- Aggiunto `npm run catalog:backfill-archived-soldout`, backfill una-tantum che
-  porta i prodotti già archiviati per listing eBay inattivo allo stato esaurito
-  di ADR 0011 (prodotto Shopify riattivato con scorta 0, politica DENY e tag
-  `esaurito`; mapping a `OUT_OF_STOCK` con snapshot). Idempotente, con
-  `--dry-run`, eseguito sul pilota per i 132 prodotti archiviati storici.
-
-### Non versionato
-
-- CI: il workflow `Codex PR comments` ora ritenta anche i `401` transitori di
-  GitHub con messaggio `Requires authentication` (oltre a `Bad credentials`),
-  evitando che un blip lato GitHub sulle chiamate GraphQL faccia fallire il job
-  della inbox Codex feedback.
 
 ## [0.27.0] — 2026-06-10
 
@@ -266,6 +261,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   e abilitato, sostituendo il link non avviabile con un blocco operativo.
 
 ## Note interne non versionate
+
+### 2026-06-10
+
+- CI: il workflow `Codex PR comments` ora ritenta anche i `401` transitori di
+  GitHub con messaggio `Requires authentication` (oltre a `Bad credentials`),
+  evitando che un blip lato GitHub sulle chiamate GraphQL faccia fallire il job
+  della inbox Codex feedback.
 
 ### 2026-06-04
 
@@ -1267,6 +1269,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.28.0]: #0280--2026-06-11
 [0.27.0]: #0270--2026-06-10
 [0.26.0]: #0260--2026-06-10
 [0.25.0]: #0250--2026-06-09
