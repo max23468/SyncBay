@@ -446,9 +446,10 @@ function getCatalogHref(
 }
 
 function normalizeCatalogOrder(value: string | null | undefined) {
+  if (!value) return null;
+
   return (
-    CATALOG_ORDER_OPTIONS.find((option) => option.value === (value ?? "")) ??
-    null
+    CATALOG_ORDER_OPTIONS.find((option) => option.value === value) ?? null
   );
 }
 
