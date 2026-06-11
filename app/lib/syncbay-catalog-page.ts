@@ -12,6 +12,32 @@ export const CATALOG_PAGE_FILTERS = [
 
 export type CatalogPageFilter = (typeof CATALOG_PAGE_FILTERS)[number];
 
+export const CATALOG_SORT_KEYS = [
+  "product",
+  "link",
+  "availability",
+  "price",
+  "updated",
+  "status",
+] as const;
+
+export type CatalogSortKey = (typeof CATALOG_SORT_KEYS)[number];
+export type CatalogSortDir = "asc" | "desc";
+
+export function normalizeCatalogSort(
+  value: string | null | undefined,
+): CatalogSortKey | null {
+  return CATALOG_SORT_KEYS.includes(value as CatalogSortKey)
+    ? (value as CatalogSortKey)
+    : null;
+}
+
+export function normalizeCatalogSortDir(
+  value: string | null | undefined,
+): CatalogSortDir {
+  return value === "desc" ? "desc" : "asc";
+}
+
 export function normalizeCatalogPageFilter(
   value: string | null | undefined,
 ): CatalogPageFilter {

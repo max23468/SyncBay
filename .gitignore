@@ -31,3 +31,6 @@ coverage/
 
 # Screenshot generati dalla preview UI locale
 preview/shots/
+
+# Profilo Playwright per QA live (sessione Shopify)
+.shopify-pw-profile/

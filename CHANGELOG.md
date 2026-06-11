@@ -6,6 +6,28 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Catalogo: colonne ordinabili cliccando le intestazioni (Prodotto,
+  Collegamento, Disponibilità, Prezzo, Aggiornamento, Stato), con direzione
+  asc/desc e ordinamento preservato cambiando filtro o pagina.
+- Catalogo: immagine e prodotto in due colonne separate; il prezzo usa il
+  simbolo di valuta (€) invece del codice; le azioni di riga sono contestuali
+  (Risolvi appare solo con conflitti aperti, Dettagli sempre disponibile).
+
+### Correzioni
+
+- Catalogo: filtri e cambi pagina più veloci — le miniature vengono risolte
+  solo per le righe mostrate invece che per tutto il catalogo caricato.
+
+### Sotto il cofano
+
+- Aggiunto `npm run catalog:backfill-archived-soldout`, backfill una-tantum che
+  porta i prodotti già archiviati per listing eBay inattivo allo stato esaurito
+  di ADR 0011 (prodotto Shopify riattivato con scorta 0, politica DENY e tag
+  `esaurito`; mapping a `OUT_OF_STOCK` con snapshot). Idempotente, con
+  `--dry-run`, eseguito sul pilota per i 132 prodotti archiviati storici.
+
 ### Non versionato
 
 - CI: il workflow `Codex PR comments` ora ritenta anche i `401` transitori di
