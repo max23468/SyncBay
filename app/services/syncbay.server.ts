@@ -25,6 +25,8 @@ import {
 import {
   CATALOG_PAGE_SIZE,
   type CatalogPageFilter,
+  type CatalogSortDir,
+  type CatalogSortKey,
   getCatalogPageWindow,
 } from "../lib/syncbay-catalog-page";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
@@ -347,7 +349,12 @@ export async function getDashboardState(session: ShopifySessionLike) {
 
 export async function getCatalogPageState(
   session: ShopifySessionLike,
-  input: { filter?: CatalogPageFilter; page?: number } = {},
+  input: {
+    filter?: CatalogPageFilter;
+    page?: number;
+    sort?: CatalogSortKey | null;
+    sortDir?: CatalogSortDir;
+  } = {},
 ) {
   const shop = await ensureShopForSession(session);
   const where = {
@@ -375,38 +382,52 @@ export async function getCatalogPageState(
     }),
     prisma.productMapping.count({ where }),
   ]);
-  const thumbnailPayloadByMappingId =
-    await getLatestThumbnailPayloadByMappingId(
-      mappings.map((mapping) => mapping.id),
-    );
 
+  // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
+  // paginazione, solo per le righe mostrate, per tenere veloci filtri e sort.
   const allRows = mappings.map((mapping) =>
     formatCatalogPageRow({
       mapping,
       now: new Date(),
       syncTargetSeconds: shop.syncTargetSeconds,
-      thumbnailPayload: thumbnailPayloadByMappingId.get(mapping.id) ?? null,
+      thumbnailPayload: null,
     }),
   );
   const activeFilter = input.filter ?? "all";
   const filteredRows = filterCatalogPageRows(allRows, activeFilter);
+  const sortedRows = sortCatalogPageRows(
+    filteredRows,
+    input.sort ?? null,
+    input.sortDir ?? "asc",
+  );
   const pagination = getCatalogPageWindow({
     page: input.page ?? 1,
     pageSize: CATALOG_PAGE_SIZE,
-    totalRows: filteredRows.length,
+    totalRows: sortedRows.length,
   });
-  const pageRows = filteredRows.slice(
+  const pageRows = sortedRows.slice(
     pagination.offset,
     pagination.offset + pagination.pageSize,
   );
+  const thumbnailPayloadByMappingId =
+    await getLatestThumbnailPayloadByMappingId(pageRows.map((row) => row.id));
+  const pageRowsWithSnapshotThumbs = pageRows.map((row) => {
+    if (row.thumbnailUrl) return row;
+    const payload = thumbnailPayloadByMappingId.get(row.id) ?? null;
+
+    return {
+      ...row,
+      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([payload]),
+    };
+  });
   const shopifyThumbnailUrlByProductGid =
     await getShopifyThumbnailUrlByProductGid({
-      productGids: pageRows
+      productGids: pageRowsWithSnapshotThumbs
         .filter((row) => !row.thumbnailUrl && row.shopifyProductGid)
         .map((row) => row.shopifyProductGid as string),
       shopDomain: shop.shopDomain,
     });
-  const rowsWithThumbnails = pageRows.map((row) =>
+  const rowsWithThumbnails = pageRowsWithSnapshotThumbs.map((row) =>
     row.thumbnailUrl
       ? row
       : {
@@ -2290,6 +2311,54 @@ function filterCatalogPageRows(
   }
 
   return rows;
+}
+
+const CATALOG_STATUS_SORT_ORDER: Record<string, number> = {
+  mapping_error: 0,
+  open_conflict: 1,
+  stale_sync: 2,
+  active_fresh: 3,
+  archived: 4,
+};
+
+function sortCatalogPageRows(
+  rows: CatalogPageRow[],
+  sort: CatalogSortKey | null,
+  dir: CatalogSortDir,
+) {
+  if (!sort) return rows;
+
+  const factor = dir === "desc" ? -1 : 1;
+  const byText = (a: string, b: string) =>
+    factor * a.localeCompare(b, "it", { sensitivity: "base" });
+  const byNumber = (a: number, b: number) => factor * (a - b);
+
+  return [...rows].sort((a, b) => {
+    if (sort === "product") return byText(a.title, b.title);
+    if (sort === "link") {
+      return byNumber(a.shopifyProductGid ? 0 : 1, b.shopifyProductGid ? 0 : 1);
+    }
+    if (sort === "availability") {
+      return byNumber(a.quantity ?? -1, b.quantity ?? -1);
+    }
+    if (sort === "price") {
+      return byNumber(
+        a.price ? Number.parseFloat(a.price.amount) : -1,
+        b.price ? Number.parseFloat(b.price.amount) : -1,
+      );
+    }
+    if (sort === "updated") {
+      return byNumber(
+        a.lastSyncedAt ? Date.parse(a.lastSyncedAt) : 0,
+        b.lastSyncedAt ? Date.parse(b.lastSyncedAt) : 0,
+      );
+    }
+
+    return byNumber(
+      CATALOG_STATUS_SORT_ORDER[a.status] ?? 9,
+      CATALOG_STATUS_SORT_ORDER[b.status] ?? 9,
+    );
+  });
 }
 
 function formatCatalogPageRow(input: {

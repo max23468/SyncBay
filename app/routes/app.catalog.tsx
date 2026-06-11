@@ -9,8 +9,12 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { MetricTile } from "../components/SyncBayUi";
 import {
   type CatalogPageFilter,
+  type CatalogSortDir,
+  type CatalogSortKey,
   normalizeCatalogPage,
   normalizeCatalogPageFilter,
+  normalizeCatalogSort,
+  normalizeCatalogSortDir,
 } from "../lib/syncbay-catalog-page";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
@@ -49,6 +53,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return getCatalogPageState(session, {
     filter: normalizeCatalogPageFilter(url.searchParams.get("filter")),
     page: normalizeCatalogPage(url.searchParams.get("page")),
+    sort: normalizeCatalogSort(url.searchParams.get("sort")),
+    sortDir: normalizeCatalogSortDir(url.searchParams.get("dir")),
   });
 };
 
@@ -56,6 +62,8 @@ export default function CatalogRoute() {
   const catalog = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));
+  const activeSort = normalizeCatalogSort(searchParams.get("sort"));
+  const activeSortDir = normalizeCatalogSortDir(searchParams.get("dir"));
   const rows = catalog.rows;
 
   return (
@@ -97,20 +105,71 @@ export default function CatalogRoute() {
         </s-grid>
 
         <s-section heading="Controllo catalogo">
-          <FilterNav activeFilter={activeFilter} />
+          <FilterNav
+            activeFilter={activeFilter}
+            activeSort={activeSort}
+            activeSortDir={activeSortDir}
+          />
           {rows.length > 0 ? (
             <>
               <s-table>
                 <s-table-header-row>
-                  <s-table-header>Prodotto</s-table-header>
-                  <s-table-header>Collegamento</s-table-header>
-                  <s-table-header format="numeric">
-                    Disponibilità
+                  <s-table-header>Immagine</s-table-header>
+                  <s-table-header>
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Prodotto"
+                      sortKey="product"
+                    />
                   </s-table-header>
-                  <s-table-header format="numeric">Prezzo</s-table-header>
-                  <s-table-header>Aggiornamento</s-table-header>
-                  <s-table-header>Stato</s-table-header>
-                  <s-table-header>Azione</s-table-header>
+                  <s-table-header>
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Collegamento"
+                      sortKey="link"
+                    />
+                  </s-table-header>
+                  <s-table-header format="numeric">
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Disponibilità"
+                      sortKey="availability"
+                    />
+                  </s-table-header>
+                  <s-table-header format="numeric">
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Prezzo"
+                      sortKey="price"
+                    />
+                  </s-table-header>
+                  <s-table-header>
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Aggiornamento"
+                      sortKey="updated"
+                    />
+                  </s-table-header>
+                  <s-table-header>
+                    <SortHeader
+                      activeFilter={activeFilter}
+                      activeSort={activeSort}
+                      activeSortDir={activeSortDir}
+                      label="Stato"
+                      sortKey="status"
+                    />
+                  </s-table-header>
+                  <s-table-header>Azioni</s-table-header>
                 </s-table-header-row>
                 <s-table-body>
                   {rows.map((row) => (
@@ -120,6 +179,8 @@ export default function CatalogRoute() {
               </s-table>
               <CatalogPagination
                 activeFilter={activeFilter}
+                activeSort={activeSort}
+                activeSortDir={activeSortDir}
                 catalog={catalog}
               />
             </>
@@ -140,14 +201,14 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
   return (
     <s-table-row>
       <s-table-cell>
-        <s-stack direction="inline" gap="base" alignItems="center">
-          <ProductThumbnail row={row} />
-          <s-stack gap="small-200">
-            <s-text type="strong">{row.title}</s-text>
-            <s-text color="subdued">
-              SKU {row.sku ?? "non letto"} · ItemID {row.ebayItemId}
-            </s-text>
-          </s-stack>
+        <ProductThumbnail row={row} />
+      </s-table-cell>
+      <s-table-cell>
+        <s-stack gap="small-200">
+          <s-text type="strong">{row.title}</s-text>
+          <s-text color="subdued">
+            SKU {row.sku ?? "non letto"} · ItemID {row.ebayItemId}
+          </s-text>
         </s-stack>
       </s-table-cell>
       <s-table-cell>
@@ -168,11 +229,7 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
           </s-text>
         </s-stack>
       </s-table-cell>
-      <s-table-cell>
-        {row.price
-          ? `${row.price.amount} ${row.price.currency ?? ""}`
-          : "Non letto"}
-      </s-table-cell>
+      <s-table-cell>{formatPrice(row.price)}</s-table-cell>
       <s-table-cell>
         <s-stack gap="small-200">
           <s-text>{formatDateTime(row.lastSyncedAt)}</s-text>
@@ -187,9 +244,12 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
         </s-badge>
       </s-table-cell>
       <s-table-cell>
-        {row.openConflictCount > 0 ? (
-          <s-button href="/app/conflicts?filter=open">Risolvi</s-button>
-        ) : (
+        <s-stack direction="inline" gap="small-200" alignItems="center">
+          {row.openConflictCount > 0 ? (
+            <s-button href="/app/conflicts?filter=open" variant="primary">
+              Risolvi
+            </s-button>
+          ) : null}
           <details className="syncbay-row-details">
             <summary>Dettagli</summary>
             <s-text>
@@ -199,20 +259,28 @@ function CatalogTableRow({ row }: { row: CatalogRow }) {
                 : "Nessun errore recente."}
             </s-text>
           </details>
-        )}
+        </s-stack>
       </s-table-cell>
     </s-table-row>
   );
 }
 
-function FilterNav({ activeFilter }: { activeFilter: CatalogPageFilter }) {
+function FilterNav({
+  activeFilter,
+  activeSort,
+  activeSortDir,
+}: {
+  activeFilter: CatalogPageFilter;
+  activeSort: CatalogSortKey | null;
+  activeSortDir: CatalogSortDir;
+}) {
   return (
     <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {CATALOG_FILTERS.map((filter) => (
         <s-clickable-chip
           aria-current={activeFilter === filter.value ? "page" : undefined}
           color={activeFilter === filter.value ? "strong" : "base"}
-          href={getCatalogHref(filter.value)}
+          href={getCatalogHref(filter.value, 1, activeSort, activeSortDir)}
           key={filter.value}
         >
           {filter.label}
@@ -224,9 +292,13 @@ function FilterNav({ activeFilter }: { activeFilter: CatalogPageFilter }) {
 
 function CatalogPagination({
   activeFilter,
+  activeSort,
+  activeSortDir,
   catalog,
 }: {
   activeFilter: CatalogPageFilter;
+  activeSort: CatalogSortKey | null;
+  activeSortDir: CatalogSortDir;
   catalog: Catalog;
 }) {
   const pagination = catalog.pagination;
@@ -250,7 +322,7 @@ function CatalogPagination({
       <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
           <s-button
-            href={getCatalogHref(activeFilter, pagination.previousPage)}
+            href={getCatalogHref(activeFilter, pagination.previousPage, activeSort, activeSortDir)}
           >
             Precedente
           </s-button>
@@ -260,7 +332,7 @@ function CatalogPagination({
           {formatNumber(pagination.totalPages)}
         </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getCatalogHref(activeFilter, pagination.nextPage)}>
+          <s-button href={getCatalogHref(activeFilter, pagination.nextPage, activeSort, activeSortDir)}>
             Successiva
           </s-button>
         ) : null}
@@ -324,15 +396,49 @@ function EmptyCatalogState({
   );
 }
 
-function getCatalogHref(filter: CatalogPageFilter, page = 1) {
+function getCatalogHref(
+  filter: CatalogPageFilter,
+  page = 1,
+  sort: CatalogSortKey | null = null,
+  sortDir: CatalogSortDir = "asc",
+) {
   const params = new URLSearchParams();
 
   if (filter !== "all") params.set("filter", filter);
   if (page > 1) params.set("page", String(page));
+  if (sort) {
+    params.set("sort", sort);
+    if (sortDir === "desc") params.set("dir", "desc");
+  }
 
   const query = params.toString();
 
   return query ? `/app/catalog?${query}` : "/app/catalog";
+}
+
+function SortHeader({
+  activeFilter,
+  activeSort,
+  activeSortDir,
+  label,
+  sortKey,
+}: {
+  activeFilter: CatalogPageFilter;
+  activeSort: CatalogSortKey | null;
+  activeSortDir: CatalogSortDir;
+  label: string;
+  sortKey: CatalogSortKey;
+}) {
+  const isActive = activeSort === sortKey;
+  const nextDir: CatalogSortDir = isActive && activeSortDir === "asc" ? "desc" : "asc";
+  const indicator = isActive ? (activeSortDir === "asc" ? " ↑" : " ↓") : "";
+
+  return (
+    <s-link href={getCatalogHref(activeFilter, 1, sortKey, nextDir)}>
+      {label}
+      {indicator}
+    </s-link>
+  );
 }
 
 function getStatusTone(row: CatalogRow) {
@@ -341,6 +447,22 @@ function getStatusTone(row: CatalogRow) {
   if (row.status === "mapping_error") return "critical";
 
   return "warning";
+}
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: "€",
+  GBP: "£",
+  USD: "$",
+};
+
+function formatPrice(price: { amount: string; currency: string | null } | null) {
+  if (!price) return "Non letto";
+
+  const symbol = price.currency ? CURRENCY_SYMBOLS[price.currency] : null;
+
+  if (symbol) return `${price.amount} ${symbol}`;
+
+  return `${price.amount}${price.currency ? ` ${price.currency}` : ""}`;
 }
 
 function formatDateTime(value: string | null) {
