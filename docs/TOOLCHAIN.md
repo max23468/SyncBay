@@ -39,8 +39,13 @@ forzare installazioni o downgrade dentro la repo.
 
 ## Tool agenti Shopify
 
-Per sviluppo assistito su superfici Shopify, la postazione locale può usare
-Shopify AI Toolkit installato come skill globali dell'agente:
+Per sviluppo assistito su superfici Shopify, questa postazione può usare anche
+il plugin Shopify disponibile in Codex Desktop per questo tool e per questa
+repo. Il plugin va considerato un supporto operativo per documentazione,
+validazione e contesto Shopify, non una dipendenza runtime di SyncBay.
+
+La postazione locale può inoltre usare Shopify AI Toolkit installato come skill
+globali dell'agente:
 
 - installazione: `npx skills add Shopify/shopify-ai-toolkit`;
 - skill attese: `shopify-admin`, `shopify-use-shopify-cli`,

@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Chiarito nelle istruzioni agenti e nella toolchain che Codex può usare anche
+  il plugin Shopify disponibile per questo tool e questa repo, come supporto
+  operativo non runtime.
+
 ## [0.29.3] — 2026-06-11
 
 ### Correzioni
