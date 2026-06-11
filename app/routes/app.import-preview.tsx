@@ -1183,8 +1183,10 @@ function getPreviewStatusMessage(source: {
   return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";
 }
 
+const itNumberFormatter = new Intl.NumberFormat("it-IT");
+
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("it-IT").format(value);
+  return itNumberFormatter.format(value);
 }
 
 function formatPreviewIssues(

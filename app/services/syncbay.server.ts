@@ -136,91 +136,96 @@ export async function getDashboardState(session: ShopifySessionLike) {
     shop.defaultProductStatus,
   );
   const [
-    ebayConnection,
-    recentJobs,
-    recentImportJobs,
-    recentAuditLogs,
-    mappingCount,
-    openConflictCount,
-    openConflicts,
-    snapshotCount,
-    latestIncrementalJob,
-    activeIncrementalJobCount,
-  ] = await prisma.$transaction([
-    prisma.ebayConnection.findUnique({
-      where: {
-        shopId_marketplaceId: {
-          marketplaceId: getEbayMarketplaceId(),
-          shopId: shop.id,
-        },
-      },
-    }),
-    prisma.syncJob.findMany({
-      where: { shopId: shop.id },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    prisma.syncJob.findMany({
-      where: { shopId: shop.id, type: SyncJobType.IMPORT_CATALOG },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-    prisma.auditLog.findMany({
-      where: { shopId: shop.id },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    prisma.productMapping.count({
-      where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
-    }),
-    prisma.syncConflict.count({
-      where: {
-        shopId: shop.id,
-        status: SyncConflictStatus.OPEN,
-      },
-    }),
-    prisma.syncConflict.findMany({
-      include: {
-        mapping: {
-          select: {
-            ebayItemId: true,
-            shopifyProductGid: true,
+    [
+      ebayConnection,
+      recentJobs,
+      recentImportJobs,
+      recentAuditLogs,
+      mappingCount,
+      openConflictCount,
+      openConflicts,
+      snapshotCount,
+      latestIncrementalJob,
+      activeIncrementalJobCount,
+    ],
+    latestImportRun,
+  ] = await Promise.all([
+    prisma.$transaction([
+      prisma.ebayConnection.findUnique({
+        where: {
+          shopId_marketplaceId: {
+            marketplaceId: getEbayMarketplaceId(),
+            shopId: shop.id,
           },
         },
-      },
-      orderBy: { detectedAt: "desc" },
-      take: 8,
-      where: {
-        shopId: shop.id,
-        status: SyncConflictStatus.OPEN,
-      },
-    }),
-    prisma.productSnapshot.count({
-      where: { shopId: shop.id },
-    }),
-    prisma.syncJob.findFirst({
-      orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-      where: {
-        shopId: shop.id,
-        status: SyncJobStatus.SUCCEEDED,
-        type: SyncJobType.SYNC_INCREMENTAL,
-      },
-    }),
-    prisma.syncJob.count({
-      where: {
-        shopId: shop.id,
-        status: {
-          in: [
-            SyncJobStatus.PENDING,
-            SyncJobStatus.RETRYING,
-            SyncJobStatus.RUNNING,
-          ],
+      }),
+      prisma.syncJob.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.syncJob.findMany({
+        where: { shopId: shop.id, type: SyncJobType.IMPORT_CATALOG },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.auditLog.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.productMapping.count({
+        where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
         },
-        type: SyncJobType.SYNC_INCREMENTAL,
-      },
-    }),
+      }),
+      prisma.syncConflict.findMany({
+        include: {
+          mapping: {
+            select: {
+              ebayItemId: true,
+              shopifyProductGid: true,
+            },
+          },
+        },
+        orderBy: { detectedAt: "desc" },
+        take: 8,
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.productSnapshot.count({
+        where: { shopId: shop.id },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        where: {
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.syncJob.count({
+        where: {
+          shopId: shop.id,
+          status: {
+            in: [
+              SyncJobStatus.PENDING,
+              SyncJobStatus.RETRYING,
+              SyncJobStatus.RUNNING,
+            ],
+          },
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+    ]),
+    getLatestImportRunSummary(shop.id),
   ]);
-  const latestImportRun = await getLatestImportRunSummary(shop.id);
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -422,9 +427,11 @@ export async function getCatalogPageState(
   });
   const shopifyThumbnailUrlByProductGid =
     await getShopifyThumbnailUrlByProductGid({
-      productGids: pageRowsWithSnapshotThumbs
-        .filter((row) => !row.thumbnailUrl && row.shopifyProductGid)
-        .map((row) => row.shopifyProductGid as string),
+      productGids: pageRowsWithSnapshotThumbs.flatMap((row) =>
+        !row.thumbnailUrl && row.shopifyProductGid
+          ? [row.shopifyProductGid as string]
+          : [],
+      ),
       shopDomain: shop.shopDomain,
     });
   const rowsWithThumbnails = pageRowsWithSnapshotThumbs.map((row) =>
@@ -578,11 +585,11 @@ export async function getConflictsPageState(
   );
   const shopifyThumbnailUrlByProductGid =
     await getShopifyThumbnailUrlByProductGid({
-      productGids: rows
-        .filter(
-          (row) => !row.product.thumbnailUrl && row.product.shopifyProductGid,
-        )
-        .map((row) => row.product.shopifyProductGid as string),
+      productGids: rows.flatMap((row) =>
+        !row.product.thumbnailUrl && row.product.shopifyProductGid
+          ? [row.product.shopifyProductGid as string]
+          : [],
+      ),
       shopDomain: shop.shopDomain,
     });
   const rowsWithThumbnails = rows.map((row) =>

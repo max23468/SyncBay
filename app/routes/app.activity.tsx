@@ -512,8 +512,10 @@ function getCatalogHealthDetail(activity: Activity) {
   return "Nessun aggiornamento incrementale completato.";
 }
 
+const itNumberFormatter = new Intl.NumberFormat("it-IT");
+
 function formatNumber(value: number) {
-  return new Intl.NumberFormat("it-IT").format(value);
+  return itNumberFormatter.format(value);
 }
 
 function formatDateTime(value: string | null) {

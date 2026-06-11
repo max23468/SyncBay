@@ -627,20 +627,22 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
   shopId: string;
 }) {
   const activeCatalogReadAt = new Date();
-  const activeCatalogPlan = await getEbayTradingCatalogImportPlan({
-    accessToken: input.accessToken,
-    connection: input.connection,
-    maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
-  });
-  const mappings = await prisma.productMapping.findMany({
-    orderBy: { updatedAt: "asc" },
-    select: { ebayItemId: true },
-    where: {
-      marketplaceId: DEFAULT_MARKETPLACE_ID,
-      shopId: input.shopId,
-      status: ProductMappingStatus.ACTIVE,
-    },
-  });
+  const [activeCatalogPlan, mappings] = await Promise.all([
+    getEbayTradingCatalogImportPlan({
+      accessToken: input.accessToken,
+      connection: input.connection,
+      maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,
+    }),
+    prisma.productMapping.findMany({
+      orderBy: { updatedAt: "asc" },
+      select: { ebayItemId: true },
+      where: {
+        marketplaceId: DEFAULT_MARKETPLACE_ID,
+        shopId: input.shopId,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+  ]);
   const activeScanComplete = isCatalogReconcileScanComplete({
     itemIds: activeCatalogPlan.itemIds,
     maxProducts: CATALOG_RECONCILE_MAX_PRODUCTS,

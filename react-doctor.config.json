@@ -10,5 +10,14 @@
         "rules": ["react-doctor/only-export-components"]
       }
     ]
+  },
+  "surfaces": {
+    "score": {
+      "excludeRules": [
+        "react-doctor/async-await-in-loop",
+        "react-doctor/async-parallel",
+        "react-doctor/server-sequential-independent-await"
+      ]
+    }
   }
 }
