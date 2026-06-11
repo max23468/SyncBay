@@ -34,6 +34,14 @@ test("treats default eBay placeholder ids as no store category", () => {
     getEbayStorefrontMetadata({ StoreCategoryID: "-999" }),
     { storeCategoryId: null, storeCategoryName: null },
   );
+
+  assert.deepEqual(
+    getEbayStorefrontMetadata({
+      StoreCategoryID: "0",
+      StoreCategoryName: "Categorie del negozio",
+    }),
+    { storeCategoryId: null, storeCategoryName: null },
+  );
 });
 
 test("accepts numeric store category ids parsed by the XML reader", () => {

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.29.3] — 2026-06-11
+
+### Correzioni
+
+- Le categorie negozio eBay con ID placeholder (`0`/`-999`) non conservano più
+  un nome categoria senza ID reale nei payload SyncBay e nella diagnostica
+  orfani.
+
 ## [0.29.2] — 2026-06-11
 
 ### Correzioni
@@ -1308,6 +1316,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.3]: #0293--2026-06-11
 [0.29.2]: #0292--2026-06-11
 [0.29.1]: #0291--2026-06-11
 [0.29.0]: #0290--2026-06-11
