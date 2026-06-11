@@ -2,6 +2,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 import { XMLParser } from "fast-xml-parser";
 
@@ -14,18 +15,10 @@ const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_LIMIT = 20;
 const DEFAULT_EBAY_LIMIT = 10;
 
-const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+let args = null;
+let shopDomain = null;
+let supabaseEnv = null;
 
-loadDotEnv(".env");
-ensureTokenEncryptionKey();
-
-const supabaseEnv = {
-  ...process.env,
-  ...(await getSupabaseCliEnv()),
-  SUPABASE_TELEMETRY_DISABLED: "1",
-};
 const xmlParser = new XMLParser({
   attributeNamePrefix: "@_",
   ignoreAttributes: false,
@@ -36,10 +29,27 @@ const xmlParser = new XMLParser({
   trimValues: true,
 });
 
-await main().catch((error) => {
-  console.error(`Diagnostica immagini Catalogo non riuscita: ${error.message}`);
-  process.exit(1);
-});
+if (isCliEntrypoint()) {
+  args = parseArgs(process.argv.slice(2));
+  loadDotEnv(".env");
+  shopDomain = resolveCatalogImagesDoctorShopDomain({
+    args,
+    env: process.env,
+  });
+  ensureTokenEncryptionKey();
+  supabaseEnv = {
+    ...process.env,
+    ...(await getSupabaseCliEnv()),
+    SUPABASE_TELEMETRY_DISABLED: "1",
+  };
+
+  await main().catch((error) => {
+    console.error(
+      `Diagnostica immagini Catalogo non riuscita: ${error.message}`,
+    );
+    process.exit(1);
+  });
+}
 
 async function main() {
   const state = getDiagnosticState();
@@ -611,6 +621,14 @@ function parseArgs(rawArgs) {
   }
 
   return parsed;
+}
+
+export function resolveCatalogImagesDoctorShopDomain(input) {
+  return input.args.shop ?? input.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+}
+
+function isCliEntrypoint() {
+  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }
 
 function printUsage() {

@@ -11,6 +11,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - `publish:preflight --remote` riconosce `main` pulito e allineato come
   controllo post-merge, evitando blocchi falsi dopo una pubblicazione già
   completata.
+- `catalog:images:doctor` carica `.env` prima di scegliere lo shop target,
+  così `SHOPIFY_DEV_STORE` locale viene rispettato quando non passi `--shop`.
 
 ## [0.29.5] — 2026-06-11
 
