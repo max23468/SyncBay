@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.29.2] — 2026-06-11
+
+### Correzioni
+
+- Catalogo: filtri e paginazione mantengono i vecchi ordinamenti decrescenti
+  `sort`/`dir` anche quando non esiste un equivalente nel parametro compatto
+  `order`.
+
 ## [0.29.1] — 2026-06-11
 
 ### Correzioni
@@ -1300,6 +1308,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.2]: #0292--2026-06-11
 [0.29.1]: #0291--2026-06-11
 [0.29.0]: #0290--2026-06-11
 [0.28.1]: #0281--2026-06-11
