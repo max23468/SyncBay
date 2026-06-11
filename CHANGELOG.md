@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.29.5] — 2026-06-11
+
+### Correzioni
+
+- Il runner usa i cicli delta eBay senza eventi per pianificare una riparazione
+  idempotente delle thumbnail mancanti nel Catalogo, limitata per ItemID/giorno
+  e basata sullo stesso flusso `SYNC_INCREMENTAL` che sincronizza i media.
+
+### Sotto il cofano
+
+- Aggiunto `npm run catalog:images:doctor`, diagnostica in sola lettura per
+  misurare la copertura immagini degli snapshot e verificare se eBay live
+  restituisce immagini per righe ancora senza thumbnail in SyncBay.
+
 ## [0.29.4] — 2026-06-11
 
 ### Correzioni
@@ -1334,6 +1348,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.5]: #0295--2026-06-11
 [0.29.4]: #0294--2026-06-11
 [0.29.3]: #0293--2026-06-11
 [0.29.2]: #0292--2026-06-11
