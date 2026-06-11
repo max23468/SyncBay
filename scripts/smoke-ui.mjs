@@ -94,12 +94,23 @@ const checks = [
     needles: [
       "Catalogo",
       "Prodotto",
-      "Collegamento",
+      "Canali",
       "Disponibilità",
       "Stato",
       "MetricTile",
       "Controllo catalogo",
-      "Origine eBay.it",
+      "CatalogViewControls",
+      "getEbayItemUrl",
+      "getShopifyProductAdminUrl",
+    ],
+  },
+  {
+    file: "scripts/syncbay-ui-render.mjs",
+    needles: [
+      "--fixture",
+      "getCatalogFixture",
+      "getDashboardFixture",
+      "catalogo",
     ],
   },
   {

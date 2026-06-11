@@ -33,14 +33,14 @@ body {
 }
 
 .preview-frame {
-  max-inline-size: 1120px;
+  max-inline-size: 1360px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .preview-note {
   margin: 0 auto 16px;
-  max-inline-size: 1120px;
+  max-inline-size: 1360px;
   padding: 8px 12px;
   border: 1px dashed #b7791f;
   border-radius: 8px;
@@ -174,6 +174,67 @@ s-button[variant="primary"] {
   color: #ffffff;
 }
 
+s-table-cell s-button,
+s-clickable-chip {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+s-clickable-chip {
+  display: inline-block;
+  border: 1px solid #babfc4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #303336;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+s-clickable-chip[color="strong"] {
+  border-color: #0f5e6e;
+  background: #eaf1f8;
+  color: #0f5e6e;
+}
+
+/* Link / form controls ---------------------------------------------------- */
+s-link {
+  display: inline;
+  color: #005bd3;
+  text-decoration: underline;
+}
+
+s-select,
+.preview-select {
+  display: block;
+  min-block-size: 58px;
+  padding: 8px 10px;
+  border: 1px solid #babfc4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+.preview-select__label,
+s-select::before {
+  display: block;
+  margin-block-end: 4px;
+  color: #6d7175;
+  font-size: 12px;
+}
+.preview-select__value,
+s-select::after {
+  display: block;
+  color: #15202b;
+  font-weight: 550;
+}
+s-select::before {
+  content: attr(label);
+}
+s-select::after {
+  content: attr(value);
+}
+s-option {
+  display: none;
+}
+
 /* Box --------------------------------------------------------------------- */
 s-box {
   display: block;
@@ -190,6 +251,52 @@ s-box[borderradius="base"] {
 }
 s-box[background="subdued"] {
   background: #f6f6f7;
+}
+s-box[blocksize="64px"] {
+  block-size: 64px;
+}
+s-box[inlinesize="64px"] {
+  inline-size: 64px;
+}
+
+/* Table ------------------------------------------------------------------- */
+s-table {
+  display: table;
+  inline-size: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+s-table-header-row,
+s-table-row {
+  display: table-row;
+}
+s-table-header,
+s-table-cell {
+  display: table-cell;
+  padding: 12px;
+  border-block-end: 1px solid #e1e3e5;
+  text-align: start;
+  vertical-align: top;
+}
+s-table-header {
+  color: #6d7175;
+  font-size: 12px;
+  font-weight: 650;
+}
+s-table-header[format="numeric"],
+s-table-cell[format="numeric"] {
+  text-align: end;
+}
+s-table-body {
+  display: table-row-group;
+}
+
+.preview-thumbnail {
+  display: block;
+  inline-size: 64px;
+  block-size: 64px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 /* Icon stand-in: glifo neutro per tipo, colore per tono ------------------- */

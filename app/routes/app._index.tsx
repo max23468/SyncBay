@@ -106,7 +106,7 @@ export default function Index() {
   const recentActivity = getRecentActivity(dashboard);
 
   return (
-    <s-page heading="Panoramica">
+    <s-page heading="Panoramica" inlineSize="large">
       <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
       <s-stack gap="large">
         <StatusHero
