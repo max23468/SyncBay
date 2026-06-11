@@ -82,6 +82,11 @@ Note:
   resta giornaliera. Tra due riconciliazioni complete il runner usa
   `GetSellerEvents` per i delta e salva le candidate lette nel payload dei job,
   riducendo il consumo di `GetItem`.
+- `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT` controlla la corsia automatica di
+  riparazione thumbnail Catalogo quando il delta eBay è vuoto: default 20
+  prodotti al giorno, massimo 100, `0` per disattivarla. I job sono
+  `SYNC_INCREMENTAL` idempotenti per ItemID/giorno con source
+  `catalog_image_repair`.
 - La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
   `write_orders` e un token offline; `shopify store execute` con il token CLI
   disponibile non è sufficiente. Sul dev store la sessione offline include

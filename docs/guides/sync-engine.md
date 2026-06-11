@@ -76,6 +76,17 @@ sotto-job più piccoli prima di fare chiamate Shopify/eBay pesanti. Se un mappin
 ha conflitti Shopify aperti, il prodotto viene saltato finché il negoziante
 sceglie un'azione guidata.
 
+Quando una finestra delta non contiene eventi né listing inattivi, il runner usa
+quel ciclo libero per riparare in modo controllato le immagini mancanti nel
+Catalogo: seleziona mapping `ACTIVE` con prodotto Shopify, senza conflitti
+aperti e senza thumbnail disponibile negli ultimi snapshot, poi crea job
+`SYNC_INCREMENTAL` con source `catalog_image_repair`. La corsia è idempotente
+per ItemID e giorno, usa lo stesso flusso media dell'import e ha limite
+configurabile con `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT` (default 20, massimo 100,
+`0` per disattivarla). Il comando `npm run catalog:images:doctor` resta lo
+strumento in sola lettura per misurare la copertura e capire se eBay live ora
+restituisce immagini per righe ancora senza thumbnail in SyncBay.
+
 Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
 prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
 SyncBay ancora attivi ma non più presenti tra i listing eBay attivi: questi

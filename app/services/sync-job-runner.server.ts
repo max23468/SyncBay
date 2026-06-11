@@ -30,6 +30,10 @@ import {
   buildCatalogReconcilePlan,
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
+import {
+  getCatalogImageRepairItemIds,
+  getCatalogImageRepairRunKey,
+} from "../lib/syncbay-catalog-image-repair";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import {
   getSellerEventsDeltaWindow,
@@ -48,6 +52,7 @@ import {
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
+import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
@@ -125,6 +130,9 @@ const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
+const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;
+const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
+const CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK = 5;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -716,6 +724,83 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
   });
 }
 
+async function enqueueCatalogImageRepairSyncJobs(input: {
+  now: Date;
+  shopId: string;
+}) {
+  const limit = getCatalogImageRepairLimit(
+    process.env.SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT,
+  );
+
+  if (limit === 0) return 0;
+
+  const mappings = await prisma.productMapping.findMany({
+    orderBy: [{ updatedAt: "asc" }, { createdAt: "asc" }],
+    select: {
+      conflicts: {
+        select: { id: true },
+        take: 1,
+        where: { status: SyncConflictStatus.OPEN },
+      },
+      ebayItemId: true,
+      shopifyProductGid: true,
+      snapshots: {
+        orderBy: { capturedAt: "desc" },
+        select: { payload: true },
+        take: CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK,
+      },
+    },
+    take: Math.min(CATALOG_RECONCILE_MAX_PRODUCTS, limit * 5),
+    where: {
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      shopId: input.shopId,
+      shopifyProductGid: { not: null },
+      status: ProductMappingStatus.ACTIVE,
+    },
+  });
+  const ebayItemIds = getCatalogImageRepairItemIds({
+    limit,
+    mappings: mappings.map((mapping) => ({
+      ebayItemId: mapping.ebayItemId,
+      hasOpenConflicts: mapping.conflicts.length > 0,
+      hasSnapshotThumbnailUrl: Boolean(
+        getProductSnapshotThumbnailUrlFromPayloads(
+          mapping.snapshots.map((snapshot) => snapshot.payload),
+        ),
+      ),
+      shopifyProductGid: mapping.shopifyProductGid,
+    })),
+  });
+
+  if (ebayItemIds.length === 0) return 0;
+
+  const repairRunKey = getCatalogImageRepairRunKey(input.now);
+  const runId = `catalog-image-repair:${input.shopId}:${repairRunKey}`;
+  const result = await prisma.syncJob.createMany({
+    data: ebayItemIds.map((ebayItemId, index) => ({
+      idempotencyKey: `catalog-image-repair:${input.shopId}:${DEFAULT_MARKETPLACE_ID}:${repairRunKey}:${ebayItemId}`,
+      maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+      payload: {
+        batchCount: ebayItemIds.length,
+        batchIndex: index + 1,
+        ebayItemIds: [ebayItemId],
+        marketplaceId: DEFAULT_MARKETPLACE_ID,
+        repairReason: "missing_catalog_thumbnail",
+        repairRunKey,
+        runId,
+        source: "catalog_image_repair",
+      } satisfies Prisma.JsonObject,
+      runAfter: input.now,
+      shopId: input.shopId,
+      status: SyncJobStatus.PENDING,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    })),
+    skipDuplicates: true,
+  });
+
+  return result.count;
+}
+
 async function enqueueSellerEventsDeltaSyncJobs(input: {
   accessToken: string;
   connection: EbayConnection;
@@ -742,6 +827,13 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
   const runId = `seller-events:${input.shopId}:${input.now.toISOString()}`;
 
   if (candidateBatches.length === 0 && delta.inactiveItemIds.length === 0) {
+    const imageRepairJobCount = await enqueueCatalogImageRepairSyncJobs({
+      now: input.now,
+      shopId: input.shopId,
+    });
+
+    if (imageRepairJobCount > 0) return;
+
     await createIncrementalNoopMarker({
       now: input.now,
       payload: {
@@ -857,6 +949,20 @@ function dedupePreviewCandidates(candidates: ImportPreviewListingCandidate[]) {
 
 function serializePreviewCandidate(candidate: ImportPreviewListingCandidate) {
   return serializeIncrementalPreviewCandidate(candidate);
+}
+
+function getCatalogImageRepairLimit(value?: string | null) {
+  const normalized = value?.trim();
+
+  if (normalized === "0") return 0;
+
+  const parsed = Number.parseInt(normalized ?? "", 10);
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT;
+  }
+
+  return Math.min(parsed, CATALOG_IMAGE_REPAIR_MAX_LIMIT);
 }
 
 async function recoverStaleRunningSyncJobs(

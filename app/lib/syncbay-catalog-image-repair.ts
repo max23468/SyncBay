@@ -1,0 +1,36 @@
+export type CatalogImageRepairMapping = {
+  ebayItemId: string | null;
+  hasOpenConflicts: boolean;
+  hasSnapshotThumbnailUrl: boolean;
+  shopifyProductGid: string | null;
+};
+
+export function getCatalogImageRepairItemIds(input: {
+  limit: number;
+  mappings: CatalogImageRepairMapping[];
+}) {
+  if (!Number.isInteger(input.limit) || input.limit <= 0) return [];
+
+  const seen = new Set<string>();
+  const itemIds: string[] = [];
+
+  for (const mapping of input.mappings) {
+    if (itemIds.length >= input.limit) break;
+    if (mapping.hasOpenConflicts) continue;
+    if (mapping.hasSnapshotThumbnailUrl) continue;
+    if (!mapping.shopifyProductGid?.trim()) continue;
+
+    const ebayItemId = mapping.ebayItemId?.trim();
+
+    if (!ebayItemId || seen.has(ebayItemId)) continue;
+
+    seen.add(ebayItemId);
+    itemIds.push(ebayItemId);
+  }
+
+  return itemIds;
+}
+
+export function getCatalogImageRepairRunKey(now: Date) {
+  return now.toISOString().slice(0, 10);
+}
