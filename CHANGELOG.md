@@ -13,6 +13,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - I prodotti con mapping `OUT_OF_STOCK`, `ARCHIVED`, `PAUSED` o `ERROR` non
   generano più nuovi conflitti Shopify; eventuali conflitti aperti vengono
   chiusi quando il listing eBay esce dalla sorgente attiva.
+- Il sync incrementale non viene più bloccato da conflitti aperti storici su
+  mapping non attivi, così un listing eBay tornato attivo può rientrare e
+  ripristinare scorta e stato Shopify.
 
 ### Sotto il cofano
 
@@ -21,6 +24,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   di ADR 0011 (prodotto Shopify riattivato con scorta 0, politica DENY e tag
   `esaurito`; mapping a `OUT_OF_STOCK` con snapshot). Idempotente, con
   `--dry-run`, eseguito sul pilota per i 132 prodotti archiviati storici.
+- Il backfill aggiorna il database solo se il mapping è ancora `ARCHIVED` al
+  momento della scrittura, evitando di sovrascrivere rientri o stati concorrenti.
 
 ## [0.28.0] — 2026-06-11
 

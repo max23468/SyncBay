@@ -16,6 +16,7 @@ import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reco
 import {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -1136,7 +1137,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       await prisma.syncConflict.findMany({
         select: {
           mapping: {
-            select: { ebayItemId: true },
+            select: { ebayItemId: true, status: true },
           },
         },
         where: {
@@ -1145,9 +1146,17 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
           status: SyncConflictStatus.OPEN,
         },
       })
-    ).flatMap((conflict) =>
-      conflict.mapping?.ebayItemId ? [conflict.mapping.ebayItemId] : [],
-    ),
+    ).flatMap((conflict) => {
+      if (
+        !shouldBlockIncrementalSyncForOpenConflictMappingStatus(
+          conflict.mapping?.status ?? null,
+        )
+      ) {
+        return [];
+      }
+
+      return conflict.mapping?.ebayItemId ? [conflict.mapping.ebayItemId] : [];
+    }),
   );
   const syncableItemIds = ebayItemIds.filter(
     (itemId) => !openConflictItemIds.has(itemId),

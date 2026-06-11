@@ -7,6 +7,7 @@ import * as conflictDetection from "./syncbay-conflict-detection.ts";
 const {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -77,6 +78,33 @@ test("detects Shopify conflicts only for active mappings", () => {
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("PAUSED"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ERROR"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus(null), false);
+});
+
+test("blocks incremental sync on open conflicts only for active mappings", () => {
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ACTIVE"),
+    true,
+  );
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus("OUT_OF_STOCK"),
+    false,
+  );
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ARCHIVED"),
+    false,
+  );
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus("PAUSED"),
+    false,
+  );
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ERROR"),
+    false,
+  );
+  assert.equal(
+    shouldBlockIncrementalSyncForOpenConflictMappingStatus(null),
+    false,
+  );
 });
 
 test("skips images conflicts when eBay has no media but Shopify does", () => {

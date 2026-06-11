@@ -276,12 +276,17 @@ async function markProductSoldOut(input) {
 async function persistSoldOutMappings(shopId, mappingIds) {
   const idList = mappingIds.map((id) => sqlString(id)).join(", ");
   const sql = `
-    update "ProductMapping"
+    with updated_mappings as (
+      update "ProductMapping"
       set status = 'OUT_OF_STOCK',
           "lastErrorCode" = null,
           "lastErrorMessage" = null,
           "lastSyncedAt" = now()
-      where "shopId" = ${sqlString(shopId)} and id in (${idList});
+      where "shopId" = ${sqlString(shopId)}
+        and id in (${idList})
+        and status = 'ARCHIVED'
+      returning *
+    )
 
     insert into "ProductSnapshot"
       (id, "mappingId", "shopId", "ebayItemId", "shopifyProductGid", "shopifyVariantGid",
@@ -290,8 +295,7 @@ async function persistSoldOutMappings(shopId, mappingIds) {
       gen_random_uuid()::text, m.id, m."shopId", m."ebayItemId", m."shopifyProductGid",
       m."shopifyVariantGid", m.sku, 'SYNCBAY', 'ACTIVE', 0,
       jsonb_build_object('reason', 'ebay_listing_inactive', 'soldOutShopifyProduct', true, 'backfill', true)
-    from "ProductMapping" m
-    where m."shopId" = ${sqlString(shopId)} and m.id in (${idList});
+    from updated_mappings m;
   `;
   await querySupabaseJson(sql);
 }
