@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- `publish:preflight --remote` riconosce `main` pulito e allineato come
+  controllo post-merge, evitando blocchi falsi dopo una pubblicazione già
+  completata.
+
 ## [0.29.5] — 2026-06-11
 
 ### Correzioni

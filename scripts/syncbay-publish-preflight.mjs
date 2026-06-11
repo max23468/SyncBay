@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 const REQUIRED_SCRIPTS = [
   "doctor:local",
@@ -11,35 +12,44 @@ const REQUIRED_SCRIPTS = [
   "release:dry-run",
 ];
 
-const args = parseArgs(process.argv.slice(2));
-const report = buildReport();
+if (isCliEntrypoint()) {
+  const args = parseArgs(process.argv.slice(2));
+  const report = buildReport(args);
 
-if (args.json) {
-  console.log(JSON.stringify(report, null, 2));
-} else {
-  printReport(report);
+  if (args.json) {
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    printReport(report);
+  }
+
+  if (report.failures.length > 0) {
+    process.exit(1);
+  }
 }
 
-if (report.failures.length > 0) {
-  process.exit(1);
-}
-
-function buildReport() {
+function buildReport(args) {
   const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
   const branch = runGit(["branch", "--show-current"]);
   const status = runGit(["status", "--short", "-uall"]);
+  const upstreamState = getUpstreamState();
   const failures = [];
   const warnings = [];
   const missingScripts = REQUIRED_SCRIPTS.filter(
     (scriptName) => !packageJson.scripts?.[scriptName],
   );
   const changelogState = getUnreleasedState();
+  const publishedMainPreflight = isPublishedMainPreflight({
+    branch,
+    remote: Boolean(args.remote),
+    status,
+    upstreamState,
+  });
 
   if (!branch) {
     failures.push("Branch corrente non rilevato.");
   }
 
-  if (branch === "main" && !args.allowMain) {
+  if (branch === "main" && !args.allowMain && !publishedMainPreflight) {
     failures.push("Pubblicazione non docs-only da main: usa una PR dedicata.");
   }
 
@@ -67,14 +77,18 @@ function buildReport() {
     );
   }
 
-  const pr = args.remote ? readCurrentPullRequest() : null;
-  const inbox = args.remote && pr ? readCodexInbox(pr.number) : null;
+  const pr =
+    args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
+  const inbox =
+    args.remote && (pr || publishedMainPreflight)
+      ? readCodexInbox(pr?.number ?? null)
+      : null;
 
-  if (args.remote && !pr) {
+  if (args.remote && !pr && !publishedMainPreflight) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
-  if (args.remote && pr && !inbox?.readable) {
+  if (args.remote && (pr || publishedMainPreflight) && !inbox?.readable) {
     failures.push(
       "Codex feedback inbox non leggibile: verificare autenticazione GitHub e issue #2 prima della pubblicazione.",
     );
@@ -104,6 +118,7 @@ function buildReport() {
     checks: {
       allowDirty: Boolean(args.allowDirty),
       allowMain: Boolean(args.allowMain),
+      publishedMainPreflight,
       remote: Boolean(args.remote),
       requiredScripts: REQUIRED_SCRIPTS,
     },
@@ -112,6 +127,7 @@ function buildReport() {
     ok: failures.length === 0,
     pr,
     statusLines: status ? status.split(/\r?\n/).filter(Boolean) : [],
+    upstreamState,
     warnings,
   };
 }
@@ -125,6 +141,8 @@ function printReport(currentReport) {
 
   if (currentReport.pr) {
     console.log(`PR: #${currentReport.pr.number} ${currentReport.pr.title}`);
+  } else if (currentReport.checks.publishedMainPreflight) {
+    console.log("Remote: main allineato a origin/main, controllo post-merge.");
   }
 
   if (currentReport.failures.length > 0) {
@@ -209,6 +227,25 @@ function runGh(ghArgs) {
   return result.stdout.trim();
 }
 
+function getUpstreamState() {
+  const output = runGit([
+    "rev-list",
+    "--left-right",
+    "--count",
+    "HEAD...@{upstream}",
+  ]);
+
+  if (!output) return null;
+
+  const [aheadValue, behindValue] = output.split(/\s+/);
+  const ahead = Number.parseInt(aheadValue ?? "", 10);
+  const behind = Number.parseInt(behindValue ?? "", 10);
+
+  if (!Number.isInteger(ahead) || !Number.isInteger(behind)) return null;
+
+  return { ahead, behind };
+}
+
 function readCurrentPullRequest() {
   const output = runGh([
     "pr",
@@ -246,18 +283,34 @@ function readCodexInbox(prNumber) {
     /## Da risolvere ora\s*(?<body>[\s\S]*?)(?=\n## |$)/,
   );
   const actionableSection = actionableSectionMatch?.groups?.body ?? "";
-  const prSectionMatch = body.match(
-    new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"),
-  );
+  const prSectionMatch = prNumber
+    ? body.match(
+        new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"),
+      )
+    : null;
   const prSection = prSectionMatch?.[0] ?? "";
 
   return {
-    actionable: hasActionableThreads(prSection),
+    actionable: prNumber ? hasActionableThreads(prSection) : false,
     globalActionable: hasActionableThreads(actionableSection),
     readable: true,
     updatedAt: parsed.updatedAt,
     url: parsed.url,
   };
+}
+
+export function isPublishedMainPreflight(input) {
+  return (
+    input.remote &&
+    input.branch === "main" &&
+    !input.status?.trim() &&
+    input.upstreamState?.ahead === 0 &&
+    input.upstreamState?.behind === 0
+  );
+}
+
+function isCliEntrypoint() {
+  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }
 
 function hasActionableThreads(markdown) {
