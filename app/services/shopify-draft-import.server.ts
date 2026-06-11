@@ -33,6 +33,7 @@ import {
   hashNullableText,
 } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
 import type {
   ImportPreviewItem,
   ImportPreviewResult,
@@ -205,6 +206,15 @@ interface ShopifyProductSoldOutLookupResponse {
         nodes?: ShopifyDraftProductVariantNode[];
       } | null;
     } | null;
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface ShopifyVariantSoldOutLookupResponse {
+  data?: {
+    node?: ShopifyDraftProductVariantNode | null;
   };
   errors?: Array<{
     message: string;
@@ -2392,50 +2402,24 @@ export async function markShopifyProductSoldOut(
     jobId: string;
     locationGid: string | null;
     productGid: string;
+    variantGid?: string | null;
   },
 ): Promise<{ status: "synced"; warnings: string[] }> {
   const warnings: string[] = [];
 
-  const lookupResponse = await admin.graphql(
-    `#graphql
-    query SyncBaySoldOutProductLookup($id: ID!) {
-      node(id: $id) {
-        ... on Product {
-          id
-          variants(first: 1) {
-            nodes {
-              id
-              inventoryItem {
-                id
-                tracked
-              }
-            }
-          }
-        }
-      }
-    }`,
-    {
-      variables: {
-        id: input.productGid,
-      },
-    },
-  );
+  const hasMappedVariant = shouldUseMappedShopifyVariant({
+    mappedVariantGid: input.variantGid,
+  });
+  const variant = hasMappedVariant
+    ? await getShopifyVariantForSoldOut(admin, input.variantGid?.trim() ?? "")
+    : await getFirstShopifyProductVariantForSoldOut(admin, input.productGid);
+  const inventoryItemGid = variant?.inventoryItem?.id ?? null;
 
-  if (!lookupResponse.ok) {
-    throw new Error(
-      `Shopify non ha restituito il prodotto da mettere in esaurito (HTTP ${lookupResponse.status}).`,
+  if (hasMappedVariant && !variant) {
+    warnings.push(
+      "Variante Shopify mappata non disponibile: scorta e policy non aggiornate.",
     );
   }
-
-  const lookupJson =
-    (await lookupResponse.json()) as ShopifyProductSoldOutLookupResponse;
-
-  if (lookupJson.errors?.length) {
-    throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
-  }
-
-  const variant = lookupJson.data?.node?.variants?.nodes?.[0] ?? null;
-  const inventoryItemGid = variant?.inventoryItem?.id ?? null;
 
   if (variant) {
     const policyResult = await setShopifyVariantInventoryPolicyDeny(admin, {
@@ -2446,7 +2430,7 @@ export async function markShopifyProductSoldOut(
     if (policyResult.status === "failed") {
       warnings.push(policyResult.errorMessage);
     }
-  } else {
+  } else if (!hasMappedVariant) {
     warnings.push(
       "Politica di inventario non aggiornata: variante Shopify non disponibile.",
     );
@@ -2483,9 +2467,7 @@ export async function markShopifyProductSoldOut(
       }
     }
   } else if (!input.locationGid) {
-    warnings.push(
-      "Scorta non azzerata: location Shopify predefinita assente.",
-    );
+    warnings.push("Scorta non azzerata: location Shopify predefinita assente.");
   } else if (!inventoryItemGid) {
     warnings.push(
       "Scorta non azzerata: inventory item Shopify non disponibile.",
@@ -2503,6 +2485,91 @@ export async function markShopifyProductSoldOut(
   }
 
   return { status: "synced", warnings };
+}
+
+async function getFirstShopifyProductVariantForSoldOut(
+  admin: ShopifyAdminGraphqlClient,
+  productGid: string,
+) {
+  const lookupResponse = await admin.graphql(
+    `#graphql
+    query SyncBaySoldOutProductLookup($id: ID!) {
+      node(id: $id) {
+        ... on Product {
+          id
+          variants(first: 1) {
+            nodes {
+              id
+              inventoryItem {
+                id
+                tracked
+              }
+            }
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: productGid,
+      },
+    },
+  );
+
+  if (!lookupResponse.ok) {
+    throw new Error(
+      `Shopify non ha restituito il prodotto da mettere in esaurito (HTTP ${lookupResponse.status}).`,
+    );
+  }
+
+  const lookupJson =
+    (await lookupResponse.json()) as ShopifyProductSoldOutLookupResponse;
+
+  if (lookupJson.errors?.length) {
+    throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
+  }
+
+  return lookupJson.data?.node?.variants?.nodes?.[0] ?? null;
+}
+
+async function getShopifyVariantForSoldOut(
+  admin: ShopifyAdminGraphqlClient,
+  variantGid: string,
+) {
+  const lookupResponse = await admin.graphql(
+    `#graphql
+    query SyncBaySoldOutVariantLookup($id: ID!) {
+      node(id: $id) {
+        ... on ProductVariant {
+          id
+          inventoryItem {
+            id
+            tracked
+          }
+        }
+      }
+    }`,
+    {
+      variables: {
+        id: variantGid,
+      },
+    },
+  );
+
+  if (!lookupResponse.ok) {
+    throw new Error(
+      `Shopify non ha restituito la variante da mettere in esaurito (HTTP ${lookupResponse.status}).`,
+    );
+  }
+
+  const lookupJson =
+    (await lookupResponse.json()) as ShopifyVariantSoldOutLookupResponse;
+
+  if (lookupJson.errors?.length) {
+    throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
+  }
+
+  return lookupJson.data?.node ?? null;
 }
 
 /**

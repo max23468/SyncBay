@@ -46,8 +46,7 @@ export function getSellerEventsDeltaWindow(input: {
 
   if (modTimeTo <= modTimeFrom) return null;
 
-  const lookbackSeconds =
-    (modTimeTo.getTime() - modTimeFrom.getTime()) / 1000;
+  const lookbackSeconds = (modTimeTo.getTime() - modTimeFrom.getTime()) / 1000;
 
   if (lookbackSeconds > EBAY_SELLER_EVENTS_MAX_LOOKBACK_SECONDS) return null;
 
@@ -70,12 +69,10 @@ export function getSellerEventsWatermarkAt(input: {
   return maxDate(sellerEventsWatermark, input.latestFullReconcileWatermarkAt);
 }
 
-export function shouldAdvanceSellerEventsArchiveWatermark(input: {
-  archiveOnly: boolean;
+export function shouldAdvanceSellerEventsRunWatermark(input: {
   statuses: string[];
 }) {
   return (
-    input.archiveOnly &&
     input.statuses.length > 0 &&
     input.statuses.every((status) => status === "SUCCEEDED")
   );

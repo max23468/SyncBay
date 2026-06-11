@@ -16,6 +16,7 @@ import {
   type SyncBayTone,
 } from "../components/SyncBayUi";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
+import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   getEbayConnectionStatusLabel,
   getNextAction,
@@ -107,7 +108,9 @@ export default function Index() {
 
   return (
     <s-page heading="Panoramica" inlineSize="large">
-      <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
+      <s-badge slot="accessory" tone="info">
+        Pilota controllato
+      </s-badge>
       <s-stack gap="large">
         <StatusHero
           actionHref={nextAction.primaryActionHref}
@@ -204,7 +207,9 @@ export default function Index() {
                 detail={getEbayDetail(dashboard)}
                 logo="ebay"
                 name={`eBay ${formatMarketplaceLabel(dashboard.ebay.marketplaceId)}`}
-                statusLabel={getEbayConnectionStatusLabel(dashboard.ebay.status)}
+                statusLabel={getEbayConnectionStatusLabel(
+                  dashboard.ebay.status,
+                )}
                 statusTone={
                   dashboard.ebay.status === "CONNECTED" ? "success" : "critical"
                 }
@@ -286,7 +291,8 @@ export default function Index() {
                     : "da allineare"}
                 </s-list-item>
                 <s-list-item>
-                  URL pubblico: {dashboard.vercel.publicUrl ?? "non configurato"}
+                  URL pubblico:{" "}
+                  {dashboard.vercel.publicUrl ?? "non configurato"}
                 </s-list-item>
                 <s-list-item>Versione app: {APP_VERSION}</s-list-item>
                 <s-list-item>Data build: {BUILD_DATE}</s-list-item>
@@ -300,7 +306,7 @@ export default function Index() {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
 function StatusRow({

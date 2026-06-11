@@ -35,7 +35,7 @@ import {
   getSellerEventsDeltaWindow,
   getSellerEventsWatermarkAt,
   isFullCatalogReconcileDue,
-  shouldAdvanceSellerEventsArchiveWatermark,
+  shouldAdvanceSellerEventsRunWatermark,
 } from "../lib/syncbay-ebay-delta-sync";
 import {
   getNextEbayTradingRateLimitRetryAt,
@@ -392,8 +392,7 @@ async function markStaleInternalShopifyImportJobsFailed(input: {
       await tx.auditLog.create({
         data: {
           details: result,
-          message:
-            "Traccia interna import Shopify stantia chiusa dal runner.",
+          message: "Traccia interna import Shopify stantia chiusa dal runner.",
           shopId: job.shopId,
           type: AuditEventType.SYNC_JOB_FAILED,
         },
@@ -486,7 +485,12 @@ async function enqueueIncrementalSyncJobs(now: Date) {
             orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
             select: { createdAt: true, finishedAt: true, payload: true },
             where: {
-              payload: { path: ["source"], equals: "seller_events_delta" },
+              AND: [
+                {
+                  payload: { path: ["source"], equals: "seller_events_delta" },
+                },
+                { payload: { path: ["watermarkAdvanced"], equals: true } },
+              ],
               shopId: shop.id,
               status: SyncJobStatus.SUCCEEDED,
               type: SyncJobType.SYNC_INCREMENTAL,
@@ -556,14 +560,13 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error);
-      const retryScheduledAt =
-        isEbayTradingUsageLimitError(errorMessage)
-          ? getNextEbayTradingRateLimitRetryAt({
-              cooldownSecondsValue:
-                process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
-              now,
-            })
-          : null;
+      const retryScheduledAt = isEbayTradingUsageLimitError(errorMessage)
+        ? getNextEbayTradingRateLimitRetryAt({
+            cooldownSecondsValue:
+              process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
+            now,
+          })
+        : null;
       const rateLimitCooldownSeconds = retryScheduledAt
         ? Math.ceil((retryScheduledAt.getTime() - now.getTime()) / 1000)
         : 0;
@@ -747,11 +750,13 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
         modTimeFrom: delta.timeFrom,
         modTimeTo: delta.timeTo,
         source: "seller_events_delta",
+        watermarkAdvanced: true,
       },
       result: {
         eventReadCount: delta.readCount,
         noWork: true,
         source: "seller_events_delta",
+        watermarkAdvanced: true,
       },
       shopId: input.shopId,
     });
@@ -840,9 +845,7 @@ function chunkArray<T>(items: T[], size: number) {
   return chunks;
 }
 
-function dedupePreviewCandidates(
-  candidates: ImportPreviewListingCandidate[],
-) {
+function dedupePreviewCandidates(candidates: ImportPreviewListingCandidate[]) {
   const candidatesById = new Map<string, ImportPreviewListingCandidate>();
 
   for (const candidate of candidates) {
@@ -1267,6 +1270,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     },
     warnings: result.warnings ?? [],
   });
+  await maybeMarkSellerEventsRunWatermarkSucceeded(job);
 
   return {
     jobId: job.id,
@@ -1523,7 +1527,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       },
       warnings: ["Esaurito saltato: mapping attivo non trovato."],
     });
-    await maybeMarkSellerEventsArchiveWindowSucceeded(job);
+    await maybeMarkSellerEventsRunWatermarkSucceeded(job);
 
     return {
       jobId: job.id,
@@ -1540,6 +1544,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       jobId: job.id,
       locationGid: job.shop.defaultLocationGid,
       productGid: mapping.shopifyProductGid,
+      variantGid: mapping.shopifyVariantGid,
     });
     soldOutWarnings.push(...soldOutResult.warnings);
   }
@@ -1596,7 +1601,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       ? soldOutWarnings
       : ["Mapping messo in esaurito senza prodotto Shopify collegato."],
   });
-  await maybeMarkSellerEventsArchiveWindowSucceeded(job);
+  await maybeMarkSellerEventsRunWatermarkSucceeded(job);
 
   return {
     jobId: job.id,
@@ -1605,9 +1610,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   };
 }
 
-async function maybeMarkSellerEventsArchiveWindowSucceeded(job: DueSyncJob) {
-  const payload = getJsonObject(job.payload);
-  const archiveOnly = payload?.archiveOnly === true;
+async function maybeMarkSellerEventsRunWatermarkSucceeded(job: DueSyncJob) {
   const source = getStringFromPayload(job.payload, "source");
   const runId = getStringFromPayload(job.payload, "runId");
   const marketplaceId = getEbayMarketplaceId(job.payload);
@@ -1616,7 +1619,7 @@ async function maybeMarkSellerEventsArchiveWindowSucceeded(job: DueSyncJob) {
 
   if (source !== "seller_events_delta" || !runId || !modTimeTo) return;
 
-  const archiveJobs = await prisma.syncJob.findMany({
+  const runJobs = await prisma.syncJob.findMany({
     select: { status: true },
     where: {
       AND: [
@@ -1624,39 +1627,44 @@ async function maybeMarkSellerEventsArchiveWindowSucceeded(job: DueSyncJob) {
         { payload: { path: ["runId"], equals: runId } },
       ],
       shopId: job.shopId,
-      type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
+      type: {
+        in: [
+          SyncJobType.SYNC_INCREMENTAL,
+          SyncJobType.ARCHIVE_INACTIVE_LISTING,
+        ],
+      },
     },
   });
 
   if (
-    !shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly,
-      statuses: archiveJobs.map((archiveJob) => archiveJob.status),
+    !shouldAdvanceSellerEventsRunWatermark({
+      statuses: runJobs.map((runJob) => runJob.status),
     })
   ) {
     return;
   }
 
   const finishedAt = new Date();
-  const archivedEventCount = archiveJobs.length;
+  const processedJobCount = runJobs.length;
 
   await prisma.syncJob.createMany({
     data: [
       {
         attempts: 1,
         finishedAt,
-        idempotencyKey: `seller-events-archive-progress:${job.shopId}:${marketplaceId}:${runId}`,
+        idempotencyKey: `seller-events-watermark:${job.shopId}:${marketplaceId}:${runId}`,
         maxAttempts: 1,
         payload: {
-          archivedEventCount,
           marketplaceId,
           modTimeFrom,
           modTimeTo,
+          processedJobCount,
           runId,
           source: "seller_events_delta",
+          watermarkAdvanced: true,
         } satisfies Prisma.JsonObject,
         result: {
-          archivedEventCount,
+          processedJobCount,
           source: "seller_events_delta",
           watermarkAdvanced: true,
         } satisfies Prisma.JsonObject,
@@ -1812,7 +1820,9 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
     titleSnapshot,
   ] = await Promise.all([
     findLatestSyncBayDescriptionBaseline(mappingId),
-    findLatestSyncBaySnapshotWithField(mappingId, { imageCount: { not: null } }),
+    findLatestSyncBaySnapshotWithField(mappingId, {
+      imageCount: { not: null },
+    }),
     findLatestSyncBaySnapshotWithField(mappingId, {
       priceAmount: { not: null },
     }),
@@ -2380,10 +2390,7 @@ async function getShopifyProductForConflict(
   const variables = defaultLocationGid
     ? { id: productGid, locationId: defaultLocationGid }
     : { id: productGid };
-  const response = await admin.graphql(
-    query,
-    { variables },
-  );
+  const response = await admin.graphql(query, { variables });
 
   if (!response.ok) return null;
 
@@ -2465,9 +2472,10 @@ function getVariantLocationQuantity(
       >[number]
     | null,
 ) {
-  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities
-    ?.find((quantity) => quantity.name === "available")
-    ?.quantity;
+  const availableQuantity =
+    variant?.inventoryItem?.inventoryLevel?.quantities?.find(
+      (quantity) => quantity.name === "available",
+    )?.quantity;
 
   return typeof availableQuantity === "number" ? availableQuantity : null;
 }
