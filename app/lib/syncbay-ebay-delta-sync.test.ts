@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getSellerEventsDeltaWindow, getSellerEventsWatermarkAt, isFullCatalogReconcileDue, shouldAdvanceSellerEventsArchiveWatermark } from "./syncbay-ebay-delta-sync.ts";
+import * as deltaSync from "./syncbay-ebay-delta-sync.ts";
+
+const {
+  getSellerEventsDeltaWindow,
+  getSellerEventsWatermarkAt,
+  isFullCatalogReconcileDue,
+  shouldAdvanceSellerEventsRunWatermark,
+} = deltaSync;
 
 test("uses a seller-events window with documented overlap and current-time buffer", () => {
   assert.deepEqual(
@@ -113,39 +120,28 @@ test("does not use full reconcile finish time as the seller-events watermark", (
   );
 });
 
-test("advances archive-only seller-events watermark only after every archive job succeeds", () => {
+test("advances seller-events watermark only after every run job succeeds", () => {
   assert.equal(
-    shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly: true,
+    shouldAdvanceSellerEventsRunWatermark({
       statuses: ["SUCCEEDED", "SUCCEEDED"],
     }),
     true,
   );
   assert.equal(
-    shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly: true,
+    shouldAdvanceSellerEventsRunWatermark({
       statuses: ["SUCCEEDED", "PENDING"],
     }),
     false,
   );
   assert.equal(
-    shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly: true,
+    shouldAdvanceSellerEventsRunWatermark({
       statuses: ["SUCCEEDED", "FAILED"],
     }),
     false,
   );
   assert.equal(
-    shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly: true,
+    shouldAdvanceSellerEventsRunWatermark({
       statuses: [],
-    }),
-    false,
-  );
-  assert.equal(
-    shouldAdvanceSellerEventsArchiveWatermark({
-      archiveOnly: false,
-      statuses: ["SUCCEEDED", "SUCCEEDED"],
     }),
     false,
   );

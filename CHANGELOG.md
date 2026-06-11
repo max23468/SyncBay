@@ -6,11 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.29.4] — 2026-06-11
 
-- Chiarito nelle istruzioni agenti e nella toolchain che Codex può usare anche
-  il plugin Shopify disponibile per questo tool e questa repo, come supporto
-  operativo non runtime.
+### Correzioni
+
+- Il delta eBay `GetSellerEvents` avanza il watermark solo dopo il successo di
+  tutti i job della finestra, inclusi i listing inattivi da mettere in esaurito,
+  evitando di perdere chiusure eBay in finestre miste.
+- La messa in esaurito di un listing inattivo usa la variante Shopify salvata
+  nel mapping invece della prima variante del prodotto, quando disponibile.
+- Panoramica applica gli stessi header embedded `no-store` delle altre route
+  app.
 
 ## [0.29.3] — 2026-06-11
 
@@ -314,6 +320,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   e abilitato, sostituendo il link non avviabile con un blocco operativo.
 
 ## Note interne non versionate
+
+### 2026-06-11
+
+- Chiarito nelle istruzioni agenti e nella toolchain che Codex può usare anche
+  il plugin Shopify disponibile per questo tool e questa repo, come supporto
+  operativo non runtime.
 
 ### 2026-06-10
 
@@ -1322,6 +1334,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.29.4]: #0294--2026-06-11
 [0.29.3]: #0293--2026-06-11
 [0.29.2]: #0292--2026-06-11
 [0.29.1]: #0291--2026-06-11
