@@ -77,6 +77,28 @@ export function shouldSkipQuantityConflictForArchivedProduct(input: {
   );
 }
 
+export function shouldDetectShopifyConflictsForMappingStatus(
+  mappingStatus: string | null,
+) {
+  return mappingStatus === "ACTIVE";
+}
+
+export function shouldBlockIncrementalSyncForOpenConflictMappingStatus(
+  mappingStatus: string | null,
+) {
+  return (
+    mappingStatus === "ACTIVE" ||
+    mappingStatus === "PAUSED" ||
+    mappingStatus === "ERROR"
+  );
+}
+
+export function shouldResolveOpenConflictsForInactiveMappingStatus(
+  mappingStatus: string | null,
+) {
+  return mappingStatus === "OUT_OF_STOCK" || mappingStatus === "ARCHIVED";
+}
+
 export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   syncBayImageCount: number | null;
   shopifyImageCount: number;

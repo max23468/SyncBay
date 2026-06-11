@@ -16,6 +16,9 @@ import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reco
 import {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  shouldBlockIncrementalSyncForOpenConflictMappingStatus,
+  shouldDetectShopifyConflictsForMappingStatus,
+  shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
 } from "../lib/syncbay-conflict-detection";
@@ -1130,23 +1133,61 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
-  const openConflictItemIds = new Set(
-    (
-      await prisma.syncConflict.findMany({
-        select: {
-          mapping: {
-            select: { ebayItemId: true },
-          },
-        },
-        where: {
-          mapping: { ebayItemId: { in: ebayItemIds } },
-          shopId: job.shopId,
-          status: SyncConflictStatus.OPEN,
-        },
-      })
-    ).flatMap((conflict) =>
-      conflict.mapping?.ebayItemId ? [conflict.mapping.ebayItemId] : [],
+  const openConflicts = await prisma.syncConflict.findMany({
+    select: {
+      mapping: {
+        select: { ebayItemId: true, id: true, status: true },
+      },
+    },
+    where: {
+      mapping: { ebayItemId: { in: ebayItemIds } },
+      shopId: job.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+  const reactivationConflictMappingIds = [
+    ...new Set(
+      openConflicts.flatMap((conflict) => {
+        if (
+          !shouldResolveOpenConflictsForInactiveMappingStatus(
+            conflict.mapping?.status ?? null,
+          )
+        ) {
+          return [];
+        }
+
+        return conflict.mapping?.id ? [conflict.mapping.id] : [];
+      }),
     ),
+  ];
+  const reactivationConflictResolvedCount =
+    reactivationConflictMappingIds.length > 0
+      ? (
+          await prisma.syncConflict.updateMany({
+            data: {
+              resolvedAt: new Date(),
+              status: SyncConflictStatus.RESOLVED,
+            },
+            where: {
+              mappingId: { in: reactivationConflictMappingIds },
+              shopId: job.shopId,
+              status: SyncConflictStatus.OPEN,
+            },
+          })
+        ).count
+      : 0;
+  const openConflictItemIds = new Set(
+    openConflicts.flatMap((conflict) => {
+      if (
+        !shouldBlockIncrementalSyncForOpenConflictMappingStatus(
+          conflict.mapping?.status ?? null,
+        )
+      ) {
+        return [];
+      }
+
+      return conflict.mapping?.ebayItemId ? [conflict.mapping.ebayItemId] : [];
+    }),
   );
   const syncableItemIds = ebayItemIds.filter(
     (itemId) => !openConflictItemIds.has(itemId),
@@ -1158,6 +1199,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       job,
       result: {
         conflictSkippedCount: ebayItemIds.length,
+        reactivationConflictResolvedCount,
         requestedCount: ebayItemIds.length,
         syncedCount: 0,
       },
@@ -1219,6 +1261,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     job,
     result: {
       conflictSkippedCount: openConflictItemIds.size,
+      reactivationConflictResolvedCount,
       requestedCount: ebayItemIds.length,
       syncedCount: syncableItemIds.length,
     },
@@ -1503,7 +1546,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
 
   const now = new Date();
 
-  await prisma.$transaction([
+  const [, , resolvedConflicts] = await prisma.$transaction([
     prisma.productMapping.update({
       data: {
         lastErrorCode: null,
@@ -1532,6 +1575,11 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
         source: ProductSnapshotSource.SYNCBAY,
       },
     }),
+    resolveOpenConflictsForInactiveMappingMutation({
+      mappingId: mapping.id,
+      resolvedAt: now,
+      shopId: job.shopId,
+    }),
   ]);
 
   await markJobSucceeded({
@@ -1539,6 +1587,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
     job,
     result: {
       ebayItemId,
+      resolvedConflictCount: resolvedConflicts.count,
       shopifyProductGid: mapping.shopifyProductGid,
       soldOutCount: 1,
       soldOutShopifyProduct: Boolean(mapping.shopifyProductGid),
@@ -1651,6 +1700,34 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
       job,
       result: { conflictCount: 0, skippedReason: "mapping_not_found" },
       warnings: ["Webhook Shopify senza mapping SyncBay collegato."],
+    });
+
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
+  }
+
+  if (!shouldDetectShopifyConflictsForMappingStatus(mapping.status)) {
+    const resolvedConflictCount =
+      shouldResolveOpenConflictsForInactiveMappingStatus(mapping.status)
+        ? await resolveOpenConflictsForInactiveMapping({
+            mappingId: mapping.id,
+            shopId: job.shopId,
+          })
+        : 0;
+
+    await markJobSucceeded({
+      delegatedJobId: null,
+      job,
+      result: {
+        conflictCount: 0,
+        mappingStatus: mapping.status,
+        resolvedConflictCount,
+        skippedReason: "mapping_not_active",
+      },
+      warnings: [],
     });
 
     return {
@@ -2489,6 +2566,33 @@ async function resolveAlignedOpenConflicts(input: {
   });
 
   return result.count;
+}
+
+async function resolveOpenConflictsForInactiveMapping(input: {
+  mappingId: string;
+  shopId: string;
+}) {
+  const result = await resolveOpenConflictsForInactiveMappingMutation(input);
+
+  return result.count;
+}
+
+function resolveOpenConflictsForInactiveMappingMutation(input: {
+  mappingId: string;
+  resolvedAt?: Date;
+  shopId: string;
+}) {
+  return prisma.syncConflict.updateMany({
+    data: {
+      resolvedAt: input.resolvedAt ?? new Date(),
+      status: SyncConflictStatus.RESOLVED,
+    },
+    where: {
+      mappingId: input.mappingId,
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
 }
 
 function getJsonObject(value: Prisma.JsonValue | null) {
