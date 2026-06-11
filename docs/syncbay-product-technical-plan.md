@@ -18,7 +18,8 @@ La sorgente di verità del catalogo resta eBay. SyncBay importa e mantiene aggio
 - Latenza target: sync entro massimo 5 minuti.
 - Scala MVP: fino a 2.000 prodotti per shop.
 - Listing da coprire: tutti i listing eBay attivi del negoziante, inclusi quelli storici/non creati da SyncBay.
-- Prodotto chiuso o rimosso da eBay: prodotto Shopify archiviato, non cancellato.
+- Prodotto chiuso o rimosso da eBay: prodotto Shopify mantenuto attivo come
+  esaurito, non archiviato né cancellato, per preservarne la SEO (ADR 0011).
 - Modifica manuale su Shopify: conflitto visibile in dashboard, non sovrascrittura silenziosa.
 
 ## Posizionamento competitivo
@@ -80,7 +81,7 @@ Shopify Admin GraphQL
   -> crea/aggiorna prodotti
   -> crea/aggiorna immagini
   -> aggiorna inventario
-  -> archivia prodotti non più attivi su eBay
+  -> mantiene come esauriti i prodotti non più attivi su eBay
 
 Dashboard SyncBay
   -> stato sync
@@ -175,7 +176,8 @@ Entità principali:
 - `media_assets`: immagini importate, hash/deduplica, stato upload Shopify.
 - `sync_jobs`: job import/sync, stato, retry, errori.
 - `conflicts`: campo, valore eBay, valore Shopify, decisione del negoziante.
-- `audit_logs`: eventi sync, errori API, modifiche regole, archiviazioni.
+- `audit_logs`: eventi sync, errori API, modifiche regole, messe in esaurito e
+  archiviazioni operative.
 
 ## Import catalogo
 
@@ -555,7 +557,7 @@ Feature future da valutare:
 - Quantità modificata su eBay aggiornata su Shopify entro 5 minuti.
 - Ordine Shopify pagato riduce disponibilità eBay o genera alert critico con retry.
 - Modifica manuale Shopify apre conflitto.
-- Listing eBay chiuso archivia prodotto Shopify.
+- Listing eBay chiuso mantiene il prodotto Shopify in vetrina come esaurito.
 - Regole sconto/markup/arrotondamento applicate senza modificare eBay.
 - Descrizione pulita visibile in anteprima prima di applicazione massiva.
 - Disinstallazione app revoca accesso e ferma sync.

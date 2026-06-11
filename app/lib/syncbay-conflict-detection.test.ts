@@ -2,7 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getAlignedOpenConflictFields, getLatestSyncBayDescriptionBaselineWhere, shouldSkipImagesConflictWhenEbayHasNoImages, shouldSkipQuantityConflictForArchivedProduct } from "./syncbay-conflict-detection.ts";
+import * as conflictDetection from "./syncbay-conflict-detection.ts";
+
+const {
+  getAlignedOpenConflictFields,
+  getLatestSyncBayDescriptionBaselineWhere,
+  shouldDetectShopifyConflictsForMappingStatus,
+  shouldSkipImagesConflictWhenEbayHasNoImages,
+  shouldSkipQuantityConflictForArchivedProduct,
+} = conflictDetection;
 
 test("builds a description baseline query that skips null description hashes", () => {
   const where = getLatestSyncBayDescriptionBaselineWhere("mapping-1");
@@ -60,6 +68,15 @@ test("keeps quantity conflicts active for sellable or mismatched products", () =
     }),
     false,
   );
+});
+
+test("detects Shopify conflicts only for active mappings", () => {
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("ACTIVE"), true);
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("OUT_OF_STOCK"), false);
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("ARCHIVED"), false);
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("PAUSED"), false);
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("ERROR"), false);
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus(null), false);
 });
 
 test("skips images conflicts when eBay has no media but Shopify does", () => {

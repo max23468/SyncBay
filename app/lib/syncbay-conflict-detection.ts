@@ -77,6 +77,12 @@ export function shouldSkipQuantityConflictForArchivedProduct(input: {
   );
 }
 
+export function shouldDetectShopifyConflictsForMappingStatus(
+  mappingStatus: string | null,
+) {
+  return mappingStatus === "ACTIVE";
+}
+
 export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   syncBayImageCount: number | null;
   shopifyImageCount: number;
