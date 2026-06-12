@@ -19,6 +19,7 @@ import {
   isLiveDescriptionConflictAligned,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
+  shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -2717,6 +2718,7 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
     mappingId: string | null;
     mapping: {
       shopifyProductGid: string | null;
+      status: ProductMappingStatus;
     } | null;
   }[];
   defaultLocationGid: string | null;
@@ -2727,7 +2729,10 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
     (conflict) =>
       conflict.field === "description" &&
       conflict.mappingId &&
-      conflict.mapping?.shopifyProductGid,
+      conflict.mapping?.shopifyProductGid &&
+      shouldResolveLiveAlignedDescriptionConflictForMappingStatus(
+        conflict.mapping?.status ?? null,
+      ),
   );
   const mappingIds = [
     ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
