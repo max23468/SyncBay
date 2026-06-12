@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.4] — 2026-06-12
+
+### Correzioni
+
+- La pagina Attività dà più spazio a filtri, timeline e metriche, mantiene i
+  badge di stato allineati nella timeline e normalizza il testo diagnostico per
+  evitare doppi punti nelle frasi composte.
+
 ## [0.33.3] — 2026-06-12
 
 ### Correzioni
@@ -1499,6 +1507,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.4]: #0334--2026-06-12
 [0.33.3]: #0333--2026-06-12
 [0.33.2]: #0332--2026-06-12
 [0.33.1]: #0331--2026-06-12

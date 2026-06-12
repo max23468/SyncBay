@@ -124,48 +124,50 @@ export default function ActivityRoute() {
       <s-badge slot="accessory" tone="info">Diagnostica guidata</s-badge>
       <s-stack gap="base">
         <s-section heading="Coda operativa">
-          <s-text color="subdued">
-            Qui controlli attività, errori e note operative senza uscire
-            dall&apos;app. La sorgente catalogo resta eBay; gli ordini Shopify
-            aggiornano solo la disponibilità eBay. Gli errori restano leggibili
-            e riprovabili dove possibile.
-          </s-text>
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-          >
-            <MetricTile
-              detail="Aggiornamenti non ancora completati."
-              icon="refresh"
-              label="In coda"
-              tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
-              value={formatNumber(activity.sync.pendingJobs)}
-            />
-            <MetricTile
-              detail="Errori letti negli ultimi aggiornamenti."
-              icon="alert-triangle"
-              label="Errori recenti"
-              tone={failedJobs > 0 ? "critical" : "neutral"}
-              value={formatNumber(failedJobs)}
-            />
-            <MetricTile
-              detail="Note operative registrate."
-              icon="clock"
-              label="Eventi"
-              tone="neutral"
-              value={formatNumber(activity.audit.length)}
-            />
-            <MetricTile
-              detail={getCatalogHealthDetail(activity)}
-              icon="product"
-              label="Catalogo"
-              tone={getCatalogHealthTone(activity)}
-              value={getCatalogHealthLabel(activity)}
-            />
-          </s-grid>
-          {actionData ? (
-            <s-text color="subdued">{actionData.message}</s-text>
-          ) : null}
+          <s-stack gap="base">
+            <s-text color="subdued">
+              Qui controlli attività, errori e note operative senza uscire
+              dall&apos;app. La sorgente catalogo resta eBay; gli ordini Shopify
+              aggiornano solo la disponibilità eBay. Gli errori restano
+              leggibili e riprovabili dove possibile.
+            </s-text>
+            <s-grid
+              gap="base"
+              gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+            >
+              <MetricTile
+                detail="Aggiornamenti non ancora completati."
+                icon="refresh"
+                label="In coda"
+                tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
+                value={formatNumber(activity.sync.pendingJobs)}
+              />
+              <MetricTile
+                detail="Errori letti negli ultimi aggiornamenti."
+                icon="alert-triangle"
+                label="Errori recenti"
+                tone={failedJobs > 0 ? "critical" : "neutral"}
+                value={formatNumber(failedJobs)}
+              />
+              <MetricTile
+                detail="Note operative registrate."
+                icon="clock"
+                label="Eventi"
+                tone="neutral"
+                value={formatNumber(activity.audit.length)}
+              />
+              <MetricTile
+                detail={getCatalogHealthDetail(activity)}
+                icon="product"
+                label="Catalogo"
+                tone={getCatalogHealthTone(activity)}
+                value={getCatalogHealthLabel(activity)}
+              />
+            </s-grid>
+            {actionData ? (
+              <s-text color="subdued">{actionData.message}</s-text>
+            ) : null}
+          </s-stack>
         </s-section>
 
         <s-section heading="Timeline">
@@ -254,7 +256,7 @@ function ActivityTimelineRow({
 
   return (
     <TimelineEvent icon={getActivityIcon(row)} isLast={isLast} tone={row.tone}>
-      <s-stack direction="inline" gap="base" justifyContent="space-between">
+      <div className="syncbay-activity-row">
         <s-stack gap="small-200">
           <s-text type="strong">{row.title}</s-text>
           <s-text>{row.detail}</s-text>
@@ -262,8 +264,10 @@ function ActivityTimelineRow({
             {row.meta} · {formatDateTime(row.timestamp)}
           </s-text>
         </s-stack>
-        <s-stack gap="small-200" alignItems="end">
-          <s-badge tone={row.tone}>{getActivityToneLabel(row.tone)}</s-badge>
+        <div className="syncbay-activity-row__status">
+          <span className="syncbay-activity-badge">
+            <s-badge tone={row.tone}>{getActivityToneLabel(row.tone)}</s-badge>
+          </span>
           {canRetry && row.job ? (
             <Form method="post">
               <input type="hidden" name="intent" value="retryJob" />
@@ -275,8 +279,8 @@ function ActivityTimelineRow({
           ) : row.job && diagnostic ? (
             <s-text color="subdued">{diagnostic.retry.label}</s-text>
           ) : null}
-        </s-stack>
-      </s-stack>
+        </div>
+      </div>
     </TimelineEvent>
   );
 }
@@ -294,22 +298,24 @@ function getActivityIcon(row: ActivityRow): SyncBayIcon {
 
 function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
   return (
-    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
-      {ACTIVITY_FILTERS.map((filter) => (
-        <s-clickable-chip
-          aria-current={activeFilter === filter.value ? "page" : undefined}
-          color={activeFilter === filter.value ? "strong" : "base"}
-          href={
-            filter.value === "all"
-              ? "/app/activity"
-              : `/app/activity?filter=${filter.value}`
-          }
-          key={filter.value}
-        >
-          {filter.label}
-        </s-clickable-chip>
-      ))}
-    </s-stack>
+    <div className="syncbay-activity-filter-nav">
+      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+        {ACTIVITY_FILTERS.map((filter) => (
+          <s-clickable-chip
+            aria-current={activeFilter === filter.value ? "page" : undefined}
+            color={activeFilter === filter.value ? "strong" : "base"}
+            href={
+              filter.value === "all"
+                ? "/app/activity"
+                : `/app/activity?filter=${filter.value}`
+            }
+            key={filter.value}
+          >
+            {filter.label}
+          </s-clickable-chip>
+        ))}
+      </s-stack>
+    </div>
   );
 }
 
@@ -331,7 +337,9 @@ function StatusRow({
           <s-heading>{title}</s-heading>
           <s-text color="subdued">{detail}</s-text>
         </s-stack>
-        <s-badge tone={tone}>{label}</s-badge>
+        <span className="syncbay-activity-badge">
+          <s-badge tone={tone}>{label}</s-badge>
+        </span>
       </s-stack>
     </s-box>
   );
@@ -453,7 +461,11 @@ function getJobDetail(
 
   if (job.errorMessage) pieces.push(job.errorMessage);
 
-  return `${pieces.join(". ")}.`;
+  return `${pieces.map(formatSentenceFragment).filter(Boolean).join(". ")}.`;
+}
+
+function formatSentenceFragment(value: string) {
+  return value.trim().replace(/[.!?]+$/u, "");
 }
 
 function formatJobStatus(status: string) {
