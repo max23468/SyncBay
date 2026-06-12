@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.7] — 2026-06-12
+
+### Sotto il cofano
+
+- Allineato il package manager canonico a `npm@11.17.0` e aggiornate le
+  dipendenze patch/minor consentite dal manifest.
+
 ## [0.35.6] — 2026-06-12
 
 ### Sicurezza
@@ -1615,6 +1622,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.7]: #0357--2026-06-12
+[0.35.6]: #0356--2026-06-12
 [0.35.5]: #0355--2026-06-12
 [0.35.4]: #0354--2026-06-12
 [0.35.3]: #0353--2026-06-12
