@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.5] — 2026-06-12
+
+### Sotto il cofano
+
+- La descrizione diagnostica della timeline Attività usa una sola passata per
+  normalizzare e scartare i frammenti vuoti, chiudendo il warning React Doctor
+  `react-doctor/js-flatmap-filter` senza cambiare il testo mostrato.
+
 ## [0.33.4] — 2026-06-12
 
 ### Correzioni
@@ -1507,6 +1515,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.5]: #0335--2026-06-12
 [0.33.4]: #0334--2026-06-12
 [0.33.3]: #0333--2026-06-12
 [0.33.2]: #0332--2026-06-12
