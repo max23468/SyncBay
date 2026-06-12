@@ -176,6 +176,8 @@ const checks = [
       "Collega eBay",
       "Controllo operativo",
       "Torna alla Panoramica",
+      "SettingCard",
+      "MetricTile",
     ],
   },
   {

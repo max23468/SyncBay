@@ -480,6 +480,48 @@
   border-color: var(--syncbay-steel);
 }
 
+/* Scheda impostazione (Impostazioni): box verticale con intestazione icona +
+   titolo + stato corrente a colpo d'occhio, poi i controlli sotto. */
+.syncbay-setting {
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+  padding: 18px 20px;
+}
+
+.syncbay-setting__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-block-end: 14px;
+  margin-block-end: 16px;
+  border-block-end: 1px solid var(--syncbay-mist);
+}
+
+.syncbay-setting__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 10px;
+  background: var(--syncbay-cloud);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
+.syncbay-setting__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.syncbay-setting__status {
+  flex: 0 0 auto;
+}
+
 /* Su viewport stretto l'hero impila azione e testo. */
 @media (max-width: 640px) {
   .syncbay-hero {

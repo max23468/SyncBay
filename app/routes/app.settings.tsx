@@ -7,6 +7,7 @@ import type {
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { ActionRow, MetricTile, SettingCard } from "../components/SyncBayUi";
 import {
   getImportProductStatusLabelCapitalized,
   IMPORT_PRODUCT_STATUS_VALUES,
@@ -169,211 +170,281 @@ export default function SettingsRoute() {
   return (
     <s-page heading="Impostazioni">
       <s-badge slot="accessory" tone="info">Controllo operativo</s-badge>
-      <s-stack gap="base">
-      <s-section heading="Sync catalogo">
-        <s-text color="subdued">
-          Negozio: {settings.shop.domain}. Il catalogo resta eBay verso
-          Shopify; la disponibilità eBay viene aggiornata solo dagli ordini
-          Shopify pagati. Qui decidi quanto lasciare SyncBay lavorare in
-          autonomia.
-        </s-text>
-        <s-unordered-list>
-          <s-list-item>
-            Stato: {currentSyncEnabled ? "attiva" : "non attiva"}
-          </s-list-item>
-          <s-list-item>
-            Intervallo target: {settings.shop.syncTargetSeconds} secondi
-          </s-list-item>
-          <s-list-item>
-            Prodotti attivi collegati: {settings.sync.activeMappingCount}
-          </s-list-item>
-        </s-unordered-list>
-        {settings.sync.enablementBlockers.length > 0 ? (
-          <s-unordered-list>
-            {settings.sync.enablementBlockers.map((blocker) => (
-              <s-list-item key={blocker}>{blocker}</s-list-item>
-            ))}
-          </s-unordered-list>
-        ) : null}
-        {actionData?.intent === "saveSyncSettings" ? (
-          <s-paragraph>{actionData.message}</s-paragraph>
-        ) : null}
-        <Form method="post">
-          <input type="hidden" name="intent" value="saveSyncSettings" />
-          <input type="hidden" name="syncEnabled" value="false" />
-          <s-switch
-            defaultChecked={currentSyncEnabled}
-            id="syncEnabled"
-            label="Sync automatico eBay verso Shopify"
-            name="syncEnabled"
-            value="true"
-          />
-          <s-button type="submit" disabled={isSaving}>
-            {isSaving ? "Salvataggio..." : "Salva sync catalogo"}
-          </s-button>
-        </Form>
-      </s-section>
+      <s-stack gap="large">
+        <SettingCard
+          description="Quanto lasciare lavorare SyncBay in autonomia."
+          icon="refresh"
+          statusLabel={currentSyncEnabled ? "Attivo" : "Non attivo"}
+          statusTone={currentSyncEnabled ? "success" : "neutral"}
+          title="Sync catalogo"
+        >
+          <s-text color="subdued">
+            Negozio: {settings.shop.domain}. Il catalogo resta eBay verso
+            Shopify; la disponibilità eBay viene aggiornata solo dagli ordini
+            Shopify pagati.
+          </s-text>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+          >
+            <MetricTile
+              detail="Tempo massimo previsto per l'aggiornamento."
+              icon="clock"
+              label="Intervallo target"
+              tone="info"
+              value={`${settings.shop.syncTargetSeconds} s`}
+            />
+            <MetricTile
+              detail="Prodotti eBay attivi collegati a Shopify."
+              icon="link"
+              label="Prodotti collegati"
+              tone="neutral"
+              value={formatNumber(settings.sync.activeMappingCount)}
+            />
+          </s-grid>
+          {settings.sync.enablementBlockers.length > 0 ? (
+            <s-box
+              border="base"
+              borderColor="base"
+              borderRadius="base"
+              padding="base"
+            >
+              <s-stack gap="small-200">
+                <s-badge tone="warning">Sync non attivabile</s-badge>
+                <s-text>
+                  Per attivare il sync automatico mancano questi prerequisiti:
+                </s-text>
+                <s-unordered-list>
+                  {settings.sync.enablementBlockers.map((blocker) => (
+                    <s-list-item key={blocker}>{blocker}</s-list-item>
+                  ))}
+                </s-unordered-list>
+              </s-stack>
+            </s-box>
+          ) : null}
+          {actionData?.intent === "saveSyncSettings" ? (
+            <s-paragraph>{actionData.message}</s-paragraph>
+          ) : null}
+          <Form method="post">
+            <input type="hidden" name="intent" value="saveSyncSettings" />
+            <input type="hidden" name="syncEnabled" value="false" />
+            <s-switch
+              defaultChecked={currentSyncEnabled}
+              id="syncEnabled"
+              label="Sync automatico eBay verso Shopify"
+              name="syncEnabled"
+              value="true"
+            />
+            <s-button type="submit" disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva sync catalogo"}
+            </s-button>
+          </Form>
+        </SettingCard>
 
-      <s-section heading="Import prodotti">
-        <s-paragraph>
-          Il default si applica ai nuovi prodotti creati dai prossimi import.
-          Le bozze restano non pubblicate.
-        </s-paragraph>
-        {actionData?.intent === "saveImportDefaults" ? (
-          <s-paragraph>{actionData.message}</s-paragraph>
-        ) : null}
-        <Form method="post">
-          <input type="hidden" name="intent" value="saveImportDefaults" />
+        <SettingCard
+          description="Stato dei nuovi prodotti creati dai prossimi import."
+          icon="import"
+          statusLabel={getImportProductStatusLabelCapitalized(currentStatus)}
+          statusTone="info"
+          title="Import prodotti"
+        >
+          <s-paragraph>
+            Il default si applica ai nuovi prodotti creati dai prossimi import.
+            Le bozze restano non pubblicate.
+          </s-paragraph>
+          {actionData?.intent === "saveImportDefaults" ? (
+            <s-paragraph>{actionData.message}</s-paragraph>
+          ) : null}
+          <Form method="post">
+            <input type="hidden" name="intent" value="saveImportDefaults" />
             <s-select
               id="defaultProductStatus"
               label="Stato prodotti di default"
               name="defaultProductStatus"
               value={currentStatus}
             >
-            {IMPORT_PRODUCT_STATUS_VALUES.map((status) => (
-              <s-option key={status} value={status}>
-                {getImportProductStatusLabelCapitalized(status)}
-              </s-option>
-            ))}
-          </s-select>
-          <s-button type="submit" disabled={isSaving}>
-            {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
-          </s-button>
-        </Form>
-      </s-section>
+              {IMPORT_PRODUCT_STATUS_VALUES.map((status) => (
+                <s-option key={status} value={status}>
+                  {getImportProductStatusLabelCapitalized(status)}
+                </s-option>
+              ))}
+            </s-select>
+            <s-button type="submit" disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
+            </s-button>
+          </Form>
+        </SettingCard>
 
-      <s-section heading="Canali di vendita">
-        <s-paragraph>
-          I prodotti attivi creati o riusati seguono questa policy di
-          pubblicazione Shopify.
-        </s-paragraph>
-        <s-text color="subdued">
-          Policy attuale:{" "}
-          {getProductPublicationModeSummaryLabel(
+        <SettingCard
+          description="Dove vengono pubblicati i prodotti su Shopify."
+          icon="store-online"
+          statusLabel={getProductPublicationModeSummaryLabel(
             currentPublicationMode,
             selectedPublicationIds.length,
           )}
-          .
-        </s-text>
-        {settings.productPublications.errorMessage ? (
-          <s-paragraph>{settings.productPublications.errorMessage}</s-paragraph>
-        ) : null}
-        {actionData?.intent === "saveProductPublications" ? (
-          <s-paragraph>{actionData.message}</s-paragraph>
-        ) : null}
-        <Form method="post">
-          <input type="hidden" name="intent" value="saveProductPublications" />
+          statusTone="info"
+          title="Canali di vendita"
+        >
+          <s-paragraph>
+            I prodotti attivi creati o riusati seguono questa policy di
+            pubblicazione Shopify.
+          </s-paragraph>
+          {settings.productPublications.errorMessage ? (
+            <s-paragraph>
+              {settings.productPublications.errorMessage}
+            </s-paragraph>
+          ) : null}
+          {actionData?.intent === "saveProductPublications" ? (
+            <s-paragraph>{actionData.message}</s-paragraph>
+          ) : null}
+          <Form method="post">
+            <input
+              type="hidden"
+              name="intent"
+              value="saveProductPublications"
+            />
             <s-select
               id="productPublicationMode"
               label="Pubblicazione prodotti"
               name="productPublicationMode"
               value={currentPublicationMode}
             >
-            {PRODUCT_PUBLICATION_MODES.map((mode) => (
-              <s-option key={mode} value={mode}>
-                {getProductPublicationModeLabel(mode)}
-              </s-option>
-            ))}
-          </s-select>
-          {settings.productPublications.availablePublications.length > 0 ? (
-            <s-stack gap="small-200">
-              {settings.productPublications.availablePublications.map(
-                (publication) => (
-                  <s-checkbox
-                    defaultChecked={selectedPublicationIds.includes(
-                      publication.id,
-                    )}
-                    id={`publication-${publication.id}`}
-                    key={publication.id}
-                    label={publication.title}
-                    name="productPublicationGids"
-                    value={publication.id}
-                  />
-                ),
-              )}
-            </s-stack>
-          ) : (
-            <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
-          )}
-          <s-button type="submit" disabled={isSaving}>
-            {isSaving ? "Salvataggio..." : "Salva canali"}
-          </s-button>
-        </Form>
-      </s-section>
-
-      <s-section heading="Avanzate">
-        <s-text color="subdued">
-          Collegamenti e dettagli tecnici restano qui, separati dalle
-          impostazioni operative più frequenti.
-        </s-text>
-        <s-stack gap="base">
-          <StatusRow
-            detail={`Marketplace ${settings.ebay.marketplaceId}. ${
-              settings.ebay.connectedAt
-                ? `Collegato il ${formatDateTime(settings.ebay.connectedAt)}.`
-                : "Collegamento non completato."
-            }`}
-            label={getEbayConnectionStatusLabel(settings.ebay.status)}
-            tone={
-              settings.ebay.status === "CONNECTED" ? "success" : "warning"
-            }
-            title="Collegamento eBay"
-          />
-          <StatusRow
-            detail={`${settings.shopify.missingScopes.length} scope Shopify mancanti; ${settings.shopify.missingConfiguredScopes.length} scope configurati mancanti.`}
-            label={
-              settings.shopify.missingScopes.length === 0 &&
-              settings.shopify.missingConfiguredScopes.length === 0
-                ? "Completi"
-                : "Da controllare"
-            }
-            tone={
-              settings.shopify.missingScopes.length === 0 &&
-              settings.shopify.missingConfiguredScopes.length === 0
-                ? "success"
-                : "warning"
-            }
-            title="Permessi Shopify"
-          />
-          <StatusRow
-            detail={settings.shopify.webhookTopics.join(", ")}
-            label={`${settings.shopify.webhookTopics.length} topic`}
-            tone="info"
-            title="Webhook"
-          />
-        </s-stack>
-        <s-stack direction="inline" gap="small-200">
-          {settings.ebay.oauthEnabled && settings.ebay.oauthReady ? (
-            <s-button href="/auth/ebay/start">
-              {settings.ebay.status === "CONNECTED"
-                ? "Ricollega eBay"
-                : "Collega eBay"}
+              {PRODUCT_PUBLICATION_MODES.map((mode) => (
+                <s-option key={mode} value={mode}>
+                  {getProductPublicationModeLabel(mode)}
+                </s-option>
+              ))}
+            </s-select>
+            <s-text color="subdued">
+              Le caselle qui sotto valgono solo con la policy «Solo canali
+              selezionati».
+            </s-text>
+            {settings.productPublications.availablePublications.length > 0 ? (
+              <s-stack gap="small-200">
+                {settings.productPublications.availablePublications.map(
+                  (publication) => (
+                    <s-checkbox
+                      defaultChecked={selectedPublicationIds.includes(
+                        publication.id,
+                      )}
+                      id={`publication-${publication.id}`}
+                      key={publication.id}
+                      label={publication.title}
+                      name="productPublicationGids"
+                      value={publication.id}
+                    />
+                  ),
+                )}
+              </s-stack>
+            ) : (
+              <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
+            )}
+            <s-button type="submit" disabled={isSaving}>
+              {isSaving ? "Salvataggio..." : "Salva canali"}
             </s-button>
-          ) : null}
-          <s-button href="/app/activity">Apri attività</s-button>
-          <s-button href="/app/import-preview">Apri importazione</s-button>
-          <s-button href="/app">Torna alla Panoramica</s-button>
-        </s-stack>
-        <details className="syncbay-details">
-          <summary>Apri dettagli tecnici</summary>
+          </Form>
+        </SettingCard>
+
+        <SettingCard
+          description="Collegamenti e dettagli tecnici, separati dalle impostazioni più frequenti."
+          icon="settings"
+          statusLabel={
+            settings.ebay.status === "CONNECTED"
+              ? "Collegato"
+              : getEbayConnectionStatusLabel(settings.ebay.status)
+          }
+          statusTone={
+            settings.ebay.status === "CONNECTED" ? "success" : "warning"
+          }
+          title="Avanzate"
+        >
           <s-stack gap="base">
-            <s-unordered-list>
-              <s-list-item>
-                Scope Shopify attivi:{" "}
-                {settings.shopify.scopes.length > 0
-                  ? settings.shopify.scopes.join(", ")
-                  : "nessuno"}
-              </s-list-item>
-              <s-list-item>
-                Scope richiesti dalla configurazione:{" "}
-                {settings.shopify.configuredScopes.length > 0
-                  ? settings.shopify.configuredScopes.join(", ")
-                : "nessuno"}
-              </s-list-item>
-            </s-unordered-list>
+            <StatusRow
+              detail={`Marketplace ${settings.ebay.marketplaceId}. ${
+                settings.ebay.connectedAt
+                  ? `Collegato il ${formatDateTime(settings.ebay.connectedAt)}.`
+                  : "Collegamento non completato."
+              }`}
+              label={getEbayConnectionStatusLabel(settings.ebay.status)}
+              tone={settings.ebay.status === "CONNECTED" ? "success" : "warning"}
+              title="Collegamento eBay"
+            />
+            <StatusRow
+              detail={`${settings.shopify.missingScopes.length} permessi Shopify mancanti; ${settings.shopify.missingConfiguredScopes.length} da riapprovare.`}
+              label={
+                settings.shopify.missingScopes.length === 0 &&
+                settings.shopify.missingConfiguredScopes.length === 0
+                  ? "Completi"
+                  : "Da controllare"
+              }
+              tone={
+                settings.shopify.missingScopes.length === 0 &&
+                settings.shopify.missingConfiguredScopes.length === 0
+                  ? "success"
+                  : "warning"
+              }
+              title="Permessi Shopify"
+            />
           </s-stack>
-        </details>
-      </s-section>
+          <div className="syncbay-action-list">
+            {settings.ebay.oauthEnabled && settings.ebay.oauthReady ? (
+              <ActionRow
+                description="Apri il collegamento eBay."
+                href="/auth/ebay/start"
+                icon="connect"
+                label={
+                  settings.ebay.status === "CONNECTED"
+                    ? "Ricollega eBay"
+                    : "Collega eBay"
+                }
+                tone="info"
+              />
+            ) : null}
+            <ActionRow
+              description="Cronologia di import, aggiornamenti ed errori."
+              href="/app/activity"
+              icon="clock"
+              label="Apri attività"
+            />
+            <ActionRow
+              description="Porta nuovi prodotti eBay su Shopify."
+              href="/app/import-preview"
+              icon="import"
+              label="Apri importazione"
+            />
+            <ActionRow
+              description="Stato operativo e prossime azioni."
+              href="/app"
+              icon="store-online"
+              label="Torna alla Panoramica"
+            />
+          </div>
+          <details className="syncbay-details">
+            <summary>Apri dettagli tecnici</summary>
+            <s-stack gap="base">
+              <s-unordered-list>
+                <s-list-item>
+                  Webhook attivi ({settings.shopify.webhookTopics.length}):{" "}
+                  {settings.shopify.webhookTopics.length > 0
+                    ? settings.shopify.webhookTopics.join(", ")
+                    : "nessuno"}
+                </s-list-item>
+                <s-list-item>
+                  Scope Shopify attivi:{" "}
+                  {settings.shopify.scopes.length > 0
+                    ? settings.shopify.scopes.join(", ")
+                    : "nessuno"}
+                </s-list-item>
+                <s-list-item>
+                  Scope richiesti dalla configurazione:{" "}
+                  {settings.shopify.configuredScopes.length > 0
+                    ? settings.shopify.configuredScopes.join(", ")
+                    : "nessuno"}
+                </s-list-item>
+              </s-unordered-list>
+            </s-stack>
+          </details>
+        </SettingCard>
       </s-stack>
     </s-page>
   );
@@ -415,6 +486,12 @@ function StatusRow({
 
 function formatDateTime(value: string) {
   return itDateTimeFormatter.format(new Date(value));
+}
+
+const itNumberFormatter = new Intl.NumberFormat("it-IT");
+
+function formatNumber(value: number) {
+  return itNumberFormatter.format(value);
 }
 
 function getProductPublicationModeLabel(mode: ProductPublicationMode) {

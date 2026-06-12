@@ -2,8 +2,8 @@
  * Componenti del design layer SyncBay (ADR 0010).
  *
  * Lista chiusa: tile metrica, hero di stato, scheda connessione, decision card
- * conflitto, pannello sorgente, tappa stepper ed evento timeline. Sono wrapper
- * in light DOM con
+ * conflitto, pannello sorgente, tappa stepper, evento timeline e scheda
+ * impostazione. Sono wrapper in light DOM con
  * CSS minimo (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris
  * Web Components nativi. Non aggiungere altri wrapper custom senza aggiornare
  * l'ADR.
@@ -137,6 +137,46 @@ export function TimelineEvent({
       </span>
       <div className="syncbay-event__panel">{children}</div>
     </li>
+  );
+}
+
+type SettingCardProps = {
+  children: ReactNode;
+  description?: string;
+  icon: SyncBayIcon;
+  statusLabel: string;
+  statusTone: SyncBayTone;
+  title: string;
+};
+
+/**
+ * Scheda impostazione (Impostazioni). Box verticale con intestazione icona +
+ * titolo + stato corrente a colpo d'occhio, poi i controlli. Vedi ADR 0010.
+ */
+export function SettingCard({
+  children,
+  description,
+  icon,
+  statusLabel,
+  statusTone,
+  title,
+}: SettingCardProps) {
+  return (
+    <section className="syncbay-setting">
+      <header className="syncbay-setting__head">
+        <span className="syncbay-setting__icon">
+          <s-icon type={icon} tone="neutral" size="base" />
+        </span>
+        <span className="syncbay-setting__heading">
+          <s-heading>{title}</s-heading>
+          {description ? <s-text color="subdued">{description}</s-text> : null}
+        </span>
+        <span className="syncbay-setting__status">
+          <s-badge tone={statusTone}>{statusLabel}</s-badge>
+        </span>
+      </header>
+      <s-stack gap="base">{children}</s-stack>
+    </section>
   );
 }
 

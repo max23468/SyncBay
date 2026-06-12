@@ -48,6 +48,9 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
 7. **Evento timeline** (Attività): nodo con icona colorata per esito e
    connettore verticale, per leggere la cronologia operativa come timeline
    invece che come pila di box uguali.
+8. **Scheda impostazione** (Impostazioni): box verticale con intestazione icona
+   + titolo + badge di stato corrente a colpo d'occhio, poi i controlli; tiene
+   le regole essenziali leggibili senza aprire ogni sezione.
 
 Tutto ciò che non è in questa lista resta nativo puro. La griglia condivisa è
 **multi-regione responsiva**: hero a tutta larghezza, poi fasce a due colonne

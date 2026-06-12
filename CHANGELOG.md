@@ -6,11 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+### Novità
 
-- Esteso l'harness locale di preview alle superfici Catalogo, Conflitti,
-  Importazione, Attività e Panoramica, e riallineata la documentazione del
-  redesign escludendo Impostazioni dal ciclo corrente.
+- Impostazioni ridisegnata: le quattro aree (Sync catalogo, Import prodotti,
+  Canali di vendita, Avanzate) diventano schede con icona, titolo e badge di
+  stato corrente a colpo d'occhio (Attivo/Non attivo, default prodotti, policy
+  canali, collegamento eBay). I dati del sync sono tile con icona (Intervallo
+  target, Prodotti collegati), i prerequisiti mancanti compaiono come avviso
+  invece che come elenco, i collegamenti rapidi di Avanzate sono una lista di
+  azioni con icona e i topic webhook si spostano nei dettagli tecnici. Vedi
+  ADR 0010.
 
 ## [0.33.6] — 2026-06-12
 
@@ -517,6 +522,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   e abilitato, sostituendo il link non avviabile con un blocco operativo.
 
 ## Note interne non versionate
+
+### 2026-06-12
+
+- Esteso l'harness locale di preview alle superfici Catalogo, Conflitti,
+  Importazione, Attività e Panoramica, e riallineata la documentazione del
+  redesign escludendo Impostazioni dal ciclo corrente.
 
 ### 2026-06-11
 
