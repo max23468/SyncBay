@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.11] — 2026-06-13
+
+### Sotto il cofano
+
+- Aggiornato Vite alla major 8 (da 6) e `vite-tsconfig-paths` alla major 6 (da
+  5). Build, typecheck, lint, test e smoke UI verificati su Node 24. Il target
+  browser del build production resta invariato.
+- Noti due avvisi di deprecazione introdotti da Vite 8, lasciati come follow-up
+  separato: `vite-tsconfig-paths` è ora sostituibile da `resolve.tsconfigPaths`
+  nativo, e `optimizeDeps.esbuildOptions` va migrato a `optimizeDeps.rolldownOptions`.
+
 ## [0.35.10] — 2026-06-13
 
 ### Correzioni
@@ -1660,6 +1671,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.11]: #03511--2026-06-13
 [0.35.10]: #03510--2026-06-13
 [0.35.9]: #0359--2026-06-12
 [0.35.8]: #0358--2026-06-12
