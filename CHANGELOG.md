@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.4] — 2026-06-12
+
+### Correzioni
+
+- Il runner finalizza o spezza un job catalogo solo se il job è ancora
+  `RUNNING`, evitando che una cancellazione concorrente da scollegamento eBay
+  venga sovrascritta da `SUCCEEDED`, `FAILED` o nuovi job figli.
+
 ## [0.35.3] — 2026-06-12
 
 ### Correzioni
@@ -1592,6 +1600,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.4]: #0354--2026-06-12
 [0.35.3]: #0353--2026-06-12
 [0.35.2]: #0352--2026-06-12
 [0.35.1]: #0351--2026-06-12

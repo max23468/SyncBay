@@ -2154,8 +2154,8 @@ async function markJobFailedOrRetrying(input: {
     willRetry: Boolean(retryAt),
   } satisfies Prisma.JsonObject;
 
-  await prisma.$transaction([
-    prisma.syncJob.update({
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.syncJob.updateMany({
       data: {
         attempts: { increment: 1 },
         errorCode: input.errorCode,
@@ -2165,9 +2165,12 @@ async function markJobFailedOrRetrying(input: {
         runAfter: retryAt ?? undefined,
         status: retryAt ? SyncJobStatus.RETRYING : SyncJobStatus.FAILED,
       },
-      where: { id: input.job.id },
-    }),
-    prisma.auditLog.create({
+      where: { id: input.job.id, status: SyncJobStatus.RUNNING },
+    });
+
+    if (updated.count !== 1) return;
+
+    await tx.auditLog.create({
       data: {
         details: result,
         message: retryAt
@@ -2176,8 +2179,8 @@ async function markJobFailedOrRetrying(input: {
         shopId: input.job.shopId,
         type: AuditEventType.SYNC_JOB_FAILED,
       },
-    }),
-  ]);
+    });
+  });
 }
 
 async function markJobSucceeded(input: {
@@ -2192,8 +2195,8 @@ async function markJobSucceeded(input: {
     warnings: [...new Set(input.warnings)],
   } satisfies Prisma.JsonObject;
 
-  await prisma.$transaction([
-    prisma.syncJob.update({
+  await prisma.$transaction(async (tx) => {
+    const updated = await tx.syncJob.updateMany({
       data: {
         errorCode: null,
         errorMessage: null,
@@ -2201,17 +2204,20 @@ async function markJobSucceeded(input: {
         result,
         status: SyncJobStatus.SUCCEEDED,
       },
-      where: { id: input.job.id },
-    }),
-    prisma.auditLog.create({
+      where: { id: input.job.id, status: SyncJobStatus.RUNNING },
+    });
+
+    if (updated.count !== 1) return;
+
+    await tx.auditLog.create({
       data: {
         details: result,
         message: "Job SyncBay completato dal runner.",
         shopId: input.job.shopId,
         type: AuditEventType.SYNC_JOB_SUCCEEDED,
       },
-    }),
-  ]);
+    });
+  });
 }
 
 async function splitOversizedEbayItemJobIfNeeded(
@@ -2237,8 +2243,21 @@ async function splitOversizedEbayItemJobIfNeeded(
     splitJobCount: splitPayloads.length,
   } satisfies Prisma.JsonObject;
 
-  await prisma.$transaction([
-    prisma.syncJob.createMany({
+  const split = await prisma.$transaction(async (tx) => {
+    const updated = await tx.syncJob.updateMany({
+      data: {
+        errorCode: null,
+        errorMessage: null,
+        finishedAt: now,
+        result,
+        status: SyncJobStatus.SUCCEEDED,
+      },
+      where: { id: job.id, status: SyncJobStatus.RUNNING },
+    });
+
+    if (updated.count !== 1) return false;
+
+    await tx.syncJob.createMany({
       data: splitPayloads.map((splitPayload, index) => ({
         attempts: 0,
         idempotencyKey: buildEbayItemJobSplitIdempotencyKey({
@@ -2254,18 +2273,9 @@ async function splitOversizedEbayItemJobIfNeeded(
         type: job.type,
       })),
       skipDuplicates: true,
-    }),
-    prisma.syncJob.update({
-      data: {
-        errorCode: null,
-        errorMessage: null,
-        finishedAt: now,
-        result,
-        status: SyncJobStatus.SUCCEEDED,
-      },
-      where: { id: job.id },
-    }),
-    prisma.auditLog.create({
+    });
+
+    await tx.auditLog.create({
       data: {
         details: result,
         message:
@@ -2273,10 +2283,12 @@ async function splitOversizedEbayItemJobIfNeeded(
         shopId: job.shopId,
         type: AuditEventType.SYNC_JOB_SUCCEEDED,
       },
-    }),
-  ]);
+    });
 
-  return true;
+    return true;
+  });
+
+  return split;
 }
 
 function filterPreviewResultByItemIds(
