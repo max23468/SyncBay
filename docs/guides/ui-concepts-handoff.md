@@ -38,6 +38,10 @@ in calce la trascrizione testuale dei due thread recuperati.
 - Fase 5, revisione post-publish del 2026-06-05: QA/documentale e controllo
   contro i sei concept completati; i residui visibili rilevati sono stati
   chiusi nella patch runtime `0.23.6`.
+- Follow-up 2026-06-12: il cleanup runtime `0.33.6` ha chiuso i residui del
+  redesign globale su `Catalogo`, `Conflitti`, `Importazione` e `Attività`.
+  `Panoramica` è stata ricontrollata come riferimento live; `Impostazioni`
+  resta esclusa dal ciclo corrente finché non entra nel suo pass dedicato.
 
 ## Note implementative
 
@@ -149,6 +153,25 @@ questo ambiente; la review visuale è stata condotta su Safari/Computer Use e
 annotata qui. I sei PNG concept sono stati comunque riaperti con `view_image`
 prima della chiusura.
 
+## Riallineamento redesign 2026-06-12
+
+Questo pass non sostituisce i concept del 2026-06-03: fissa lo stato effettivo
+dopo il cleanup runtime e separa le superfici già ricontrollate da quelle fuori
+scope.
+
+| Superficie | Stato |
+| --- | --- |
+| `Panoramica` | Ricontrollata live come riferimento di coerenza. Nessuna modifica runtime nel cleanup `0.33.6`. |
+| `Catalogo` | Riallineati badge accessorio, spaziatura filtri e fallback thumbnail senza immagine. |
+| `Conflitti` | Confermata IA con KPI `Aperti`, `Sicuri`, `Da rivedere`, `Da decidere`, `Totale`; fallback thumbnail coerente. |
+| `Importazione` | Riallineati spaziatura filtri e copia primaria sullo scope `write_locations`. |
+| `Attività` | Diagnostica tecnica spostata dietro disclosure, filtri distanziati e timeline più leggibile. |
+| `Impostazioni` | Fuori dal ciclo corrente. Il concept storico resta versionato, ma la pagina va ripresa in un pass dedicato. |
+
+Il renderer locale di preview ora copre le cinque superfici in scope con fixture
+sintetiche sanificate. La verifica definitiva della resa `s-*` resta Shopify
+Admin embedded.
+
 ## Readiness screenshot e microcopy 2026-06-05
 
 Obiettivo: preparare l'app embedded per screenshot prodotto e review commerciale
@@ -158,15 +181,17 @@ Sequenza consigliata screenshot:
 
 1. `Panoramica`: prossima azione e stato sync visibili.
 2. `Catalogo`: tabella con immagini, disponibilità e origine eBay chiara.
-3. `Conflitti`: KPI `Batch sicuri`, `Da rivedere`, `Manuali` e decision card.
+3. `Conflitti`: KPI `Sicuri`, `Da rivedere`, `Da decidere` e decision card.
 4. `Attività`: timeline con impatto, prossima azione e retry sicuro.
 5. `Importazione`: step progressivi e preview paginata.
-6. `Impostazioni`: quattro box verticali confermati.
+
+`Impostazioni` resta fuori dalla sequenza screenshot corrente finché non viene
+ripresa nel suo redesign dedicato.
 
 Regole copy per screenshot:
 
 - usare italiano operativo, frasi brevi e niente allarmismi;
-- mostrare `Batch sicuro` solo per decisioni che non toccano prezzo,
+- mostrare `Sicuri` solo per decisioni che non toccano prezzo,
   disponibilità, stato prodotto o mapping;
 - mostrare `Attendi eBay` quando il retry manuale anticiperebbe un cooldown
   provider;
