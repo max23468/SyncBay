@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.2] — 2026-06-12
+
+### Correzioni
+
+- Il runner archivia automaticamente i vecchi fallimenti `SYNC_INCREMENTAL`
+  già superati da un sync riuscito più recente, evitando che errori storici
+  riappaiano come problemi operativi; aggiunto il comando
+  `jobs:archive-stale-failures` per applicare la stessa regola in modo
+  controllato allo storico Supabase.
+
 ## [0.33.1] — 2026-06-12
 
 ### Correzioni
@@ -1481,6 +1491,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.2]: #0332--2026-06-12
 [0.33.1]: #0331--2026-06-12
 [0.33.0]: #0330--2026-06-12
 [0.32.1]: #0321--2026-06-12
