@@ -1482,11 +1482,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 [Non rilasciato]: #non-rilasciato
 [0.33.1]: #0331--2026-06-12
-<<<<<<< HEAD
 [0.33.0]: #0330--2026-06-12
-=======
-[0.32.2]: #0322--2026-06-12
->>>>>>> 9347461 (fix: prevent stale description conflicts)
 [0.32.1]: #0321--2026-06-12
 [0.32.0]: #0320--2026-06-12
 [0.31.0]: #0310--2026-06-12
