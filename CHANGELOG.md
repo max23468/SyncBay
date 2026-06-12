@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Impostazioni: il negoziante può ora **scollegare l'account eBay** dal box
+  Avanzate, con conferma. La disconnessione cancella i token salvati e ferma il
+  sync automatico, ma lascia su Shopify il catalogo già importato: è reversibile
+  e basta ricollegare eBay per riprendere. Vedi ADR 0012.
+- Impostazioni: l'**intervallo target di aggiornamento** è ora configurabile (1,
+  2, 3 o 5 minuti, sempre entro il massimo di 5 minuti) e guida la cadenza del
+  sync incrementale.
+- Impostazioni: disattivare il sync automatico richiede ora una **conferma**
+  esplicita con nota sulle conseguenze, e i dati del sync mostrano l'**ultimo
+  aggiornamento** completato.
+
 ## [0.34.0] — 2026-06-12
 
 ### Novità
