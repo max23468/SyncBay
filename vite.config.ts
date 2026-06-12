@@ -83,7 +83,7 @@ export default defineConfig({
   ],
   build: {
     assetsInlineLimit: 0,
-    target: "esnext",
+    target: ["chrome87", "edge88", "es2020", "firefox78", "safari14.1"],
   },
   optimizeDeps: {
     esbuildOptions: {
