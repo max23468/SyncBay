@@ -34,7 +34,10 @@ con dati sintetici/sanitizzati in memoria e salva HTML + screenshot in
 
 ```bash
 npm run ui:preview
+npm run ui:preview:attivita
 npm run ui:preview:catalogo
+npm run ui:preview:conflitti
+npm run ui:preview:importazione
 npm run ui:preview:panoramica
 ```
 
@@ -96,8 +99,17 @@ direttamente i file `.html` in un browser.
   uno stand-in CSS, non il componente Shopify.
 - I dati sono fittizi e sintetici, mai dati reali di negozianti.
 
-## Pagine
+## Pagine coperte
 
-- `panoramica.html` — due scenari: "tutto sotto controllo" e "serve attenzione".
+Il renderer fixture usa i componenti di route reali per le cinque superfici
+ridisegnate e ricontrollate nel ciclo corrente:
 
-Le altre superfici si aggiungono qui man mano che il restyling procede.
+- `panoramica` — centro operativo e stato collegamenti;
+- `catalogo` — tabella prodotti, thumbnail e stato unico;
+- `conflitti` — KPI di sicurezza operativa e decision card;
+- `importazione` — step progressivi, location e preview paginata;
+- `attivita` — coda operativa, timeline e diagnostica progressiva.
+
+`Impostazioni` resta fuori dal ciclo di preview corrente: il concept storico è
+versionato, ma la pagina non è stata ripresa nel redesign globale di questi
+giorni e va verificata quando entrerà nel suo pass dedicato.

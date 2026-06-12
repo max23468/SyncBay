@@ -10,6 +10,7 @@
  * Admin). Reali qui: dati, componente di route, design layer SyncBay.
  *
  * Uso:
+ *   node scripts/syncbay-ui-render.mjs attivita --fixture
  *   node scripts/syncbay-ui-render.mjs panoramica --fixture  # smoke veloce
  *   node scripts/syncbay-ui-render.mjs catalogo --fixture
  *   node scripts/syncbay-ui-render.mjs panoramica            # dati reali locali
@@ -85,6 +86,15 @@ if (fixtureMode) {
 }
 
 const PAGES = {
+  attivita: {
+    module: "/app/routes/app.activity.tsx",
+    path: "/app/activity",
+    fixture: getDashboardFixture,
+    loader: async (_mod, session) => {
+      const services = await loadServices();
+      return services.getDashboardState(session);
+    },
+  },
   catalogo: {
     module: "/app/routes/app.catalog.tsx",
     path: "/app/catalog",
@@ -93,6 +103,21 @@ const PAGES = {
       const services = await loadServices();
       return services.getCatalogPageState(session);
     },
+  },
+  conflitti: {
+    module: "/app/routes/app.conflicts.tsx",
+    path: "/app/conflicts",
+    fixture: getConflictsFixture,
+    loader: async (_mod, session) => {
+      const services = await loadServices();
+      return services.getConflictsPageState(session);
+    },
+  },
+  importazione: {
+    module: "/app/routes/app.import-preview.tsx",
+    path: "/app/import-preview",
+    fixture: getImportPreviewFixture,
+    loader: null,
   },
   panoramica: {
     module: "/app/routes/app._index.tsx",
@@ -155,6 +180,11 @@ try {
       : `sessione: shop ${session.shop}`,
   );
   const routeMod = await vite.ssrLoadModule(pageConfig.module);
+  if (!fixtureMode && !pageConfig.loader) {
+    throw new Error(
+      `La pagina ${page} supporta solo --fixture in questo harness: il loader richiede una sessione Shopify Admin embedded.`,
+    );
+  }
   const data = fixtureMode
     ? pageConfig.fixture()
     : await pageConfig.loader(routeMod, session);
@@ -359,8 +389,75 @@ function getCatalogFixture() {
     },
     summary: {
       archivedCount: 1,
+      conflictCount: 1,
       freshCount: 1,
+      linkedCount: rows.length,
       needsCheckCount: 1,
+      totalCount: rows.length,
+    },
+  };
+}
+
+function getConflictsFixture() {
+  const rows = [
+    {
+      detectedAt: "2026-06-11T15:30:00.000Z",
+      ebayItemId: "123456789002",
+      field: "description",
+      id: "conflict-1",
+      product: {
+        shopifyProductGid: "gid://shopify/Product/901000000002",
+        sku: "SYNC-LAMP-002",
+        thumbnailUrl: null,
+        title: "Lampada da tavolo modernariato",
+      },
+      resolution: null,
+      resolvedAt: null,
+      shopifyValue: "Descrizione aggiornata manualmente su Shopify.",
+      sourceValue: "Descrizione pulita letta da eBay.",
+      status: "OPEN",
+    },
+    {
+      detectedAt: "2026-06-11T14:20:00.000Z",
+      ebayItemId: "123456789004",
+      field: "quantity",
+      id: "conflict-2",
+      product: {
+        shopifyProductGid: "gid://shopify/Product/901000000004",
+        sku: "SYNC-BOOK-004",
+        thumbnailUrl:
+          "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=160&h=160&fit=crop",
+        title: "Libro illustrato fuori catalogo",
+      },
+      resolution: null,
+      resolvedAt: null,
+      shopifyValue: "2 disponibili",
+      sourceValue: "1 disponibile su eBay",
+      status: "OPEN",
+    },
+  ];
+
+  return {
+    filters: ["open", "resolved", "all"],
+    pagination: {
+      currentEnd: rows.length,
+      currentStart: 1,
+      hasNextPage: false,
+      hasPreviousPage: false,
+      nextPage: null,
+      offset: 0,
+      page: 1,
+      pageSize: 20,
+      previousPage: null,
+      totalPages: 1,
+      totalRows: rows.length,
+    },
+    rows,
+    summary: {
+      batchSafeCount: 1,
+      guardedCount: 0,
+      manualOnlyCount: 1,
+      openCount: rows.length,
       totalCount: rows.length,
     },
   };
@@ -407,7 +504,20 @@ function getDashboardFixture() {
         type: "SYNC_COMPLETED",
       },
     ],
-    conflicts: { openCount: 1 },
+    conflicts: {
+      openCount: 1,
+      recent: [
+        {
+          detectedAt: "2026-06-11T15:30:00.000Z",
+          ebayItemId: "123456789002",
+          field: "description",
+          id: "conflict-1",
+          shopifyProductGid: "gid://shopify/Product/901000000002",
+          shopifyValue: "Descrizione aggiornata manualmente su Shopify.",
+          syncbayValue: "Descrizione pulita letta da eBay.",
+        },
+      ],
+    },
     ebay: {
       connectedAt: "2026-06-01T09:15:00.000Z",
       marketplaceId: "EBAY_IT",
@@ -443,14 +553,170 @@ function getDashboardFixture() {
       failedJobs: [],
       lastJobs: [
         {
+          attempts: 1,
           createdAt: "2026-06-11T15:50:00.000Z",
+          errorCode: null,
           errorMessage: null,
           id: "job-1",
+          maxAttempts: 1,
+          runAfter: "2026-06-11T15:55:00.000Z",
           status: "SUCCEEDED",
           type: "SYNC_INCREMENTAL",
         },
+        {
+          attempts: 1,
+          createdAt: "2026-06-11T15:35:00.000Z",
+          errorCode: "EBAY_TRADING_RATE_LIMITED",
+          errorMessage: "eBay ha imposto un cooldown temporaneo.",
+          id: "job-2",
+          maxAttempts: 3,
+          runAfter: "2026-06-11T15:58:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
       ],
+      pendingJobs: 1,
     },
     vercel: { publicUrl: "https://syncbay.vercel.app" },
+  };
+}
+
+function getImportPreviewFixture() {
+  const locations = [
+    {
+      fulfillsOnlineOrders: true,
+      id: "gid://shopify/Location/preview-main",
+      isActive: true,
+      name: "Sede principale",
+    },
+  ];
+  const items = [
+    {
+      itemId: "123456789001",
+      issues: [],
+      normalized: {
+        imageCount: 3,
+        sku: "SYNC-TAZZA-001",
+        title: "Set tazze ceramica giapponese",
+      },
+      status: "importable",
+    },
+    {
+      itemId: "123456789005",
+      issues: [
+        {
+          message: "Prezzo non letto dalla preview eBay.",
+          severity: "warning",
+        },
+      ],
+      normalized: {
+        imageCount: 1,
+        sku: "SYNC-RADIO-005",
+        title: "Radio vintage da collezione",
+      },
+      status: "importable",
+    },
+    {
+      itemId: "123456789006",
+      issues: [
+        {
+          message: "SKU mancante: SyncBay userà un fallback EBAY-ItemID.",
+          severity: "info",
+        },
+      ],
+      normalized: {
+        imageCount: 0,
+        sku: null,
+        title: "Specchio da parete anni 70",
+      },
+      status: "error",
+    },
+  ];
+
+  return {
+    canWriteLocations: true,
+    locationError: null,
+    locationRename: {
+      canRename: true,
+      nextAction: "Puoi rinominare la location selezionata da SyncBay.",
+    },
+    locations,
+    wizard: {
+      draftImport: {
+        blockers: [],
+        draftLimit: 25,
+        enabled: true,
+        importProductStatus: "DRAFT",
+        importableCount: 2,
+        nextAction: "Controlla l'anteprima e avvia l'import quando sei pronto.",
+        plannedCreateCount: 2,
+      },
+      ebay: {
+        missingRequirements: [],
+        oauthEnabled: true,
+        oauthReady: true,
+        status: "CONNECTED",
+      },
+      importPreview: {
+        blockers: [],
+        defaults: {
+          descriptionMode: "Descrizioni pulite per Shopify",
+          imageImport: "Importa immagini eBay disponibili",
+          productStatus: "Bozza",
+        },
+      },
+      previewPlan: {
+        limits: {
+          maxProducts: 2000,
+        },
+      },
+      previewResult: {
+        items,
+        mode: "live",
+        summary: {
+          errorCount: 1,
+          importableCount: 2,
+          totalCount: items.length,
+        },
+      },
+      previewSource: {
+        coverageNote: "Fixture sintetica con stato collegato e dati sanitizzati.",
+        errorMessage: null,
+        readCount: items.length,
+        source: "trading_api",
+      },
+      productPublications: {
+        mode: "SELECTED",
+        selectedCount: 2,
+      },
+      runtimePhases: [
+        {
+          detail: "Preview locale senza chiamate provider.",
+          label: "Harness fixture",
+          status: "ready",
+        },
+        {
+          detail: "Scritture disabilitate finché non confermate nell'app.",
+          label: "Protezione scritture",
+          status: "ready",
+        },
+      ],
+      shop: {
+        defaultLocationGid: locations[0].id,
+        domain: "syncbay-preview.myshopify.com",
+      },
+      validationRules: [
+        {
+          code: "sku_fallback",
+          label: "SKU fallback EBAY-ItemID quando manca lo SKU eBay",
+          severity: "info",
+        },
+        {
+          code: "max_products",
+          label: "Limite pilota 2.000 prodotti",
+          severity: "warning",
+        },
+      ],
+    },
   };
 }

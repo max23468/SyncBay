@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Esteso l'harness locale di preview alle superfici Catalogo, Conflitti,
+  Importazione, Attività e Panoramica, e riallineata la documentazione del
+  redesign escludendo Impostazioni dal ciclo corrente.
+
 ## [0.33.6] — 2026-06-12
 
 ### Correzioni
