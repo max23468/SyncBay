@@ -1268,7 +1268,13 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
       },
       where: {
         shopId: shop.id,
-        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        status: {
+          in: [
+            SyncJobStatus.PENDING,
+            SyncJobStatus.RETRYING,
+            SyncJobStatus.RUNNING,
+          ],
+        },
         type: {
           in: [
             SyncJobType.IMPORT_CATALOG,

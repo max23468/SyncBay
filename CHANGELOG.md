@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.3] — 2026-06-12
+
+### Correzioni
+
+- Scollegare eBay annulla anche i job catalogo già in esecuzione, evitando che
+  il recupero dei job `RUNNING` li rimetta in coda dopo la cancellazione dei
+  token.
+
 ## [0.35.2] — 2026-06-12
 
 ### Correzioni
@@ -1584,6 +1592,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.3]: #0353--2026-06-12
 [0.35.2]: #0352--2026-06-12
 [0.35.1]: #0351--2026-06-12
 [0.35.0]: #0350--2026-06-12
