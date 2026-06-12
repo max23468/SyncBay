@@ -154,7 +154,8 @@ const checks = [
       "Vai al catalogo",
       "Rinomina location",
       "Anteprima prima",
-      "Pianifica import catalogo",
+      "Avvia import catalogo",
+      "syncbay-stepper",
     ],
   },
   {

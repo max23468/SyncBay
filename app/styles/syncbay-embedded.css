@@ -287,6 +287,87 @@
   flex: 0 0 auto;
 }
 
+/* Stepper verticale (Importazione): nodo numerato/spuntato per ogni step, con
+   connettore che dà il senso di avanzamento del flusso di import. */
+.syncbay-stepper {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.syncbay-step {
+  display: flex;
+  gap: 14px;
+}
+
+.syncbay-step__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.syncbay-step__node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--syncbay-mist);
+  background: var(--syncbay-paper);
+  color: var(--syncbay-slate);
+  font-weight: 650;
+  font-size: 14px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.syncbay-step__line {
+  inline-size: 2px;
+  flex: 1 1 auto;
+  min-block-size: 12px;
+  margin-block: 4px;
+  background: var(--syncbay-mist);
+  border-radius: 1px;
+}
+
+.syncbay-step__panel {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-end: 22px;
+}
+
+.syncbay-step:last-child .syncbay-step__panel {
+  padding-block-end: 0;
+}
+
+.syncbay-step__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 12px;
+}
+
+.syncbay-step--completed .syncbay-step__node {
+  background: var(--syncbay-tint-success);
+  border-color: var(--syncbay-moss);
+  color: var(--syncbay-moss);
+}
+
+.syncbay-step--completed .syncbay-step__line {
+  background: var(--syncbay-moss);
+}
+
+.syncbay-step--active .syncbay-step__node {
+  background: var(--syncbay-tint-info);
+  border-color: var(--syncbay-harbor);
+  color: var(--syncbay-harbor);
+  box-shadow: 0 0 0 3px var(--syncbay-tint-info);
+}
+
 /* Su viewport stretto l'hero impila azione e testo. */
 @media (max-width: 640px) {
   .syncbay-hero {

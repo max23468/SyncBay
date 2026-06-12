@@ -1,11 +1,14 @@
 /**
  * Componenti del design layer SyncBay (ADR 0010).
  *
- * Lista chiusa: tile metrica, hero di stato, scheda connessione. Sono wrapper in
- * light DOM con CSS minimo (`app/styles/syncbay-embedded.css`) attorno a
- * componenti Polaris Web Components nativi. Non aggiungere altri wrapper custom
- * senza aggiornare l'ADR.
+ * Lista chiusa: tile metrica, hero di stato, scheda connessione, decision card
+ * conflitto, pannello sorgente e tappa stepper. Sono wrapper in light DOM con
+ * CSS minimo (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris
+ * Web Components nativi. Non aggiungere altri wrapper custom senza aggiornare
+ * l'ADR.
  */
+
+import type { ReactNode } from "react";
 
 export type SyncBayTone =
   | "neutral"
@@ -58,6 +61,51 @@ export function MetricTile({
         {detail ? <s-text color="subdued">{detail}</s-text> : null}
       </span>
     </div>
+  );
+}
+
+export type StepStatus = "completed" | "active" | "pending";
+
+type StepProps = {
+  children: ReactNode;
+  index: number;
+  isLast?: boolean;
+  status: StepStatus;
+  statusLabel: string;
+  title: string;
+};
+
+/**
+ * Tappa di uno stepper verticale (Importazione). Nodo numerato, o spuntato se
+ * completato, con connettore verso la tappa successiva. Vedi ADR 0010.
+ */
+export function Step({
+  children,
+  index,
+  isLast = false,
+  status,
+  statusLabel,
+  title,
+}: StepProps) {
+  const tone: SyncBayTone =
+    status === "completed" ? "success" : status === "active" ? "info" : "neutral";
+
+  return (
+    <li className={`syncbay-step syncbay-step--${status}`}>
+      <span className="syncbay-step__rail">
+        <span className="syncbay-step__node">
+          {status === "completed" ? "✓" : index}
+        </span>
+        {isLast ? null : <span className="syncbay-step__line" />}
+      </span>
+      <div className="syncbay-step__panel">
+        <span className="syncbay-step__head">
+          <s-heading>{title}</s-heading>
+          <s-badge tone={tone}>{statusLabel}</s-badge>
+        </span>
+        <s-stack gap="base">{children}</s-stack>
+      </div>
+    </li>
   );
 }
 
