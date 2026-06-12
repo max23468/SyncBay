@@ -232,6 +232,31 @@
   margin-block-end: 14px;
 }
 
+.syncbay-activity-filter-nav {
+  margin-block-end: 22px;
+}
+
+.syncbay-activity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 16px;
+  align-items: start;
+}
+
+.syncbay-activity-row__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-inline-size: 110px;
+}
+
+.syncbay-activity-badge {
+  display: inline-flex;
+  justify-content: flex-end;
+  min-inline-size: 86px;
+}
+
 /* Decision card conflitto: accento tonale a sinistra keyato sulla gravità della
    scelta (batch sicuro / da rivedere / manuale), come l'hero di stato. */
 .syncbay-conflict {
@@ -446,5 +471,16 @@
   }
   .syncbay-hero__actions {
     align-self: stretch;
+  }
+  .syncbay-activity-row {
+    grid-template-columns: 1fr;
+  }
+  .syncbay-activity-row__status {
+    align-items: flex-start;
+    min-inline-size: 0;
+  }
+  .syncbay-activity-badge {
+    justify-content: flex-start;
+    min-inline-size: 0;
   }
 }
