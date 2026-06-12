@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.6] — 2026-06-12
+
+### Sicurezza
+
+- Aggiornata la risoluzione di `esbuild` a `0.28.1`, chiudendo l'advisory
+  Dependabot sulla catena `@shopify/cli`/Vite senza cambiare codice runtime.
+
 ## [0.35.5] — 2026-06-12
 
 ### Correzioni
