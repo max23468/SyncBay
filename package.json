@@ -118,5 +118,15 @@
     "p-map": "^4.0.0",
     "global-agent": "4.1.3"
   },
-  "author": "Matteo"
+  "author": "Matteo",
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true,
+    "fsevents@2.3.2": true,
+    "msgpackr-extract@3.0.4": true,
+    "prisma@6.19.3": true,
+    "unrs-resolver@1.12.2": true
+  }
 }
