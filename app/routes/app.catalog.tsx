@@ -100,9 +100,13 @@ export default function CatalogRoute() {
   const activeSort = activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
   const activeSortDir = activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
   const rows = catalog.rows;
+  const accessory = getCatalogAccessory(catalog);
 
   return (
     <s-page heading="Catalogo" inlineSize="large">
+      <s-badge slot="accessory" tone={accessory.tone}>
+        {accessory.label}
+      </s-badge>
       <s-stack gap="large">
         <s-grid
           gap="base"
@@ -291,42 +295,44 @@ function CatalogViewControls({
   const activeOrderValue = getCatalogOrderValue(activeSort, activeSortDir);
 
   return (
-    <s-stack gap="base">
-      <s-stack
-        direction="inline"
-        gap="small-200"
-        accessibilityRole="navigation"
-      >
-        {CATALOG_FILTERS.map((filter) => (
-          <s-clickable-chip
-            aria-current={activeFilter === filter.value ? "page" : undefined}
-            color={activeFilter === filter.value ? "strong" : "base"}
-            href={getCatalogHref(filter.value, 1, activeSort, activeSortDir)}
-            key={filter.value}
-          >
-            {filter.label}
-          </s-clickable-chip>
-        ))}
+    <div className="syncbay-filter-nav">
+      <s-stack gap="base">
+        <s-stack
+          direction="inline"
+          gap="small-200"
+          accessibilityRole="navigation"
+        >
+          {CATALOG_FILTERS.map((filter) => (
+            <s-clickable-chip
+              aria-current={activeFilter === filter.value ? "page" : undefined}
+              color={activeFilter === filter.value ? "strong" : "base"}
+              href={getCatalogHref(filter.value, 1, activeSort, activeSortDir)}
+              key={filter.value}
+            >
+              {filter.label}
+            </s-clickable-chip>
+          ))}
+        </s-stack>
+        <s-stack direction="inline" gap="small-200" alignItems="center">
+          <s-text color="subdued">Ordine</s-text>
+          {CATALOG_ORDER_OPTIONS.map((order) => (
+            <s-clickable-chip
+              aria-current={activeOrderValue === order.value ? "page" : undefined}
+              color={activeOrderValue === order.value ? "strong" : "base"}
+              href={getCatalogHref(
+                activeFilter,
+                1,
+                order.sort,
+                order.sortDir,
+              )}
+              key={order.value || "default"}
+            >
+              {order.label}
+            </s-clickable-chip>
+          ))}
+        </s-stack>
       </s-stack>
-      <s-stack direction="inline" gap="small-200" alignItems="center">
-        <s-text color="subdued">Ordine</s-text>
-        {CATALOG_ORDER_OPTIONS.map((order) => (
-          <s-clickable-chip
-            aria-current={activeOrderValue === order.value ? "page" : undefined}
-            color={activeOrderValue === order.value ? "strong" : "base"}
-            href={getCatalogHref(
-              activeFilter,
-              1,
-              order.sort,
-              order.sortDir,
-            )}
-            key={order.value || "default"}
-          >
-            {order.label}
-          </s-clickable-chip>
-        ))}
-      </s-stack>
-    </s-stack>
+    </div>
   );
 }
 
@@ -393,18 +399,27 @@ function ProductThumbnail({ row }: { row: CatalogRow }) {
   }
 
   return (
-    <s-box
-      accessibilityVisibility="hidden"
-      background="subdued"
-      blockSize="64px"
-      borderRadius="base"
-      inlineSize="64px"
-    >
-      <s-box padding="base">
-        <s-icon type="image" />
-      </s-box>
-    </s-box>
+    <span aria-hidden="true" className="syncbay-product-placeholder">
+      <s-icon type="image" tone="neutral" />
+    </span>
   );
+}
+
+function getCatalogAccessory(catalog: Catalog): {
+  label: string;
+  tone: "critical" | "info" | "success" | "warning";
+} {
+  if (catalog.summary.conflictCount > 0) {
+    return { label: "Da verificare", tone: "warning" };
+  }
+  if (catalog.summary.needsCheckCount > 0) {
+    return { label: "Controlli aperti", tone: "warning" };
+  }
+  if (catalog.summary.linkedCount === 0) {
+    return { label: "Importazione richiesta", tone: "info" };
+  }
+
+  return { label: "Catalogo aggiornato", tone: "success" };
 }
 
 function EmptyCatalogState({
