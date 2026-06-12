@@ -99,6 +99,12 @@ export function shouldResolveOpenConflictsForInactiveMappingStatus(
   return mappingStatus === "OUT_OF_STOCK" || mappingStatus === "ARCHIVED";
 }
 
+export function shouldResolveLiveAlignedDescriptionConflictForMappingStatus(
+  mappingStatus: string | null,
+) {
+  return shouldDetectShopifyConflictsForMappingStatus(mappingStatus);
+}
+
 export function isLiveDescriptionConflictAligned(input: {
   currentShopifyDescriptionHash: string | null;
   field: string;

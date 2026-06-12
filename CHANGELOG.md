@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.32.1] — 2026-06-12
+
+### Correzioni
+
+- I bottoni per salvare e rinominare la location nella pagina Importazione hanno
+  ora più spazio dal campo sopra, migliorando la leggibilità del setup Shopify.
+- Lo step "Anteprima catalogo" dell'importazione risulta completato solo dopo
+  una preview eBay reale, evitando falsi progressi quando sono mostrati dati
+  dimostrativi.
+- La chiusura automatica dei conflitti `description` già riallineati non sblocca
+  più mapping in stato `PAUSED` o `ERROR`, preservando i blocchi intenzionali.
+
 ## [0.32.0] — 2026-06-12
 
 ### Novità
@@ -1444,6 +1456,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.32.1]: #0321--2026-06-12
 [0.32.0]: #0320--2026-06-12
 [0.31.0]: #0310--2026-06-12
 [0.30.2]: #0302--2026-06-12

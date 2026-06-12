@@ -24,6 +24,7 @@ import {
   getPageWindow,
   normalizePage,
 } from "../lib/syncbay-pagination";
+import { isLiveImportPreviewStepComplete } from "../lib/syncbay-import-preview-stepper";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
   getEbayConnectionAction,
@@ -260,7 +261,11 @@ export default function ImportPreview() {
   const stepDone = [
     wizard.ebay.status === "CONNECTED",
     Boolean(wizard.shop.defaultLocationGid) && !locationError,
-    wizard.previewResult.summary.importableCount > 0,
+    isLiveImportPreviewStepComplete({
+      importableCount: wizard.previewResult.summary.importableCount,
+      previewErrorMessage: wizard.previewSource.errorMessage,
+      previewSource: wizard.previewSource.source,
+    }),
     draftStatus === "created" || draftStatus === "queued",
   ];
   const stepStatuses = computeStepStatuses(stepDone);
@@ -567,25 +572,29 @@ function LocationSaveForm({
   return (
     <Form method="post">
       <input type="hidden" name="intent" value="saveLocation" />
-      <s-select
-        id="defaultLocationGid"
-        label="Location predefinita"
-        name="defaultLocationGid"
-        value={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
-      >
-        {locations.map((location) => (
-          <s-option key={location.id} value={location.id}>
-            {location.name}
-            {location.isActive ? "" : " - non attiva"}
-            {location.fulfillsOnlineOrders
-              ? ""
-              : " - fulfillment online non attivo"}
-          </s-option>
-        ))}
-      </s-select>
-      <s-button type="submit" disabled={isSaving}>
-        {isSavingLocation ? "Salvataggio..." : "Salva location"}
-      </s-button>
+      <s-stack gap="base">
+        <s-select
+          id="defaultLocationGid"
+          label="Location predefinita"
+          name="defaultLocationGid"
+          value={wizard.shop.defaultLocationGid ?? locations[0]?.id ?? ""}
+        >
+          {locations.map((location) => (
+            <s-option key={location.id} value={location.id}>
+              {location.name}
+              {location.isActive ? "" : " - non attiva"}
+              {location.fulfillsOnlineOrders
+                ? ""
+                : " - fulfillment online non attivo"}
+            </s-option>
+          ))}
+        </s-select>
+        <s-stack direction="inline" gap="small-200">
+          <s-button type="submit" disabled={isSaving}>
+            {isSavingLocation ? "Salvataggio..." : "Salva location"}
+          </s-button>
+        </s-stack>
+      </s-stack>
     </Form>
   );
 }
@@ -607,25 +616,32 @@ function LocationRenameForm({
     <Form method="post">
       <input type="hidden" name="intent" value="renameLocation" />
       <input type="hidden" name="locationGid" value={selectedLocation.id} />
-      <s-text-field
-        defaultValue={selectedLocation.name}
-        disabled={!locationRename.canRename || isSaving}
-        id="locationName"
-        label="Nome location"
-        maxLength={80}
-        name="locationName"
-        required
-      />
-      <s-button type="submit" disabled={!locationRename.canRename || isSaving}>
-        {isRenamingLocation ? "Rinomina..." : "Rinomina location"}
-      </s-button>
-      <s-paragraph>{locationRename.nextAction}</s-paragraph>
-      {!canWriteLocations ? (
-        <s-paragraph>
-          Apri di nuovo SyncBay da Shopify Admin per riapprovare il nuovo
-          permesso `write_locations`.
-        </s-paragraph>
-      ) : null}
+      <s-stack gap="base">
+        <s-text-field
+          defaultValue={selectedLocation.name}
+          disabled={!locationRename.canRename || isSaving}
+          id="locationName"
+          label="Nome location"
+          maxLength={80}
+          name="locationName"
+          required
+        />
+        <s-stack direction="inline" gap="small-200">
+          <s-button
+            type="submit"
+            disabled={!locationRename.canRename || isSaving}
+          >
+            {isRenamingLocation ? "Rinomina..." : "Rinomina location"}
+          </s-button>
+        </s-stack>
+        <s-paragraph>{locationRename.nextAction}</s-paragraph>
+        {!canWriteLocations ? (
+          <s-paragraph>
+            Apri di nuovo SyncBay da Shopify Admin per riapprovare il nuovo
+            permesso `write_locations`.
+          </s-paragraph>
+        ) : null}
+      </s-stack>
     </Form>
   );
 }

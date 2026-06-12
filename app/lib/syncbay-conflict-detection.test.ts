@@ -10,6 +10,7 @@ const {
   isLiveDescriptionConflictAligned,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
+  shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -122,6 +123,33 @@ test("resolves open conflicts automatically only for inactive-source mappings", 
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus(null), false);
+});
+
+test("resolves live-aligned description conflicts only for active mappings", () => {
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ACTIVE"),
+    true,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("OUT_OF_STOCK"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ARCHIVED"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("PAUSED"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ERROR"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedDescriptionConflictForMappingStatus(null),
+    false,
+  );
 });
 
 test("recognizes live description conflicts already aligned to latest baseline", () => {
