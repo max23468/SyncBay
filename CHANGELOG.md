@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.0] — 2026-06-12
+
 ### Novità
 
 - Impostazioni: il negoziante può ora **scollegare l'account eBay** dal box
@@ -1557,6 +1559,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.0]: #0350--2026-06-12
 [0.34.0]: #0340--2026-06-12
 [0.33.6]: #0336--2026-06-12
 [0.33.5]: #0335--2026-06-12
