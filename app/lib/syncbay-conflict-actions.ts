@@ -29,10 +29,10 @@ export function getConflictFieldDecisionMode(
 }
 
 export function getConflictDecisionModeLabel(mode: ConflictDecisionMode) {
-  if (mode === "batch_safe") return "Batch sicuro";
+  if (mode === "batch_safe") return "Sicuro";
   if (mode === "guarded") return "Da rivedere";
 
-  return "Manuale";
+  return "Da decidere";
 }
 
 export function getConflictDecisionModeDetail(
@@ -40,13 +40,13 @@ export function getConflictDecisionModeDetail(
   mode = getConflictFieldDecisionMode(field),
 ) {
   if (mode === "batch_safe") {
-    return "Può entrare in azioni batch solo per mantenere la descrizione Shopify come nuova baseline.";
+    return "Puoi tenere la descrizione di Shopify: diventa la versione di riferimento, senza rischi.";
   }
   if (mode === "guarded") {
-    return "Azione possibile, ma richiede revisione visiva perché cambia contenuto o immagini del prodotto.";
+    return "Puoi sistemarlo, ma guarda prima il prodotto: cambia testo o immagini che vede il cliente.";
   }
 
-  return "Richiede decisione manuale: può impattare disponibilità, prezzo, pubblicazione o mapping.";
+  return "Meglio decidere a mano: può toccare disponibilità, prezzo o pubblicazione del prodotto.";
 }
 
 export function getSafeBatchConflictResolutions(
@@ -64,8 +64,8 @@ export function getConflictResolutionSafety(
   if (getSafeBatchConflictResolutions(field).includes(resolution)) {
     return {
       detail:
-        "Mantiene la descrizione Shopify e aggiorna la baseline SyncBay senza chiamare provider esterni.",
-      label: "Batch sicuro",
+        "Tiene la descrizione di Shopify come riferimento, senza toccare eBay.",
+      label: "Sicuro",
       mode: "batch_safe",
     };
   }
@@ -73,8 +73,8 @@ export function getConflictResolutionSafety(
   if (resolution === "IGNORE_FIELD") {
     return {
       detail:
-        "Ignora solo questo conflitto: usare manualmente quando il campo non va più gestito in questo ciclo.",
-      label: "Manuale",
+        "Salta questo conflitto per ora: non cambia nulla e lo ritrovi se ricompare.",
+      label: "Da decidere",
       mode: "manual_only",
     };
   }
@@ -84,7 +84,7 @@ export function getConflictResolutionSafety(
   if (fieldMode === "guarded" || fieldMode === "batch_safe") {
     return {
       detail:
-        "Rivedi il prodotto prima di applicarla in serie: contenuto e immagini sono visibili al cliente.",
+        "Guarda il prodotto prima di applicarla a tutti: testo e immagini li vede il cliente.",
       label: "Da rivedere",
       mode: "guarded",
     };
@@ -92,8 +92,8 @@ export function getConflictResolutionSafety(
 
   return {
     detail:
-      "Decisione manuale obbligatoria: non è una correzione batch sicura per questo campo.",
-    label: "Manuale",
+      "Scelta manuale: per questo campo non è una sistemazione sicura da applicare a tutti.",
+    label: "Da decidere",
     mode: "manual_only",
   };
 }

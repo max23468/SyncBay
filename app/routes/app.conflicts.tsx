@@ -125,10 +125,10 @@ export default function ConflictsRoute() {
         <StatusHero
           body={
             hasOpen
-              ? "Nessuna sovrascrittura silenziosa: SyncBay non modifica Shopify senza conferma. Scegli quale valore mantenere per far ripartire l'allineamento."
-              : "Le modifiche Shopify non richiedono decisioni in questo momento: l'allineamento eBay verso Shopify prosegue senza attese."
+              ? "SyncBay non modifica i tuoi prodotti su Shopify senza il tuo via libera. Scegli quale versione tenere e l'aggiornamento riparte."
+              : "Per ora non c'è niente da decidere: eBay e Shopify restano allineati."
           }
-          eyebrow="Decisioni aperte"
+          eyebrow="Decisioni da prendere"
           icon={hasOpen ? "alert-triangle" : "check-circle"}
           title={
             hasOpen
@@ -145,35 +145,35 @@ export default function ConflictsRoute() {
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
         >
           <MetricTile
-            detail="Richiedono una scelta."
+            detail="Aspettano una tua scelta."
             icon="alert-triangle"
             label="Aperti"
             tone={hasOpen ? "warning" : "neutral"}
             value={formatNumber(conflicts.summary.openCount)}
           />
           <MetricTile
-            detail="Solo descrizioni da mantenere su Shopify."
+            detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
             icon="check-circle"
-            label="Batch sicuri"
+            label="Sicuri"
             tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
             value={formatNumber(conflicts.summary.batchSafeCount)}
           />
           <MetricTile
-            detail="Titoli e immagini da rivedere prima di applicare in serie."
+            detail="Titoli e immagini: guardali prima di applicarli a tutti."
             icon="alert-circle"
             label="Da rivedere"
             tone={conflicts.summary.guardedCount > 0 ? "warning" : "neutral"}
             value={formatNumber(conflicts.summary.guardedCount)}
           />
           <MetricTile
-            detail="Prezzi, quantità, stato, SKU o campi non classificati."
+            detail="Prezzo, quantità, stato o SKU: da decidere caso per caso."
             icon="settings"
-            label="Manuali"
+            label="Da decidere"
             tone={conflicts.summary.manualOnlyCount > 0 ? "info" : "neutral"}
             value={formatNumber(conflicts.summary.manualOnlyCount)}
           />
           <MetricTile
-            detail="Totale reale della coda conflitti."
+            detail="Tutti i conflitti rilevati, aperti e già risolti."
             icon="inventory"
             label="Totale"
             tone="info"
@@ -184,7 +184,7 @@ export default function ConflictsRoute() {
           <s-text color="subdued">{actionData.message}</s-text>
         ) : null}
 
-        <s-section heading="Coda conflitti">
+        <s-section heading="Conflitti da gestire">
           <FilterNav activeFilter={activeFilter} />
           {rows.length > 0 ? (
             <s-stack gap="base">
@@ -268,13 +268,13 @@ function ConflictItem({
           gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
         >
           <SourcePanel
-            label="eBay · sorgente di verità"
+            label="eBay · versione di riferimento"
             mark="ebay"
             truth
             value={row.sourceValue}
           />
           <SourcePanel
-            label="Shopify · vetrina"
+            label="Shopify · versione in vetrina"
             mark="shopify"
             value={row.shopifyValue}
           />
@@ -403,7 +403,7 @@ function ConflictPagination({
         Mostrati {formatNumber(pagination.currentStart)}-
         {formatNumber(pagination.currentEnd)} di{" "}
         {formatNumber(pagination.totalRows)} risultati
-        {activeFilter === "all" ? "" : " per questo filtro"}. Coda totale:{" "}
+        {activeFilter === "all" ? "" : " per questo filtro"}. In totale:{" "}
         {formatNumber(conflicts.summary.totalCount)}.
       </s-text>
       <s-stack direction="inline" gap="small-200">

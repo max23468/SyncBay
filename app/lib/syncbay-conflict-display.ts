@@ -7,7 +7,7 @@ export function formatConflictValueForDisplay(input: {
   if (input.value === null) return "Non disponibile";
 
   if (input.field === "description" && isDescriptionHash(input.value)) {
-    return "Descrizione modificata: apri i dettagli tecnici per confrontare gli hash.";
+    return "Descrizione modificata a mano (testo completo non mostrato qui).";
   }
 
   if (input.field === "images" && typeof input.value === "number") {

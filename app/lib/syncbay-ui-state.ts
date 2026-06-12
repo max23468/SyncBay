@@ -255,19 +255,19 @@ export function getConflictImpactText(field: string) {
     return "Il prezzo mostrato su Shopify può differire dal valore eBay.";
   }
   if (field === "title") {
-    return "Il titolo Shopify resterà diverso dal catalogo eBay finché non scegli una direzione.";
+    return "Il titolo su Shopify resterà diverso da quello di eBay finché non scegli quale tenere.";
   }
   if (field === "description") {
-    return "La descrizione Shopify contiene modifiche che SyncBay non sovrascrive senza conferma.";
+    return "Su Shopify la descrizione è stata modificata a mano e SyncBay non la tocca senza il tuo via libera.";
   }
   if (field === "images") {
-    return "Le immagini Shopify possono non riflettere l'ultima versione letta da eBay.";
+    return "Le immagini su Shopify potrebbero non essere le ultime arrivate da eBay.";
   }
   if (field === "status") {
-    return "Lo stato prodotto Shopify può bloccare o modificare la pubblicazione prevista.";
+    return "Lo stato del prodotto su Shopify può cambiarne la pubblicazione.";
   }
 
-  return "SyncBay ha trovato una differenza che richiede una decisione prima del prossimo allineamento.";
+  return "SyncBay ha trovato una differenza da sistemare prima del prossimo aggiornamento.";
 }
 
 export function getProductPublicationModeSummaryLabel(
