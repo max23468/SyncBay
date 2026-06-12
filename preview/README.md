@@ -37,6 +37,7 @@ npm run ui:preview
 npm run ui:preview:attivita
 npm run ui:preview:catalogo
 npm run ui:preview:conflitti
+npm run ui:preview:impostazioni
 npm run ui:preview:importazione
 npm run ui:preview:panoramica
 ```
@@ -101,15 +102,12 @@ direttamente i file `.html` in un browser.
 
 ## Pagine coperte
 
-Il renderer fixture usa i componenti di route reali per le cinque superfici
+Il renderer fixture usa i componenti di route reali per le sei superfici
 ridisegnate e ricontrollate nel ciclo corrente:
 
 - `panoramica` — centro operativo e stato collegamenti;
 - `catalogo` — tabella prodotti, thumbnail e stato unico;
 - `conflitti` — KPI di sicurezza operativa e decision card;
 - `importazione` — step progressivi, location e preview paginata;
-- `attivita` — coda operativa, timeline e diagnostica progressiva.
-
-`Impostazioni` resta fuori dal ciclo di preview corrente: il concept storico è
-versionato, ma la pagina non è stata ripresa nel redesign globale di questi
-giorni e va verificata quando entrerà nel suo pass dedicato.
+- `attivita` — coda operativa, timeline e diagnostica progressiva;
+- `impostazioni` — schede operative per sync, import, canali e avanzate.

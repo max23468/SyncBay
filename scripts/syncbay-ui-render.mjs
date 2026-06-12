@@ -11,6 +11,7 @@
  *
  * Uso:
  *   node scripts/syncbay-ui-render.mjs attivita --fixture
+ *   node scripts/syncbay-ui-render.mjs impostazioni --fixture
  *   node scripts/syncbay-ui-render.mjs panoramica --fixture  # smoke veloce
  *   node scripts/syncbay-ui-render.mjs catalogo --fixture
  *   node scripts/syncbay-ui-render.mjs panoramica            # dati reali locali
@@ -118,6 +119,15 @@ const PAGES = {
     path: "/app/import-preview",
     fixture: getImportPreviewFixture,
     loader: null,
+  },
+  impostazioni: {
+    module: "/app/routes/app.settings.tsx",
+    path: "/app/settings",
+    fixture: getSettingsFixture,
+    loader: async (_mod, session) => {
+      const services = await loadServices();
+      return services.getShopSettingsState(session);
+    },
   },
   panoramica: {
     module: "/app/routes/app._index.tsx",
@@ -717,6 +727,74 @@ function getImportPreviewFixture() {
           severity: "warning",
         },
       ],
+    },
+  };
+}
+
+function getSettingsFixture() {
+  return {
+    ebay: {
+      connectedAt: "2026-06-01T09:15:00.000Z",
+      marketplaceId: "EBAY_IT",
+      oauthEnabled: true,
+      oauthReady: true,
+      status: "CONNECTED",
+    },
+    productPublications: {
+      availablePublications: [
+        {
+          id: "gid://shopify/Publication/online-store",
+          title: "Negozio online",
+        },
+        {
+          id: "gid://shopify/Publication/shop-app",
+          title: "Shop",
+        },
+      ],
+      errorMessage: null,
+      mode: "SELECTED",
+      selectedPublicationIds: [
+        "gid://shopify/Publication/online-store",
+        "gid://shopify/Publication/shop-app",
+      ],
+    },
+    shop: {
+      defaultProductStatus: "ACTIVE",
+      domain: "syncbay-preview.myshopify.com",
+      syncEnabled: true,
+      syncTargetSeconds: 300,
+    },
+    shopify: {
+      configuredScopes: [
+        "read_products",
+        "write_products",
+        "read_inventory",
+        "write_inventory",
+        "read_locations",
+        "write_locations",
+      ],
+      missingConfiguredScopes: [],
+      missingScopes: [],
+      scopes: [
+        "read_products",
+        "write_products",
+        "read_inventory",
+        "write_inventory",
+        "read_locations",
+        "write_locations",
+      ],
+      webhookTopics: [
+        "orders/paid",
+        "products/update",
+        "inventory_levels/update",
+        "app/uninstalled",
+      ],
+    },
+    sync: {
+      activeMappingCount: 896,
+      canEnable: true,
+      enablementBlockers: [],
+      lastIncrementalFinishedAt: "2026-06-12T20:18:00.000Z",
     },
   };
 }

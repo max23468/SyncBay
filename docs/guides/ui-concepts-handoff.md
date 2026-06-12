@@ -40,8 +40,9 @@ in calce la trascrizione testuale dei due thread recuperati.
   chiusi nella patch runtime `0.23.6`.
 - Follow-up 2026-06-12: il cleanup runtime `0.33.6` ha chiuso i residui del
   redesign globale su `Catalogo`, `Conflitti`, `Importazione` e `Attività`.
-  `Panoramica` è stata ricontrollata come riferimento live; `Impostazioni`
-  resta esclusa dal ciclo corrente finché non entra nel suo pass dedicato.
+- Follow-up Impostazioni 2026-06-12: `0.34.0` ha riallineato la pagina alle
+  schede operative del design layer; `0.35.0` ha aggiunto disconnessione eBay,
+  intervallo sync configurabile, conferma disattivazione e ultimo sync.
 
 ## Note implementative
 
@@ -166,11 +167,22 @@ scope.
 | `Conflitti` | Confermata IA con KPI `Aperti`, `Sicuri`, `Da rivedere`, `Da decidere`, `Totale`; fallback thumbnail coerente. |
 | `Importazione` | Riallineati spaziatura filtri e copia primaria sullo scope `write_locations`. |
 | `Attività` | Diagnostica tecnica spostata dietro disclosure, filtri distanziati e timeline più leggibile. |
-| `Impostazioni` | Fuori dal ciclo corrente. Il concept storico resta versionato, ma la pagina va ripresa in un pass dedicato. |
+| `Impostazioni` | Riallineata con quattro schede operative: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Sync e Avanzate restano a tutta larghezza; Import e Canali possono affiancarsi su desktop e collassano su viewport stretto. |
 
-Il renderer locale di preview ora copre le cinque superfici in scope con fixture
+Il renderer locale di preview ora copre le sei superfici in scope con fixture
 sintetiche sanificate. La verifica definitiva della resa `s-*` resta Shopify
 Admin embedded.
+
+### Matrice temi coperti
+
+| Tema redesign | Copertura |
+| --- | --- |
+| Navigazione embedded e IA a sei voci | Tutte le pagine. |
+| Design layer con icone, tile e badge di stato | Panoramica, Catalogo, Conflitti, Attività e Impostazioni; Importazione usa lo stepper dello stesso layer. |
+| Dettagli tecnici secondari, non dominanti | Importazione, Attività e Impostazioni dietro disclosure; Catalogo e Conflitti restano focalizzate su tabella/decisioni. |
+| Ritmo di spaziatura filtri e controlli | Catalogo, Conflitti, Importazione e Attività; Impostazioni usa form verticali distanziati dentro le schede. |
+| Responsive stretto | Tile, timeline, stepper e schede Impostazioni collassano senza forzare larghezza extra. |
+| Sorgente eBay -> Shopify senza ambiguità bidirezionale | Tutte le pagine; Impostazioni ribadisce che solo gli ordini Shopify aggiornano la disponibilità eBay. |
 
 ## Readiness screenshot e microcopy 2026-06-05
 
@@ -184,9 +196,7 @@ Sequenza consigliata screenshot:
 3. `Conflitti`: KPI `Sicuri`, `Da rivedere`, `Da decidere` e decision card.
 4. `Attività`: timeline con impatto, prossima azione e retry sicuro.
 5. `Importazione`: step progressivi e preview paginata.
-
-`Impostazioni` resta fuori dalla sequenza screenshot corrente finché non viene
-ripresa nel suo redesign dedicato.
+6. `Impostazioni`: schede operative con sync, import, canali e avanzate.
 
 Regole copy per screenshot:
 

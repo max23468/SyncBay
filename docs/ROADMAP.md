@@ -9,9 +9,9 @@ esteso della vecchia roadmap di fondazione sta in
 
 - Verificare in produzione pilota le nuove classificazioni dei conflitti su
   coda reale: `Sicuri`, `Da rivedere`, `Da decidere`.
-- Raccogliere screenshot prodotto puliti delle superfici embedded ridisegnate,
-  usando dati reali o fixture sintetiche realistiche senza dati personali;
-  `Impostazioni` resta fuori dal ciclo corrente finché non viene ripresa.
+- Raccogliere screenshot prodotto puliti delle sei superfici embedded
+  ridisegnate, usando dati reali o fixture sintetiche realistiche senza dati
+  personali.
 - Estendere la diagnostica self-service verso rollback per prodotto dopo il
   primo pass su impatto job, prossima azione e retry sicuro.
 - Tenere sotto controllo sicurezza e dati: cifratura token, webhook GDPR,
@@ -48,10 +48,10 @@ esteso della vecchia roadmap di fondazione sta in
 - Il primo ciclo incrementale reale eBay -> Shopify e il flusso ordine Shopify
   pagato -> aggiornamento disponibilità eBay sono stati verificati sul dev store
   e ripristinati dopo il test.
-- Il redesign embedded è stato implementato, pubblicato e rivisto post-publish
-  contro i concept finali; il cleanup 0.33.6 ha riallineato Catalogo,
-  Conflitti, Importazione e Attività, mentre `Impostazioni` resta fuori dal
-  ciclo corrente.
+- Il redesign embedded a sei superfici è stato implementato, pubblicato e
+  rivisto post-publish contro i concept finali; `Impostazioni` è stata chiusa
+  nel pass 0.34.0/0.35.0 con schede operative, disconnessione eBay,
+  intervallo sync configurabile e conferme esplicite.
 - La UI embedded classifica i conflitti per sicurezza operativa e la timeline
   Attività spiega impatto, prossima azione e retry sicuro dei job.
 - Coda conflitti pilota verificata e ripulita: 933 falsi positivi `description`
