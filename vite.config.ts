@@ -83,6 +83,7 @@ export default defineConfig({
   ],
   build: {
     assetsInlineLimit: 0,
+    target: ["chrome87", "edge88", "es2020", "firefox78", "safari14.1"],
   },
   optimizeDeps: {
     include: ["@shopify/app-bridge-react"],
