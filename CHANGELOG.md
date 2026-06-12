@@ -8,6 +8,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [0.35.10] — 2026-06-13
 
+### Correzioni
+
+- Ripristinato il target browser del build production Vite, mantenendo il
+  workaround `esnext` solo per l'ottimizzazione locale delle dipendenze.
+
 ### Sotto il cofano
 
 - Aggiornati i range patch/minor delle dipendenze consentite restando su Node
