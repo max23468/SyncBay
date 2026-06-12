@@ -94,7 +94,7 @@ const checks = [
     needles: [
       "Catalogo",
       "Prodotto",
-      "Canali",
+      "Collegamento",
       "Disponibilità",
       "Stato",
       "MetricTile",
@@ -102,6 +102,8 @@ const checks = [
       "CatalogViewControls",
       "getEbayItemUrl",
       "getShopifyProductAdminUrl",
+      "Dettagli",
+      "Riprova",
     ],
   },
   {
