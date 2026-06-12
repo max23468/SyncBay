@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.31.0] — 2026-06-12
+
+### Novità
+
+- Importazione ridisegnata come stepper verticale guidato: le cinque tappe
+  (Collegamento eBay, Preparazione Shopify, Anteprima catalogo, Importazione,
+  Dopo l'import) hanno ora un nodo numerato — spuntato quando la tappa è
+  completata — con connettore che dà il senso di avanzamento, e uno stato per
+  tappa ("Completato", "Da fare ora", "In attesa") derivato dai dati reali del
+  wizard. Le metriche dell'anteprima (Letti da eBay, Totale, Importabili,
+  Errori) sono tile con icona e tinta come Panoramica e Catalogo. Azioni,
+  validazioni e avvio import controllato invariati. Vedi ADR 0010.
+
 ## [0.30.2] — 2026-06-12
 
 ### Correzioni
@@ -1414,6 +1427,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.31.0]: #0310--2026-06-12
 [0.30.2]: #0302--2026-06-12
 [0.30.1]: #0301--2026-06-12
 [0.30.0]: #0300--2026-06-12
