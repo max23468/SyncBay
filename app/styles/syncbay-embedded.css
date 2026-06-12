@@ -492,6 +492,7 @@
 .syncbay-setting__head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding-block-end: 14px;
   margin-block-end: 16px;
@@ -519,7 +520,22 @@
 }
 
 .syncbay-setting__status {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  max-inline-size: 100%;
+}
+
+.syncbay-setting form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.syncbay-setting form s-select,
+.syncbay-setting form .preview-select,
+.syncbay-setting form s-stack,
+.syncbay-setting form s-text {
+  align-self: stretch;
 }
 
 /* Su viewport stretto l'hero impila azione e testo. */
@@ -540,5 +556,18 @@
   .syncbay-activity-badge {
     justify-content: flex-start;
     min-inline-size: 0;
+  }
+  .syncbay-setting__head {
+    align-items: flex-start;
+  }
+  .syncbay-setting__heading {
+    flex-basis: calc(100% - 48px);
+  }
+  .syncbay-setting__status {
+    flex-basis: 100%;
+    padding-inline-start: 48px;
+  }
+  .syncbay-setting s-grid {
+    grid-template-columns: 1fr !important;
   }
 }

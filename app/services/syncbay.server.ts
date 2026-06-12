@@ -1256,8 +1256,30 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
     };
   }
 
-  await prisma.$transaction([
-    prisma.ebayConnection.update({
+  const disconnectedAt = new Date();
+  const result = await prisma.$transaction(async (tx) => {
+    const cancelledJobs = await tx.syncJob.updateMany({
+      data: {
+        errorCode: "EBAY_DISCONNECTED",
+        errorMessage:
+          "Account eBay scollegato dalle impostazioni. Job catalogo annullato.",
+        finishedAt: disconnectedAt,
+        status: SyncJobStatus.CANCELLED,
+      },
+      where: {
+        shopId: shop.id,
+        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        type: {
+          in: [
+            SyncJobType.IMPORT_CATALOG,
+            SyncJobType.SYNC_INCREMENTAL,
+            SyncJobType.ARCHIVE_INACTIVE_LISTING,
+          ],
+        },
+      },
+    });
+
+    await tx.ebayConnection.update({
       data: {
         connectedAt: null,
         ebayUserId: null,
@@ -1270,26 +1292,41 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
         tokenExpiresAt: null,
       },
       where: { id: connection.id },
-    }),
-    prisma.shop.update({
+    });
+    await tx.shop.update({
       data: { syncEnabled: false },
       where: { id: shop.id },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       data: {
+        details: { cancelledSyncJobCount: cancelledJobs.count },
         message:
           "Account eBay scollegato dalle impostazioni. Sync automatico disattivato.",
         shopId: shop.id,
         type: AuditEventType.EBAY_DISCONNECTED,
       },
-    }),
-  ]);
+    });
+
+    return { cancelledSyncJobCount: cancelledJobs.count };
+  });
 
   return {
-    message:
-      "Account eBay scollegato. Il catalogo già importato resta su Shopify; ricollega eBay per riprendere gli aggiornamenti.",
+    message: formatDisconnectEbayMessage(result.cancelledSyncJobCount),
     status: "disconnected" as const,
   };
+}
+
+function formatDisconnectEbayMessage(cancelledSyncJobCount: number) {
+  const base =
+    "Account eBay scollegato. Il catalogo già importato resta su Shopify; ricollega eBay per riprendere gli aggiornamenti.";
+
+  if (cancelledSyncJobCount === 0) return base;
+
+  if (cancelledSyncJobCount === 1) {
+    return `${base} 1 aggiornamento catalogo in coda è stato annullato.`;
+  }
+
+  return `${base} ${cancelledSyncJobCount} aggiornamenti catalogo in coda sono stati annullati.`;
 }
 
 async function loadShopSettingsPublications(admin: ShopifyAdminGraphqlClient) {

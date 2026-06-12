@@ -335,109 +335,114 @@ export default function SettingsRoute() {
           )}
         </SettingCard>
 
-        <SettingCard
-          description="Stato dei nuovi prodotti creati dai prossimi import."
-          icon="import"
-          statusLabel={getImportProductStatusLabelCapitalized(currentStatus)}
-          statusTone="info"
-          title="Import prodotti"
+        <s-grid
+          gap="large"
+          gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))"
         >
-          <s-paragraph>
-            Il default si applica ai nuovi prodotti creati dai prossimi import.
-            Le bozze restano non pubblicate.
-          </s-paragraph>
-          {actionData?.intent === "saveImportDefaults" ? (
-            <s-paragraph>{actionData.message}</s-paragraph>
-          ) : null}
-          <Form method="post">
-            <input type="hidden" name="intent" value="saveImportDefaults" />
-            <s-select
-              id="defaultProductStatus"
-              label="Stato prodotti di default"
-              name="defaultProductStatus"
-              value={currentStatus}
-            >
-              {IMPORT_PRODUCT_STATUS_VALUES.map((status) => (
-                <s-option key={status} value={status}>
-                  {getImportProductStatusLabelCapitalized(status)}
-                </s-option>
-              ))}
-            </s-select>
-            <s-button type="submit" disabled={isSaving}>
-              {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
-            </s-button>
-          </Form>
-        </SettingCard>
-
-        <SettingCard
-          description="Dove vengono pubblicati i prodotti su Shopify."
-          icon="store-online"
-          statusLabel={getProductPublicationModeSummaryLabel(
-            currentPublicationMode,
-            selectedPublicationIds.length,
-          )}
-          statusTone="info"
-          title="Canali di vendita"
-        >
-          <s-paragraph>
-            I prodotti attivi creati o riusati seguono questa policy di
-            pubblicazione Shopify.
-          </s-paragraph>
-          {settings.productPublications.errorMessage ? (
+          <SettingCard
+            description="Stato dei nuovi prodotti creati dai prossimi import."
+            icon="import"
+            statusLabel={getImportProductStatusLabelCapitalized(currentStatus)}
+            statusTone="info"
+            title="Import prodotti"
+          >
             <s-paragraph>
-              {settings.productPublications.errorMessage}
+              Il default si applica ai nuovi prodotti creati dai prossimi
+              import. Le bozze restano non pubblicate.
             </s-paragraph>
-          ) : null}
-          {actionData?.intent === "saveProductPublications" ? (
-            <s-paragraph>{actionData.message}</s-paragraph>
-          ) : null}
-          <Form method="post">
-            <input
-              type="hidden"
-              name="intent"
-              value="saveProductPublications"
-            />
-            <s-select
-              id="productPublicationMode"
-              label="Pubblicazione prodotti"
-              name="productPublicationMode"
-              value={currentPublicationMode}
-            >
-              {PRODUCT_PUBLICATION_MODES.map((mode) => (
-                <s-option key={mode} value={mode}>
-                  {getProductPublicationModeLabel(mode)}
-                </s-option>
-              ))}
-            </s-select>
-            <s-text color="subdued">
-              Le caselle qui sotto valgono solo con la policy «Solo canali
-              selezionati».
-            </s-text>
-            {settings.productPublications.availablePublications.length > 0 ? (
-              <s-stack gap="small-200">
-                {settings.productPublications.availablePublications.map(
-                  (publication) => (
-                    <s-checkbox
-                      defaultChecked={selectedPublicationIds.includes(
-                        publication.id,
-                      )}
-                      id={`publication-${publication.id}`}
-                      key={publication.id}
-                      label={publication.title}
-                      name="productPublicationGids"
-                      value={publication.id}
-                    />
-                  ),
-                )}
-              </s-stack>
-            ) : (
-              <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
+            {actionData?.intent === "saveImportDefaults" ? (
+              <s-paragraph>{actionData.message}</s-paragraph>
+            ) : null}
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveImportDefaults" />
+              <s-select
+                id="defaultProductStatus"
+                label="Stato prodotti di default"
+                name="defaultProductStatus"
+                value={currentStatus}
+              >
+                {IMPORT_PRODUCT_STATUS_VALUES.map((status) => (
+                  <s-option key={status} value={status}>
+                    {getImportProductStatusLabelCapitalized(status)}
+                  </s-option>
+                ))}
+              </s-select>
+              <s-button type="submit" disabled={isSaving}>
+                {isSaving ? "Salvataggio..." : "Salva stato prodotto default"}
+              </s-button>
+            </Form>
+          </SettingCard>
+
+          <SettingCard
+            description="Dove vengono pubblicati i prodotti su Shopify."
+            icon="store-online"
+            statusLabel={getProductPublicationModeSummaryLabel(
+              currentPublicationMode,
+              selectedPublicationIds.length,
             )}
-            <s-button type="submit" disabled={isSaving}>
-              {isSaving ? "Salvataggio..." : "Salva canali"}
-            </s-button>
-          </Form>
-        </SettingCard>
+            statusTone="info"
+            title="Canali di vendita"
+          >
+            <s-paragraph>
+              I prodotti attivi creati o riusati seguono questa policy di
+              pubblicazione Shopify.
+            </s-paragraph>
+            {settings.productPublications.errorMessage ? (
+              <s-paragraph>
+                {settings.productPublications.errorMessage}
+              </s-paragraph>
+            ) : null}
+            {actionData?.intent === "saveProductPublications" ? (
+              <s-paragraph>{actionData.message}</s-paragraph>
+            ) : null}
+            <Form method="post">
+              <input
+                type="hidden"
+                name="intent"
+                value="saveProductPublications"
+              />
+              <s-select
+                id="productPublicationMode"
+                label="Pubblicazione prodotti"
+                name="productPublicationMode"
+                value={currentPublicationMode}
+              >
+                {PRODUCT_PUBLICATION_MODES.map((mode) => (
+                  <s-option key={mode} value={mode}>
+                    {getProductPublicationModeLabel(mode)}
+                  </s-option>
+                ))}
+              </s-select>
+              <s-text color="subdued">
+                Le caselle qui sotto valgono solo con la policy «Solo canali
+                selezionati».
+              </s-text>
+              {settings.productPublications.availablePublications.length > 0 ? (
+                <s-stack gap="small-200">
+                  {settings.productPublications.availablePublications.map(
+                    (publication) => (
+                      <s-checkbox
+                        defaultChecked={selectedPublicationIds.includes(
+                          publication.id,
+                        )}
+                        id={`publication-${publication.id}`}
+                        key={publication.id}
+                        label={publication.title}
+                        name="productPublicationGids"
+                        value={publication.id}
+                      />
+                    ),
+                  )}
+                </s-stack>
+              ) : (
+                <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
+              )}
+              <s-button type="submit" disabled={isSaving}>
+                {isSaving ? "Salvataggio..." : "Salva canali"}
+              </s-button>
+            </Form>
+          </SettingCard>
+        </s-grid>
 
         <SettingCard
           description="Collegamenti e dettagli tecnici, separati dalle impostazioni più frequenti."
