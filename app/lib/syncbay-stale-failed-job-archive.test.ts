@@ -21,6 +21,20 @@ test("archives old failed incremental jobs superseded by a later successful sync
   );
 });
 
+test("ages stale failures against now instead of the later success timestamp", () => {
+  assert.equal(
+    isSupersededFailedIncrementalSyncJob({
+      errorCode: "SYNCBAY_INCREMENTAL_BLOCKED",
+      latestSuccessfulIncrementalSyncAt: "2026-06-11T09:05:00.000Z",
+      now,
+      status: "FAILED",
+      type: "SYNC_INCREMENTAL",
+      updatedAt: "2026-06-11T09:00:00.000Z",
+    }),
+    true,
+  );
+});
+
 test("keeps recent failed incremental jobs actionable", () => {
   assert.equal(
     isSupersededFailedIncrementalSyncJob({

@@ -453,12 +453,8 @@ async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) 
 
     if (!latestSuccessAt) continue;
 
-    const archiveReferenceAt = Math.min(
-      latestSuccessAt.getTime(),
-      input.now.getTime(),
-    );
     const archiveCutoff = new Date(
-      archiveReferenceAt - STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
+      input.now.getTime() - STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
     );
     const archived = await prisma.syncJob.updateMany({
       data: { status: SyncJobStatus.CANCELLED },
@@ -467,7 +463,7 @@ async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) 
         shopId,
         status: SyncJobStatus.FAILED,
         type: SyncJobType.SYNC_INCREMENTAL,
-        updatedAt: { lte: archiveCutoff },
+        updatedAt: { lt: latestSuccessAt, lte: archiveCutoff },
       },
     });
 

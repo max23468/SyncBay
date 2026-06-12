@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.3] — 2026-06-12
+
+### Correzioni
+
+- L'archiviazione dei vecchi fallimenti incrementali usa ora l'età rispetto
+  all'ora corrente, non rispetto al sync riuscito più recente, così i casi
+  "fallimento seguito subito da successo" diventano archiviabili dopo 24 ore.
+
 ## [0.33.2] — 2026-06-12
 
 ### Correzioni
@@ -1491,6 +1499,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.3]: #0333--2026-06-12
 [0.33.2]: #0332--2026-06-12
 [0.33.1]: #0331--2026-06-12
 [0.33.0]: #0330--2026-06-12
