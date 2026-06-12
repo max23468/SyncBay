@@ -65,6 +65,7 @@ import {
   getProductSnapshotThumbnailUrlFromPayloads,
 } from "../lib/syncbay-product-snapshot-payload";
 import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
+import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -2849,20 +2850,6 @@ function splitScopes(scopes?: string | null) {
         return trimmedScope ? [trimmedScope] : [];
       })
     : [];
-}
-
-function hasEffectiveShopifyScope(scopes: string[], requiredScope: string) {
-  if (scopes.includes(requiredScope)) return true;
-
-  if (requiredScope === "read_products")
-    return scopes.includes("write_products");
-  if (requiredScope === "read_inventory")
-    return scopes.includes("write_inventory");
-  if (requiredScope === "read_locations")
-    return scopes.includes("write_locations");
-  if (requiredScope === "read_orders") return scopes.includes("write_orders");
-
-  return false;
 }
 
 async function findCoalescedWebhookJob(input: {

@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.1] — 2026-06-12
+
+### Correzioni
+
+- Impostazioni considera ora gli scope Shopify `write_*` come copertura dei
+  rispettivi `read_*`, così `write_files` e `write_publications` non risultano
+  permessi mancanti quando la sessione offline Shopify li espone come permessi
+  di scrittura.
+
 ## [0.35.0] — 2026-06-12
 
 ### Novità
@@ -1559,6 +1568,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.1]: #0351--2026-06-12
 [0.35.0]: #0350--2026-06-12
 [0.34.0]: #0340--2026-06-12
 [0.33.6]: #0336--2026-06-12
