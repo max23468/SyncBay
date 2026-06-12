@@ -1,6 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
 import { createLogger, defineConfig, type UserConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
 // Replace the HOST env var with SHOPIFY_APP_URL so that it doesn't break the Vite server.
@@ -79,16 +78,12 @@ export default defineConfig({
   },
   plugins: [
     reactRouter(),
-    tsconfigPaths(),
   ],
   build: {
     assetsInlineLimit: 0,
     target: ["chrome87", "edge88", "es2020", "firefox78", "safari14.1"],
   },
   optimizeDeps: {
-    esbuildOptions: {
-      target: "esnext",
-    },
     include: ["@shopify/app-bridge-react"],
   },
 }) satisfies UserConfig;

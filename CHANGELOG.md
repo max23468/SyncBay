@@ -10,12 +10,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Sotto il cofano
 
-- Aggiornato Vite alla major 8 (da 6) e `vite-tsconfig-paths` alla major 6 (da
-  5). Build, typecheck, lint, test e smoke UI verificati su Node 24. Il target
-  browser del build production resta invariato.
-- Noti due avvisi di deprecazione introdotti da Vite 8, lasciati come follow-up
-  separato: `vite-tsconfig-paths` è ora sostituibile da `resolve.tsconfigPaths`
-  nativo, e `optimizeDeps.esbuildOptions` va migrato a `optimizeDeps.rolldownOptions`.
+- Aggiornato Vite dalla major 6 alla major 8. Build, typecheck, lint, test e
+  smoke UI verificati su Node 24; il target browser del build production resta
+  invariato.
+- Risolte le deprecazioni emerse con Vite 8: rimosso il plugin
+  `vite-tsconfig-paths` (no-op, il `tsconfig` non definisce `paths` e non ci sono
+  import con alias) e rimossa l'opzione deprecata `optimizeDeps.esbuildOptions`.
+  Il pre-bundle di `@shopify/app-bridge-react` resta attivo, verificato con
+  `vite optimize`.
 
 ## [0.35.10] — 2026-06-13
 
