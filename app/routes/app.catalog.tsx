@@ -113,7 +113,7 @@ export default function CatalogRoute() {
             icon="product"
             label="Totale"
             tone="info"
-            value={formatNumber(catalog.summary.totalCount)}
+            value={formatNumber(catalog.summary.linkedCount)}
           />
           <MetricTile
             detail="Senza conflitti o ritardi evidenti."

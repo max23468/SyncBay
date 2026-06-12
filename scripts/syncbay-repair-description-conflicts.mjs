@@ -43,6 +43,14 @@ with latest_syncbay as (
     and ps.source = 'SYNCBAY'
     and ps."mappingId" is not null
     and ps."descriptionHash" is not null
+    and not (
+      coalesce(ps.payload->>'updatedEbayFromShopifyOrder', 'false') = 'true'
+      and not coalesce(ps.payload ? 'conflictResolution', false)
+    )
+    and not (
+      coalesce(ps.payload->>'restoredEbayAfterTest', 'false') = 'true'
+      and not coalesce(ps.payload ? 'conflictResolution', false)
+    )
   order by ps."mappingId", ps."capturedAt" desc
 ),
 baseline_repairable_conflicts as (
@@ -114,6 +122,14 @@ with latest_description_syncbay as (
     and ps.source = 'SYNCBAY'
     and ps."mappingId" is not null
     and ps."descriptionHash" is not null
+    and not (
+      coalesce(ps.payload->>'updatedEbayFromShopifyOrder', 'false') = 'true'
+      and not coalesce(ps.payload ? 'conflictResolution', false)
+    )
+    and not (
+      coalesce(ps.payload->>'restoredEbayAfterTest', 'false') = 'true'
+      and not coalesce(ps.payload ? 'conflictResolution', false)
+    )
   order by ps."mappingId", ps."capturedAt" desc
 ),
 latest_syncbay as (

@@ -15,42 +15,24 @@ export function getLatestSyncBayDescriptionBaselineWhere(
   return {
     descriptionHash: { not: null },
     mappingId,
-    NOT: [
-      {
-        AND: [
-          {
-            payload: {
-              path: ["updatedEbayFromShopifyOrder"],
-              equals: true,
-            },
-          },
-          {
-            payload: {
-              path: ["conflictResolution"],
-              equals: Prisma.DbNull,
-            },
-          },
-        ],
-      },
-      {
-        AND: [
-          {
-            payload: {
-              path: ["restoredEbayAfterTest"],
-              equals: true,
-            },
-          },
-          {
-            payload: {
-              path: ["conflictResolution"],
-              equals: Prisma.DbNull,
-            },
-          },
-        ],
-      },
-    ],
     source: ProductSnapshotSource.SYNCBAY,
   };
+}
+
+export function shouldUseSyncBayDescriptionBaselinePayload(
+  payload: Prisma.JsonValue | null | undefined,
+) {
+  const objectPayload = getJsonObject(payload);
+
+  if (!objectPayload) return true;
+
+  const isStockTestSnapshot =
+    objectPayload.updatedEbayFromShopifyOrder === true ||
+    objectPayload.restoredEbayAfterTest === true;
+
+  if (!isStockTestSnapshot) return true;
+
+  return objectPayload.conflictResolution != null;
 }
 
 export function getAlignedOpenConflictFields(input: {
@@ -125,4 +107,10 @@ export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   shopifyImageCount: number;
 }) {
   return input.syncBayImageCount === 0 && input.shopifyImageCount > 0;
+}
+
+function getJsonObject(value: Prisma.JsonValue | null | undefined) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return value as Prisma.JsonObject;
 }

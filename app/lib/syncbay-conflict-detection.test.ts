@@ -8,6 +8,7 @@ const {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
   isLiveDescriptionConflictAligned,
+  shouldUseSyncBayDescriptionBaselinePayload,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
@@ -22,6 +23,39 @@ test("builds a description baseline query that skips null description hashes", (
   assert.deepEqual(where.descriptionHash, { not: null });
   assert.equal(where.mappingId, "mapping-1");
   assert.equal(where.source, "SYNCBAY");
+});
+
+test("keeps normal description baselines when payload has no stock-test markers", () => {
+  assert.equal(shouldUseSyncBayDescriptionBaselinePayload({}), true);
+  assert.equal(
+    shouldUseSyncBayDescriptionBaselinePayload({
+      mediaSync: { updated: true },
+    }),
+    true,
+  );
+  assert.equal(shouldUseSyncBayDescriptionBaselinePayload(null), true);
+});
+
+test("skips stock-test description baselines unless they came from conflict resolution", () => {
+  assert.equal(
+    shouldUseSyncBayDescriptionBaselinePayload({
+      updatedEbayFromShopifyOrder: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseSyncBayDescriptionBaselinePayload({
+      restoredEbayAfterTest: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseSyncBayDescriptionBaselinePayload({
+      conflictResolution: { conflictId: "conflict-1" },
+      updatedEbayFromShopifyOrder: true,
+    }),
+    true,
+  );
 });
 
 test("finds open conflict fields that are aligned again", () => {
