@@ -228,6 +228,61 @@
   flex: 0 0 auto;
 }
 
+/* Decision card conflitto: accento tonale a sinistra keyato sulla gravità della
+   scelta (batch sicuro / da rivedere / manuale), come l'hero di stato. */
+.syncbay-conflict {
+  padding: 16px 18px;
+  border: 1px solid var(--syncbay-mist);
+  border-inline-start-width: 4px;
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+}
+
+.syncbay-conflict--success {
+  border-inline-start-color: var(--syncbay-moss);
+}
+.syncbay-conflict--warning {
+  border-inline-start-color: var(--syncbay-amber);
+}
+.syncbay-conflict--critical {
+  border-inline-start-color: var(--syncbay-coral);
+}
+
+/* Pannello sorgente nel confronto eBay/Shopify: marchio + valore. Il lato eBay
+   è evidenziato come sorgente di verità (ADR 0011). */
+.syncbay-source {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 10px;
+  background: var(--syncbay-cloud);
+}
+
+.syncbay-source--truth {
+  border-color: var(--syncbay-steel);
+  background: var(--syncbay-tint-info);
+}
+
+.syncbay-source__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.syncbay-source__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 8px;
+  background: var(--syncbay-paper);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
 /* Su viewport stretto l'hero impila azione e testo. */
 @media (max-width: 640px) {
   .syncbay-hero {

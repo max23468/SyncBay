@@ -14,6 +14,12 @@ import {
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
+  EbayMark,
+  MetricTile,
+  ShopifyMark,
+  StatusHero,
+} from "../components/SyncBayUi";
+import {
   getConflictActionLabel,
   getConflictFieldLabel,
   getConflictImpactText,
@@ -109,51 +115,74 @@ export default function ConflictsRoute() {
   const activeFilter = normalizeConflictFilter(searchParams.get("filter"));
   const rows = conflicts.rows;
   const isSaving = navigation.state !== "idle";
+  const openCount = conflicts.summary.openCount;
+  const hasOpen = openCount > 0;
 
   return (
     <s-page heading="Conflitti">
       <s-badge slot="accessory" tone="warning">Scelte esplicite</s-badge>
-      <s-stack gap="base">
-        <s-section heading="Decisioni aperte">
-          <s-text color="subdued">
-            Nessuna sovrascrittura silenziosa: SyncBay non modifica Shopify
-            senza conferma. Scegli quale valore mantenere per far ripartire
-            l&apos;allineamento.
-          </s-text>
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(5, minmax(140px, 1fr))"
-          >
-            <MetricCard
-              detail="Richiedono una scelta."
-              label="Aperti"
-              value={formatNumber(conflicts.summary.openCount)}
-            />
-            <MetricCard
-              detail="Solo descrizioni da mantenere su Shopify."
-              label="Batch sicuri"
-              value={formatNumber(conflicts.summary.batchSafeCount)}
-            />
-            <MetricCard
-              detail="Titoli e immagini da rivedere prima di applicare in serie."
-              label="Da rivedere"
-              value={formatNumber(conflicts.summary.guardedCount)}
-            />
-            <MetricCard
-              detail="Prezzi, quantità, stato, SKU o campi non classificati."
-              label="Manuali"
-              value={formatNumber(conflicts.summary.manualOnlyCount)}
-            />
-            <MetricCard
-              detail="Totale reale della coda conflitti."
-              label="Totale"
-              value={formatNumber(conflicts.summary.totalCount)}
-            />
-          </s-grid>
-          {actionData ? (
-            <s-text color="subdued">{actionData.message}</s-text>
-          ) : null}
-        </s-section>
+      <s-stack gap="large">
+        <StatusHero
+          body={
+            hasOpen
+              ? "Nessuna sovrascrittura silenziosa: SyncBay non modifica Shopify senza conferma. Scegli quale valore mantenere per far ripartire l'allineamento."
+              : "Le modifiche Shopify non richiedono decisioni in questo momento: l'allineamento eBay verso Shopify prosegue senza attese."
+          }
+          eyebrow="Decisioni aperte"
+          icon={hasOpen ? "alert-triangle" : "check-circle"}
+          title={
+            hasOpen
+              ? `${formatNumber(openCount)} ${
+                  openCount === 1 ? "conflitto da decidere" : "conflitti da decidere"
+                }`
+              : "Nessun conflitto in sospeso"
+          }
+          tone={hasOpen ? "warning" : "success"}
+        />
+
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        >
+          <MetricTile
+            detail="Richiedono una scelta."
+            icon="alert-triangle"
+            label="Aperti"
+            tone={hasOpen ? "warning" : "neutral"}
+            value={formatNumber(conflicts.summary.openCount)}
+          />
+          <MetricTile
+            detail="Solo descrizioni da mantenere su Shopify."
+            icon="check-circle"
+            label="Batch sicuri"
+            tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
+            value={formatNumber(conflicts.summary.batchSafeCount)}
+          />
+          <MetricTile
+            detail="Titoli e immagini da rivedere prima di applicare in serie."
+            icon="alert-circle"
+            label="Da rivedere"
+            tone={conflicts.summary.guardedCount > 0 ? "warning" : "neutral"}
+            value={formatNumber(conflicts.summary.guardedCount)}
+          />
+          <MetricTile
+            detail="Prezzi, quantità, stato, SKU o campi non classificati."
+            icon="settings"
+            label="Manuali"
+            tone={conflicts.summary.manualOnlyCount > 0 ? "info" : "neutral"}
+            value={formatNumber(conflicts.summary.manualOnlyCount)}
+          />
+          <MetricTile
+            detail="Totale reale della coda conflitti."
+            icon="inventory"
+            label="Totale"
+            tone="info"
+            value={formatNumber(conflicts.summary.totalCount)}
+          />
+        </s-grid>
+        {actionData ? (
+          <s-text color="subdued">{actionData.message}</s-text>
+        ) : null}
 
         <s-section heading="Coda conflitti">
           <FilterNav activeFilter={activeFilter} />
@@ -193,14 +222,16 @@ function ConflictItem({
 }) {
   const isOpen = row.status === "OPEN";
   const decisionMode = getConflictFieldDecisionMode(row.field);
+  const safetyTone = getDecisionModeTone(decisionMode);
 
   return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+    <div className={`syncbay-conflict syncbay-conflict--${safetyTone}`}>
       <s-stack gap="base">
         <s-stack
           direction="inline"
           gap="base"
           justifyContent="space-between"
+          alignItems="start"
         >
           <s-stack direction="inline" gap="base" alignItems="center">
             <ProductThumbnail row={row} />
@@ -219,57 +250,42 @@ function ConflictItem({
           </s-badge>
         </s-stack>
 
-        <s-grid gap="base" gridTemplateColumns="repeat(3, minmax(0, 1fr))">
-          <s-stack gap="small-200">
-            <s-text color="subdued" type="strong">Campo</s-text>
-            <s-text>{getConflictFieldLabel(row.field)}</s-text>
+        <s-stack gap="small-200">
+          <s-stack direction="inline" gap="small-200" alignItems="center">
+            <s-text type="strong">{getConflictFieldLabel(row.field)}</s-text>
+            <s-badge tone={safetyTone}>
+              {getConflictDecisionModeLabel(decisionMode)}
+            </s-badge>
           </s-stack>
-          <s-stack gap="small-200">
-            <s-text color="subdued" type="strong">Impatto</s-text>
-            <s-text>{getConflictImpactText(row.field)}</s-text>
-          </s-stack>
-          <s-stack gap="small-200">
-            <s-text color="subdued" type="strong">Gestione</s-text>
-            <s-stack gap="small-200">
-              <s-badge tone={getDecisionModeTone(decisionMode)}>
-                {getConflictDecisionModeLabel(decisionMode)}
-              </s-badge>
-              <s-text color="subdued">
-                {getConflictDecisionModeDetail(row.field, decisionMode)}
-              </s-text>
-            </s-stack>
-          </s-stack>
-        </s-grid>
+          <s-text color="subdued">{getConflictImpactText(row.field)}</s-text>
+          <s-text color="subdued">
+            {getConflictDecisionModeDetail(row.field, decisionMode)}
+          </s-text>
+        </s-stack>
 
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
         >
-          <s-box
-            border="base"
-            borderColor="base"
-            borderRadius="base"
-            padding="base"
-          >
-            <s-stack gap="small-200">
-              <s-text color="subdued">Valore eBay</s-text>
-              <s-text>{row.sourceValue}</s-text>
-            </s-stack>
-          </s-box>
-          <s-box
-            border="base"
-            borderColor="base"
-            borderRadius="base"
-            padding="base"
-          >
-            <s-stack gap="small-200">
-              <s-text color="subdued">Valore Shopify</s-text>
-              <s-text>{row.shopifyValue}</s-text>
-            </s-stack>
-          </s-box>
+          <SourcePanel
+            label="eBay · sorgente di verità"
+            mark="ebay"
+            truth
+            value={row.sourceValue}
+          />
+          <SourcePanel
+            label="Shopify · vetrina"
+            mark="shopify"
+            value={row.shopifyValue}
+          />
         </s-grid>
 
-        <s-stack direction="inline" gap="base" justifyContent="space-between">
+        <s-stack
+          direction="inline"
+          gap="base"
+          justifyContent="space-between"
+          alignItems="center"
+        >
           <s-text color="subdued">
             Rilevato {formatDateTime(row.detectedAt)}
             {row.resolvedAt
@@ -283,6 +299,7 @@ function ConflictItem({
                   conflictId={row.id}
                   disabled={isSaving}
                   field={row.field}
+                  isPrimary={resolution === "REALIGN_FROM_EBAY"}
                   key={resolution}
                   resolution={resolution}
                 />
@@ -291,7 +308,31 @@ function ConflictItem({
           ) : null}
         </s-stack>
       </s-stack>
-    </s-box>
+    </div>
+  );
+}
+
+function SourcePanel({
+  label,
+  mark,
+  truth = false,
+  value,
+}: {
+  label: string;
+  mark: "ebay" | "shopify";
+  truth?: boolean;
+  value: string;
+}) {
+  return (
+    <div className={`syncbay-source${truth ? " syncbay-source--truth" : ""}`}>
+      <span className="syncbay-source__head">
+        <span className="syncbay-source__mark">
+          {mark === "ebay" ? <EbayMark /> : <ShopifyMark />}
+        </span>
+        <s-text color="subdued" type="strong">{label}</s-text>
+      </span>
+      <s-text>{value}</s-text>
+    </div>
   );
 }
 
@@ -299,11 +340,13 @@ function ResolveConflictForm({
   conflictId,
   disabled,
   field,
+  isPrimary,
   resolution,
 }: {
   conflictId: string;
   disabled: boolean;
   field: string;
+  isPrimary: boolean;
   resolution: ConflictResolution;
 }) {
   const safety = getConflictResolutionSafety(field, resolution);
@@ -313,7 +356,11 @@ function ResolveConflictForm({
       <input type="hidden" name="conflictId" value={conflictId} />
       <input type="hidden" name="resolution" value={resolution} />
       <s-stack gap="small-200" alignItems="start">
-        <s-button type="submit" disabled={disabled}>
+        <s-button
+          type="submit"
+          disabled={disabled}
+          variant={isPrimary ? "primary" : undefined}
+        >
           {getConflictActionLabel(resolution)}
         </s-button>
         <s-text color="subdued">{safety.label}</s-text>
@@ -400,26 +447,6 @@ function ProductThumbnail({ row }: { row: ConflictRow }) {
       borderRadius="base"
       inlineSize="64px"
     />
-  );
-}
-
-function MetricCard({
-  detail,
-  label,
-  value,
-}: {
-  detail: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="small-200">
-        <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </s-stack>
-    </s-box>
   );
 }
 
