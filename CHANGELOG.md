@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.8] — 2026-06-12
+
+### Sotto il cofano
+
+- React Doctor è ora una dev dependency del progetto e il gate
+  `quality:react-doctor` usa la config `doctor.config.json` con il flag
+  `--blocking`, evitando i warning di deprecazione del runner.
+- La route Impostazioni è stata divisa in sezioni React locali più piccole,
+  chiudendo il warning `react-doctor/no-giant-component` e portando lo score
+  React Doctor a 100/100.
+
 ## [0.35.7] — 2026-06-12
 
 ### Sotto il cofano
@@ -1622,6 +1633,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.8]: #0358--2026-06-12
 [0.35.7]: #0357--2026-06-12
 [0.35.6]: #0356--2026-06-12
 [0.35.5]: #0355--2026-06-12
