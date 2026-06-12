@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.10] — 2026-06-13
+
 ### Sotto il cofano
 
 - Aggiornati i range patch/minor delle dipendenze consentite restando su Node
@@ -1653,6 +1655,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.10]: #03510--2026-06-13
 [0.35.9]: #0359--2026-06-12
 [0.35.8]: #0358--2026-06-12
 [0.35.7]: #0357--2026-06-12
