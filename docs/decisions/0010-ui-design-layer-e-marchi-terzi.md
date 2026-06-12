@@ -35,6 +35,12 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
    rispettivi marchi come indicatori di sorgente/destinazione.
 3. **Hero di stato** (pannello prossima-azione/stato) con icona di stato e
    accento tonale per dominare la gerarchia di pagina.
+4. **Decision card conflitto**: scheda per singolo conflitto con accento tonale
+   a sinistra keyato sulla gravità della scelta (batch sicuro / da rivedere /
+   manuale), stessa logica visiva dell'hero.
+5. **Pannello sorgente** del confronto eBay/Shopify dentro la decision card:
+   marchio del provider + valore, con il lato eBay evidenziato come sorgente di
+   verità (ADR 0011).
 
 Tutto ciò che non è in questa lista resta nativo puro. La griglia condivisa è
 **multi-regione responsiva**: hero a tutta larghezza, poi fasce a due colonne

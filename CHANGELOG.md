@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Conflitti ridisegnata con la stessa lingua visiva di Panoramica e Catalogo: la
+  pagina si apre con un hero di stato (numero di conflitti da decidere o "nessuno
+  in sospeso") e metriche a tile con icona e tinta semantica. Ogni conflitto è
+  ora una decision card con accento tonale a sinistra keyato sulla gravità della
+  scelta (batch sicuro, da rivedere, manuale); il confronto eBay/Shopify è in due
+  pannelli sorgente con i marchi ufficiali, con il lato eBay evidenziato come
+  sorgente di verità; l'azione "Usa valore eBay" è la primaria. Vedi ADR 0010.
+
 ## [0.29.7] — 2026-06-12
 
 ### Sotto il cofano
