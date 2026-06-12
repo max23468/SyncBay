@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Attività ridisegnata come timeline operativa: ogni evento ha ora un nodo con
+  icona colorata per esito (completato, in errore, in corso) e un connettore
+  verticale, per leggere la cronologia a colpo d'occhio invece di una pila di
+  box uguali. Le metriche in alto (In coda, Errori recenti, Eventi, Catalogo)
+  sono tile con icona e tinta come nelle altre pagine, e la diagnostica resta
+  sotto la timeline. Microcopy più chiaro ("Aggiornamento automatico" al posto
+  di "Runner incrementale"). Retry, filtri e logica invariati. Vedi ADR 0010.
+
 ## [0.32.1] — 2026-06-12
 
 ### Correzioni

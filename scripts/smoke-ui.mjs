@@ -140,6 +140,9 @@ const checks = [
       "retryJob",
       "Diagnostica guidata",
       "Controlli rapidi",
+      "MetricTile",
+      "TimelineEvent",
+      "syncbay-timeline",
     ],
   },
   {

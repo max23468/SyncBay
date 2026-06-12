@@ -13,6 +13,11 @@ import {
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import {
+  MetricTile,
+  type SyncBayIcon,
+  TimelineEvent,
+} from "../components/SyncBayUi";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
 import {
@@ -127,26 +132,34 @@ export default function ActivityRoute() {
           </s-text>
           <s-grid
             gap="base"
-            gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
+            gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
           >
-            <MetricCard
-              detail="Job non ancora completati."
+            <MetricTile
+              detail="Aggiornamenti non ancora completati."
+              icon="refresh"
               label="In coda"
+              tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
               value={formatNumber(activity.sync.pendingJobs)}
             />
-            <MetricCard
-              detail="Errori letti negli ultimi job."
+            <MetricTile
+              detail="Errori letti negli ultimi aggiornamenti."
+              icon="alert-triangle"
               label="Errori recenti"
+              tone={failedJobs > 0 ? "critical" : "neutral"}
               value={formatNumber(failedJobs)}
             />
-            <MetricCard
+            <MetricTile
               detail="Note operative registrate."
+              icon="clock"
               label="Eventi"
+              tone="neutral"
               value={formatNumber(activity.audit.length)}
             />
-            <MetricCard
+            <MetricTile
               detail={getCatalogHealthDetail(activity)}
+              icon="product"
               label="Catalogo"
+              tone={getCatalogHealthTone(activity)}
               value={getCatalogHealthLabel(activity)}
             />
           </s-grid>
@@ -158,15 +171,16 @@ export default function ActivityRoute() {
         <s-section heading="Timeline">
           <ActivityFilterNav activeFilter={activeFilter} />
           {rows.length > 0 ? (
-            <s-stack gap="base">
-              {rows.map((row) => (
+            <ol className="syncbay-timeline">
+              {rows.map((row, index) => (
                 <ActivityTimelineRow
+                  isLast={index === rows.length - 1}
                   isSaving={isSaving}
                   key={row.id}
                   row={row}
                 />
               ))}
-            </s-stack>
+            </ol>
           ) : (
             <s-box border="base" borderColor="base" borderRadius="base" padding="base">
               <s-stack gap="base">
@@ -205,7 +219,7 @@ export default function ActivityRoute() {
                   ? "info"
                   : "success"
               }
-              title="Runner incrementale"
+              title="Aggiornamento automatico"
             />
             <StatusRow
               detail={`${activity.conflicts.openCount} decisioni aperte nella coda conflitti.`}
@@ -227,9 +241,11 @@ export const headers: HeadersFunction = (headersArgs) => {
 };
 
 function ActivityTimelineRow({
+  isLast,
   isSaving,
   row,
 }: {
+  isLast: boolean;
   isSaving: boolean;
   row: ActivityRow;
 }) {
@@ -237,10 +253,10 @@ function ActivityTimelineRow({
   const canRetry = diagnostic?.retry.canRetry ?? false;
 
   return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+    <TimelineEvent icon={getActivityIcon(row)} isLast={isLast} tone={row.tone}>
       <s-stack direction="inline" gap="base" justifyContent="space-between">
         <s-stack gap="small-200">
-          <s-heading>{row.title}</s-heading>
+          <s-text type="strong">{row.title}</s-text>
           <s-text>{row.detail}</s-text>
           <s-text color="subdued">
             {row.meta} · {formatDateTime(row.timestamp)}
@@ -248,21 +264,32 @@ function ActivityTimelineRow({
         </s-stack>
         <s-stack gap="small-200" alignItems="end">
           <s-badge tone={row.tone}>{getActivityToneLabel(row.tone)}</s-badge>
-        {canRetry && row.job ? (
-          <Form method="post">
-            <input type="hidden" name="intent" value="retryJob" />
-            <input type="hidden" name="jobId" value={row.job.id} />
-            <s-button type="submit" disabled={isSaving}>
-              {diagnostic?.retry.label ?? "Riprova"}
-            </s-button>
-          </Form>
-        ) : row.job && diagnostic ? (
-          <s-text color="subdued">{diagnostic.retry.label}</s-text>
-        ) : null}
+          {canRetry && row.job ? (
+            <Form method="post">
+              <input type="hidden" name="intent" value="retryJob" />
+              <input type="hidden" name="jobId" value={row.job.id} />
+              <s-button type="submit" disabled={isSaving}>
+                {diagnostic?.retry.label ?? "Riprova"}
+              </s-button>
+            </Form>
+          ) : row.job && diagnostic ? (
+            <s-text color="subdued">{diagnostic.retry.label}</s-text>
+          ) : null}
         </s-stack>
       </s-stack>
-    </s-box>
+    </TimelineEvent>
   );
+}
+
+function getActivityIcon(row: ActivityRow): SyncBayIcon {
+  if (row.tone === "critical") return "alert-triangle";
+  if (row.tone === "success") return "check-circle";
+  if (row.category === "IMPORT_CATALOG") return "import";
+  if (row.category === "UPDATE_EBAY_STOCK") return "inventory";
+  if (row.category === "CONFLICT") return "alert-circle";
+  if (row.category === "AUDIT") return "clock";
+
+  return "refresh";
 }
 
 function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
@@ -283,26 +310,6 @@ function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
         </s-clickable-chip>
       ))}
     </s-stack>
-  );
-}
-
-function MetricCard({
-  detail,
-  label,
-  value,
-}: {
-  detail: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="small-200">
-        <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </s-stack>
-    </s-box>
   );
 }
 

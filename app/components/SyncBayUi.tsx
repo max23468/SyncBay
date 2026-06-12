@@ -2,7 +2,8 @@
  * Componenti del design layer SyncBay (ADR 0010).
  *
  * Lista chiusa: tile metrica, hero di stato, scheda connessione, decision card
- * conflitto, pannello sorgente e tappa stepper. Sono wrapper in light DOM con
+ * conflitto, pannello sorgente, tappa stepper ed evento timeline. Sono wrapper
+ * in light DOM con
  * CSS minimo (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris
  * Web Components nativi. Non aggiungere altri wrapper custom senza aggiornare
  * l'ADR.
@@ -105,6 +106,36 @@ export function Step({
         </span>
         <s-stack gap="base">{children}</s-stack>
       </div>
+    </li>
+  );
+}
+
+type TimelineEventProps = {
+  children: ReactNode;
+  icon: SyncBayIcon;
+  isLast?: boolean;
+  tone: SyncBayTone;
+};
+
+/**
+ * Evento di una timeline operativa (Attività). Nodo con icona colorata per
+ * esito e connettore verso l'evento successivo. Vedi ADR 0010.
+ */
+export function TimelineEvent({
+  children,
+  icon,
+  isLast = false,
+  tone,
+}: TimelineEventProps) {
+  return (
+    <li className={`syncbay-event syncbay-event--${tone}`}>
+      <span className="syncbay-event__rail">
+        <span className="syncbay-event__node">
+          <s-icon type={icon} tone={tone} size="base" />
+        </span>
+        {isLast ? null : <span className="syncbay-event__line" />}
+      </span>
+      <div className="syncbay-event__panel">{children}</div>
     </li>
   );
 }
