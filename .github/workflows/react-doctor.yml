@@ -24,3 +24,8 @@ jobs:
         with:
           fetch-depth: 0
       - uses: millionco/react-doctor@v2
+        with:
+          # Niente commento riassuntivo "sticky": le PR pulite non ricevono
+          # commenti. Quando ci sono problemi restano i commenti inline sulle
+          # righe interessate e lo stato del check con score e conteggi.
+          comment: false
