@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Aggiornati i range patch/minor delle dipendenze consentite restando su Node
+  24, Prisma 6, React 18, ESLint 9 e Vite 6.
+
 ## [0.35.9] — 2026-06-12
 
 ### Correzioni
