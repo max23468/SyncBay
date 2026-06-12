@@ -7,6 +7,7 @@ import * as conflictDetection from "./syncbay-conflict-detection.ts";
 const {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  isLiveDescriptionConflictAligned,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
@@ -121,6 +122,52 @@ test("resolves open conflicts automatically only for inactive-source mappings", 
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus(null), false);
+});
+
+test("recognizes live description conflicts already aligned to latest baseline", () => {
+  assert.equal(
+    isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash: "hash-1",
+      field: "description",
+      latestSyncBayDescriptionHash: "hash-1",
+    }),
+    true,
+  );
+  assert.equal(
+    isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash: "hash-1",
+      field: "description",
+      latestSyncBayDescriptionHash: " hash-1 ",
+    }),
+    true,
+  );
+});
+
+test("keeps non-description or missing live description hashes open", () => {
+  assert.equal(
+    isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash: "ACTIVE",
+      field: "status",
+      latestSyncBayDescriptionHash: "ACTIVE",
+    }),
+    false,
+  );
+  assert.equal(
+    isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash: null,
+      field: "description",
+      latestSyncBayDescriptionHash: "hash-1",
+    }),
+    false,
+  );
+  assert.equal(
+    isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash: "hash-1",
+      field: "description",
+      latestSyncBayDescriptionHash: null,
+    }),
+    false,
+  );
 });
 
 test("skips images conflicts when eBay has no media but Shopify does", () => {

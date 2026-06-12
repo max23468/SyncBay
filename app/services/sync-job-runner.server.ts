@@ -16,6 +16,7 @@ import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reco
 import {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
+  isLiveDescriptionConflictAligned,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
@@ -737,7 +738,7 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
   if (limit === 0) return 0;
 
   const mappings = await prisma.productMapping.findMany({
-    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ updatedAt: "asc" }, { createdAt: "asc" }],
     select: {
       conflicts: {
         select: { id: true },
@@ -1246,8 +1247,16 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   const openConflicts = await prisma.syncConflict.findMany({
     select: {
+      field: true,
+      id: true,
+      mappingId: true,
       mapping: {
-        select: { ebayItemId: true, id: true, status: true },
+        select: {
+          ebayItemId: true,
+          id: true,
+          shopifyProductGid: true,
+          status: true,
+        },
       },
     },
     where: {
@@ -1287,8 +1296,21 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
           })
         ).count
       : 0;
+  const alignedDescriptionConflicts =
+    await resolveLiveAlignedDescriptionConflicts({
+      conflicts: openConflicts,
+      defaultLocationGid: job.shop.defaultLocationGid,
+      shopId: job.shopId,
+      shopDomain: job.shop.shopDomain,
+    });
+  const resolvedAlignedDescriptionConflictIds = new Set(
+    alignedDescriptionConflicts.conflictIds,
+  );
   const openConflictItemIds = new Set(
     openConflicts.flatMap((conflict) => {
+      if (resolvedAlignedDescriptionConflictIds.has(conflict.id)) {
+        return [];
+      }
       if (
         !shouldBlockIncrementalSyncForOpenConflictMappingStatus(
           conflict.mapping?.status ?? null,
@@ -1309,6 +1331,8 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       delegatedJobId: null,
       job,
       result: {
+        alignedDescriptionConflictResolvedCount:
+          alignedDescriptionConflicts.count,
         conflictSkippedCount: ebayItemIds.length,
         reactivationConflictResolvedCount,
         requestedCount: ebayItemIds.length,
@@ -1371,6 +1395,8 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     delegatedJobId: result.jobId,
     job,
     result: {
+      alignedDescriptionConflictResolvedCount:
+        alignedDescriptionConflicts.count,
       conflictSkippedCount: openConflictItemIds.size,
       reactivationConflictResolvedCount,
       requestedCount: ebayItemIds.length,
@@ -2682,6 +2708,142 @@ async function resolveAlignedOpenConflicts(input: {
   });
 
   return result.count;
+}
+
+async function resolveLiveAlignedDescriptionConflicts(input: {
+  conflicts: {
+    field: string;
+    id: string;
+    mappingId: string | null;
+    mapping: {
+      shopifyProductGid: string | null;
+    } | null;
+  }[];
+  defaultLocationGid: string | null;
+  shopId: string;
+  shopDomain: string;
+}) {
+  const candidates = input.conflicts.filter(
+    (conflict) =>
+      conflict.field === "description" &&
+      conflict.mappingId &&
+      conflict.mapping?.shopifyProductGid,
+  );
+  const mappingIds = [
+    ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
+  ];
+
+  if (mappingIds.length === 0) {
+    return { conflictIds: [], count: 0 };
+  }
+
+  const latestDescriptionSnapshots = await prisma.productSnapshot.findMany({
+    orderBy: { capturedAt: "desc" },
+    select: { descriptionHash: true, mappingId: true },
+    where: {
+      descriptionHash: { not: null },
+      mappingId: { in: mappingIds },
+      NOT: [
+        {
+          AND: [
+            {
+              payload: {
+                path: ["updatedEbayFromShopifyOrder"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+        {
+          AND: [
+            {
+              payload: {
+                path: ["restoredEbayAfterTest"],
+                equals: true,
+              },
+            },
+            {
+              payload: {
+                path: ["conflictResolution"],
+                equals: Prisma.DbNull,
+              },
+            },
+          ],
+        },
+      ],
+      shopId: input.shopId,
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+  const latestDescriptionHashByMappingId = new Map<string, string>();
+
+  for (const snapshot of latestDescriptionSnapshots) {
+    if (
+      snapshot.mappingId &&
+      snapshot.descriptionHash &&
+      !latestDescriptionHashByMappingId.has(snapshot.mappingId)
+    ) {
+      latestDescriptionHashByMappingId.set(
+        snapshot.mappingId,
+        snapshot.descriptionHash,
+      );
+    }
+  }
+
+  const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
+  const conflictIds: string[] = [];
+
+  for (const conflict of candidates) {
+    const latestSyncBayDescriptionHash = conflict.mappingId
+      ? (latestDescriptionHashByMappingId.get(conflict.mappingId) ?? null)
+      : null;
+    const shopifyProductGid = conflict.mapping?.shopifyProductGid ?? null;
+
+    if (!latestSyncBayDescriptionHash || !shopifyProductGid) {
+      continue;
+    }
+
+    const product = await getShopifyProductForConflict(
+      admin,
+      shopifyProductGid,
+      input.defaultLocationGid,
+    );
+    const currentShopifyDescriptionHash = product
+      ? hashNullableText(product.descriptionHtml ?? null)
+      : null;
+
+    if (isLiveDescriptionConflictAligned({
+      currentShopifyDescriptionHash,
+      field: conflict.field,
+      latestSyncBayDescriptionHash,
+    })) {
+      conflictIds.push(conflict.id);
+    }
+  }
+
+  if (conflictIds.length === 0) {
+    return { conflictIds: [], count: 0 };
+  }
+
+  const result = await prisma.syncConflict.updateMany({
+    data: {
+      resolvedAt: new Date(),
+      status: SyncConflictStatus.RESOLVED,
+    },
+    where: {
+      id: { in: conflictIds },
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+
+  return { conflictIds, count: result.count };
 }
 
 async function resolveOpenConflictsForInactiveMapping(input: {

@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.30.2] — 2026-06-12
+
+### Correzioni
+
+- Il runner chiude automaticamente i falsi conflitti `description` già
+  riallineati alla baseline SyncBay più recente prima che blocchino il sync
+  incrementale; il doctor e la repair CLI includono anche i conflitti stale su
+  mapping `OUT_OF_STOCK`/`ARCHIVED`, coerenti con la policy ADR 0011.
+- La riparazione automatica delle thumbnail Catalogo torna a scorrere i mapping
+  attivi più vecchi prima dei più recenti, evitando che gli stessi candidati
+  senza immagini blocchino l'avanzamento del backlog giornaliero.
+- I filtri della pagina Conflitti hanno più spazio dal riquadro sottostante,
+  migliorando la leggibilità della coda decisioni.
+
 ## [0.30.1] — 2026-06-12
 
 ### Correzioni
@@ -1400,6 +1414,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.30.2]: #0302--2026-06-12
 [0.30.1]: #0301--2026-06-12
 [0.30.0]: #0300--2026-06-12
 [0.29.7]: #0297--2026-06-12

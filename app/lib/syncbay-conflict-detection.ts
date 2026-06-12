@@ -99,6 +99,21 @@ export function shouldResolveOpenConflictsForInactiveMappingStatus(
   return mappingStatus === "OUT_OF_STOCK" || mappingStatus === "ARCHIVED";
 }
 
+export function isLiveDescriptionConflictAligned(input: {
+  currentShopifyDescriptionHash: string | null;
+  field: string;
+  latestSyncBayDescriptionHash: string | null;
+}) {
+  return (
+    input.field === "description" &&
+    typeof input.latestSyncBayDescriptionHash === "string" &&
+    input.latestSyncBayDescriptionHash.trim().length > 0 &&
+    typeof input.currentShopifyDescriptionHash === "string" &&
+    input.latestSyncBayDescriptionHash.trim() ===
+      input.currentShopifyDescriptionHash.trim()
+  );
+}
+
 export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   syncBayImageCount: number | null;
   shopifyImageCount: number;
