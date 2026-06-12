@@ -27,7 +27,7 @@ test("does not expose description hashes as merchant-facing values", () => {
       field: "description",
       value: "9ee766a5385ce09ada37023699d0928a43ac9b13878fdd4b61762a77443266d0",
     }),
-    "Descrizione modificata: apri i dettagli tecnici per confrontare gli hash.",
+    "Descrizione modificata a mano (testo completo non mostrato qui).",
   );
 });
 

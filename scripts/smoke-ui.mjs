@@ -60,9 +60,9 @@ const checks = [
   {
     file: "app/lib/syncbay-conflict-actions.ts",
     needles: [
-      "Batch sicuro",
+      "Sicuro",
       "Da rivedere",
-      "Manuale",
+      "Da decidere",
       "getSafeBatchConflictResolutions",
     ],
   },
@@ -118,11 +118,11 @@ const checks = [
     needles: [
       "Conflitti",
       "getConflictActionLabel",
-      "Batch sicuri",
-      "Decisioni aperte",
+      "Sicuri",
+      "Decisioni da prendere",
       "CONFLICT_RESOLUTIONS.map",
       "alignItems=\"start\"",
-      "Nessuna sovrascrittura silenziosa",
+      "senza il tuo via libera",
     ],
   },
   {

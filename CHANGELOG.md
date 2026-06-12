@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.30.1] — 2026-06-12
+
+### Correzioni
+
+- Conflitti: microcopy riscritto in lingua piana per il negoziante, meno gergo
+  tecnico. Spariscono termini come "batch", "baseline", "hash", "dettagli
+  tecnici" e "sovrascrittura silenziosa"; le modalità di gestione diventano
+  "Sicuro", "Da rivedere" e "Da decidere"; hero, tile, testi d'impatto, pannelli
+  sorgente eBay/Shopify e note di sicurezza usano frasi più dirette. Logica e
+  azioni invariate.
+
 ## [0.30.0] — 2026-06-12
 
 ### Novità
@@ -1389,6 +1400,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.30.1]: #0301--2026-06-12
 [0.30.0]: #0300--2026-06-12
 [0.29.7]: #0297--2026-06-12
 [0.29.6]: #0296--2026-06-11
