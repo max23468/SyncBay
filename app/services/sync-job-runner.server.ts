@@ -56,6 +56,10 @@ import {
   isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
 import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
+import {
+  STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
+  STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES,
+} from "../lib/syncbay-stale-failed-job-archive";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
@@ -180,8 +184,11 @@ export async function runDueSyncJobs(
   const completedResults = results.filter(
     (result): result is DueSyncJobRunResult => Boolean(result),
   );
+  const archivedStaleFailedJobCount =
+    await archiveSupersededFailedIncrementalSyncJobs({ now });
 
   return {
+    archivedStaleFailedJobCount,
     failedCount: completedResults.filter((result) => result.status === "failed")
       .length,
     processedCount: completedResults.length,
@@ -416,6 +423,74 @@ async function markStaleInternalShopifyImportJobsFailed(input: {
   }
 
   return cleanedCount;
+}
+
+async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) {
+  const failedJobShops = await prisma.syncJob.findMany({
+    distinct: ["shopId"],
+    select: { shopId: true },
+    where: {
+      errorCode: { in: [...STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES] },
+      status: SyncJobStatus.FAILED,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+  let archivedCount = 0;
+
+  for (const { shopId } of failedJobShops) {
+    const latestSuccessfulIncrementalSync = await prisma.syncJob.findFirst({
+      orderBy: [{ finishedAt: "desc" }, { updatedAt: "desc" }],
+      select: { finishedAt: true, updatedAt: true },
+      where: {
+        shopId,
+        status: SyncJobStatus.SUCCEEDED,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    });
+    const latestSuccessAt =
+      latestSuccessfulIncrementalSync?.finishedAt ??
+      latestSuccessfulIncrementalSync?.updatedAt;
+
+    if (!latestSuccessAt) continue;
+
+    const archiveReferenceAt = Math.min(
+      latestSuccessAt.getTime(),
+      input.now.getTime(),
+    );
+    const archiveCutoff = new Date(
+      archiveReferenceAt - STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
+    );
+    const archived = await prisma.syncJob.updateMany({
+      data: { status: SyncJobStatus.CANCELLED },
+      where: {
+        errorCode: { in: [...STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES] },
+        shopId,
+        status: SyncJobStatus.FAILED,
+        type: SyncJobType.SYNC_INCREMENTAL,
+        updatedAt: { lte: archiveCutoff },
+      },
+    });
+
+    if (archived.count === 0) continue;
+
+    archivedCount += archived.count;
+    await prisma.auditLog.create({
+      data: {
+        details: {
+          archiveCutoff: archiveCutoff.toISOString(),
+          archivedCount: archived.count,
+          latestSuccessfulIncrementalSyncAt: latestSuccessAt.toISOString(),
+          reason: "superseded_failed_incremental_sync",
+        } satisfies Prisma.JsonObject,
+        message:
+          "Fallimenti incrementali storici archiviati dopo un sync riuscito più recente.",
+        shopId,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    });
+  }
+
+  return archivedCount;
 }
 
 async function lockShopForUpdate(tx: Prisma.TransactionClient, shopId: string) {
