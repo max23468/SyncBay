@@ -461,7 +461,11 @@ function getJobDetail(
 
   if (job.errorMessage) pieces.push(job.errorMessage);
 
-  return `${pieces.map(formatSentenceFragment).filter(Boolean).join(". ")}.`;
+  return `${pieces.flatMap((piece) => {
+    const fragment = formatSentenceFragment(piece);
+
+    return fragment ? [fragment] : [];
+  }).join(". ")}.`;
 }
 
 function formatSentenceFragment(value: string) {
