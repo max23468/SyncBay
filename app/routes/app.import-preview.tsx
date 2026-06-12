@@ -25,6 +25,7 @@ import {
   normalizePage,
 } from "../lib/syncbay-pagination";
 import { isLiveImportPreviewStepComplete } from "../lib/syncbay-import-preview-stepper";
+import { computeSequentialStepStatuses } from "../lib/syncbay-import-step-status";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
   getEbayConnectionAction,
@@ -268,7 +269,7 @@ export default function ImportPreview() {
     }),
     draftStatus === "created" || draftStatus === "queued",
   ];
-  const stepStatuses = computeStepStatuses(stepDone);
+  const stepStatuses = computeSequentialStepStatuses(stepDone);
 
   return (
     <s-page heading="Importazione">
@@ -359,25 +360,6 @@ export default function ImportPreview() {
       </s-box>
     </s-page>
   );
-}
-
-/**
- * Stato sequenziale delle tappe: la prima non completata è "active", le
- * successive "pending", quelle fatte "completed".
- */
-function computeStepStatuses(done: boolean[]): StepStatus[] {
-  let activeAssigned = false;
-
-  return done.map((isDone) => {
-    if (isDone) return "completed";
-    if (!activeAssigned) {
-      activeAssigned = true;
-
-      return "active";
-    }
-
-    return "pending";
-  });
 }
 
 function getStepStatusLabel(status: StepStatus, activeLabel: string) {

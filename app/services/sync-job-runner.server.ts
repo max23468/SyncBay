@@ -23,6 +23,7 @@ import {
   shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
+  shouldUseSyncBayDescriptionBaselinePayload,
 } from "../lib/syncbay-conflict-detection";
 import {
   deserializeIncrementalPreviewCandidate,
@@ -2004,10 +2005,16 @@ async function findLatestSyncBaySnapshotWithField(
 }
 
 async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
-  return prisma.productSnapshot.findFirst({
+  const candidates = await prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
     where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
   });
+
+  return (
+    candidates.find((snapshot) =>
+      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload),
+    ) ?? null
+  );
 }
 
 async function getImportPreviewResultByItemIds(
@@ -2744,44 +2751,10 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
 
   const latestDescriptionSnapshots = await prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
-    select: { descriptionHash: true, mappingId: true },
+    select: { descriptionHash: true, mappingId: true, payload: true },
     where: {
       descriptionHash: { not: null },
       mappingId: { in: mappingIds },
-      NOT: [
-        {
-          AND: [
-            {
-              payload: {
-                path: ["updatedEbayFromShopifyOrder"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-        {
-          AND: [
-            {
-              payload: {
-                path: ["restoredEbayAfterTest"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-      ],
       shopId: input.shopId,
       source: ProductSnapshotSource.SYNCBAY,
     },
@@ -2792,7 +2765,8 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
     if (
       snapshot.mappingId &&
       snapshot.descriptionHash &&
-      !latestDescriptionHashByMappingId.has(snapshot.mappingId)
+      !latestDescriptionHashByMappingId.has(snapshot.mappingId) &&
+      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload)
     ) {
       latestDescriptionHashByMappingId.set(
         snapshot.mappingId,

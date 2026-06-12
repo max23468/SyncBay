@@ -32,6 +32,10 @@ import {
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import { summarizeConflictDecisionModes } from "../lib/syncbay-conflict-actions";
 import {
+  getLatestSyncBayDescriptionBaselineWhere,
+  shouldUseSyncBayDescriptionBaselinePayload,
+} from "../lib/syncbay-conflict-detection";
+import {
   CONFLICT_PAGE_SIZE,
   type ConflictFilter,
   getConflictStatusFilter,
@@ -366,7 +370,7 @@ export async function getCatalogPageState(
     marketplaceId: getEbayMarketplaceId(),
     shopId: shop.id,
   };
-  const [mappings, totalAvailableCount] = await prisma.$transaction([
+  const [mappings, totalAvailableCount, linkedCount] = await prisma.$transaction([
     prisma.productMapping.findMany({
       include: {
         conflicts: {
@@ -386,6 +390,12 @@ export async function getCatalogPageState(
       where,
     }),
     prisma.productMapping.count({ where }),
+    prisma.productMapping.count({
+      where: {
+        ...where,
+        shopifyProductGid: { not: null },
+      },
+    }),
   ]);
 
   // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
@@ -473,6 +483,7 @@ export async function getCatalogPageState(
       conflictCount: allRows.filter((row) => row.status === "open_conflict")
         .length,
       freshCount: allRows.filter((row) => row.status === "active_fresh").length,
+      linkedCount,
       needsCheckCount: allRows.filter(
         (row) =>
           row.status === "stale_sync" ||
@@ -886,47 +897,16 @@ function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
 }
 
 async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
-  return prisma.productSnapshot.findFirst({
+  const candidates = await prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
-    where: {
-      mappingId,
-      NOT: [
-        {
-          AND: [
-            {
-              payload: {
-                path: ["updatedEbayFromShopifyOrder"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-        {
-          AND: [
-            {
-              payload: {
-                path: ["restoredEbayAfterTest"],
-                equals: true,
-              },
-            },
-            {
-              payload: {
-                path: ["conflictResolution"],
-                equals: Prisma.DbNull,
-              },
-            },
-          ],
-        },
-      ],
-      source: ProductSnapshotSource.SYNCBAY,
-    },
+    where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
   });
+
+  return (
+    candidates.find((snapshot) =>
+      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload),
+    ) ?? null
+  );
 }
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {
