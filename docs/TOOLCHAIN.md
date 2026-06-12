@@ -14,7 +14,11 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Lockfile                  | `package-lock.json`                           |
 | Immagine Docker base      | `node:24.16.0-alpine`                         |
 
-Il floor Node `>=24.15` è richiesto dalla catena `react-doctor@latest` tramite `ini@7`; non abbassarlo senza cambiare strategia sul quality gate. La base Docker è pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc` con `engine-strict=true`. Il package manager canonico è dichiarato in `package.json` come `npm@11.17.0`.
+Il floor Node `>=24.15` è richiesto dalla catena React Doctor tramite `ini@7`;
+non abbassarlo senza cambiare strategia sul quality gate. La base Docker è
+pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc`
+con `engine-strict=true`. Il package manager canonico è dichiarato in
+`package.json` come `npm@11.17.0`.
 
 Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
 toolchain coerente con `.node-version`, non dal Node Homebrew globale. Sulla
@@ -139,7 +143,7 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 | Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                            |
 | Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti |
 | Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
-| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con `npx --yes react-doctor@latest`              |
+| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`      |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
 | Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
 | Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build` |
