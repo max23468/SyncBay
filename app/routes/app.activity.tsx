@@ -263,6 +263,12 @@ function ActivityTimelineRow({
           <s-text color="subdued">
             {row.meta} · {formatDateTime(row.timestamp)}
           </s-text>
+          {row.job && diagnostic ? (
+            <ActivityTechnicalDetails
+              diagnostic={diagnostic}
+              job={row.job}
+            />
+          ) : null}
         </s-stack>
         <div className="syncbay-activity-row__status">
           <span className="syncbay-activity-badge">
@@ -355,7 +361,7 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       detail: getJobDetail(job, diagnostic),
       id: `job-${job.id}`,
       job,
-      meta: `${getTimelineCategoryLabel(category)} · ${formatJobStatus(job.status)} · ${diagnostic.technicalReference}`,
+      meta: `${getTimelineCategoryLabel(category)} · ${formatJobStatus(job.status)}`,
       timestamp: job.createdAt,
       title: getJobTitle(job.type),
       tone: getJobTone(job.status),
@@ -452,20 +458,41 @@ function getJobDetail(
   job: ActivityJob,
   diagnostic: ReturnType<typeof getSyncJobDiagnostic>,
 ) {
-  const pieces = [
-    diagnostic.impact,
-    diagnostic.nextAction,
-    `Tentativi ${job.attempts}/${job.maxAttempts}`,
-    `prossima esecuzione ${formatDateTime(job.runAfter)}`,
-  ];
-
-  if (job.errorMessage) pieces.push(job.errorMessage);
+  const pieces = [diagnostic.impact, diagnostic.nextAction];
 
   return `${pieces.flatMap((piece) => {
     const fragment = formatSentenceFragment(piece);
 
     return fragment ? [fragment] : [];
   }).join(". ")}.`;
+}
+
+function ActivityTechnicalDetails({
+  diagnostic,
+  job,
+}: {
+  diagnostic: ReturnType<typeof getSyncJobDiagnostic>;
+  job: ActivityJob;
+}) {
+  return (
+    <details className="syncbay-row-details syncbay-activity-details">
+      <summary>Dettagli tecnici</summary>
+      <s-unordered-list>
+        <s-list-item>Tipo job: {job.type}</s-list-item>
+        <s-list-item>Codice: {diagnostic.technicalReference}</s-list-item>
+        <s-list-item>
+          Tentativi: {job.attempts}/{job.maxAttempts}
+        </s-list-item>
+        <s-list-item>
+          Prossima esecuzione: {formatDateTime(job.runAfter)}
+        </s-list-item>
+        <s-list-item>Retry: {diagnostic.retry.reason}</s-list-item>
+        {job.errorMessage ? (
+          <s-list-item>Errore: {job.errorMessage}</s-list-item>
+        ) : null}
+      </s-unordered-list>
+    </details>
+  );
 }
 
 function formatSentenceFragment(value: string) {

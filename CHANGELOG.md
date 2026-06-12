@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.6] — 2026-06-12
+
+### Correzioni
+
+- Le superfici Catalogo, Conflitti, Importazione e Attività allineano badge,
+  filtri e fallback immagine con il redesign embedded: Catalogo mostra un badge
+  di stato sobrio, i filtri hanno respiro coerente, gli scope tecnici restano
+  nei dettagli e la timeline Attività sposta codici e tentativi dietro
+  disclosure.
+
 ## [0.33.5] — 2026-06-12
 
 ### Sotto il cofano
@@ -1515,6 +1525,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.6]: #0336--2026-06-12
 [0.33.5]: #0335--2026-06-12
 [0.33.4]: #0334--2026-06-12
 [0.33.3]: #0333--2026-06-12

@@ -567,7 +567,7 @@ function LocationSaveForm({
               {location.isActive ? "" : " - non attiva"}
               {location.fulfillsOnlineOrders
                 ? ""
-                : " - fulfillment online non attivo"}
+                : " - non gestisce ordini online"}
             </s-option>
           ))}
         </s-select>
@@ -618,10 +618,18 @@ function LocationRenameForm({
         </s-stack>
         <s-paragraph>{locationRename.nextAction}</s-paragraph>
         {!canWriteLocations ? (
-          <s-paragraph>
-            Apri di nuovo SyncBay da Shopify Admin per riapprovare il nuovo
-            permesso `write_locations`.
-          </s-paragraph>
+          <>
+            <s-paragraph>
+              Apri di nuovo SyncBay da Shopify Admin per autorizzare la
+              modifica del nome location.
+            </s-paragraph>
+            <details className="syncbay-row-details">
+              <summary>Dettagli tecnici</summary>
+              <s-text color="subdued">
+                Permesso richiesto: `write_locations`.
+              </s-text>
+            </details>
+          </>
         ) : null}
       </s-stack>
     </Form>
@@ -830,18 +838,20 @@ function ImportPreviewFilterNav({
   activeFilter: ImportPreviewFilter;
 }) {
   return (
-    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
-      {IMPORT_PREVIEW_FILTERS.map((filter) => (
-        <s-clickable-chip
-          aria-current={activeFilter === filter.value ? "page" : undefined}
-          color={activeFilter === filter.value ? "strong" : "base"}
-          href={getImportPreviewHref(filter.value)}
-          key={filter.value}
-        >
-          {filter.label}
-        </s-clickable-chip>
-      ))}
-    </s-stack>
+    <div className="syncbay-filter-nav">
+      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+        {IMPORT_PREVIEW_FILTERS.map((filter) => (
+          <s-clickable-chip
+            aria-current={activeFilter === filter.value ? "page" : undefined}
+            color={activeFilter === filter.value ? "strong" : "base"}
+            href={getImportPreviewHref(filter.value)}
+            key={filter.value}
+          >
+            {filter.label}
+          </s-clickable-chip>
+        ))}
+      </s-stack>
+    </div>
   );
 }
 

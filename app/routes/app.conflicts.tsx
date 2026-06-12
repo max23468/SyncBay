@@ -442,13 +442,9 @@ function ProductThumbnail({ row }: { row: ConflictRow }) {
   }
 
   return (
-    <s-box
-      accessibilityVisibility="hidden"
-      background="subdued"
-      blockSize="64px"
-      borderRadius="base"
-      inlineSize="64px"
-    />
+    <span aria-hidden="true" className="syncbay-product-placeholder">
+      <s-icon type="image" tone="neutral" />
+    </span>
   );
 }
 

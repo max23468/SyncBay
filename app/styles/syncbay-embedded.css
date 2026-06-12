@@ -228,12 +228,28 @@
   flex: 0 0 auto;
 }
 
-.syncbay-conflict-filter-nav {
-  margin-block-end: 14px;
+.syncbay-filter-nav,
+.syncbay-conflict-filter-nav,
+.syncbay-activity-filter-nav {
+  margin-block-end: 18px;
+  overflow-x: auto;
+  padding-block-end: 2px;
 }
 
-.syncbay-activity-filter-nav {
-  margin-block-end: 22px;
+.syncbay-product-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 64px;
+  block-size: 64px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 8px;
+  background: var(--syncbay-cloud);
+  color: var(--syncbay-slate);
+}
+
+.syncbay-activity-details {
+  margin-block-start: 4px;
 }
 
 .syncbay-activity-row {
