@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.34.0] — 2026-06-12
+
 ### Novità
 
 - Impostazioni ridisegnata: le quattro aree (Sync catalogo, Import prodotti,
@@ -1542,6 +1544,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.34.0]: #0340--2026-06-12
 [0.33.6]: #0336--2026-06-12
 [0.33.5]: #0335--2026-06-12
 [0.33.4]: #0334--2026-06-12
