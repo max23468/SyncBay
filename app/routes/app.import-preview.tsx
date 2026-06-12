@@ -14,6 +14,7 @@ import {
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
+import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
 import {
   getImportedProductsLabel,
   getImportedProductSingularLabel,
@@ -256,55 +257,129 @@ export default function ImportPreview() {
       !phase.detail.toLowerCase().includes("ebay"),
   );
 
+  const stepDone = [
+    wizard.ebay.status === "CONNECTED",
+    Boolean(wizard.shop.defaultLocationGid) && !locationError,
+    wizard.previewResult.summary.importableCount > 0,
+    draftStatus === "created" || draftStatus === "queued",
+  ];
+  const stepStatuses = computeStepStatuses(stepDone);
+
   return (
     <s-page heading="Importazione">
       <s-badge slot="accessory" tone="info">Anteprima prima</s-badge>
-      <s-stack gap="base">
-        <PreparationSection
-          locationRenameStatus={locationRenameStatus}
-          previewSource={wizard.previewSource}
-          searchParams={searchParams}
-          shopDomain={wizard.shop.domain}
-          wizard={wizard}
-        />
-        <LocationShopifySection
-          locationError={locationError}
-          locationRename={locationRename}
-          locationUiState={{
-            canWriteLocations,
-            isRenamingLocation,
-            isSaving,
-            isSavingLocation,
-          }}
-          locations={locations}
-          selectedLocation={selectedLocation}
-          wizard={wizard}
-        />
-        <PreviewStatusSection
-          activeFilter={activePreviewFilter}
-          activePage={activePreviewPage}
-          previewModeLabel={previewModeLabel}
-          previewReadLabel={previewReadLabel}
-          wizard={wizard}
-        />
-        <DraftImportSection
-          draftCount={draftActionData?.count ?? searchParams.get("count")}
-          draftMessage={draftActionData?.message ?? searchParams.get("message")}
-          draftStatus={draftStatus}
-          isCreatingDrafts={isCreatingDrafts}
-          isSaving={isSaving}
-          wizard={wizard}
-        />
-        <AfterImportSection wizard={wizard} />
+      <ol className="syncbay-stepper">
+        <Step
+          index={1}
+          status={stepStatuses[0]}
+          statusLabel={getStepStatusLabel(stepStatuses[0], "Da collegare")}
+          title="Collegamento eBay"
+        >
+          <PreparationSection
+            locationRenameStatus={locationRenameStatus}
+            previewSource={wizard.previewSource}
+            searchParams={searchParams}
+            shopDomain={wizard.shop.domain}
+            wizard={wizard}
+          />
+        </Step>
+        <Step
+          index={2}
+          status={stepStatuses[1]}
+          statusLabel={getStepStatusLabel(stepStatuses[1], "Da preparare")}
+          title="Preparazione Shopify"
+        >
+          <LocationShopifySection
+            locationError={locationError}
+            locationRename={locationRename}
+            locationUiState={{
+              canWriteLocations,
+              isRenamingLocation,
+              isSaving,
+              isSavingLocation,
+            }}
+            locations={locations}
+            selectedLocation={selectedLocation}
+            wizard={wizard}
+          />
+        </Step>
+        <Step
+          index={3}
+          status={stepStatuses[2]}
+          statusLabel={getStepStatusLabel(stepStatuses[2], "Da controllare")}
+          title="Anteprima catalogo"
+        >
+          <PreviewStatusSection
+            activeFilter={activePreviewFilter}
+            activePage={activePreviewPage}
+            previewModeLabel={previewModeLabel}
+            previewReadLabel={previewReadLabel}
+            wizard={wizard}
+          />
+        </Step>
+        <Step
+          index={4}
+          status={stepStatuses[3]}
+          statusLabel={getStepStatusLabel(stepStatuses[3], "Da avviare")}
+          title="Importazione"
+        >
+          <DraftImportSection
+            draftCount={draftActionData?.count ?? searchParams.get("count")}
+            draftMessage={
+              draftActionData?.message ?? searchParams.get("message")
+            }
+            draftStatus={draftStatus}
+            isCreatingDrafts={isCreatingDrafts}
+            isSaving={isSaving}
+            wizard={wizard}
+          />
+        </Step>
+        <Step
+          index={5}
+          isLast
+          status={stepDone[3] ? "active" : "pending"}
+          statusLabel={stepDone[3] ? "Da fare ora" : "In attesa"}
+          title="Dopo l'import"
+        >
+          <AfterImportSection wizard={wizard} />
+        </Step>
+      </ol>
+      <s-box paddingBlockStart="base">
         <ImportTechnicalDetails
           previewModeLabel={previewModeLabel}
           selectedLocation={selectedLocation}
           visibleRuntimePhases={visibleRuntimePhases}
           wizard={wizard}
         />
-      </s-stack>
+      </s-box>
     </s-page>
   );
+}
+
+/**
+ * Stato sequenziale delle tappe: la prima non completata è "active", le
+ * successive "pending", quelle fatte "completed".
+ */
+function computeStepStatuses(done: boolean[]): StepStatus[] {
+  let activeAssigned = false;
+
+  return done.map((isDone) => {
+    if (isDone) return "completed";
+    if (!activeAssigned) {
+      activeAssigned = true;
+
+      return "active";
+    }
+
+    return "pending";
+  });
+}
+
+function getStepStatusLabel(status: StepStatus, activeLabel: string) {
+  if (status === "completed") return "Completato";
+  if (status === "active") return activeLabel;
+
+  return "In attesa";
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
@@ -358,11 +433,10 @@ function PreparationSection({
   });
 
   return (
-    <s-section heading="Collegamento eBay">
-      <s-badge tone="info">Step 1</s-badge>
+    <>
       <s-text color="subdued">
         Negozio: {shopDomain}. Stato eBay:{" "}
-        {getEbayConnectionStatusLabel(wizard.ebay.status)}. SyncBay mostra
+        {getEbayConnectionStatusLabel(wizard.ebay.status)}. SyncBay ti mostra
         l&apos;anteprima prima di scrivere sul catalogo Shopify.
       </s-text>
       <s-stack direction="inline" gap="small-200">
@@ -396,7 +470,7 @@ function PreparationSection({
           {searchParams.get("message") ?? "errore Shopify"}.
         </s-paragraph>
       ) : null}
-    </s-section>
+    </>
   );
 }
 
@@ -421,8 +495,7 @@ function LocationShopifySection({
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Preparazione Shopify">
-      <s-badge tone="info">Step 2</s-badge>
+    <>
       <s-text color="subdued">
         Conferma la location e controlla i default di importazione. La
         configurazione completa resta in Impostazioni.
@@ -476,7 +549,7 @@ function LocationShopifySection({
       <s-stack direction="inline" gap="small-200">
         <s-button href="/app/settings">Modifica impostazioni</s-button>
       </s-stack>
-    </s-section>
+    </>
   );
 }
 
@@ -570,9 +643,10 @@ function PreviewStatusSection({
   previewReadLabel: string;
   wizard: WizardState;
 }) {
+  const errorCount = wizard.previewResult.summary.errorCount;
+
   return (
-    <s-section heading="Anteprima catalogo">
-      <s-badge tone="info">Step 3</s-badge>
+    <>
       <s-text color="subdued">
         {getPreviewStatusMessage(wizard.previewSource)}
       </s-text>
@@ -586,27 +660,39 @@ function PreviewStatusSection({
       ) : null}
       <s-grid
         gap="base"
-        gridTemplateColumns="repeat(4, minmax(140px, 1fr))"
+        gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
       >
-        <MetricCard
+        <MetricTile
           detail={previewReadLabel}
-          label="Letti"
+          icon="import"
+          label="Letti da eBay"
+          tone="info"
           value={formatNumber(wizard.previewSource.readCount)}
         />
-        <MetricCard
-          detail="Elementi in anteprima."
+        <MetricTile
+          detail="Prodotti in anteprima."
+          icon="package"
           label="Totale"
+          tone="neutral"
           value={formatNumber(wizard.previewResult.summary.totalCount)}
         />
-        <MetricCard
-          detail="Possono entrare nel primo import."
+        <MetricTile
+          detail="Pronti per il primo import."
+          icon="check-circle"
           label="Importabili"
+          tone={
+            wizard.previewResult.summary.importableCount > 0
+              ? "success"
+              : "neutral"
+          }
           value={formatNumber(wizard.previewResult.summary.importableCount)}
         />
-        <MetricCard
+        <MetricTile
           detail="Da correggere o saltare."
+          icon="alert-triangle"
           label="Errori"
-          value={formatNumber(wizard.previewResult.summary.errorCount)}
+          tone={errorCount > 0 ? "critical" : "neutral"}
+          value={formatNumber(errorCount)}
         />
       </s-grid>
       <ImportPreviewFilterNav activeFilter={activeFilter} />
@@ -615,7 +701,7 @@ function PreviewStatusSection({
         activePage={activePage}
         wizard={wizard}
       />
-    </s-section>
+    </>
   );
 }
 
@@ -798,26 +884,6 @@ function StatusRow({
   );
 }
 
-function MetricCard({
-  detail,
-  label,
-  value,
-}: {
-  detail: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="small-200">
-        <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </s-stack>
-    </s-box>
-  );
-}
-
 function DraftImportSection({
   draftCount,
   draftMessage,
@@ -834,11 +900,10 @@ function DraftImportSection({
   wizard: WizardState;
 }) {
   return (
-    <s-section heading="Importazione">
-      <s-badge tone="info">Step 4</s-badge>
+    <>
       <s-text color="subdued">
-        Pianifica la creazione o il riuso dei prodotti Shopify dopo aver
-        controllato anteprima, location e impostazioni.
+        Avvia la creazione o il riuso dei prodotti Shopify dopo aver controllato
+        anteprima, location e impostazioni.
       </s-text>
       {draftStatus === "created" ? (
         <s-paragraph>
@@ -901,20 +966,19 @@ function DraftImportSection({
           disabled={isSaving || wizard.draftImport.blockers.length > 0}
         >
           {isCreatingDrafts
-            ? "Pianificazione..."
-            : "Pianifica import catalogo"}
+            ? "Avvio in corso..."
+            : "Avvia import catalogo"}
         </s-button>
       </Form>
-    </s-section>
+    </>
   );
 }
 
 function AfterImportSection({ wizard }: { wizard: WizardState }) {
   return (
-    <s-section heading="Dopo l'import">
-      <s-badge tone="info">Step 5</s-badge>
+    <>
       <s-text color="subdued">
-        Dopo la pianificazione puoi controllare i prodotti collegati nel
+        Una volta avviato l&apos;import puoi controllare i prodotti collegati nel
         Catalogo e completare eventuali canali o default dalle Impostazioni.
       </s-text>
       <s-stack direction="inline" gap="small-200">
@@ -940,7 +1004,7 @@ function AfterImportSection({ wizard }: { wizard: WizardState }) {
           title="Impostazioni import"
         />
       </s-stack>
-    </s-section>
+    </>
   );
 }
 

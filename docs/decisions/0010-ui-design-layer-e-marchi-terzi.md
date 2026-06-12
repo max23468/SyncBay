@@ -41,6 +41,10 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
 5. **Pannello sorgente** del confronto eBay/Shopify dentro la decision card:
    marchio del provider + valore, con il lato eBay evidenziato come sorgente di
    verità (ADR 0011).
+6. **Tappa stepper** (Importazione): nodo numerato o spuntato con connettore
+   verticale, per dare il senso di avanzamento del flusso di import; lo stato di
+   ogni tappa (completata / da fare ora / in attesa) deriva dai dati reali del
+   wizard.
 
 Tutto ciò che non è in questa lista resta nativo puro. La griglia condivisa è
 **multi-regione responsiva**: hero a tutta larghezza, poi fasce a due colonne
