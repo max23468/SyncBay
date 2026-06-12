@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.5] — 2026-06-12
+
+### Correzioni
+
+- I job catalogo oversized cancellati mentre sono in `RUNNING` non proseguono
+  più con il batch completo dopo il tentativo di split, evitando write provider
+  dopo una disconnessione eBay concorrente.
+
 ## [0.35.4] — 2026-06-12
 
 ### Correzioni
@@ -1600,6 +1608,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.5]: #0355--2026-06-12
 [0.35.4]: #0354--2026-06-12
 [0.35.3]: #0353--2026-06-12
 [0.35.2]: #0352--2026-06-12
