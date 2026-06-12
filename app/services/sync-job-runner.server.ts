@@ -1206,7 +1206,9 @@ async function runImportCatalogJob(job: DueSyncJob) {
     throw new Error("Job import senza eBay ItemID da riprendere.");
   }
 
-  if (await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds)) {
+  const splitResult = await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds);
+
+  if (splitResult !== "not_needed") {
     return {
       jobId: job.id,
       status: "succeeded" as const,
@@ -1310,7 +1312,9 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     throw new Error("Job sync incrementale senza eBay ItemID.");
   }
 
-  if (await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds)) {
+  const splitResult = await splitOversizedEbayItemJobIfNeeded(job, ebayItemIds);
+
+  if (splitResult !== "not_needed") {
     return {
       jobId: job.id,
       status: "succeeded" as const,
@@ -2224,11 +2228,11 @@ async function splitOversizedEbayItemJobIfNeeded(
   job: DueSyncJob,
   ebayItemIds: string[],
 ) {
-  if (ebayItemIds.length <= RUNNER_EBAY_ITEM_BATCH_SIZE) return false;
+  if (ebayItemIds.length <= RUNNER_EBAY_ITEM_BATCH_SIZE) return "not_needed";
 
   const payload = getJsonObject(job.payload);
 
-  if (!payload) return false;
+  if (!payload) return "not_needed";
 
   const splitPayloads = buildEbayItemJobSplitPayloads({
     ebayItemIds,
@@ -2255,7 +2259,7 @@ async function splitOversizedEbayItemJobIfNeeded(
       where: { id: job.id, status: SyncJobStatus.RUNNING },
     });
 
-    if (updated.count !== 1) return false;
+    if (updated.count !== 1) return "not_running";
 
     await tx.syncJob.createMany({
       data: splitPayloads.map((splitPayload, index) => ({
@@ -2285,7 +2289,7 @@ async function splitOversizedEbayItemJobIfNeeded(
       },
     });
 
-    return true;
+    return "split";
   });
 
   return split;
