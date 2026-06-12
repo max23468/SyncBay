@@ -59,7 +59,7 @@ candidates as (
     and j.status = 'FAILED'
     and j."errorCode" in (${ARCHIVABLE_ERROR_CODES.map(sqlString).join(", ")})
     and j."updatedAt" < (select completed_at from latest_success)
-    and j."updatedAt" <= (select completed_at from latest_success) - (${Number(maxAgeHours)} || ' hours')::interval
+    and j."updatedAt" <= now() - (${Number(maxAgeHours)} || ' hours')::interval
 )
 select jsonb_build_object(
   'mode', 'dry-run',
@@ -105,7 +105,7 @@ candidates as (
     and j.status = 'FAILED'
     and j."errorCode" in (${ARCHIVABLE_ERROR_CODES.map(sqlString).join(", ")})
     and j."updatedAt" < (select completed_at from latest_success)
-    and j."updatedAt" <= (select completed_at from latest_success) - (${Number(maxAgeHours)} || ' hours')::interval
+    and j."updatedAt" <= now() - (${Number(maxAgeHours)} || ' hours')::interval
 ),
 updated as (
   update "SyncJob" j

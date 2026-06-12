@@ -34,9 +34,7 @@ export function isSupersededFailedIncrementalSyncJob(input: {
     return false;
   }
 
-  const archiveReferenceAt = Math.min(latestSuccessAt, input.now.getTime());
-
-  return updatedAt <= archiveReferenceAt - archiveAfterMs;
+  return updatedAt <= input.now.getTime() - archiveAfterMs;
 }
 
 export function isStaleFailedIncrementalSyncErrorCode(
