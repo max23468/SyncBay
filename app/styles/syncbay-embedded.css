@@ -42,10 +42,12 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  min-inline-size: 0;
   padding: 16px;
   border: 1px solid var(--syncbay-mist);
   border-radius: 12px;
   background: var(--syncbay-tint-neutral);
+  overflow-wrap: anywhere;
 }
 
 .syncbay-tile__icon {
@@ -65,6 +67,7 @@
   flex-direction: column;
   gap: 2px;
   min-inline-size: 0;
+  flex: 1 1 auto;
 }
 
 .syncbay-tile--info {
@@ -486,7 +489,9 @@
   border: 1px solid var(--syncbay-mist);
   border-radius: 12px;
   background: var(--syncbay-paper);
+  min-inline-size: 0;
   padding: 18px 20px;
+  overflow-wrap: anywhere;
 }
 
 .syncbay-setting__head {
@@ -559,6 +564,9 @@
   }
   .syncbay-setting__head {
     align-items: flex-start;
+  }
+  .syncbay-setting {
+    padding: 16px;
   }
   .syncbay-setting__heading {
     flex-basis: calc(100% - 48px);
