@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.0] — 2026-06-12
+
+### Novità
+
+- Impostazioni: il negoziante può ora **scollegare l'account eBay** dal box
+  Avanzate, con conferma. La disconnessione cancella i token salvati e ferma il
+  sync automatico, ma lascia su Shopify il catalogo già importato: è reversibile
+  e basta ricollegare eBay per riprendere. Vedi ADR 0012.
+- Impostazioni: l'**intervallo target di aggiornamento** è ora configurabile (1,
+  2, 3 o 5 minuti, sempre entro il massimo di 5 minuti) e guida la cadenza del
+  sync incrementale.
+- Impostazioni: disattivare il sync automatico richiede ora una **conferma**
+  esplicita con nota sulle conseguenze, e i dati del sync mostrano l'**ultimo
+  aggiornamento** completato.
+
 ## [0.34.0] — 2026-06-12
 
 ### Novità
@@ -1544,6 +1559,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.0]: #0350--2026-06-12
 [0.34.0]: #0340--2026-06-12
 [0.33.6]: #0336--2026-06-12
 [0.33.5]: #0335--2026-06-12

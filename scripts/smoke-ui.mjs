@@ -178,6 +178,12 @@ const checks = [
       "Torna alla Panoramica",
       "SettingCard",
       "MetricTile",
+      "Intervallo target",
+      "Ultimo aggiornamento",
+      "Disattiva sync automatico",
+      "Scollega account eBay",
+      "disconnectEbay",
+      "saveSyncTarget",
     ],
   },
   {

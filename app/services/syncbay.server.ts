@@ -42,6 +42,10 @@ import {
 } from "../lib/syncbay-conflicts-page";
 import { getPageWindow } from "../lib/syncbay-pagination";
 import {
+  getSyncTargetLabel,
+  normalizeSyncTargetSeconds,
+} from "../lib/syncbay-sync-interval";
+import {
   getCatalogRowStatus,
   type CatalogAvailabilityKind,
   type CatalogStatusKind,
@@ -1108,23 +1112,33 @@ export async function getShopSettingsState(
   admin?: ShopifyAdminGraphqlClient,
 ) {
   const shop = await ensureShopForSession(session);
-  const [ebayConnection, activeMappingCount] = await prisma.$transaction([
-    prisma.ebayConnection.findUnique({
-      where: {
-        shopId_marketplaceId: {
+  const [ebayConnection, activeMappingCount, latestIncrementalJob] =
+    await prisma.$transaction([
+      prisma.ebayConnection.findUnique({
+        where: {
+          shopId_marketplaceId: {
+            marketplaceId: getEbayMarketplaceId(),
+            shopId: shop.id,
+          },
+        },
+      }),
+      prisma.productMapping.count({
+        where: {
           marketplaceId: getEbayMarketplaceId(),
           shopId: shop.id,
+          status: ProductMappingStatus.ACTIVE,
         },
-      },
-    }),
-    prisma.productMapping.count({
-      where: {
-        marketplaceId: getEbayMarketplaceId(),
-        shopId: shop.id,
-        status: ProductMappingStatus.ACTIVE,
-      },
-    }),
-  ]);
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { finishedAt: true },
+        where: {
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+    ]);
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -1177,7 +1191,103 @@ export async function getShopSettingsState(
       activeMappingCount,
       canEnable: syncBlockers.length === 0,
       enablementBlockers: syncBlockers,
+      lastIncrementalFinishedAt:
+        latestIncrementalJob?.finishedAt?.toISOString() ?? null,
     },
+  };
+}
+
+export async function updateSyncTargetSeconds(
+  session: ShopifySessionLike,
+  value: string,
+) {
+  const shop = await ensureShopForSession(session);
+  const seconds = normalizeSyncTargetSeconds(value);
+
+  if (seconds === null) {
+    return {
+      message: "Intervallo non valido. Scegli tra 1, 2, 3 o 5 minuti.",
+      status: "blocked" as const,
+      syncTargetSeconds: shop.syncTargetSeconds,
+    };
+  }
+
+  await prisma.$transaction([
+    prisma.shop.update({
+      data: { syncTargetSeconds: seconds },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        details: { syncTargetSeconds: seconds },
+        message: `Intervallo target di aggiornamento impostato a ${seconds} secondi dalle impostazioni.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    }),
+  ]);
+
+  return {
+    message: `Intervallo target salvato: ${getSyncTargetLabel(seconds)}.`,
+    status: "saved" as const,
+    syncTargetSeconds: seconds,
+  };
+}
+
+export async function disconnectEbayConnection(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const connection = await prisma.ebayConnection.findUnique({
+    where: {
+      shopId_marketplaceId: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+      },
+    },
+  });
+
+  if (
+    !connection ||
+    connection.status === EbayConnectionStatus.NOT_CONNECTED
+  ) {
+    return {
+      message: "Nessun account eBay collegato da scollegare.",
+      status: "not_connected" as const,
+    };
+  }
+
+  await prisma.$transaction([
+    prisma.ebayConnection.update({
+      data: {
+        connectedAt: null,
+        ebayUserId: null,
+        encryptedAccessToken: null,
+        encryptedRefreshToken: null,
+        lastRefreshAt: null,
+        refreshTokenExpiresAt: null,
+        scopes: null,
+        status: EbayConnectionStatus.NOT_CONNECTED,
+        tokenExpiresAt: null,
+      },
+      where: { id: connection.id },
+    }),
+    prisma.shop.update({
+      data: { syncEnabled: false },
+      where: { id: shop.id },
+    }),
+    prisma.auditLog.create({
+      data: {
+        message:
+          "Account eBay scollegato dalle impostazioni. Sync automatico disattivato.",
+        shopId: shop.id,
+        type: AuditEventType.EBAY_DISCONNECTED,
+      },
+    }),
+  ]);
+
+  return {
+    message:
+      "Account eBay scollegato. Il catalogo già importato resta su Shopify; ricollega eBay per riprendere gli aggiornamenti.",
+    status: "disconnected" as const,
   };
 }
 

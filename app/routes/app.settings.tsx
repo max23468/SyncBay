@@ -24,12 +24,18 @@ import {
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
+import {
+  getSyncTargetLabel,
+  SYNC_TARGET_OPTIONS,
+} from "../lib/syncbay-sync-interval";
 import { authenticate } from "../shopify.server";
 import {
+  disconnectEbayConnection,
   getShopSettingsState,
   updateShopSyncEnabled,
   updateDefaultImportProductStatus,
   updateProductPublicationSettings,
+  updateSyncTargetSeconds,
 } from "../services/syncbay.server";
 
 type SettingsActionData =
@@ -53,6 +59,17 @@ type SettingsActionData =
       message: string;
       status: "blocked" | "saved";
       syncEnabled: boolean;
+    }
+  | {
+      intent: "saveSyncTarget";
+      message: string;
+      status: "blocked" | "saved";
+      syncTargetSeconds: number;
+    }
+  | {
+      intent: "disconnectEbay";
+      message: string;
+      status: "disconnected" | "not_connected";
     };
 
 export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
@@ -142,6 +159,30 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     } satisfies SettingsActionData);
   }
 
+  if (intent === "saveSyncTarget") {
+    const result = await updateSyncTargetSeconds(
+      session,
+      String(formData.get("syncTargetSeconds") ?? ""),
+    );
+
+    return Response.json({
+      intent,
+      message: result.message,
+      status: result.status,
+      syncTargetSeconds: result.syncTargetSeconds,
+    } satisfies SettingsActionData);
+  }
+
+  if (intent === "disconnectEbay") {
+    const result = await disconnectEbayConnection(session);
+
+    return Response.json({
+      intent,
+      message: result.message,
+      status: result.status,
+    } satisfies SettingsActionData);
+  }
+
   throw new Response("Azione impostazioni non supportata.", { status: 400 });
 };
 
@@ -166,6 +207,10 @@ export default function SettingsRoute() {
     actionData?.intent === "saveProductPublications"
       ? actionData.selectedPublicationIds
       : settings.productPublications.selectedPublicationIds;
+  const currentSyncTarget =
+    actionData?.intent === "saveSyncTarget"
+      ? actionData.syncTargetSeconds
+      : settings.shop.syncTargetSeconds;
 
   return (
     <s-page heading="Impostazioni">
@@ -188,11 +233,15 @@ export default function SettingsRoute() {
             gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
           >
             <MetricTile
-              detail="Tempo massimo previsto per l'aggiornamento."
-              icon="clock"
-              label="Intervallo target"
-              tone="info"
-              value={`${settings.shop.syncTargetSeconds} s`}
+              detail="Ultimo aggiornamento incrementale completato."
+              icon="check-circle"
+              label="Ultimo aggiornamento"
+              tone={settings.sync.lastIncrementalFinishedAt ? "success" : "neutral"}
+              value={
+                settings.sync.lastIncrementalFinishedAt
+                  ? formatDateTime(settings.sync.lastIncrementalFinishedAt)
+                  : "Mai"
+              }
             />
             <MetricTile
               detail="Prodotti eBay attivi collegati a Shopify."
@@ -222,23 +271,68 @@ export default function SettingsRoute() {
               </s-stack>
             </s-box>
           ) : null}
-          {actionData?.intent === "saveSyncSettings" ? (
+          {actionData?.intent === "saveSyncTarget" ? (
             <s-paragraph>{actionData.message}</s-paragraph>
           ) : null}
           <Form method="post">
-            <input type="hidden" name="intent" value="saveSyncSettings" />
-            <input type="hidden" name="syncEnabled" value="false" />
-            <s-switch
-              defaultChecked={currentSyncEnabled}
-              id="syncEnabled"
-              label="Sync automatico eBay verso Shopify"
-              name="syncEnabled"
-              value="true"
-            />
+            <input type="hidden" name="intent" value="saveSyncTarget" />
+            <s-select
+              id="syncTargetSeconds"
+              label="Intervallo target di aggiornamento"
+              name="syncTargetSeconds"
+              value={String(currentSyncTarget)}
+            >
+              {SYNC_TARGET_OPTIONS.map((option) => (
+                <s-option key={option.value} value={String(option.value)}>
+                  {option.label}
+                </s-option>
+              ))}
+            </s-select>
+            <s-text color="subdued">
+              Tempo entro cui SyncBay punta ad allineare il catalogo (massimo 5
+              minuti). Attuale: {getSyncTargetLabel(currentSyncTarget)}.
+            </s-text>
             <s-button type="submit" disabled={isSaving}>
-              {isSaving ? "Salvataggio..." : "Salva sync catalogo"}
+              {isSaving ? "Salvataggio..." : "Salva intervallo"}
             </s-button>
           </Form>
+          {actionData?.intent === "saveSyncSettings" ? (
+            <s-paragraph>{actionData.message}</s-paragraph>
+          ) : null}
+          {currentSyncEnabled ? (
+            <details className="syncbay-details">
+              <summary>Disattiva sync automatico</summary>
+              <s-stack gap="small-200">
+                <s-text>
+                  Disattivando il sync, SyncBay smette di allineare il catalogo
+                  da eBay a Shopify finché non lo riattivi. La disponibilità
+                  eBay dagli ordini Shopify resta gestita a parte.
+                </s-text>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="saveSyncSettings" />
+                  <input type="hidden" name="syncEnabled" value="false" />
+                  <s-button type="submit" disabled={isSaving}>
+                    Conferma disattivazione
+                  </s-button>
+                </Form>
+              </s-stack>
+            </details>
+          ) : (
+            <Form method="post">
+              <input type="hidden" name="intent" value="saveSyncSettings" />
+              <input type="hidden" name="syncEnabled" value="false" />
+              <s-switch
+                defaultChecked={currentSyncEnabled}
+                id="syncEnabled"
+                label="Sync automatico eBay verso Shopify"
+                name="syncEnabled"
+                value="true"
+              />
+              <s-button type="submit" disabled={isSaving}>
+                {isSaving ? "Salvataggio..." : "Salva sync catalogo"}
+              </s-button>
+            </Form>
+          )}
         </SettingCard>
 
         <SettingCard
@@ -419,6 +513,27 @@ export default function SettingsRoute() {
               label="Torna alla Panoramica"
             />
           </div>
+          {actionData?.intent === "disconnectEbay" ? (
+            <s-paragraph>{actionData.message}</s-paragraph>
+          ) : null}
+          {settings.ebay.status === "CONNECTED" ? (
+            <details className="syncbay-details">
+              <summary>Scollega account eBay</summary>
+              <s-stack gap="small-200">
+                <s-text>
+                  Scollegando eBay, SyncBay cancella i token salvati e ferma il
+                  sync automatico. Il catalogo già importato resta su Shopify e
+                  potrai ricollegare eBay quando vuoi.
+                </s-text>
+                <Form method="post">
+                  <input type="hidden" name="intent" value="disconnectEbay" />
+                  <s-button type="submit" disabled={isSaving}>
+                    Conferma scollegamento
+                  </s-button>
+                </Form>
+              </s-stack>
+            </details>
+          ) : null}
           <details className="syncbay-details">
             <summary>Apri dettagli tecnici</summary>
             <s-stack gap="base">
