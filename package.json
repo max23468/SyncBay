@@ -61,7 +61,7 @@
     "node": ">=24.15 <25",
     "npm": ">=11 <12"
   },
-  "packageManager": "npm@11.14.1",
+  "packageManager": "npm@11.17.0",
   "dependencies": {
     "@prisma/client": "^6.19.3",
     "@react-router/dev": "^7.17.0",
