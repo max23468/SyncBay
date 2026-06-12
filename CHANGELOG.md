@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Impostazioni: schede e tile vanno a capo correttamente su viewport stretti,
+  evitando contenuti percepiti come tagliati o troppo compressi.
+
+### Sotto il cofano
+
+- Il renderer locale del redesign resta compatibile con `esbuild 0.28.1`
+  evitando trasformazioni legacy non supportate sui moduli React Router e App
+  Bridge già compilati.
+
 ## [0.35.8] — 2026-06-12
 
 ### Sotto il cofano
