@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.9] — 2026-06-12
+
 ### Correzioni
 
 - Impostazioni: schede e tile vanno a capo correttamente su viewport stretti,
@@ -16,6 +18,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Il renderer locale del redesign resta compatibile con `esbuild 0.28.1`
   evitando trasformazioni legacy non supportate sui moduli React Router e App
   Bridge già compilati.
+- Playwright è ora una dev dependency diretta, così gli script di preview e QA
+  possono importarlo senza installazioni temporanee.
 
 ## [0.35.8] — 2026-06-12
 
@@ -1644,6 +1648,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.9]: #0359--2026-06-12
 [0.35.8]: #0358--2026-06-12
 [0.35.7]: #0357--2026-06-12
 [0.35.6]: #0356--2026-06-12
