@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.32.0] — 2026-06-12
+
 ### Novità
 
 - Catalogo: ogni riga ha ora azioni contestuali, niente più cella azioni vuota.
@@ -1442,6 +1444,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.32.0]: #0320--2026-06-12
 [0.31.0]: #0310--2026-06-12
 [0.30.2]: #0302--2026-06-12
 [0.30.1]: #0301--2026-06-12
