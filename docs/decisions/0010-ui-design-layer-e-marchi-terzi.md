@@ -45,6 +45,9 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
    verticale, per dare il senso di avanzamento del flusso di import; lo stato di
    ogni tappa (completata / da fare ora / in attesa) deriva dai dati reali del
    wizard.
+7. **Evento timeline** (Attività): nodo con icona colorata per esito e
+   connettore verticale, per leggere la cronologia operativa come timeline
+   invece che come pila di box uguali.
 
 Tutto ciò che non è in questa lista resta nativo puro. La griglia condivisa è
 **multi-regione responsiva**: hero a tutta larghezza, poi fasce a due colonne

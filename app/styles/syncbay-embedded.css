@@ -368,6 +368,77 @@
   box-shadow: 0 0 0 3px var(--syncbay-tint-info);
 }
 
+/* Timeline operativa (Attività): per ogni evento un nodo con icona colorata
+   per esito e un connettore verticale, per leggere la cronologia a colpo
+   d'occhio invece di una pila di box uguali. */
+.syncbay-timeline {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.syncbay-event {
+  display: flex;
+  gap: 14px;
+}
+
+.syncbay-event__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.syncbay-event__node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--syncbay-mist);
+  background: var(--syncbay-paper);
+  flex: 0 0 auto;
+}
+
+.syncbay-event__line {
+  inline-size: 2px;
+  flex: 1 1 auto;
+  min-block-size: 12px;
+  margin-block: 4px;
+  background: var(--syncbay-mist);
+  border-radius: 1px;
+}
+
+.syncbay-event__panel {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block-end: 18px;
+}
+
+.syncbay-event:last-child .syncbay-event__panel {
+  padding-block-end: 0;
+}
+
+.syncbay-event--success .syncbay-event__node {
+  background: var(--syncbay-tint-success);
+  border-color: var(--syncbay-moss);
+}
+.syncbay-event--warning .syncbay-event__node {
+  background: var(--syncbay-tint-warning);
+  border-color: var(--syncbay-amber);
+}
+.syncbay-event--critical .syncbay-event__node {
+  background: var(--syncbay-tint-critical);
+  border-color: var(--syncbay-coral);
+}
+.syncbay-event--info .syncbay-event__node {
+  background: var(--syncbay-tint-info);
+  border-color: var(--syncbay-steel);
+}
+
 /* Su viewport stretto l'hero impila azione e testo. */
 @media (max-width: 640px) {
   .syncbay-hero {

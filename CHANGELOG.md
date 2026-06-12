@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.33.0] — 2026-06-12
+
+### Novità
+
+- Attività ridisegnata come timeline operativa: ogni evento ha ora un nodo con
+  icona colorata per esito (completato, in errore, in corso) e un connettore
+  verticale, per leggere la cronologia a colpo d'occhio invece di una pila di
+  box uguali. Le metriche in alto (In coda, Errori recenti, Eventi, Catalogo)
+  sono tile con icona e tinta come nelle altre pagine, e la diagnostica resta
+  sotto la timeline. Microcopy più chiaro ("Aggiornamento automatico" al posto
+  di "Runner incrementale"). Retry, filtri e logica invariati. Vedi ADR 0010.
+
 ## [0.32.1] — 2026-06-12
 
 ### Correzioni
@@ -1456,6 +1468,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.33.0]: #0330--2026-06-12
 [0.32.1]: #0321--2026-06-12
 [0.32.0]: #0320--2026-06-12
 [0.31.0]: #0310--2026-06-12
