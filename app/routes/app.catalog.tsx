@@ -109,7 +109,7 @@ export default function CatalogRoute() {
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
         >
           <MetricTile
-            detail="Mapping eBay verso Shopify presenti."
+            detail="Prodotti eBay collegati a Shopify."
             icon="product"
             label="Totale"
             tone="info"
@@ -151,7 +151,7 @@ export default function CatalogRoute() {
                   <s-table-header-row>
                     <s-table-header>Immagine</s-table-header>
                     <s-table-header>Prodotto</s-table-header>
-                    <s-table-header>Canali</s-table-header>
+                    <s-table-header>Collegamento</s-table-header>
                     <s-table-header format="numeric">
                       Disponibilità
                     </s-table-header>
@@ -243,7 +243,7 @@ function CatalogTableRow({
         <s-stack gap="small-200">
           <s-text>{formatDateTime(row.lastSyncedAt)}</s-text>
           <s-text color="subdued">
-            Snapshot {formatDateTime(row.snapshotCapturedAt)}
+            Lettura eBay {formatDateTime(row.snapshotCapturedAt)}
           </s-text>
         </s-stack>
       </s-table-cell>
@@ -258,9 +258,22 @@ function CatalogTableRow({
         </s-stack>
       </s-table-cell>
       <s-table-cell>
-        {row.openConflictCount > 0 ? (
-          <s-button href="/app/conflicts?filter=open">Risolvi</s-button>
-        ) : null}
+        <s-stack gap="small-200" alignItems="start">
+          {row.openConflictCount > 0 ? (
+            <s-button href="/app/conflicts?filter=open" variant="primary">
+              Risolvi
+            </s-button>
+          ) : null}
+          {row.status === "mapping_error" ? (
+            <s-button href="/app/activity?filter=errors">Riprova</s-button>
+          ) : null}
+          <s-button
+            href={shopifyProductUrl ?? getEbayItemUrl(row.ebayItemId)}
+            target="_blank"
+          >
+            Dettagli
+          </s-button>
+        </s-stack>
       </s-table-cell>
     </s-table-row>
   );

@@ -6,6 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Catalogo: ogni riga ha ora azioni contestuali, niente più cella azioni vuota.
+  "Dettagli" (sempre) apre il prodotto su Shopify o l'inserzione eBay,
+  "Risolvi" appare con conflitti aperti e "Riprova" sui prodotti in errore
+  (rimanda alla coda errori in Attività).
+
+### Correzioni
+
+- Catalogo: microcopy più diretto per il negoziante — la metrica Totale dice
+  "Prodotti eBay collegati a Shopify" invece di "Mapping…", e la colonna
+  Aggiornato mostra "Lettura eBay" invece di "Snapshot". La colonna dei
+  collegamenti si chiama ora "Collegamento" invece di "Canali", per non
+  confonderla con i canali di vendita.
+
 ## [0.31.0] — 2026-06-12
 
 ### Novità
