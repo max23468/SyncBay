@@ -371,18 +371,20 @@ function ResolveConflictForm({
 
 function FilterNav({ activeFilter }: { activeFilter: ConflictFilter }) {
   return (
-    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
-      {CONFLICT_FILTERS.map((filter) => (
-        <s-clickable-chip
-          aria-current={activeFilter === filter.value ? "page" : undefined}
-          color={activeFilter === filter.value ? "strong" : "base"}
-          href={getConflictHref(filter.value)}
-          key={filter.value}
-        >
-          {filter.label}
-        </s-clickable-chip>
-      ))}
-    </s-stack>
+    <div className="syncbay-conflict-filter-nav">
+      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+        {CONFLICT_FILTERS.map((filter) => (
+          <s-clickable-chip
+            aria-current={activeFilter === filter.value ? "page" : undefined}
+            color={activeFilter === filter.value ? "strong" : "base"}
+            href={getConflictHref(filter.value)}
+            key={filter.value}
+          >
+            {filter.label}
+          </s-clickable-chip>
+        ))}
+      </s-stack>
+    </div>
   );
 }
 

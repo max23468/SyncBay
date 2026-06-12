@@ -228,6 +228,10 @@
   flex: 0 0 auto;
 }
 
+.syncbay-conflict-filter-nav {
+  margin-block-end: 14px;
+}
+
 /* Decision card conflitto: accento tonale a sinistra keyato sulla gravità della
    scelta (batch sicuro / da rivedere / manuale), come l'hero di stato. */
 .syncbay-conflict {

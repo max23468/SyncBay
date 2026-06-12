@@ -67,6 +67,22 @@ aligned_conflicts as (
     and sc.field = 'description'
     and sc."shopifyValue" #>> '{}' is not null
     and ls."descriptionHash" = sc."shopifyValue" #>> '{}'
+),
+inactive_mapping_conflicts as (
+  select sc.id
+  from "SyncConflict" sc
+  join "Shop" s on s.id = sc."shopId"
+  join "ProductMapping" pm on pm.id = sc."mappingId"
+  where s."shopDomain" = ${sqlString(shopDomain)}
+    and sc.status = 'OPEN'
+    and pm.status in ('OUT_OF_STOCK', 'ARCHIVED')
+),
+repairable_conflicts as (
+  select id from baseline_repairable_conflicts
+  union
+  select id from aligned_conflicts
+  union
+  select id from inactive_mapping_conflicts
 )
 select jsonb_build_object(
   'mode', 'dry-run',
@@ -81,10 +97,8 @@ select jsonb_build_object(
   ),
   'baselineRepairableConflictCount', (select count(*)::int from baseline_repairable_conflicts),
   'alignedConflictCount', (select count(*)::int from aligned_conflicts),
-  'repairableConflictCount', (
-    (select count(*)::int from baseline_repairable_conflicts) +
-    (select count(*)::int from aligned_conflicts)
-  )
+  'inactiveMappingConflictCount', (select count(*)::int from inactive_mapping_conflicts),
+  'repairableConflictCount', (select count(*)::int from repairable_conflicts)
 ) as result;
 `;
 }
@@ -195,6 +209,15 @@ aligned_conflicts as (
     and sc."shopifyValue" #>> '{}' is not null
     and ls."descriptionHash" = sc."shopifyValue" #>> '{}'
 ),
+inactive_mapping_conflicts as (
+  select sc.id, sc."shopId"
+  from "SyncConflict" sc
+  join "Shop" s on s.id = sc."shopId"
+  join "ProductMapping" pm on pm.id = sc."mappingId"
+  where s."shopDomain" = ${sqlString(shopDomain)}
+    and sc.status = 'OPEN'
+    and pm.status in ('OUT_OF_STOCK', 'ARCHIVED')
+),
 inserted_snapshots as (
   insert into "ProductSnapshot" (
     id,
@@ -261,6 +284,18 @@ updated_aligned_conflicts as (
     "resolvedAt" = now(),
     "updatedAt" = now()
   where sc.id in (select id from aligned_conflicts)
+    and sc.id not in (select id from baseline_repairable_conflicts)
+  returning sc.id, sc."shopId"
+),
+updated_inactive_mapping_conflicts as (
+  update "SyncConflict" sc
+  set
+    status = 'RESOLVED',
+    "resolvedAt" = now(),
+    "updatedAt" = now()
+  where sc.id in (select id from inactive_mapping_conflicts)
+    and sc.id not in (select id from baseline_repairable_conflicts)
+    and sc.id not in (select id from aligned_conflicts)
   returning sc.id, sc."shopId"
 ),
 audit as (
@@ -274,15 +309,18 @@ audit as (
       'repair', 'description_conflict_baseline',
       'baselineResolvedConflictCount', (select count(*)::int from updated_baseline_conflicts),
       'alignedResolvedConflictCount', (select count(*)::int from updated_aligned_conflicts),
+      'inactiveMappingResolvedConflictCount', (select count(*)::int from updated_inactive_mapping_conflicts),
       'resolvedConflictCount',
         (select count(*)::int from updated_baseline_conflicts) +
-        (select count(*)::int from updated_aligned_conflicts),
+        (select count(*)::int from updated_aligned_conflicts) +
+        (select count(*)::int from updated_inactive_mapping_conflicts),
       'insertedSnapshotCount', (select count(*)::int from inserted_snapshots)
     ),
     now()
   where
     (select count(*) from updated_baseline_conflicts) > 0 or
-    (select count(*) from updated_aligned_conflicts) > 0
+    (select count(*) from updated_aligned_conflicts) > 0 or
+    (select count(*) from updated_inactive_mapping_conflicts) > 0
   returning id
 )
 select jsonb_build_object(
@@ -290,9 +328,11 @@ select jsonb_build_object(
   'shopDomain', ${sqlString(shopDomain)},
   'baselineResolvedConflictCount', (select count(*)::int from updated_baseline_conflicts),
   'alignedResolvedConflictCount', (select count(*)::int from updated_aligned_conflicts),
+  'inactiveMappingResolvedConflictCount', (select count(*)::int from updated_inactive_mapping_conflicts),
   'resolvedConflictCount',
     (select count(*)::int from updated_baseline_conflicts) +
-    (select count(*)::int from updated_aligned_conflicts),
+    (select count(*)::int from updated_aligned_conflicts) +
+    (select count(*)::int from updated_inactive_mapping_conflicts),
   'insertedSnapshotCount', (select count(*)::int from inserted_snapshots),
   'auditLogCount', (select count(*)::int from audit)
 ) as result;
@@ -347,6 +387,9 @@ function printSummary(result, applied) {
     console.log(
       `Conflitti con baseline riparata: ${result.baselineResolvedConflictCount}`,
     );
+    console.log(
+      `Conflitti su mapping inattivi chiusi: ${result.inactiveMappingResolvedConflictCount}`,
+    );
     console.log(`Snapshot baseline creati: ${result.insertedSnapshotCount}`);
     console.log(`Audit log creati: ${result.auditLogCount}`);
     return;
@@ -362,6 +405,9 @@ function printSummary(result, applied) {
   );
   console.log(
     `Da riparare creando baseline: ${result.baselineRepairableConflictCount}`,
+  );
+  console.log(
+    `Su mapping inattivi da chiudere: ${result.inactiveMappingConflictCount}`,
   );
   console.log("");
   console.log("Per applicare: npm run conflicts:repair-description -- --apply");

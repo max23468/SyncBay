@@ -78,6 +78,21 @@ aligned_description as (
     and sc."shopifyValue" #>> '{}' is not null
     and ls."descriptionHash" = sc."shopifyValue" #>> '{}'
 ),
+inactive_mapping_conflicts as (
+  select sc.id
+  from "SyncConflict" sc
+  join shop_row s on s.id = sc."shopId"
+  join "ProductMapping" pm on pm.id = sc."mappingId"
+  where sc.status = 'OPEN'
+    and pm.status in ('OUT_OF_STOCK', 'ARCHIVED')
+),
+repairable_conflicts as (
+  select id from baseline_repairable_description
+  union
+  select id from aligned_description
+  union
+  select id from inactive_mapping_conflicts
+),
 conflict_rows as (
   select jsonb_agg(to_jsonb(rows) order by rows.status, rows.field) as rows
   from (
@@ -179,9 +194,11 @@ select jsonb_build_object(
   ),
   'baselineRepairableDescriptionConflictCount', (select count(*)::int from baseline_repairable_description),
   'alignedDescriptionConflictCount', (select count(*)::int from aligned_description),
+  'inactiveMappingConflictCount', (select count(*)::int from inactive_mapping_conflicts),
   'repairableDescriptionConflictCount',
     (select count(*)::int from baseline_repairable_description) +
     (select count(*)::int from aligned_description),
+  'repairableConflictCount', (select count(*)::int from repairable_conflicts),
   'conflictRows', coalesce((select rows from conflict_rows), '[]'::jsonb),
   'activeQueueRows', coalesce((select rows from queue_rows), '[]'::jsonb),
   'cooldownRows', coalesce((select rows from cooldown_rows), '[]'::jsonb),
@@ -232,6 +249,9 @@ function printReport(report) {
   console.log(
     `Description riparabili: ${report.repairableDescriptionConflictCount} (${report.alignedDescriptionConflictCount} già allineati, ${report.baselineRepairableDescriptionConflictCount} con baseline da creare)`,
   );
+  console.log(
+    `Mapping inattivi da chiudere: ${report.inactiveMappingConflictCount}`,
+  );
   console.log(`Cooldown eBay attivi: ${sumRows(report.cooldownRows)}`);
   console.log("");
 
@@ -255,7 +275,7 @@ function printReport(report) {
     console.log("");
   }
 
-  if (report.repairableDescriptionConflictCount > 0) {
+  if (report.repairableConflictCount > 0) {
     console.log(
       "Prossimo passo: npm run conflicts:repair-description -- --apply",
     );
