@@ -16,6 +16,7 @@ const {
   getNextAction,
   getProductPublicationModeSummaryLabel,
   getTimelineCategoryLabel,
+  isCatalogMappingStale,
 } = uiState;
 
 test("prioritizes missing eBay connection before other dashboard issues", () => {
@@ -207,6 +208,74 @@ test("computes catalog row status from mapping health", () => {
       mappingStatus: "ACTIVE",
     }),
     "active_fresh",
+  );
+});
+
+test("derives catalog staleness from the shop verification watermark", () => {
+  const now = new Date("2026-06-13T12:00:00.000Z");
+  const syncTargetSeconds = 300; // soglia stale = 2x = 10 minuti
+  const longAgo = new Date("2026-06-12T12:00:00.000Z");
+  const recent = new Date("2026-06-13T11:55:00.000Z");
+
+  // Catalogo tranquillo: prodotto invariato da 24h ma eBay verificato 5 min fa.
+  // Non deve risultare "Da controllare".
+  assert.equal(
+    isCatalogMappingStale({
+      catalogVerifiedAt: recent,
+      lastSyncedAt: longAgo,
+      mappingStatus: "ACTIVE",
+      now,
+      syncTargetSeconds,
+    }),
+    false,
+  );
+
+  // Verifica del catalogo in ritardo (oltre 10 min): è genuinamente stale.
+  assert.equal(
+    isCatalogMappingStale({
+      catalogVerifiedAt: longAgo,
+      lastSyncedAt: longAgo,
+      mappingStatus: "ACTIVE",
+      now,
+      syncTargetSeconds,
+    }),
+    true,
+  );
+
+  // Prodotto sincronizzato di recente di per sé, senza watermark di shop.
+  assert.equal(
+    isCatalogMappingStale({
+      catalogVerifiedAt: null,
+      lastSyncedAt: recent,
+      mappingStatus: "ACTIVE",
+      now,
+      syncTargetSeconds,
+    }),
+    false,
+  );
+
+  // In pausa: sempre da controllare, anche con watermark fresco.
+  assert.equal(
+    isCatalogMappingStale({
+      catalogVerifiedAt: recent,
+      lastSyncedAt: recent,
+      mappingStatus: "PAUSED",
+      now,
+      syncTargetSeconds,
+    }),
+    true,
+  );
+
+  // Mai sincronizzato: da controllare anche con watermark fresco.
+  assert.equal(
+    isCatalogMappingStale({
+      catalogVerifiedAt: recent,
+      lastSyncedAt: null,
+      mappingStatus: "ACTIVE",
+      now,
+      syncTargetSeconds,
+    }),
+    true,
   );
 });
 

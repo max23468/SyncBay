@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.12] — 2026-06-13
+
+### Correzioni
+
+- Catalogo: lo stato "Da controllare" non scatta più sull'intero catalogo pochi
+  minuti dopo ogni sincronizzazione. La staleness ora si basa sul watermark di
+  verifica a livello negozio (ultimo ciclo di sync incrementale riuscito), in
+  linea con la salute sync mostrata in dashboard, invece che sull'ultima
+  riscrittura del singolo prodotto. Restano "Da controllare" solo i prodotti in
+  pausa, mai sincronizzati o quando la verifica del catalogo contro eBay è
+  realmente in ritardo.
+
 ## [0.35.11] — 2026-06-13
 
 ### Sotto il cofano
@@ -1673,6 +1685,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.12]: #03512--2026-06-13
 [0.35.11]: #03511--2026-06-13
 [0.35.10]: #03510--2026-06-13
 [0.35.9]: #0359--2026-06-12

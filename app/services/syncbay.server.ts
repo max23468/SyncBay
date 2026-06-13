@@ -47,6 +47,7 @@ import {
 } from "../lib/syncbay-sync-interval";
 import {
   getCatalogRowStatus,
+  isCatalogMappingStale,
   type CatalogAvailabilityKind,
   type CatalogStatusKind,
 } from "../lib/syncbay-ui-state";
@@ -375,40 +376,56 @@ export async function getCatalogPageState(
     marketplaceId: getEbayMarketplaceId(),
     shopId: shop.id,
   };
-  const [mappings, totalAvailableCount, linkedCount] = await prisma.$transaction([
-    prisma.productMapping.findMany({
-      include: {
-        conflicts: {
-          select: {
-            field: true,
-            id: true,
+  const [mappings, totalAvailableCount, linkedCount, latestIncrementalJob] =
+    await prisma.$transaction([
+      prisma.productMapping.findMany({
+        include: {
+          conflicts: {
+            select: {
+              field: true,
+              id: true,
+            },
+            where: { status: SyncConflictStatus.OPEN },
           },
-          where: { status: SyncConflictStatus.OPEN },
+          snapshots: {
+            orderBy: { capturedAt: "desc" },
+            take: 1,
+          },
         },
-        snapshots: {
-          orderBy: { capturedAt: "desc" },
-          take: 1,
+        orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+        take: CATALOG_IMPORT_MAX_PRODUCTS,
+        where,
+      }),
+      prisma.productMapping.count({ where }),
+      prisma.productMapping.count({
+        where: {
+          ...where,
+          shopifyProductGid: { not: null },
         },
-      },
-      orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-      take: CATALOG_IMPORT_MAX_PRODUCTS,
-      where,
-    }),
-    prisma.productMapping.count({ where }),
-    prisma.productMapping.count({
-      where: {
-        ...where,
-        shopifyProductGid: { not: null },
-      },
-    }),
-  ]);
+      }),
+      // Watermark a livello shop: ultimo ciclo di sync incrementale riuscito
+      // (delta eventi venditore o reconcile). Stesso segnale della salute sync
+      // in dashboard, così catalogo e dashboard restano coerenti.
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { finishedAt: true },
+        where: {
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+    ]);
+  const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
 
   // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
   // paginazione, solo per le righe mostrate, per tenere veloci filtri e sort.
+  const now = new Date();
   const allRows = mappings.map((mapping) =>
     formatCatalogPageRow({
+      catalogVerifiedAt,
       mapping,
-      now: new Date(),
+      now,
       syncTargetSeconds: shop.syncTargetSeconds,
       thumbnailPayload: null,
     }),
@@ -2503,6 +2520,7 @@ function sortCatalogPageRows(
 }
 
 function formatCatalogPageRow(input: {
+  catalogVerifiedAt: Date | null;
   mapping: Prisma.ProductMappingGetPayload<{
     include: {
       conflicts: {
@@ -2526,6 +2544,7 @@ function formatCatalogPageRow(input: {
     mappingStatus: input.mapping.status,
     openConflictCount: input.mapping.conflicts.length,
     stale: isCatalogMappingStale({
+      catalogVerifiedAt: input.catalogVerifiedAt,
       lastSyncedAt: input.mapping.lastSyncedAt,
       mappingStatus: input.mapping.status,
       now: input.now,
@@ -2618,19 +2637,6 @@ function formatConflictPageRow(
     }),
     status: conflict.status,
   };
-}
-
-function isCatalogMappingStale(input: {
-  lastSyncedAt: Date | null;
-  mappingStatus: ProductMappingStatus;
-  now: Date;
-  syncTargetSeconds: number;
-}) {
-  if (input.mappingStatus === ProductMappingStatus.PAUSED) return true;
-  if (!input.lastSyncedAt) return true;
-
-  const targetMs = Math.max(input.syncTargetSeconds, 60) * 1000;
-  return input.now.getTime() - input.lastSyncedAt.getTime() > targetMs * 2;
 }
 
 function getCatalogAvailability(input: {
