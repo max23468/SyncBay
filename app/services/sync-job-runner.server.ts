@@ -1774,11 +1774,10 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   }
 
   const soldOutWarnings: string[] = [];
+  const interruptedJob = await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJob) return interruptedJob;
 
   if (mapping.shopifyProductGid) {
-    const interruptedJob = await getInterruptedRunningSyncJobResult(job);
-    if (interruptedJob) return interruptedJob;
-
     const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
     const soldOutResult = await markShopifyProductSoldOut(admin, {
       jobId: job.id,
