@@ -146,6 +146,9 @@ export async function getDashboardState(session: ShopifySessionLike) {
   const defaultProductStatus = normalizeImportProductStatus(
     shop.defaultProductStatus,
   );
+  const now = new Date();
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const [
     [
       ebayConnection,
@@ -158,6 +161,10 @@ export async function getDashboardState(session: ShopifySessionLike) {
       snapshotCount,
       latestIncrementalJob,
       activeIncrementalJobCount,
+      latestIncrementalWorkJob,
+      reliabilityJobs,
+      newMappings24h,
+      newConflicts24h,
     ],
     latestImportRun,
   ] = await Promise.all([
@@ -230,6 +237,31 @@ export async function getDashboardState(session: ShopifySessionLike) {
           type: SyncJobType.SYNC_INCREMENTAL,
         },
       }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { result: true },
+        where: {
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.syncJob.findMany({
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true, status: true },
+        take: 2000,
+        where: { createdAt: { gte: weekAgo }, shopId: shop.id },
+      }),
+      prisma.productMapping.count({
+        where: {
+          createdAt: { gte: dayAgo },
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      }),
+      prisma.syncConflict.count({
+        where: { detectedAt: { gte: dayAgo }, shopId: shop.id },
+      }),
     ]),
     getLatestImportRunSummary(shop.id),
   ]);
@@ -253,6 +285,14 @@ export async function getDashboardState(session: ShopifySessionLike) {
     complianceReadiness.summary,
     importPreview.summary,
   ];
+  const reliability = summarizeReliability(reliabilityJobs, now);
+  const lastRunCounts = {
+    requested: readJobResultCount(
+      latestIncrementalWorkJob?.result,
+      "requestedCount",
+    ),
+    synced: readJobResultCount(latestIncrementalWorkJob?.result, "syncedCount"),
+  };
 
   return {
     readiness,
@@ -350,6 +390,14 @@ export async function getDashboardState(session: ShopifySessionLike) {
           latestIncrementalJob?.finishedAt?.toISOString() ?? null,
         latestIncrementalStatus: latestIncrementalJob?.status ?? null,
       },
+      lastRunCounts,
+    },
+    metrics: {
+      reliability,
+      trends: {
+        newConflicts24h,
+        newMappings24h,
+      },
     },
     audit: recentAuditLogs.map((log) => ({
       createdAt: log.createdAt.toISOString(),
@@ -357,6 +405,59 @@ export async function getDashboardState(session: ShopifySessionLike) {
       type: log.type,
     })),
   };
+}
+
+/**
+ * Legge in modo difensivo un conteggio numerico dal `result` JSON di un job.
+ * Il result varia di forma per tipo di job; se il campo manca o non è numerico
+ * restituisce null invece di inventare un valore.
+ */
+function readJobResultCount(
+  result: Prisma.JsonValue | null | undefined,
+  key: string,
+): number | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) {
+    return null;
+  }
+
+  const value = (result as Record<string, unknown>)[key];
+
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Aggrega l'affidabilità del servizio sugli ultimi 7 giorni a partire dai job
+ * realmente registrati: totale, riusciti, tasso e serie giornaliera per la
+ * sparkline. Nessun dato sintetico: se non ci sono job, la finestra è vuota.
+ */
+function summarizeReliability(
+  jobs: { createdAt: Date; status: SyncJobStatus }[],
+  now: Date,
+) {
+  const windowDays = 7;
+  const totalJobs = jobs.length;
+  const succeededJobs = jobs.filter(
+    (job) => job.status === SyncJobStatus.SUCCEEDED,
+  ).length;
+  const successRate =
+    totalJobs > 0 ? Math.round((succeededJobs / totalJobs) * 100) : 100;
+  const daily: number[] = [];
+
+  for (let offset = windowDays - 1; offset >= 0; offset -= 1) {
+    const dayStart = new Date(now);
+    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setDate(dayStart.getDate() - offset);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    daily.push(
+      jobs.filter(
+        (job) => job.createdAt >= dayStart && job.createdAt < dayEnd,
+      ).length,
+    );
+  }
+
+  return { daily, succeededJobs, successRate, totalJobs, windowDays };
 }
 
 export async function getCatalogPageState(

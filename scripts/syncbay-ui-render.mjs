@@ -585,7 +585,18 @@ function getDashboardFixture() {
           type: "UPDATE_EBAY_STOCK",
         },
       ],
+      lastRunCounts: { requested: 142, synced: 8 },
       pendingJobs: 1,
+    },
+    metrics: {
+      reliability: {
+        daily: [12, 18, 9, 22, 14, 28, 31],
+        succeededJobs: 130,
+        successRate: 99,
+        totalJobs: 131,
+        windowDays: 7,
+      },
+      trends: { newConflicts24h: 2, newMappings24h: 12 },
     },
     vercel: { publicUrl: "https://syncbay.vercel.app" },
   };

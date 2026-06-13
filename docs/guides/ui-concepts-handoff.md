@@ -233,6 +233,28 @@ Decisioni fissate (vedi ADR `docs/decisions/0010-ui-design-layer-e-marchi-terzi.
 - esecuzione: sistema visivo condiviso + Panoramica come pagina-prova con
   approvazione del maintainer, poi propagazione alle altre cinque superfici.
 
+## Evoluzione 2026-06-14 - Panoramica ridisegnata
+
+Secondo giro di redesign richiesto dal maintainer: app più veloce, dinamica e
+informativa, meno gergale. Lavorato sulla Panoramica come pagina-prova (route
+reale `app/routes/app._index.tsx`), poi da propagare.
+
+- design layer esteso (ADR 0010, estensione 2026-06-14): battito del sync,
+  lente rischio disponibilità, sparkline affidabilità; il first-run riusa la
+  tappa stepper per l'onboarding Collega → Importa → Attiva;
+- contenuti: via i "Dettagli tecnici" dalla vista negoziante, azioni davvero
+  contestuali, metriche con tendenza 24h e affidabilità 7 giorni dallo storico
+  job (aggregazione in `getDashboardState`, nessun nuovo worker);
+- linguaggio de-gergato (niente "Centro operativo"/"Pilota controllato"; azioni
+  e stati specifici), attività come timeline;
+- accento UI portato sul Bay Blue del logo, uso disciplinato, colori come
+  variabili semantiche, tema chiaro theme-ready (ADR 0013);
+- ancora aperto: propagazione alle altre cinque superfici, runtime vivo
+  (streaming `defer`, polling leggero, toast) con ADR dati-live dedicato,
+  conteggio "esaurite" nel battito;
+- verifica: typecheck, lint, `test:lib` (221), build verdi; preview via
+  `scripts/syncbay-ui-render.mjs panoramica --fixture`.
+
 ## Decisione prodotto
 
 SyncBay resta una app Shopify embedded per negozianti italiani che partono da

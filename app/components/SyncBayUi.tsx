@@ -36,11 +36,17 @@ export type SyncBayIcon =
   | "store"
   | "store-online";
 
+export type MetricTrend = {
+  label: string;
+  tone: "up" | "watch" | "neutral";
+};
+
 type MetricTileProps = {
   detail?: string;
   icon: SyncBayIcon;
   label: string;
   tone?: SyncBayTone;
+  trend?: MetricTrend;
   value: string;
 };
 
@@ -49,6 +55,7 @@ export function MetricTile({
   icon,
   label,
   tone = "neutral",
+  trend,
   value,
 }: MetricTileProps) {
   return (
@@ -60,7 +67,188 @@ export function MetricTile({
         <s-text color="subdued">{label}</s-text>
         <s-heading>{value}</s-heading>
         {detail ? <s-text color="subdued">{detail}</s-text> : null}
+        {trend ? (
+          trend.tone === "neutral" ? (
+            <s-text color="subdued">{trend.label}</s-text>
+          ) : (
+            <span className={`syncbay-tile__trend syncbay-tile__trend--${trend.tone}`}>
+              {trend.label}
+            </span>
+          )
+        ) : null}
       </span>
+    </div>
+  );
+}
+
+type SyncPulseProps = {
+  appliedLabel: string;
+  marketplaceLabel: string;
+  readLabel: string;
+  working: boolean;
+};
+
+/**
+ * Battito del sync (Panoramica): flusso eBay -> SyncBay -> Shopify. Quando
+ * `working` è vero, i connettori mostrano pallini in viaggio e l'hub ruota;
+ * a riposo l'hub diventa una spunta e il flusso è statico. I conteggi sono
+ * etichette derivate dai dati reali. Vedi ADR 0010.
+ */
+export function SyncPulse({
+  appliedLabel,
+  marketplaceLabel,
+  readLabel,
+  working,
+}: SyncPulseProps) {
+  return (
+    <div className="syncbay-pulse">
+      <span className="syncbay-pulse__stage">
+        <span className="syncbay-pulse__node">
+          <s-icon type="store" tone="neutral" size="base" />
+        </span>
+        <s-text>{marketplaceLabel}</s-text>
+        <s-text color="subdued">sorgente</s-text>
+      </span>
+      <span className="syncbay-pulse__track">
+        {working ? (
+          <>
+            <span className="syncbay-pulse__dot" />
+            <span className="syncbay-pulse__dot syncbay-pulse__dot--delay" />
+          </>
+        ) : null}
+        <span className="syncbay-pulse__track-label">{readLabel}</span>
+      </span>
+      <span className="syncbay-pulse__stage">
+        <span
+          className={`syncbay-pulse__node ${
+            working ? "syncbay-pulse__node--hub" : "syncbay-pulse__node--done"
+          }`}
+        >
+          {working ? (
+            <span className="syncbay-pulse__spin">
+              <s-icon type="refresh" tone="info" size="base" />
+            </span>
+          ) : (
+            <s-icon type="check-circle" tone="success" size="base" />
+          )}
+        </span>
+        <s-text>SyncBay</s-text>
+        <s-text color="subdued">{working ? "allinea" : "allineato"}</s-text>
+      </span>
+      <span className="syncbay-pulse__track">
+        {working ? <span className="syncbay-pulse__dot" /> : null}
+        <span className="syncbay-pulse__track-label">{appliedLabel}</span>
+      </span>
+      <span className="syncbay-pulse__stage">
+        <span className="syncbay-pulse__node">
+          <s-icon type="store-online" tone="neutral" size="base" />
+        </span>
+        <s-text>Shopify</s-text>
+        <s-text color="subdued">vetrina</s-text>
+      </span>
+    </div>
+  );
+}
+
+type SparklineProps = {
+  ariaLabel: string;
+  values: number[];
+};
+
+/**
+ * Sparkline minima dell'andamento (Panoramica): polilinea in accento Bay Blue,
+ * scalata sui valori reali. Serie vuota o piatta resa come baseline. I valori
+ * arrivano dall'aggregazione dello storico job, non sono sintetici.
+ */
+export function Sparkline({ ariaLabel, values }: SparklineProps) {
+  const width = 150;
+  const height = 34;
+  const pad = 3;
+  const max = Math.max(1, ...values);
+  const count = values.length;
+  const point = (value: number, index: number) => {
+    const x =
+      count <= 1 ? width - pad : (index / (count - 1)) * (width - pad * 2) + pad;
+    const y = height - pad - (value / max) * (height - pad * 2);
+
+    return { x, y };
+  };
+  const points = values
+    .map((value, index) => {
+      const { x, y } = point(value, index);
+
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const last = count > 0 ? point(values[count - 1], count - 1) : null;
+
+  return (
+    <svg
+      aria-label={ariaLabel}
+      className="syncbay-reliability__spark"
+      height={height}
+      role="img"
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+    >
+      {count > 1 ? (
+        <polyline
+          fill="none"
+          points={points}
+          stroke="var(--syncbay-accent)"
+          strokeWidth="2"
+        />
+      ) : (
+        <line
+          stroke="var(--syncbay-mist)"
+          strokeWidth="2"
+          x1={pad}
+          x2={width - pad}
+          y1={height / 2}
+          y2={height / 2}
+        />
+      )}
+      {last ? <circle cx={last.x} cy={last.y} fill="var(--syncbay-accent)" r="3" /> : null}
+    </svg>
+  );
+}
+
+type RiskLensProps = {
+  body: string;
+  count: number;
+  href?: string;
+  title: string;
+};
+
+/**
+ * Lente rischio disponibilità (Panoramica): la card più pesante della pagina.
+ * Quando ci sono prodotti a rischio è in tono di attenzione con azione diretta;
+ * a zero diventa una rassicurazione verde. Protezione disponibilità = valore #1
+ * del prodotto. Vedi ADR 0010/0011.
+ */
+export function RiskLens({ body, count, href, title }: RiskLensProps) {
+  const clear = count === 0;
+
+  return (
+    <div className={`syncbay-risk ${clear ? "syncbay-risk--clear" : ""}`}>
+      <span className="syncbay-risk__icon">
+        <s-icon
+          type={clear ? "check-circle" : "alert-triangle"}
+          tone={clear ? "success" : "warning"}
+          size="base"
+        />
+      </span>
+      <span className="syncbay-risk__body">
+        <s-heading>{title}</s-heading>
+        <s-text color="subdued">{body}</s-text>
+      </span>
+      {!clear && href ? (
+        <span className="syncbay-risk__actions">
+          <s-button href={href} variant="primary">
+            Rivedi
+          </s-button>
+        </span>
+      ) : null}
     </div>
   );
 }
