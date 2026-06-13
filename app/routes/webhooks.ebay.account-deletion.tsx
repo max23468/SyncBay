@@ -14,8 +14,7 @@ import {
 
 const MAX_NOTIFICATION_BODY_BYTES = 128 * 1024;
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
+export const loader = async ({ url }: LoaderFunctionArgs) => {
   const challengeCode = url.searchParams.get("challenge_code");
   if (!challengeCode) {
     return Response.json(

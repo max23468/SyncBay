@@ -79,9 +79,8 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
 
 export const meta: MetaFunction = () => getSyncBayMeta("Catalogo");
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const url = new URL(request.url);
   const order = normalizeCatalogOrder(url.searchParams.get("order"));
 
   return getCatalogPageState(session, {

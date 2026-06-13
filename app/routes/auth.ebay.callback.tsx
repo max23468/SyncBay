@@ -3,8 +3,7 @@ import { redirect } from "react-router";
 
 import { completeEbayAuthorization } from "../services/ebay.server";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
+export const loader = async ({ url }: LoaderFunctionArgs) => {
   const error = url.searchParams.get("error");
   if (error) {
     return Response.json(

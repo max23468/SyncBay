@@ -29,6 +29,7 @@ import {
   type CatalogSortKey,
   getCatalogPageWindow,
 } from "../lib/syncbay-catalog-page";
+import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import { summarizeConflictDecisionModes } from "../lib/syncbay-conflict-actions";
 import {
@@ -214,11 +215,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       }),
       prisma.syncJob.findFirst({
         orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-        where: {
-          shopId: shop.id,
-          status: SyncJobStatus.SUCCEEDED,
-          type: SyncJobType.SYNC_INCREMENTAL,
-        },
+        where: getCompletedCatalogVerificationJobWhere(shop.id),
       }),
       prisma.syncJob.count({
         where: {
@@ -409,11 +406,7 @@ export async function getCatalogPageState(
       prisma.syncJob.findFirst({
         orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
         select: { finishedAt: true },
-        where: {
-          shopId: shop.id,
-          status: SyncJobStatus.SUCCEEDED,
-          type: SyncJobType.SYNC_INCREMENTAL,
-        },
+        where: getCompletedCatalogVerificationJobWhere(shop.id),
       }),
     ]);
   const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
