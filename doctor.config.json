@@ -1,5 +1,6 @@
 {
   "ignore": {
+    "files": [".shopify/**"],
     "overrides": [
       {
         "files": [
