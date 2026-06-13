@@ -14,7 +14,7 @@
     "docker-start": "npm run setup && npm run start",
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
-    "quality:react-doctor": "react-doctor --diff false --blocking error .",
+    "quality:react-doctor": "react-doctor --scope full --blocking error .",
     "smoke:ui": "node scripts/smoke-ui.mjs",
     "ui:render": "node scripts/syncbay-ui-render.mjs",
     "ui:preview": "npm run ui:preview:panoramica && npm run ui:preview:catalogo && npm run ui:preview:conflitti && npm run ui:preview:importazione && npm run ui:preview:attivita && npm run ui:preview:impostazioni",
@@ -101,7 +101,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "playwright": "^1.60.0",
     "prettier": "^3.8.4",
-    "react-doctor": "^0.5.1",
+    "react-doctor": "^0.5.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.16"
   },
@@ -124,7 +124,6 @@
     "esbuild@0.28.1": true,
     "fsevents@2.3.3": true,
     "fsevents@2.3.2": true,
-    "msgpackr-extract@3.0.4": true,
     "prisma@6.19.3": true,
     "unrs-resolver@1.12.2": true
   }

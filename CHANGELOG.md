@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.14] — 2026-06-13
+
+### Sotto il cofano
+
+- Aggiornato React Doctor a `0.5.4`, sostituendo il flag deprecato
+  `--diff false` con `--scope full` nel gate `quality:react-doctor`.
+
 ## [0.35.13] — 2026-06-13
 
 ### Correzioni
@@ -1699,6 +1706,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.14]: #03514--2026-06-13
 [0.35.13]: #03513--2026-06-13
 [0.35.12]: #03512--2026-06-13
 [0.35.11]: #03511--2026-06-13
