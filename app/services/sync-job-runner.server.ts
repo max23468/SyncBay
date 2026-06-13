@@ -56,6 +56,7 @@ import {
   isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
 import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
+import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
   STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
   STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES,
@@ -1216,6 +1217,9 @@ async function runImportCatalogJob(job: DueSyncJob) {
     };
   }
 
+  const interruptedJob = await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJob) return interruptedJob;
+
   const connection = await prisma.ebayConnection.findUnique({
     where: {
       shopId_marketplaceId: {
@@ -1228,6 +1232,10 @@ async function runImportCatalogJob(job: DueSyncJob) {
   if (!connection || connection.status !== EbayConnectionStatus.CONNECTED) {
     throw new Error("Connessione eBay non collegata per il job import.");
   }
+
+  const interruptedJobBeforeProvider =
+    await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, previewResult] = await Promise.all([
     getShopifyAdminGraphqlClient(job.shop.shopDomain),
@@ -1322,6 +1330,9 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
+  const interruptedJob = await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJob) return interruptedJob;
+
   const openConflicts = await prisma.syncConflict.findMany({
     select: {
       field: true,
@@ -1357,22 +1368,33 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       }),
     ),
   ];
-  const reactivationConflictResolvedCount =
-    reactivationConflictMappingIds.length > 0
-      ? (
-          await prisma.syncConflict.updateMany({
-            data: {
-              resolvedAt: new Date(),
-              status: SyncConflictStatus.RESOLVED,
-            },
-            where: {
-              mappingId: { in: reactivationConflictMappingIds },
-              shopId: job.shopId,
-              status: SyncConflictStatus.OPEN,
-            },
-          })
-        ).count
-      : 0;
+  let reactivationConflictResolvedCount = 0;
+  if (reactivationConflictMappingIds.length > 0) {
+    const interruptedJobBeforeConflictUpdate =
+      await getInterruptedRunningSyncJobResult(job);
+    if (interruptedJobBeforeConflictUpdate) {
+      return interruptedJobBeforeConflictUpdate;
+    }
+
+    reactivationConflictResolvedCount = (
+      await prisma.syncConflict.updateMany({
+        data: {
+          resolvedAt: new Date(),
+          status: SyncConflictStatus.RESOLVED,
+        },
+        where: {
+          mappingId: { in: reactivationConflictMappingIds },
+          shopId: job.shopId,
+          status: SyncConflictStatus.OPEN,
+        },
+      })
+    ).count;
+  }
+
+  const interruptedJobBeforeConflictProbe =
+    await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJobBeforeConflictProbe) return interruptedJobBeforeConflictProbe;
+
   const alignedDescriptionConflicts =
     await resolveLiveAlignedDescriptionConflicts({
       conflicts: openConflicts,
@@ -1426,6 +1448,10 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       type: job.type,
     };
   }
+
+  const interruptedJobBeforeProvider =
+    await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, previewResult] = await Promise.all([
     getShopifyAdminGraphqlClient(job.shop.shopDomain),
@@ -1750,6 +1776,9 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   const soldOutWarnings: string[] = [];
 
   if (mapping.shopifyProductGid) {
+    const interruptedJob = await getInterruptedRunningSyncJobResult(job);
+    if (interruptedJob) return interruptedJob;
+
     const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
     const soldOutResult = await markShopifyProductSoldOut(admin, {
       jobId: job.id,
@@ -2137,6 +2166,25 @@ function getPreviewCandidate(
   value: unknown,
 ): ImportPreviewListingCandidate | null {
   return deserializeIncrementalPreviewCandidate(value);
+}
+
+async function getInterruptedRunningSyncJobResult(
+  job: DueSyncJob,
+): Promise<DueSyncJobRunResult | null> {
+  const currentJob = await prisma.syncJob.findUnique({
+    select: { status: true },
+    where: { id: job.id },
+  });
+
+  if (shouldContinueRunningSyncJob(currentJob?.status ?? null)) return null;
+
+  return {
+    errorMessage:
+      "Job SyncBay interrotto: lo stato non è più RUNNING prima del lavoro provider.",
+    jobId: job.id,
+    status: "skipped",
+    type: job.type,
+  };
 }
 
 async function markJobFailedOrRetrying(input: {
