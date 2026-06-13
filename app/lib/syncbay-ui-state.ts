@@ -225,6 +225,37 @@ export function getCatalogRowStatus(
   return input.lastSyncedAt ? "active_fresh" : "stale_sync";
 }
 
+// La sync SyncBay è event-driven: ogni ciclo legge il delta degli eventi
+// venditore eBay e riscrive `lastSyncedAt` solo per i prodotti effettivamente
+// cambiati, più un reconcile completo periodico. Calcolare la staleness sul
+// `lastSyncedAt` per-prodotto farebbe quindi risultare "Da controllare" l'intero
+// catalogo pochi minuti dopo ogni reconcile, anche con sync sana. Usiamo invece
+// il watermark a livello shop (`catalogVerifiedAt` = ultimo ciclo incrementale
+// riuscito): se eBay è stato verificato di recente, un prodotto invariato è
+// "corrente as of now". Resta "Da controllare" solo se in pausa, mai
+// sincronizzato, o se la verifica del catalogo stessa è in ritardo.
+export function isCatalogMappingStale(input: {
+  catalogVerifiedAt: Date | null;
+  lastSyncedAt: Date | null;
+  mappingStatus?: string | null;
+  now: Date;
+  syncTargetSeconds: number;
+}): boolean {
+  if (input.mappingStatus === "PAUSED") return true;
+  if (!input.lastSyncedAt) return true;
+
+  const thresholdMs = Math.max(input.syncTargetSeconds, 60) * 1000 * 2;
+  // Un prodotto è fresco se è stato sincronizzato di recente di per sé oppure se
+  // l'intero catalogo è stato verificato contro eBay di recente: prendiamo il
+  // segnale più recente tra i due per evitare falsi "Da controllare".
+  const referenceMs = Math.max(
+    input.lastSyncedAt.getTime(),
+    input.catalogVerifiedAt?.getTime() ?? 0,
+  );
+
+  return input.now.getTime() - referenceMs > thresholdMs;
+}
+
 export function getCatalogAvailabilityLabel(
   availability: CatalogAvailabilityKind,
 ) {
