@@ -52,6 +52,27 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
    + titolo + badge di stato corrente a colpo d'occhio, poi i controlli; tiene
    le regole essenziali leggibili senza aprire ogni sezione.
 
+Estensione 2026-06-14 (Panoramica), stessa logica di wrapper in light DOM
+attorno a componenti nativi:
+
+9. **Battito del sync** (Panoramica): flusso eBay -> SyncBay -> Shopify con nodi
+   icona, connettori etichettati dai conteggi reali e stato animato quando un
+   job è attivo (pallini in viaggio, hub che ruota), statico a riposo. Con
+   `prefers-reduced-motion` resta statico, i numeri restano. È l'elemento-firma
+   della pagina e rende esplicito il modello sorgente -> destinazione (ADR 0011).
+10. **Lente rischio disponibilità** (Panoramica): la card più pesante della
+    pagina, in tono di attenzione, per i prodotti che rischiano di essere
+    venduti senza scorta; a zero diventa rassicurazione verde. Mette in primo
+    piano il valore #1 del prodotto (protezione disponibilità, ADR 0011).
+11. **Sparkline affidabilità** (Panoramica): mini-andamento delle
+    sincronizzazioni degli ultimi 7 giorni in accento, da aggregazione dello
+    storico job; serie vuota o piatta resa come baseline, mai dati sintetici.
+
+Il first-run della Panoramica riusa la **tappa stepper** (punto 6) per
+l'onboarding guidato Collega -> Importa -> Attiva. L'accento di questi elementi
+è il Bay Blue del logo con uso disciplinato (ADR 0013), non più il solo
+`Harbor` teal.
+
 Tutto ciò che non è in questa lista resta nativo puro. La griglia condivisa è
 **multi-regione responsiva**: hero a tutta larghezza, poi fasce a due colonne
 che collassano a una su viewport stretto. Restano vietati: viola, gradienti

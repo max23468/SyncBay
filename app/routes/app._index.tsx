@@ -9,20 +9,21 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
   ActionRow,
-  ConnectionCard,
   MetricTile,
+  RiskLens,
+  Sparkline,
   StatusHero,
+  Step,
+  type StepStatus,
+  SyncPulse,
+  TimelineEvent,
   type SyncBayIcon,
   type SyncBayTone,
 } from "../components/SyncBayUi";
+import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
-import {
-  getEbayConnectionStatusLabel,
-  getNextAction,
-  type NextActionKind,
-} from "../lib/syncbay-ui-state";
-import { APP_VERSION, BUILD_DATE } from "../lib/version";
+import { getNextAction, type NextActionKind } from "../lib/syncbay-ui-state";
 import {
   getDashboardState,
   requestSyncJobRetry,
@@ -43,6 +44,12 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   dateStyle: "short",
   timeStyle: "short",
 });
+
+const BLOCKER_KINDS: NextActionKind[] = [
+  "ebay_connection",
+  "settings_missing",
+  "import_incomplete",
+];
 
 export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
@@ -90,9 +97,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Index() {
   const dashboard = useLoaderData<typeof loader>();
-  const quantityIssueCount = getQuantityIssueCount(dashboard);
+  const firstRun = dashboard.imports.mappingCount === 0;
+  const onboardingSteps = getOnboardingSteps(dashboard);
+  const riskCount = getRiskCount(dashboard);
   const settingsMissing = getSettingsMissing(dashboard);
   const importIncomplete = getImportIncomplete(dashboard);
+  const working = isSyncWorking(dashboard);
   const nextAction = getNextAction({
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     ebayOauthEnabled: dashboard.ebay.oauthEnabled,
@@ -101,72 +111,153 @@ export default function Index() {
     importBlockerCount: dashboard.importPreview.blockers.length,
     importIncomplete,
     openConflictCount: dashboard.conflicts.openCount,
-    quantityIssueCount,
+    quantityIssueCount: riskCount,
     settingsMissing,
   });
+  const showBlocker = BLOCKER_KINDS.includes(nextAction.kind);
   const recentActivity = getRecentActivity(dashboard);
+  const contextualActions = getContextualActions(dashboard, importIncomplete);
+  const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
+  const reliability = dashboard.metrics.reliability;
+  const newMappings = dashboard.metrics.trends.newMappings24h;
+  const newConflicts = dashboard.metrics.trends.newConflicts24h;
 
   return (
     <s-page heading="Panoramica" inlineSize="large">
-      <s-badge slot="accessory" tone="info">
-        Pilota controllato
+      <s-badge slot="accessory" tone={getBadgeTone(firstRun, working)}>
+        {getBadgeLabel(firstRun, working)}
       </s-badge>
       <s-stack gap="large">
-        <StatusHero
-          actionHref={nextAction.primaryActionHref}
-          actionLabel={nextAction.primaryActionLabel}
-          body={nextAction.body}
-          eyebrow={`Centro operativo · ${dashboard.shop.domain}`}
-          icon={getHeroIcon(nextAction.kind)}
-          title={nextAction.title}
-          tone={nextAction.tone}
+        <LiveSync working={working} />
+        {firstRun ? <FirstRunOnboarding steps={onboardingSteps} /> : null}
+        {firstRun ? null : (
+        <>
+        {showBlocker ? (
+          <StatusHero
+            actionHref={nextAction.primaryActionHref}
+            actionLabel={nextAction.primaryActionLabel}
+            body={nextAction.body}
+            icon={getHeroIcon(nextAction.kind)}
+            title={nextAction.title}
+            tone={nextAction.tone}
+          />
+        ) : null}
+
+        <RiskLens
+          body={getRiskBody(riskCount)}
+          count={riskCount}
+          href="/app/catalog"
+          title={getRiskTitle(riskCount)}
         />
 
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        <s-box
+          border="base"
+          borderColor="base"
+          borderRadius="base"
+          padding="base"
         >
-          <MetricTile
-            detail="Prodotti Shopify collegati a eBay."
-            icon="link"
-            label="Prodotti collegati"
-            tone="info"
-            value={formatNumber(dashboard.imports.mappingCount)}
-          />
-          <MetricTile
-            detail="Richiedono una scelta prima dell'allineamento."
-            icon="alert-triangle"
-            label="Conflitti aperti"
-            tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
-            value={formatNumber(dashboard.conflicts.openCount)}
-          />
-          <MetricTile
-            detail={
-              quantityIssueCount > 0
-                ? "Controlli stock emersi dalle attività."
-                : "Nessun controllo stock in evidenza."
-            }
-            icon="inventory"
-            label="Quantità da verificare"
-            tone={quantityIssueCount > 0 ? "warning" : "neutral"}
-            value={formatNumber(quantityIssueCount)}
-          />
-          <MetricTile
-            detail={getCatalogHealthDetail(dashboard)}
-            icon="clock"
-            label="Ultimo aggiornamento"
-            tone="neutral"
-            value={getCatalogHealthValue(dashboard)}
-          />
-        </s-grid>
+          <s-stack gap="base">
+            <s-stack
+              direction="inline"
+              gap="base"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <s-heading>Da eBay a Shopify</s-heading>
+              <s-text color="subdued">{getPulseStatus(dashboard, working)}</s-text>
+            </s-stack>
+            <SyncPulse
+              appliedLabel={getAppliedLabel(dashboard, working)}
+              marketplaceLabel={`eBay ${formatMarketplaceLabel(
+                dashboard.ebay.marketplaceId,
+              )}`}
+              readLabel={getReadLabel(dashboard)}
+              working={working}
+            />
+          </s-stack>
+        </s-box>
+
+        <div>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
+          >
+            <MetricTile
+              detail="Seguiti e allineati a eBay."
+              icon="link"
+              label="Prodotti collegati"
+              tone="info"
+              trend={
+                newMappings > 0
+                  ? {
+                      label: `${formatNumber(newMappings)} ${
+                        newMappings === 1 ? "nuovo" : "nuovi"
+                      } da ieri`,
+                      tone: "up",
+                    }
+                  : undefined
+              }
+              value={formatNumber(dashboard.imports.mappingCount)}
+            />
+            <MetricTile
+              detail={
+                dashboard.conflicts.openCount > 0
+                  ? "Scegli quale valore mantenere."
+                  : "Niente da rivedere."
+              }
+              icon="alert-triangle"
+              label="Conflitti aperti"
+              tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
+              trend={
+                newConflicts > 0
+                  ? {
+                      label: `${formatNumber(newConflicts)} ${
+                        newConflicts === 1 ? "nuovo" : "nuovi"
+                      } da ieri`,
+                      tone: "watch",
+                    }
+                  : undefined
+              }
+              value={formatNumber(dashboard.conflicts.openCount)}
+            />
+            <MetricTile
+              detail={
+                dashboard.sync.catalogHealth.nextDueAt
+                  ? `Prossimo ${formatDateTime(
+                      dashboard.sync.catalogHealth.nextDueAt,
+                    )}.`
+                  : "In attesa del primo controllo."
+              }
+              icon="clock"
+              label="Controllo automatico"
+              tone="neutral"
+              value={`ogni ${minutes} min`}
+            />
+          </s-grid>
+          <div className="syncbay-reliability">
+            <s-text color="subdued">
+              {reliability.totalJobs > 0
+                ? `Ultimi ${reliability.windowDays} giorni · ${formatNumber(
+                    reliability.totalJobs,
+                  )} sincronizzazioni · ${reliability.successRate}% riuscite.`
+                : "Nessuna sincronizzazione negli ultimi 7 giorni."}
+            </s-text>
+            {reliability.totalJobs > 0 ? (
+              <Sparkline
+                ariaLabel="Andamento sincronizzazioni ultimi 7 giorni"
+                values={reliability.daily}
+              />
+            ) : null}
+          </div>
+        </div>
 
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
         >
-          <s-section heading="Azioni consigliate">
+          <s-section heading="Cosa fare adesso">
             <div className="syncbay-action-list">
-              {getRecommendedActions(dashboard).map((action) => (
+              {contextualActions.map((action) => (
                 <ActionRow
                   description={action.description}
                   href={action.href}
@@ -179,127 +270,33 @@ export default function Index() {
             </div>
           </s-section>
 
-          <s-section heading="Stato catalogo">
-            <s-stack gap="base">
-              <StatusRow
-                detail={getSyncHealthDetail(dashboard)}
-                label={getCatalogHealthBadge(dashboard)}
-                tone={getCatalogHealthTone(dashboard)}
-                title="Aggiornamento catalogo"
-              />
-              <StatusRow
-                detail={getImportStatusDetail(dashboard)}
-                label={importIncomplete ? "Da completare" : "Pronta"}
-                tone={importIncomplete ? "warning" : "success"}
-                title="Importazione"
-              />
-            </s-stack>
-          </s-section>
-        </s-grid>
-
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-        >
-          <s-section heading="Collegamenti">
-            <s-stack gap="base">
-              <ConnectionCard
-                detail={getEbayDetail(dashboard)}
-                logo="ebay"
-                name={`eBay ${formatMarketplaceLabel(dashboard.ebay.marketplaceId)}`}
-                statusLabel={getEbayConnectionStatusLabel(
-                  dashboard.ebay.status,
-                )}
-                statusTone={
-                  dashboard.ebay.status === "CONNECTED" ? "success" : "critical"
-                }
-              />
-              <ConnectionCard
-                detail={`Negozio ${dashboard.shop.domain}.`}
-                logo="shopify"
-                name="Shopify"
-                statusLabel="Collegato"
-                statusTone="success"
-              />
-            </s-stack>
-          </s-section>
-
-          <s-section heading="Attività recenti">
+          <s-section heading="Attività recente">
             {recentActivity.length > 0 ? (
-              <s-stack gap="base">
-                {recentActivity.map((activity) => (
-                  <s-box
-                    border="base"
-                    borderColor="base"
-                    borderRadius="base"
+              <ul className="syncbay-timeline">
+                {recentActivity.map((activity, index) => (
+                  <TimelineEvent
+                    icon={getActivityIcon(activity.tone)}
+                    isLast={index === recentActivity.length - 1}
                     key={activity.id}
-                    padding="base"
+                    tone={activity.tone}
                   >
-                    <s-stack
-                      direction="inline"
-                      gap="base"
-                      justifyContent="space-between"
-                    >
-                      <s-stack gap="small-200">
-                        <s-heading>{activity.title}</s-heading>
-                        <s-text color="subdued">{activity.detail}</s-text>
-                      </s-stack>
-                      <s-badge tone={activity.tone}>
-                        {getToneLabel(activity.tone)}
-                      </s-badge>
+                    <s-stack gap="small-200">
+                      <s-heading>{activity.title}</s-heading>
+                      <s-text color="subdued">{activity.detail}</s-text>
                     </s-stack>
-                  </s-box>
+                  </TimelineEvent>
                 ))}
-              </s-stack>
+              </ul>
             ) : (
               <s-text color="subdued">
-                Nessuna attività registrata. Quando SyncBay importerà o
-                aggiornerà il catalogo, gli eventi appariranno qui.
+                Ancora nessuna attività. Appena SyncBay importa o aggiorna il
+                catalogo, gli eventi compaiono qui.
               </s-text>
             )}
           </s-section>
         </s-grid>
-
-        <s-section heading="Dettagli tecnici">
-          <details className="syncbay-details">
-            <summary>Apri dettagli tecnici</summary>
-            <s-stack gap="base">
-              <s-unordered-list>
-                <s-list-item>
-                  Shop collegato: {dashboard.shop.domain}
-                </s-list-item>
-                <s-list-item>
-                  Target sync: {dashboard.shop.syncTargetSeconds} secondi
-                </s-list-item>
-                <s-list-item>
-                  Scope Shopify mancanti:{" "}
-                  {dashboard.shopify.missingScopes.length > 0
-                    ? dashboard.shopify.missingScopes.join(", ")
-                    : "nessuno"}
-                </s-list-item>
-                <s-list-item>
-                  Scope configurazione mancanti:{" "}
-                  {dashboard.shopify.missingConfiguredScopes.length > 0
-                    ? dashboard.shopify.missingConfiguredScopes.join(", ")
-                    : "nessuno"}
-                </s-list-item>
-                <s-list-item>
-                  Queue/Cron:{" "}
-                  {dashboard.supabase.queueProviderReady &&
-                  dashboard.supabase.schedulerProviderReady
-                    ? "predisposto"
-                    : "da allineare"}
-                </s-list-item>
-                <s-list-item>
-                  URL pubblico:{" "}
-                  {dashboard.vercel.publicUrl ?? "non configurato"}
-                </s-list-item>
-                <s-list-item>Versione app: {APP_VERSION}</s-list-item>
-                <s-list-item>Data build: {BUILD_DATE}</s-list-item>
-              </s-unordered-list>
-            </s-stack>
-          </details>
-        </s-section>
+        </>
+        )}
       </s-stack>
     </s-page>
   );
@@ -309,34 +306,200 @@ export const headers: HeadersFunction = (headersArgs) => {
   return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
 
-function StatusRow({
-  detail,
-  label,
-  title,
-  tone,
-}: {
-  detail: string;
-  label: string;
-  title: string;
-  tone: "critical" | "info" | "success" | "warning";
-}) {
+type OnboardingSteps = {
+  ebay: StepStatus;
+  importCatalog: StepStatus;
+  sync: StepStatus;
+};
+
+function getOnboardingSteps(dashboard: Dashboard): OnboardingSteps {
+  const ebayConnected = dashboard.ebay.status === "CONNECTED";
+  const imported = dashboard.imports.mappingCount > 0;
+  const syncOn = dashboard.shop.syncEnabled;
+
+  return {
+    ebay: ebayConnected ? "completed" : "active",
+    importCatalog: !ebayConnected
+      ? "pending"
+      : imported
+        ? "completed"
+        : "active",
+    sync: !imported ? "pending" : syncOn ? "completed" : "active",
+  };
+}
+
+function stepStatusLabel(status: StepStatus) {
+  if (status === "completed") return "Fatto";
+  if (status === "active") return "Da fare ora";
+
+  return "In attesa";
+}
+
+function getBadgeTone(firstRun: boolean, working: boolean): SyncBayTone {
+  if (firstRun) return "info";
+
+  return working ? "info" : "success";
+}
+
+function getBadgeLabel(firstRun: boolean, working: boolean) {
+  if (firstRun) return "Configurazione iniziale";
+
+  return working ? "Sincronizzazione in corso" : "Tutto sincronizzato";
+}
+
+function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack direction="inline" gap="base" justifyContent="space-between">
+      <s-stack gap="base">
         <s-stack gap="small-200">
-          <s-heading>{title}</s-heading>
-          <s-text color="subdued">{detail}</s-text>
+          <s-heading>Benvenuto in SyncBay</s-heading>
+          <s-text color="subdued">
+            Tre passi e il tuo catalogo eBay è su Shopify, pronto a vendere. Ti
+            guidiamo uno alla volta.
+          </s-text>
         </s-stack>
-        <s-badge tone={tone}>{label}</s-badge>
+        <ul className="syncbay-stepper">
+          <Step
+            index={1}
+            status={steps.ebay}
+            statusLabel={stepStatusLabel(steps.ebay)}
+            title="Collega il tuo account eBay"
+          >
+            <s-text color="subdued">
+              SyncBay legge le tue inserzioni da eBay.it. eBay resta la tua
+              sorgente: non viene modificato.
+            </s-text>
+            {steps.ebay === "active" ? (
+              <div>
+                <s-button href="/auth/ebay/start" variant="primary">
+                  Collega eBay
+                </s-button>
+              </div>
+            ) : null}
+          </Step>
+          <Step
+            index={2}
+            status={steps.importCatalog}
+            statusLabel={stepStatusLabel(steps.importCatalog)}
+            title="Importa il catalogo"
+          >
+            <s-text color="subdued">
+              Rivedi le inserzioni trovate su eBay e portale in Shopify, con
+              un&apos;anteprima prima di confermare.
+            </s-text>
+            {steps.importCatalog === "active" ? (
+              <div>
+                <s-button href="/app/import-preview" variant="primary">
+                  Vai all&apos;importazione
+                </s-button>
+              </div>
+            ) : null}
+          </Step>
+          <Step
+            index={3}
+            isLast
+            status={steps.sync}
+            statusLabel={stepStatusLabel(steps.sync)}
+            title="Attiva la sincronizzazione"
+          >
+            <s-text color="subdued">
+              Da qui SyncBay tiene Shopify allineato a eBay e protegge le
+              disponibilità, entro 5 minuti.
+            </s-text>
+            {steps.sync === "active" ? (
+              <div>
+                <s-button href="/app/settings" variant="primary">
+                  Apri le impostazioni
+                </s-button>
+              </div>
+            ) : null}
+          </Step>
+        </ul>
+        <s-text color="subdued">
+          Completati i tre passi, qui compare la panoramica operativa: stato del
+          sync, prodotti a rischio e attività.
+        </s-text>
       </s-stack>
     </s-box>
   );
 }
 
-function getQuantityIssueCount(dashboard: Dashboard) {
-  return dashboard.sync.failedJobs.filter(
+function isSyncWorking(dashboard: Dashboard) {
+  return (
+    dashboard.sync.catalogHealth.status === "running" ||
+    dashboard.sync.catalogHealth.activeIncrementalJobCount > 0 ||
+    dashboard.sync.pendingJobs > 0
+  );
+}
+
+function getRiskCount(dashboard: Dashboard) {
+  // Un aggiornamento di disponibilità verso eBay non andato a buon fine = il
+  // prodotto può restare in vendita su Shopify senza scorta reale. Contiamo i
+  // job di stock falliti e quelli ancora in riprova.
+  const failedStock = dashboard.sync.failedJobs.filter(
     (job) => job.type === "UPDATE_EBAY_STOCK",
   ).length;
+  const retryingStock = dashboard.sync.lastJobs.filter(
+    (job) => job.type === "UPDATE_EBAY_STOCK" && job.status === "RETRYING",
+  ).length;
+
+  return failedStock + retryingStock;
+}
+
+function getRiskTitle(count: number) {
+  if (count === 0) return "Le disponibilità sono protette";
+
+  return count === 1
+    ? "1 prodotto potrebbe essere venduto senza disponibilità"
+    : `${formatNumber(count)} prodotti potrebbero essere venduti senza disponibilità`;
+}
+
+function getRiskBody(count: number) {
+  if (count === 0) {
+    return "Nessun prodotto rischia di essere venduto senza scorta. SyncBay tiene Shopify allineato a eBay.";
+  }
+
+  return "Disponibili su Shopify, ma l'aggiornamento della disponibilità verso eBay non è andato a buon fine. SyncBay resta in modalità prudente finché non controlli.";
+}
+
+function getPulseStatus(dashboard: Dashboard, working: boolean) {
+  if (working) return "Allineamento in corso";
+
+  const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
+
+  return latest
+    ? `Aggiornato ${formatDateTime(latest)}`
+    : "In attesa del primo allineamento";
+}
+
+function getReadLabel(dashboard: Dashboard) {
+  const requested = dashboard.sync.lastRunCounts.requested;
+
+  if (requested !== null) {
+    return requested === 1
+      ? "1 inserzione letta"
+      : `${formatNumber(requested)} inserzioni lette`;
+  }
+
+  return `${formatNumber(dashboard.imports.mappingCount)} prodotti seguiti`;
+}
+
+function getAppliedLabel(dashboard: Dashboard, working: boolean) {
+  const pending = dashboard.sync.pendingJobs;
+
+  if (working && pending > 0) {
+    return pending === 1
+      ? "1 aggiornamento in coda"
+      : `${formatNumber(pending)} aggiornamenti in coda`;
+  }
+
+  const synced = dashboard.sync.lastRunCounts.synced;
+
+  if (synced !== null) {
+    return synced === 1 ? "1 aggiornata" : `${formatNumber(synced)} aggiornate`;
+  }
+
+  return working ? "allineamento in corso" : "tutto allineato";
 }
 
 function getSettingsMissing(dashboard: Dashboard) {
@@ -385,11 +548,19 @@ function getHeroIcon(kind: NextActionKind): SyncBayIcon {
   return "check-circle";
 }
 
+function getActivityIcon(tone: RecentActivity["tone"]): SyncBayIcon {
+  if (tone === "success") return "check-circle";
+  if (tone === "critical") return "alert-circle";
+  if (tone === "warning") return "alert-triangle";
+
+  return "refresh";
+}
+
 function formatMarketplaceLabel(marketplaceId: string) {
   return marketplaceId.replace(/^EBAY_/, "");
 }
 
-type RecommendedAction = {
+type ContextualAction = {
   description: string;
   href: string;
   icon: SyncBayIcon;
@@ -397,8 +568,11 @@ type RecommendedAction = {
   tone: SyncBayTone;
 };
 
-function getRecommendedActions(dashboard: Dashboard): RecommendedAction[] {
-  const actions: RecommendedAction[] = [];
+function getContextualActions(
+  dashboard: Dashboard,
+  importIncomplete: boolean,
+): ContextualAction[] {
+  const actions: ContextualAction[] = [];
 
   if (
     dashboard.ebay.oauthReady &&
@@ -417,126 +591,46 @@ function getRecommendedActions(dashboard: Dashboard): RecommendedAction[] {
     });
   }
 
-  actions.push({
-    description: "Porta nuovi listing eBay in Shopify.",
-    href: "/app/import-preview",
-    icon: "import",
-    label: "Importazione",
-    tone: "neutral",
-  });
-
-  actions.push({
-    description: "Sfoglia i prodotti collegati e il loro stato.",
-    href: "/app/catalog",
-    icon: "product",
-    label: "Catalogo",
-    tone: "neutral",
-  });
-
   if (dashboard.conflicts.openCount > 0) {
     actions.push({
-      description: `${formatNumber(dashboard.conflicts.openCount)} modifiche da rivedere.`,
+      description: "Scegli quale valore mantenere tra eBay e Shopify.",
       href: "/app/conflicts",
       icon: "alert-triangle",
-      label: "Risolvi conflitti",
+      label:
+        dashboard.conflicts.openCount === 1
+          ? "Risolvi 1 conflitto"
+          : `Risolvi ${formatNumber(dashboard.conflicts.openCount)} conflitti`,
       tone: "warning",
     });
   }
 
   actions.push({
-    description: "Sync catalogo, canali e opzioni avanzate.",
-    href: "/app/settings",
-    icon: "settings",
-    label: "Impostazioni",
+    description: "Porta in Shopify le inserzioni trovate su eBay.",
+    href: "/app/import-preview",
+    icon: "import",
+    label: importIncomplete ? "Completa l'importazione" : "Importa nuove inserzioni",
     tone: "neutral",
   });
+
+  if (actions.length < 2) {
+    actions.push({
+      description: "Sfoglia i prodotti collegati e il loro stato.",
+      href: "/app/catalog",
+      icon: "product",
+      label: "Apri il catalogo",
+      tone: "neutral",
+    });
+  }
 
   return actions;
 }
 
-function getEbayDetail(dashboard: Dashboard) {
-  if (dashboard.ebay.status === "CONNECTED" && dashboard.ebay.connectedAt) {
-    return `Collegato dal ${formatDateTime(dashboard.ebay.connectedAt)}.`;
-  }
-
-  if (dashboard.ebay.oauthReady && dashboard.ebay.oauthEnabled) {
-    return "Puoi collegare o ricollegare l'account eBay da SyncBay.";
-  }
-
-  if (dashboard.ebay.missingRequirements.length > 0) {
-    return `Mancano ${dashboard.ebay.missingRequirements.length} requisiti di configurazione eBay.`;
-  }
-
-  return "Collegamento eBay predisposto, ma non ancora attivo.";
-}
-
-function getCatalogHealthBadge(dashboard: Dashboard) {
-  const status = dashboard.sync.catalogHealth.status;
-
-  if (status === "disabled") return "Non attivo";
-  if (status === "due") return "Da eseguire";
-  if (status === "fresh") return "Aggiornato";
-  if (status === "overdue") return "In ritardo";
-  if (status === "running") return "In corso";
-
-  return "Da controllare";
-}
-
-function getCatalogHealthTone(dashboard: Dashboard) {
-  const status = dashboard.sync.catalogHealth.status;
-
-  if (status === "fresh") return "success";
-  if (status === "overdue") return "warning";
-  if (status === "disabled") return "info";
-
-  return "info";
-}
-
-function getCatalogHealthValue(dashboard: Dashboard) {
-  const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
-
-  return latest ? formatDateTime(latest) : getCatalogHealthBadge(dashboard);
-}
-
-function getCatalogHealthDetail(dashboard: Dashboard) {
-  const nextDueAt = dashboard.sync.catalogHealth.nextDueAt;
-
-  if (nextDueAt) return `Prossimo controllo: ${formatDateTime(nextDueAt)}.`;
-
-  return "Nessun aggiornamento incrementale completato.";
-}
-
-function getSyncHealthDetail(dashboard: Dashboard) {
-  const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
-  const next = dashboard.sync.catalogHealth.nextDueAt;
-
-  if (latest && next) {
-    return `Ultimo aggiornamento ${formatDateTime(latest)}, prossimo controllo ${formatDateTime(next)}.`;
-  }
-
-  if (latest) return `Ultimo aggiornamento ${formatDateTime(latest)}.`;
-
-  return "Nessun aggiornamento catalogo completato finora.";
-}
-
-function getImportStatusDetail(dashboard: Dashboard) {
-  if (dashboard.importPreview.blockers.length > 0) {
-    return dashboard.importPreview.blockers.join(", ");
-  }
-
-  if (dashboard.imports.mappingCount === 0) {
-    return "Nessun prodotto collegato: avvia l'importazione quando eBay è pronto.";
-  }
-
-  return `${formatNumber(dashboard.imports.mappingCount)} prodotti collegati.`;
-}
-
 function getJobTitle(type: string) {
   if (type === "IMPORT_CATALOG") return "Importazione catalogo";
-  if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
-  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata";
-  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto messo in esaurito";
+  if (type === "SYNC_INCREMENTAL") return "Allineamento catalogo";
+  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata su eBay";
+  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica rilevata su Shopify";
+  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto segnato come esaurito";
 
   return "Attività SyncBay";
 }
@@ -546,7 +640,7 @@ function formatJobStatus(status: string) {
   if (status === "RUNNING") return "In corso";
   if (status === "SUCCEEDED") return "Completata";
   if (status === "FAILED") return "Errore";
-  if (status === "RETRYING") return "Riproverà automaticamente";
+  if (status === "RETRYING") return "Riprova automatica in corso";
   if (status === "CANCELLED") return "Annullata";
 
   return status;
@@ -558,14 +652,6 @@ function getJobTone(status: string): RecentActivity["tone"] {
   if (status === "RETRYING") return "warning";
 
   return "info";
-}
-
-function getToneLabel(tone: RecentActivity["tone"]) {
-  if (tone === "success") return "Ok";
-  if (tone === "critical") return "Errore";
-  if (tone === "warning") return "Attenzione";
-
-  return "Info";
 }
 
 const itNumberFormatter = new Intl.NumberFormat("it-IT");

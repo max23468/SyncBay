@@ -213,7 +213,8 @@ Regole:
 
 ### Palette direzionale
 
-Questa non è ancora una palette implementata. Serve come direzione per il futuro design system dell'app, distinta dagli asset logo definitivi.
+In implementazione progressiva nel design layer (ADR 0010). Distinta dagli
+asset logo definitivi.
 
 | Ruolo | Nome | Valore |
 | --- | --- | --- |
@@ -222,8 +223,10 @@ Questa non è ancora una palette implementata. Serve come direzione per il futur
 | Testo primario | Ink | `#15202B` |
 | Testo secondario | Slate | `#51615F` |
 | Bordo | Mist | `#D8E0DD` |
-| Brand primario | Harbor | `#0F5E6E` |
-| Brand azione | Current | `#1A8F7A` |
+| Accento UI | Bay Blue | `#0064D2` |
+| Accento UI forte | Bay Blue scuro | `#0A4A94` |
+| Brand teal (palette) | Harbor | `#0F5E6E` |
+| Azione teal (palette) | Current | `#1A8F7A` |
 | Successo | Moss | `#3F7D4A` |
 | Warning | Amber | `#B7791F` |
 | Conflitto/errore | Coral | `#C75C48` |
@@ -231,10 +234,16 @@ Questa non è ancora una palette implementata. Serve come direzione per il futur
 
 Regole:
 
-- `Harbor` e `Current` sono brand/action, non devono dominare tutta la UI.
+- **Accento UI = Bay Blue** del logo, con uso disciplinato (link, stati attivi,
+  battito del sync, sparkline, focus, bottoni primari del design layer): non
+  come campitura diffusa né chrome eBay-like. Vedi ADR 0013.
+- `Harbor`/`Current` restano colori di palette ma **non sono più l'accento UI
+  primario** (sostituiti da Bay Blue per l'accento; ADR 0013).
 - `Coral` solo per errori e conflitti, mai come colore decorativo principale.
 - Non trasformare i richiami eBay/Shopify del logo in un sistema cromatico dominante per tutta l'app.
-- Il design system dovrà restare operativo e leggibile, con il logo come accento di marca.
+- Il design system resta operativo e leggibile, con il logo come accento di marca.
+- **Tema chiaro, ma theme-ready**: colori espressi come variabili semantiche,
+  nessun dark mode spedito (admin Shopify light-only). Vedi ADR 0013.
 
 ### Tipografia
 

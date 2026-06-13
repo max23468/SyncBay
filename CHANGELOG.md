@@ -6,6 +6,28 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.0] — 2026-06-14
+
+### Novità
+
+- Panoramica ridisegnata: il battito del sync eBay → SyncBay → Shopify mostra a
+  colpo d'occhio cosa sta facendo l'app, una lente in evidenza segnala i
+  prodotti che rischiano di essere venduti senza disponibilità, le metriche
+  mostrano la tendenza rispetto al giorno prima e l'affidabilità degli ultimi 7
+  giorni, e i passaggi tecnici sono usciti dalla vista del negoziante. A
+  catalogo vuoto la pagina diventa un primo avvio guidato (Collega → Importa →
+  Attiva). Linguaggio rivisto, più concreto e meno gergale.
+
+### Sotto il cofano
+
+- `getDashboardState` aggrega lo storico job per ricavare i conteggi reali del
+  battito (inserzioni lette/aggiornate), le tendenze a 24 ore di prodotti
+  collegati e conflitti e il tasso di riuscita degli ultimi 7 giorni, senza
+  introdurre nuovi worker o chiamate provider.
+- Accento UI portato sul Bay Blue del logo con uso disciplinato e colori del
+  design layer espressi come variabili semantiche (light, theme-ready). Vedi
+  ADR 0013 e l'estensione 2026-06-14 di ADR 0010.
+
 ## [0.35.18] — 2026-06-13
 
 ### Correzioni
@@ -1749,6 +1771,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.0]: #0360--2026-06-14
 [0.35.18]: #03518--2026-06-13
 [0.35.17]: #03517--2026-06-13
 [0.35.16]: #03516--2026-06-13
