@@ -2,10 +2,9 @@ import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
 import { runDueSyncJobs } from "../services/sync-job-runner.server";
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request, url }: ActionFunctionArgs) => {
   requireCronSecret(request);
 
-  const url = new URL(request.url);
   const limit = Number.parseInt(url.searchParams.get("limit") ?? "", 10);
   const result = await runDueSyncJobs({
     limit: Number.isInteger(limit) ? limit : undefined,

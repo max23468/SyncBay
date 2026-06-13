@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.13] — 2026-06-13
+
+### Correzioni
+
+- Catalogo e dashboard usano solo watermark incrementali completi per valutare
+  freschezza e salute sync, evitando che un singolo batch riuscito renda fresco
+  l'intero catalogo mentre altri job dello stesso ciclo sono ancora pendenti o
+  falliti.
+
+### Sotto il cofano
+
+- Attivati i cinque future flag React Router v8 e aggiornate le route che
+  leggono query string per usare l'URL normalizzato fornito dal router.
+
 ## [0.35.12] — 2026-06-13
 
 ### Correzioni
@@ -1685,6 +1699,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.13]: #03513--2026-06-13
 [0.35.12]: #03512--2026-06-13
 [0.35.11]: #03511--2026-06-13
 [0.35.10]: #03510--2026-06-13

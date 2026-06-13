@@ -8,9 +8,7 @@ import { login } from "../../shopify.server";
 
 export const meta: MetaFunction = () => getSyncBayMeta("Accesso");
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-
+export const loader = async ({ url }: LoaderFunctionArgs) => {
   if (url.searchParams.get("shop")) {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }

@@ -9,10 +9,9 @@ import { getShopifyAdminGraphqlClient } from "../services/shopify-admin-session.
 
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   requireInternalAppSecret(request);
 
-  const url = new URL(request.url);
   const { shopDomain } = normalizeDiagnosticsProductInput(
     {
       productGids: [],

@@ -73,9 +73,8 @@ type ConflictActionData = {
 
 export const meta: MetaFunction = () => getSyncBayMeta("Conflitti");
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const url = new URL(request.url);
 
   return getConflictsPageState(session, {
     filter: normalizeConflictFilter(url.searchParams.get("filter")),
