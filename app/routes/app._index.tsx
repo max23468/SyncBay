@@ -20,6 +20,7 @@ import {
   type SyncBayIcon,
   type SyncBayTone,
 } from "../components/SyncBayUi";
+import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getNextAction, type NextActionKind } from "../lib/syncbay-ui-state";
@@ -127,6 +128,7 @@ export default function Index() {
         {getBadgeLabel(firstRun, working)}
       </s-badge>
       <s-stack gap="large">
+        <LiveSync working={working} />
         {firstRun ? <FirstRunOnboarding steps={onboardingSteps} /> : null}
         {firstRun ? null : (
         <>
