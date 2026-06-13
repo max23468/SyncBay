@@ -529,11 +529,27 @@
   max-inline-size: 100%;
 }
 
+.syncbay-setting > s-stack,
+.syncbay-setting s-box,
+.syncbay-setting s-grid,
+.syncbay-setting s-stack,
+.syncbay-setting s-text,
+.syncbay-setting s-paragraph,
+.syncbay-setting s-unordered-list,
+.syncbay-setting s-list-item,
+.syncbay-setting details {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
 .syncbay-setting form {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
 }
 
 .syncbay-setting form s-select,

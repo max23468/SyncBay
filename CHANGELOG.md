@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.35.18] — 2026-06-13
+
+### Correzioni
+
+- Impostazioni: i componenti testuali e le griglie interne delle schede si
+  restringono correttamente sui viewport stretti, evitando tagli orizzontali
+  nella vista mobile.
+
+### Sotto il cofano
+
+- Aggiornati React, React DOM e i tipi TypeScript alla linea `19.2`, mantenendo
+  il nuovo JSX transform già configurato e verificando la compatibilità dei peer
+  Shopify, React Router e Vercel.
+
 ## [0.35.17] — 2026-06-13
 
 ### Sotto il cofano
@@ -1735,6 +1749,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.35.18]: #03518--2026-06-13
 [0.35.17]: #03517--2026-06-13
 [0.35.16]: #03516--2026-06-13
 [0.35.15]: #03515--2026-06-13
