@@ -216,34 +216,38 @@ Regole:
 In implementazione progressiva nel design layer (ADR 0010). Distinta dagli
 asset logo definitivi.
 
-| Ruolo | Nome | Valore |
-| --- | --- | --- |
-| Fondo app | Cloud | `#F6F8F7` |
-| Superficie | Paper | `#FFFFFF` |
-| Testo primario | Ink | `#15202B` |
-| Testo secondario | Slate | `#51615F` |
-| Bordo | Mist | `#D8E0DD` |
-| Accento UI | Bay Blue | `#0064D2` |
-| Accento UI forte | Bay Blue scuro | `#0A4A94` |
-| Brand teal (palette) | Harbor | `#0F5E6E` |
-| Azione teal (palette) | Current | `#1A8F7A` |
-| Successo | Moss | `#3F7D4A` |
-| Warning | Amber | `#B7791F` |
-| Conflitto/errore | Coral | `#C75C48` |
-| Info | Steel | `#3D6F9F` |
+La palette semantica usa i **colori del logo eBay/Shopify** (ADR 0013): il verde
+di Shopify sostituisce il verde di eBay. Brand primario = blu eBay, secondario =
+verde Shopify. Ogni ruolo semantico ha hue di marca (bordi/icone/accenti), tinta
+tenue (sfondi) e versione scura per il testo.
+
+| Ruolo | Nome | Hue | Testo | Tinta |
+| --- | --- | --- | --- | --- |
+| Fondo app | Cloud | `#F6F8F7` | — | — |
+| Superficie | Paper | `#FFFFFF` | — | — |
+| Testo primario | Ink | `#15202B` | — | — |
+| Testo secondario | Slate | `#51615F` | — | — |
+| Bordo | Mist | `#D8E0DD` | — | — |
+| Primario / Accento / Info | Bay Blue (eBay) | `#0064D2` | `#0A4A94` | `#E7F0FB` |
+| Secondario / Successo | Verde Shopify | `#95BF47` | `#466A1A` | `#EEF6E1` |
+| Warning | Giallo eBay | `#F5AF02` | `#7A5200` | `#FDF3D6` |
+| Errore / Conflitto | Rosso eBay | `#E53238` | `#A31D22` | `#FCE9EA` |
+| Legacy (no ruolo) | Harbor / Current | `#0F5E6E` / `#1A8F7A` | — | — |
 
 Regole:
 
-- **Accento UI = Bay Blue** del logo, con uso disciplinato (link, stati attivi,
-  battito del sync, sparkline, focus, bottoni primari del design layer): non
-  come campitura diffusa né chrome eBay-like. Vedi ADR 0013.
-- `Harbor`/`Current` restano colori di palette ma **non sono più l'accento UI
-  primario** (sostituiti da Bay Blue per l'accento; ADR 0013).
-- `Coral` solo per errori e conflitti, mai come colore decorativo principale.
-- Non trasformare i richiami eBay/Shopify del logo in un sistema cromatico dominante per tutta l'app.
-- Il design system resta operativo e leggibile, con il logo come accento di marca.
-- **Tema chiaro, ma theme-ready**: colori espressi come variabili semantiche,
-  nessun dark mode spedito (admin Shopify light-only). Vedi ADR 0013.
+- **Mappatura semantica = colori eBay/Shopify**: success = verde Shopify, info =
+  blu eBay, warning = giallo eBay, errore = rosso eBay. Vedi ADR 0013.
+- **Blu = primario E info**: stessa tinta, trattamento diverso — il primario/
+  azione usa il blu **pieno** (link, battito, sparkline, focus, bottoni primari),
+  l'informativo usa la **tinta tenue** + testo blu scuro.
+- **Contrasto**: gli hue di marca da soli non bastano come testo su bianco; usare
+  sempre la variante `-text` scura per il testo e tenere le superfici neutre.
+- Colore di marca su accenti, icone, badge e bordi — **mai** come campiture
+  diffuse o banner che ricreino il logo eBay.
+- `Harbor`/`Current` restano colori legacy, senza ruolo semantico.
+- **Tema chiaro, ma theme-ready**: colori come variabili semantiche, nessun dark
+  mode spedito (admin Shopify light-only). Vedi ADR 0013.
 
 ### Tipografia
 

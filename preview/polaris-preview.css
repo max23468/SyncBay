@@ -139,20 +139,20 @@ s-badge {
   white-space: nowrap;
 }
 s-badge[tone="success"] {
-  background: #e9f3ea;
-  color: #2f5d38;
+  background: #eef6e1;
+  color: #466a1a;
 }
 s-badge[tone="warning"] {
-  background: #f8f0dc;
-  color: #6b5310;
+  background: #fdf3d6;
+  color: #7a5200;
 }
 s-badge[tone="critical"] {
-  background: #f8e9e5;
-  color: #8a3322;
+  background: #fce9ea;
+  color: #a31d22;
 }
 s-badge[tone="info"] {
-  background: #eaf1f8;
-  color: #2c4d6e;
+  background: #e7f0fb;
+  color: #0a4a94;
 }
 
 /* Button ------------------------------------------------------------------ */
@@ -310,16 +310,16 @@ s-icon {
   color: #5c6ac4;
 }
 s-icon[tone="success"] {
-  color: #3f7d4a;
+  color: #95bf47;
 }
 s-icon[tone="warning"] {
-  color: #b7791f;
+  color: #f5af02;
 }
 s-icon[tone="critical"] {
-  color: #c75c48;
+  color: #e53238;
 }
 s-icon[tone="info"] {
-  color: #3d6f9f;
+  color: #0064d2;
 }
 s-icon[tone="neutral"] {
   color: #51615f;

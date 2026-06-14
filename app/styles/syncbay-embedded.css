@@ -4,19 +4,31 @@
   --syncbay-ink: #15202b;
   --syncbay-slate: #51615f;
   --syncbay-mist: #d8e0dd;
+  /* Colori di palette legacy (non più ruoli semantici, vedi sotto). */
   --syncbay-harbor: #0f5e6e;
   --syncbay-current: #1a8f7a;
-  --syncbay-moss: #3f7d4a;
-  --syncbay-amber: #b7791f;
-  --syncbay-coral: #c75c48;
-  --syncbay-steel: #3d6f9f;
+
+  /* Colori semantici = palette eBay/Shopify (ADR 0013, decisione maintainer
+     2026-06-14, distribuzione privata): verde Shopify per il successo, blu eBay
+     per l'informativo, giallo eBay per il warning, rosso eBay per l'errore.
+     Ogni ruolo ha: hue di marca (bordi/icone/accenti), tinta tenue (sfondi) e
+     una versione scura per il testo, perché gli hue di marca da soli non hanno
+     contrasto sufficiente come testo su bianco. */
+  --syncbay-success: #95bf47;
+  --syncbay-success-text: #466a1a;
+  --syncbay-warning: #f5af02;
+  --syncbay-warning-text: #7a5200;
+  --syncbay-critical: #e53238;
+  --syncbay-critical-text: #a31d22;
+  --syncbay-info: #0064d2;
+  --syncbay-info-text: #0a4a94;
 
   /* Tinte tenui del design layer (ADR 0010): solo sfondi morbidi, mai pieni. */
   --syncbay-tint-neutral: #eef2f1;
-  --syncbay-tint-info: #eaf1f8;
-  --syncbay-tint-success: #e9f3ea;
-  --syncbay-tint-warning: #f8f0dc;
-  --syncbay-tint-critical: #f8e9e5;
+  --syncbay-tint-info: #e7f0fb;
+  --syncbay-tint-success: #eef6e1;
+  --syncbay-tint-warning: #fdf3d6;
+  --syncbay-tint-critical: #fce9ea;
 
   /* Accento UI SyncBay: Bay Blue del logo, uso disciplinato (link, stati,
      nodo del battito, sparkline) mai come chrome eBay-like. Deroga consapevole
@@ -119,19 +131,19 @@
 }
 
 .syncbay-hero--success {
-  border-inline-start-color: var(--syncbay-moss);
+  border-inline-start-color: var(--syncbay-success);
   background: var(--syncbay-tint-success);
 }
 .syncbay-hero--warning {
-  border-inline-start-color: var(--syncbay-amber);
+  border-inline-start-color: var(--syncbay-warning);
   background: var(--syncbay-tint-warning);
 }
 .syncbay-hero--critical {
-  border-inline-start-color: var(--syncbay-coral);
+  border-inline-start-color: var(--syncbay-critical);
   background: var(--syncbay-tint-critical);
 }
 .syncbay-hero--info {
-  border-inline-start-color: var(--syncbay-steel);
+  border-inline-start-color: var(--syncbay-info);
   background: var(--syncbay-tint-info);
 }
 
@@ -310,13 +322,13 @@
 }
 
 .syncbay-conflict--success {
-  border-inline-start-color: var(--syncbay-moss);
+  border-inline-start-color: var(--syncbay-success);
 }
 .syncbay-conflict--warning {
-  border-inline-start-color: var(--syncbay-amber);
+  border-inline-start-color: var(--syncbay-warning);
 }
 .syncbay-conflict--critical {
-  border-inline-start-color: var(--syncbay-coral);
+  border-inline-start-color: var(--syncbay-critical);
 }
 
 /* Pannello sorgente nel confronto eBay/Shopify: marchio + valore. Il lato eBay
@@ -332,7 +344,7 @@
 }
 
 .syncbay-source--truth {
-  border-color: var(--syncbay-steel);
+  border-color: var(--syncbay-info);
   background: var(--syncbay-tint-info);
 }
 
@@ -420,12 +432,12 @@
 
 .syncbay-step--completed .syncbay-step__node {
   background: var(--syncbay-tint-success);
-  border-color: var(--syncbay-moss);
-  color: var(--syncbay-moss);
+  border-color: var(--syncbay-success);
+  color: var(--syncbay-success);
 }
 
 .syncbay-step--completed .syncbay-step__line {
-  background: var(--syncbay-moss);
+  background: var(--syncbay-success);
 }
 
 .syncbay-step--active .syncbay-step__node {
@@ -491,19 +503,19 @@
 
 .syncbay-event--success .syncbay-event__node {
   background: var(--syncbay-tint-success);
-  border-color: var(--syncbay-moss);
+  border-color: var(--syncbay-success);
 }
 .syncbay-event--warning .syncbay-event__node {
   background: var(--syncbay-tint-warning);
-  border-color: var(--syncbay-amber);
+  border-color: var(--syncbay-warning);
 }
 .syncbay-event--critical .syncbay-event__node {
   background: var(--syncbay-tint-critical);
-  border-color: var(--syncbay-coral);
+  border-color: var(--syncbay-critical);
 }
 .syncbay-event--info .syncbay-event__node {
   background: var(--syncbay-tint-info);
-  border-color: var(--syncbay-steel);
+  border-color: var(--syncbay-info);
 }
 
 /* Scheda impostazione (Impostazioni): box verticale con intestazione icona +
@@ -623,9 +635,9 @@
 }
 
 .syncbay-pulse__node--done {
-  border: 2px solid var(--syncbay-moss);
+  border: 2px solid var(--syncbay-success);
   background: var(--syncbay-tint-success);
-  color: var(--syncbay-moss);
+  color: var(--syncbay-success);
 }
 
 .syncbay-pulse__track {
@@ -695,13 +707,13 @@
   align-items: flex-start;
   gap: 14px;
   padding: 18px 20px;
-  border: 2px solid var(--syncbay-amber);
+  border: 2px solid var(--syncbay-warning);
   border-radius: 12px;
   background: var(--syncbay-paper);
 }
 
 .syncbay-risk--clear {
-  border-color: var(--syncbay-moss);
+  border-color: var(--syncbay-success);
   background: var(--syncbay-tint-success);
 }
 
@@ -742,10 +754,10 @@
 }
 
 .syncbay-tile__trend--up {
-  color: var(--syncbay-moss);
+  color: var(--syncbay-success-text);
 }
 .syncbay-tile__trend--watch {
-  color: var(--syncbay-amber);
+  color: var(--syncbay-warning-text);
 }
 
 /* Striscia affidabilità: testo a sinistra, sparkline a destra, filo divisorio
