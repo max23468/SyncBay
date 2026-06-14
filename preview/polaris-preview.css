@@ -169,8 +169,8 @@ s-button {
   cursor: pointer;
 }
 s-button[variant="primary"] {
-  border-color: #0f5e6e;
-  background: #0f5e6e;
+  border-color: #0064d2;
+  background: #0064d2;
   color: #ffffff;
 }
 
@@ -191,9 +191,9 @@ s-clickable-chip {
 }
 
 s-clickable-chip[color="strong"] {
-  border-color: #0f5e6e;
-  background: #eaf1f8;
-  color: #0f5e6e;
+  border-color: #0064d2;
+  background: #e7f0fb;
+  color: #0064d2;
 }
 
 /* Link / form controls ---------------------------------------------------- */

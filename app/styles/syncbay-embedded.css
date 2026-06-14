@@ -49,7 +49,7 @@
 
 .syncbay-row-details summary,
 .syncbay-details summary {
-  color: var(--syncbay-harbor);
+  color: var(--syncbay-accent);
   cursor: pointer;
   font-weight: 650;
 }
@@ -184,7 +184,7 @@
 
 .syncbay-action-list s-clickable:hover .syncbay-action {
   background: var(--syncbay-cloud);
-  border-color: var(--syncbay-harbor);
+  border-color: var(--syncbay-accent);
 }
 
 .syncbay-action__icon {
@@ -429,10 +429,10 @@
 }
 
 .syncbay-step--active .syncbay-step__node {
-  background: var(--syncbay-tint-info);
-  border-color: var(--syncbay-harbor);
-  color: var(--syncbay-harbor);
-  box-shadow: 0 0 0 3px var(--syncbay-tint-info);
+  background: var(--syncbay-accent-tint);
+  border-color: var(--syncbay-accent);
+  color: var(--syncbay-accent);
+  box-shadow: 0 0 0 3px var(--syncbay-accent-tint);
 }
 
 /* Timeline operativa (Attività): per ogni evento un nodo con icona colorata
