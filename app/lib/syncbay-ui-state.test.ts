@@ -234,6 +234,46 @@ test("schedules overview revalidation for the next future retry backoff", () => 
   );
 });
 
+test("prefers queued future retry wake time over recent jobs", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T10:30:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+      ],
+      nextRetryRunAfter: "2026-06-14T10:15:00.000Z",
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    "2026-06-14T10:15:00.000Z",
+  );
+});
+
+test("does not fall back to recent jobs when queued retry wake time is known empty", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T10:15:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+      ],
+      nextRetryRunAfter: null,
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    null,
+  );
+});
+
 test("does not schedule overview revalidation for due or terminal jobs", () => {
   assert.equal(
     getOverviewSyncWakeAt({

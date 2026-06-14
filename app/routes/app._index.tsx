@@ -107,6 +107,7 @@ export default function Index() {
       dashboard.sync.catalogHealth.activeIncrementalJobCount,
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     lastJobs: dashboard.sync.lastJobs,
+    nextRetryRunAfter: dashboard.sync.nextRetryRunAfter,
     pendingJobs: dashboard.sync.pendingJobs,
   };
   const working = isOverviewSyncWorking(overviewSyncInput);

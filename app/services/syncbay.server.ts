@@ -161,6 +161,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       snapshotCount,
       latestIncrementalJob,
       activeIncrementalJobCount,
+      nextRetryJob,
       latestIncrementalWorkJob,
       reliabilityJobs,
       newMappings24h,
@@ -235,6 +236,15 @@ export async function getDashboardState(session: ShopifySessionLike) {
             ],
           },
           type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
+        select: { runAfter: true },
+        where: {
+          runAfter: { gt: now },
+          shopId: shop.id,
+          status: SyncJobStatus.RETRYING,
         },
       }),
       prisma.syncJob.findFirst({
@@ -363,6 +373,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       pendingJobs: recentJobs.filter(
         (job) => job.status === SyncJobStatus.PENDING,
       ).length,
+      nextRetryRunAfter: nextRetryJob?.runAfter.toISOString() ?? null,
       lastJobs: recentJobs.map((job) => ({
         attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
