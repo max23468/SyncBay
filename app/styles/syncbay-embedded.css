@@ -637,7 +637,7 @@
 .syncbay-pulse__node--done {
   border: 2px solid var(--syncbay-success);
   background: var(--syncbay-tint-success);
-  color: var(--syncbay-success);
+  color: var(--syncbay-success-text);
 }
 
 .syncbay-pulse__track {

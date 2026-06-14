@@ -67,10 +67,15 @@ export function useActionToast<T>(
 
 type LiveSyncProps = {
   intervalMs?: number;
+  nextRevalidateAt?: string | null;
   working: boolean;
 };
 
-export function LiveSync({ intervalMs = 15000, working }: LiveSyncProps) {
+export function LiveSync({
+  intervalMs = 15000,
+  nextRevalidateAt,
+  working,
+}: LiveSyncProps) {
   const revalidator = useRevalidator();
   const revalidateRef = useRef(revalidator.revalidate);
   const wasWorking = useRef(working);
@@ -80,11 +85,11 @@ export function LiveSync({ intervalMs = 15000, working }: LiveSyncProps) {
   });
 
   useEffect(() => {
-    if (wasWorking.current && !working) {
+    if (wasWorking.current && !working && !nextRevalidateAt) {
       showSyncBayToast("Sincronizzazione completata");
     }
     wasWorking.current = working;
-  }, [working]);
+  }, [nextRevalidateAt, working]);
 
   useEffect(() => {
     if (!working) return undefined;
@@ -102,6 +107,26 @@ export function LiveSync({ intervalMs = 15000, working }: LiveSyncProps) {
       document.removeEventListener("visibilitychange", tick);
     };
   }, [working, intervalMs]);
+
+  useEffect(() => {
+    if (working || !nextRevalidateAt) return undefined;
+
+    const wakeAt = Date.parse(nextRevalidateAt);
+    if (Number.isNaN(wakeAt)) return undefined;
+
+    const wake = () => {
+      if (document.visibilityState === "visible" && Date.now() >= wakeAt) {
+        revalidateRef.current();
+      }
+    };
+    const id = window.setTimeout(wake, Math.max(0, wakeAt - Date.now()));
+    document.addEventListener("visibilitychange", wake);
+
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("visibilitychange", wake);
+    };
+  }, [nextRevalidateAt, working]);
 
   return null;
 }

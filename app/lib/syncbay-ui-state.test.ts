@@ -14,6 +14,7 @@ const {
   getEbayConnectionAction,
   getEbayConnectionStatusLabel,
   getNextAction,
+  getOverviewSyncWakeAt,
   getProductPublicationModeSummaryLabel,
   getTimelineCategoryLabel,
   isOverviewSyncWorking,
@@ -206,6 +207,54 @@ test("does not keep overview working through future retry backoffs", () => {
       pendingJobs: 0,
     }),
     false,
+  );
+});
+
+test("schedules overview revalidation for the next future retry backoff", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T10:15:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+        {
+          runAfter: "2026-06-14T10:05:00.000Z",
+          status: "RETRYING",
+          type: "SYNC_INCREMENTAL",
+        },
+      ],
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    "2026-06-14T10:05:00.000Z",
+  );
+});
+
+test("does not schedule overview revalidation for due or terminal jobs", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T09:59:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+        {
+          runAfter: "2026-06-14T10:15:00.000Z",
+          status: "SUCCEEDED",
+          type: "SYNC_INCREMENTAL",
+        },
+      ],
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    null,
   );
 });
 

@@ -25,6 +25,7 @@ import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   getNextAction,
+  getOverviewSyncWakeAt,
   isOverviewSyncWorking,
   shouldShowOverviewStatusHero,
   type NextActionKind,
@@ -101,13 +102,15 @@ export default function Index() {
   const riskCount = getRiskCount(dashboard);
   const settingsMissing = getSettingsMissing(dashboard);
   const importIncomplete = getImportIncomplete(dashboard);
-  const working = isOverviewSyncWorking({
+  const overviewSyncInput = {
     activeIncrementalJobCount:
       dashboard.sync.catalogHealth.activeIncrementalJobCount,
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     lastJobs: dashboard.sync.lastJobs,
     pendingJobs: dashboard.sync.pendingJobs,
-  });
+  };
+  const working = isOverviewSyncWorking(overviewSyncInput);
+  const nextRevalidateAt = getOverviewSyncWakeAt(overviewSyncInput);
   const nextAction = getNextAction({
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     ebayOauthEnabled: dashboard.ebay.oauthEnabled,
@@ -133,7 +136,7 @@ export default function Index() {
         {getBadgeLabel(firstRun, working)}
       </s-badge>
       <s-stack gap="large">
-        <LiveSync working={working} />
+        <LiveSync nextRevalidateAt={nextRevalidateAt} working={working} />
         {firstRun ? <FirstRunOnboarding steps={onboardingSteps} /> : null}
         {firstRun ? null : (
         <>
