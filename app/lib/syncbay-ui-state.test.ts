@@ -176,10 +176,36 @@ test("keeps overview working while active stock retries are running", () => {
     isOverviewSyncWorking({
       activeIncrementalJobCount: 0,
       catalogHealthStatus: "fresh",
-      lastJobs: [{ status: "RETRYING", type: "UPDATE_EBAY_STOCK" }],
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T09:59:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+      ],
+      now: "2026-06-14T10:00:00.000Z",
       pendingJobs: 0,
     }),
     true,
+  );
+});
+
+test("does not keep overview working through future retry backoffs", () => {
+  assert.equal(
+    isOverviewSyncWorking({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        {
+          runAfter: "2026-06-14T10:15:00.000Z",
+          status: "RETRYING",
+          type: "UPDATE_EBAY_STOCK",
+        },
+      ],
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    false,
   );
 });
 
