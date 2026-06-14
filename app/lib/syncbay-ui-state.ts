@@ -35,9 +35,11 @@ export interface OverviewSyncWorkingInput {
   activeIncrementalJobCount?: number | null;
   catalogHealthStatus?: string | null;
   lastJobs?: Array<{
+    runAfter?: Date | string | null;
     status?: string | null;
     type?: string | null;
   }>;
+  now?: Date | string;
   pendingJobs?: number | null;
 }
 
@@ -95,21 +97,39 @@ const OVERVIEW_STATUS_HERO_KINDS = new Set<NextActionKind>([
   "settings_missing",
 ]);
 
-const ACTIVE_OVERVIEW_JOB_STATUSES = new Set(["RUNNING", "RETRYING"]);
-
 export function shouldShowOverviewStatusHero(kind: NextActionKind) {
   return OVERVIEW_STATUS_HERO_KINDS.has(kind);
 }
 
 export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
+  const nowTime = getOverviewTime(input.now ?? new Date()) ?? Date.now();
+
   return (
     input.catalogHealthStatus === "running" ||
     (input.activeIncrementalJobCount ?? 0) > 0 ||
     (input.pendingJobs ?? 0) > 0 ||
-    (input.lastJobs ?? []).some((job) =>
-      ACTIVE_OVERVIEW_JOB_STATUSES.has(job.status ?? ""),
-    )
+    (input.lastJobs ?? []).some((job) => isOverviewJobWorking(job, nowTime))
   );
+}
+
+function isOverviewJobWorking(
+  job: NonNullable<OverviewSyncWorkingInput["lastJobs"]>[number],
+  nowTime: number,
+) {
+  if (job.status === "RUNNING") return true;
+  if (job.status !== "RETRYING") return false;
+
+  const runAfterTime = getOverviewTime(job.runAfter);
+
+  return runAfterTime === null || runAfterTime <= nowTime;
+}
+
+function getOverviewTime(value: Date | string | null | undefined) {
+  if (!value) return null;
+
+  const time = value instanceof Date ? value.getTime() : Date.parse(value);
+
+  return Number.isNaN(time) ? null : time;
 }
 
 export function getNextAction(input: NextActionInput): NextAction {
