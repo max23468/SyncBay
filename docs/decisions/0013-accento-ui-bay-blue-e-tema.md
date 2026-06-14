@@ -21,43 +21,64 @@ fissare due punti lasciati aperti dalla palette direzionale di `BRAND.md`:
    inchiodati a hex fissi, per non dover riscrivere tutto se un dark mode
    diventasse rilevante (admin o App Store pubblica).
 
-Bay Blue è vicino al blu associato a eBay. AGENTS vieta colori che facciano
-sembrare SyncBay un'app ufficiale eBay/Shopify. La scelta è quindi una **deroga
-consapevole**, approvata dal maintainer, da vincolare a un uso disciplinato.
+I colori eBay/Shopify sono vicini ai marchi dei due provider, e AGENTS vietava
+colori che facessero sembrare SyncBay un'app ufficiale eBay/Shopify. Quel
+vincolo era motivato dalla review dell'App Store pubblico. Il maintainer ha
+confermato che **l'app sarà distribuita in privato** (non pubblicata sullo
+Store, almeno per ora): quindi il rischio "sembra ufficiale" non è più un
+blocco, ed è una **scelta di design deliberata** del maintainer usare i colori
+eBay/Shopify come sistema semantico. AGENTS va aggiornato di conseguenza.
 
 ## Decisione
 
-- **Accento UI = Bay Blue `#0064D2`** (con `#0a4a94` per gli stati forti), usato
-  **con disciplina**: link, stati attivi, nodo/hub del battito, sparkline,
-  bordi di focus e bottoni primari del design layer. **Vietato** come campitura
-  diffusa, header pieni, barre o accostamenti blu+giallo+rosso che ricreino la
-  chrome di eBay. Le superfici restano neutre allineate all'admin; l'identità
-  vive nell'accento e negli asset di brand, non nella colorazione delle
-  superfici.
+- **Palette semantica = colori del logo eBay/Shopify** (decisione maintainer,
+  aggiornamento 2026-06-14): il verde di Shopify sostituisce il verde di eBay,
+  e i quattro colori diventano i ruoli di stato dell'app:
+  - **success = verde Shopify `#95BF47`**;
+  - **info = blu eBay `#0064D2`**;
+  - **warning = giallo eBay `#F5AF02`**;
+  - **error = rosso eBay `#E53238`**.
+  Ogni ruolo ha tre forme: hue di marca (bordi/icone/accenti), **tinta tenue**
+  per gli sfondi e una **versione scura per il testo** (`-text`), perché gli hue
+  di marca da soli non hanno contrasto sufficiente come testo su bianco.
+- **Brand primario = blu eBay `#0064D2`**, **secondario = verde Shopify
+  `#95BF47`**.
+- **Accento UI = Bay Blue `#0064D2`** (con `#0a4a94` per gli stati forti): link,
+  stati attivi, nodo/hub del battito, sparkline, focus e bottoni primari del
+  design layer. **Blu = info E blu = primario coincidono** per scelta: si
+  distinguono per *trattamento*, non per tinta — il primario/azione usa il blu
+  **pieno**, l'informativo usa la **tinta tenue** + testo blu scuro. Le
+  superfici restano neutre; i colori di marca vivono su accenti, icone, badge e
+  bordi, non come campiture diffuse o banner che ricreino il logo eBay.
 - **Tema: solo chiaro, ma theme-ready.** Niente dark mode spedito, niente
   interruttore: SyncBay segue l'admin (chiaro). I colori del design layer sono
-  espressi come **variabili semantiche** (`--syncbay-accent`,
-  `--syncbay-accent-strong`, `--syncbay-accent-tint`, oltre alle superfici/testi
-  esistenti) così un eventuale dark mode futuro è un cambio di un blocco di
-  variabili, non una riscrittura.
+  espressi come **variabili semantiche** (`--syncbay-success/-warning/-critical/
+  -info` con `-text`/`-tint`, `--syncbay-accent` ecc.) così un eventuale dark
+  mode futuro è un cambio di un blocco di variabili, non una riscrittura.
 
-Questa decisione **sostituisce** la parte "brand primario `Harbor` / azione
-`Current`" della palette direzionale app di `BRAND.md` e ADR 0002, limitatamente
-all'accento UI. Il resto della palette direzionale (superfici, testi, semantici
-successo/warning/critico) resta valido.
+Questa decisione **sostituisce** la palette direzionale semantica di `BRAND.md`
+e ADR 0002 (i toni muti `Harbor`/`Current`/`Moss`/`Amber`/`Coral`/`Steel` come
+ruoli di stato e accento). Restano validi superfici, testi e bordi neutri
+(Cloud/Paper/Ink/Slate/Mist). `Harbor`/`Current` sopravvivono come colori di
+palette legacy, senza ruolo semantico.
 
 ## Conseguenze
 
-- L'app riprende il colore del proprio logo: identità più coesa.
-- Aumenta il rischio di percezione "app eBay ufficiale": mitigato dall'uso
-  disciplinato e dalla chrome neutra. Da rivalutare prima dell'invio all'App
-  Store pubblica (verifica brand/legale già prevista da ADR 0002).
+- L'app riprende i colori del proprio logo e dei due provider: identità coesa e
+  modello eBay→Shopify leggibile a colpo d'occhio.
+- Resta una percezione "vicina a eBay/Shopify": accettata, perché la
+  distribuzione è privata. Da **rivalutare solo se** si deciderà la
+  pubblicazione sull'App Store pubblico (verifica brand/legale già prevista da
+  ADR 0002).
+- Lettura/contrasto: gli hue di marca sono saturi e poco contrastati come testo;
+  per questo ogni ruolo ha la variante `-text` scura e si tengono le superfici
+  neutre, per non diventare "urlati" su una dashboard densa.
 - I nuovi componenti del design layer e le superfici future devono usare le
-  variabili semantiche, non hex fissi.
+  variabili semantiche (`-text`/`-tint` incluse), non hex fissi.
 - La propagazione alle altre cinque superfici dovrà riconciliare i riferimenti
-  residui a `Harbor`/`Current` verso l'accento e le variabili semantiche.
-- `Harbor` teal resta disponibile come colore di palette, ma non è più
-  l'accento UI primario.
+  residui a `Harbor`/`Current` e ai vecchi toni muti verso le variabili
+  semantiche brandizzate.
+- `Harbor`/`Current` restano colori di palette legacy, senza ruolo semantico.
 
 ## Alternative considerate
 

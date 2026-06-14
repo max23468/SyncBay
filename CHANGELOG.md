@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.4] — 2026-06-15
+
+### Sotto il cofano
+
+- Palette dell'app allineata ai colori del logo eBay/Shopify: verde Shopify per
+  il successo, blu eBay per informativo e accento primario, giallo eBay per il
+  warning, rosso eBay per l'errore, con varianti scure per il testo e superfici
+  neutre per la leggibilità. Accento coerente (link, stati, battito, bottoni)
+  sul blu eBay.
+- Aggiunto un pattern condiviso di toast per il feedback delle azioni, pronto
+  per le prossime superfici. Vedi ADR 0013 e ADR 0014.
+
 ## [0.36.3] — 2026-06-15
 
 ### Correzioni
@@ -1800,6 +1812,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.4]: #0364--2026-06-15
 [0.36.3]: #0363--2026-06-15
 [0.36.2]: #0362--2026-06-14
 [0.36.1]: #0361--2026-06-14

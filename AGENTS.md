@@ -205,8 +205,9 @@ basso rischio, cleanup o modifiche meccaniche già determinate.
 - Tono UI: professionale, concreto, calmo. Frasi brevi, stato del sistema, azione successiva chiara. Vedi `BRAND.md`.
 - Evita emoji nella UI, esclamativi multipli, "oops" o messaggi vaghi.
 - Mantieni identificatori nel codice in inglese quando coerente con librerie e framework.
-- Non usare colori, loghi o claim che facciano sembrare SyncBay un'app ufficiale eBay o Shopify senza approvazione esplicita.
-- Il richiamo a eBay e Shopify deve esserci, ma restare sottile nel branding: chiaro nel contesto funzionale, non urlato in tagline, palette o logo.
+- Non usare loghi o claim che facciano sembrare SyncBay un'app ufficiale eBay o Shopify.
+- Sui colori c'è una decisione esplicita del maintainer (ADR 0013): la palette semantica dell'app **usa i colori del logo eBay/Shopify** (verde Shopify = success, blu eBay = info/primario, giallo eBay = warning, rosso eBay = error). È ammessa perché la distribuzione è privata; va rivalutata solo se si punta all'App Store pubblico. Tienili su accenti, icone, badge e bordi, mai come campiture diffuse o banner che ricreino il logo eBay.
+- Il richiamo a eBay e Shopify nel branding resta funzionale e non urlato in tagline o logo; la palette ora è invece intenzionalmente quella dei due provider (ADR 0013).
 
 ## Sicurezza, privacy e dati
 

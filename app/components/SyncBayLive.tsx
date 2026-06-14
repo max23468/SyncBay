@@ -14,14 +14,55 @@
 import { useEffect, useRef } from "react";
 import { useRevalidator } from "react-router";
 
+type ToastOptions = { duration?: number; isError?: boolean };
 type ShopifyToastGlobal = {
-  toast?: { show?: (message: string, options?: { duration?: number }) => void };
+  toast?: { show?: (message: string, options?: ToastOptions) => void };
 };
 
 function getShopifyToast(): ShopifyToastGlobal["toast"] | undefined {
   if (typeof window === "undefined") return undefined;
 
   return (window as unknown as { shopify?: ShopifyToastGlobal }).shopify?.toast;
+}
+
+/**
+ * Mostra un toast App Bridge in modo sicuro (no-op fuori dall'admin embedded,
+ * es. SSR/preview). Punto unico per il feedback delle azioni in tutte le
+ * superfici.
+ */
+export function showSyncBayToast(message: string, options?: ToastOptions) {
+  getShopifyToast()?.show?.(message, options);
+}
+
+type ActionToastResult = { isError?: boolean; message: string } | null;
+
+/**
+ * Hook condiviso per il feedback delle azioni (ADR 0014): quando una `fetcher`
+ * di azione si completa, deriva il messaggio dal risultato e mostra un toast.
+ * Da usare nelle superfici con azioni (Conflitti, Attività, ...): evita di
+ * reinventare il pattern pagina per pagina. Si attiva una sola volta per
+ * risultato nuovo.
+ */
+export function useActionToast<T>(
+  fetcher: { data: T | undefined; state: string },
+  getToast: (data: T) => ActionToastResult,
+) {
+  const lastData = useRef<T | undefined>(undefined);
+
+  useEffect(() => {
+    if (
+      fetcher.state !== "idle" ||
+      fetcher.data === undefined ||
+      fetcher.data === lastData.current
+    ) {
+      return;
+    }
+    lastData.current = fetcher.data;
+    const result = getToast(fetcher.data);
+    if (result) {
+      showSyncBayToast(result.message, { isError: result.isError });
+    }
+  }, [fetcher.state, fetcher.data, getToast]);
 }
 
 type LiveSyncProps = {
@@ -40,7 +81,7 @@ export function LiveSync({ intervalMs = 15000, working }: LiveSyncProps) {
 
   useEffect(() => {
     if (wasWorking.current && !working) {
-      getShopifyToast()?.show?.("Sincronizzazione completata");
+      showSyncBayToast("Sincronizzazione completata");
     }
     wasWorking.current = working;
   }, [working]);
