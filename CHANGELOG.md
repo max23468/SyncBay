@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.5] — 2026-06-15
+
+### Correzioni
+
+- Panoramica: quando l'unico lavoro attivo è una retry con `runAfter` futuro,
+  la pagina programma una rivalidazione alla prossima finestra invece di
+  restare ferma fino al refresh manuale.
+- UI: il nodo centrale del battito completato usa il colore testuale success
+  scuro sulla tinta chiara, migliorando il contrasto.
+
 ## [0.36.4] — 2026-06-15
 
 ### Sotto il cofano
@@ -1812,6 +1822,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.5]: #0365--2026-06-15
 [0.36.4]: #0364--2026-06-15
 [0.36.3]: #0363--2026-06-15
 [0.36.2]: #0362--2026-06-14

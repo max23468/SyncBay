@@ -112,6 +112,25 @@ export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
   );
 }
 
+export function getOverviewSyncWakeAt(input: OverviewSyncWorkingInput) {
+  const nowTime = getOverviewTime(input.now ?? new Date()) ?? Date.now();
+  const nextRunAfter = (input.lastJobs ?? []).reduce<number | null>(
+    (earliest, job) => {
+      if (job.status !== "RETRYING") return earliest;
+
+      const runAfterTime = getOverviewTime(job.runAfter);
+
+      if (runAfterTime === null || runAfterTime <= nowTime) return earliest;
+      if (earliest === null || runAfterTime < earliest) return runAfterTime;
+
+      return earliest;
+    },
+    null,
+  );
+
+  return nextRunAfter === null ? null : new Date(nextRunAfter).toISOString();
+}
+
 function isOverviewJobWorking(
   job: NonNullable<OverviewSyncWorkingInput["lastJobs"]>[number],
   nowTime: number,
