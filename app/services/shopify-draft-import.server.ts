@@ -33,6 +33,10 @@ import {
   hashNullableText,
 } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import {
+  buildSyncBayProductLookupQueries,
+  buildSyncBayShopifyImportTags,
+} from "../lib/syncbay-shopify-tags";
 import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
 import type {
   ImportPreviewItem,
@@ -548,7 +552,7 @@ export function buildShopifyDraftProductInputs(
         handle: buildSyncBayProductHandle(item.itemId),
         metafields: buildSyncBayProductMetafields(item),
         status: importProductStatus,
-        tags: ["SyncBay", "Import preview", "eBay import pilot"],
+        tags: buildSyncBayShopifyImportTags(),
         title: item.normalized.title,
       },
       source: {
@@ -1180,11 +1184,12 @@ async function findExistingSyncBayDraftProductByMetafieldScan(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
 ) {
-  let cursor: string | null = null;
+  for (const query of buildSyncBayProductLookupQueries()) {
+    let cursor: string | null = null;
 
-  while (true) {
-    const response = await admin.graphql(
-      `#graphql
+    while (true) {
+      const response = await admin.graphql(
+        `#graphql
       query SyncBayFindDraftProductByMetafield($query: String!, $cursor: String) {
         products(first: 250, query: $query, after: $cursor) {
           nodes {
@@ -1221,32 +1226,35 @@ async function findExistingSyncBayDraftProductByMetafieldScan(
           }
         }
       }`,
-      {
-        variables: {
-          cursor,
-          query: "tag:SyncBay",
+        {
+          variables: {
+            cursor,
+            query,
+          },
         },
-      },
-    );
+      );
 
-    if (!response.ok) return null;
+      if (!response.ok) return null;
 
-    const json = (await response.json()) as ShopifyProductLookupResponse;
+      const json = (await response.json()) as ShopifyProductLookupResponse;
 
-    if (json.errors?.length) return null;
+      if (json.errors?.length) return null;
 
-    for (const node of json.data?.products?.nodes ?? []) {
-      if (node.metafield?.value === draftProduct.source.ebayItemId) {
-        return node;
+      for (const node of json.data?.products?.nodes ?? []) {
+        if (node.metafield?.value === draftProduct.source.ebayItemId) {
+          return node;
+        }
       }
+
+      const pageInfo = json.data?.products?.pageInfo;
+
+      if (!pageInfo?.hasNextPage || !pageInfo.endCursor) break;
+
+      cursor = pageInfo.endCursor;
     }
-
-    const pageInfo = json.data?.products?.pageInfo;
-
-    if (!pageInfo?.hasNextPage || !pageInfo.endCursor) return null;
-
-    cursor = pageInfo.endCursor;
   }
+
+  return null;
 }
 
 async function syncShopifyInventoryFromEbayQuantity(
