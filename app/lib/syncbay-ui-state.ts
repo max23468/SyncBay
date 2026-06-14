@@ -31,6 +31,16 @@ export interface NextAction {
   tone: Tone;
 }
 
+export interface OverviewSyncWorkingInput {
+  activeIncrementalJobCount?: number | null;
+  catalogHealthStatus?: string | null;
+  lastJobs?: Array<{
+    status?: string | null;
+    type?: string | null;
+  }>;
+  pendingJobs?: number | null;
+}
+
 export interface EbayConnectionActionInput {
   missingRequirementCount?: number;
   oauthEnabled?: boolean;
@@ -77,6 +87,30 @@ export type TimelineCategoryKind =
   | "UPDATE_EBAY_STOCK"
   | "CONFLICT"
   | "FAILED_JOB";
+
+const OVERVIEW_STATUS_HERO_KINDS = new Set<NextActionKind>([
+  "ebay_connection",
+  "catalog_overdue",
+  "import_incomplete",
+  "settings_missing",
+]);
+
+const ACTIVE_OVERVIEW_JOB_STATUSES = new Set(["RUNNING", "RETRYING"]);
+
+export function shouldShowOverviewStatusHero(kind: NextActionKind) {
+  return OVERVIEW_STATUS_HERO_KINDS.has(kind);
+}
+
+export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
+  return (
+    input.catalogHealthStatus === "running" ||
+    (input.activeIncrementalJobCount ?? 0) > 0 ||
+    (input.pendingJobs ?? 0) > 0 ||
+    (input.lastJobs ?? []).some((job) =>
+      ACTIVE_OVERVIEW_JOB_STATUSES.has(job.status ?? ""),
+    )
+  );
+}
 
 export function getNextAction(input: NextActionInput): NextAction {
   if (input.ebayStatus !== "CONNECTED") {

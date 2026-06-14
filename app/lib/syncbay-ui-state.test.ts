@@ -16,7 +16,9 @@ const {
   getNextAction,
   getProductPublicationModeSummaryLabel,
   getTimelineCategoryLabel,
+  isOverviewSyncWorking,
   isCatalogMappingStale,
+  shouldShowOverviewStatusHero,
 } = uiState;
 
 test("prioritizes missing eBay connection before other dashboard issues", () => {
@@ -148,6 +150,52 @@ test("reports all clear when no action is needed", () => {
     title: "Tutto sotto controllo",
     tone: "success",
   });
+});
+
+test("shows overview status hero for setup and overdue blockers", () => {
+  assert.equal(shouldShowOverviewStatusHero("ebay_connection"), true);
+  assert.equal(shouldShowOverviewStatusHero("catalog_overdue"), true);
+  assert.equal(shouldShowOverviewStatusHero("import_incomplete"), true);
+  assert.equal(shouldShowOverviewStatusHero("settings_missing"), true);
+  assert.equal(shouldShowOverviewStatusHero("quantity_check"), false);
+  assert.equal(shouldShowOverviewStatusHero("open_conflicts"), false);
+  assert.equal(shouldShowOverviewStatusHero("all_clear"), false);
+});
+
+test("keeps overview working while active stock retries are running", () => {
+  assert.equal(
+    isOverviewSyncWorking({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [{ status: "RUNNING", type: "UPDATE_EBAY_STOCK" }],
+      pendingJobs: 0,
+    }),
+    true,
+  );
+  assert.equal(
+    isOverviewSyncWorking({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [{ status: "RETRYING", type: "UPDATE_EBAY_STOCK" }],
+      pendingJobs: 0,
+    }),
+    true,
+  );
+});
+
+test("does not treat terminal recent jobs as overview work in progress", () => {
+  assert.equal(
+    isOverviewSyncWorking({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "fresh",
+      lastJobs: [
+        { status: "FAILED", type: "UPDATE_EBAY_STOCK" },
+        { status: "SUCCEEDED", type: "SYNC_INCREMENTAL" },
+      ],
+      pendingJobs: 0,
+    }),
+    false,
+  );
 });
 
 test("maps conflict action labels", () => {

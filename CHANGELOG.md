@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.2] — 2026-06-14
+
+### Correzioni
+
+- Panoramica: lo stato catalogo in ritardo mostra di nuovo un avviso operativo
+  e i job attivi di aggiornamento disponibilità mantengono la pagina in stato di
+  sincronizzazione in corso.
+
+### Sotto il cofano
+
+- Aggiornato lo smoke UI della Panoramica al redesign corrente, rimuovendo
+  aspettative su testi e componenti della vecchia vista tecnica.
+
 ## [0.36.1] — 2026-06-14
 
 ### Correzioni
@@ -1779,6 +1792,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.2]: #0362--2026-06-14
 [0.36.1]: #0361--2026-06-14
 [0.36.0]: #0360--2026-06-14
 [0.35.18]: #03518--2026-06-13

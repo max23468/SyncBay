@@ -23,7 +23,12 @@ import {
 import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
-import { getNextAction, type NextActionKind } from "../lib/syncbay-ui-state";
+import {
+  getNextAction,
+  isOverviewSyncWorking,
+  shouldShowOverviewStatusHero,
+  type NextActionKind,
+} from "../lib/syncbay-ui-state";
 import {
   getDashboardState,
   requestSyncJobRetry,
@@ -44,12 +49,6 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   dateStyle: "short",
   timeStyle: "short",
 });
-
-const BLOCKER_KINDS: NextActionKind[] = [
-  "ebay_connection",
-  "settings_missing",
-  "import_incomplete",
-];
 
 export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
@@ -102,7 +101,13 @@ export default function Index() {
   const riskCount = getRiskCount(dashboard);
   const settingsMissing = getSettingsMissing(dashboard);
   const importIncomplete = getImportIncomplete(dashboard);
-  const working = isSyncWorking(dashboard);
+  const working = isOverviewSyncWorking({
+    activeIncrementalJobCount:
+      dashboard.sync.catalogHealth.activeIncrementalJobCount,
+    catalogHealthStatus: dashboard.sync.catalogHealth.status,
+    lastJobs: dashboard.sync.lastJobs,
+    pendingJobs: dashboard.sync.pendingJobs,
+  });
   const nextAction = getNextAction({
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     ebayOauthEnabled: dashboard.ebay.oauthEnabled,
@@ -114,7 +119,7 @@ export default function Index() {
     quantityIssueCount: riskCount,
     settingsMissing,
   });
-  const showBlocker = BLOCKER_KINDS.includes(nextAction.kind);
+  const showBlocker = shouldShowOverviewStatusHero(nextAction.kind);
   const recentActivity = getRecentActivity(dashboard);
   const contextualActions = getContextualActions(dashboard, importIncomplete);
   const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
@@ -421,14 +426,6 @@ function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
         </s-text>
       </s-stack>
     </s-box>
-  );
-}
-
-function isSyncWorking(dashboard: Dashboard) {
-  return (
-    dashboard.sync.catalogHealth.status === "running" ||
-    dashboard.sync.catalogHealth.activeIncrementalJobCount > 0 ||
-    dashboard.sync.pendingJobs > 0
   );
 }
 
