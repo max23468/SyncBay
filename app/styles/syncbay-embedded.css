@@ -707,7 +707,7 @@
   align-items: flex-start;
   gap: 14px;
   padding: 18px 20px;
-  border: 2px solid var(--syncbay-warning);
+  border: 2px solid var(--syncbay-warning-text);
   border-radius: 12px;
   background: var(--syncbay-paper);
 }

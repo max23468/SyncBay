@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.6] — 2026-06-15
+
+### Correzioni
+
+- UI: la card di rischio disponibilità usa un bordo warning più scuro, così il
+  rischio resta visibile anche sulla superficie bianca.
+
 ## [0.36.5] — 2026-06-15
 
 ### Correzioni
@@ -1822,6 +1829,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.6]: #0366--2026-06-15
 [0.36.5]: #0365--2026-06-15
 [0.36.4]: #0364--2026-06-15
 [0.36.3]: #0363--2026-06-15
