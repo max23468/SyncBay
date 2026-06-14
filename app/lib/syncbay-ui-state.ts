@@ -39,6 +39,7 @@ export interface OverviewSyncWorkingInput {
     status?: string | null;
     type?: string | null;
   }>;
+  nextRetryRunAfter?: Date | string | null;
   now?: Date | string;
   pendingJobs?: number | null;
 }
@@ -114,6 +115,14 @@ export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
 
 export function getOverviewSyncWakeAt(input: OverviewSyncWorkingInput) {
   const nowTime = getOverviewTime(input.now ?? new Date()) ?? Date.now();
+  const queuedRetryRunAfter = getOverviewTime(input.nextRetryRunAfter);
+
+  if (input.nextRetryRunAfter !== undefined) {
+    return queuedRetryRunAfter !== null && queuedRetryRunAfter > nowTime
+      ? new Date(queuedRetryRunAfter).toISOString()
+      : null;
+  }
+
   const nextRunAfter = (input.lastJobs ?? []).reduce<number | null>(
     (earliest, job) => {
       if (job.status !== "RETRYING") return earliest;

@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.7] — 2026-06-15
+
+### Correzioni
+
+- Panoramica: la rivalidazione programmata per retry future usa tutta la coda
+  attiva dei job `RETRYING`, non solo gli ultimi job mostrati nella cronologia.
+
 ## [0.36.6] — 2026-06-15
 
 ### Correzioni
@@ -1829,6 +1836,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.7]: #0367--2026-06-15
 [0.36.6]: #0366--2026-06-15
 [0.36.5]: #0365--2026-06-15
 [0.36.4]: #0364--2026-06-15
