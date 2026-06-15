@@ -53,6 +53,7 @@
     "stock:restore-ebay": "node scripts/syncbay-restore-ebay-stock.mjs",
     "ebay:store-category-orphans": "node scripts/syncbay-store-category-orphans.mjs",
     "categories:backfill": "node --experimental-strip-types scripts/syncbay-category-backfill.mjs",
+    "facets:backfill": "node --experimental-strip-types scripts/syncbay-product-facets-backfill.mjs",
     "catalog:images:doctor": "node scripts/syncbay-catalog-images-doctor.mjs",
     "catalog:backfill-archived-soldout": "node scripts/syncbay-backfill-archived-to-soldout.mjs",
     "prisma:validate": "DATABASE_URL=${DATABASE_URL:-postgresql://user:pass@localhost:5432/syncbay} DATABASE_DIRECT_URL=${DATABASE_DIRECT_URL:-postgresql://user:pass@localhost:5432/syncbay} prisma validate",

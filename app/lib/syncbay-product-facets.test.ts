@@ -197,6 +197,32 @@ test("uses title fallback for category, area and material when eBay structured f
   );
 });
 
+test("normalizes nested eBay store categories to storefront category values", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      storeCategoryName:
+        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete italiane in lire",
+  );
+});
+
+test("uses Numisleo-like category values from coin title fallback", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      title: "NL* ITALIA 500 LIRE ARGENTO CARAVELLE 1961 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete italiane in lire",
+  );
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      title: "NL* ITALIA 2 EURO COMMEMORATIVO 2020 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete in euro",
+  );
+});
+
 test("does not infer copper material from ramo in Italian coin titles", () => {
   assert.equal(
     buildSyncBayProductFacets({

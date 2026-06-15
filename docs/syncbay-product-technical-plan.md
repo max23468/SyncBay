@@ -362,6 +362,15 @@ cataloghi/libri cartacei. Il comando operativo
 `applicable` e salta conflitti manuali, incertezze, lookup falliti senza
 proposta locale valida e prodotti senza GID Shopify.
 
+Le cinque faccette storefront `syncbay_facets.*` seguono lo stesso principio:
+il comando operativo `npm run facets:backfill` è dry-run di default, confronta i
+metafield Shopify attuali con la proposta SyncBay derivata da snapshot eBay,
+titolo e Trading API `GetItem` con `ItemSpecifics`, e classifica righe
+applicabili, già corrette, conflitti manuali e incerte. La scrittura reale
+richiede `--apply --confirm-apply`, usa Shopify Admin GraphQL `metafieldsSet`,
+aggiunge solo metafield mancanti e non attiva filtri storefront Search &
+Discovery.
+
 ## Matching prodotti esistenti
 
 MVP:
