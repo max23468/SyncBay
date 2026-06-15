@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.39.3] — 2026-06-15
+
 ### Correzioni
 
 - Descrizioni eBay: aggiunto il backfill controllato `descriptions:backfill-cleanup`
@@ -1946,6 +1948,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.39.3]: #0393--2026-06-15
 [0.39.2]: #0392--2026-06-15
 [0.39.1]: #0391--2026-06-15
 [0.39.0]: #0390--2026-06-15
