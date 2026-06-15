@@ -33,6 +33,10 @@ import {
   hashNullableText,
 } from "../lib/syncbay-description-hash";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
+import {
+  calculateShopifyPricing,
+  type SyncBayPricingRule,
+} from "../lib/syncbay-pricing-rules";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import {
   buildSyncBayProductLookupQueries,
@@ -43,6 +47,7 @@ import type {
   ImportPreviewItem,
   ImportPreviewResult,
 } from "./import-preview.server";
+import { getPricingRuleForShopId } from "./pricing-rules.server";
 
 // Tag Shopify applicato ai prodotti il cui listing eBay è diventato inattivo:
 // restano in vetrina come esauriti invece di essere archiviati (ADR 0011).
@@ -87,6 +92,7 @@ interface ShopifyInventoryItemNode {
 }
 
 interface ShopifyDraftProductVariantNode {
+  compareAtPrice?: string | null;
   id: string;
   inventoryItem?: ShopifyInventoryItemNode | null;
   price?: string | null;
@@ -537,6 +543,10 @@ export function getDraftImportReadiness(input: {
 export function buildShopifyDraftProductInputs(
   previewResult: ImportPreviewResult,
   importProductStatus: ImportProductStatus,
+  pricingRule: SyncBayPricingRule = {
+    discountPercent: 0,
+    roundingMode: "CENTS",
+  },
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
@@ -565,6 +575,11 @@ export function buildShopifyDraftProductInputs(
         source: {
           ebayItemId: item.itemId,
         },
+        pricing: calculateShopifyPricing({
+          discountPercent: pricingRule.discountPercent,
+          ebayPriceAmount: item.normalized.priceAmount,
+          roundingMode: pricingRule.roundingMode,
+        }),
         previewItem: item,
       };
     });
@@ -580,6 +595,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   shopDomain: string;
 }) {
   const shop = await ensureDraftImportShop(input.shopDomain);
+  const pricingRule = await getPricingRuleForShopId(shop.id);
   const admin = createShopifyAdminGraphqlClientWithBackoff(input.admin);
   const importProductStatus =
     input.importProductStatusOverride ??
@@ -620,6 +636,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   const draftProducts = buildShopifyDraftProductInputs(
     input.previewResult,
     importProductStatus,
+    pricingRule,
   );
   const job = await startDraftImportJob({
     catalogImportRunId: input.catalogImportRunId ?? null,
@@ -972,6 +989,8 @@ async function createShopifyDraftProductRequest(
           variants(first: 1) {
             nodes {
               id
+              price
+              compareAtPrice
               inventoryItem {
                 id
                 tracked
@@ -1080,6 +1099,8 @@ async function findExistingSyncBayDraftProduct(
         variants(first: 1) {
           nodes {
             id
+            price
+            compareAtPrice
             inventoryItem {
               id
               tracked
@@ -1158,6 +1179,8 @@ async function findMappedSyncBayDraftProduct(
           variants(first: 1) {
             nodes {
               id
+              price
+              compareAtPrice
               inventoryItem {
                 id
                 tracked
@@ -1218,6 +1241,8 @@ async function findExistingSyncBayDraftProductByMetafieldScan(
             variants(first: 1) {
               nodes {
                 id
+                price
+                compareAtPrice
                 inventoryItem {
                   id
                   tracked
@@ -1424,6 +1449,8 @@ async function updateShopifyProductFromEbay(
           variants(first: 1) {
             nodes {
               id
+              price
+              compareAtPrice
               inventoryItem {
                 id
                 tracked
@@ -1518,8 +1545,9 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
     }
 > {
   const variant = getFirstProductVariant(input.product);
-  const price = formatShopifyPrice(
-    input.draftProduct.previewItem.normalized.priceAmount,
+  const price = formatShopifyPrice(input.draftProduct.pricing.priceAmount);
+  const compareAtPrice = formatShopifyPrice(
+    input.draftProduct.pricing.compareAtPriceAmount,
   );
 
   if (!variant) {
@@ -1545,6 +1573,7 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
           id
           sku
           price
+          compareAtPrice
           inventoryItem {
             id
             tracked
@@ -1561,6 +1590,7 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
         productId: input.product.id,
         variants: [
           {
+            compareAtPrice,
             id: variant.id,
             price,
           },
@@ -1641,6 +1671,7 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
                 }
               : (updatedVariant.inventoryItem ?? variant.inventoryItem),
             price: updatedVariant.price,
+            compareAtPrice: updatedVariant.compareAtPrice,
             sku: updatedVariant.sku ?? variant.sku,
           },
         ],
@@ -2516,6 +2547,8 @@ async function getFirstShopifyProductVariantForSoldOut(
           variants(first: 1) {
             nodes {
               id
+              price
+              compareAtPrice
               inventoryItem {
                 id
                 tracked
@@ -3220,11 +3253,19 @@ function buildSyncBayProductSnapshot(input: {
       importJobId: input.jobId,
       inventorySync: input.result.inventorySync,
       mediaSync: input.result.mediaSync,
+      pricing: {
+        applied: input.draftProduct.pricing.applied,
+        compareAtPriceAmount: input.draftProduct.pricing.compareAtPriceAmount,
+        discountPercent: input.draftProduct.pricing.discountPercent,
+        ebayPriceAmount: item.normalized.priceAmount,
+        priceAmount: input.draftProduct.pricing.priceAmount,
+        roundingMode: input.draftProduct.pricing.roundingMode,
+      },
       publicationSync: input.result.publicationSync,
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
     } satisfies Prisma.JsonObject,
-    priceAmount: item.normalized.priceAmount,
+    priceAmount: input.draftProduct.pricing.priceAmount,
     productStatus: input.importProductStatus,
     quantity: item.normalized.quantity,
     shopId: input.shopId,

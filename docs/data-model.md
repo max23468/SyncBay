@@ -15,7 +15,7 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - conflitti Shopify (`SyncConflict`).
 - richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`).
 
-Il modello resta iniziale: include mapping, snapshot e conflitti, ma non include ancora regole prezzo persistenti, regole descrizione persistenti o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID, stato dell'allineamento scorte e diagnostica del riallineamento immagini scritto da SyncBay.
+Il modello resta iniziale: include mapping, snapshot, conflitti e una regola prezzo globale per shop, ma non include ancora regole descrizione persistenti, regole prezzo per categoria o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID, stato dell'allineamento scorte, prezzo Shopify calcolato e diagnostica del riallineamento immagini scritto da SyncBay.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -132,17 +132,16 @@ Schema iniziale:
 
 Regole Shopify-only.
 
-Tipi:
+Schema iniziale:
 
-- sconto percentuale;
-- sconto fisso;
-- markup percentuale;
-- markup fisso;
-- moltiplicatore;
-- arrotondamento;
-- prezzo minimo;
-- margine minimo se esiste costo;
-- compare-at price.
+- una regola globale per shop;
+- sconto percentuale intero `0-90`, dove `0` mantiene il prezzo eBay;
+- arrotondamento a due decimali o all'euro;
+- compare-at price Shopify valorizzato con il prezzo eBay originale quando lo
+  sconto è attivo.
+
+Restano previste come evoluzioni: sconto fisso, markup, moltiplicatore, prezzo
+minimo, margine minimo e regole per categoria.
 
 ### Regole descrizione
 

@@ -113,6 +113,7 @@ type ShopifyProductForConflict = {
   title?: string | null;
   variants?: {
     nodes?: Array<{
+      compareAtPrice?: string | null;
       inventoryItem?: {
         inventoryLevel?: {
           quantities?: Array<{
@@ -1674,6 +1675,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         ebayItemId: mapping.ebayItemId,
         mappingId: mapping.id,
         payload: {
+          ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
           previousQuantity,
           orderLineItemKey: lineItem.lineItemKey,
           reason: "shopify_order_paid",
@@ -2084,6 +2086,10 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
   }
 
   return {
+    compareAtPriceAmount: getPricingPayloadMoneyAmount(
+      priceSnapshot?.payload,
+      "compareAtPriceAmount",
+    ),
     descriptionHash: descriptionSnapshot?.descriptionHash ?? null,
     imageCount: imageSnapshot?.imageCount ?? null,
     priceAmount: priceSnapshot?.priceAmount ?? null,
@@ -2105,6 +2111,35 @@ async function findLatestSyncBaySnapshotWithField(
       ...fieldWhere,
     },
   });
+}
+
+function getPricingPayloadMoneyAmount(
+  payload: Prisma.JsonValue | null | undefined,
+  key: "compareAtPriceAmount" | "priceAmount",
+) {
+  const object = getJsonObject(payload);
+  const pricing = getJsonObject(object?.pricing);
+  const value = pricing?.[key];
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toFixed(2);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number.toFixed(2) : value.trim();
+  }
+
+  return null;
+}
+
+function getSnapshotPricingPayloadObject(
+  payload: Prisma.JsonValue | null | undefined,
+) {
+  const pricing = getJsonObject(getJsonObject(payload)?.pricing);
+
+  return pricing ? ({ pricing } satisfies Prisma.JsonObject) : {};
 }
 
 async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
@@ -2621,6 +2656,7 @@ async function getShopifyProductForConflict(
             nodes {
               inventoryQuantity
               price
+              compareAtPrice
               inventoryItem {
                 tracked
                 inventoryLevel(locationId: $locationId) {
@@ -2655,6 +2691,7 @@ async function getShopifyProductForConflict(
             nodes {
               inventoryQuantity
               price
+              compareAtPrice
               inventoryItem {
                 tracked
               }
@@ -2680,6 +2717,7 @@ async function getShopifyProductForConflict(
 function getDetectedShopifyConflicts(
   product: ShopifyProductForConflict,
   snapshot: {
+    compareAtPriceAmount: string | null;
     descriptionHash: string | null;
     imageCount: number | null;
     priceAmount: Prisma.Decimal | null;
@@ -2720,11 +2758,12 @@ function getDetectedShopifyConflicts(
       hashNullableText(product.descriptionHtml ?? null),
     ),
     buildConflict("status", snapshot.productStatus, product.status),
-    buildConflict(
-      "price",
-      snapshot.priceAmount?.toFixed(2) ?? null,
-      variant?.price ?? null,
-    ),
+    buildPriceConflict({
+      lastCompareAtPrice: snapshot.compareAtPriceAmount,
+      lastPrice: snapshot.priceAmount?.toFixed(2) ?? null,
+      shopifyCompareAtPrice: variant?.compareAtPrice ?? null,
+      shopifyPrice: variant?.price ?? null,
+    }),
     quantityConflict,
     imagesConflict,
   ];
@@ -2754,6 +2793,33 @@ function getVariantLocationQuantity(
     )?.quantity;
 
   return typeof availableQuantity === "number" ? availableQuantity : null;
+}
+
+function buildPriceConflict(input: {
+  lastCompareAtPrice: string | null;
+  lastPrice: string | null;
+  shopifyCompareAtPrice: string | null;
+  shopifyPrice: string | null;
+}) {
+  const lastSyncBayValue = {
+    amount: input.lastPrice,
+    compareAtPrice: input.lastCompareAtPrice,
+  } satisfies Prisma.JsonObject;
+  const shopifyValue = {
+    amount: input.shopifyPrice,
+    compareAtPrice: input.shopifyCompareAtPrice,
+  } satisfies Prisma.JsonObject;
+
+  if (JSON.stringify(lastSyncBayValue) === JSON.stringify(shopifyValue)) {
+    return null;
+  }
+
+  return {
+    ebayValue: lastSyncBayValue,
+    field: "price",
+    lastSyncBayValue,
+    shopifyValue,
+  };
 }
 
 function buildConflict(
@@ -2986,7 +3052,7 @@ function resolveOpenConflictsForInactiveMappingMutation(input: {
   });
 }
 
-function getJsonObject(value: Prisma.JsonValue | null) {
+function getJsonObject(value: Prisma.JsonValue | null | undefined) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
   return value as Record<string, Prisma.JsonValue>;
