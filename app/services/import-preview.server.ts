@@ -6,6 +6,11 @@ import {
   resolveShopifyCategoryProposal,
   type ShopifyCategoryProposal,
 } from "../lib/syncbay-shopify-category-mapping";
+import {
+  buildSyncBayProductFacets,
+  type EbayItemSpecific,
+  type SyncBayProductFacet,
+} from "../lib/syncbay-product-facets";
 
 export type ImportPreviewSeverity = "info" | "warning" | "error";
 export type ImportPreviewStatus = "importable" | "skipped" | "error";
@@ -18,6 +23,7 @@ export interface ImportPreviewListingCandidate {
   ebayPrimaryCategoryPath?: string | null;
   imageUrls?: string[];
   itemId: string;
+  itemSpecifics?: EbayItemSpecific[];
   priceAmount?: number | null;
   quantity?: number | null;
   sku?: string | null;
@@ -55,6 +61,7 @@ export interface ImportPreviewItem {
     imageUrls: string[];
     imageCount: number;
     priceAmount: number | null;
+    productFacets: SyncBayProductFacet[];
     productStatus: string;
     quantity: number | null;
     sku: string | null;
@@ -246,6 +253,12 @@ function buildPreviewItem(
       imageUrls: candidate.imageUrls ?? [],
       imageCount: candidate.imageUrls?.length ?? 0,
       priceAmount: normalizeNumber(candidate.priceAmount),
+      productFacets: buildSyncBayProductFacets({
+        ebayPrimaryCategoryName,
+        itemSpecifics: candidate.itemSpecifics ?? [],
+        storeCategoryName,
+        title,
+      }),
       productStatus: DEFAULT_PRODUCT_STATUS,
       quantity: normalizeInteger(candidate.quantity),
       sku: normalizeText(candidate.sku),

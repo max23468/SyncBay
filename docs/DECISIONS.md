@@ -27,6 +27,7 @@ Usa un ADR quando una scelta:
 - `0012-impostazioni-avanzate-disconnessione-intervallo.md`: disconnessione eBay self-service reversibile e intervallo target sync configurabile (60-300 s).
 - `0013-accento-ui-bay-blue-e-tema.md`: accento UI sul Bay Blue del logo con uso disciplinato e strategia tema chiaro theme-ready.
 - `0015-mapping-categorie-ebay-shopify.md`: mapping categorie eBay -> Shopify per nuovi import e backfill controllato, senza tag categoria e senza apply massivo automatico.
+- `0016-faccette-storefront-import.md`: import controllato di cinque faccette storefront da eBay verso metafield Shopify `syncbay_facets.*`.
 
 ## Convenzioni
 

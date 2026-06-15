@@ -10,6 +10,7 @@ export function serializeIncrementalPreviewCandidate(
     descriptionHtml: candidate.descriptionHtml ?? null,
     imageUrls: candidate.imageUrls ?? [],
     itemId: candidate.itemId,
+    itemSpecifics: serializeItemSpecifics(candidate.itemSpecifics ?? []),
     priceAmount: candidate.priceAmount ?? null,
     quantity: candidate.quantity ?? null,
     sku: candidate.sku ?? null,
@@ -40,6 +41,7 @@ export function deserializeIncrementalPreviewCandidate(
       ? object.imageUrls.filter((url): url is string => typeof url === "string")
       : [],
     itemId,
+    itemSpecifics: deserializeItemSpecifics(object.itemSpecifics),
     priceAmount: getNullableNumber(object.priceAmount),
     quantity: getNullableNumber(object.quantity),
     sku: getNullableString(object.sku),
@@ -50,6 +52,41 @@ export function deserializeIncrementalPreviewCandidate(
     title: getNullableString(object.title),
     variantCount: getNullableNumber(object.variantCount) ?? 1,
   };
+}
+
+function serializeItemSpecifics(
+  itemSpecifics: NonNullable<ImportPreviewListingCandidate["itemSpecifics"]>,
+) {
+  return itemSpecifics.flatMap((specific) => {
+    const name = specific.name.trim();
+    const values = specific.values
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (!name || values.length === 0) return [];
+
+    return [{ name, values }];
+  });
+}
+
+function deserializeItemSpecifics(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value.flatMap((item) => {
+    const object =
+      item && typeof item === "object" && !Array.isArray(item)
+        ? (item as Record<string, unknown>)
+        : null;
+    const name = getNullableString(object?.name)?.trim();
+    const values = Array.isArray(object?.values)
+      ? object.values
+          .filter((entry): entry is string => typeof entry === "string")
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+      : [];
+    if (!name || values.length === 0) return [];
+
+    return [{ name, values }];
+  });
 }
 
 function getNullableString(value: unknown) {

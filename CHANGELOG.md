@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Import: i nuovi prodotti possono ricevere le cinque faccette storefront
+  `Categoria`, `Area / Stato`, `Materiale`, `Conservazione` e `Perizia` come
+  metafield Shopify `syncbay_facets.*`, usando dati categoria, `ItemSpecifics`
+  e un parser titolo conservativo per segnali numismatici come `BB`, `SPL`,
+  `FDC`, `Proof`, materiali e perizia.
+
 ## [0.38.2] — 2026-06-15
 
 ### Correzioni

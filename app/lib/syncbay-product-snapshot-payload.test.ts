@@ -117,6 +117,50 @@ test("persists unapplied Shopify category proposals for dry-run reporting", () =
   );
 });
 
+test("persists approved storefront facets for import audit", () => {
+  assert.deepEqual(
+    buildEbayProductSnapshotPayload({
+      descriptionMode: "pulita",
+      imageUrls: [],
+      issueCodes: [],
+      productFacets: [
+        {
+          key: "categoria",
+          label: "Categoria",
+          namespace: "syncbay_facets",
+          type: "single_line_text_field",
+          value: "Monete in euro",
+        },
+        {
+          key: "materiale",
+          label: "Materiale",
+          namespace: "syncbay_facets",
+          type: "single_line_text_field",
+          value: "Argento",
+        },
+      ],
+      skuGenerated: false,
+      status: "ready",
+    }).productFacets,
+    [
+      {
+        key: "categoria",
+        label: "Categoria",
+        namespace: "syncbay_facets",
+        type: "single_line_text_field",
+        value: "Monete in euro",
+      },
+      {
+        key: "materiale",
+        label: "Materiale",
+        namespace: "syncbay_facets",
+        type: "single_line_text_field",
+        value: "Argento",
+      },
+    ],
+  );
+});
+
 test("reads thumbnails from eBay snapshot image URLs", () => {
   assert.equal(
     getProductSnapshotThumbnailUrl({

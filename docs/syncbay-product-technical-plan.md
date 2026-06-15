@@ -317,7 +317,15 @@ MVP:
 - varianti semplici quando i dati eBay sono chiari e mappabili;
 - fallback esplicito per varianti non mappabili: prodotto saltato o import parziale solo se il negoziante lo approva;
 - log dei listing esclusi per varianti complesse;
-- item specifics base come metafield/tag Shopify.
+- cinque faccette storefront controllate come metafield prodotto Shopify:
+  `Categoria`, `Area / Stato`, `Materiale`, `Conservazione`, `Perizia`.
+
+Decisione attuale: ADR 0016. Le faccette vengono lette da categoria negozio
+eBay, categoria marketplace, `ItemSpecifics` Trading API e, quando i campi
+strutturati sono insufficienti, da un parser titolo conservativo con lista chiusa
+di segnali numismatici. I valori vengono scritti nel namespace
+`syncbay_facets` e salvati nel payload diagnostico. SyncBay non crea tag filtro e
+non deduce valori mancanti da descrizione HTML o assenza del campo.
 
 Post-MVP:
 
