@@ -90,6 +90,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
 | Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`       |
 | Dry-run categorie             | `npm run categories:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`               |
+| Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop syncbay-dev.myshopify.com [--limit N]`     |
 | Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop syncbay-dev.myshopify.com [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | React Doctor                  | `npm run quality:react-doctor`                                                              |
@@ -128,6 +129,12 @@ token, segreti o dati cliente.
 la pulizia descrizioni rimuove template, colori e markup non essenziale. Stampa
 metriche e brevi estratti testuali; non scrive su eBay né su Shopify e aggiorna
 solo il token eBay cifrato se scaduto.
+`npm run descriptions:backfill-cleanup` usa Supabase CLI linked, Trading API
+`GetItem` e sessione offline Shopify per pianificare l'applicazione retroattiva
+delle descrizioni pulite ai prodotti già importati. È dry-run di default,
+non stampa HTML completo delle descrizioni, salta prodotti con conflitti aperti
+o senza mapping Shopify, non modifica eBay e richiede `--apply --confirm-apply`
+per scrivere `descriptionHtml` su Shopify e registrare snapshot `SYNCBAY`.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.
