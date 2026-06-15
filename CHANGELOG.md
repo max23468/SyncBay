@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.39.5] — 2026-06-15
+
+### Sotto il cofano
+
+- Attività: impaginazione uniformata alla Panoramica. Le metriche stanno
+  direttamente sulla pagina (niente più riquadro che le incorniciava) e i box
+  dei controlli rapidi sono ora icona-led, per un'unica lingua visiva tra le due
+  pagine.
+
 ## [0.39.4] — 2026-06-15
 
 ### Correzioni
@@ -1956,6 +1965,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.39.5]: #0395--2026-06-15
 [0.39.4]: #0394--2026-06-15
 [0.39.3]: #0393--2026-06-15
 [0.39.2]: #0392--2026-06-15
