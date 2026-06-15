@@ -1,4 +1,8 @@
 import {
+  buildDescriptionCleanupReportRow,
+  cleanEbayDescriptionHtml,
+} from "../lib/syncbay-description-cleanup";
+import {
   resolveShopifyCategoryProposal,
   type ShopifyCategoryProposal,
 } from "../lib/syncbay-shopify-category-mapping";
@@ -36,8 +40,15 @@ export interface ImportPreviewItem {
   normalized: {
     categoryProposal: ShopifyCategoryProposal;
     currency: string | null;
+    descriptionCleanedLength: number;
+    descriptionCleanedTextExcerpt: string;
     descriptionHtml: string | null;
     descriptionMode: string;
+    descriptionOriginalLength: number;
+    descriptionOriginalTextExcerpt: string;
+    descriptionRemovedPercent: number;
+    descriptionTemplateSignalCount: number;
+    descriptionWasChanged: boolean;
     ebayPrimaryCategoryId: string | null;
     ebayPrimaryCategoryName: string | null;
     ebayPrimaryCategoryPath: string | null;
@@ -70,7 +81,6 @@ export interface ImportPreviewResult {
 }
 
 const DEFAULT_PRODUCT_STATUS = "published";
-const DEFAULT_DESCRIPTION_MODE = "HTML pulito senza template";
 const MAX_SIMPLE_VARIANTS = 1;
 
 export function buildImportPreview(
@@ -182,7 +192,7 @@ export function getImportPreviewValidationRules() {
     },
     {
       code: "description_cleanup",
-      label: "Descrizione da pulire prima dell'import",
+      label: "Descrizione ripulita da SyncBay",
       severity: "info" satisfies ImportPreviewSeverity,
     },
   ];
@@ -191,7 +201,15 @@ export function getImportPreviewValidationRules() {
 function buildPreviewItem(
   candidate: ImportPreviewListingCandidate,
 ): ImportPreviewItem {
-  const issues = getPreviewIssues(candidate);
+  const descriptionCleanup = cleanEbayDescriptionHtml(
+    candidate.descriptionHtml,
+  );
+  const descriptionReport = buildDescriptionCleanupReportRow({
+    descriptionHtml: candidate.descriptionHtml,
+    itemId: candidate.itemId,
+    title: candidate.title,
+  });
+  const issues = getPreviewIssues(candidate, descriptionReport.wasChanged);
   const hasErrors = issues.some((issue) => issue.severity === "error");
   const ebayPrimaryCategoryName = normalizeText(
     candidate.ebayPrimaryCategoryName,
@@ -213,8 +231,15 @@ function buildPreviewItem(
         title,
       }),
       currency: normalizeCurrency(candidate.currency),
-      descriptionHtml: normalizeText(candidate.descriptionHtml),
-      descriptionMode: DEFAULT_DESCRIPTION_MODE,
+      descriptionCleanedLength: descriptionReport.cleanedLength,
+      descriptionCleanedTextExcerpt: descriptionReport.cleanedTextExcerpt,
+      descriptionHtml: descriptionCleanup.html,
+      descriptionMode: descriptionCleanup.mode,
+      descriptionOriginalLength: descriptionReport.rawLength,
+      descriptionOriginalTextExcerpt: descriptionReport.rawTextExcerpt,
+      descriptionRemovedPercent: descriptionReport.removedPercent,
+      descriptionTemplateSignalCount: descriptionReport.templateSignalCount,
+      descriptionWasChanged: descriptionReport.wasChanged,
       ebayPrimaryCategoryId: normalizeText(candidate.ebayPrimaryCategoryId),
       ebayPrimaryCategoryName,
       ebayPrimaryCategoryPath,
@@ -233,7 +258,10 @@ function buildPreviewItem(
   };
 }
 
-function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
+function getPreviewIssues(
+  candidate: ImportPreviewListingCandidate,
+  descriptionWasChanged: boolean,
+) {
   const issues: ImportPreviewIssue[] = [];
 
   if (!normalizeText(candidate.sku)) {
@@ -285,13 +313,11 @@ function getPreviewIssues(candidate: ImportPreviewListingCandidate) {
     });
   }
 
-  if (
-    candidate.descriptionHtml &&
-    looksLikeTemplate(candidate.descriptionHtml)
-  ) {
+  if (candidate.descriptionHtml && descriptionWasChanged) {
     issues.push({
       code: "description_cleanup",
-      message: "Descrizione con possibile template storico da ripulire.",
+      message:
+        "Descrizione eBay ripulita da template, colori o markup non essenziale.",
       severity: "info",
     });
   }
@@ -331,15 +357,6 @@ function normalizeNumber(value: number | null | undefined) {
 
 function normalizeInteger(value: number | null | undefined) {
   return Number.isInteger(value) ? Number(value) : null;
-}
-
-function looksLikeTemplate(descriptionHtml: string) {
-  const normalized = descriptionHtml.toLowerCase();
-  return (
-    normalized.includes("<table") ||
-    normalized.includes("<style") ||
-    normalized.includes("template")
-  );
 }
 
 function normalizeText(value: string | null | undefined) {

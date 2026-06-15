@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.38.0] — 2026-06-15
+
+### Novità
+
+- Import preview: le descrizioni eBay vengono ripulite prima dell'import da
+  template negozio, colori inline e markup non essenziale, con riepilogo
+  prima/dopo nella card prodotto.
+
+### Sotto il cofano
+
+- Aggiunto il report `npm run descriptions:cleanup-report` per misurare su un
+  campione eBay reale quanta descrizione viene rimossa dal cleaner, senza
+  scritture su eBay o Shopify.
+
 ## [0.37.0] — 2026-06-15
 
 ### Novità
@@ -1877,6 +1891,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.38.0]: #0380--2026-06-15
 [0.37.0]: #0370--2026-06-15
 [0.36.8]: #0368--2026-06-15
 [0.36.7]: #0367--2026-06-15

@@ -85,6 +85,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                              |
 | Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                         |
 | Verifica campione import      | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                     |
+| Report pulizia descrizioni    | `npm run descriptions:cleanup-report -- --shop syncbay-dev.myshopify.com --sample 20`       |
 | Riparazione prezzo/SKU        | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run`     |
 | Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
 | Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`       |
@@ -122,6 +123,11 @@ connessione eBay `EBAY_IT`, token eBay utilizzabili, coda stock/sync e mapping
 candidati con snapshot `EUR` prima di una prova reale `orders/paid`; non stampa
 token, segreti o dati cliente.
 `npm run import:verify` usa Supabase CLI linked più l'endpoint runtime SyncBay `/api/diagnostics/shopify-admin`, protetto da `APP_SECRET`, per confrontare un campione dell'ultima run import tra snapshot eBay/SyncBay, mapping e prodotto Shopify live senza dipendere da `shopify store auth`. Lo script legge il secret da `SYNCBAY_INTERNAL_APP_SECRET`, `APP_SECRET` o dal Portachiavi macOS `syncbay-app-secret`; la vecchia strada Shopify CLI resta solo come fallback manuale esplicito con `--shopify-source cli`.
+`npm run descriptions:cleanup-report` usa Supabase CLI linked e Trading API
+`GetItem` in sola lettura per misurare, su un campione di listing reali, quanto
+la pulizia descrizioni rimuove template, colori e markup non essenziale. Stampa
+metriche e brevi estratti testuali; non scrive su eBay né su Shopify e aggiorna
+solo il token eBay cifrato se scaduto.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.
