@@ -33,6 +33,16 @@ export interface SyncBayProductFacetInput {
 }
 
 const FACET_NAMESPACE = "syncbay_facets";
+const FACET_TYPES: Record<
+  SyncBayProductFacetKey,
+  SyncBayProductFacet["type"]
+> = {
+  area_stato: "single_line_text_field",
+  categoria: "single_line_text_field",
+  conservazione: "list.single_line_text_field",
+  materiale: "list.single_line_text_field",
+  perizia: "single_line_text_field",
+};
 
 const FACETS = [
   {
@@ -151,8 +161,8 @@ function getFacetValues(
 
   if (key === "categoria") {
     const fallbackValue =
-      normalizeFacetValue(input.storeCategoryName) ??
-      normalizeFacetValue(input.ebayPrimaryCategoryName) ??
+      getStorefrontCategoryValue(input.storeCategoryName) ??
+      getStorefrontCategoryValue(input.ebayPrimaryCategoryName) ??
       titleValues[0];
     return fallbackValue ? [fallbackValue] : [];
   }
@@ -188,11 +198,11 @@ function buildFacet(input: {
     key: input.key,
     label: input.label,
     namespace: FACET_NAMESPACE,
-    type:
-      values.length === 1
-        ? "single_line_text_field"
-        : "list.single_line_text_field",
-    value: values.length === 1 ? values[0]! : JSON.stringify(values),
+    type: FACET_TYPES[input.key],
+    value:
+      FACET_TYPES[input.key] === "list.single_line_text_field"
+        ? JSON.stringify(values)
+        : values[0]!,
   };
 }
 
@@ -213,19 +223,104 @@ function getTitleFacetValues(
 
 function getTitleCategoryValues(title: string) {
   const normalized = normalizeLookupKey(title);
+  if (hasAnyPhrase(normalized, ["altro collezionismo"])) {
+    return ["Altro collezionismo"];
+  }
+  if (hasAnyToken(normalized, ["miniassegno", "miniassegni"])) {
+    return ["Miniassegni"];
+  }
   if (hasAnyToken(normalized, ["medaglia", "medaglie"])) return ["Medaglie"];
   if (hasAnyToken(normalized, ["banconota", "banconote"])) return ["Banconote"];
   if (hasAnyToken(normalized, ["francobollo", "francobolli"])) {
     return ["Francobolli"];
   }
+  if (
+    hasAnyToken(normalized, ["catalogo", "cataloghi", "libro", "libri"]) ||
+    hasAnyPhrase(normalized, ["accessori numismatici"])
+  ) {
+    return ["Libri, cataloghi e accessori"];
+  }
   if (hasAnyPhrase(normalized, ["divisionale", "serie zecca", "proof set"])) {
     return ["Divisionali e serie"];
+  }
+  if (
+    hasAnyPhrase(normalized, [
+      "monete antiche",
+      "moneta romana",
+      "monete romane",
+      "impero romano",
+      "repubblica romana",
+      "magna grecia",
+    ])
+  ) {
+    return ["Monete antiche"];
+  }
+  if (hasAnyPhrase(normalized, ["pre euro", "pre-euro"])) {
+    return ["Monete europee pre euro"];
+  }
+  if (hasAnyToken(normalized, ["euro"])) {
+    return ["Monete in euro"];
+  }
+  if (
+    hasAnyToken(normalized, [
+      "lira",
+      "lire",
+      "centesimo",
+      "centesimi",
+      "cent",
+    ])
+  ) {
+    return ["Monete italiane in lire"];
   }
   if (hasAnyToken(normalized, ["moneta", "monete", "lire", "euro"])) {
     return ["Monete"];
   }
 
   return [];
+}
+
+function getStorefrontCategoryValue(value?: string | null) {
+  const normalized = normalizeLookupKey(value ?? "");
+  if (!normalized) return null;
+
+  if (hasAnyPhrase(normalized, ["altro collezionismo"])) {
+    return "Altro collezionismo";
+  }
+  if (hasAnyToken(normalized, ["miniassegno", "miniassegni"])) {
+    return "Miniassegni";
+  }
+  if (hasAnyPhrase(normalized, ["libri cataloghi accessori"])) {
+    return "Libri, cataloghi e accessori";
+  }
+  if (hasAnyPhrase(normalized, ["divisionali", "divisionale", "serie zecca"])) {
+    return "Divisionali e serie";
+  }
+  if (hasAnyPhrase(normalized, ["monete italiane in lire"])) {
+    return "Monete italiane in lire";
+  }
+  if (hasAnyPhrase(normalized, ["monete in euro"])) {
+    return "Monete in euro";
+  }
+  if (hasAnyPhrase(normalized, ["monete europee pre euro"])) {
+    return "Monete europee pre euro";
+  }
+  if (hasAnyPhrase(normalized, ["monete antiche"])) {
+    return "Monete antiche";
+  }
+  if (hasAnyToken(normalized, ["francobollo", "francobolli"])) {
+    return "Francobolli";
+  }
+  if (hasAnyToken(normalized, ["banconota", "banconote"])) {
+    return "Banconote";
+  }
+  if (hasAnyToken(normalized, ["medaglia", "medaglie"])) {
+    return "Medaglie";
+  }
+
+  const normalizedValue = normalizeFacetValue(value);
+  if (normalizedValue && !normalizedValue.includes(":")) return normalizedValue;
+
+  return null;
 }
 
 function getTitleAreaValues(title: string) {
@@ -246,11 +341,17 @@ function getTitleAreaValues(title: string) {
   }
   if (hasAnyPhrase(normalized, ["san marino"])) return ["San Marino"];
   if (hasAnyPhrase(normalized, ["germania", "deutschland"])) return ["Germania"];
-  if (hasAnyPhrase(normalized, ["regno unito", "u k", "uk"])) {
+  if (
+    hasAnyPhrase(normalized, ["regno unito", "u k"]) ||
+    hasAnyToken(normalized, ["uk"])
+  ) {
     return ["Regno Unito"];
   }
   if (hasAnyPhrase(normalized, ["francia"])) return ["Francia"];
-  if (hasAnyPhrase(normalized, ["stati uniti", "usa", "u s a"])) {
+  if (
+    hasAnyPhrase(normalized, ["stati uniti", "u s a"]) ||
+    hasAnyToken(normalized, ["usa"])
+  ) {
     return ["Stati Uniti"];
   }
   if (

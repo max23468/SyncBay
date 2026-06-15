@@ -83,6 +83,10 @@ Search & Discovery e del tema compatibile.
   non si perdono tra pianificazione import e creazione prodotto.
 - Le faccette vengono salvate anche nello snapshot diagnostico eBay per audit e
   debug.
+- I prodotti già collegati possono essere allineati con
+  `npm run facets:backfill`: dry-run di default, apply solo con
+  `--apply --confirm-apply`, scrittura Shopify tramite `metafieldsSet` e nessuna
+  attivazione automatica dei filtri storefront.
 - I valori mancanti non vengono inventati: un filtro può quindi non coprire tutti
   i prodotti finché eBay non espone dati sufficienti o il titolo non contiene un
   segnale riconosciuto.
@@ -107,6 +111,7 @@ Search & Discovery e del tema compatibile.
 - `app/services/import-preview.server.ts`
 - `app/services/ebay-trading-preview.server.ts`
 - `app/services/shopify-draft-import.server.ts`
+- `scripts/syncbay-product-facets-backfill.mjs`
 - `docs/syncbay-product-technical-plan.md`
 - Shopify Search & Discovery filters:
   https://help.shopify.com/en/manual/online-store/storefront-search/search-and-discovery-filters

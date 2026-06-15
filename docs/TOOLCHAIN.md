@@ -91,6 +91,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`       |
 | Dry-run categorie             | `npm run categories:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`               |
 | Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop syncbay-dev.myshopify.com [--limit N]`     |
+| Dry-run faccette storefront   | `npm run facets:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`                   |
 | Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop syncbay-dev.myshopify.com [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | React Doctor                  | `npm run quality:react-doctor`                                                              |
@@ -148,6 +149,16 @@ include il motivo tecnico nella riga JSON e nel campione umano. La scrittura rea
 `--apply --confirm-apply`, usa Shopify Admin GraphQL `productUpdate` e aggiorna
 solo righe `applicable`, saltando categorie manuali diverse, righe incerte,
 lookup falliti senza proposta locale valida e prodotti senza GID Shopify.
+`npm run facets:backfill` è un dry-run di default: per i mapping ACTIVE calcola
+le cinque faccette storefront `syncbay_facets.*` da snapshot eBay e, salvo
+`--snapshot-only`, da Trading API `GetItem` con `ItemSpecifics`. Confronta i
+metafield Shopify attuali e classifica prodotti applicabili, già corretti,
+conflitti manuali e incerti; senza flag di apply non scrive prodotti Shopify e
+non modifica eBay, salvo refresh della sessione offline Shopify e del token
+eBay cifrato se scaduti. La scrittura reale richiede
+`--apply --confirm-apply`, usa Shopify Admin GraphQL `metafieldsSet`, aggiunge
+solo metafield mancanti e salta prodotti con valori `syncbay_facets.*` già
+presenti ma diversi.
 `npm run catalog:images:doctor` è in sola lettura sui listing eBay: misura la
 copertura immagini degli snapshot Catalogo e chiama Trading API `GetItem` solo
 per le prime righe senza immagine, così distingue listing davvero senza immagini

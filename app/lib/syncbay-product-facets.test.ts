@@ -42,8 +42,8 @@ test("builds only the five approved storefront facets from eBay metadata", () =>
         key: "materiale",
         label: "Materiale",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Argento",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Argento"]),
       },
       {
         key: "conservazione",
@@ -103,8 +103,8 @@ test("extracts Numisleo conservation and perizia signals from the title", () => 
         key: "conservazione",
         label: "Conservazione",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "BB",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["BB"]),
       },
       {
         key: "perizia",
@@ -144,8 +144,8 @@ test("extracts split conservation and material from coin titles without inferrin
         key: "materiale",
         label: "Materiale",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Argento",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Argento"]),
       },
       {
         key: "conservazione",
@@ -183,17 +183,43 @@ test("uses title fallback for category, area and material when eBay structured f
         key: "materiale",
         label: "Materiale",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Bronzo",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Bronzo"]),
       },
       {
         key: "conservazione",
         label: "Conservazione",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Proof",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Proof"]),
       },
     ],
+  );
+});
+
+test("normalizes nested eBay store categories to storefront category values", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      storeCategoryName:
+        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete italiane in lire",
+  );
+});
+
+test("uses Numisleo-like category values from coin title fallback", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      title: "NL* ITALIA 500 LIRE ARGENTO CARAVELLE 1961 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete italiane in lire",
+  );
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      title: "NL* ITALIA 2 EURO COMMEMORATIVO 2020 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete in euro",
   );
 });
 
@@ -203,6 +229,33 @@ test("does not infer copper material from ramo in Italian coin titles", () => {
       title: "NL* ITALIA 20 LIRE RAMO DI QUERCIA 1968 RARA FDC",
     }).some((facet) => facet.key === "materiale"),
     false,
+  );
+});
+
+test("matches short country aliases only on token boundaries", () => {
+  assert.equal(
+    buildSyncBayProductFacets({
+      title: "NL* MEDAGLIA DUKA BRONZO 1990",
+    }).some((facet) => facet.key === "area_stato"),
+    false,
+  );
+  assert.equal(
+    buildSyncBayProductFacets({
+      title: "NL* MEDAGLIA USATO SICURO BRONZO 1990",
+    }).some((facet) => facet.key === "area_stato"),
+    false,
+  );
+  assert.equal(
+    buildSyncBayProductFacets({
+      title: "NL* UK MEDAGLIA BRONZO 1990",
+    }).find((facet) => facet.key === "area_stato")?.value,
+    "Regno Unito",
+  );
+  assert.equal(
+    buildSyncBayProductFacets({
+      title: "NL* USA MEDAGLIA BRONZO 1990",
+    }).find((facet) => facet.key === "area_stato")?.value,
+    "Stati Uniti",
   );
 });
 
@@ -229,16 +282,16 @@ test("serializes product facets as Shopify metafields without audit labels", () 
         key: "materiale",
         label: "Materiale",
         namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Argento",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Argento"]),
       },
     ]),
     [
       {
-        key: "materiale",
-        namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Argento",
+          key: "materiale",
+          namespace: "syncbay_facets",
+          type: "list.single_line_text_field",
+          value: JSON.stringify(["Argento"]),
       },
     ],
   );

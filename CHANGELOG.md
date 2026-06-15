@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.40.0] — 2026-06-15
+
+### Novità
+
+- Backfill: aggiunto `npm run facets:backfill`, dry-run/apply controllato per
+  popolare sui prodotti già collegati le cinque faccette storefront
+  `syncbay_facets.*` senza attivare i filtri Search & Discovery.
+
 ## [0.39.5] — 2026-06-15
 
 ### Sotto il cofano
@@ -1965,6 +1973,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.40.0]: #0400--2026-06-15
 [0.39.5]: #0395--2026-06-15
 [0.39.4]: #0394--2026-06-15
 [0.39.3]: #0393--2026-06-15
