@@ -21,7 +21,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -262,7 +262,9 @@ try {
 </html>`;
 
   const suffix = fixtureMode ? "fixture" : "live";
-  const outPath = join(root, `preview/shots/${page}-${suffix}.html`);
+  const shotsDir = join(root, "preview/shots");
+  mkdirSync(shotsDir, { recursive: true });
+  const outPath = join(shotsDir, `${page}-${suffix}.html`);
   writeFileSync(outPath, html);
   console.error(`ok html: ${outPath}`);
 
