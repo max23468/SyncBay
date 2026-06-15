@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.39.0] — 2026-06-15
+
 ### Novità
 
 - Import: i nuovi prodotti possono ricevere le cinque faccette storefront
@@ -1921,6 +1923,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.39.0]: #0390--2026-06-15
 [0.38.2]: #0382--2026-06-15
 [0.38.1]: #0381--2026-06-15
 [0.38.0]: #0380--2026-06-15
