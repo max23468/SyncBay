@@ -191,7 +191,9 @@ async function buildReportRow(input) {
     lookupFailureReason,
     lookupFailed,
     proposedFacets: buildSyncBayProductFacets(source),
-    shopifyProductGid: input.mapping.shopifyProductGid ?? null,
+    shopifyProductGid: input.shopifyProduct
+      ? (input.mapping.shopifyProductGid ?? null)
+      : null,
   };
 }
 
