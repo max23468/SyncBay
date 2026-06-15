@@ -35,6 +35,21 @@ test("drops store navigation lists before the product description", () => {
   );
 });
 
+test("keeps allowed leading block tags outside generated paragraphs", () => {
+  assert.equal(
+    cleanEbayDescriptionHtml(
+      "<ul><li>Conservazione SPL</li><li>Periziata</li></ul>",
+    ).html,
+    "<ul><li>Conservazione SPL</li><li>Periziata</li></ul>",
+  );
+
+  assert.equal(
+    cleanEbayDescriptionHtml("<h2>Dettagli prodotto</h2><p>Moneta rara.</p>")
+      .html,
+    "<h2>Dettagli prodotto</h2><p>Moneta rara.</p>",
+  );
+});
+
 test("keeps product details from neutral tables while removing table markup", () => {
   assert.equal(
     cleanEbayDescriptionHtml(

@@ -493,7 +493,7 @@ function normalizeDescriptionWhitespace(html: string) {
   const formatted = formatLeadingFormattingFragments(withoutEmptyTags);
 
   if (!formatted) return "";
-  if (/<[a-z][\s>]/i.test(formatted)) return formatted;
+  if (/<[a-z][a-z0-9]*(?:\s|>)/i.test(formatted)) return formatted;
 
   return `<p>${formatted}</p>`;
 }

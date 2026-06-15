@@ -16,6 +16,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Categorie Shopify: i francobolli singoli restano classificati come single
   stamp anche quando il segnale generico arriva dalla categoria primaria e il
   dettaglio singolo arriva da titolo o categoria negozio.
+- Descrizioni eBay: liste e heading già puliti restano blocchi HTML validi e
+  non vengono più avvolti in paragrafi generati.
 
 ## [0.38.0] — 2026-06-15
 
