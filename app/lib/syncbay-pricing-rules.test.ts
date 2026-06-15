@@ -36,6 +36,37 @@ test("rounds the discounted Shopify price to the nearest whole euro when request
   });
 });
 
+test("keeps whole-euro discounted prices below the eBay compare-at price", () => {
+  assert.deepEqual(
+    calculateShopifyPricing({
+      discountPercent: 1,
+      ebayPriceAmount: 10,
+      roundingMode: "WHOLE_EURO",
+    }),
+    {
+      applied: true,
+      compareAtPriceAmount: 10,
+      discountPercent: 1,
+      priceAmount: 9,
+      roundingMode: "WHOLE_EURO",
+    },
+  );
+  assert.deepEqual(
+    calculateShopifyPricing({
+      discountPercent: 1,
+      ebayPriceAmount: 9.99,
+      roundingMode: "WHOLE_EURO",
+    }),
+    {
+      applied: true,
+      compareAtPriceAmount: 9.99,
+      discountPercent: 1,
+      priceAmount: 9,
+      roundingMode: "WHOLE_EURO",
+    },
+  );
+});
+
 test("normalizes a free integer discount percent from settings form input", () => {
   assert.deepEqual(
     normalizePricingRuleFormInput({

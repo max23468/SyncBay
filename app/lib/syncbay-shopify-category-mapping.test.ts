@@ -118,6 +118,24 @@ test("derives category confidence from the text source that matched", () => {
   );
 });
 
+test("maps single stamp listings from store or title signals even when primary category is broad", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Francobolli",
+      title: "Francobollo singolo Regno d'Italia",
+    }),
+    {
+      applied: false,
+      confidence: "high",
+      productType: "Francobolli",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-5-4",
+      shopifyCategoryName: "Single Stamps",
+      source: "ebay_primary_category",
+    },
+  );
+});
+
 test("maps music records to records and LPs without assuming vinyl", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({

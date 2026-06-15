@@ -13,6 +13,7 @@ export function buildPricingRuleSyncPlan(input: {
   if (skippedReason) {
     return {
       batches: [] as string[][],
+      pricingOnly: true,
       queuedProductCount: 0,
       skippedReason,
     };
@@ -20,6 +21,7 @@ export function buildPricingRuleSyncPlan(input: {
 
   return {
     batches: chunkArray(input.activeEbayItemIds, input.batchSize),
+    pricingOnly: true,
     queuedProductCount: input.activeEbayItemIds.length,
     skippedReason: null,
   };

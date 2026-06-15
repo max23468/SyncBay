@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Regola prezzo: il riallineamento dopo salvataggio ora aggiorna solo prezzo e
+  prezzo barrato Shopify, senza passare dal sync completo di titolo,
+  descrizione, media, stato e inventario.
+- Regola prezzo: l'arrotondamento all'euro mantiene il prezzo scontato sotto il
+  prezzo barrato Shopify anche con sconti piccoli.
+- Categorie Shopify: i francobolli singoli restano classificati come single
+  stamp anche quando il segnale generico arriva dalla categoria primaria e il
+  dettaglio singolo arriva da titolo o categoria negozio.
+
 ## [0.38.0] — 2026-06-15
 
 ### Novità

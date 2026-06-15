@@ -127,7 +127,7 @@ export function resolveShopifyCategoryProposal(
   const stampsSignal = findMatchingSignal(signals, matchesStamps);
   if (stampsSignal) {
     return buildProposal({
-      category: matchesSingleStamp(stampsSignal.text)
+      category: signals.some((signal) => matchesSingleStamp(signal.text))
         ? SHOPIFY_TAXONOMY_CATEGORIES.singleStamps
         : SHOPIFY_TAXONOMY_CATEGORIES.postageStamps,
       confidence: stampsSignal.confidence,

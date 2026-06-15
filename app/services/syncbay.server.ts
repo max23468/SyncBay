@@ -1429,6 +1429,7 @@ export async function updatePricingRuleSettings(
               shop.defaultProductStatus,
             ),
             marketplaceId: getEbayMarketplaceId(),
+            pricingOnly: syncPlan.pricingOnly,
             requestedCount: ebayItemIds.length,
             roundingMode: normalized.roundingMode,
             runId,

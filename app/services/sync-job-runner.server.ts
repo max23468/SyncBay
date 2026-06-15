@@ -48,6 +48,7 @@ import {
   getNextEbayTradingRateLimitRetryAt,
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
+import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
 import { getNextIncrementalEnqueueAt } from "../lib/syncbay-incremental-schedule";
 import {
   buildEbayItemJobSplitIdempotencyKey,
@@ -88,6 +89,7 @@ import {
   createShopifyDraftProductsIfEnabled,
   markShopifyProductSoldOut,
 } from "./shopify-draft-import.server";
+import { getPricingRuleForShopId } from "./pricing-rules.server";
 
 type DueSyncJob = Prisma.SyncJobGetPayload<{ include: { shop: true } }>;
 type DueSyncJobRunResult = {
@@ -131,6 +133,23 @@ type ShopifyProductForConflict = {
 type ShopifyProductForConflictResponse = {
   data?: {
     node?: ShopifyProductForConflict | null;
+  };
+  errors?: Array<{ message: string }>;
+};
+type ShopifyUserError = {
+  field?: string[] | null;
+  message: string;
+};
+type ShopifyPricingVariantUpdateResponse = {
+  data?: {
+    productVariantsBulkUpdate?: {
+      productVariants?: Array<{
+        compareAtPrice?: string | null;
+        id: string;
+        price?: string | null;
+      }>;
+      userErrors?: ShopifyUserError[];
+    } | null;
   };
   errors?: Array<{ message: string }>;
 };
@@ -1450,6 +1469,18 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
+  if (isPricingOnlyIncrementalSync(job.payload)) {
+    return runPricingOnlyIncrementalSyncJob({
+      alignedDescriptionConflictResolvedCount:
+        alignedDescriptionConflicts.count,
+      job,
+      openConflictSkippedCount: openConflictItemIds.size,
+      reactivationConflictResolvedCount,
+      requestedItemIds: ebayItemIds,
+      syncableItemIds,
+    });
+  }
+
   const interruptedJobBeforeProvider =
     await getInterruptedRunningSyncJobResult(job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
@@ -1514,6 +1545,266 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     jobId: job.id,
     status: "succeeded" as const,
     type: job.type,
+  };
+}
+
+async function runPricingOnlyIncrementalSyncJob(input: {
+  alignedDescriptionConflictResolvedCount: number;
+  job: DueSyncJob;
+  openConflictSkippedCount: number;
+  reactivationConflictResolvedCount: number;
+  requestedItemIds: string[];
+  syncableItemIds: string[];
+}) {
+  const interruptedJobBeforeProvider =
+    await getInterruptedRunningSyncJobResult(input.job);
+  if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
+
+  const [admin, previewResult, pricingRule, mappings] = await Promise.all([
+    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+    getIncrementalPreviewResult(input.job, input.syncableItemIds),
+    getPricingRuleForShopId(input.job.shopId),
+    prisma.productMapping.findMany({
+      select: {
+        ebayItemId: true,
+        id: true,
+        shopifyProductGid: true,
+        shopifyVariantGid: true,
+        sku: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        marketplaceId: getEbayMarketplaceId(input.job.payload),
+        shopId: input.job.shopId,
+      },
+    }),
+  ]);
+  const previewItemsById = new Map(
+    filterPreviewResultByItemIds(
+      previewResult,
+      input.syncableItemIds,
+    ).items.map((item) => [item.itemId, item]),
+  );
+  const mappingsByItemId = new Map(
+    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
+  );
+  const synced: Prisma.JsonObject[] = [];
+  const skipped: Prisma.JsonObject[] = [];
+  const syncBaySnapshots: Prisma.ProductSnapshotCreateManyInput[] = [];
+  const now = new Date();
+
+  for (const itemId of input.syncableItemIds) {
+    const item = previewItemsById.get(itemId);
+    const mapping = mappingsByItemId.get(itemId);
+
+    if (!item || !mapping?.shopifyProductGid || !mapping.shopifyVariantGid) {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: !item ? "ebay_listing_not_found" : "shopify_mapping_missing",
+      });
+      continue;
+    }
+
+    const pricing = calculateShopifyPricing({
+      discountPercent: pricingRule.discountPercent,
+      ebayPriceAmount: item.normalized.priceAmount,
+      roundingMode: pricingRule.roundingMode,
+    });
+    const price = formatShopifyPrice(pricing.priceAmount);
+    const compareAtPrice = formatShopifyPrice(pricing.compareAtPriceAmount);
+
+    if (!price) {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: "ebay_price_missing",
+      });
+      continue;
+    }
+
+    const updateResult = await updateShopifyVariantPricingOnly(admin, {
+      compareAtPrice,
+      price,
+      productGid: mapping.shopifyProductGid,
+      variantGid: mapping.shopifyVariantGid,
+    });
+
+    if (updateResult.status === "failed") {
+      throw new Error(updateResult.errorMessage);
+    }
+
+    synced.push({
+      compareAtPrice: updateResult.compareAtPrice,
+      ebayItemId: itemId,
+      price: updateResult.price,
+      shopifyProductGid: mapping.shopifyProductGid,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+    });
+    syncBaySnapshots.push({
+      capturedAt: now,
+      currency: item.normalized.currency,
+      ebayItemId: item.itemId,
+      mappingId: mapping.id,
+      payload: {
+        pricing: {
+          applied: pricing.applied,
+          compareAtPriceAmount: pricing.compareAtPriceAmount,
+          discountPercent: pricing.discountPercent,
+          ebayPriceAmount: item.normalized.priceAmount,
+          priceAmount: pricing.priceAmount,
+          pricingOnly: true,
+          roundingMode: pricing.roundingMode,
+        },
+        pricingOnly: true,
+        syncJobId: input.job.id,
+      } satisfies Prisma.JsonObject,
+      priceAmount: pricing.priceAmount,
+      shopId: input.job.shopId,
+      shopifyProductGid: mapping.shopifyProductGid,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+      sku: item.normalized.sku ?? mapping.sku,
+      source: ProductSnapshotSource.SYNCBAY,
+      title: item.normalized.title,
+    });
+  }
+
+  if (syncBaySnapshots.length > 0) {
+    const syncedMappingIds = syncBaySnapshots
+      .map((snapshot) => snapshot.mappingId)
+      .filter((mappingId): mappingId is string => Boolean(mappingId));
+
+    await prisma.$transaction([
+      prisma.productSnapshot.createMany({ data: syncBaySnapshots }),
+      prisma.productMapping.updateMany({
+        data: { lastSyncedAt: now },
+        where: { id: { in: syncedMappingIds } },
+      }),
+    ]);
+  }
+
+  await markJobSucceeded({
+    delegatedJobId: null,
+    job: input.job,
+    result: {
+      alignedDescriptionConflictResolvedCount:
+        input.alignedDescriptionConflictResolvedCount,
+      conflictSkippedCount: input.openConflictSkippedCount,
+      pricingOnly: true,
+      reactivationConflictResolvedCount:
+        input.reactivationConflictResolvedCount,
+      requestedCount: input.requestedItemIds.length,
+      skipped,
+      skippedCount: skipped.length,
+      synced,
+      syncedCount: synced.length,
+    },
+    warnings:
+      skipped.length > 0
+        ? [
+            `Sync prezzo completato con ${skipped.length} prodotti saltati.`,
+          ]
+        : [],
+  });
+  await maybeMarkSellerEventsRunWatermarkSucceeded(input.job);
+
+  return {
+    jobId: input.job.id,
+    status: "succeeded" as const,
+    type: input.job.type,
+  };
+}
+
+async function updateShopifyVariantPricingOnly(
+  admin: {
+    graphql: (
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) => Promise<Response>;
+  },
+  input: {
+    compareAtPrice: string | null;
+    price: string;
+    productGid: string;
+    variantGid: string;
+  },
+): Promise<
+  | {
+      compareAtPrice: string | null;
+      price: string | null;
+      status: "synced";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayUpdateVariantPricingOnly($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+          price
+          compareAtPrice
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    {
+      variables: {
+        productId: input.productGid,
+        variants: [
+          {
+            compareAtPrice: input.compareAtPrice,
+            id: input.variantGid,
+            price: input.price,
+          },
+        ],
+      },
+    },
+  );
+  const json =
+    (await response.json()) as ShopifyPricingVariantUpdateResponse;
+
+  if (!response.ok) {
+    return {
+      errorMessage: `Shopify productVariantsBulkUpdate ha risposto con stato HTTP ${response.status}.`,
+      status: "failed",
+    };
+  }
+
+  if (json.errors?.length) {
+    return {
+      errorMessage: formatShopifyGraphqlErrors(json.errors),
+      status: "failed",
+    };
+  }
+
+  const userErrors = json.data?.productVariantsBulkUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return {
+      errorMessage: formatShopifyUserErrors(userErrors),
+      status: "failed",
+    };
+  }
+
+  const updatedVariant =
+    json.data?.productVariantsBulkUpdate?.productVariants?.[0] ?? null;
+
+  if (!updatedVariant) {
+    return {
+      errorMessage: "Shopify non ha restituito la variante aggiornata.",
+      status: "failed",
+    };
+  }
+
+  return {
+    compareAtPrice: updatedVariant.compareAtPrice ?? null,
+    price: updatedVariant.price ?? null,
+    status: "synced",
   };
 }
 
@@ -2426,6 +2717,10 @@ function getEbayItemIds(payload: Prisma.JsonValue | null) {
     : [];
 }
 
+function isPricingOnlyIncrementalSync(payload: Prisma.JsonValue | null) {
+  return getJsonObject(payload)?.pricingOnly === true;
+}
+
 function getArchiveEbayItemId(payload: Prisma.JsonValue | null) {
   const ebayItemId = getStringFromPayload(payload, "ebayItemId");
 
@@ -3068,6 +3363,28 @@ function getJsonNumber(value: Prisma.JsonValue | undefined) {
 
 function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
+}
+
+function formatShopifyPrice(value: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return value.toFixed(2);
+}
+
+function formatShopifyGraphqlErrors(errors: Array<{ message: string }>) {
+  return errors.map((error) => error.message).join("; ");
+}
+
+function formatShopifyUserErrors(errors: ShopifyUserError[]) {
+  return errors
+    .map((error) =>
+      error.field?.length
+        ? `${error.field.join(".")}: ${error.message}`
+        : error.message,
+    )
+    .join("; ");
 }
 
 function getStringFromPayload(payload: Prisma.JsonValue | null, key: string) {
