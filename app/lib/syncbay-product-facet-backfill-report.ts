@@ -152,7 +152,8 @@ function getProductFacetBackfillStatus(
 function getMissingMetafields(row: ProductFacetBackfillReportRowInput) {
   return row.proposedFacets.flatMap((facet) => {
     const current = findCurrentMetafield(row.currentMetafields, facet);
-    if (current) return [];
+    if (current && isExactMetafieldMatch(current, facet)) return [];
+    if (current && !hasSameMetafieldValues(current, facet)) return [];
 
     return [toShopifyProductFacetMetafield(facet)];
   });
@@ -162,7 +163,7 @@ function getConflicts(row: ProductFacetBackfillReportRowInput) {
   return row.proposedFacets.flatMap((facet) => {
     const current = findCurrentMetafield(row.currentMetafields, facet);
     if (!current) return [];
-    if (current.type === facet.type && current.value === facet.value) return [];
+    if (hasSameMetafieldValues(current, facet)) return [];
 
     return [toShopifyProductFacetMetafield(facet)];
   });
@@ -176,6 +177,42 @@ function findCurrentMetafield(
     (metafield) =>
       metafield.namespace === facet.namespace && metafield.key === facet.key,
   );
+}
+
+function isExactMetafieldMatch(
+  current: CurrentProductFacetMetafield,
+  facet: SyncBayProductFacet,
+) {
+  return current.type === facet.type && current.value === facet.value;
+}
+
+function hasSameMetafieldValues(
+  current: CurrentProductFacetMetafield,
+  facet: SyncBayProductFacet,
+) {
+  return areSameValues(
+    parseMetafieldValues(current.type, current.value),
+    parseMetafieldValues(facet.type, facet.value),
+  );
+}
+
+function parseMetafieldValues(type: string, value: string) {
+  if (type !== "list.single_line_text_field") return [value];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((entry): entry is string => typeof entry === "string");
+  } catch {
+    return [];
+  }
+}
+
+function areSameValues(left: string[], right: string[]) {
+  if (left.length !== right.length) return false;
+
+  return left.every((value, index) => value === right[index]);
 }
 
 function toShopifyProductFacetMetafield(

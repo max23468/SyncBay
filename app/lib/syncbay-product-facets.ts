@@ -33,6 +33,16 @@ export interface SyncBayProductFacetInput {
 }
 
 const FACET_NAMESPACE = "syncbay_facets";
+const FACET_TYPES: Record<
+  SyncBayProductFacetKey,
+  SyncBayProductFacet["type"]
+> = {
+  area_stato: "single_line_text_field",
+  categoria: "single_line_text_field",
+  conservazione: "list.single_line_text_field",
+  materiale: "list.single_line_text_field",
+  perizia: "single_line_text_field",
+};
 
 const FACETS = [
   {
@@ -188,11 +198,11 @@ function buildFacet(input: {
     key: input.key,
     label: input.label,
     namespace: FACET_NAMESPACE,
-    type:
-      values.length === 1
-        ? "single_line_text_field"
-        : "list.single_line_text_field",
-    value: values.length === 1 ? values[0]! : JSON.stringify(values),
+    type: FACET_TYPES[input.key],
+    value:
+      FACET_TYPES[input.key] === "list.single_line_text_field"
+        ? JSON.stringify(values)
+        : values[0]!,
   };
 }
 
@@ -331,11 +341,17 @@ function getTitleAreaValues(title: string) {
   }
   if (hasAnyPhrase(normalized, ["san marino"])) return ["San Marino"];
   if (hasAnyPhrase(normalized, ["germania", "deutschland"])) return ["Germania"];
-  if (hasAnyPhrase(normalized, ["regno unito", "u k", "uk"])) {
+  if (
+    hasAnyPhrase(normalized, ["regno unito", "u k"]) ||
+    hasAnyToken(normalized, ["uk"])
+  ) {
     return ["Regno Unito"];
   }
   if (hasAnyPhrase(normalized, ["francia"])) return ["Francia"];
-  if (hasAnyPhrase(normalized, ["stati uniti", "usa", "u s a"])) {
+  if (
+    hasAnyPhrase(normalized, ["stati uniti", "u s a"]) ||
+    hasAnyToken(normalized, ["usa"])
+  ) {
     return ["Stati Uniti"];
   }
   if (

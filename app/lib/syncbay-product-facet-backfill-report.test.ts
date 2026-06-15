@@ -16,8 +16,8 @@ const conservazioneFacet = {
   key: "conservazione" as const,
   label: "Conservazione",
   namespace: "syncbay_facets" as const,
-  type: "single_line_text_field" as const,
-  value: "BB",
+  type: "list.single_line_text_field" as const,
+  value: JSON.stringify(["BB"]),
 };
 
 test("classifies facet backfill rows without applying changes", () => {
@@ -80,7 +80,12 @@ test("classifies facet backfill rows without applying changes", () => {
   );
   assert.deepEqual(report.proposedFacets, [
     { count: 3, key: "categoria", label: "Categoria", value: "Monete italiane in lire" },
-    { count: 1, key: "conservazione", label: "Conservazione", value: "BB" },
+    {
+      count: 1,
+      key: "conservazione",
+      label: "Conservazione",
+      value: JSON.stringify(["BB"]),
+    },
   ]);
 });
 
@@ -155,8 +160,8 @@ test("builds an apply plan only for missing approved facet metafields", () => {
             key: "conservazione",
             namespace: "syncbay_facets",
             ownerId: "gid://shopify/Product/1",
-            type: "single_line_text_field",
-            value: "BB",
+            type: "list.single_line_text_field",
+            value: JSON.stringify(["BB"]),
           },
         ],
         shopifyProductGid: "gid://shopify/Product/1",
@@ -170,4 +175,42 @@ test("builds an apply plan only for missing approved facet metafields", () => {
       uncertain: 0,
     },
   });
+});
+
+test("repairs legacy single-line facet metafields when values match the stable list type", () => {
+  const report = buildProductFacetBackfillReport({
+    rows: [
+      {
+        currentMetafields: [
+          {
+            key: "conservazione",
+            namespace: "syncbay_facets",
+            type: "single_line_text_field",
+            value: "BB",
+          },
+        ],
+        ebayItemId: "1",
+        proposedFacets: [conservazioneFacet],
+        shopifyProductGid: "gid://shopify/Product/1",
+      },
+    ],
+    shopDomain: "syncbay-dev.myshopify.com",
+  });
+
+  assert.equal(report.rows[0]?.status, "applicable");
+  assert.deepEqual(buildProductFacetApplyPlan(report).rows, [
+    {
+      ebayItemId: "1",
+      metafields: [
+        {
+          key: "conservazione",
+          namespace: "syncbay_facets",
+          ownerId: "gid://shopify/Product/1",
+          type: "list.single_line_text_field",
+          value: JSON.stringify(["BB"]),
+        },
+      ],
+      shopifyProductGid: "gid://shopify/Product/1",
+    },
+  ]);
 });
