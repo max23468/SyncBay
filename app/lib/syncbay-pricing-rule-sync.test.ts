@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildPricingRuleSyncPlan } from "./syncbay-pricing-rule-sync.ts";
+import { buildPricingRuleSyncPlan, isPricingOnlySyncJobPayload } from "./syncbay-pricing-rule-sync.ts";
 
 test("queues pricing rule sync in deterministic batches when eBay and Shopify location are ready", () => {
   const plan = buildPricingRuleSyncPlan({
@@ -52,5 +52,17 @@ test("skips pricing rule sync with an operational reason when prerequisites are 
       hasDefaultLocation: false,
     }).skippedReason,
     "location Shopify predefinita assente",
+  );
+});
+
+test("treats legacy pricing-rule update jobs as pricing-only", () => {
+  assert.equal(
+    isPricingOnlySyncJobPayload({ source: "pricing_rule_update" }),
+    true,
+  );
+  assert.equal(isPricingOnlySyncJobPayload({ pricingOnly: true }), true);
+  assert.equal(
+    isPricingOnlySyncJobPayload({ source: "seller_events_delta" }),
+    false,
   );
 });

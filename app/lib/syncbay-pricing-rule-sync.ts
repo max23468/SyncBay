@@ -27,6 +27,12 @@ export function buildPricingRuleSyncPlan(input: {
   };
 }
 
+export function isPricingOnlySyncJobPayload(payload: unknown) {
+  const object = getJsonObject(payload);
+
+  return object?.pricingOnly === true || object?.source === "pricing_rule_update";
+}
+
 function getPricingRuleSyncSkippedReason(input: {
   activeMappingCount: number;
   ebayConnected: boolean;
@@ -49,4 +55,10 @@ function chunkArray<T>(items: T[], size: number) {
   }
 
   return chunks;
+}
+
+function getJsonObject(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return value as Record<string, unknown>;
 }

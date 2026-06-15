@@ -48,6 +48,7 @@ import {
   getNextEbayTradingRateLimitRetryAt,
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
+import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
 import { getNextIncrementalEnqueueAt } from "../lib/syncbay-incremental-schedule";
 import {
@@ -1469,7 +1470,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
-  if (isPricingOnlyIncrementalSync(job.payload)) {
+  if (isPricingOnlySyncJobPayload(job.payload)) {
     return runPricingOnlyIncrementalSyncJob({
       alignedDescriptionConflictResolvedCount:
         alignedDescriptionConflicts.count,
@@ -2715,10 +2716,6 @@ function getEbayItemIds(payload: Prisma.JsonValue | null) {
         (itemId): itemId is string => typeof itemId === "string",
       )
     : [];
-}
-
-function isPricingOnlyIncrementalSync(payload: Prisma.JsonValue | null) {
-  return getJsonObject(payload)?.pricingOnly === true;
 }
 
 function getArchiveEbayItemId(payload: Prisma.JsonValue | null) {
