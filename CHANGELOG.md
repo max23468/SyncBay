@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.39.2] — 2026-06-15
+
+### Sotto il cofano
+
+- Attività: conferma con toast quando riprovi un aggiornamento, aggiornamento
+  live della coda mentre ci sono job in corso, badge di stato a colpo d'occhio
+  e microcopy più diretto. Colori coerenti con la palette eBay/Shopify della
+  Panoramica.
+
 ## [0.39.1] — 2026-06-15
 
 ### Correzioni
@@ -1930,6 +1939,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.39.2]: #0392--2026-06-15
 [0.39.1]: #0391--2026-06-15
 [0.39.0]: #0390--2026-06-15
 [0.38.2]: #0382--2026-06-15
