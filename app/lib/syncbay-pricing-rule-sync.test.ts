@@ -14,6 +14,7 @@ test("queues pricing rule sync in deterministic batches when eBay and Shopify lo
 
   assert.deepEqual(plan, {
     batches: [["1003", "1001"], ["1002"]],
+    pricingOnly: true,
     queuedProductCount: 3,
     skippedReason: null,
   });
@@ -29,6 +30,7 @@ test("skips pricing rule sync with an operational reason when prerequisites are 
     }),
     {
       batches: [],
+      pricingOnly: true,
       queuedProductCount: 0,
       skippedReason: "nessun prodotto attivo",
     },

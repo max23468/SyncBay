@@ -46,7 +46,7 @@ export function calculateShopifyPricing(input: {
   );
   const roundedCents =
     roundingMode === "WHOLE_EURO"
-      ? Math.max(1, Math.round(discountedCents / 100) * 100)
+      ? Math.max(1, Math.floor(discountedCents / 100) * 100)
       : discountedCents;
 
   return {
@@ -120,4 +120,3 @@ function toMoneyCents(value: number | null) {
 function centsToAmount(cents: number) {
   return cents / 100;
 }
-
