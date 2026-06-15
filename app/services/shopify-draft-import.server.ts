@@ -32,6 +32,7 @@ import {
   getSyncBayDescriptionHash,
   hashNullableText,
 } from "../lib/syncbay-description-hash";
+import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import {
   buildSyncBayProductLookupQueries,
@@ -539,27 +540,34 @@ export function buildShopifyDraftProductInputs(
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
-    .map((item) => ({
-      media: dedupeImageUrls(item.normalized.imageUrls)
-        .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
-        .map((imageUrl) => ({
-          alt: item.normalized.title,
-          mediaContentType: "IMAGE",
-          originalSource: imageUrl,
-        })),
-      product: {
-        descriptionHtml: item.normalized.descriptionHtml ?? undefined,
-        handle: buildSyncBayProductHandle(item.itemId),
-        metafields: buildSyncBayProductMetafields(item),
-        status: importProductStatus,
-        tags: buildSyncBayShopifyImportTags(),
-        title: item.normalized.title,
-      },
-      source: {
-        ebayItemId: item.itemId,
-      },
-      previewItem: item,
-    }));
+    .map((item) => {
+      const categoryFields = buildShopifyDraftCategoryFields(
+        item.normalized.categoryProposal,
+      );
+
+      return {
+        media: dedupeImageUrls(item.normalized.imageUrls)
+          .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
+          .map((imageUrl) => ({
+            alt: item.normalized.title,
+            mediaContentType: "IMAGE",
+            originalSource: imageUrl,
+          })),
+        product: {
+          ...categoryFields,
+          descriptionHtml: item.normalized.descriptionHtml ?? undefined,
+          handle: buildSyncBayProductHandle(item.itemId),
+          metafields: buildSyncBayProductMetafields(item),
+          status: importProductStatus,
+          tags: buildSyncBayShopifyImportTags(),
+          title: item.normalized.title,
+        },
+        source: {
+          ebayItemId: item.itemId,
+        },
+        previewItem: item,
+      };
+    });
 }
 
 export async function createShopifyDraftProductsIfEnabled(input: {
@@ -3230,7 +3238,11 @@ function buildSyncBayProductSnapshot(input: {
 
 function buildEbaySnapshotPayload(item: ImportPreviewItem) {
   return buildEbayProductSnapshotPayload({
+    categoryProposal: item.normalized.categoryProposal,
     descriptionMode: item.normalized.descriptionMode,
+    ebayPrimaryCategoryId: item.normalized.ebayPrimaryCategoryId,
+    ebayPrimaryCategoryName: item.normalized.ebayPrimaryCategoryName,
+    ebayPrimaryCategoryPath: item.normalized.ebayPrimaryCategoryPath,
     imageUrls: item.normalized.imageUrls,
     issueCodes: item.issues.map((issue) => issue.code),
     skuGenerated: item.normalized.skuGenerated,

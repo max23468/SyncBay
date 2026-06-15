@@ -65,34 +65,35 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
 ## Comandi locali
 
-| Scopo                    | Comando                                                                                 |
-| ------------------------ | --------------------------------------------------------------------------------------- |
-| Installazione            | `npm install`                                                                           |
-| Sviluppo Shopify         | `npm run dev`                                                                           |
-| Typecheck                | `npm run typecheck`                                                                     |
-| Lint                     | `npm run lint`                                                                          |
-| Build                    | `npm run build`                                                                         |
-| Smoke UI                 | `npm run smoke:ui`                                                                      |
-| Test librerie pure       | `npm run test:lib`                                                                      |
-| Coverage moduli puri     | `npm run coverage:lib`                                                                  |
-| Validazione Prisma       | `npm run prisma:validate`                                                               |
-| Advisor Supabase         | `npm run db:verify`                                                                     |
-| Doctor locale            | `npm run doctor:local`                                                                  |
-| Preflight pubblicazione  | `npm run publish:preflight -- --remote`                                                 |
-| Diagnostica job import   | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                               |
-| Archivio job storici     | `npm run jobs:archive-stale-failures -- --shop syncbay-dev.myshopify.com --apply`        |
-| Doctor conflitti/stale   | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                          |
-| Limiti eBay Trading      | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                          |
-| Readiness ordini pagati  | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                     |
-| Verifica campione import | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                 |
-| Riparazione prezzo/SKU   | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run` |
-| Ripristino stock eBay    | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
-| Orfani categoria negozio | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`   |
-| Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop syncbay-dev.myshopify.com [--limit N]`    |
-| Test guardia stock eBay  | `npm run test:stock-guard`                                                             |
-| React Doctor             | `npm run quality:react-doctor`                                                          |
-| Release dry-run          | `npm run release:dry-run`                                                               |
-| Release locale           | `npm run release`                                                                       |
+| Scopo                         | Comando                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| Installazione                 | `npm install`                                                                               |
+| Sviluppo Shopify              | `npm run dev`                                                                               |
+| Typecheck                     | `npm run typecheck`                                                                         |
+| Lint                          | `npm run lint`                                                                              |
+| Build                         | `npm run build`                                                                             |
+| Smoke UI                      | `npm run smoke:ui`                                                                          |
+| Test librerie pure            | `npm run test:lib`                                                                          |
+| Coverage moduli puri          | `npm run coverage:lib`                                                                      |
+| Validazione Prisma            | `npm run prisma:validate`                                                                   |
+| Advisor Supabase              | `npm run db:verify`                                                                         |
+| Doctor locale                 | `npm run doctor:local`                                                                      |
+| Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
+| Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
+| Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop syncbay-dev.myshopify.com --apply`           |
+| Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                              |
+| Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                              |
+| Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                         |
+| Verifica campione import      | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                     |
+| Riparazione prezzo/SKU        | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run`     |
+| Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
+| Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`       |
+| Dry-run categorie             | `npm run categories:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`               |
+| Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop syncbay-dev.myshopify.com [--limit N]`             |
+| Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
+| React Doctor                  | `npm run quality:react-doctor`                                                              |
+| Release dry-run               | `npm run release:dry-run`                                                                   |
+| Release locale                | `npm run release`                                                                           |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
 `npm run doctor:local` verifica toolchain Node/npm, `engine-strict`, file base
@@ -124,6 +125,16 @@ token, segreti o dati cliente.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.
+`npm run categories:backfill` è un dry-run di default: per i mapping ACTIVE
+confronta la categoria Shopify attuale con la proposta SyncBay derivata da
+snapshot eBay o Trading API `GetItem`. Classifica righe applicabili, già
+corrette, conflitti manuali e incerte; senza flag di apply non scrive prodotti
+Shopify e non modifica eBay, salvo refresh della sessione offline Shopify e del
+token eBay cifrato se scaduti. Quando un lookup Trading fallisce, il report
+include il motivo tecnico nella riga JSON e nel campione umano. La scrittura reale richiede
+`--apply --confirm-apply`, usa Shopify Admin GraphQL `productUpdate` e aggiorna
+solo righe `applicable`, saltando categorie manuali diverse, righe incerte,
+lookup falliti senza proposta locale valida e prodotti senza GID Shopify.
 `npm run catalog:images:doctor` è in sola lettura sui listing eBay: misura la
 copertura immagini degli snapshot Catalogo e chiama Trading API `GetItem` solo
 per le prime righe senza immagine, così distingue listing davvero senza immagini
@@ -137,17 +148,17 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 
 ## Verifiche per tipo di modifica
 
-| Tipo modifica                                                       | Verifiche proporzionate                                                         |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Docs-only                                                           | Review contenuto e `git diff --check`                                           |
-| Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                            |
-| Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti |
+| Tipo modifica                                                       | Verifiche proporzionate                                                                                                                                |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Docs-only                                                           | Review contenuto e `git diff --check`                                                                                                                  |
+| Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                                                                                                   |
+| Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti                                                  |
 | Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
-| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`      |
-| Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili            |
-| Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile |
-| Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build` |
-| Versioning/changelog runtime                                        | `npm run release:dry-run`                                                       |
+| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`                                                                             |
+| Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
+| Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile                                                                        |
+| Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |
+| Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
 
 ## Deploy e release
 

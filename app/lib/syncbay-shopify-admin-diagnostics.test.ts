@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildShopifyAdminDiagnosticsProductQuery, normalizeShopifyAdminDiagnosticsProductInput } from "./syncbay-shopify-admin-diagnostics.ts";
+import * as shopifyAdminDiagnostics from "./syncbay-shopify-admin-diagnostics.ts";
+
+const {
+  buildShopifyAdminDiagnosticsProductQuery,
+  normalizeShopifyAdminDiagnosticsProductInput,
+} = shopifyAdminDiagnostics;
 
 test("normalizes a bounded product diagnostics payload", () => {
   assert.deepEqual(
@@ -78,5 +83,19 @@ test("builds the fixed Shopify product diagnostics query without arbitrary Graph
     ids: ["gid://shopify/Product/1"],
     locationId: "gid://shopify/Location/1",
   });
-  assert.match(withLocation.query, /inventoryLevel\(locationId: \$locationId\)/);
+  assert.match(
+    withLocation.query,
+    /inventoryLevel\(locationId: \$locationId\)/,
+  );
+});
+
+test("includes product category and product type for category backfill dry-runs", () => {
+  const query = buildShopifyAdminDiagnosticsProductQuery({
+    defaultLocationGid: null,
+    productGids: ["gid://shopify/Product/1"],
+  }).query;
+
+  assert.match(query, /productType/);
+  assert.match(query, /category\s*\{/);
+  assert.match(query, /fullName/);
 });

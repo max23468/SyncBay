@@ -266,6 +266,7 @@ async function getEnrichedTradingCandidate(
   const detailVariations = getTradingVariations(detailItem);
 
   const detailStorefront = getEbayStorefrontMetadata(detailItem.Storefront);
+  const detailPrimaryCategory = getTradingPrimaryCategoryMetadata(detailItem);
 
   return withFallbackSku({
     currency:
@@ -279,6 +280,18 @@ async function getEnrichedTradingCandidate(
     priceAmount:
       getTradingPrice(detailItem, detailVariations) ??
       listCandidate.priceAmount,
+    ebayPrimaryCategoryId:
+      detailPrimaryCategory.ebayPrimaryCategoryId ??
+      listCandidate.ebayPrimaryCategoryId ??
+      null,
+    ebayPrimaryCategoryName:
+      detailPrimaryCategory.ebayPrimaryCategoryName ??
+      listCandidate.ebayPrimaryCategoryName ??
+      null,
+    ebayPrimaryCategoryPath:
+      detailPrimaryCategory.ebayPrimaryCategoryPath ??
+      listCandidate.ebayPrimaryCategoryPath ??
+      null,
     quantity:
       getTradingQuantity(detailItem, detailVariations) ??
       listCandidate.quantity,
@@ -445,12 +458,16 @@ function mapTradingItemToCandidate(
 
   const variations = getTradingVariations(item);
   const storefront = getEbayStorefrontMetadata(item.Storefront);
+  const primaryCategory = getTradingPrimaryCategoryMetadata(item);
 
   return {
     currency:
       getTradingCurrency(item, variations) ??
       getExpectedMarketplaceCurrency(marketplaceId),
     descriptionHtml: getString(item, "Description"),
+    ebayPrimaryCategoryId: primaryCategory.ebayPrimaryCategoryId,
+    ebayPrimaryCategoryName: primaryCategory.ebayPrimaryCategoryName,
+    ebayPrimaryCategoryPath: primaryCategory.ebayPrimaryCategoryPath,
     imageUrls: getTradingImageUrls(item),
     itemId,
     priceAmount: getTradingPrice(item, variations),
@@ -460,6 +477,18 @@ function mapTradingItemToCandidate(
     storeCategoryName: storefront.storeCategoryName,
     title: getString(item, "Title"),
     variantCount: Math.max(variations.length, 1),
+  };
+}
+
+function getTradingPrimaryCategoryMetadata(item: XmlRecord) {
+  const primaryCategory = asRecord(item.PrimaryCategory);
+  const categoryId = getString(primaryCategory, "CategoryID");
+  const categoryName = getString(primaryCategory, "CategoryName");
+
+  return {
+    ebayPrimaryCategoryId: categoryId,
+    ebayPrimaryCategoryName: categoryName,
+    ebayPrimaryCategoryPath: null,
   };
 }
 
@@ -626,7 +655,9 @@ function getMoneyValue(value: unknown) {
 
 function getMoneyCurrency(value: unknown) {
   const record = asRecord(value);
-  const currency = record ? normalizeText(toText(record["@_currencyID"])) : null;
+  const currency = record
+    ? normalizeText(toText(record["@_currencyID"]))
+    : null;
 
   return currency?.toUpperCase() ?? null;
 }

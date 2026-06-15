@@ -1,0 +1,184 @@
+import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
+
+export type CategoryBackfillStatus =
+  | "already_correct"
+  | "applicable"
+  | "conflict_manual"
+  | "ebay_lookup_failed"
+  | "missing_shopify_product"
+  | "uncertain";
+
+export interface CategoryBackfillReportRowInput {
+  ebayItemId: string;
+  lookupFailureReason?: string | null;
+  lookupFailed?: boolean;
+  proposal: ShopifyCategoryProposal | null;
+  shopifyCategoryGid: string | null;
+  shopifyProductGid: string | null;
+  shopifyProductType: string | null;
+}
+
+export interface CategoryBackfillReportRow extends CategoryBackfillReportRowInput {
+  status: CategoryBackfillStatus;
+}
+
+export interface CategoryBackfillReport {
+  proposedCategories: Array<{
+    count: number;
+    shopifyCategoryGid: string;
+    shopifyCategoryName: string;
+  }>;
+  rows: CategoryBackfillReportRow[];
+  shopDomain: string;
+  summary: {
+    alreadyCorrect: number;
+    applicable: number;
+    conflictsManual: number;
+    ebayLookupFailed: number;
+    missingShopifyProduct: number;
+    total: number;
+    uncertain: number;
+  };
+}
+
+export interface CategoryApplyPlan {
+  rows: Array<{
+    ebayItemId: string;
+    productType: string;
+    shopifyCategoryGid: string;
+    shopifyProductGid: string;
+  }>;
+  skipped: {
+    alreadyCorrect: number;
+    conflictsManual: number;
+    ebayLookupFailed: number;
+    missingShopifyProduct: number;
+    uncertain: number;
+  };
+}
+
+export function buildCategoryBackfillReport(input: {
+  rows: CategoryBackfillReportRowInput[];
+  shopDomain: string;
+}): CategoryBackfillReport {
+  const rows = input.rows.map((row) => ({
+    ...row,
+    status: getCategoryBackfillStatus(row),
+  }));
+
+  return {
+    proposedCategories: getProposedCategories(rows),
+    rows,
+    shopDomain: input.shopDomain,
+    summary: {
+      alreadyCorrect: countStatus(rows, "already_correct"),
+      applicable: countStatus(rows, "applicable"),
+      conflictsManual: countStatus(rows, "conflict_manual"),
+      ebayLookupFailed: countStatus(rows, "ebay_lookup_failed"),
+      missingShopifyProduct: countStatus(rows, "missing_shopify_product"),
+      total: rows.length,
+      uncertain: countStatus(rows, "uncertain"),
+    },
+  };
+}
+
+export function buildCategoryApplyPlan(
+  report: CategoryBackfillReport,
+): CategoryApplyPlan {
+  return {
+    rows: report.rows
+      .filter((row) => row.status === "applicable")
+      .map((row) => ({
+        ebayItemId: row.ebayItemId,
+        productType: row.proposal?.productType ?? "",
+        shopifyCategoryGid: row.proposal?.shopifyCategoryGid ?? "",
+        shopifyProductGid: row.shopifyProductGid ?? "",
+      }))
+      .filter(
+        (row) =>
+          row.productType &&
+          row.shopifyCategoryGid &&
+          row.shopifyProductGid,
+      ),
+    skipped: {
+      alreadyCorrect: report.summary.alreadyCorrect,
+      conflictsManual: report.summary.conflictsManual,
+      ebayLookupFailed: report.summary.ebayLookupFailed,
+      missingShopifyProduct: report.summary.missingShopifyProduct,
+      uncertain: report.summary.uncertain,
+    },
+  };
+}
+
+function getCategoryBackfillStatus(
+  row: CategoryBackfillReportRowInput,
+): CategoryBackfillStatus {
+  if (!row.shopifyProductGid) return "missing_shopify_product";
+
+  const proposal = row.proposal;
+  if (
+    !proposal ||
+    proposal.confidence === "low" ||
+    !proposal.shopifyCategoryGid
+  ) {
+    if (row.lookupFailed) return "ebay_lookup_failed";
+
+    return "uncertain";
+  }
+
+  if (
+    row.shopifyCategoryGid &&
+    row.shopifyCategoryGid !== proposal.shopifyCategoryGid
+  ) {
+    return "conflict_manual";
+  }
+
+  if (
+    row.shopifyCategoryGid === proposal.shopifyCategoryGid &&
+    normalizeNullableText(row.shopifyProductType) === proposal.productType
+  ) {
+    return "already_correct";
+  }
+
+  return "applicable";
+}
+
+function getProposedCategories(rows: CategoryBackfillReportRow[]) {
+  const counts = new Map<
+    string,
+    { count: number; shopifyCategoryGid: string; shopifyCategoryName: string }
+  >();
+
+  for (const row of rows) {
+    const proposal = row.proposal;
+    if (!proposal?.shopifyCategoryGid || !proposal.shopifyCategoryName) {
+      continue;
+    }
+
+    const current = counts.get(proposal.shopifyCategoryGid);
+    counts.set(proposal.shopifyCategoryGid, {
+      count: (current?.count ?? 0) + 1,
+      shopifyCategoryGid: proposal.shopifyCategoryGid,
+      shopifyCategoryName: proposal.shopifyCategoryName,
+    });
+  }
+
+  return [...counts.values()].sort((left, right) => {
+    if (right.count !== left.count) return right.count - left.count;
+
+    return left.shopifyCategoryName.localeCompare(right.shopifyCategoryName);
+  });
+}
+
+function countStatus(
+  rows: CategoryBackfillReportRow[],
+  status: CategoryBackfillStatus,
+) {
+  return rows.filter((row) => row.status === status).length;
+}
+
+function normalizeNullableText(value: string | null) {
+  const normalized = value?.trim();
+
+  return normalized && normalized.length > 0 ? normalized : null;
+}

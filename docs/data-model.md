@@ -122,6 +122,11 @@ Schema iniziale:
 - riferimenti mapping/listing/prodotto/variante;
 - SKU, titolo, prezzo, valuta, quantità, stato prodotto;
 - hash descrizione, conteggio immagini e payload diagnostico.
+- proposta categoria Shopify quando disponibile: categoria eBay
+  marketplace/negozio, categoria Shopify candidata, `productType`, confidenza,
+  sorgente e motivo; il dato resta diagnostico nei payload, viene usato sui
+  nuovi `productCreate` quando valido e abilita l'apply categorie esplicito sui
+  prodotti già collegati.
 
 ### Regole prezzo
 

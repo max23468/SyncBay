@@ -1,9 +1,17 @@
+import {
+  resolveShopifyCategoryProposal,
+  type ShopifyCategoryProposal,
+} from "../lib/syncbay-shopify-category-mapping";
+
 export type ImportPreviewSeverity = "info" | "warning" | "error";
 export type ImportPreviewStatus = "importable" | "skipped" | "error";
 
 export interface ImportPreviewListingCandidate {
   currency?: string | null;
   descriptionHtml?: string | null;
+  ebayPrimaryCategoryId?: string | null;
+  ebayPrimaryCategoryName?: string | null;
+  ebayPrimaryCategoryPath?: string | null;
   imageUrls?: string[];
   itemId: string;
   priceAmount?: number | null;
@@ -26,9 +34,13 @@ export interface ImportPreviewItem {
   itemId: string;
   issues: ImportPreviewIssue[];
   normalized: {
+    categoryProposal: ShopifyCategoryProposal;
     currency: string | null;
     descriptionHtml: string | null;
     descriptionMode: string;
+    ebayPrimaryCategoryId: string | null;
+    ebayPrimaryCategoryName: string | null;
+    ebayPrimaryCategoryPath: string | null;
     imageUrls: string[];
     imageCount: number;
     priceAmount: number | null;
@@ -181,14 +193,31 @@ function buildPreviewItem(
 ): ImportPreviewItem {
   const issues = getPreviewIssues(candidate);
   const hasErrors = issues.some((issue) => issue.severity === "error");
+  const ebayPrimaryCategoryName = normalizeText(
+    candidate.ebayPrimaryCategoryName,
+  );
+  const ebayPrimaryCategoryPath = normalizeText(
+    candidate.ebayPrimaryCategoryPath,
+  );
+  const storeCategoryName = normalizeText(candidate.storeCategoryName);
+  const title = normalizeText(candidate.title) ?? "Titolo non disponibile";
 
   return {
     itemId: candidate.itemId,
     issues,
     normalized: {
+      categoryProposal: resolveShopifyCategoryProposal({
+        ebayPrimaryCategoryName,
+        ebayPrimaryCategoryPath,
+        ebayStoreCategoryName: storeCategoryName,
+        title,
+      }),
       currency: normalizeCurrency(candidate.currency),
       descriptionHtml: normalizeText(candidate.descriptionHtml),
       descriptionMode: DEFAULT_DESCRIPTION_MODE,
+      ebayPrimaryCategoryId: normalizeText(candidate.ebayPrimaryCategoryId),
+      ebayPrimaryCategoryName,
+      ebayPrimaryCategoryPath,
       imageUrls: candidate.imageUrls ?? [],
       imageCount: candidate.imageUrls?.length ?? 0,
       priceAmount: normalizeNumber(candidate.priceAmount),
@@ -197,8 +226,8 @@ function buildPreviewItem(
       sku: normalizeText(candidate.sku),
       skuGenerated: Boolean(candidate.skuGenerated),
       storeCategoryId: normalizeText(candidate.storeCategoryId),
-      storeCategoryName: normalizeText(candidate.storeCategoryName),
-      title: normalizeText(candidate.title) ?? "Titolo non disponibile",
+      storeCategoryName,
+      title,
     },
     status: hasErrors ? "error" : "importable",
   };
