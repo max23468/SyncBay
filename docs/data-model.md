@@ -127,6 +127,12 @@ Schema iniziale:
   sorgente e motivo; il dato resta diagnostico nei payload, viene usato sui
   nuovi `productCreate` quando valido e abilita l'apply categorie esplicito sui
   prodotti già collegati.
+- faccette storefront controllate da dati strutturati e titolo eBay:
+  `Categoria`, `Area / Stato`, `Materiale`, `Conservazione`, `Perizia`.
+  Le faccette vengono scritte su Shopify come metafield prodotto
+  `syncbay_facets.*` e salvate nello snapshot diagnostico per audit. Il parser
+  titolo usa una lista chiusa di segnali numismatici e non legge la descrizione
+  HTML.
 
 ### Regole prezzo
 

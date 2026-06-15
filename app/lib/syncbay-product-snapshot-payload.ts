@@ -1,4 +1,5 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
+import type { SyncBayProductFacet } from "./syncbay-product-facets";
 
 type SnapshotPayloadValue =
   | boolean
@@ -20,6 +21,7 @@ export function buildEbayProductSnapshotPayload(input: {
   ebayPrimaryCategoryPath?: string | null;
   imageUrls?: string[];
   issueCodes: string[];
+  productFacets?: SyncBayProductFacet[];
   skuGenerated: boolean;
   status: string;
   storeCategoryId?: string | null;
@@ -31,6 +33,9 @@ export function buildEbayProductSnapshotPayload(input: {
     issueCodes: input.issueCodes,
     skuGenerated: input.skuGenerated,
     status: input.status,
+    ...(input.productFacets?.length
+      ? { productFacets: input.productFacets.map(serializeProductFacet) }
+      : {}),
     ...(input.ebayPrimaryCategoryId
       ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId }
       : {}),
@@ -49,6 +54,18 @@ export function buildEbayProductSnapshotPayload(input: {
     ...(input.categoryProposal
       ? { categoryProposal: serializeCategoryProposal(input.categoryProposal) }
       : {}),
+  };
+}
+
+function serializeProductFacet(
+  facet: SyncBayProductFacet,
+): EbayProductSnapshotPayload {
+  return {
+    key: facet.key,
+    label: facet.label,
+    namespace: facet.namespace,
+    type: facet.type,
+    value: facet.value,
   };
 }
 

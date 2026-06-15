@@ -10,6 +10,10 @@ test("round-trips store category fields through the SYNC_INCREMENTAL job payload
     descriptionHtml: null,
     imageUrls: ["https://i.ebayimg.example/one.jpg"],
     itemId: "157963442050",
+    itemSpecifics: [
+      { name: "Materiale", values: ["Argento"] },
+      { name: "Conservazione", values: ["FDC"] },
+    ],
     priceAmount: 0.99,
     quantity: 1,
     sku: "NL-VEIII-1942",
@@ -22,6 +26,10 @@ test("round-trips store category fields through the SYNC_INCREMENTAL job payload
   const serialized = serializeIncrementalPreviewCandidate(candidate);
 
   assert.equal(serialized.storeCategoryId, "31415");
+  assert.deepEqual(serialized.itemSpecifics, [
+    { name: "Materiale", values: ["Argento"] },
+    { name: "Conservazione", values: ["FDC"] },
+  ]);
   assert.equal(
     serialized.storeCategoryName,
     "Italia Regno - Vittorio Emanuele III",

@@ -32,12 +32,13 @@ import {
   getSyncBayDescriptionHash,
   hashNullableText,
 } from "../lib/syncbay-description-hash";
-import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import {
   calculateShopifyPricing,
   type SyncBayPricingRule,
 } from "../lib/syncbay-pricing-rules";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
+import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import {
   buildSyncBayProductLookupQueries,
   buildSyncBayShopifyImportTags,
@@ -3286,6 +3287,7 @@ function buildEbaySnapshotPayload(item: ImportPreviewItem) {
     ebayPrimaryCategoryPath: item.normalized.ebayPrimaryCategoryPath,
     imageUrls: item.normalized.imageUrls,
     issueCodes: item.issues.map((issue) => issue.code),
+    productFacets: item.normalized.productFacets,
     skuGenerated: item.normalized.skuGenerated,
     status: item.status,
     storeCategoryId: item.normalized.storeCategoryId,
@@ -3669,6 +3671,7 @@ function buildSyncBayProductMetafields(item: ImportPreviewItem) {
           value: "generated_from_ebay_item_id",
         }
       : null,
+    ...buildShopifyProductFacetMetafields(item.normalized.productFacets),
   ].filter((metafield): metafield is NonNullable<typeof metafield> =>
     Boolean(metafield),
   );

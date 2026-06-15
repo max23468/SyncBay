@@ -2,6 +2,7 @@ import type { EbayConnection } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 
 import { getEbayStorefrontMetadata } from "../lib/syncbay-ebay-storefront";
+import { parseEbayTradingItemSpecifics } from "../lib/syncbay-product-facets";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { ImportPreviewListingCandidate } from "./import-preview.server";
 
@@ -277,6 +278,7 @@ async function getEnrichedTradingCandidate(
       getString(detailItem, "Description") ?? listCandidate.descriptionHtml,
     imageUrls: getTradingImageUrls(detailItem, listCandidate.imageUrls),
     itemId: listCandidate.itemId,
+    itemSpecifics: parseEbayTradingItemSpecifics(detailItem.ItemSpecifics),
     priceAmount:
       getTradingPrice(detailItem, detailVariations) ??
       listCandidate.priceAmount,
@@ -470,6 +472,7 @@ function mapTradingItemToCandidate(
     ebayPrimaryCategoryPath: primaryCategory.ebayPrimaryCategoryPath,
     imageUrls: getTradingImageUrls(item),
     itemId,
+    itemSpecifics: parseEbayTradingItemSpecifics(item.ItemSpecifics),
     priceAmount: getTradingPrice(item, variations),
     quantity: getTradingQuantity(item, variations),
     sku: getTradingSku(item, variations),
