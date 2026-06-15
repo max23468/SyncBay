@@ -16,7 +16,7 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e 
 6. Sceglie modalità descrizione:
    - HTML completo;
    - solo testo;
-   - HTML pulito senza template.
+   - HTML pulito senza template e colori.
 7. Vede preview import:
    - prodotti importabili;
    - prodotti saltati;
@@ -50,6 +50,9 @@ wizard:
   primi 10 listing del batch preview per listing attivi storici/Seller Hub;
 - genera SKU fallback `EBAY-<ItemID>` quando eBay non restituisce uno SKU del
   listing, segnalandolo come nota nella preview;
+- normalizza le descrizioni eBay rimuovendo template negozio, colori inline,
+  script/stili e markup non essenziale prima di mostrarle e passarle
+  all'import Shopify;
 - mantiene la preview mock con dati fittizi solo quando eBay non è collegato o
   quando serve un fallback dimostrativo;
 - mantiene ogni scrittura Shopify dietro conferma esplicita;
@@ -68,7 +71,7 @@ Validazioni MVP già codificate per la preview:
 - disponibilità assente o non leggibile;
 - listing senza immagini;
 - varianti troppo complesse per MVP;
-- descrizione con possibile template eBay da ripulire.
+- descrizione eBay ripulita da template, colori o markup non essenziale.
 
 La base di import Shopify in `draft` è preparata dietro feature flag:
 
@@ -140,6 +143,10 @@ Copertura attuale della preview live:
 - `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`
   confronta un campione dell'ultima run tra snapshot eBay/SyncBay, mapping e
   prodotti Shopify live.
+- `npm run descriptions:cleanup-report -- --shop syncbay-dev.myshopify.com
+  --sample 20` misura su listing eBay reali la pulizia descrizioni prima
+  dell'import, riportando caratteri rimossi, segnali template e brevi estratti
+  testuali.
 
 Smoke UI locale:
 

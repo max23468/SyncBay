@@ -763,6 +763,7 @@ function PreviewExamplesSection({
                   {formatPreviewStatus(item.status)}
                 </s-badge>
               </s-stack>
+              <DescriptionPreviewDetails item={item} />
             </s-box>
           ))}
           <ImportPreviewPagination
@@ -782,6 +783,50 @@ function PreviewExamplesSection({
         </s-box>
       )}
     </s-stack>
+  );
+}
+
+function DescriptionPreviewDetails({
+  item,
+}: {
+  item: WizardState["previewResult"]["items"][number];
+}) {
+  const description = item.normalized;
+
+  if (
+    description.descriptionOriginalLength === 0 &&
+    description.descriptionCleanedLength === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <details className="syncbay-row-details">
+      <summary>
+        Descrizione:{" "}
+        {description.descriptionWasChanged
+          ? `ripulita, -${description.descriptionRemovedPercent}%`
+          : "già pulita"}
+      </summary>
+      <s-stack gap="small-200">
+        <s-text color="subdued">
+          Prima: {formatNumber(description.descriptionOriginalLength)} caratteri.
+          Dopo: {formatNumber(description.descriptionCleanedLength)} caratteri.
+          Segnali template:{" "}
+          {formatNumber(description.descriptionTemplateSignalCount)}.
+        </s-text>
+        {description.descriptionOriginalTextExcerpt ? (
+          <s-text color="subdued">
+            Originale: {description.descriptionOriginalTextExcerpt}
+          </s-text>
+        ) : null}
+        {description.descriptionCleanedTextExcerpt ? (
+          <s-text>
+            Pulita: {description.descriptionCleanedTextExcerpt}
+          </s-text>
+        ) : null}
+      </s-stack>
+    </details>
   );
 }
 
