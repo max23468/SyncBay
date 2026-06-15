@@ -49,6 +49,7 @@ import {
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
+import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
 import { getNextIncrementalEnqueueAt } from "../lib/syncbay-incremental-schedule";
 import {
@@ -1561,7 +1562,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     await getInterruptedRunningSyncJobResult(input.job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
-  const [admin, previewResult, pricingRule, mappings] = await Promise.all([
+  const [admin, previewResult, pricingRule, mappings, snapshots] =
+    await Promise.all([
     getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
     getIncrementalPreviewResult(input.job, input.syncableItemIds),
     getPricingRuleForShopId(input.job.shopId),
@@ -1579,6 +1581,27 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         shopId: input.job.shopId,
       },
     }),
+    prisma.productSnapshot.findMany({
+      orderBy: { capturedAt: "desc" },
+      select: {
+        capturedAt: true,
+        currency: true,
+        ebayItemId: true,
+        payload: true,
+        priceAmount: true,
+        sku: true,
+        source: true,
+        title: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        priceAmount: { not: null },
+        shopId: input.job.shopId,
+        source: {
+          in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY],
+        },
+      },
+    }),
   ]);
   const previewItemsById = new Map(
     filterPreviewResultByItemIds(
@@ -1589,6 +1612,27 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   const mappingsByItemId = new Map(
     mappings.map((mapping) => [mapping.ebayItemId, mapping]),
   );
+  const snapshotPricingSourcesByItemId = buildSnapshotPricingSourcesByItemId(
+    snapshots.flatMap((snapshot) =>
+      snapshot.ebayItemId
+        ? [
+            {
+              capturedAt: snapshot.capturedAt,
+              currency: snapshot.currency,
+              ebayItemId: snapshot.ebayItemId,
+              payload: snapshot.payload,
+              priceAmount:
+                snapshot.priceAmount === null
+                  ? null
+                  : Number(snapshot.priceAmount),
+              sku: snapshot.sku,
+              source: snapshot.source,
+              title: snapshot.title,
+            },
+          ]
+        : [],
+    ),
+  );
   const synced: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
   const syncBaySnapshots: Prisma.ProductSnapshotCreateManyInput[] = [];
@@ -1597,18 +1641,34 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   for (const itemId of input.syncableItemIds) {
     const item = previewItemsById.get(itemId);
     const mapping = mappingsByItemId.get(itemId);
+    const pricingSource =
+      item === undefined
+        ? snapshotPricingSourcesByItemId.get(itemId)
+        : {
+            currency: item.normalized.currency,
+            priceAmount: item.normalized.priceAmount,
+            sku: item.normalized.sku,
+            source: "preview" as const,
+            title: item.normalized.title,
+          };
 
-    if (!item || !mapping?.shopifyProductGid || !mapping.shopifyVariantGid) {
+    if (
+      !pricingSource ||
+      !mapping?.shopifyProductGid ||
+      !mapping.shopifyVariantGid
+    ) {
       skipped.push({
         ebayItemId: itemId,
-        reason: !item ? "ebay_listing_not_found" : "shopify_mapping_missing",
+        reason: !pricingSource
+          ? "pricing_source_missing"
+          : "shopify_mapping_missing",
       });
       continue;
     }
 
     const pricing = calculateShopifyPricing({
       discountPercent: pricingRule.discountPercent,
-      ebayPriceAmount: item.normalized.priceAmount,
+      ebayPriceAmount: pricingSource.priceAmount,
       roundingMode: pricingRule.roundingMode,
     });
     const price = formatShopifyPrice(pricing.priceAmount);
@@ -1642,15 +1702,15 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     });
     syncBaySnapshots.push({
       capturedAt: now,
-      currency: item.normalized.currency,
-      ebayItemId: item.itemId,
+      currency: pricingSource.currency,
+      ebayItemId: itemId,
       mappingId: mapping.id,
       payload: {
         pricing: {
           applied: pricing.applied,
           compareAtPriceAmount: pricing.compareAtPriceAmount,
           discountPercent: pricing.discountPercent,
-          ebayPriceAmount: item.normalized.priceAmount,
+          ebayPriceAmount: pricingSource.priceAmount,
           priceAmount: pricing.priceAmount,
           pricingOnly: true,
           roundingMode: pricing.roundingMode,
@@ -1662,9 +1722,9 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       shopId: input.job.shopId,
       shopifyProductGid: mapping.shopifyProductGid,
       shopifyVariantGid: mapping.shopifyVariantGid,
-      sku: item.normalized.sku ?? mapping.sku,
+      sku: pricingSource.sku ?? mapping.sku,
       source: ProductSnapshotSource.SYNCBAY,
-      title: item.normalized.title,
+      title: pricingSource.title,
     });
   }
 
