@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.38.1] — 2026-06-15
+
 ### Correzioni
 
 - Regola prezzo: il riallineamento dopo salvataggio ora aggiorna solo prezzo e
@@ -1904,6 +1906,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.38.1]: #0381--2026-06-15
 [0.38.0]: #0380--2026-06-15
 [0.37.0]: #0370--2026-06-15
 [0.36.8]: #0368--2026-06-15
