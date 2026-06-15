@@ -134,53 +134,45 @@ export default function ActivityRoute() {
       <s-badge slot="accessory" tone={getActivityBadgeTone(working, failedJobs)}>
         {getActivityBadgeLabel(working, failedJobs)}
       </s-badge>
-      <s-stack gap="base">
+      <s-stack gap="large">
         <LiveSync working={working} />
-        <s-section heading="In sintesi">
-          <s-stack gap="base">
-            <s-text color="subdued">
-              Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti,
-              errori e note. Gli errori restano leggibili e, dove si può,
-              riprovabili.
-            </s-text>
-            <s-grid
-              gap="base"
-              gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-            >
-              <MetricTile
-                detail="Aggiornamenti non ancora completati."
-                icon="refresh"
-                label="In coda"
-                tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
-                value={formatNumber(activity.sync.pendingJobs)}
-              />
-              <MetricTile
-                detail="Errori letti negli ultimi aggiornamenti."
-                icon="alert-triangle"
-                label="Errori recenti"
-                tone={failedJobs > 0 ? "critical" : "neutral"}
-                value={formatNumber(failedJobs)}
-              />
-              <MetricTile
-                detail="Note operative registrate."
-                icon="clock"
-                label="Eventi"
-                tone="neutral"
-                value={formatNumber(activity.audit.length)}
-              />
-              <MetricTile
-                detail={getCatalogHealthDetail(activity)}
-                icon="product"
-                label="Catalogo"
-                tone={getCatalogHealthTone(activity)}
-                value={getCatalogHealthLabel(activity)}
-              />
-            </s-grid>
-            {actionData ? (
-              <s-text color="subdued">{actionData.message}</s-text>
-            ) : null}
-          </s-stack>
-        </s-section>
+        <s-text color="subdued">
+          Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti, errori
+          e note. Gli errori restano leggibili e, dove si può, riprovabili.
+        </s-text>
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
+        >
+          <MetricTile
+            detail="Aggiornamenti non ancora completati."
+            icon="refresh"
+            label="In coda"
+            tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
+            value={formatNumber(activity.sync.pendingJobs)}
+          />
+          <MetricTile
+            detail="Errori letti negli ultimi aggiornamenti."
+            icon="alert-triangle"
+            label="Errori recenti"
+            tone={failedJobs > 0 ? "critical" : "neutral"}
+            value={formatNumber(failedJobs)}
+          />
+          <MetricTile
+            detail="Note operative registrate."
+            icon="clock"
+            label="Eventi"
+            tone="neutral"
+            value={formatNumber(activity.audit.length)}
+          />
+          <MetricTile
+            detail={getCatalogHealthDetail(activity)}
+            icon="product"
+            label="Catalogo"
+            tone={getCatalogHealthTone(activity)}
+            value={getCatalogHealthLabel(activity)}
+          />
+        </s-grid>
 
         <s-section heading="Timeline">
           <ActivityFilterNav activeFilter={activeFilter} />
@@ -213,6 +205,7 @@ export default function ActivityRoute() {
           <s-stack gap="base">
             <StatusRow
               detail={getCatalogHealthDetail(activity)}
+              icon="product"
               label={getCatalogHealthLabel(activity)}
               tone={getCatalogHealthTone(activity)}
               title="Aggiornamento catalogo"
@@ -233,6 +226,7 @@ export default function ActivityRoute() {
                   ? "info"
                   : "success"
               }
+              icon="refresh"
               title="Aggiornamento automatico"
             />
             <StatusRow
@@ -240,6 +234,7 @@ export default function ActivityRoute() {
               label={
                 activity.conflicts.openCount > 0 ? "Da gestire" : "Pulito"
               }
+              icon="alert-triangle"
               tone={activity.conflicts.openCount > 0 ? "warning" : "success"}
               title="Conflitti Shopify"
             />
@@ -339,21 +334,33 @@ function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
 
 function StatusRow({
   detail,
+  icon,
   label,
   title,
   tone,
 }: {
   detail: string;
+  icon: SyncBayIcon;
   label: string;
   title: string;
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack direction="inline" gap="base" justifyContent="space-between">
-        <s-stack gap="small-200">
-          <s-heading>{title}</s-heading>
-          <s-text color="subdued">{detail}</s-text>
+      <s-stack
+        direction="inline"
+        gap="base"
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <s-stack direction="inline" gap="base" alignItems="center">
+          <span className="syncbay-tile__icon">
+            <s-icon type={icon} tone="neutral" size="base" />
+          </span>
+          <s-stack gap="small-200">
+            <s-heading>{title}</s-heading>
+            <s-text color="subdued">{detail}</s-text>
+          </s-stack>
         </s-stack>
         <span className="syncbay-activity-badge">
           <s-badge tone={tone}>{label}</s-badge>
