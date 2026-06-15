@@ -6,6 +6,28 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.37.0] — 2026-06-15
+
+### Novità
+
+- Impostazioni: aggiunta una regola prezzo globale Shopify-only con sconto
+  percentuale intero, arrotondamento a due decimali o all'euro e applicazione
+  automatica ai prodotti importati o riallineati. Quando lo sconto è attivo,
+  SyncBay scrive il prezzo Shopify scontato e mantiene il prezzo eBay originale
+  come prezzo barrato Shopify.
+
+### Correzioni
+
+- Backfill categorie: il refresh Trading viene tentato quando manca la categoria
+  primaria eBay, anche se esiste una categoria negozio, e la confidenza della
+  proposta Shopify deriva dal segnale che ha davvero prodotto il match.
+
+### Sotto il cofano
+
+- Aggiunta la tabella `PricingRule` per shop e aggiornati snapshot/conflitti
+  prezzo per distinguere prezzo eBay originale, prezzo Shopify calcolato e
+  prezzo barrato.
+
 ## [0.36.8] — 2026-06-15
 
 ### Sotto il cofano
@@ -1855,6 +1877,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.37.0]: #0370--2026-06-15
 [0.36.8]: #0368--2026-06-15
 [0.36.7]: #0367--2026-06-15
 [0.36.6]: #0366--2026-06-15

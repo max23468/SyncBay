@@ -9,6 +9,7 @@ import {
   buildCategoryApplyPlan,
   buildCategoryBackfillReport,
 } from "../app/lib/syncbay-category-backfill-report.ts";
+import { shouldRefreshCategoryFromTrading } from "../app/lib/syncbay-category-trading-refresh.ts";
 import { resolveShopifyCategoryProposal } from "../app/lib/syncbay-shopify-category-mapping.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
@@ -201,7 +202,7 @@ async function buildReportRow(input) {
 }
 
 function shouldRefreshFromTrading(source) {
-  return !source.ebayPrimaryCategoryName && !source.ebayStoreCategoryName;
+  return shouldRefreshCategoryFromTrading(source);
 }
 
 function getSnapshotCategorySource(mapping) {

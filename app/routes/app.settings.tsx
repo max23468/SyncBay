@@ -20,6 +20,11 @@ import {
   type ProductPublicationMode,
 } from "../lib/syncbay-product-publication-settings";
 import {
+  PRICE_ROUNDING_MODES,
+  type PriceRoundingMode,
+  type SyncBayPricingRule,
+} from "../lib/syncbay-pricing-rules";
+import {
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
@@ -34,6 +39,7 @@ import {
   getShopSettingsState,
   updateShopSyncEnabled,
   updateDefaultImportProductStatus,
+  updatePricingRuleSettings,
   updateProductPublicationSettings,
   updateSyncTargetSeconds,
 } from "../services/syncbay.server";
@@ -51,6 +57,12 @@ type SettingsActionData =
       message: string;
       mode: ProductPublicationMode;
       selectedPublicationIds: string[];
+      status: "blocked" | "saved";
+    }
+  | {
+      intent: "savePricingRule";
+      message: string;
+      pricingRule: SyncBayPricingRule;
       status: "blocked" | "saved";
     }
   | {
@@ -73,6 +85,11 @@ type SettingsActionData =
     };
 
 type SettingsState = Awaited<ReturnType<typeof getShopSettingsState>>;
+
+const DEFAULT_SETTINGS_PRICING_RULE: SyncBayPricingRule = {
+  discountPercent: 0,
+  roundingMode: "CENTS",
+};
 
 export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
 
@@ -161,6 +178,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     } satisfies SettingsActionData);
   }
 
+  if (intent === "savePricingRule") {
+    const result = await updatePricingRuleSettings(session, {
+      discountPercent: String(formData.get("discountPercent") ?? ""),
+      roundingMode: String(formData.get("roundingMode") ?? ""),
+    });
+
+    return Response.json({
+      intent,
+      message: result.message,
+      pricingRule: result.pricingRule,
+      status: result.status,
+    } satisfies SettingsActionData);
+  }
+
   if (intent === "saveSyncTarget") {
     const result = await updateSyncTargetSeconds(
       session,
@@ -213,6 +244,10 @@ export default function SettingsRoute() {
     actionData?.intent === "saveSyncTarget"
       ? actionData.syncTargetSeconds
       : settings.shop.syncTargetSeconds;
+  const currentPricingRule =
+    actionData?.intent === "savePricingRule"
+      ? actionData.pricingRule
+      : (settings.pricingRule ?? DEFAULT_SETTINGS_PRICING_RULE);
 
   return (
     <s-page heading="Impostazioni">
@@ -241,6 +276,11 @@ export default function SettingsRoute() {
             isSaving={isSaving}
             selectedPublicationIds={selectedPublicationIds}
             settings={settings}
+          />
+          <PricingRuleSettingsCard
+            actionData={actionData}
+            currentPricingRule={currentPricingRule}
+            isSaving={isSaving}
           />
         </s-grid>
 
@@ -504,6 +544,64 @@ function ProductPublicationSettingsCard({
   );
 }
 
+function PricingRuleSettingsCard({
+  actionData,
+  currentPricingRule,
+  isSaving,
+}: {
+  actionData?: SettingsActionData;
+  currentPricingRule: SyncBayPricingRule;
+  isSaving: boolean;
+}) {
+  return (
+    <SettingCard
+      description="Prezzo Shopify calcolato dal prezzo eBay."
+      icon="product"
+      statusLabel={getPricingRuleSummaryLabel(currentPricingRule)}
+      statusTone={currentPricingRule.discountPercent > 0 ? "success" : "neutral"}
+      title="Regola prezzo"
+    >
+      <s-paragraph>
+        Lo sconto si applica a tutti i prodotti importati o riallineati. Il
+        prezzo eBay resta come compare-at price Shopify quando lo sconto è
+        maggiore di zero.
+      </s-paragraph>
+      {actionData?.intent === "savePricingRule" ? (
+        <s-paragraph>{actionData.message}</s-paragraph>
+      ) : null}
+      <Form method="post">
+        <input type="hidden" name="intent" value="savePricingRule" />
+        <s-text-field
+          defaultValue={String(currentPricingRule.discountPercent)}
+          id="discountPercent"
+          label="Sconto sul prezzo eBay"
+          name="discountPercent"
+          required
+        />
+        <s-text color="subdued">
+          Inserisci un numero intero da 0 a 90. Con 0 SyncBay mantiene il prezzo
+          eBay senza prezzo barrato.
+        </s-text>
+        <s-select
+          id="roundingMode"
+          label="Arrotondamento prezzo Shopify"
+          name="roundingMode"
+          value={currentPricingRule.roundingMode}
+        >
+          {PRICE_ROUNDING_MODES.map((roundingMode) => (
+            <s-option key={roundingMode} value={roundingMode}>
+              {getPriceRoundingModeLabel(roundingMode)}
+            </s-option>
+          ))}
+        </s-select>
+        <s-button type="submit" disabled={isSaving}>
+          {isSaving ? "Salvataggio..." : "Salva regola prezzo"}
+        </s-button>
+      </Form>
+    </SettingCard>
+  );
+}
+
 function AdvancedSettingsCard({
   actionData,
   isSaving,
@@ -683,4 +781,16 @@ function getProductPublicationModeLabel(mode: ProductPublicationMode) {
   if (mode === "SELECTED") return "Solo canali selezionati";
 
   return "Tutti i canali disponibili";
+}
+
+function getPriceRoundingModeLabel(mode: PriceRoundingMode) {
+  if (mode === "WHOLE_EURO") return "Arrotonda all'euro";
+
+  return "Due decimali";
+}
+
+function getPricingRuleSummaryLabel(rule: SyncBayPricingRule) {
+  if (rule.discountPercent === 0) return "Prezzo eBay";
+
+  return `-${rule.discountPercent}%`;
 }

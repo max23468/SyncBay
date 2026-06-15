@@ -99,6 +99,25 @@ test("maps scale model cars to Shopify scale model cars", () => {
   );
 });
 
+test("derives category confidence from the text source that matched", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Collezionismo altro",
+      title:
+        "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Modellini auto",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-8-3",
+      shopifyCategoryName: "Cars",
+      source: "title",
+    },
+  );
+});
+
 test("maps music records to records and LPs without assuming vinyl", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({

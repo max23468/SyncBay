@@ -89,126 +89,146 @@ export function resolveShopifyCategoryProposal(
   );
   const storeText = normalizeSearchText(input.ebayStoreCategoryName);
   const titleText = normalizeSearchText(input.title);
-  const combinedText = [primaryText, storeText, titleText].join(" ");
-  const source = getProposalSource({ primaryText, storeText, titleText });
-  const confidence = source === "ebay_primary_category" ? "high" : "medium";
+  const signals = getProposalSignals({ primaryText, storeText, titleText });
 
-  if (matchesBanknotes(combinedText)) {
+  const banknotesSignal = findMatchingSignal(signals, matchesBanknotes);
+  if (banknotesSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleBanknotes,
-      confidence,
+      confidence: banknotesSignal.confidence,
       productType: "Banconote italiane",
-      source,
+      source: banknotesSignal.source,
     });
   }
 
-  if (matchesFirstDayCovers(combinedText)) {
+  const firstDayCoversSignal = findMatchingSignal(
+    signals,
+    matchesFirstDayCovers,
+  );
+  if (firstDayCoversSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.firstDayCovers,
-      confidence,
+      confidence: firstDayCoversSignal.confidence,
       productType: "Buste primo giorno",
-      source,
+      source: firstDayCoversSignal.source,
     });
   }
 
-  if (matchesStampSheets(combinedText)) {
+  const stampSheetsSignal = findMatchingSignal(signals, matchesStampSheets);
+  if (stampSheetsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.stampSheets,
-      confidence,
+      confidence: stampSheetsSignal.confidence,
       productType: "Fogli francobolli",
-      source,
+      source: stampSheetsSignal.source,
     });
   }
 
-  if (matchesStamps(combinedText)) {
+  const stampsSignal = findMatchingSignal(signals, matchesStamps);
+  if (stampsSignal) {
     return buildProposal({
-      category: matchesSingleStamp(combinedText)
+      category: matchesSingleStamp(stampsSignal.text)
         ? SHOPIFY_TAXONOMY_CATEGORIES.singleStamps
         : SHOPIFY_TAXONOMY_CATEGORIES.postageStamps,
-      confidence,
+      confidence: stampsSignal.confidence,
       productType: "Francobolli",
-      source,
+      source: stampsSignal.source,
     });
   }
 
-  if (matchesBullionCoins(combinedText)) {
+  const bullionCoinsSignal = findMatchingSignal(signals, matchesBullionCoins);
+  if (bullionCoinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.bullionCoins,
-      confidence,
+      confidence: bullionCoinsSignal.confidence,
       productType: "Monete bullion",
-      source,
+      source: bullionCoinsSignal.source,
     });
   }
 
-  if (matchesCommemorativeCoins(combinedText)) {
+  const commemorativeCoinsSignal = findMatchingSignal(
+    signals,
+    matchesCommemorativeCoins,
+  );
+  if (commemorativeCoinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.commemorativeCoins,
-      confidence,
+      confidence: commemorativeCoinsSignal.confidence,
       productType: "Monete commemorative",
-      source,
+      source: commemorativeCoinsSignal.source,
     });
   }
 
-  if (matchesRareCoins(combinedText)) {
+  const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
+  if (rareCoinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.rareCoins,
-      confidence,
+      confidence: rareCoinsSignal.confidence,
       productType: "Monete italiane",
-      source,
+      source: rareCoinsSignal.source,
     });
   }
 
-  if (matchesCoins(combinedText)) {
+  const coinsSignal = findMatchingSignal(signals, matchesCoins);
+  if (coinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
-      confidence,
+      confidence: coinsSignal.confidence,
       productType: "Monete italiane",
-      source,
+      source: coinsSignal.source,
     });
   }
 
-  if (matchesNumismatics(combinedText)) {
+  const numismaticsSignal = findMatchingSignal(signals, matchesNumismatics);
+  if (numismaticsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoinsAndCurrency,
-      confidence,
+      confidence: numismaticsSignal.confidence,
       productType: "Collezionismo numismatico",
-      source,
+      source: numismaticsSignal.source,
     });
   }
 
-  if (matchesScaleModelCars(combinedText)) {
+  const scaleModelCarsSignal = findMatchingSignal(
+    signals,
+    matchesScaleModelCars,
+  );
+  if (scaleModelCarsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.scaleModelsCars,
-      confidence,
+      confidence: scaleModelCarsSignal.confidence,
       productType: "Modellini auto",
-      source,
+      source: scaleModelCarsSignal.source,
     });
   }
 
-  if (matchesMusicRecords(combinedText)) {
+  const musicRecordsSignal = findMatchingSignal(signals, matchesMusicRecords);
+  if (musicRecordsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.musicRecords,
-      confidence,
+      confidence: musicRecordsSignal.confidence,
       productType: "Dischi musicali",
-      source,
+      source: musicRecordsSignal.source,
     });
   }
 
-  if (matchesTypewriters(combinedText)) {
+  const typewritersSignal = findMatchingSignal(signals, matchesTypewriters);
+  if (typewritersSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.typewriters,
-      confidence,
+      confidence: typewritersSignal.confidence,
       productType: "Macchine da scrivere",
-      source,
+      source: typewritersSignal.source,
     });
   }
 
-  if (matchesPrintBooks(combinedText)) {
+  const printBooksSignal = findMatchingSignal(signals, matchesPrintBooks);
+  if (printBooksSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.printBooks,
-      confidence,
+      confidence: printBooksSignal.confidence,
       productType: "Libri e cataloghi",
-      source,
+      source: printBooksSignal.source,
     });
   }
 
@@ -240,16 +260,39 @@ function buildProposal(input: {
   };
 }
 
-function getProposalSource(input: {
+function getProposalSignals(input: {
   primaryText: string;
   storeText: string;
   titleText: string;
-}): ShopifyCategoryProposalSource {
-  if (input.primaryText) return "ebay_primary_category";
-  if (input.storeText) return "ebay_store_category";
-  if (input.titleText) return "title";
+}) {
+  return [
+    {
+      confidence: "high",
+      source: "ebay_primary_category",
+      text: input.primaryText,
+    },
+    {
+      confidence: "medium",
+      source: "ebay_store_category",
+      text: input.storeText,
+    },
+    {
+      confidence: "medium",
+      source: "title",
+      text: input.titleText,
+    },
+  ] satisfies Array<{
+    confidence: ShopifyCategoryProposalConfidence;
+    source: ShopifyCategoryProposalSource;
+    text: string;
+  }>;
+}
 
-  return "fallback";
+function findMatchingSignal(
+  signals: ReturnType<typeof getProposalSignals>,
+  matcher: (value: string) => boolean,
+) {
+  return signals.find((signal) => signal.text && matcher(signal.text)) ?? null;
 }
 
 function matchesBanknotes(value: string) {

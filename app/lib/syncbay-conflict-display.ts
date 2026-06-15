@@ -14,6 +14,12 @@ export function formatConflictValueForDisplay(input: {
     return `${input.value} ${input.value === 1 ? "immagine" : "immagini"}`;
   }
 
+  if (input.field === "price") {
+    const priceLabel = formatPriceConflictValue(input.value);
+
+    if (priceLabel) return priceLabel;
+  }
+
   if (typeof input.value === "string") return truncateDisplayValue(input.value);
   if (typeof input.value === "number" || typeof input.value === "boolean") {
     return String(input.value);
@@ -32,6 +38,21 @@ export function formatConflictValueForDisplay(input: {
     getJsonString(object?.amount);
 
   return knownValue ? truncateDisplayValue(knownValue) : "Valore strutturato";
+}
+
+function formatPriceConflictValue(value: Prisma.JsonValue) {
+  const object = getJsonObject(value);
+
+  if (!object) return null;
+
+  const amount = getJsonString(object.amount);
+  const compareAtPrice = getJsonString(object.compareAtPrice);
+
+  if (amount && compareAtPrice) {
+    return `${amount} (prezzo barrato ${compareAtPrice})`;
+  }
+
+  return amount ?? null;
 }
 
 function isDescriptionHash(value: Prisma.JsonValue) {

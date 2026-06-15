@@ -19,7 +19,8 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Prossimo
 
-- Aggiungere regole prezzo Shopify-only e pulizia descrizioni eBay più profonda.
+- Estendere le regole prezzo Shopify-only oltre lo sconto percentuale globale e
+  aggiungere pulizia descrizioni eBay più profonda.
 - Rafforzare la vista Attività con dettagli operativi progressivi quando i
   volumi reali rendono chiari i pattern di errore.
 

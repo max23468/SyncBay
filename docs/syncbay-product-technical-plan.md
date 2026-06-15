@@ -253,15 +253,16 @@ Le regole non modificano eBay. Si applicano solo al prezzo scritto su Shopify.
 
 Tipi:
 
-- sconto percentuale;
+- sconto percentuale globale MVP, già persistito per shop come intero `0-90`;
 - sconto fisso;
 - markup percentuale;
 - markup fisso;
 - moltiplicatore;
-- arrotondamento;
+- arrotondamento a due decimali o all'euro per il caso globale MVP;
 - prezzo minimo;
 - margine minimo se il negoziante fornisce un costo;
-- compare-at price;
+- compare-at price Shopify valorizzato con il prezzo eBay originale quando lo
+  sconto globale è attivo;
 - regole globali MVP, regole per categoria in fase successiva.
 
 Ogni sync deve conservare:
@@ -270,6 +271,9 @@ Ogni sync deve conservare:
 - prezzo calcolato Shopify;
 - regola applicata;
 - timestamp ultimo calcolo.
+
+Quando la regola globale cambia dalle Impostazioni, SyncBay pianifica batch di
+sync incrementale per riallineare anche i prodotti già importati.
 
 ## Descrizioni e template eBay
 

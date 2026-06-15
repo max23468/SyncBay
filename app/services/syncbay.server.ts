@@ -46,6 +46,7 @@ import {
   getSyncTargetLabel,
   normalizeSyncTargetSeconds,
 } from "../lib/syncbay-sync-interval";
+import { buildPricingRuleSyncPlan } from "../lib/syncbay-pricing-rule-sync";
 import {
   getCatalogRowStatus,
   isCatalogMappingStale,
@@ -62,6 +63,7 @@ import {
   serializeProductPublicationGids,
   type ProductPublicationMode,
 } from "../lib/syncbay-product-publication-settings";
+import { normalizePricingRuleFormInput } from "../lib/syncbay-pricing-rules";
 import {
   getProductSnapshotThumbnailUrl,
   getProductSnapshotThumbnailUrlFromPayloads,
@@ -80,6 +82,10 @@ import {
   getImportPreviewValidationRules,
   getMockImportPreview,
 } from "./import-preview.server";
+import {
+  DEFAULT_PRICING_RULE,
+  normalizePricingRule,
+} from "./pricing-rules.server";
 import {
   getDraftImportLimit,
   getDraftImportReadiness,
@@ -118,6 +124,7 @@ const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
 const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
+const PRICING_RULE_SYNC_BATCH_SIZE = 10;
 const RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS = 4;
 const REQUIRED_SHOPIFY_SCOPES = [
   "read_products",
@@ -967,6 +974,14 @@ function buildKeepShopifyBaselineSnapshot(input: {
 }) {
   const shopifyValue = input.conflict.shopifyValue;
   const snapshotPayload = getKeepShopifyBaselinePayload(input.snapshot.payload);
+  const keptShopifyPriceAmount =
+    input.conflict.field === "price"
+      ? getConflictPriceAmount(shopifyValue)
+      : input.snapshot.priceAmount;
+  const keptShopifyCompareAtPrice =
+    input.conflict.field === "price"
+      ? getConflictCompareAtPrice(shopifyValue)
+      : getPricingPayloadValue(snapshotPayload, "compareAtPriceAmount");
 
   return {
     currency: input.snapshot.currency,
@@ -984,6 +999,15 @@ function buildKeepShopifyBaselineSnapshot(input: {
     mappingId: input.snapshot.mappingId,
     payload: {
       ...snapshotPayload,
+      ...(input.conflict.field === "price"
+        ? {
+            pricing: {
+              ...getJsonObject(snapshotPayload.pricing),
+              compareAtPriceAmount: keptShopifyCompareAtPrice,
+              priceAmount: keptShopifyPriceAmount?.toString() ?? null,
+            },
+          }
+        : {}),
       conflictResolution: {
         conflictId: input.conflict.id,
         field: input.conflict.field,
@@ -992,7 +1016,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
     } satisfies Prisma.JsonObject,
     priceAmount:
       input.conflict.field === "price"
-        ? getJsonDecimalValue(shopifyValue)
+        ? keptShopifyPriceAmount
         : input.snapshot.priceAmount,
     productStatus:
       input.conflict.field === "status"
@@ -1235,7 +1259,7 @@ export async function getShopSettingsState(
   admin?: ShopifyAdminGraphqlClient,
 ) {
   const shop = await ensureShopForSession(session);
-  const [ebayConnection, activeMappingCount, latestIncrementalJob] =
+  const [ebayConnection, activeMappingCount, latestIncrementalJob, pricingRule] =
     await prisma.$transaction([
       prisma.ebayConnection.findUnique({
         where: {
@@ -1260,6 +1284,13 @@ export async function getShopSettingsState(
           status: SyncJobStatus.SUCCEEDED,
           type: SyncJobType.SYNC_INCREMENTAL,
         },
+      }),
+      prisma.pricingRule.findUnique({
+        select: {
+          discountPercent: true,
+          roundingMode: true,
+        },
+        where: { shopId: shop.id },
       }),
     ]);
   const ebayRuntime = getEbayRuntimeReadiness();
@@ -1295,6 +1326,7 @@ export async function getShopSettingsState(
       mode: publicationMode,
       selectedPublicationIds,
     },
+    pricingRule: normalizePricingRule(pricingRule ?? DEFAULT_PRICING_RULE),
     shopify: {
       configuredScopes: getConfiguredShopifyScopes(),
       missingConfiguredScopes: shopifyReadiness.missingConfiguredScopes,
@@ -1318,6 +1350,143 @@ export async function getShopSettingsState(
         latestIncrementalJob?.finishedAt?.toISOString() ?? null,
     },
   };
+}
+
+export async function updatePricingRuleSettings(
+  session: ShopifySessionLike,
+  input: {
+    discountPercent: string;
+    roundingMode: string;
+  },
+) {
+  const normalized = normalizePricingRuleFormInput(input);
+  const shop = await ensureShopForSession(session);
+
+  if (normalized.status === "invalid") {
+    return {
+      message: normalized.message,
+      pricingRule: await getExistingPricingRuleForSettings(shop.id),
+      status: "blocked" as const,
+    };
+  }
+
+  const pricingUpdate = await prisma.$transaction(async (tx) => {
+    const savedRule = await tx.pricingRule.upsert({
+      create: {
+        discountPercent: normalized.discountPercent,
+        roundingMode: normalized.roundingMode,
+        shopId: shop.id,
+      },
+      select: {
+        discountPercent: true,
+        roundingMode: true,
+      },
+      update: {
+        discountPercent: normalized.discountPercent,
+        roundingMode: normalized.roundingMode,
+      },
+      where: { shopId: shop.id },
+    });
+    const activeMappings = await tx.productMapping.findMany({
+      orderBy: { updatedAt: "asc" },
+      select: { ebayItemId: true },
+      where: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+        status: ProductMappingStatus.ACTIVE,
+      },
+    });
+    const ebayConnection = await tx.ebayConnection.findUnique({
+      select: { status: true },
+      where: {
+        shopId_marketplaceId: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+        },
+      },
+    });
+    const syncPlan = buildPricingRuleSyncPlan({
+      activeEbayItemIds: activeMappings.map((mapping) => mapping.ebayItemId),
+      batchSize: PRICING_RULE_SYNC_BATCH_SIZE,
+      ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
+      hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    });
+    const now = new Date();
+    const runId = `pricing-rule:${shop.id}:${now.toISOString()}:${randomUUID()}`;
+
+    if (syncPlan.batches.length > 0) {
+      await tx.syncJob.createMany({
+        data: syncPlan.batches.map((ebayItemIds, index) => ({
+          attempts: 0,
+          idempotencyKey: `pricing-rule-sync:${shop.id}:${index + 1}:${runId}`,
+          maxAttempts: CATALOG_IMPORT_BATCH_MAX_ATTEMPTS,
+          payload: {
+            batchCount: syncPlan.batches.length,
+            batchIndex: index + 1,
+            discountPercent: normalized.discountPercent,
+            ebayItemIds,
+            importProductStatus: normalizeImportProductStatus(
+              shop.defaultProductStatus,
+            ),
+            marketplaceId: getEbayMarketplaceId(),
+            requestedCount: ebayItemIds.length,
+            roundingMode: normalized.roundingMode,
+            runId,
+            source: "pricing_rule_update",
+          } satisfies Prisma.JsonObject,
+          runAfter: now,
+          shopId: shop.id,
+          status: SyncJobStatus.PENDING,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        })),
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        details: {
+          discountPercent: normalized.discountPercent,
+          queuedPricingRuleSyncJobCount: syncPlan.batches.length,
+          queuedPricingRuleSyncProductCount: syncPlan.queuedProductCount,
+          queuedPricingRuleSyncSkippedReason: syncPlan.skippedReason,
+          roundingMode: normalized.roundingMode,
+        },
+        message: `Regola prezzo Shopify aggiornata: sconto ${normalized.discountPercent}% con arrotondamento ${getPricingRoundingModeLabel(normalized.roundingMode)}.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    });
+
+    return {
+      pricingRule: savedRule,
+      syncSkippedReason: syncPlan.skippedReason,
+      queuedProductCount: syncPlan.queuedProductCount,
+      queuedSyncJobCount: syncPlan.batches.length,
+    };
+  });
+  const syncMessage = pricingUpdate.syncSkippedReason
+    ? ` Riallineamento non pianificato: ${pricingUpdate.syncSkippedReason}.`
+    : pricingUpdate.queuedProductCount > 0
+      ? ` Riallineamento pianificato per ${pricingUpdate.queuedProductCount} prodotti.`
+      : " Nessun prodotto attivo da riallineare.";
+
+  return {
+    message: `Regola prezzo salvata: ${formatPricingRuleSummary(pricingUpdate.pricingRule)}.${syncMessage}`,
+    pricingRule: normalizePricingRule(pricingUpdate.pricingRule),
+    status: "saved" as const,
+  };
+}
+
+async function getExistingPricingRuleForSettings(shopId: string) {
+  const pricingRule = await prisma.pricingRule.findUnique({
+    select: {
+      discountPercent: true,
+      roundingMode: true,
+    },
+    where: { shopId },
+  });
+
+  return normalizePricingRule(pricingRule ?? DEFAULT_PRICING_RULE);
 }
 
 export async function updateSyncTargetSeconds(
@@ -2252,6 +2421,23 @@ function getProductPublicationModeLabel(mode: ProductPublicationMode) {
   return "tutti i canali disponibili";
 }
 
+function getPricingRoundingModeLabel(mode: string) {
+  if (mode === "WHOLE_EURO") return "all'euro";
+
+  return "a due decimali";
+}
+
+function formatPricingRuleSummary(input: {
+  discountPercent: number;
+  roundingMode: string;
+}) {
+  if (input.discountPercent === 0) {
+    return "nessuno sconto applicato ai prezzi Shopify";
+  }
+
+  return `sconto ${input.discountPercent}%, arrotondamento ${getPricingRoundingModeLabel(input.roundingMode)}`;
+}
+
 function getComplianceReadiness() {
   const accountDeletion = getAccountDeletionPostConfig();
   const ready = accountDeletion.missingRequirements.length === 0;
@@ -3099,6 +3285,37 @@ function getJsonDecimalValue(value: Prisma.JsonValue | undefined) {
   const number = Number(value);
 
   return Number.isFinite(number) ? new Prisma.Decimal(value) : null;
+}
+
+function getConflictPriceAmount(value: Prisma.JsonValue | undefined) {
+  const object = getJsonObject(value);
+
+  return getJsonDecimalValue(object?.amount) ?? getJsonDecimalValue(value);
+}
+
+function getConflictCompareAtPrice(value: Prisma.JsonValue | undefined) {
+  const object = getJsonObject(value);
+
+  return getPricingPayloadValue(object, "compareAtPrice");
+}
+
+function getPricingPayloadValue(
+  payload: Record<string, Prisma.JsonValue> | null | undefined,
+  key: "compareAtPrice" | "compareAtPriceAmount",
+) {
+  const value = payload?.[key];
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value.toFixed(2);
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number.toFixed(2) : value.trim();
+  }
+
+  return null;
 }
 
 function getJsonString(value: Prisma.JsonValue | undefined) {
