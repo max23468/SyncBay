@@ -78,7 +78,7 @@
     "@vercel/speed-insights": "^2.0.0",
     "fast-xml-parser": "^5.8.0",
     "isbot": "^5.1.42",
-    "prisma": "^6.19.3",
+    "prisma": "^7.8.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router": "^7.12.0"
