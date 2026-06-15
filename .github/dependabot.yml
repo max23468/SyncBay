@@ -20,10 +20,16 @@ updates:
         update-types:
           - minor
           - patch
-    # Major bloccanti: React 19 e ESLint 10 rompono la risoluzione dei peer
-    # (eslint-plugin-import non supporta ESLint 10; React 19 e' una migrazione
-    # major fuori scope MVP). Restano minor/patch.
+    # Major bloccanti: React 19, ESLint 10 e Prisma 7 rompono la risoluzione
+    # dei peer (eslint-plugin-import non supporta ESLint 10; il session storage
+    # Shopify Prisma 9 richiede Prisma 6.19). Restano minor/patch.
     ignore:
+      - dependency-name: prisma
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@prisma/client"
+        update-types:
+          - version-update:semver-major
       - dependency-name: react
         update-types:
           - version-update:semver-major
