@@ -1,24 +1,68 @@
+import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
+
+type SnapshotPayloadValue =
+  | boolean
+  | number
+  | string
+  | null
+  | SnapshotPayloadValue[]
+  | { [key: string]: SnapshotPayloadValue };
+
+export type EbayProductSnapshotPayload = {
+  [key: string]: SnapshotPayloadValue;
+};
+
 export function buildEbayProductSnapshotPayload(input: {
+  categoryProposal?: ShopifyCategoryProposal | null;
   descriptionMode: string;
+  ebayPrimaryCategoryId?: string | null;
+  ebayPrimaryCategoryName?: string | null;
+  ebayPrimaryCategoryPath?: string | null;
   imageUrls?: string[];
   issueCodes: string[];
   skuGenerated: boolean;
   status: string;
   storeCategoryId?: string | null;
   storeCategoryName?: string | null;
-}) {
+}): EbayProductSnapshotPayload {
   return {
     descriptionMode: input.descriptionMode,
     imageUrls: normalizeImageUrls(input.imageUrls ?? []),
     issueCodes: input.issueCodes,
     skuGenerated: input.skuGenerated,
     status: input.status,
+    ...(input.ebayPrimaryCategoryId
+      ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId }
+      : {}),
+    ...(input.ebayPrimaryCategoryName
+      ? { ebayPrimaryCategoryName: input.ebayPrimaryCategoryName }
+      : {}),
+    ...(input.ebayPrimaryCategoryPath
+      ? { ebayPrimaryCategoryPath: input.ebayPrimaryCategoryPath }
+      : {}),
     ...(input.storeCategoryId
       ? { storeCategoryId: input.storeCategoryId }
       : {}),
     ...(input.storeCategoryName
       ? { storeCategoryName: input.storeCategoryName }
       : {}),
+    ...(input.categoryProposal
+      ? { categoryProposal: serializeCategoryProposal(input.categoryProposal) }
+      : {}),
+  };
+}
+
+function serializeCategoryProposal(
+  proposal: ShopifyCategoryProposal,
+): EbayProductSnapshotPayload {
+  return {
+    applied: proposal.applied,
+    confidence: proposal.confidence,
+    productType: proposal.productType,
+    reason: proposal.reason,
+    shopifyCategoryGid: proposal.shopifyCategoryGid,
+    shopifyCategoryName: proposal.shopifyCategoryName,
+    source: proposal.source,
   };
 }
 

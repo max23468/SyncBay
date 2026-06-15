@@ -50,7 +50,13 @@ export function buildShopifyAdminDiagnosticsProductQuery(input: {
       title
       handle
       status
+      productType
       totalInventory
+      category {
+        id
+        name
+        fullName
+      }
       media(first: 50) {
         nodes {
           mediaContentType
@@ -95,7 +101,13 @@ export function buildShopifyAdminDiagnosticsProductQuery(input: {
       title
       handle
       status
+      productType
       totalInventory
+      category {
+        id
+        name
+        fullName
+      }
       media(first: 50) {
         nodes {
           mediaContentType

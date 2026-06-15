@@ -103,6 +103,20 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   o prodotti importati;
 - ogni prodotto creato o riusato aggiorna anche prezzo e SKU della variante
   Shopify, oltre a stato prodotto, immagini e inventario;
+- SyncBay calcola una proposta categoria Shopify per numismatica, filatelia,
+  modellini auto, dischi musicali, macchine da scrivere e cataloghi/libri
+  cartacei, salvando categoria eBay marketplace/negozio, categoria Shopify
+  candidata, `productType`, confidenza e motivo nello snapshot diagnostico;
+  sui nuovi prodotti creati dall'import passa subito `category` e `productType`
+  a Shopify quando la proposta è valida, senza creare tag categoria;
+- `npm run categories:backfill -- --shop syncbay-dev.myshopify.com` confronta
+  in sola lettura i prodotti collegati con la proposta categoria SyncBay e
+  classifica applicabili, già corretti, conflitti manuali e incerti prima di
+  qualsiasi apply; la scrittura reale richiede
+  `--apply --confirm-apply` e aggiorna solo le righe applicabili, saltando
+  conflitti e incertezze; un lookup Trading fallito non blocca una proposta
+  locale già valida, ma resta segnalato quando impedisce di proporre una
+  categoria affidabile;
 - l'import reale ha completato 958 listing sul dev store con mapping, snapshot,
   job e audit coerenti. La schedule Supabase Cron `syncbay-run-due-jobs`
   riprende ogni minuto i job `IMPORT_CATALOG` dovuti.

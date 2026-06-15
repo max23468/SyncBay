@@ -1,0 +1,189 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+// @ts-expect-error Node --experimental-strip-types resolves this test import.
+import { resolveShopifyCategoryProposal } from "./syncbay-shopify-category-mapping.ts";
+
+test("maps historic coin listings to rare coins with high confidence", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Monete italiane",
+      ebayPrimaryCategoryPath: "Monete e banconote > Monete > Italia Regno",
+      ebayStoreCategoryName: "Italia Regno - Vittorio Emanuele III",
+      title: "5 Lire Aquilino 1927 Regno d'Italia SPL",
+    }),
+    {
+      applied: false,
+      confidence: "high",
+      productType: "Monete italiane",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+      shopifyCategoryName: "Rare Coins",
+      source: "ebay_primary_category",
+    },
+  );
+});
+
+test("maps banknotes to collectible banknotes", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Banconote italiane",
+      ebayPrimaryCategoryPath: "Monete e banconote > Banconote > Italia",
+      title: "Banconota 1000 Lire Montessori",
+    }),
+    {
+      applied: false,
+      confidence: "high",
+      productType: "Banconote italiane",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+      shopifyCategoryName: "Collectible Banknotes",
+      source: "ebay_primary_category",
+    },
+  );
+});
+
+test("uses store category and title with medium confidence when primary category is missing", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayStoreCategoryName: "Italia Regno - Vittorio Emanuele III",
+      title: "20 Lire oro 1882 Umberto I",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Monete italiane",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+      shopifyCategoryName: "Rare Coins",
+      source: "ebay_store_category",
+    },
+  );
+});
+
+test("does not treat precious metal alone as bullion coins", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Monete italiane",
+      title: "20 Lire oro Regno d'Italia 1882",
+    })?.shopifyCategoryName,
+    "Rare Coins",
+  );
+});
+
+test("maps explicit bullion coin listings to bullion coins", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Monete bullion",
+      title: "Krugerrand 1 oz oro bullion coin",
+    })?.shopifyCategoryName,
+    "Bullion Coins",
+  );
+});
+
+test("maps scale model cars to Shopify scale model cars", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      title:
+        "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43 come da foto",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Modellini auto",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-8-3",
+      shopifyCategoryName: "Cars",
+      source: "title",
+    },
+  );
+});
+
+test("maps music records to records and LPs without assuming vinyl", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      title: "NL* ITALIA DISCO GIORDANO ANDREA CHENIER Grand Opera Series",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Dischi musicali",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/me-3-4",
+      shopifyCategoryName: "Records & LPs",
+      source: "title",
+    },
+  );
+});
+
+test("maps Fabbri music volumes to records and LPs by maintainer decision", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      title:
+        "NL* FABBRI EDITORE I GRANDI MUSICISTI Volume X BACH E BEETHOVEN",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Dischi musicali",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/me-3-4",
+      shopifyCategoryName: "Records & LPs",
+      source: "title",
+    },
+  );
+});
+
+test("maps typewriters to office typewriters", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      title:
+        "NL* Macchina da Scrivere ADLER MODELLO TIPPA OLANDA Custodia originale Top",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Macchine da scrivere",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/os-10-10",
+      shopifyCategoryName: "Typewriters",
+      source: "title",
+    },
+  );
+});
+
+test("maps paper catalog books to print books", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      title:
+        "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Libri e cataloghi",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/me-1-3",
+      shopifyCategoryName: "Print Books",
+      source: "title",
+    },
+  );
+});
+
+test("returns a low-confidence unapplied proposal for unknown collectibles", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Collezionismo altro",
+      title: "Lotto misto da collezione",
+    }),
+    {
+      applied: false,
+      confidence: "low",
+      productType: "Collezionismo",
+      reason: "low_confidence",
+      shopifyCategoryGid: null,
+      shopifyCategoryName: null,
+      source: "fallback",
+    },
+  );
+});

@@ -325,14 +325,30 @@ Post-MVP:
 
 ## Mapping categorie
 
-Scelta MVP: automatico.
+Scelta MVP: automatico e prudente.
 
 Strategia:
 
-- mappare categorie eBay a product type, tag e metafield Shopify;
+- mappare categorie eBay a proposta di categoria Shopify standard,
+  `productType` e metafield SyncBay/eBay;
+- non creare tag categoria;
 - non bloccare import se la categoria non è mappabile;
 - registrare confidenza e fallback;
-- lasciare il prodotto importabile anche con mapping categoria incompleto.
+- lasciare il prodotto importabile anche con mapping categoria incompleto;
+- salvare in dry-run/report la proposta categoria anche quando non viene
+  applicata.
+
+Decisione attuale: ADR 0015. L'import di nuovi prodotti passa `category` e
+`productType` a Shopify quando la proposta SyncBay ha una categoria valida e
+confidenza non bassa; i casi incerti restano importabili senza categoria
+Shopify. L'apply sui prodotti già collegati deve partire da report/preview e
+non sovrascrivere categorie Shopify manuali senza conferma esplicita. La mappa
+iniziale copre le categorie osservate nel catalogo pilota: numismatica,
+filatelia, modellini auto, dischi musicali, macchine da scrivere e
+cataloghi/libri cartacei. Il comando operativo
+`npm run categories:backfill -- --apply --confirm-apply` applica solo righe
+`applicable` e salta conflitti manuali, incertezze, lookup falliti senza
+proposta locale valida e prodotti senza GID Shopify.
 
 ## Matching prodotti esistenti
 

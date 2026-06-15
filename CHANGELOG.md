@@ -6,6 +6,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.36.8] — 2026-06-15
+
+### Sotto il cofano
+
+- Aggiunta la fondazione dry-run per il mapping categorie eBay -> Shopify:
+  SyncBay propone categoria Shopify, `productType`, confidenza e sorgente nello
+  snapshot diagnostico senza applicare ancora modifiche massive allo store.
+- Aggiunto `npm run categories:backfill`, report dry-run read-only per
+  confrontare prodotti Shopify collegati e categorie proposte da SyncBay prima
+  dell'apply.
+- Estesa la mappa iniziale alle categorie osservate nel campione reale:
+  modellini auto e dischi musicali, mantenendo l'apply disattivato.
+- Aggiunto l'apply controllato `--apply --confirm-apply`, che aggiorna su
+  Shopify solo righe applicabili e salta conflitti manuali e casi incerti.
+- I nuovi prodotti creati dall'import Shopify ricevono subito `category` e
+  `productType` quando la proposta SyncBay è valida, senza creare tag categoria.
+- Il report categorie espone il motivo dei lookup eBay falliti, così eventuali
+  fallimenti Trading temporanei non sembrano conflitti o decisioni catalogo.
+
 ## [0.36.7] — 2026-06-15
 
 ### Correzioni
@@ -1836,6 +1855,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.36.8]: #0368--2026-06-15
 [0.36.7]: #0367--2026-06-15
 [0.36.6]: #0366--2026-06-15
 [0.36.5]: #0365--2026-06-15
