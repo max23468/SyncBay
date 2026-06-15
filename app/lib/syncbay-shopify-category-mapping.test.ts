@@ -182,12 +182,12 @@ test("maps single stamp listings from store or title signals even when primary c
     }),
     {
       applied: false,
-      confidence: "high",
+      confidence: "medium",
       productType: "Francobolli",
       reason: "dry_run_only",
       shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-5-4",
       shopifyCategoryName: "Single Stamps",
-      source: "ebay_primary_category",
+      source: "title",
     },
   );
 });

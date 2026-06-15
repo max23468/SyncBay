@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Regola prezzo: l'arrotondamento all'euro non collassa più i prezzi bassi a
+  `0,01` quando non esiste un euro intero positivo sotto il prezzo eBay.
+- Categorie Shopify: i francobolli singoli ereditano sorgente e confidenza dal
+  segnale che indica davvero il dettaglio singolo, invece dalla categoria
+  generica `Francobolli`.
+
 ## [0.41.0] — 2026-06-19
 
 ### Novità
