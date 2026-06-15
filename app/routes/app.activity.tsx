@@ -18,6 +18,7 @@ import {
   type SyncBayIcon,
   TimelineEvent,
 } from "../components/SyncBayUi";
+import { LiveSync, useActionToast } from "../components/SyncBayLive";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
 import {
@@ -118,18 +119,29 @@ export default function ActivityRoute() {
   const failedJobs = activity.sync.lastJobs.filter(
     (job) => job.status === "FAILED",
   ).length;
+  const working =
+    activity.sync.pendingJobs > 0 ||
+    activity.sync.catalogHealth.activeIncrementalJobCount > 0 ||
+    activity.sync.catalogHealth.status === "running";
+
+  useActionToast(
+    { data: actionData, state: navigation.state },
+    (data) => ({ message: data.message }),
+  );
 
   return (
     <s-page heading="Attività">
-      <s-badge slot="accessory" tone="info">Diagnostica guidata</s-badge>
+      <s-badge slot="accessory" tone={getActivityBadgeTone(working, failedJobs)}>
+        {getActivityBadgeLabel(working, failedJobs)}
+      </s-badge>
       <s-stack gap="base">
-        <s-section heading="Coda operativa">
+        <LiveSync working={working} />
+        <s-section heading="In sintesi">
           <s-stack gap="base">
             <s-text color="subdued">
-              Qui controlli attività, errori e note operative senza uscire
-              dall&apos;app. La sorgente catalogo resta eBay; gli ordini Shopify
-              aggiornano solo la disponibilità eBay. Gli errori restano
-              leggibili e riprovabili dove possibile.
+              Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti,
+              errori e note. Gli errori restano leggibili e, dove si può,
+              riprovabili.
             </s-text>
             <s-grid
               gap="base"
@@ -449,7 +461,7 @@ function getJobTitle(type: string) {
   if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
   if (type === "UPDATE_EBAY_STOCK") return "Disponibilità eBay";
   if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto messo in esaurito";
+  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto segnato come esaurito";
 
   return "Attività SyncBay";
 }
@@ -524,6 +536,27 @@ function getActivityToneLabel(tone: ActivityRow["tone"]) {
   if (tone === "warning") return "Attenzione";
 
   return "Info";
+}
+
+function getActivityBadgeTone(
+  working: boolean,
+  failedJobs: number,
+): "info" | "success" | "warning" {
+  if (working) return "info";
+  if (failedJobs > 0) return "warning";
+
+  return "success";
+}
+
+function getActivityBadgeLabel(working: boolean, failedJobs: number) {
+  if (working) return "Aggiornamenti in corso";
+  if (failedJobs > 0) {
+    return failedJobs === 1
+      ? "1 errore da rivedere"
+      : `${formatNumber(failedJobs)} errori da rivedere`;
+  }
+
+  return "Tutto tranquillo";
 }
 
 function getCatalogHealthLabel(activity: Activity) {
