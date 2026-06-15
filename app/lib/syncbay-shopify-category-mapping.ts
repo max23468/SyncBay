@@ -91,6 +91,15 @@ export function resolveShopifyCategoryProposal(
   const titleText = normalizeSearchText(input.title);
   const signals = getProposalSignals({ primaryText, storeText, titleText });
 
+  if (titleText && matchesPrintBooks(titleText)) {
+    return buildProposal({
+      category: SHOPIFY_TAXONOMY_CATEGORIES.printBooks,
+      confidence: "medium",
+      productType: "Libri e cataloghi",
+      source: "title",
+    });
+  }
+
   const banknotesSignal = findMatchingSignal(signals, matchesBanknotes);
   if (banknotesSignal) {
     return buildProposal({
@@ -98,6 +107,20 @@ export function resolveShopifyCategoryProposal(
       confidence: banknotesSignal.confidence,
       productType: "Banconote italiane",
       source: banknotesSignal.source,
+    });
+  }
+
+  const medalSignals =
+    primaryText || storeText
+      ? signals.filter((signal) => signal.source !== "title")
+      : signals;
+  const medalsSignal = findMatchingSignal(medalSignals, matchesMedals);
+  if (medalsSignal) {
+    return buildProposal({
+      category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoinsAndCurrency,
+      confidence: medalsSignal.confidence,
+      productType: "Medaglie",
+      source: medalsSignal.source,
     });
   }
 
@@ -139,7 +162,7 @@ export function resolveShopifyCategoryProposal(
   const bullionCoinsSignal = findMatchingSignal(signals, matchesBullionCoins);
   if (bullionCoinsSignal) {
     return buildProposal({
-      category: SHOPIFY_TAXONOMY_CATEGORIES.bullionCoins,
+      category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
       confidence: bullionCoinsSignal.confidence,
       productType: "Monete bullion",
       source: bullionCoinsSignal.source,
@@ -152,7 +175,7 @@ export function resolveShopifyCategoryProposal(
   );
   if (commemorativeCoinsSignal) {
     return buildProposal({
-      category: SHOPIFY_TAXONOMY_CATEGORIES.commemorativeCoins,
+      category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
       confidence: commemorativeCoinsSignal.confidence,
       productType: "Monete commemorative",
       source: commemorativeCoinsSignal.source,
@@ -162,7 +185,7 @@ export function resolveShopifyCategoryProposal(
   const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
   if (rareCoinsSignal) {
     return buildProposal({
-      category: SHOPIFY_TAXONOMY_CATEGORIES.rareCoins,
+      category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
       confidence: rareCoinsSignal.confidence,
       productType: "Monete italiane",
       source: rareCoinsSignal.source,
@@ -302,7 +325,13 @@ function matchesBanknotes(value: string) {
 }
 
 function matchesFirstDayCovers(value: string) {
-  return hasAny(value, ["buste primo giorno", "busta primo giorno", " fdc "]);
+  const hasExplicitFirstDayCoverSignal = hasAny(value, [
+    "buste primo giorno",
+    "busta primo giorno",
+  ]);
+  const hasFdcStampSignal = hasToken(value, "fdc") && matchesStamps(value);
+
+  return hasExplicitFirstDayCoverSignal || hasFdcStampSignal;
 }
 
 function matchesStampSheets(value: string) {
@@ -335,6 +364,10 @@ function matchesBullionCoins(value: string) {
 
 function matchesCommemorativeCoins(value: string) {
   return hasAny(value, ["commemorativ", "commemorative"]);
+}
+
+function matchesMedals(value: string) {
+  return hasAny(value, ["medagli", "medal"]);
 }
 
 function matchesRareCoins(value: string) {
@@ -441,6 +474,10 @@ function matchesPrintBooks(value: string) {
 
 function hasAny(value: string, needles: string[]) {
   return needles.some((needle) => value.includes(needle));
+}
+
+function hasToken(value: string, token: string) {
+  return value.split(" ").includes(token);
 }
 
 function normalizeSearchText(value: string | null | undefined) {

@@ -148,14 +148,21 @@ per scrivere `descriptionHtml` su Shopify e registrare snapshot `SYNCBAY`.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.
 `npm run categories:backfill` è un dry-run di default: per i mapping ACTIVE
 confronta la categoria Shopify attuale con la proposta SyncBay derivata da
-snapshot eBay o Trading API `GetItem`. Classifica righe applicabili, già
-corrette, conflitti manuali e incerte; senza flag di apply non scrive prodotti
-Shopify e non modifica eBay, salvo refresh della sessione offline Shopify e del
-token eBay cifrato se scaduti. Quando un lookup Trading fallisce, il report
-include il motivo tecnico nella riga JSON e nel campione umano. La scrittura reale richiede
+snapshot eBay, metafield prodotto `syncbay.*` o, solo quando mancano entrambi,
+Trading API `GetItem`. Il report mostra il conteggio delle sorgenti usate
+(`snapshot`, `metafield Shopify`, `eBay live`, `assenti`) per capire se sta
+consumando quota eBay. Classifica righe applicabili, già corrette, conflitti
+manuali e incerte; senza flag di apply non scrive prodotti Shopify e non
+modifica eBay, salvo refresh della sessione offline Shopify e del token eBay
+cifrato se scaduti. Quando un lookup Trading fallisce, il report include il
+motivo tecnico nella riga JSON e nel campione umano. La scrittura reale richiede
 `--apply --confirm-apply`, usa Shopify Admin GraphQL `productUpdate` e aggiorna
 solo righe `applicable`, saltando categorie manuali diverse, righe incerte,
-lookup falliti senza proposta locale valida e prodotti senza GID Shopify.
+lookup falliti senza proposta locale valida e prodotti senza GID Shopify. I
+conflitti categoria generati dal vecchio mapper possono essere inclusi solo con
+`--repair-category-conflicts` e, in apply, anche
+`--confirm-repair-category-conflicts`: il repair resta limitato a pattern
+legacy riconosciuti e non forza conflitti manuali generici.
 `npm run facets:backfill` è un dry-run di default: per i mapping ACTIVE calcola
 le cinque faccette storefront `syncbay_facets.*` da snapshot eBay e, salvo
 `--snapshot-only`, da Trading API `GetItem` con `ItemSpecifics`. Confronta i

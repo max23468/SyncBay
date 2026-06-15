@@ -184,3 +184,122 @@ test("builds an apply plan only from applicable category rows", () => {
     },
   });
 });
+
+test("can include known legacy mapper conflicts only when explicitly requested", () => {
+  const neutralCoinProposal = {
+    ...rareCoinsProposal,
+    shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+    shopifyCategoryName: "Collectible Coins",
+  };
+  const mediumNeutralCoinProposal = {
+    ...neutralCoinProposal,
+    confidence: "medium" as const,
+  };
+  const medalProposal = {
+    ...rareCoinsProposal,
+    productType: "Medaglie",
+    shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+    shopifyCategoryName: "Collectible Coins & Currency",
+  };
+  const report = buildCategoryBackfillReport({
+    rows: [
+      {
+        ebayItemId: "1",
+        proposal: neutralCoinProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-5-3",
+        shopifyProductGid: "gid://shopify/Product/1",
+        shopifyProductType: "Buste primo giorno",
+      },
+      {
+        ebayItemId: "2",
+        proposal: neutralCoinProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+        shopifyProductGid: "gid://shopify/Product/2",
+        shopifyProductType: "Monete italiane",
+      },
+      {
+        ebayItemId: "3",
+        proposal: medalProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-5",
+        shopifyProductGid: "gid://shopify/Product/3",
+        shopifyProductType: "Francobolli",
+      },
+      {
+        ebayItemId: "4",
+        proposal: {
+          ...rareCoinsProposal,
+          productType: "Banconote italiane",
+          shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+          shopifyCategoryName: "Collectible Banknotes",
+        },
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/4",
+        shopifyProductType: "Monete italiane",
+      },
+      {
+        ebayItemId: "5",
+        proposal: rareCoinsProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/5",
+        shopifyProductType: "Collezionismo numismatico",
+      },
+      {
+        ebayItemId: "6",
+        proposal: mediumNeutralCoinProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+        shopifyProductGid: "gid://shopify/Product/6",
+        shopifyProductType: "Monete italiane",
+      },
+      {
+        ebayItemId: "7",
+        proposal: mediumNeutralCoinProposal,
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+        shopifyProductGid: "gid://shopify/Product/7",
+        shopifyProductType: "Medaglie",
+      },
+    ],
+    shopDomain: "syncbay-dev.myshopify.com",
+  });
+
+  assert.deepEqual(buildCategoryApplyPlan(report).rows, []);
+  assert.deepEqual(
+    buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).rows,
+    [
+      {
+        ebayItemId: "1",
+        productType: "Monete italiane",
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/1",
+      },
+      {
+        ebayItemId: "2",
+        productType: "Monete italiane",
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/2",
+      },
+      {
+        ebayItemId: "3",
+        productType: "Medaglie",
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/3",
+      },
+      {
+        ebayItemId: "4",
+        productType: "Banconote italiane",
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+        shopifyProductGid: "gid://shopify/Product/4",
+      },
+      {
+        ebayItemId: "6",
+        productType: "Monete italiane",
+        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+        shopifyProductGid: "gid://shopify/Product/6",
+      },
+    ],
+  );
+  assert.equal(
+    buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).skipped
+      .conflictsManual,
+    2,
+  );
+});

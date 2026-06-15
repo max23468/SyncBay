@@ -39,6 +39,7 @@ import {
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
+import { buildSyncBayProductMetafields as buildSyncBayBaseProductMetafields } from "../lib/syncbay-shopify-product-metafields";
 import {
   buildSyncBayProductLookupQueries,
   buildSyncBayShopifyImportTags,
@@ -3633,44 +3634,18 @@ function isImportablePreviewItem(item: ImportPreviewItem) {
 
 function buildSyncBayProductMetafields(item: ImportPreviewItem) {
   return [
-    {
-      key: "ebay_item_id",
-      namespace: "syncbay",
-      type: "single_line_text_field",
-      value: item.itemId,
-    },
-    item.normalized.sku
-      ? {
-          key: "ebay_sku",
-          namespace: "syncbay",
-          type: "single_line_text_field",
-          value: item.normalized.sku,
-        }
-      : null,
-    item.normalized.priceAmount !== null
-      ? {
-          key: "ebay_price",
-          namespace: "syncbay",
-          type: "single_line_text_field",
-          value: String(item.normalized.priceAmount),
-        }
-      : null,
-    item.normalized.quantity !== null
-      ? {
-          key: "ebay_quantity",
-          namespace: "syncbay",
-          type: "single_line_text_field",
-          value: String(item.normalized.quantity),
-        }
-      : null,
-    item.normalized.skuGenerated
-      ? {
-          key: "sku_policy",
-          namespace: "syncbay",
-          type: "single_line_text_field",
-          value: "generated_from_ebay_item_id",
-        }
-      : null,
+    ...buildSyncBayBaseProductMetafields({
+      ebayItemId: item.itemId,
+      ebayPrimaryCategoryId: item.normalized.ebayPrimaryCategoryId,
+      ebayPrimaryCategoryName: item.normalized.ebayPrimaryCategoryName,
+      ebayPrimaryCategoryPath: item.normalized.ebayPrimaryCategoryPath,
+      priceAmount: item.normalized.priceAmount,
+      quantity: item.normalized.quantity,
+      sku: item.normalized.sku,
+      skuGenerated: item.normalized.skuGenerated,
+      storeCategoryId: item.normalized.storeCategoryId,
+      storeCategoryName: item.normalized.storeCategoryName,
+    }),
     ...buildShopifyProductFacetMetafields(item.normalized.productFacets),
   ].filter((metafield): metafield is NonNullable<typeof metafield> =>
     Boolean(metafield),

@@ -10,6 +10,7 @@ import {
   buildCategoryBackfillReport,
 } from "../app/lib/syncbay-category-backfill-report.ts";
 import { shouldRefreshCategoryFromTrading } from "../app/lib/syncbay-category-trading-refresh.ts";
+import { getSyncBayCategorySourceFromMetafields } from "../app/lib/syncbay-shopify-product-metafields.ts";
 import { resolveShopifyCategoryProposal } from "../app/lib/syncbay-shopify-category-mapping.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
@@ -83,6 +84,22 @@ async function main() {
     throw new Error("--confirm-apply richiede anche --apply.");
   }
 
+  if (
+    args.apply &&
+    args.repairCategoryConflicts &&
+    !args.confirmRepairCategoryConflicts
+  ) {
+    throw new Error(
+      "Riparazione conflitti categoria bloccata: aggiungi --confirm-repair-category-conflicts.",
+    );
+  }
+
+  if (args.confirmRepairCategoryConflicts && !args.repairCategoryConflicts) {
+    throw new Error(
+      "--confirm-repair-category-conflicts richiede anche --repair-category-conflicts.",
+    );
+  }
+
   const state = getBackfillState();
 
   if (!state.connection) {
@@ -127,7 +144,10 @@ async function main() {
     rows,
     shopDomain,
   });
-  const applyPlan = buildCategoryApplyPlan(report);
+  const sourceSummary = getCategorySourceSummary(rows);
+  const applyPlan = buildCategoryApplyPlan(report, {
+    includeCategoryConflicts: args.repairCategoryConflicts,
+  });
   const applyResult = args.apply
     ? await applyCategoryPlan({
         accessToken: shopifyAccessToken,
@@ -139,11 +159,13 @@ async function main() {
     analyzed: mappings.length,
     apply: applyResult ?? {
       planned: applyPlan.rows.length,
+      repairCategoryConflicts: Boolean(args.repairCategoryConflicts),
       requested: false,
       skipped: applyPlan.skipped,
     },
     activeMappingsTotal: allMappings.length,
     partial: Boolean(args.limit && args.limit < allMappings.length),
+    sourceSummary,
   };
 
   if (args.json) {
@@ -159,11 +181,13 @@ async function main() {
 
 async function buildReportRow(input) {
   const snapshotSource = getSnapshotCategorySource(input.mapping);
-  let source = snapshotSource;
+  const metafieldSource = getMetafieldCategorySource(input.shopifyProduct);
+  let source = mergeCategorySources(snapshotSource, metafieldSource);
+  let categorySource = getCachedCategorySourceName(snapshotSource, metafieldSource);
   let lookupFailureReason = null;
   let lookupFailed = false;
 
-  if (shouldRefreshFromTrading(snapshotSource)) {
+  if (shouldRefreshFromTrading(source)) {
     try {
       const item = await getTradingItem({
         accessToken: input.accessToken,
@@ -177,9 +201,11 @@ async function buildReportRow(input) {
         ebayStoreCategoryName: getStorefrontCategoryName(item),
         title: getString(item, "Title") ?? snapshotSource.title,
       };
+      categorySource = "trading";
     } catch (error) {
       lookupFailureReason = formatError(error);
       lookupFailed = true;
+      categorySource = "none";
     }
   }
 
@@ -192,6 +218,7 @@ async function buildReportRow(input) {
 
   return {
     ebayItemId: input.mapping.ebayItemId,
+    categorySource,
     lookupFailureReason,
     lookupFailed,
     proposal,
@@ -203,6 +230,48 @@ async function buildReportRow(input) {
 
 function shouldRefreshFromTrading(source) {
   return shouldRefreshCategoryFromTrading(source);
+}
+
+function mergeCategorySources(snapshotSource, metafieldSource) {
+  return {
+    ebayPrimaryCategoryId:
+      snapshotSource.ebayPrimaryCategoryId ??
+      metafieldSource?.ebayPrimaryCategoryId ??
+      null,
+    ebayPrimaryCategoryName:
+      snapshotSource.ebayPrimaryCategoryName ??
+      metafieldSource?.ebayPrimaryCategoryName ??
+      null,
+    ebayPrimaryCategoryPath:
+      snapshotSource.ebayPrimaryCategoryPath ??
+      metafieldSource?.ebayPrimaryCategoryPath ??
+      null,
+    ebayStoreCategoryName:
+      snapshotSource.ebayStoreCategoryName ??
+      metafieldSource?.storeCategoryPath ??
+      metafieldSource?.storeCategoryName ??
+      null,
+    title: snapshotSource.title,
+  };
+}
+
+function getMetafieldCategorySource(shopifyProduct) {
+  return getSyncBayCategorySourceFromMetafields(
+    shopifyProduct?.metafields?.nodes,
+  );
+}
+
+function getCachedCategorySourceName(snapshotSource, metafieldSource) {
+  if (!shouldRefreshFromTrading(snapshotSource)) return "snapshot";
+  if (
+    metafieldSource?.ebayPrimaryCategoryName ||
+    metafieldSource?.storeCategoryName ||
+    metafieldSource?.storeCategoryPath
+  ) {
+    return "shopify_metafields";
+  }
+
+  return "none";
 }
 
 function getSnapshotCategorySource(mapping) {
@@ -297,6 +366,12 @@ async function loadShopifyProducts(input) {
         id
         name
         fullName
+      }
+      metafields(first: 20, namespace: "syncbay") {
+        nodes {
+          key
+          value
+        }
       }
     }
   }
@@ -427,6 +502,7 @@ async function applyCategoryPlan(input) {
     failed: failures.length,
     failures: failures.slice(0, 20),
     planned: input.plan.rows.length,
+    repairCategoryConflicts: Boolean(args.repairCategoryConflicts),
     requested: true,
     skipped: input.plan.skipped,
   };
@@ -754,6 +830,11 @@ function printReport(report) {
     `Senza prodotto Shopify collegato: ${report.summary.missingShopifyProduct}`,
   );
   console.log(`Lookup eBay falliti: ${report.summary.ebayLookupFailed}`);
+  if (report.sourceSummary) {
+    console.log(
+      `Sorgenti categorie: snapshot ${report.sourceSummary.snapshot}, metafield Shopify ${report.sourceSummary.shopifyMetafields}, eBay live ${report.sourceSummary.trading}, assenti ${report.sourceSummary.none}`,
+    );
+  }
   console.log("");
 
   if (report.proposedCategories.length > 0) {
@@ -784,6 +865,9 @@ function printApplySummary(apply) {
     console.log(`- falliti: ${apply.failed}`);
   }
 
+  console.log(
+    `- riparazione conflitti categoria: ${apply.repairCategoryConflicts ? "inclusa" : "non inclusa"}`,
+  );
   console.log(`- già corretti saltati: ${apply.skipped.alreadyCorrect}`);
   console.log(`- conflitti manuali saltati: ${apply.skipped.conflictsManual}`);
   console.log(`- incerti saltati: ${apply.skipped.uncertain}`);
@@ -821,6 +905,21 @@ function printSample(report, label, status) {
   console.log("");
 }
 
+function getCategorySourceSummary(rows) {
+  return rows.reduce(
+    (summary, row) => {
+      if (row.categorySource === "snapshot") summary.snapshot += 1;
+      else if (row.categorySource === "shopify_metafields") {
+        summary.shopifyMetafields += 1;
+      } else if (row.categorySource === "trading") summary.trading += 1;
+      else summary.none += 1;
+
+      return summary;
+    },
+    { none: 0, shopifyMetafields: 0, snapshot: 0, trading: 0 },
+  );
+}
+
 function parseArgs(rawArgs) {
   const parsed = {};
 
@@ -839,6 +938,16 @@ function parseArgs(rawArgs) {
 
     if (arg === "--confirm-apply") {
       parsed.confirmApply = true;
+      continue;
+    }
+
+    if (arg === "--repair-category-conflicts") {
+      parsed.repairCategoryConflicts = true;
+      continue;
+    }
+
+    if (arg === "--confirm-repair-category-conflicts") {
+      parsed.confirmRepairCategoryConflicts = true;
       continue;
     }
 
@@ -867,7 +976,7 @@ function parseArgs(rawArgs) {
 }
 
 function printUsage() {
-  console.log(`Uso: npm run categories:backfill -- [--shop dominio.myshopify.com] [--limit N] [--json] [--apply --confirm-apply]
+  console.log(`Uso: npm run categories:backfill -- [--shop dominio.myshopify.com] [--limit N] [--json] [--apply --confirm-apply] [--repair-category-conflicts --confirm-repair-category-conflicts]
 
 Dry-run categorie: analizza i mapping ACTIVE, calcola la categoria Shopify
 proposta da eBay e confronta la categoria Shopify attuale. Di default non
@@ -876,7 +985,11 @@ Shopify e il token eBay cifrato se scaduti.
 
   --limit N         Analizza solo i primi N mapping.
   --apply           Applica su Shopify solo le righe applicabili.
-  --confirm-apply   Conferma obbligatoria per qualunque scrittura prodotto Shopify.`);
+  --confirm-apply   Conferma obbligatoria per qualunque scrittura prodotto Shopify.
+  --repair-category-conflicts
+                    Include nell'apply i conflitti noti del vecchio mapper.
+  --confirm-repair-category-conflicts
+                    Conferma obbligatoria per sovrascrivere quei conflitti.`);
 }
 
 function getTokenUrl(environment) {

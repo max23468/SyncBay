@@ -6,6 +6,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Il backfill categorie legge i metafield prodotto `syncbay.*` già presenti su
+  Shopify come sorgente cache prima di chiamare eBay Trading `GetItem`, così le
+  verifiche post-apply possono evitare quote eBay quando snapshot o metafield
+  contengono già le categorie sorgente.
+- Il mapping categorie usa `Collectible Coins` come categoria Shopify neutra per
+  le monete e sposta distinzioni come italiane, commemorative o bullion nel
+  `productType`, evitando categorie troppo strette o fuorvianti come `Rare
+  Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
+  contesti numismatici.
+- `npm run categories:backfill` supporta il repair esplicito dei conflitti
+  generati dal vecchio mapper con
+  `--repair-category-conflicts --confirm-repair-category-conflicts`, limitato a
+  pattern legacy riconosciuti.
+- I cataloghi/libri cartacei con titolo esplicito, come i cataloghi di carte
+  telefoniche, restano `Print Books` anche quando una categoria sorgente
+  generica li collocherebbe nel collezionismo.
+
 ## [0.40.4] — 2026-06-19
 
 ### Correzioni

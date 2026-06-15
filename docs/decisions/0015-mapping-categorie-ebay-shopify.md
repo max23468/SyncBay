@@ -64,9 +64,6 @@ Categorie Shopify iniziali:
 
 - `Collectible Coins & Currency`;
 - `Collectible Coins`;
-- `Rare Coins`;
-- `Commemorative Coins`;
-- `Bullion Coins`;
 - `Collectible Banknotes`;
 - `Postage Stamps`;
 - `Single Stamps`;
@@ -85,10 +82,14 @@ Regole principali:
 - solo titolo = confidenza media/bassa e solo per casi evidenti;
 - casi sconosciuti = nessuna categoria Shopify proposta, confidenza bassa;
 - "oro" o "argento" non bastano per classificare una moneta come bullion;
-- `Bullion Coins` vince solo se il listing segnala chiaramente bullion,
-  investimento o monete da investimento;
-- monete storiche/Regno/Repubblica/Vaticano restano `Rare Coins` anche se in
-  oro o argento;
+- le monete restano sulla categoria Shopify neutra `Collectible Coins`; il
+  dettaglio commerciale vive nel `productType` (`Monete italiane`, `Monete
+  commemorative`, `Monete bullion`) per evitare classificazioni troppo strette
+  o fuorvianti come `Rare Coins`, `Commemorative Coins` o `Bullion Coins`;
+- "bullion", "commemorative", "FDC" o segnali simili specializzano il
+  `productType`, non la categoria Shopify, salvo evidenze future più affidabili;
+- `First Day Covers` viene usata solo per segnali filatelici espliciti, non per
+  sigle FDC in contesti numismatici;
 - i modellini auto richiedono segnali combinati di modellino/scala e veicolo;
 - i dischi musicali vengono classificati come `Records & LPs` senza dedurre
   automaticamente `Vinyl`;
@@ -116,10 +117,19 @@ Shopify Admin GraphQL `productUpdate` per aggiornare solo `category` e
 non blocca una proposta locale già valida; resta bloccante solo quando non c'è
 una proposta abbastanza affidabile.
 
+Il backfill può usare i metafield prodotto `syncbay.*` già scritti su Shopify
+come sorgente cache per categoria eBay e categoria negozio eBay prima di
+chiamare Trading API. Il report espone il conteggio per sorgente (`snapshot`,
+`metafield Shopify`, `eBay live`, `assenti`) per rendere visibile l'eventuale
+consumo di quota eBay.
+
 SyncBay non deve sovrascrivere in silenzio categorie Shopify già impostate dal
 negoziante. Se la categoria Shopify esistente è diversa dalla proposta SyncBay,
 la scrittura reale salta la riga come conflitto manuale; un eventuale override
-richiederà una decisione separata.
+richiede un flag operativo esplicito e deve restare limitato a conflitti legacy
+riconosciuti dal mapper, come vecchie categorie troppo strette `Rare Coins`,
+`Commemorative Coins`, `Bullion Coins` o `First Day Covers` quando la proposta
+neutra e il `productType` sono coerenti.
 
 ## Conseguenze
 
