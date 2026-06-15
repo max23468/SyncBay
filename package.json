@@ -49,6 +49,7 @@
     "conflicts:doctor": "node scripts/syncbay-conflicts-doctor.mjs",
     "conflicts:repair-description": "node scripts/syncbay-repair-description-conflicts.mjs",
     "descriptions:cleanup-report": "node --experimental-strip-types scripts/syncbay-description-cleanup-report.mjs",
+    "descriptions:backfill-cleanup": "node --experimental-strip-types scripts/syncbay-description-backfill.mjs",
     "stock:restore-ebay": "node scripts/syncbay-restore-ebay-stock.mjs",
     "ebay:store-category-orphans": "node scripts/syncbay-store-category-orphans.mjs",
     "categories:backfill": "node --experimental-strip-types scripts/syncbay-category-backfill.mjs",

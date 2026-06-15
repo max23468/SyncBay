@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Descrizioni eBay: aggiunto il backfill controllato `descriptions:backfill-cleanup`
+  per applicare retroattivamente la descrizione pulita ai prodotti Shopify già
+  importati, con dry-run predefinito, apply confermato e skip dei conflitti
+  aperti.
+
 ## [0.39.2] — 2026-06-15
 
 ### Sotto il cofano
