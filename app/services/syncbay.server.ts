@@ -29,6 +29,7 @@ import {
   type CatalogSortKey,
   getCatalogPageWindow,
   getCatalogSnapshotLookupIds,
+  isCatalogRowNeedingCheck,
 } from "../lib/syncbay-catalog-page";
 import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
@@ -640,12 +641,7 @@ export async function getCatalogPageState(
         .length,
       freshCount: allRows.filter((row) => row.status === "active_fresh").length,
       linkedCount,
-      needsCheckCount: allRows.filter(
-        (row) =>
-          row.status === "stale_sync" ||
-          row.status === "mapping_error" ||
-          row.availability !== "aligned",
-      ).length,
+      needsCheckCount: allRows.filter(isCatalogRowNeedingCheck).length,
       totalCount: totalAvailableCount,
     },
   };
@@ -2809,12 +2805,7 @@ function filterCatalogPageRows(
     return rows.filter((row) => row.status === "active_fresh");
   }
   if (filter === "needs_check") {
-    return rows.filter(
-      (row) =>
-        row.availability !== "aligned" ||
-        row.status === "mapping_error" ||
-        row.status === "stale_sync",
-    );
+    return rows.filter(isCatalogRowNeedingCheck);
   }
   if (filter === "conflicts") {
     return rows.filter((row) => row.status === "open_conflict");

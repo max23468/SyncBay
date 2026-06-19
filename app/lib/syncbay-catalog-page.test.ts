@@ -7,6 +7,7 @@ import * as catalogPage from "./syncbay-catalog-page.ts";
 const {
   getCatalogSnapshotLookupIds,
   getCatalogPageWindow,
+  isCatalogRowNeedingCheck,
   normalizeCatalogPage,
   normalizeCatalogPageFilter,
 } = catalogPage;
@@ -78,5 +79,22 @@ test("limits snapshot lookups to visible catalog rows", () => {
       ],
     }),
     ["mapping-1", "mapping-2", "mapping-3"],
+  );
+});
+
+test("excludes archived sold-out rows from operational check counts", () => {
+  assert.equal(
+    isCatalogRowNeedingCheck({
+      availability: "unknown",
+      status: "archived",
+    }),
+    false,
+  );
+  assert.equal(
+    isCatalogRowNeedingCheck({
+      availability: "unknown",
+      status: "active_fresh",
+    }),
+    true,
   );
 });
