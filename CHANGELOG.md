@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.40.1] — 2026-06-19
+
+### Correzioni
+
+- Margini laterali uniformi su tutte le pagine: Conflitti, Importazione,
+  Attività e Impostazioni ora usano la stessa larghezza di colonna di Panoramica
+  e Catalogo, eliminando i margini disallineati tra le schermate.
+
 ## [0.40.0] — 2026-06-15
 
 ### Novità
@@ -1973,6 +1981,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.40.1]: #0401--2026-06-19
 [0.40.0]: #0400--2026-06-15
 [0.39.5]: #0395--2026-06-15
 [0.39.4]: #0394--2026-06-15
