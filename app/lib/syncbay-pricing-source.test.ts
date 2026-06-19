@@ -4,7 +4,7 @@ import test from "node:test";
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildSnapshotPricingSourcesByItemId } from "./syncbay-pricing-source.ts";
 
-test("prefers eBay snapshot prices over newer discounted SyncBay snapshots", () => {
+test("uses newer SyncBay pricing baselines before stale eBay snapshots", () => {
   const sources = buildSnapshotPricingSourcesByItemId([
     {
       capturedAt: new Date("2026-06-15T10:00:00Z"),
@@ -12,13 +12,13 @@ test("prefers eBay snapshot prices over newer discounted SyncBay snapshots", () 
       ebayItemId: "1001",
       payload: {
         pricing: {
-          compareAtPriceAmount: 100,
+          compareAtPriceAmount: 120,
           discountPercent: 8,
-          ebayPriceAmount: 100,
-          priceAmount: 92,
+          ebayPriceAmount: 120,
+          priceAmount: 110.4,
         },
       },
-      priceAmount: 92,
+      priceAmount: 110.4,
       sku: "SKU-1001",
       source: "SYNCBAY",
       title: "Prodotto scontato",
@@ -28,7 +28,7 @@ test("prefers eBay snapshot prices over newer discounted SyncBay snapshots", () 
       currency: "EUR",
       ebayItemId: "1001",
       payload: {},
-      priceAmount: 100,
+      priceAmount: 80,
       sku: "SKU-1001",
       source: "EBAY",
       title: "Prodotto eBay",
@@ -37,10 +37,10 @@ test("prefers eBay snapshot prices over newer discounted SyncBay snapshots", () 
 
   assert.deepEqual(sources.get("1001"), {
     currency: "EUR",
-    priceAmount: 100,
+    priceAmount: 120,
     sku: "SKU-1001",
     source: "snapshot",
-    title: "Prodotto eBay",
+    title: "Prodotto scontato",
   });
 });
 

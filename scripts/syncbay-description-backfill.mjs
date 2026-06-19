@@ -16,6 +16,7 @@ import {
   cleanEbayDescriptionHtml,
 } from "../app/lib/syncbay-description-cleanup.ts";
 import { hashNullableText } from "../app/lib/syncbay-description-hash.ts";
+import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
@@ -46,14 +47,15 @@ if (args.help) {
   process.exit(0);
 }
 
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
-const marketplaceId = args.marketplace ?? DEFAULT_MARKETPLACE_ID;
-
 loadDotEnv(".env");
 if (process.env.SYNCBAY_SUPABASE_CWD) {
   loadDotEnv(`${process.env.SYNCBAY_SUPABASE_CWD}/.env`);
 }
+
+const shopDomain =
+  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const marketplaceId = args.marketplace ?? DEFAULT_MARKETPLACE_ID;
+
 ensureTokenEncryptionKey();
 
 const supabaseEnv = {
@@ -183,6 +185,8 @@ async function buildReportRow(input) {
       input.mapping.shopifyProductGid && !input.shopifyProduct,
     ),
     shopifyProductGid: input.mapping.shopifyProductGid ?? null,
+    latestSyncBayDescriptionHash:
+      input.mapping.latestSyncBayDescriptionHash ?? null,
     title: input.mapping.title ?? input.shopifyProduct?.title ?? null,
   };
 
@@ -268,6 +272,7 @@ mappings as (
     pm."shopifyProductGid",
     pm.status,
     coalesce(ps.title, pm."ebayItemId") as title,
+    description_baseline."descriptionHash" as "latestSyncBayDescriptionHash",
     coalesce(
       array_remove(array_agg(distinct sc.field) filter (where sc.id is not null), null),
       array[]::text[]
@@ -285,9 +290,18 @@ mappings as (
     order by ps."capturedAt" desc
     limit 1
   ) ps on true
+  left join lateral (
+    select "descriptionHash"
+    from "ProductSnapshot" ps
+    where ps."mappingId" = pm.id
+      and ps.source = 'SYNCBAY'
+      and ps."descriptionHash" is not null
+    order by ps."capturedAt" desc
+    limit 1
+  ) description_baseline on true
   where pm."marketplaceId" = ${sqlQuote(marketplaceId)}
     and pm.status in ('ACTIVE', 'OUT_OF_STOCK')
-  group by pm.id, pm."ebayItemId", pm."shopifyProductGid", pm.status, ps.title
+  group by pm.id, pm."ebayItemId", pm."shopifyProductGid", pm.status, ps.title, description_baseline."descriptionHash"
   order by pm."updatedAt" desc
 )
 select jsonb_build_object(
@@ -452,7 +466,30 @@ async function recordDescriptionBackfillSnapshot(input) {
   });
 
   querySupabaseJson(`
-with inserted_snapshot as (
+with latest_baseline as (
+  select
+    sku,
+    title,
+    "priceAmount",
+    currency,
+    quantity,
+    "productStatus",
+    "shopifyVariantGid"
+  from "ProductSnapshot"
+  where "mappingId" = ${sqlQuote(input.row.mappingId)}
+    and (
+      sku is not null
+      or title is not null
+      or "priceAmount" is not null
+      or currency is not null
+      or quantity is not null
+      or "productStatus" is not null
+      or "shopifyVariantGid" is not null
+    )
+  order by "capturedAt" desc
+  limit 1
+),
+inserted_snapshot as (
   insert into "ProductSnapshot" (
     id,
     "shopId",
@@ -460,21 +497,36 @@ with inserted_snapshot as (
     source,
     "ebayItemId",
     "shopifyProductGid",
+    "shopifyVariantGid",
+    sku,
+    title,
+    "priceAmount",
+    currency,
+    quantity,
+    "productStatus",
     "descriptionHash",
     payload,
     "capturedAt"
   )
-  values (
+  select
     gen_random_uuid()::text,
     ${sqlQuote(input.shopId)},
     ${sqlQuote(input.row.mappingId)},
     'SYNCBAY',
     ${sqlQuote(input.row.ebayItemId)},
     ${sqlQuote(input.row.shopifyProductGid)},
+    latest_baseline."shopifyVariantGid",
+    latest_baseline.sku,
+    coalesce(latest_baseline.title, ${sqlQuote(input.row.title)}),
+    latest_baseline."priceAmount",
+    latest_baseline.currency,
+    latest_baseline.quantity,
+    latest_baseline."productStatus",
     ${sqlQuote(descriptionHash)},
     ${sqlQuote(JSON.stringify(payload))}::jsonb,
     ${sqlQuote(capturedAt)}::timestamp
-  )
+  from (select 1) seed
+  left join latest_baseline on true
   returning id
 ),
 updated_mapping as (
@@ -850,8 +902,7 @@ function parseArgs(rawArgs) {
     }
 
     if (arg === "--limit") {
-      const value = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.limit = Number.isInteger(value) && value > 0 ? value : undefined;
+      parsed.limit = parsePositiveLimitOption(rawArgs[index + 1], "--limit");
       index += 1;
       continue;
     }

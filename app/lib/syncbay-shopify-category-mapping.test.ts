@@ -127,11 +127,39 @@ test("keeps medal categories in coins and currency instead of stamps", () => {
   );
 });
 
+test("allows medal titles when eBay category context is generic numismatics", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Monete e banconote",
+      title: "Medaglia commemorativa Vittorio Emanuele III",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Medaglie",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+      shopifyCategoryName: "Collectible Coins & Currency",
+      source: "title",
+    },
+  );
+});
+
 test("maps explicit first day cover stamp listings to first day covers", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName: "Francobolli:Italia:Buste primo giorno",
       title: "Busta primo giorno FDC francobolli Italia 1984",
+    })?.shopifyCategoryName,
+    "First Day Covers",
+  );
+});
+
+test("combines FDC title abbreviations with stamp category context", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Francobolli:Italia",
+      title: "Italia 1984 FDC serie completa",
     })?.shopifyCategoryName,
     "First Day Covers",
   );

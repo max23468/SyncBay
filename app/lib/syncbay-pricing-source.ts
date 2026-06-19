@@ -4,6 +4,8 @@ export interface SyncBaySnapshotPricingSourceInput {
   ebayItemId: string;
   payload: unknown;
   priceAmount: number | null;
+  productStatus?: string | null;
+  quantity?: number | null;
   sku: string | null;
   source: string;
   title: string | null;
@@ -12,6 +14,8 @@ export interface SyncBaySnapshotPricingSourceInput {
 export interface SyncBayPricingSource {
   currency: string | null;
   priceAmount: number | null;
+  productStatus?: string | null;
+  quantity?: number | null;
   sku: string | null;
   source: "preview" | "snapshot";
   title: string | null;
@@ -20,8 +24,7 @@ export interface SyncBayPricingSource {
 export function buildSnapshotPricingSourcesByItemId(
   snapshots: SyncBaySnapshotPricingSourceInput[],
 ) {
-  const ebaySources = new Map<string, SyncBayPricingSource>();
-  const syncBaySources = new Map<string, SyncBayPricingSource>();
+  const sources = new Map<string, SyncBayPricingSource>();
   const sortedSnapshots = [...snapshots].sort(
     (left, right) => right.capturedAt.getTime() - left.capturedAt.getTime(),
   );
@@ -31,34 +34,22 @@ export function buildSnapshotPricingSourcesByItemId(
 
     if (priceAmount === null) continue;
 
-    const source = {
+    if (sources.has(snapshot.ebayItemId)) continue;
+
+    sources.set(snapshot.ebayItemId, {
       currency: snapshot.currency,
       priceAmount,
       sku: snapshot.sku,
       source: "snapshot" as const,
       title: snapshot.title,
-    };
-
-    if (snapshot.source === "EBAY" && !ebaySources.has(snapshot.ebayItemId)) {
-      ebaySources.set(snapshot.ebayItemId, source);
-    }
-
-    if (
-      snapshot.source === "SYNCBAY" &&
-      !syncBaySources.has(snapshot.ebayItemId)
-    ) {
-      syncBaySources.set(snapshot.ebayItemId, source);
-    }
+      ...(snapshot.productStatus !== undefined
+        ? { productStatus: snapshot.productStatus }
+        : {}),
+      ...(snapshot.quantity !== undefined ? { quantity: snapshot.quantity } : {}),
+    });
   }
 
-  return new Map(
-    [...new Set([...syncBaySources.keys(), ...ebaySources.keys()])].map(
-      (itemId) => [
-        itemId,
-        ebaySources.get(itemId) ?? syncBaySources.get(itemId),
-      ],
-    ),
-  );
+  return sources;
 }
 
 function getSnapshotOriginalPriceAmount(

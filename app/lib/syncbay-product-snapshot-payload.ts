@@ -1,5 +1,8 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
-import type { SyncBayProductFacet } from "./syncbay-product-facets";
+import type {
+  SyncBayProductFacet,
+  SyncBayProductFacetKey,
+} from "./syncbay-product-facets";
 
 type SnapshotPayloadValue =
   | boolean
@@ -113,6 +116,37 @@ export function getProductSnapshotThumbnailUrlFromPayloads(values: unknown[]) {
   return null;
 }
 
+export function getProductFacetsFromSnapshotPayload(
+  value: unknown,
+): SyncBayProductFacet[] {
+  const payload = getObject(value);
+  const facets = payload?.productFacets;
+  if (!Array.isArray(facets)) return [];
+
+  return facets.flatMap((facet) => {
+    const candidate = getObject(facet);
+    const key = getProductFacetKey(candidate?.key);
+    const label = getString(candidate?.label);
+    const namespace = getString(candidate?.namespace);
+    const type = getProductFacetType(candidate?.type);
+    const facetValue = getString(candidate?.value);
+
+    if (!key || !label || namespace !== "syncbay_facets" || !type || !facetValue) {
+      return [];
+    }
+
+    return [
+      {
+        key,
+        label,
+        namespace,
+        type,
+        value: facetValue,
+      },
+    ];
+  });
+}
+
 function normalizeImageUrls(imageUrls: string[]) {
   return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
     Boolean,
@@ -133,6 +167,33 @@ function getStringArray(value: unknown) {
 
 function getString(value: unknown) {
   return typeof value === "string" ? value : null;
+}
+
+function getProductFacetKey(value: unknown): SyncBayProductFacetKey | null {
+  if (
+    value === "categoria" ||
+    value === "area_stato" ||
+    value === "materiale" ||
+    value === "conservazione" ||
+    value === "perizia"
+  ) {
+    return value;
+  }
+
+  return null;
+}
+
+function getProductFacetType(
+  value: unknown,
+): SyncBayProductFacet["type"] | null {
+  if (
+    value === "single_line_text_field" ||
+    value === "list.single_line_text_field"
+  ) {
+    return value;
+  }
+
+  return null;
 }
 
 function isSafeImageUrl(value: string) {

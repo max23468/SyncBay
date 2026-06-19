@@ -22,6 +22,7 @@ import { LiveSync, useActionToast } from "../components/SyncBayLive";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
 import {
+  getActivityBadgeState,
   getConflictFieldLabel,
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
@@ -123,6 +124,11 @@ export default function ActivityRoute() {
     activity.sync.pendingJobs > 0 ||
     activity.sync.catalogHealth.activeIncrementalJobCount > 0 ||
     activity.sync.catalogHealth.status === "running";
+  const badge = getActivityBadgeState({
+    failedJobs,
+    openConflictCount: activity.conflicts.openCount,
+    working,
+  });
 
   useActionToast(
     { data: actionData, state: navigation.state },
@@ -131,8 +137,8 @@ export default function ActivityRoute() {
 
   return (
     <s-page heading="Attività" inlineSize="large">
-      <s-badge slot="accessory" tone={getActivityBadgeTone(working, failedJobs)}>
-        {getActivityBadgeLabel(working, failedJobs)}
+      <s-badge slot="accessory" tone={badge.tone}>
+        {badge.label}
       </s-badge>
       <s-stack gap="large">
         <LiveSync working={working} />
@@ -543,27 +549,6 @@ function getActivityToneLabel(tone: ActivityRow["tone"]) {
   if (tone === "warning") return "Attenzione";
 
   return "Info";
-}
-
-function getActivityBadgeTone(
-  working: boolean,
-  failedJobs: number,
-): "info" | "success" | "warning" {
-  if (working) return "info";
-  if (failedJobs > 0) return "warning";
-
-  return "success";
-}
-
-function getActivityBadgeLabel(working: boolean, failedJobs: number) {
-  if (working) return "Aggiornamenti in corso";
-  if (failedJobs > 0) {
-    return failedJobs === 1
-      ? "1 errore da rivedere"
-      : `${formatNumber(failedJobs)} errori da rivedere`;
-  }
-
-  return "Tutto tranquillo";
 }
 
 function getCatalogHealthLabel(activity: Activity) {

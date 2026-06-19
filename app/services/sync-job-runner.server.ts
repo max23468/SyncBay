@@ -51,6 +51,7 @@ import {
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
+import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
 import { getNextIncrementalEnqueueAt } from "../lib/syncbay-incremental-schedule";
 import {
   buildEbayItemJobSplitIdempotencyKey,
@@ -1589,6 +1590,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         ebayItemId: true,
         payload: true,
         priceAmount: true,
+        productStatus: true,
+        quantity: true,
         sku: true,
         source: true,
         title: true,
@@ -1625,6 +1628,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
                 snapshot.priceAmount === null
                   ? null
                   : Number(snapshot.priceAmount),
+              productStatus: snapshot.productStatus,
+              quantity: snapshot.quantity,
               sku: snapshot.sku,
               source: snapshot.source,
               title: snapshot.title,
@@ -1647,6 +1652,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         : {
             currency: item.normalized.currency,
             priceAmount: item.normalized.priceAmount,
+            productStatus: item.normalized.productStatus,
+            quantity: item.normalized.quantity,
             sku: item.normalized.sku,
             source: "preview" as const,
             title: item.normalized.title,
@@ -1719,6 +1726,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         syncJobId: input.job.id,
       } satisfies Prisma.JsonObject,
       priceAmount: pricing.priceAmount,
+      productStatus: pricingSource.productStatus ?? null,
+      quantity: pricingSource.quantity ?? null,
       shopId: input.job.shopId,
       shopifyProductGid: mapping.shopifyProductGid,
       shopifyVariantGid: mapping.shopifyVariantGid,
@@ -1958,12 +1967,17 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
-    const latestSnapshot = await prisma.productSnapshot.findFirst({
+    const latestStockSnapshots = await prisma.productSnapshot.findMany({
       orderBy: { capturedAt: "desc" },
+      take: 1,
       where: {
+        currency: { not: null },
         mappingId: mapping.id,
+        quantity: { not: null },
       },
     });
+    const latestSnapshot =
+      selectLatestStockBaselineSnapshot(latestStockSnapshots);
     const latestSkuPolicySnapshot = await prisma.productSnapshot.findFirst({
       orderBy: { capturedAt: "desc" },
       where: {
