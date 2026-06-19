@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.41.0] — 2026-06-19
+
+### Novità
+
+- Catalogo: ricerca per titolo, SKU o ItemID eBay. Il campo di ricerca lavora
+  insieme a filtri, ordinamento e paginazione, con stato vuoto dedicato quando
+  non ci sono risultati.
+
 ## [0.40.5] — 2026-06-19
 
 ### Sotto il cofano
@@ -2036,6 +2044,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.41.0]: #0410--2026-06-19
 [0.40.5]: #0405--2026-06-19
 [0.40.4]: #0404--2026-06-19
 [0.40.3]: #0403--2026-06-19
