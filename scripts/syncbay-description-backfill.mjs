@@ -454,6 +454,7 @@ async function recordDescriptionBackfillSnapshot(input) {
   querySupabaseJson(`
 with inserted_snapshot as (
   insert into "ProductSnapshot" (
+    id,
     "shopId",
     "mappingId",
     source,
@@ -464,6 +465,7 @@ with inserted_snapshot as (
     "capturedAt"
   )
   values (
+    gen_random_uuid()::text,
     ${sqlQuote(input.shopId)},
     ${sqlQuote(input.row.mappingId)},
     'SYNCBAY',
