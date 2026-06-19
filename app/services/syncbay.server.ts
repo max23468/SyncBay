@@ -33,7 +33,10 @@ import {
 } from "../lib/syncbay-catalog-page";
 import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
-import { summarizeConflictDecisionModes } from "../lib/syncbay-conflict-actions";
+import {
+  getSafeBatchConflictResolutions,
+  summarizeConflictDecisionModes,
+} from "../lib/syncbay-conflict-actions";
 import {
   getLatestSyncBayDescriptionBaselineWhere,
   shouldUseSyncBayDescriptionBaselinePayload,
@@ -983,6 +986,48 @@ export async function resolveSyncConflict(
   return {
     message: "Conflitto aggiornato.",
     status: "resolved" as const,
+  };
+}
+
+/**
+ * Risolve in blocco i soli conflitti "sicuri" aperti applicando, per ogni
+ * campo, la risoluzione sicura prevista (oggi: descrizione -> mantieni la
+ * versione di Shopify, senza toccare eBay). Riusa `resolveSyncConflict` per
+ * ogni conflitto, così la logica resta una sola. Copre tutti i conflitti
+ * aperti, non solo la pagina visibile. I conflitti delicati restano manuali.
+ */
+export async function resolveBatchSafeConflicts(session: ShopifySessionLike) {
+  const shop = await ensureShopForSession(session);
+  const openConflicts = await prisma.syncConflict.findMany({
+    select: { field: true, id: true },
+    where: { shopId: shop.id, status: SyncConflictStatus.OPEN },
+  });
+
+  let resolvedCount = 0;
+  for (const conflict of openConflicts) {
+    const safeResolution = getSafeBatchConflictResolutions(conflict.field)[0];
+
+    if (!safeResolution) continue;
+
+    try {
+      await resolveSyncConflict(session, {
+        conflictId: conflict.id,
+        resolution: safeResolution,
+      });
+      resolvedCount += 1;
+    } catch {
+      // Conflitto già risolto o non più valido: salta senza fermare il blocco.
+    }
+  }
+
+  return {
+    message:
+      resolvedCount === 0
+        ? "Nessun conflitto sicuro da risolvere."
+        : resolvedCount === 1
+          ? "1 conflitto sicuro risolto: descrizione di Shopify mantenuta."
+          : `${resolvedCount} conflitti sicuri risolti: descrizioni di Shopify mantenute.`,
+    resolvedCount,
   };
 }
 

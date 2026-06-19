@@ -19,6 +19,7 @@ import {
   ShopifyMark,
   StatusHero,
 } from "../components/SyncBayUi";
+import { useActionToast } from "../components/SyncBayLive";
 import {
   getConflictActionLabel,
   getConflictFieldLabel,
@@ -41,6 +42,7 @@ import { normalizePage } from "../lib/syncbay-pagination";
 import { authenticate } from "../shopify.server";
 import {
   getConflictsPageState,
+  resolveBatchSafeConflicts,
   resolveSyncConflict,
 } from "../services/syncbay.server";
 
@@ -66,7 +68,7 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
 });
 
 type ConflictActionData = {
-  intent: "resolveConflict";
+  intent: "resolveBatchSafe" | "resolveConflict";
   message: string;
   status: "resolved";
 };
@@ -87,6 +89,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     authenticate.admin(request),
     request.formData(),
   ]);
+  const intent = String(formData.get("intent") ?? "resolveConflict");
+
+  if (intent === "resolveBatchSafe") {
+    const result = await resolveBatchSafeConflicts(session);
+
+    return Response.json({
+      intent: "resolveBatchSafe",
+      message: result.message,
+      status: "resolved",
+    } satisfies ConflictActionData);
+  }
+
   const conflictId = String(formData.get("conflictId") ?? "");
   const resolution = String(formData.get("resolution") ?? "");
 
@@ -116,10 +130,18 @@ export default function ConflictsRoute() {
   const isSaving = navigation.state !== "idle";
   const openCount = conflicts.summary.openCount;
   const hasOpen = openCount > 0;
+  const safeCount = conflicts.summary.batchSafeCount;
+
+  useActionToast(
+    { data: actionData, state: navigation.state },
+    (data) => ({ message: data.message }),
+  );
 
   return (
     <s-page heading="Conflitti" inlineSize="large">
-      <s-badge slot="accessory" tone="warning">Scelte esplicite</s-badge>
+      <s-badge slot="accessory" tone={hasOpen ? "warning" : "success"}>
+        {hasOpen ? "Scelte da fare" : "Tutto allineato"}
+      </s-badge>
       <s-stack gap="large">
         <StatusHero
           body={
@@ -179,8 +201,37 @@ export default function ConflictsRoute() {
             value={formatNumber(conflicts.summary.totalCount)}
           />
         </s-grid>
-        {actionData ? (
-          <s-text color="subdued">{actionData.message}</s-text>
+
+        {hasOpen && safeCount > 0 ? (
+          <div className="syncbay-risk syncbay-risk--clear">
+            <span className="syncbay-risk__icon">
+              <s-icon type="check-circle" tone="success" size="base" />
+            </span>
+            <span className="syncbay-risk__body">
+              <s-heading>
+                {safeCount === 1
+                  ? "1 conflitto sicuro da sistemare in blocco"
+                  : `${formatNumber(safeCount)} conflitti sicuri da sistemare in blocco`}
+              </s-heading>
+              <s-text color="subdued">
+                Sono tutte descrizioni: SyncBay tiene la versione di Shopify come
+                riferimento, senza toccare eBay. Le scelte delicate (titoli,
+                immagini, prezzi) restano qui sotto, una per una.
+              </s-text>
+            </span>
+            <span className="syncbay-risk__actions">
+              <Form method="post">
+                <input name="intent" type="hidden" value="resolveBatchSafe" />
+                <s-button disabled={isSaving} type="submit" variant="primary">
+                  {isSaving
+                    ? "Applico..."
+                    : safeCount === 1
+                      ? "Applica al sicuro"
+                      : `Applica ai ${formatNumber(safeCount)} sicuri`}
+                </s-button>
+              </Form>
+            </span>
+          </div>
         ) : null}
 
         <s-section heading="Conflitti da gestire">
@@ -352,6 +403,7 @@ function ResolveConflictForm({
 
   return (
     <Form method="post">
+      <input type="hidden" name="intent" value="resolveConflict" />
       <input type="hidden" name="conflictId" value={conflictId} />
       <input type="hidden" name="resolution" value={resolution} />
       <s-stack gap="small-200" alignItems="start">
