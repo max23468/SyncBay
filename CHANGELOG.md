@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.41.1] — 2026-06-19
+
+### Correzioni
+
+- Regola prezzo: l'arrotondamento all'euro non collassa più i prezzi bassi a
+  `0,01` quando non esiste un euro intero positivo sotto il prezzo eBay e non
+  pubblica un prezzo barrato quando l'arrotondamento non lascia uno sconto
+  reale.
+- Categorie Shopify: i francobolli singoli ereditano sorgente e confidenza dal
+  segnale che indica davvero il dettaglio singolo, invece dalla categoria
+  generica `Francobolli`.
+
 ## [0.41.0] — 2026-06-19
 
 ### Novità
@@ -2044,6 +2056,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.41.1]: #0411--2026-06-19
 [0.41.0]: #0410--2026-06-19
 [0.40.5]: #0405--2026-06-19
 [0.40.4]: #0404--2026-06-19

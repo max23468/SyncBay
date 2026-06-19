@@ -149,13 +149,15 @@ export function resolveShopifyCategoryProposal(
 
   const stampsSignal = findMatchingSignal(signals, matchesStamps);
   if (stampsSignal) {
+    const singleStampSignal = findMatchingSignal(signals, matchesSingleStamp);
+
     return buildProposal({
-      category: signals.some((signal) => matchesSingleStamp(signal.text))
+      category: singleStampSignal
         ? SHOPIFY_TAXONOMY_CATEGORIES.singleStamps
         : SHOPIFY_TAXONOMY_CATEGORIES.postageStamps,
-      confidence: stampsSignal.confidence,
+      confidence: singleStampSignal?.confidence ?? stampsSignal.confidence,
       productType: "Francobolli",
-      source: stampsSignal.source,
+      source: singleStampSignal?.source ?? stampsSignal.source,
     });
   }
 

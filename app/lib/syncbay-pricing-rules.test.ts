@@ -67,6 +67,40 @@ test("keeps whole-euro discounted prices below the eBay compare-at price", () =>
   );
 });
 
+test("falls back to cents when whole-euro rounding would collapse low prices", () => {
+  assert.deepEqual(
+    calculateShopifyPricing({
+      discountPercent: 1,
+      ebayPriceAmount: 1,
+      roundingMode: "WHOLE_EURO",
+    }),
+    {
+      applied: true,
+      compareAtPriceAmount: 1,
+      discountPercent: 1,
+      priceAmount: 0.99,
+      roundingMode: "WHOLE_EURO",
+    },
+  );
+});
+
+test("drops compare-at pricing when rounding leaves no actual discount", () => {
+  assert.deepEqual(
+    calculateShopifyPricing({
+      discountPercent: 1,
+      ebayPriceAmount: 0.5,
+      roundingMode: "WHOLE_EURO",
+    }),
+    {
+      applied: false,
+      compareAtPriceAmount: null,
+      discountPercent: 1,
+      priceAmount: 0.5,
+      roundingMode: "WHOLE_EURO",
+    },
+  );
+});
+
 test("normalizes a free integer discount percent from settings form input", () => {
   assert.deepEqual(
     normalizePricingRuleFormInput({

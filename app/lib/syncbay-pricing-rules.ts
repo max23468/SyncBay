@@ -44,10 +44,21 @@ export function calculateShopifyPricing(input: {
     1,
     Math.round((originalCents * (100 - discountPercent)) / 100),
   );
+  const wholeEuroCents = Math.floor(discountedCents / 100) * 100;
   const roundedCents =
-    roundingMode === "WHOLE_EURO"
-      ? Math.max(1, Math.floor(discountedCents / 100) * 100)
+    roundingMode === "WHOLE_EURO" && wholeEuroCents >= 100
+      ? wholeEuroCents
       : discountedCents;
+
+  if (roundedCents >= originalCents) {
+    return {
+      applied: false,
+      compareAtPriceAmount: null,
+      discountPercent,
+      priceAmount: centsToAmount(originalCents),
+      roundingMode,
+    };
+  }
 
   return {
     applied: true,
