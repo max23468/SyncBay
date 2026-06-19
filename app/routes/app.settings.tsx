@@ -250,7 +250,7 @@ export default function SettingsRoute() {
       : (settings.pricingRule ?? DEFAULT_SETTINGS_PRICING_RULE);
 
   return (
-    <s-page heading="Impostazioni">
+    <s-page heading="Impostazioni" inlineSize="large">
       <s-badge slot="accessory" tone="info">Controllo operativo</s-badge>
       <s-stack gap="large">
         <SyncCatalogSettingsCard

@@ -272,7 +272,7 @@ export default function ImportPreview() {
   const stepStatuses = computeSequentialStepStatuses(stepDone);
 
   return (
-    <s-page heading="Importazione">
+    <s-page heading="Importazione" inlineSize="large">
       <s-badge slot="accessory" tone="info">Anteprima prima</s-badge>
       <ol className="syncbay-stepper">
         <Step

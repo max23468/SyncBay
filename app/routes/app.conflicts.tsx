@@ -118,7 +118,7 @@ export default function ConflictsRoute() {
   const hasOpen = openCount > 0;
 
   return (
-    <s-page heading="Conflitti">
+    <s-page heading="Conflitti" inlineSize="large">
       <s-badge slot="accessory" tone="warning">Scelte esplicite</s-badge>
       <s-stack gap="large">
         <StatusHero

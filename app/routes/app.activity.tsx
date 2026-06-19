@@ -130,7 +130,7 @@ export default function ActivityRoute() {
   );
 
   return (
-    <s-page heading="Attività">
+    <s-page heading="Attività" inlineSize="large">
       <s-badge slot="accessory" tone={getActivityBadgeTone(working, failedJobs)}>
         {getActivityBadgeLabel(working, failedJobs)}
       </s-badge>
