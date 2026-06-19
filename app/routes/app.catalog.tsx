@@ -3,7 +3,7 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
-import { useLoaderData, useSearchParams } from "react-router";
+import { Form, useLoaderData, useSearchParams } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { MetricTile } from "../components/SyncBayUi";
@@ -86,6 +86,7 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   return getCatalogPageState(session, {
     filter: normalizeCatalogPageFilter(url.searchParams.get("filter")),
     page: normalizeCatalogPage(url.searchParams.get("page")),
+    search: url.searchParams.get("q") ?? undefined,
     sort: order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort")),
     sortDir: order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir")),
   });
@@ -98,6 +99,7 @@ export default function CatalogRoute() {
   const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));
   const activeSort = activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
   const activeSortDir = activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
+  const activeSearch = searchParams.get("q") ?? "";
   const rows = catalog.rows;
   const accessory = getCatalogAccessory(catalog);
 
@@ -145,6 +147,7 @@ export default function CatalogRoute() {
           <s-stack gap="large">
             <CatalogViewControls
               activeFilter={activeFilter}
+              activeSearch={activeSearch}
               activeSort={activeSort}
               activeSortDir={activeSortDir}
             />
@@ -175,13 +178,17 @@ export default function CatalogRoute() {
                 </s-table>
                 <CatalogPagination
                   activeFilter={activeFilter}
+                  activeSearch={activeSearch}
                   activeSort={activeSort}
                   activeSortDir={activeSortDir}
                   catalog={catalog}
                 />
               </s-stack>
             ) : (
-              <EmptyCatalogState activeFilter={activeFilter} />
+              <EmptyCatalogState
+                activeFilter={activeFilter}
+                activeSearch={activeSearch}
+              />
             )}
           </s-stack>
         </s-section>
@@ -284,10 +291,12 @@ function CatalogTableRow({
 
 function CatalogViewControls({
   activeFilter,
+  activeSearch,
   activeSort,
   activeSortDir,
 }: {
   activeFilter: CatalogPageFilter;
+  activeSearch: string;
   activeSort: CatalogSortKey | null;
   activeSortDir: CatalogSortDir;
 }) {
@@ -296,6 +305,30 @@ function CatalogViewControls({
   return (
     <div className="syncbay-filter-nav">
       <s-stack gap="base">
+        <Form action="/app/catalog" method="get">
+          {activeFilter !== "all" ? (
+            <input name="filter" type="hidden" value={activeFilter} />
+          ) : null}
+          {activeOrderValue ? (
+            <input name="order" type="hidden" value={activeOrderValue} />
+          ) : null}
+          <s-stack direction="inline" gap="small-200" alignItems="end">
+            <s-text-field
+              defaultValue={activeSearch}
+              label="Cerca nel catalogo"
+              name="q"
+              placeholder="Titolo, SKU o ItemID eBay"
+            />
+            <s-button type="submit">Cerca</s-button>
+            {activeSearch ? (
+              <s-button
+                href={getCatalogHref(activeFilter, 1, activeSort, activeSortDir, "")}
+              >
+                Azzera
+              </s-button>
+            ) : null}
+          </s-stack>
+        </Form>
         <s-stack
           direction="inline"
           gap="small-200"
@@ -305,7 +338,13 @@ function CatalogViewControls({
             <s-clickable-chip
               aria-current={activeFilter === filter.value ? "page" : undefined}
               color={activeFilter === filter.value ? "strong" : "base"}
-              href={getCatalogHref(filter.value, 1, activeSort, activeSortDir)}
+              href={getCatalogHref(
+                filter.value,
+                1,
+                activeSort,
+                activeSortDir,
+                activeSearch,
+              )}
               key={filter.value}
             >
               {filter.label}
@@ -323,6 +362,7 @@ function CatalogViewControls({
                 1,
                 order.sort,
                 order.sortDir,
+                activeSearch,
               )}
               key={order.value || "default"}
             >
@@ -337,25 +377,31 @@ function CatalogViewControls({
 
 function CatalogPagination({
   activeFilter,
+  activeSearch,
   activeSort,
   activeSortDir,
   catalog,
 }: {
   activeFilter: CatalogPageFilter;
+  activeSearch: string;
   activeSort: CatalogSortKey | null;
   activeSortDir: CatalogSortDir;
   catalog: Catalog;
 }) {
   const pagination = catalog.pagination;
+  const resultQualifier = activeSearch
+    ? ` per la ricerca «${activeSearch}»`
+    : activeFilter === "all"
+      ? ""
+      : " per questo filtro";
 
   return (
     <s-stack gap="small-200">
       <s-text color="subdued">
         Mostrati {formatNumber(pagination.currentStart)}-
         {formatNumber(pagination.currentEnd)} di{" "}
-        {formatNumber(pagination.totalRows)} risultati
-        {activeFilter === "all" ? "" : " per questo filtro"}. Catalogo totale:{" "}
-        {formatNumber(catalog.summary.totalCount)}.
+        {formatNumber(pagination.totalRows)} risultati{resultQualifier}. Catalogo
+        totale: {formatNumber(catalog.summary.totalCount)}.
       </s-text>
       {pagination.cappedAtMaxProducts ? (
         <s-text color="subdued">
@@ -367,7 +413,7 @@ function CatalogPagination({
       <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
           <s-button
-            href={getCatalogHref(activeFilter, pagination.previousPage, activeSort, activeSortDir)}
+            href={getCatalogHref(activeFilter, pagination.previousPage, activeSort, activeSortDir, activeSearch)}
           >
             Precedente
           </s-button>
@@ -377,7 +423,7 @@ function CatalogPagination({
           {formatNumber(pagination.totalPages)}
         </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getCatalogHref(activeFilter, pagination.nextPage, activeSort, activeSortDir)}>
+          <s-button href={getCatalogHref(activeFilter, pagination.nextPage, activeSort, activeSortDir, activeSearch)}>
             Successiva
           </s-button>
         ) : null}
@@ -423,9 +469,27 @@ function getCatalogAccessory(catalog: Catalog): {
 
 function EmptyCatalogState({
   activeFilter,
+  activeSearch,
 }: {
   activeFilter: CatalogPageFilter;
+  activeSearch: string;
 }) {
+  if (activeSearch) {
+    return (
+      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-stack gap="base">
+          <s-heading>Nessun prodotto per «{activeSearch}»</s-heading>
+          <s-text>
+            Controlla il testo o cerca per titolo, SKU o ItemID eBay.
+          </s-text>
+          <s-button href="/app/catalog" variant="primary">
+            Azzera la ricerca
+          </s-button>
+        </s-stack>
+      </s-box>
+    );
+  }
+
   if (activeFilter === "all") {
     return (
       <s-box border="base" borderColor="base" borderRadius="base" padding="base">
@@ -459,6 +523,7 @@ function getCatalogHref(
   page = 1,
   sort: CatalogSortKey | null = null,
   sortDir: CatalogSortDir = "asc",
+  search = "",
 ) {
   const params = new URLSearchParams();
   const orderValue = getCatalogOrderValue(sort, sortDir);
@@ -470,6 +535,7 @@ function getCatalogHref(
     params.set("sort", sort);
     params.set("dir", sortDir);
   }
+  if (search.trim()) params.set("q", search.trim());
 
   const query = params.toString();
 
