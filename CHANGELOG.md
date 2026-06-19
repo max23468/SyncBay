@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.40.2] — 2026-06-19
+
+### Correzioni
+
+- Catalogo e Conflitti: ridotto l'egress Supabase evitando il caricamento della
+  storia completa degli snapshot prodotto tramite relazioni Prisma; le pagine
+  leggono ora solo l'ultimo snapshot utile per mapping.
+
+### Sotto il cofano
+
+- Aggiunto `npm run jobs:coalesce-shopify-changes`, dry-run/apply controllato
+  per cancellare logicamente i job webhook Shopify duplicati mantenendo l'evento
+  più recente per prodotto o inventory item.
+
 ## [0.40.1] — 2026-06-19
 
 ### Correzioni
@@ -1981,6 +1995,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.40.2]: #0402--2026-06-19
 [0.40.1]: #0401--2026-06-19
 [0.40.0]: #0400--2026-06-15
 [0.39.5]: #0395--2026-06-15

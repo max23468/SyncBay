@@ -81,6 +81,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop syncbay-dev.myshopify.com --apply`           |
+| Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop syncbay-dev.myshopify.com [--apply]`       |
 | Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                              |
 | Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                              |
 | Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                         |
@@ -111,6 +112,12 @@ minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e
 dry-run di default e, con `--apply`, marca come `CANCELLED` solo i vecchi
 fallimenti `SYNC_INCREMENTAL` superati da un sync incrementale riuscito più
 recente. Non riprova i job, non stampa payload prodotto, token o dati personali.
+`npm run jobs:coalesce-shopify-changes` usa lo stesso accesso Supabase in
+modalità dry-run di default e, con `--apply`, marca come `CANCELLED` solo i job
+`DETECT_SHOPIFY_CHANGES` duplicati più vecchi quando esiste un job `PENDING` più
+recente per lo stesso shop, topic Shopify e prodotto/inventory item. Non elimina
+righe, non stampa payload prodotto e riduce lavoro ripetuto del runner quando
+Shopify invia raffiche di webhook per gli stessi prodotti.
 `npm run conflicts:doctor` usa Supabase CLI linked in sola lettura per
 distinguere conflitti aperti, conflitti stale, falsi positivi description
 riparabili e cooldown eBay che bloccano il retry; non stampa valori prodotto o

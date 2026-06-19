@@ -37,6 +37,40 @@ export function isStaleInternalShopifyImportJob(input: {
   return input.startedAt.getTime() <= input.now.getTime() - input.staleAfterMs;
 }
 
+export function getDuplicateShopifyChangeJobIdsToCancel(
+  jobs: Array<{
+    createdAt: Date;
+    id: string;
+    payload: unknown;
+    shopId: string;
+  }>,
+) {
+  const newestJobByKey = new Map<string, { createdAt: Date; id: string }>();
+  const duplicateIds: string[] = [];
+
+  for (const job of jobs) {
+    const key = getShopifyChangeJobDedupeKey(job);
+
+    if (!key) continue;
+
+    const current = newestJobByKey.get(key);
+
+    if (!current) {
+      newestJobByKey.set(key, { createdAt: job.createdAt, id: job.id });
+      continue;
+    }
+
+    if (job.createdAt > current.createdAt) {
+      duplicateIds.push(current.id);
+      newestJobByKey.set(key, { createdAt: job.createdAt, id: job.id });
+    } else {
+      duplicateIds.push(job.id);
+    }
+  }
+
+  return duplicateIds;
+}
+
 export function buildEbayItemJobSplitPayloads(input: {
   ebayItemIds: string[];
   maxItems: number;
@@ -95,6 +129,20 @@ function getStringField(value: unknown, key: string) {
   const field = (value as Record<string, unknown>)[key];
 
   return typeof field === "string" ? field : null;
+}
+
+function getShopifyChangeJobDedupeKey(input: {
+  payload: unknown;
+  shopId: string;
+}) {
+  const topic = getStringField(input.payload, "topic");
+  const resourceId =
+    getStringField(input.payload, "resourceId") ??
+    getStringField(input.payload, "inventoryItemGid");
+
+  if (!topic || !resourceId) return null;
+
+  return `${input.shopId}:${topic}:${resourceId}`;
 }
 
 function stableStringify(value: unknown) {

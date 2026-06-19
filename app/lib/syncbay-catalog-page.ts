@@ -85,3 +85,26 @@ export function getCatalogPageWindow(input: {
     totalRows,
   };
 }
+
+export function getCatalogSnapshotLookupIds(input: {
+  maxLookupRows: number;
+  rows: Array<{ id: string }>;
+}) {
+  const maxLookupRows =
+    Number.isInteger(input.maxLookupRows) && input.maxLookupRows > 0
+      ? input.maxLookupRows
+      : CATALOG_PAGE_SIZE;
+  const ids: string[] = [];
+  const seen = new Set<string>();
+
+  for (const row of input.rows) {
+    if (seen.has(row.id)) continue;
+
+    seen.add(row.id);
+    ids.push(row.id);
+
+    if (ids.length >= maxLookupRows) break;
+  }
+
+  return ids;
+}

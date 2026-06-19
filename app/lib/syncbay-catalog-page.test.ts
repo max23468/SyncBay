@@ -5,6 +5,7 @@ import test from "node:test";
 import * as catalogPage from "./syncbay-catalog-page.ts";
 
 const {
+  getCatalogSnapshotLookupIds,
   getCatalogPageWindow,
   normalizeCatalogPage,
   normalizeCatalogPageFilter,
@@ -61,5 +62,21 @@ test("clamps catalog pages outside the available range", () => {
       totalPages: 1,
       totalRows: 0,
     },
+  );
+});
+
+test("limits snapshot lookups to visible catalog rows", () => {
+  assert.deepEqual(
+    getCatalogSnapshotLookupIds({
+      maxLookupRows: 3,
+      rows: [
+        { id: "mapping-1" },
+        { id: "mapping-2" },
+        { id: "mapping-1" },
+        { id: "mapping-3" },
+        { id: "mapping-4" },
+      ],
+    }),
+    ["mapping-1", "mapping-2", "mapping-3"],
   );
 });

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, isSchedulableSyncJob, isStaleInternalShopifyImportJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, isSchedulableSyncJob, isStaleInternalShopifyImportJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -161,5 +161,55 @@ test("includes run identity in split job idempotency keys", () => {
       },
       splitIndex: 1,
     }),
+  );
+});
+
+test("keeps the newest Shopify change job per shop topic and resource", () => {
+  assert.deepEqual(
+    getDuplicateShopifyChangeJobIdsToCancel([
+      {
+        createdAt: new Date("2026-06-19T10:00:00.000Z"),
+        id: "older-product",
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        shopId: "shop-1",
+      },
+      {
+        createdAt: new Date("2026-06-19T10:00:01.000Z"),
+        id: "newer-product",
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        shopId: "shop-1",
+      },
+      {
+        createdAt: new Date("2026-06-19T10:00:02.000Z"),
+        id: "other-topic",
+        payload: {
+          inventoryItemGid: "gid://shopify/InventoryItem/1",
+          topic: "inventory_levels/update",
+        },
+        shopId: "shop-1",
+      },
+      {
+        createdAt: new Date("2026-06-19T10:00:03.000Z"),
+        id: "missing-resource-kept",
+        payload: { topic: "products/update" },
+        shopId: "shop-1",
+      },
+      {
+        createdAt: new Date("2026-06-19T10:00:04.000Z"),
+        id: "other-shop-kept",
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        shopId: "shop-2",
+      },
+    ]),
+    ["older-product"],
   );
 });
