@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.41.4] — 2026-06-19
+
+### Sotto il cofano
+
+- Aggiornate le dipendenze e i tool di supporto compatibili: Shopify CLI,
+  parser XML eBay, rilevamento bot, TypeScript ESLint, Playwright e React
+  Doctor.
+
 ## [0.41.3] — 2026-06-19
 
 ### Correzioni
@@ -2071,6 +2079,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.41.4]: #0414--2026-06-19
 [0.41.3]: #0413--2026-06-19
 [0.41.2]: #0412--2026-06-19
 [0.41.1]: #0411--2026-06-19
