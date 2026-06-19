@@ -24,6 +24,19 @@ export const CATALOG_SORT_KEYS = [
 export type CatalogSortKey = (typeof CATALOG_SORT_KEYS)[number];
 export type CatalogSortDir = "asc" | "desc";
 
+export function isCatalogRowNeedingCheck(input: {
+  availability: string;
+  status: string;
+}) {
+  if (input.status === "mapping_error" || input.status === "stale_sync") {
+    return true;
+  }
+
+  if (input.status === "archived") return false;
+
+  return input.availability !== "aligned";
+}
+
 export function normalizeCatalogSort(
   value: string | null | undefined,
 ): CatalogSortKey | null {
