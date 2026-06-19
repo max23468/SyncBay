@@ -50,6 +50,16 @@ export function calculateShopifyPricing(input: {
       ? wholeEuroCents
       : discountedCents;
 
+  if (roundedCents >= originalCents) {
+    return {
+      applied: false,
+      compareAtPriceAmount: null,
+      discountPercent,
+      priceAmount: centsToAmount(originalCents),
+      roundingMode,
+    };
+  }
+
   return {
     applied: true,
     compareAtPriceAmount: centsToAmount(originalCents),
