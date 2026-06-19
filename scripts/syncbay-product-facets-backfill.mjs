@@ -13,6 +13,8 @@ import {
   buildSyncBayProductFacets,
   parseEbayTradingItemSpecifics,
 } from "../app/lib/syncbay-product-facets.ts";
+import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
+import { getProductFacetsFromSnapshotPayload } from "../app/lib/syncbay-product-snapshot-payload.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
@@ -46,10 +48,11 @@ if (args.help) {
   process.exit(0);
 }
 
+loadDotEnv(".env");
+
 const shopDomain =
   args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
 
-loadDotEnv(".env");
 ensureTokenEncryptionKey();
 
 const supabaseEnv = {
@@ -160,6 +163,9 @@ async function main() {
 
 async function buildReportRow(input) {
   const snapshotSource = getSnapshotFacetSource(input.mapping);
+  let snapshotProductFacets = getProductFacetsFromSnapshotPayload(
+    input.mapping.ebayPayload,
+  );
   let source = snapshotSource;
   let lookupFailureReason = null;
   let lookupFailed = false;
@@ -179,6 +185,7 @@ async function buildReportRow(input) {
           getStorefrontCategoryName(item) ?? snapshotSource.storeCategoryName,
         title: getString(item, "Title") ?? snapshotSource.title,
       };
+      snapshotProductFacets = [];
     } catch (error) {
       lookupFailureReason = formatError(error);
       lookupFailed = true;
@@ -190,7 +197,10 @@ async function buildReportRow(input) {
     ebayItemId: input.mapping.ebayItemId,
     lookupFailureReason,
     lookupFailed,
-    proposedFacets: buildSyncBayProductFacets(source),
+    proposedFacets:
+      snapshotProductFacets.length > 0
+        ? snapshotProductFacets
+        : buildSyncBayProductFacets(source),
     shopifyProductGid: input.shopifyProduct
       ? (input.mapping.shopifyProductGid ?? null)
       : null,
@@ -861,8 +871,7 @@ function parseArgs(rawArgs) {
     }
 
     if (arg === "--limit") {
-      const value = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.limit = Number.isInteger(value) && value > 0 ? value : undefined;
+      parsed.limit = parsePositiveLimitOption(rawArgs[index + 1], "--limit");
       index += 1;
       continue;
     }

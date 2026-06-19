@@ -1,5 +1,16 @@
 type Tone = "critical" | "warning" | "info" | "success";
 
+export interface ActivityBadgeStateInput {
+  failedJobs: number;
+  openConflictCount?: number | null;
+  working: boolean;
+}
+
+export interface ActivityBadgeState {
+  label: string;
+  tone: "info" | "success" | "warning";
+}
+
 export type NextActionKind =
   | "ebay_connection"
   | "quantity_check"
@@ -102,6 +113,38 @@ export function shouldShowOverviewStatusHero(kind: NextActionKind) {
   return OVERVIEW_STATUS_HERO_KINDS.has(kind);
 }
 
+export function getActivityBadgeState(
+  input: ActivityBadgeStateInput,
+): ActivityBadgeState {
+  const openConflictCount = input.openConflictCount ?? 0;
+
+  if (input.working) {
+    return { label: "Aggiornamenti in corso", tone: "info" };
+  }
+
+  if (input.failedJobs > 0) {
+    return {
+      label:
+        input.failedJobs === 1
+          ? "1 errore da rivedere"
+          : `${formatInteger(input.failedJobs)} errori da rivedere`,
+      tone: "warning",
+    };
+  }
+
+  if (openConflictCount > 0) {
+    return {
+      label:
+        openConflictCount === 1
+          ? "1 conflitto da gestire"
+          : `${formatInteger(openConflictCount)} conflitti da gestire`,
+      tone: "warning",
+    };
+  }
+
+  return { label: "Tutto tranquillo", tone: "success" };
+}
+
 export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
   const nowTime = getOverviewTime(input.now ?? new Date()) ?? Date.now();
 
@@ -158,6 +201,12 @@ function getOverviewTime(value: Date | string | null | undefined) {
   const time = value instanceof Date ? value.getTime() : Date.parse(value);
 
   return Number.isNaN(time) ? null : time;
+}
+
+function formatInteger(value: number) {
+  return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 }).format(
+    value,
+  );
 }
 
 export function getNextAction(input: NextActionInput): NextAction {

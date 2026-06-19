@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.41.3] — 2026-06-19
+
+### Correzioni
+
+- Codex feedback: corretti i casi aperti su backfill descrizioni/faccette,
+  mapping categorie Shopify, baseline stock, sorgenti prezzo da snapshot e badge
+  Attività con conflitti aperti.
+
 ## [0.41.2] — 2026-06-19
 
 ### Correzioni
@@ -2063,6 +2071,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.41.3]: #0413--2026-06-19
 [0.41.2]: #0412--2026-06-19
 [0.41.1]: #0411--2026-06-19
 [0.41.0]: #0410--2026-06-19

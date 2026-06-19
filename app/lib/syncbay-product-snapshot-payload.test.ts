@@ -6,6 +6,7 @@ import * as productSnapshotPayload from "./syncbay-product-snapshot-payload.ts";
 
 const {
   buildEbayProductSnapshotPayload,
+  getProductFacetsFromSnapshotPayload,
   getProductSnapshotThumbnailUrl,
   getProductSnapshotThumbnailUrlFromPayloads,
 } = productSnapshotPayload;
@@ -156,6 +157,52 @@ test("persists approved storefront facets for import audit", () => {
         namespace: "syncbay_facets",
         type: "single_line_text_field",
         value: "Argento",
+      },
+    ],
+  );
+});
+
+test("reads approved storefront facets from snapshot payloads", () => {
+  assert.deepEqual(
+    getProductFacetsFromSnapshotPayload({
+      productFacets: [
+        {
+          key: "categoria",
+          label: "Categoria",
+          namespace: "syncbay_facets",
+          type: "single_line_text_field",
+          value: "Monete in euro",
+        },
+        {
+          key: "area_stato",
+          label: "Area",
+          namespace: "syncbay_facets",
+          type: "single_line_text_field",
+          value: "Italia",
+        },
+        {
+          key: "area",
+          label: "Area",
+          namespace: "altro",
+          type: "single_line_text_field",
+          value: "Da ignorare",
+        },
+      ],
+    }),
+    [
+      {
+        key: "categoria",
+        label: "Categoria",
+        namespace: "syncbay_facets",
+        type: "single_line_text_field",
+        value: "Monete in euro",
+      },
+      {
+        key: "area_stato",
+        label: "Area",
+        namespace: "syncbay_facets",
+        type: "single_line_text_field",
+        value: "Italia",
       },
     ],
   );

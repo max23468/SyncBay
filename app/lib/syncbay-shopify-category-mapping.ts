@@ -110,11 +110,10 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
-  const medalSignals =
-    primaryText || storeText
-      ? signals.filter((signal) => signal.source !== "title")
-      : signals;
-  const medalsSignal = findMatchingSignal(medalSignals, matchesMedals);
+  const medalsSignal = findMedalsSignal(signals, {
+    primaryText,
+    storeText,
+  });
   if (medalsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoinsAndCurrency,
@@ -124,10 +123,7 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
-  const firstDayCoversSignal = findMatchingSignal(
-    signals,
-    matchesFirstDayCovers,
-  );
+  const firstDayCoversSignal = findFirstDayCoversSignal(signals);
   if (firstDayCoversSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.firstDayCovers,
@@ -320,6 +316,42 @@ function findMatchingSignal(
   return signals.find((signal) => signal.text && matcher(signal.text)) ?? null;
 }
 
+function findMedalsSignal(
+  signals: ReturnType<typeof getProposalSignals>,
+  context: { primaryText: string; storeText: string },
+) {
+  const nonTitleSignal = findMatchingSignal(
+    signals.filter((signal) => signal.source !== "title"),
+    matchesMedals,
+  );
+  if (nonTitleSignal) return nonTitleSignal;
+
+  const titleSignal = findMatchingSignal(
+    signals.filter((signal) => signal.source === "title"),
+    matchesMedals,
+  );
+  if (!titleSignal) return null;
+
+  if (!context.primaryText && !context.storeText) return titleSignal;
+  if (isGenericNumismaticContext(context.primaryText, context.storeText)) {
+    return titleSignal;
+  }
+
+  return null;
+}
+
+function findFirstDayCoversSignal(signals: ReturnType<typeof getProposalSignals>) {
+  const explicitSignal = findMatchingSignal(signals, matchesFirstDayCovers);
+  if (explicitSignal) return explicitSignal;
+
+  const fdcSignal = findMatchingSignal(signals, (value) =>
+    hasToken(value, "fdc"),
+  );
+  const stampsSignal = findMatchingSignal(signals, matchesStamps);
+
+  return fdcSignal && stampsSignal ? fdcSignal : null;
+}
+
 function matchesBanknotes(value: string) {
   const withoutMacroCategory = value.replaceAll("monete e banconote", "");
 
@@ -395,6 +427,13 @@ function matchesCoins(value: string) {
 
 function matchesNumismatics(value: string) {
   return hasAny(value, ["numismatic", "monete e banconote"]);
+}
+
+function isGenericNumismaticContext(primaryText: string, storeText: string) {
+  const context = `${primaryText} ${storeText}`.trim();
+  if (!context) return true;
+
+  return matchesNumismatics(context) || matchesCoins(context);
 }
 
 function matchesScaleModelCars(value: string) {

@@ -96,6 +96,24 @@ test("skips products already aligned to the cleaned description", () => {
   assert.equal(row.reason, "shopify_description_matches_cleaned_ebay");
 });
 
+test("skips products changed manually since the latest SyncBay description baseline", () => {
+  const row = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Descrizione riscritta a mano.</p>",
+    ebayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    ebayItemId: "1008",
+    latestSyncBayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    mappingId: "mapping-8",
+    openConflictFields: [],
+    shopifyProductGid: "gid://shopify/Product/8",
+    title: "Moneta Regno",
+  });
+
+  assert.equal(row.status, "conflict_skipped");
+  assert.equal(row.reason, "shopify_description_changed_since_last_syncbay_baseline");
+});
+
 test("summarizes rows and builds an apply plan only from applicable rows", () => {
   const report = buildDescriptionBackfillReport({
     rows: [
@@ -135,6 +153,7 @@ function buildTestBackfillRow(input: {
   currentShopifyDescriptionHtml?: string | null;
   ebayDescriptionHtml?: string | null;
   ebayItemId: string;
+  latestSyncBayDescriptionHtml?: string | null;
   mappingId: string;
   openConflictFields?: string[];
   shopifyProductGid?: string | null;
@@ -160,5 +179,8 @@ function buildTestBackfillRow(input: {
     descriptionWasChanged: cleanup.wasChanged,
     originalDescriptionHash: hashNullableText(input.ebayDescriptionHtml),
     originalTextExcerpt: reportRow.rawTextExcerpt,
+    latestSyncBayDescriptionHash: hashNullableText(
+      input.latestSyncBayDescriptionHtml,
+    ),
   });
 }

@@ -22,6 +22,7 @@ export interface DescriptionBackfillInput {
   ebayItemId: string;
   ebayLookupFailed?: boolean;
   ebayLookupFailureReason?: string | null;
+  latestSyncBayDescriptionHash?: string | null;
   mappingId: string;
   openConflictFields?: string[];
   originalDescriptionHash: string | null;
@@ -148,6 +149,18 @@ export function buildDescriptionBackfillRow(
       baseRow,
       "already_correct",
       "shopify_description_matches_cleaned_ebay",
+    );
+  }
+
+  if (
+    input.latestSyncBayDescriptionHash &&
+    input.currentShopifyDescriptionHash &&
+    input.currentShopifyDescriptionHash !== input.latestSyncBayDescriptionHash
+  ) {
+    return withStatus(
+      baseRow,
+      "conflict_skipped",
+      "shopify_description_changed_since_last_syncbay_baseline",
     );
   }
 

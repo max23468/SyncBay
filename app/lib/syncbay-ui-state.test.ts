@@ -8,6 +8,7 @@ const {
   getCatalogAvailabilityLabel,
   getCatalogRowStatus,
   getCatalogStatusLabel,
+  getActivityBadgeState,
   getConflictActionLabel,
   getConflictFieldLabel,
   getConflictImpactText,
@@ -161,6 +162,20 @@ test("shows overview status hero for setup and overdue blockers", () => {
   assert.equal(shouldShowOverviewStatusHero("quantity_check"), false);
   assert.equal(shouldShowOverviewStatusHero("open_conflicts"), false);
   assert.equal(shouldShowOverviewStatusHero("all_clear"), false);
+});
+
+test("keeps Activity badge out of all-clear while conflicts are open", () => {
+  assert.deepEqual(
+    getActivityBadgeState({
+      failedJobs: 0,
+      openConflictCount: 2,
+      working: false,
+    }),
+    {
+      label: "2 conflitti da gestire",
+      tone: "warning",
+    },
+  );
 });
 
 test("keeps overview working while active stock retries are running", () => {
