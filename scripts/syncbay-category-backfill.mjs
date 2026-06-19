@@ -100,6 +100,22 @@ async function main() {
     );
   }
 
+  if (
+    args.apply &&
+    args.forceCategoryConflicts &&
+    !args.confirmForceCategoryConflicts
+  ) {
+    throw new Error(
+      "Forzatura conflitti categoria bloccata: aggiungi --confirm-force-category-conflicts.",
+    );
+  }
+
+  if (args.confirmForceCategoryConflicts && !args.forceCategoryConflicts) {
+    throw new Error(
+      "--confirm-force-category-conflicts richiede anche --force-category-conflicts.",
+    );
+  }
+
   const state = getBackfillState();
 
   if (!state.connection) {
@@ -146,6 +162,7 @@ async function main() {
   });
   const sourceSummary = getCategorySourceSummary(rows);
   const applyPlan = buildCategoryApplyPlan(report, {
+    forceCategoryConflicts: args.forceCategoryConflicts,
     includeCategoryConflicts: args.repairCategoryConflicts,
   });
   const applyResult = args.apply
@@ -159,6 +176,7 @@ async function main() {
     analyzed: mappings.length,
     apply: applyResult ?? {
       planned: applyPlan.rows.length,
+      forceCategoryConflicts: Boolean(args.forceCategoryConflicts),
       repairCategoryConflicts: Boolean(args.repairCategoryConflicts),
       requested: false,
       skipped: applyPlan.skipped,
@@ -501,6 +519,7 @@ async function applyCategoryPlan(input) {
     applied: results.length - failures.length,
     failed: failures.length,
     failures: failures.slice(0, 20),
+    forceCategoryConflicts: Boolean(args.forceCategoryConflicts),
     planned: input.plan.rows.length,
     repairCategoryConflicts: Boolean(args.repairCategoryConflicts),
     requested: true,
@@ -868,6 +887,9 @@ function printApplySummary(apply) {
   console.log(
     `- riparazione conflitti categoria: ${apply.repairCategoryConflicts ? "inclusa" : "non inclusa"}`,
   );
+  console.log(
+    `- forzatura conflitti categoria: ${apply.forceCategoryConflicts ? "inclusa" : "non inclusa"}`,
+  );
   console.log(`- già corretti saltati: ${apply.skipped.alreadyCorrect}`);
   console.log(`- conflitti manuali saltati: ${apply.skipped.conflictsManual}`);
   console.log(`- incerti saltati: ${apply.skipped.uncertain}`);
@@ -951,6 +973,16 @@ function parseArgs(rawArgs) {
       continue;
     }
 
+    if (arg === "--force-category-conflicts") {
+      parsed.forceCategoryConflicts = true;
+      continue;
+    }
+
+    if (arg === "--confirm-force-category-conflicts") {
+      parsed.confirmForceCategoryConflicts = true;
+      continue;
+    }
+
     if (arg === "--help" || arg === "-h") {
       parsed.help = true;
       continue;
@@ -976,7 +1008,7 @@ function parseArgs(rawArgs) {
 }
 
 function printUsage() {
-  console.log(`Uso: npm run categories:backfill -- [--shop dominio.myshopify.com] [--limit N] [--json] [--apply --confirm-apply] [--repair-category-conflicts --confirm-repair-category-conflicts]
+  console.log(`Uso: npm run categories:backfill -- [--shop dominio.myshopify.com] [--limit N] [--json] [--apply --confirm-apply] [--repair-category-conflicts --confirm-repair-category-conflicts] [--force-category-conflicts --confirm-force-category-conflicts]
 
 Dry-run categorie: analizza i mapping ACTIVE, calcola la categoria Shopify
 proposta da eBay e confronta la categoria Shopify attuale. Di default non
@@ -989,6 +1021,10 @@ Shopify e il token eBay cifrato se scaduti.
   --repair-category-conflicts
                     Include nell'apply i conflitti noti del vecchio mapper.
   --confirm-repair-category-conflicts
+                    Conferma obbligatoria per sovrascrivere quei conflitti.
+  --force-category-conflicts
+                    Include nell'apply tutti i conflitti categoria manuali.
+  --confirm-force-category-conflicts
                     Conferma obbligatoria per sovrascrivere quei conflitti.`);
 }
 

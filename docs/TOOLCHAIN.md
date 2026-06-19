@@ -162,7 +162,10 @@ lookup falliti senza proposta locale valida e prodotti senza GID Shopify. I
 conflitti categoria generati dal vecchio mapper possono essere inclusi solo con
 `--repair-category-conflicts` e, in apply, anche
 `--confirm-repair-category-conflicts`: il repair resta limitato a pattern
-legacy riconosciuti e non forza conflitti manuali generici.
+legacy riconosciuti e non forza conflitti manuali generici. La sovrascrittura
+di tutti i conflitti categoria manuali richiede una decisione esplicita del
+maintainer e i flag `--force-category-conflicts` e, in apply, anche
+`--confirm-force-category-conflicts`.
 `npm run facets:backfill` è un dry-run di default: per i mapping ACTIVE calcola
 le cinque faccette storefront `syncbay_facets.*` da snapshot eBay e, salvo
 `--snapshot-only`, da Trading API `GetItem` con `ItemSpecifics`. Confronta i

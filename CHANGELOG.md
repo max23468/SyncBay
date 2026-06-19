@@ -21,6 +21,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   generati dal vecchio mapper con
   `--repair-category-conflicts --confirm-repair-category-conflicts`, limitato a
   pattern legacy riconosciuti.
+- `npm run categories:backfill` può forzare anche i conflitti categoria manuali
+  solo con conferma esplicita del maintainer tramite
+  `--force-category-conflicts --confirm-force-category-conflicts`.
 - I cataloghi/libri cartacei con titolo esplicito, come i cataloghi di carte
   telefoniche, restano `Print Books` anche quando una categoria sorgente
   generica li collocherebbe nel collezionismo.

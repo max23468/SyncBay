@@ -95,13 +95,18 @@ export function buildCategoryBackfillReport(input: {
 
 export function buildCategoryApplyPlan(
   report: CategoryBackfillReport,
-  options: { includeCategoryConflicts?: boolean } = {},
+  options: {
+    forceCategoryConflicts?: boolean;
+    includeCategoryConflicts?: boolean;
+  } = {},
 ): CategoryApplyPlan {
   return {
     rows: report.rows
       .filter(
         (row) =>
           row.status === "applicable" ||
+          (options.forceCategoryConflicts &&
+            row.status === "conflict_manual") ||
           (options.includeCategoryConflicts &&
             isKnownLegacyMapperConflict(row)),
       )
@@ -119,7 +124,9 @@ export function buildCategoryApplyPlan(
       ),
     skipped: {
       alreadyCorrect: report.summary.alreadyCorrect,
-      conflictsManual: options.includeCategoryConflicts
+      conflictsManual: options.forceCategoryConflicts
+        ? 0
+        : options.includeCategoryConflicts
         ? report.rows.filter(
             (row) =>
               row.status === "conflict_manual" &&
