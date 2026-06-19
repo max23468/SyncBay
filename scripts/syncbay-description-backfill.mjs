@@ -470,7 +470,6 @@ with latest_baseline as (
   select
     sku,
     title,
-    "priceAmount",
     currency,
     quantity,
     "productStatus",
@@ -480,7 +479,6 @@ with latest_baseline as (
     and (
       sku is not null
       or title is not null
-      or "priceAmount" is not null
       or currency is not null
       or quantity is not null
       or "productStatus" is not null
@@ -500,7 +498,6 @@ inserted_snapshot as (
     "shopifyVariantGid",
     sku,
     title,
-    "priceAmount",
     currency,
     quantity,
     "productStatus",
@@ -518,7 +515,6 @@ inserted_snapshot as (
     latest_baseline."shopifyVariantGid",
     latest_baseline.sku,
     coalesce(latest_baseline.title, ${sqlQuote(input.row.title)}),
-    latest_baseline."priceAmount",
     latest_baseline.currency,
     latest_baseline.quantity,
     latest_baseline."productStatus",
