@@ -71,3 +71,38 @@ test("uses the original eBay price stored in SyncBay pricing payloads", () => {
     title: "Prodotto pricing-only",
   });
 });
+
+test("ignores SyncBay description snapshots without pricing data", () => {
+  const sources = buildSnapshotPricingSourcesByItemId([
+    {
+      capturedAt: new Date("2026-06-16T10:00:00Z"),
+      currency: "EUR",
+      ebayItemId: "1003",
+      payload: {
+        descriptionBackfill: true,
+      },
+      priceAmount: null,
+      sku: "SKU-1003",
+      source: "SYNCBAY",
+      title: "Descrizione aggiornata",
+    },
+    {
+      capturedAt: new Date("2026-06-15T10:00:00Z"),
+      currency: "EUR",
+      ebayItemId: "1003",
+      payload: {},
+      priceAmount: 80,
+      sku: "SKU-1003",
+      source: "EBAY",
+      title: "Prodotto eBay",
+    },
+  ]);
+
+  assert.deepEqual(sources.get("1003"), {
+    currency: "EUR",
+    priceAmount: 80,
+    sku: "SKU-1003",
+    source: "snapshot",
+    title: "Prodotto eBay",
+  });
+});

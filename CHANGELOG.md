@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [0.41.4] — 2026-06-19
 
+### Correzioni
+
+- Backfill descrizioni: le descrizioni Shopify svuotate manualmente vengono
+  trattate come modifiche manuali e gli snapshot del backfill non diventano più
+  sorgenti prezzo.
+
 ### Sotto il cofano
 
 - Aggiornate le dipendenze e i tool di supporto compatibili: Shopify CLI,

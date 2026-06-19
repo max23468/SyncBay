@@ -154,7 +154,6 @@ export function buildDescriptionBackfillRow(
 
   if (
     input.latestSyncBayDescriptionHash &&
-    input.currentShopifyDescriptionHash &&
     input.currentShopifyDescriptionHash !== input.latestSyncBayDescriptionHash
   ) {
     return withStatus(

@@ -114,6 +114,24 @@ test("skips products changed manually since the latest SyncBay description basel
   assert.equal(row.reason, "shopify_description_changed_since_last_syncbay_baseline");
 });
 
+test("skips products whose Shopify description was manually cleared", () => {
+  const row = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: null,
+    ebayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    ebayItemId: "1009",
+    latestSyncBayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    mappingId: "mapping-9",
+    openConflictFields: [],
+    shopifyProductGid: "gid://shopify/Product/9",
+    title: "Moneta Regno",
+  });
+
+  assert.equal(row.status, "conflict_skipped");
+  assert.equal(row.reason, "shopify_description_changed_since_last_syncbay_baseline");
+});
+
 test("summarizes rows and builds an apply plan only from applicable rows", () => {
   const report = buildDescriptionBackfillReport({
     rows: [
