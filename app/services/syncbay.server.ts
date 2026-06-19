@@ -496,6 +496,7 @@ export async function getCatalogPageState(
   input: {
     filter?: CatalogPageFilter;
     page?: number;
+    search?: string;
     sort?: CatalogSortKey | null;
     sortDir?: CatalogSortDir;
   } = {},
@@ -556,7 +557,10 @@ export async function getCatalogPageState(
     }),
   );
   const activeFilter = input.filter ?? "all";
-  const filteredRows = filterCatalogPageRows(allRows, activeFilter);
+  const filteredRows = filterCatalogPageRows(
+    searchCatalogPageRows(allRows, input.search ?? ""),
+    activeFilter,
+  );
   const sortedRows = sortCatalogPageRows(
     filteredRows,
     input.sort ?? null,
@@ -2781,6 +2785,18 @@ type ShopifyProductThumbnailsResponse = {
 };
 
 type CatalogPageRow = ReturnType<typeof formatCatalogPageRow>;
+
+function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {
+  const needle = query.trim().toLowerCase();
+
+  if (!needle) return rows;
+
+  return rows.filter((row) =>
+    [row.title, row.sku, row.ebayItemId].some(
+      (field) => field?.toLowerCase().includes(needle) ?? false,
+    ),
+  );
+}
 
 function filterCatalogPageRows(
   rows: CatalogPageRow[],
