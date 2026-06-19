@@ -15,6 +15,7 @@ import {
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
+import { useActionToast } from "../components/SyncBayLive";
 import {
   getImportedProductsLabel,
   getImportedProductSingularLabel,
@@ -246,6 +247,14 @@ export default function ImportPreview() {
   const draftStatus =
     draftActionData?.draftStatus ??
     (searchParams.get("draft") as ShopifyDraftImportStatus | null);
+
+  useActionToast(
+    { data: draftActionData ?? undefined, state: navigation.state },
+    (data) => ({
+      isError: data.draftStatus !== "queued",
+      message: data.message ?? "",
+    }),
+  );
   const locationRenameStatus = searchParams.get(
     "locationRename",
   ) as ShopifyLocationRenameStatus | null;
