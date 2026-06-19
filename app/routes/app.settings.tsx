@@ -7,7 +7,13 @@ import type {
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
-import { ActionRow, MetricTile, SettingCard } from "../components/SyncBayUi";
+import {
+  ActionRow,
+  MetricTile,
+  SettingCard,
+  type SyncBayIcon,
+} from "../components/SyncBayUi";
+import { useActionToast } from "../components/SyncBayLive";
 import {
   getImportProductStatusLabelCapitalized,
   IMPORT_PRODUCT_STATUS_VALUES,
@@ -248,13 +254,23 @@ export default function SettingsRoute() {
     actionData?.intent === "savePricingRule"
       ? actionData.pricingRule
       : (settings.pricingRule ?? DEFAULT_SETTINGS_PRICING_RULE);
+  const configReady =
+    settings.ebay.status === "CONNECTED" &&
+    settings.shopify.missingScopes.length === 0 &&
+    settings.shopify.missingConfiguredScopes.length === 0;
+
+  useActionToast(
+    { data: actionData, state: navigation.state },
+    (data) => ({ isError: data.status === "blocked", message: data.message }),
+  );
 
   return (
     <s-page heading="Impostazioni" inlineSize="large">
-      <s-badge slot="accessory" tone="info">Controllo operativo</s-badge>
+      <s-badge slot="accessory" tone={configReady ? "success" : "warning"}>
+        {configReady ? "Configurato" : "Da configurare"}
+      </s-badge>
       <s-stack gap="large">
         <SyncCatalogSettingsCard
-          actionData={actionData}
           currentSyncEnabled={currentSyncEnabled}
           currentSyncTarget={currentSyncTarget}
           isSaving={isSaving}
@@ -266,26 +282,22 @@ export default function SettingsRoute() {
           gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))"
         >
           <ImportProductSettingsCard
-            actionData={actionData}
             currentStatus={currentStatus}
             isSaving={isSaving}
           />
           <ProductPublicationSettingsCard
-            actionData={actionData}
             currentPublicationMode={currentPublicationMode}
             isSaving={isSaving}
             selectedPublicationIds={selectedPublicationIds}
             settings={settings}
           />
           <PricingRuleSettingsCard
-            actionData={actionData}
             currentPricingRule={currentPricingRule}
             isSaving={isSaving}
           />
         </s-grid>
 
         <AdvancedSettingsCard
-          actionData={actionData}
           isSaving={isSaving}
           settings={settings}
         />
@@ -295,13 +307,11 @@ export default function SettingsRoute() {
 }
 
 function SyncCatalogSettingsCard({
-  actionData,
   currentSyncEnabled,
   currentSyncTarget,
   isSaving,
   settings,
 }: {
-  actionData?: SettingsActionData;
   currentSyncEnabled: boolean;
   currentSyncTarget: number;
   isSaving: boolean;
@@ -354,9 +364,6 @@ function SyncCatalogSettingsCard({
           </s-stack>
         </s-box>
       ) : null}
-      {actionData?.intent === "saveSyncTarget" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
-      ) : null}
       <Form method="post">
         <input type="hidden" name="intent" value="saveSyncTarget" />
         <s-select
@@ -379,9 +386,6 @@ function SyncCatalogSettingsCard({
           {isSaving ? "Salvataggio..." : "Salva intervallo"}
         </s-button>
       </Form>
-      {actionData?.intent === "saveSyncSettings" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
-      ) : null}
       {currentSyncEnabled ? (
         <details className="syncbay-details">
           <summary>Disattiva sync automatico</summary>
@@ -421,11 +425,9 @@ function SyncCatalogSettingsCard({
 }
 
 function ImportProductSettingsCard({
-  actionData,
   currentStatus,
   isSaving,
 }: {
-  actionData?: SettingsActionData;
   currentStatus: ImportProductStatus;
   isSaving: boolean;
 }) {
@@ -441,9 +443,6 @@ function ImportProductSettingsCard({
         Il default si applica ai nuovi prodotti creati dai prossimi import. Le
         bozze restano non pubblicate.
       </s-paragraph>
-      {actionData?.intent === "saveImportDefaults" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
-      ) : null}
       <Form method="post">
         <input type="hidden" name="intent" value="saveImportDefaults" />
         <s-select
@@ -467,13 +466,11 @@ function ImportProductSettingsCard({
 }
 
 function ProductPublicationSettingsCard({
-  actionData,
   currentPublicationMode,
   isSaving,
   selectedPublicationIds,
   settings,
 }: {
-  actionData?: SettingsActionData;
   currentPublicationMode: ProductPublicationMode;
   isSaving: boolean;
   selectedPublicationIds: string[];
@@ -496,9 +493,6 @@ function ProductPublicationSettingsCard({
       </s-paragraph>
       {settings.productPublications.errorMessage ? (
         <s-paragraph>{settings.productPublications.errorMessage}</s-paragraph>
-      ) : null}
-      {actionData?.intent === "saveProductPublications" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
       ) : null}
       <Form method="post">
         <input type="hidden" name="intent" value="saveProductPublications" />
@@ -545,11 +539,9 @@ function ProductPublicationSettingsCard({
 }
 
 function PricingRuleSettingsCard({
-  actionData,
   currentPricingRule,
   isSaving,
 }: {
-  actionData?: SettingsActionData;
   currentPricingRule: SyncBayPricingRule;
   isSaving: boolean;
 }) {
@@ -566,9 +558,6 @@ function PricingRuleSettingsCard({
         prezzo eBay resta come compare-at price Shopify quando lo sconto è
         maggiore di zero.
       </s-paragraph>
-      {actionData?.intent === "savePricingRule" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
-      ) : null}
       <Form method="post">
         <input type="hidden" name="intent" value="savePricingRule" />
         <s-text-field
@@ -603,17 +592,15 @@ function PricingRuleSettingsCard({
 }
 
 function AdvancedSettingsCard({
-  actionData,
   isSaving,
   settings,
 }: {
-  actionData?: SettingsActionData;
   isSaving: boolean;
   settings: SettingsState;
 }) {
   return (
     <SettingCard
-      description="Collegamenti e dettagli tecnici, separati dalle impostazioni più frequenti."
+      description="Stato dei collegamenti e dei permessi, con le azioni per sistemarli."
       icon="settings"
       statusLabel={
         settings.ebay.status === "CONNECTED"
@@ -621,26 +608,32 @@ function AdvancedSettingsCard({
           : getEbayConnectionStatusLabel(settings.ebay.status)
       }
       statusTone={settings.ebay.status === "CONNECTED" ? "success" : "warning"}
-      title="Avanzate"
+      title="Collegamenti e diagnostica"
     >
       <s-stack gap="base">
         <StatusRow
-          detail={`Marketplace ${settings.ebay.marketplaceId}. ${
-            settings.ebay.connectedAt
-              ? `Collegato il ${formatDateTime(settings.ebay.connectedAt)}.`
-              : "Collegamento non completato."
-          }`}
+          detail={
+            settings.ebay.status === "CONNECTED"
+              ? `Marketplace ${settings.ebay.marketplaceId}${
+                  settings.ebay.connectedAt
+                    ? `, collegato il ${formatDateTime(settings.ebay.connectedAt)}`
+                    : ""
+                }.`
+              : "eBay non è collegato: import e allineamento restano fermi finché non lo colleghi."
+          }
+          icon="link"
           label={getEbayConnectionStatusLabel(settings.ebay.status)}
           tone={settings.ebay.status === "CONNECTED" ? "success" : "warning"}
           title="Collegamento eBay"
         />
         <StatusRow
-          detail={`${settings.shopify.missingScopes.length} permessi Shopify mancanti; ${settings.shopify.missingConfiguredScopes.length} da riapprovare.`}
+          detail={getShopifyScopesDetail(settings)}
+          icon="settings"
           label={
             settings.shopify.missingScopes.length === 0 &&
             settings.shopify.missingConfiguredScopes.length === 0
               ? "Completi"
-              : "Da controllare"
+              : "Da sistemare"
           }
           tone={
             settings.shopify.missingScopes.length === 0 &&
@@ -651,39 +644,18 @@ function AdvancedSettingsCard({
           title="Permessi Shopify"
         />
       </s-stack>
-      <div className="syncbay-action-list">
-        {settings.ebay.oauthEnabled && settings.ebay.oauthReady ? (
+      {settings.ebay.oauthEnabled &&
+      settings.ebay.oauthReady &&
+      settings.ebay.status !== "CONNECTED" ? (
+        <div className="syncbay-action-list">
           <ActionRow
-            description="Apri il collegamento eBay."
+            description="Riattiva import, aggiornamenti e disponibilità."
             href="/auth/ebay/start"
             icon="connect"
-            label={
-              settings.ebay.status === "CONNECTED" ? "Ricollega eBay" : "Collega eBay"
-            }
-            tone="info"
+            label="Collega eBay"
+            tone="critical"
           />
-        ) : null}
-        <ActionRow
-          description="Cronologia di import, aggiornamenti ed errori."
-          href="/app/activity"
-          icon="clock"
-          label="Apri attività"
-        />
-        <ActionRow
-          description="Porta nuovi prodotti eBay su Shopify."
-          href="/app/import-preview"
-          icon="import"
-          label="Apri importazione"
-        />
-        <ActionRow
-          description="Stato operativo e prossime azioni."
-          href="/app"
-          icon="store-online"
-          label="Torna alla Panoramica"
-        />
-      </div>
-      {actionData?.intent === "disconnectEbay" ? (
-        <s-paragraph>{actionData.message}</s-paragraph>
+        </div>
       ) : null}
       {settings.ebay.status === "CONNECTED" ? (
         <details className="syncbay-details">
@@ -742,25 +714,58 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
   timeZone: "Europe/Rome",
 });
 
+function getShopifyScopesDetail(settings: SettingsState) {
+  const missing = settings.shopify.missingScopes.length;
+  const config = settings.shopify.missingConfiguredScopes.length;
+
+  if (missing === 0 && config === 0) {
+    return "Tutti i permessi necessari sono concessi.";
+  }
+
+  const parts: string[] = [];
+  if (config > 0) {
+    parts.push(`${config} da aggiungere alla configurazione dell'app`);
+  }
+  if (missing > 0) {
+    parts.push(`${missing} da concedere reinstallando l'app`);
+  }
+
+  return `Permessi da sistemare: ${parts.join("; ")}.`;
+}
+
 function StatusRow({
   detail,
+  icon,
   label,
   title,
   tone,
 }: {
   detail: string;
+  icon: SyncBayIcon;
   label: string;
   title: string;
   tone: "critical" | "info" | "success" | "warning";
 }) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack direction="inline" gap="base" justifyContent="space-between">
-        <s-stack gap="small-200">
-          <s-heading>{title}</s-heading>
-          <s-text color="subdued">{detail}</s-text>
+      <s-stack
+        direction="inline"
+        gap="base"
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <s-stack direction="inline" gap="base" alignItems="center">
+          <span className="syncbay-tile__icon">
+            <s-icon type={icon} tone="neutral" size="base" />
+          </span>
+          <s-stack gap="small-200">
+            <s-heading>{title}</s-heading>
+            <s-text color="subdued">{detail}</s-text>
+          </s-stack>
         </s-stack>
-        <s-badge tone={tone}>{label}</s-badge>
+        <span className="syncbay-activity-badge">
+          <s-badge tone={tone}>{label}</s-badge>
+        </span>
       </s-stack>
     </s-box>
   );
