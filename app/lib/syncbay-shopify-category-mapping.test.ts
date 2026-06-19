@@ -4,7 +4,7 @@ import test from "node:test";
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { resolveShopifyCategoryProposal } from "./syncbay-shopify-category-mapping.ts";
 
-test("maps historic coin listings to rare coins with high confidence", () => {
+test("maps historic coin listings to collectible coins with high confidence", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName: "Monete italiane",
@@ -17,8 +17,8 @@ test("maps historic coin listings to rare coins with high confidence", () => {
       confidence: "high",
       productType: "Monete italiane",
       reason: "dry_run_only",
-      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
-      shopifyCategoryName: "Rare Coins",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyCategoryName: "Collectible Coins",
       source: "ebay_primary_category",
     },
   );
@@ -54,8 +54,8 @@ test("uses store category and title with medium confidence when primary category
       confidence: "medium",
       productType: "Monete italiane",
       reason: "dry_run_only",
-      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
-      shopifyCategoryName: "Rare Coins",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyCategoryName: "Collectible Coins",
       source: "ebay_store_category",
     },
   );
@@ -67,17 +67,73 @@ test("does not treat precious metal alone as bullion coins", () => {
       ebayPrimaryCategoryName: "Monete italiane",
       title: "20 Lire oro Regno d'Italia 1882",
     })?.shopifyCategoryName,
-    "Rare Coins",
+    "Collectible Coins",
   );
 });
 
-test("maps explicit bullion coin listings to bullion coins", () => {
+test("keeps bullion details in productType without using the bullion Shopify category", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName: "Monete bullion",
       title: "Krugerrand 1 oz oro bullion coin",
+    }),
+    {
+      applied: false,
+      confidence: "high",
+      productType: "Monete bullion",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyCategoryName: "Collectible Coins",
+      source: "ebay_primary_category",
+    },
+  );
+});
+
+test("keeps commemorative details in productType without using a narrow Shopify category", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete in euro:Italia",
+      title: "Italia 2 Euro commemorativo FDC 2024",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Monete commemorative",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyCategoryName: "Collectible Coins",
+      source: "title",
+    },
+  );
+});
+
+test("keeps medal categories in coins and currency instead of stamps", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Monete e banconote:Medaglie",
+      ebayStoreCategoryName: "Medaglie italiane ed estere",
+      title: "Medaglia commemorativa Casa Savoia",
+    }),
+    {
+      applied: false,
+      confidence: "high",
+      productType: "Medaglie",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+      shopifyCategoryName: "Collectible Coins & Currency",
+      source: "ebay_primary_category",
+    },
+  );
+});
+
+test("maps explicit first day cover stamp listings to first day covers", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayPrimaryCategoryName: "Francobolli:Italia:Buste primo giorno",
+      title: "Busta primo giorno FDC francobolli Italia 1984",
     })?.shopifyCategoryName,
-    "Bullion Coins",
+    "First Day Covers",
   );
 });
 
@@ -194,6 +250,25 @@ test("maps paper catalog books to print books", () => {
     resolveShopifyCategoryProposal({
       title:
         "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998",
+    }),
+    {
+      applied: false,
+      confidence: "medium",
+      productType: "Libri e cataloghi",
+      reason: "dry_run_only",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/me-1-3",
+      shopifyCategoryName: "Print Books",
+      source: "title",
+    },
+  );
+});
+
+test("keeps phone card catalog books as print books even with collectible store category", () => {
+  assert.deepEqual(
+    resolveShopifyCategoryProposal({
+      ebayStoreCategoryName: "Numismatica > Cataloghi",
+      title:
+        "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998 pari al n",
     }),
     {
       applied: false,

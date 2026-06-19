@@ -6,6 +6,30 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.40.5] — 2026-06-19
+
+### Sotto il cofano
+
+- Il backfill categorie legge i metafield prodotto `syncbay.*` già presenti su
+  Shopify come sorgente cache prima di chiamare eBay Trading `GetItem`, così le
+  verifiche post-apply possono evitare quote eBay quando snapshot o metafield
+  contengono già le categorie sorgente.
+- Il mapping categorie usa `Collectible Coins` come categoria Shopify neutra per
+  le monete e sposta distinzioni come italiane, commemorative o bullion nel
+  `productType`, evitando categorie troppo strette o fuorvianti come `Rare
+  Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
+  contesti numismatici.
+- `npm run categories:backfill` supporta il repair esplicito dei conflitti
+  generati dal vecchio mapper con
+  `--repair-category-conflicts --confirm-repair-category-conflicts`, limitato a
+  pattern legacy riconosciuti.
+- `npm run categories:backfill` può forzare anche i conflitti categoria manuali
+  solo con conferma esplicita del maintainer tramite
+  `--force-category-conflicts --confirm-force-category-conflicts`.
+- I cataloghi/libri cartacei con titolo esplicito, come i cataloghi di carte
+  telefoniche, restano `Print Books` anche quando una categoria sorgente
+  generica li collocherebbe nel collezionismo.
+
 ## [0.40.4] — 2026-06-19
 
 ### Correzioni
@@ -2012,6 +2036,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.40.5]: #0405--2026-06-19
 [0.40.4]: #0404--2026-06-19
 [0.40.3]: #0403--2026-06-19
 [0.40.2]: #0402--2026-06-19

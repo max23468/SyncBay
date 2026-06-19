@@ -8,6 +8,17 @@ export type CategoryBackfillStatus =
   | "missing_shopify_product"
   | "uncertain";
 
+const SHOPIFY_TAXONOMY_GIDS = {
+  bullionCoins: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-1",
+  collectibleBanknotes: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+  collectibleCoins: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+  collectibleCoinsAndCurrency: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+  commemorativeCoins: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-2",
+  firstDayCovers: "gid://shopify/TaxonomyCategory/ae-2-2-5-3",
+  postageStamps: "gid://shopify/TaxonomyCategory/ae-2-2-5",
+  rareCoins: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+} as const;
+
 export interface CategoryBackfillReportRowInput {
   ebayItemId: string;
   lookupFailureReason?: string | null;
@@ -84,10 +95,21 @@ export function buildCategoryBackfillReport(input: {
 
 export function buildCategoryApplyPlan(
   report: CategoryBackfillReport,
+  options: {
+    forceCategoryConflicts?: boolean;
+    includeCategoryConflicts?: boolean;
+  } = {},
 ): CategoryApplyPlan {
   return {
     rows: report.rows
-      .filter((row) => row.status === "applicable")
+      .filter(
+        (row) =>
+          row.status === "applicable" ||
+          (options.forceCategoryConflicts &&
+            row.status === "conflict_manual") ||
+          (options.includeCategoryConflicts &&
+            isKnownLegacyMapperConflict(row)),
+      )
       .map((row) => ({
         ebayItemId: row.ebayItemId,
         productType: row.proposal?.productType ?? "",
@@ -102,12 +124,72 @@ export function buildCategoryApplyPlan(
       ),
     skipped: {
       alreadyCorrect: report.summary.alreadyCorrect,
-      conflictsManual: report.summary.conflictsManual,
+      conflictsManual: options.forceCategoryConflicts
+        ? 0
+        : options.includeCategoryConflicts
+        ? report.rows.filter(
+            (row) =>
+              row.status === "conflict_manual" &&
+              !isKnownLegacyMapperConflict(row),
+          ).length
+        : report.summary.conflictsManual,
       ebayLookupFailed: report.summary.ebayLookupFailed,
       missingShopifyProduct: report.summary.missingShopifyProduct,
       uncertain: report.summary.uncertain,
     },
   };
+}
+
+function isKnownLegacyMapperConflict(row: CategoryBackfillReportRow) {
+  const proposal = row.proposal;
+  if (row.status !== "conflict_manual" || !proposal) {
+    return false;
+  }
+
+  const canRepairHighConfidence = proposal.confidence === "high";
+  const canRepairUnchangedProductType =
+    proposal.confidence === "medium" &&
+    normalizeNullableText(row.shopifyProductType) === proposal.productType;
+
+  const isCoinFlatteningConflict =
+    (canRepairHighConfidence || canRepairUnchangedProductType) &&
+    proposal.shopifyCategoryGid === SHOPIFY_TAXONOMY_GIDS.collectibleCoins &&
+    ["Monete italiane", "Monete commemorative", "Monete bullion"].includes(
+      proposal.productType,
+    ) &&
+    new Set<string>([
+      SHOPIFY_TAXONOMY_GIDS.bullionCoins,
+      SHOPIFY_TAXONOMY_GIDS.commemorativeCoins,
+      SHOPIFY_TAXONOMY_GIDS.firstDayCovers,
+      SHOPIFY_TAXONOMY_GIDS.rareCoins,
+    ]).has(row.shopifyCategoryGid ?? "");
+
+  const isMedalFlatteningConflict =
+    canRepairHighConfidence &&
+    proposal.shopifyCategoryGid ===
+      SHOPIFY_TAXONOMY_GIDS.collectibleCoinsAndCurrency &&
+    proposal.productType === "Medaglie" &&
+    new Set<string>([
+      SHOPIFY_TAXONOMY_GIDS.collectibleCoins,
+      SHOPIFY_TAXONOMY_GIDS.postageStamps,
+      SHOPIFY_TAXONOMY_GIDS.rareCoins,
+    ]).has(row.shopifyCategoryGid ?? "");
+
+  const isBanknoteFromCoinConflict =
+    canRepairHighConfidence &&
+    proposal.shopifyCategoryGid ===
+      SHOPIFY_TAXONOMY_GIDS.collectibleBanknotes &&
+    proposal.productType === "Banconote italiane" &&
+    new Set<string>([
+      SHOPIFY_TAXONOMY_GIDS.collectibleCoins,
+      SHOPIFY_TAXONOMY_GIDS.rareCoins,
+    ]).has(row.shopifyCategoryGid ?? "");
+
+  return (
+    isCoinFlatteningConflict ||
+    isMedalFlatteningConflict ||
+    isBanknoteFromCoinConflict
+  );
 }
 
 function getCategoryBackfillStatus(

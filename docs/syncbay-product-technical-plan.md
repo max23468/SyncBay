@@ -360,7 +360,10 @@ filatelia, modellini auto, dischi musicali, macchine da scrivere e
 cataloghi/libri cartacei. Il comando operativo
 `npm run categories:backfill -- --apply --confirm-apply` applica solo righe
 `applicable` e salta conflitti manuali, incertezze, lookup falliti senza
-proposta locale valida e prodotti senza GID Shopify.
+proposta locale valida e prodotti senza GID Shopify. I conflitti generati da
+vecchie regole del mapper possono essere inclusi solo con flag di repair
+espliciti e pattern riconosciuti, senza trasformare il backfill in una
+sovrascrittura massiva delle categorie manuali.
 
 Le cinque faccette storefront `syncbay_facets.*` seguono lo stesso principio:
 il comando operativo `npm run facets:backfill` è dry-run di default, confronta i
