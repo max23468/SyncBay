@@ -28,6 +28,7 @@ import {
   type CatalogSortDir,
   type CatalogSortKey,
   getCatalogPageWindow,
+  getCatalogSnapshotLookupIds,
 } from "../lib/syncbay-catalog-page";
 import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
@@ -103,6 +104,18 @@ interface ShopifyAdminGraphqlClient {
     options?: { variables?: Record<string, unknown> },
   ) => Promise<Response>;
 }
+
+type LatestProductSnapshotForDisplay = {
+  capturedAt: Date;
+  currency: string | null;
+  mappingId: string | null;
+  payload: Prisma.JsonValue | null;
+  priceAmount: Prisma.Decimal | null;
+  productStatus: string | null;
+  quantity: number | null;
+  sku: string | null;
+  title: string | null;
+};
 
 interface WebhookRecordInput {
   payload?: unknown;
@@ -503,10 +516,6 @@ export async function getCatalogPageState(
             },
             where: { status: SyncConflictStatus.OPEN },
           },
-          snapshots: {
-            orderBy: { capturedAt: "desc" },
-            take: 1,
-          },
         },
         orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
         take: CATALOG_IMPORT_MAX_PRODUCTS,
@@ -529,6 +538,9 @@ export async function getCatalogPageState(
       }),
     ]);
   const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
+  const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
+    mappings.map((mapping) => mapping.id),
+  );
 
   // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
   // paginazione, solo per le righe mostrate, per tenere veloci filtri e sort.
@@ -536,6 +548,7 @@ export async function getCatalogPageState(
   const allRows = mappings.map((mapping) =>
     formatCatalogPageRow({
       catalogVerifiedAt,
+      latestSnapshot: latestSnapshotByMappingId.get(mapping.id) ?? null,
       mapping,
       now,
       syncTargetSeconds: shop.syncTargetSeconds,
@@ -559,7 +572,12 @@ export async function getCatalogPageState(
     pagination.offset + pagination.pageSize,
   );
   const thumbnailPayloadByMappingId =
-    await getLatestThumbnailPayloadByMappingId(pageRows.map((row) => row.id));
+    await getLatestThumbnailPayloadByMappingId(
+      getCatalogSnapshotLookupIds({
+        maxLookupRows: CATALOG_PAGE_SIZE,
+        rows: pageRows,
+      }),
+    );
   const pageRowsWithSnapshotThumbs = pageRows.map((row) => {
     if (row.thumbnailUrl) return row;
     const payload = thumbnailPayloadByMappingId.get(row.id) ?? null;
@@ -697,14 +715,7 @@ export async function getConflictsPageState(
   });
   const conflicts = await prisma.syncConflict.findMany({
     include: {
-      mapping: {
-        include: {
-          snapshots: {
-            orderBy: { capturedAt: "desc" },
-            take: 1,
-          },
-        },
-      },
+      mapping: true,
     },
     orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
     skip: pagination.offset,
@@ -720,8 +731,16 @@ export async function getConflictsPageState(
         conflict.mapping?.id ? [conflict.mapping.id] : [],
       ),
     );
+  const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
+    conflicts.flatMap((conflict) =>
+      conflict.mapping?.id ? [conflict.mapping.id] : [],
+    ),
+  );
   const rows = conflicts.map((conflict) =>
     formatConflictPageRow(conflict, {
+      latestSnapshot: conflict.mapping?.id
+        ? (latestSnapshotByMappingId.get(conflict.mapping.id) ?? null)
+        : null,
       thumbnailPayload:
         (conflict.mapping?.id
           ? thumbnailPayloadByMappingId.get(conflict.mapping.id)
@@ -2657,6 +2676,37 @@ async function getLatestThumbnailPayloadByMappingId(mappingIds: string[]) {
   return payloadByMappingId;
 }
 
+async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
+  const uniqueMappingIds = [...new Set(mappingIds)];
+  const snapshotByMappingId = new Map<string, LatestProductSnapshotForDisplay>();
+
+  if (uniqueMappingIds.length === 0) return snapshotByMappingId;
+
+  const snapshots = await prisma.$queryRaw<LatestProductSnapshotForDisplay[]>`
+    SELECT DISTINCT ON ("mappingId")
+      "mappingId",
+      "capturedAt",
+      "currency",
+      "payload",
+      "priceAmount",
+      "productStatus",
+      "quantity",
+      "sku",
+      "title"
+    FROM "ProductSnapshot"
+    WHERE "mappingId" IN (${Prisma.join(uniqueMappingIds)})
+    ORDER BY "mappingId", "capturedAt" DESC
+  `;
+
+  for (const snapshot of snapshots) {
+    if (!snapshot.mappingId) continue;
+
+    snapshotByMappingId.set(snapshot.mappingId, snapshot);
+  }
+
+  return snapshotByMappingId;
+}
+
 async function getShopifyThumbnailUrlByProductGid(input: {
   productGids: string[];
   shopDomain: string;
@@ -2813,6 +2863,7 @@ function sortCatalogPageRows(
 
 function formatCatalogPageRow(input: {
   catalogVerifiedAt: Date | null;
+  latestSnapshot: LatestProductSnapshotForDisplay | null;
   mapping: Prisma.ProductMappingGetPayload<{
     include: {
       conflicts: {
@@ -2821,14 +2872,13 @@ function formatCatalogPageRow(input: {
           id: true;
         };
       };
-      snapshots: true;
     };
   }>;
   now: Date;
   syncTargetSeconds: number;
   thumbnailPayload: Prisma.JsonValue | null;
 }) {
-  const latestSnapshot = input.mapping.snapshots[0] ?? null;
+  const latestSnapshot = input.latestSnapshot;
   const lastSyncedAt = input.mapping.lastSyncedAt?.toISOString() ?? null;
   const status = getCatalogRowStatus({
     lastErrorCode: input.mapping.lastErrorCode,
@@ -2885,18 +2935,15 @@ function formatCatalogPageRow(input: {
 function formatConflictPageRow(
   conflict: Prisma.SyncConflictGetPayload<{
     include: {
-      mapping: {
-        include: {
-          snapshots: true;
-        };
-      };
+      mapping: true;
     };
   }>,
   input: {
+    latestSnapshot: LatestProductSnapshotForDisplay | null;
     thumbnailPayload: Prisma.JsonValue | null;
   },
 ) {
-  const latestSnapshot = conflict.mapping?.snapshots[0] ?? null;
+  const latestSnapshot = input.latestSnapshot;
 
   return {
     detectedAt: conflict.detectedAt.toISOString(),
