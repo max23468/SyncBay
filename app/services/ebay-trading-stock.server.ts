@@ -26,7 +26,7 @@ export async function reviseEbayTradingInventoryQuantity(input: {
   };
 }
 
-export function buildReviseInventoryStatusRequest(input: {
+function buildReviseInventoryStatusRequest(input: {
   itemId: string;
   quantity: number;
   sku?: string | null;

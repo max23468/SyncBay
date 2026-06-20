@@ -88,7 +88,7 @@ docs/
 | Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
-| Recuperare decisioni, concept UI e trascrizione dei thread del redesign embedded | `guides/ui-concepts-handoff.md` |
+| Recuperare decisioni, concept UI e fonti archiviate del redesign embedded | `guides/ui-concepts-handoff.md` |
 | Implementare il redesign UI embedded deciso nei thread | `superpowers/plans/2026-06-03-syncbay-ui-redesign.md` |
 | Capire limiti e governance del servizio | `guides/service-governance.md` |
 | Capire dati e entità | `data-model.md` |

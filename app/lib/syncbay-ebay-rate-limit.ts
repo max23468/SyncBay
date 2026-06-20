@@ -1,5 +1,5 @@
-export const DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_UTC_HOUR = 7;
-export const DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_GRACE_SECONDS = 5 * 60;
+const DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_UTC_HOUR = 7;
+const DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_GRACE_SECONDS = 5 * 60;
 
 const RATE_LIMIT_PATTERNS = [
   /superato il limite di utilizzo/i,
@@ -38,7 +38,7 @@ export function getNextEbayTradingRateLimitRetryAt(input: {
   return getNextEbayTradingDailyResetAt(input.now);
 }
 
-export function getNextEbayTradingDailyResetAt(now: Date) {
+function getNextEbayTradingDailyResetAt(now: Date) {
   const resetAt = new Date(now);
   resetAt.setUTCHours(
     DEFAULT_EBAY_TRADING_RATE_LIMIT_RESET_UTC_HOUR,

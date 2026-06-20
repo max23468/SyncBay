@@ -1,5 +1,5 @@
-export type ShopifyCategoryProposalConfidence = "high" | "medium" | "low";
-export type ShopifyCategoryProposalSource =
+type ShopifyCategoryProposalConfidence = "high" | "medium" | "low";
+type ShopifyCategoryProposalSource =
   | "ebay_primary_category"
   | "ebay_store_category"
   | "title"

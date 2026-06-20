@@ -24,7 +24,7 @@
     "ui:preview:impostazioni": "node scripts/syncbay-ui-render.mjs impostazioni --fixture",
     "ui:preview:importazione": "node scripts/syncbay-ui-render.mjs importazione --fixture",
     "ui:preview:panoramica": "node scripts/syncbay-ui-render.mjs panoramica --fixture",
-    "ui:preview-shot": "node scripts/preview-shot.mjs",
+    "ui:shot-live": "node scripts/syncbay-ui-shot-live.mjs",
     "ui:seed-local": "PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts/syncbay-seed-local-preview.sql",
     "test:lib": "node --test --experimental-strip-types app/lib/*.test.ts",
     "coverage:lib": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-include='app/lib/*.ts' --test-coverage-exclude='app/lib/*.test.ts' --test-coverage-lines=75 --test-coverage-branches=65 app/lib/*.test.ts",

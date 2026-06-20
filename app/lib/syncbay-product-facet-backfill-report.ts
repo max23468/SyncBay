@@ -4,7 +4,7 @@ import type {
   SyncBayProductFacetKey,
 } from "./syncbay-product-facets";
 
-export type ProductFacetBackfillStatus =
+type ProductFacetBackfillStatus =
   | "already_correct"
   | "applicable"
   | "conflict_manual"
@@ -12,7 +12,7 @@ export type ProductFacetBackfillStatus =
   | "missing_shopify_product"
   | "uncertain";
 
-export interface CurrentProductFacetMetafield {
+interface CurrentProductFacetMetafield {
   key: string;
   namespace: string;
   type: string;
@@ -28,7 +28,7 @@ export interface ProductFacetBackfillReportRowInput {
   shopifyProductGid: string | null;
 }
 
-export interface ProductFacetBackfillReportRow
+interface ProductFacetBackfillReportRow
   extends ProductFacetBackfillReportRowInput {
   conflicts: ShopifyProductFacetMetafield[];
   missingMetafields: ShopifyProductFacetMetafield[];

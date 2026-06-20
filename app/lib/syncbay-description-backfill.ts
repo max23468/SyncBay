@@ -1,4 +1,4 @@
-export type DescriptionBackfillStatus =
+type DescriptionBackfillStatus =
   | "applicable"
   | "already_correct"
   | "cleaner_unchanged"
@@ -58,7 +58,7 @@ export interface DescriptionBackfillReport {
   summary: DescriptionBackfillSummary;
 }
 
-export interface DescriptionBackfillSummary {
+interface DescriptionBackfillSummary {
   alreadyCorrect: number;
   analyzed: number;
   applicable: number;

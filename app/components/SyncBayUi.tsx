@@ -36,7 +36,7 @@ export type SyncBayIcon =
   | "store"
   | "store-online";
 
-export type MetricTrend = {
+type MetricTrend = {
   label: string;
   tone: "up" | "watch" | "neutral";
 };
@@ -442,37 +442,6 @@ export function StatusHero({
           </s-button>
         </span>
       ) : null}
-    </div>
-  );
-}
-
-type ConnectionCardProps = {
-  detail: string;
-  logo: "ebay" | "shopify";
-  name: string;
-  statusLabel: string;
-  statusTone: SyncBayTone;
-};
-
-export function ConnectionCard({
-  detail,
-  logo,
-  name,
-  statusLabel,
-  statusTone,
-}: ConnectionCardProps) {
-  return (
-    <div className="syncbay-connection">
-      <span className="syncbay-connection__mark">
-        {logo === "ebay" ? <EbayMark /> : <ShopifyMark />}
-      </span>
-      <span className="syncbay-connection__body">
-        <s-heading>{name}</s-heading>
-        <s-text color="subdued">{detail}</s-text>
-      </span>
-      <span className="syncbay-connection__status">
-        <s-badge tone={statusTone}>{statusLabel}</s-badge>
-      </span>
     </div>
   );
 }

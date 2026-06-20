@@ -1,6 +1,6 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
 
-export type CategoryBackfillStatus =
+type CategoryBackfillStatus =
   | "already_correct"
   | "applicable"
   | "conflict_manual"
@@ -29,7 +29,7 @@ export interface CategoryBackfillReportRowInput {
   shopifyProductType: string | null;
 }
 
-export interface CategoryBackfillReportRow extends CategoryBackfillReportRowInput {
+interface CategoryBackfillReportRow extends CategoryBackfillReportRowInput {
   status: CategoryBackfillStatus;
 }
 

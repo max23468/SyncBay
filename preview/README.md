@@ -23,7 +23,7 @@ Questo harness aggira il limite con **stand-in neutri** dei componenti `s-*`
 Non valida la resa esatta dei componenti Shopify: per quella restano il pilota
 Vercel e Shopify Admin.
 
-## Due modalità
+## Tre modalità
 
 ### 1. Smoke veloce con fixture sintetica (default design)
 
@@ -79,18 +79,21 @@ funzionali del sync.
 Solo la chrome dei componenti `s-*` resta simulata. Tutto il resto — dati,
 componente di route, design layer, gerarchia — è reale.
 
-### 3. Harness HTML statico
+### 3. Screenshot live dentro Shopify Admin
 
-`scripts/preview-shot.mjs` screenshotta gli HTML statici in `preview/` con dati
-sintetici. Utile quando il database locale non è disponibile.
+Quando serve verificare la resa embedded reale, usa Playwright con profilo
+persistente dedicato. Al primo avvio si apre Chromium per il login Shopify; le
+esecuzioni successive riusano `.shopify-pw-profile/`, che è gitignorato.
 
 ```bash
-npm run ui:preview-shot            # tutte le pagine statiche
-node scripts/preview-shot.mjs panoramica
+npm run ui:shot-live                  # Panoramica
+npm run ui:shot-live -- Catalogo      # voce nav Catalogo
+HEADLESS=1 npm run ui:shot-live -- Conflitti conflitti
 ```
 
-I PNG finiscono in `preview/shots/` (desktop e stretto). In alternativa apri
-direttamente i file `.html` in un browser.
+Output: `preview/shots/<nome>-real.png` e, quando disponibile, anche lo
+screenshot del frame embedded. Questo percorso valida l'integrazione Admin; per
+QA rapido e ripetibile resta preferibile `npm run ui:preview`.
 
 ## Fedeltà
 
@@ -98,7 +101,9 @@ direttamente i file `.html` in un browser.
   spaziatura, responsive.
 - Approssimati: tutto ciò che è `s-*` (bottoni, badge, sezioni, icone, testo) è
   uno stand-in CSS, non il componente Shopify.
-- I dati sono fittizi e sintetici, mai dati reali di negozianti.
+- I dati fixture sono sintetici; il render live locale usa solo dati reali o
+  aggregati già presenti nel database locale, senza token o dati personali in
+  output.
 
 ## Pagine coperte
 

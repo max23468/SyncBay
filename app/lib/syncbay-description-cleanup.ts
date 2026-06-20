@@ -221,7 +221,7 @@ export function summarizeDescriptionCleanupReport(
   };
 }
 
-export function htmlToText(html: string) {
+function htmlToText(html: string) {
   return html
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;|&#160;/gi, " ")
