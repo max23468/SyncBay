@@ -858,8 +858,8 @@ function DescriptionPreviewDetails({
       <summary>
         Descrizione:{" "}
         {description.descriptionWasChanged
-          ? `ripulita, -${description.descriptionRemovedPercent}%`
-          : "già pulita"}
+          ? `adattata, -${description.descriptionRemovedPercent}%`
+          : "invariata"}
       </summary>
       <s-stack gap="small-200">
         <s-text color="subdued">
@@ -875,7 +875,7 @@ function DescriptionPreviewDetails({
         ) : null}
         {description.descriptionCleanedTextExcerpt ? (
           <s-text>
-            Pulita: {description.descriptionCleanedTextExcerpt}
+            Preview: {description.descriptionCleanedTextExcerpt}
           </s-text>
         ) : null}
       </s-stack>

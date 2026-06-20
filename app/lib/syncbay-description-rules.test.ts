@@ -5,6 +5,7 @@ import test from "node:test";
 import * as descriptionRules from "./syncbay-description-rules.ts";
 
 const {
+  applyDescriptionRuleToHtml,
   DESCRIPTION_RULE_MODES,
   getDescriptionRuleSummary,
   normalizeDescriptionRuleFormInput,
@@ -39,4 +40,27 @@ test("summarizes description rules in merchant-facing Italian", () => {
   assert.equal(getDescriptionRuleSummary("CLEAN_HTML"), "HTML pulito");
   assert.equal(getDescriptionRuleSummary("FULL_HTML"), "HTML eBay completo");
   assert.equal(getDescriptionRuleSummary("TEXT_ONLY"), "Solo testo");
+});
+
+test("applies full html and text-only description modes", () => {
+  const html = "<p>Moneta <strong>rara</strong></p>";
+
+  assert.deepEqual(
+    applyDescriptionRuleToHtml({
+      cleanedHtml: "<p>Moneta rara</p>",
+      html,
+      mode: "FULL_HTML",
+    }),
+    { html, mode: "FULL_HTML", removedPercent: 0, wasChanged: false },
+  );
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: "<p>Moneta rara</p>",
+    html: `${html}<script>alert(1)</script>&nbsp;&amp;`,
+    mode: "TEXT_ONLY",
+  });
+
+  assert.equal(textOnly.html, "Moneta rara &");
+  assert.equal(textOnly.mode, "TEXT_ONLY");
+  assert.equal(textOnly.wasChanged, true);
+  assert.ok(textOnly.removedPercent > 0);
 });

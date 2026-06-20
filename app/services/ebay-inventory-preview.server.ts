@@ -7,6 +7,7 @@ import {
   type ImportPreviewResult,
 } from "./import-preview.server";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
+import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
 import { EbayTokenError, getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingImportPreview } from "./ebay-trading-preview.server";
 
@@ -96,7 +97,7 @@ const TRADING_API_COVERAGE_NOTE =
 
 async function getEbayInventoryImportPreview(
   connection: EbayConnection,
-  options: { limit?: number } = {},
+  options: { descriptionRuleMode?: DescriptionRuleMode; limit?: number } = {},
 ): Promise<EbayInventoryPreviewState> {
   const limit = getPreviewLimit(options.limit);
 
@@ -115,6 +116,7 @@ async function getEbayInventoryImportPreview(
       const inventoryPreview = buildImportPreview(
         inventoryResult.page.candidates,
         "live",
+        { descriptionRuleMode: options.descriptionRuleMode },
       );
 
       if (inventoryPreview.summary.importableCount > 0) {
@@ -152,7 +154,9 @@ async function getEbayInventoryImportPreview(
     return {
       coverageNote: getTradingCoverageNote(inventoryErrorMessage),
       errorMessage: null,
-      previewResult: buildImportPreview(tradingPage.candidates, "live"),
+      previewResult: buildImportPreview(tradingPage.candidates, "live", {
+        descriptionRuleMode: options.descriptionRuleMode,
+      }),
       readCount: tradingPage.readCount,
       readCounts: {
         inventoryApi: inventoryReadCount,
@@ -251,7 +255,7 @@ function getTradingCoverageNote(inventoryErrorMessage?: string | null) {
 
 export async function getEbayLiveImportPreview(
   connection: EbayConnection,
-  options: { limit?: number } = {},
+  options: { descriptionRuleMode?: DescriptionRuleMode; limit?: number } = {},
 ) {
   return getEbayInventoryImportPreview(connection, options);
 }

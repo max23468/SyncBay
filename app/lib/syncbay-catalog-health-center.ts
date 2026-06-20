@@ -4,6 +4,7 @@ export interface CatalogHealthCause {
   code:
     | "failed_jobs"
     | "incremental_running"
+    | "needs_check"
     | "open_conflicts"
     | "stale_sync"
     | "unknown_availability";
@@ -33,6 +34,12 @@ export function buildCatalogHealthCenter(input: {
     code: "stale_sync",
     detail: "Il watermark catalogo è più vecchio della finestra target.",
     label: "Prodotti attivi non verificati",
+    tone: "warning",
+  });
+  pushCause(causes, input.needsCheckCount, {
+    code: "needs_check",
+    detail: "Alcuni mapping richiedono una verifica prima di considerarli allineati.",
+    label: "Righe da verificare",
     tone: "warning",
   });
   pushCause(causes, input.unknownAvailabilityCount, {

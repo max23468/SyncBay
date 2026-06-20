@@ -61,11 +61,10 @@ function RoutePendingIndicator({
   if (!isVisible) return null;
 
   return (
-    <div
+    <output
       aria-live="polite"
       aria-label={`${copy.title}. ${copy.detail}`}
       className="syncbay-route-pending"
-      role="status"
     >
       <span className="syncbay-route-pending__surface">
         <span aria-hidden="true" className="syncbay-route-pending__icon">
@@ -76,7 +75,7 @@ function RoutePendingIndicator({
           <s-text color="subdued">{copy.detail}</s-text>
         </span>
       </span>
-    </div>
+    </output>
   );
 }
 

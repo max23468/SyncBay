@@ -31,41 +31,46 @@ export function buildExistingProductMatchSuggestions(input: {
     ? (input.limit as number)
     : 5;
 
-  return input.shopifyProducts
-    .flatMap((product) => {
-      const reasons: string[] = [];
-      let score = 0;
+  const bestByProduct = new Map<string, ExistingProductMatchSuggestion>();
 
-      if (sameToken(input.ebay.sku, product.sku)) {
-        score += 100;
-        reasons.push("SKU identico");
-      }
-      if (sameToken(input.ebay.itemId, product.barcode)) {
-        score += 95;
-        reasons.push("ItemID eBay trovato su barcode");
-      }
+  for (const product of input.shopifyProducts) {
+    const reasons: string[] = [];
+    let score = 0;
 
-      const titleSimilarity = getTitleSimilarity(input.ebay.title, product.title);
-      if (titleSimilarity >= 0.8) {
-        score += 40;
-        reasons.push("Titolo molto simile");
-      } else if (titleSimilarity >= 0.55) {
-        score += 24;
-        reasons.push("Titolo simile");
-      }
+    if (sameToken(input.ebay.sku, product.sku)) {
+      score += 100;
+      reasons.push("SKU identico");
+    }
+    if (sameToken(input.ebay.itemId, product.barcode)) {
+      score += 95;
+      reasons.push("ItemID eBay trovato su barcode");
+    }
 
-      if (score < 20) return [];
+    const titleSimilarity = getTitleSimilarity(input.ebay.title, product.title);
+    if (titleSimilarity >= 0.8) {
+      score += 40;
+      reasons.push("Titolo molto simile");
+    } else if (titleSimilarity >= 0.55) {
+      score += 24;
+      reasons.push("Titolo simile");
+    }
 
-      return [
-        {
-          confidence: getConfidence(score),
-          productGid: product.productGid,
-          reasons,
-          score,
-          variantGid: product.variantGid ?? null,
-        },
-      ];
-    })
+    if (score < 20) continue;
+
+    const suggestion = {
+      confidence: getConfidence(score),
+      productGid: product.productGid,
+      reasons,
+      score,
+      variantGid: product.variantGid ?? null,
+    };
+    const existing = bestByProduct.get(product.productGid);
+    if (!existing || suggestion.score > existing.score) {
+      bestByProduct.set(product.productGid, suggestion);
+    }
+  }
+
+  return Array.from(bestByProduct.values())
     .sort((first, second) => second.score - first.score)
     .slice(0, limit);
 }

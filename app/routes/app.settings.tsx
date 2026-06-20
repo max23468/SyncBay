@@ -45,6 +45,7 @@ import {
   getSyncTargetLabel,
   SYNC_TARGET_OPTIONS,
 } from "../lib/syncbay-sync-interval";
+import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import { authenticate } from "../shopify.server";
 import {
   disconnectEbayConnection,
@@ -776,6 +777,9 @@ function AdvancedSettingsCard({
               {settings.shopify.configuredScopes.length > 0
                 ? settings.shopify.configuredScopes.join(", ")
                 : "nessuno"}
+            </s-list-item>
+            <s-list-item>
+              Versione SyncBay: {APP_VERSION} ({BUILD_DATE})
             </s-list-item>
           </s-unordered-list>
         </s-stack>

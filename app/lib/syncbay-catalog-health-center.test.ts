@@ -23,6 +23,7 @@ test("breaks catalog health into concrete operational causes", () => {
     health.causes.map((cause) => [cause.code, cause.count, cause.tone]),
     [
       ["stale_sync", 8, "warning"],
+      ["needs_check", 12, "warning"],
       ["unknown_availability", 4, "warning"],
       ["open_conflicts", 3, "warning"],
       ["failed_jobs", 1, "critical"],
