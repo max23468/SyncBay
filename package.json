@@ -32,6 +32,7 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "vite": "vite",
+    "pretypecheck": "prisma generate",
     "typecheck": "react-router typegen && tsc --noEmit",
     "db:advisors:security": "npx supabase db advisors --linked --type security",
     "db:advisors:performance": "npx supabase db advisors --linked --type performance",
