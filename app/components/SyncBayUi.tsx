@@ -114,7 +114,7 @@ export function SyncPulse({
         <s-text>{marketplaceLabel}</s-text>
         <s-text color="subdued">sorgente</s-text>
       </span>
-      <span className="syncbay-pulse__track">
+      <span aria-hidden="true" className="syncbay-pulse__track">
         {working ? (
           <>
             <span className="syncbay-pulse__dot" />
@@ -123,7 +123,7 @@ export function SyncPulse({
         ) : null}
         <span className="syncbay-pulse__track-label">{readLabel}</span>
       </span>
-      <span className="syncbay-pulse__stage">
+      <span aria-hidden="true" className="syncbay-pulse__stage">
         <span
           className={`syncbay-pulse__node ${
             working ? "syncbay-pulse__node--hub" : "syncbay-pulse__node--done"
@@ -140,11 +140,11 @@ export function SyncPulse({
         <s-text>SyncBay</s-text>
         <s-text color="subdued">{working ? "allinea" : "allineato"}</s-text>
       </span>
-      <span className="syncbay-pulse__track">
+      <span aria-hidden="true" className="syncbay-pulse__track">
         {working ? <span className="syncbay-pulse__dot" /> : null}
         <span className="syncbay-pulse__track-label">{appliedLabel}</span>
       </span>
-      <span className="syncbay-pulse__stage">
+      <span aria-hidden="true" className="syncbay-pulse__stage">
         <span className="syncbay-pulse__node">
           <s-icon type="store-online" tone="neutral" size="base" />
         </span>

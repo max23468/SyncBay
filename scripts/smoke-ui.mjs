@@ -230,11 +230,11 @@ const navMenuContent = fs.existsSync("app/routes/app.tsx")
   ? fs.readFileSync("app/routes/app.tsx", "utf8")
   : "";
 
-const visibleOverviewLink = /<a\s+href="\/app">\s*Panoramica\s*<\/a>/.test(
+const visibleOverviewLink = /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<\/(?:a|Link)>/.test(
   navMenuContent,
 );
 
-const hiddenHomeLink = /<a\s+href="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/a>/.test(
+const hiddenHomeLink = /<(?:a|Link)\s+(?:href|to)="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/(?:a|Link)>/.test(
   navMenuContent,
 );
 

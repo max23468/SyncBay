@@ -6,6 +6,7 @@ import * as catalogPage from "./syncbay-catalog-page.ts";
 
 const {
   catalogRowMatchesSearch,
+  getCatalogQueryPlan,
   getCatalogSnapshotLookupIds,
   getCatalogPageWindow,
   isCatalogRowNeedingCheck,
@@ -63,6 +64,68 @@ test("computes catalog pagination windows", () => {
       previousPage: 1,
       totalPages: 3,
       totalRows: 250,
+    },
+  );
+});
+
+test("plans simple catalog views as a single visible database page", () => {
+  assert.deepEqual(
+    getCatalogQueryPlan({
+      filter: "archived",
+      page: 2,
+      search: "",
+      sort: null,
+      sortDir: "asc",
+      totalRows: 1154,
+    }),
+    {
+      mode: "database-page",
+      pagination: {
+        currentEnd: 100,
+        currentStart: 51,
+        hasNextPage: true,
+        hasPreviousPage: true,
+        nextPage: 3,
+        offset: 50,
+        page: 2,
+        pageSize: 50,
+        previousPage: 1,
+        totalPages: 24,
+        totalRows: 1154,
+      },
+      take: 50,
+    },
+  );
+});
+
+test("keeps computed catalog views on the full in-memory plan", () => {
+  assert.deepEqual(
+    getCatalogQueryPlan({
+      filter: "fresh",
+      page: 1,
+      search: "lire",
+      sort: "price",
+      sortDir: "asc",
+      totalRows: 1154,
+    }),
+    {
+      mode: "computed-full",
+    },
+  );
+});
+
+test("keeps searched catalog views on the full in-memory plan", () => {
+  assert.deepEqual(
+    getCatalogQueryPlan({
+      filter: "archived",
+      page: 1,
+      search: "lire",
+      sort: null,
+      sortDir: "asc",
+      totalRows: 274,
+    }),
+    {
+      mode: "computed-full",
     },
   );
 });

@@ -116,6 +116,37 @@ export function getCatalogPageWindow(input: {
   };
 }
 
+export function getCatalogQueryPlan(input: {
+  filter: CatalogPageFilter;
+  page: number;
+  search?: string | null;
+  sort: CatalogSortKey | null;
+  sortDir: CatalogSortDir;
+  totalRows: number;
+}) {
+  if (
+    ["all", "linked", "conflicts", "not_updated", "archived"].includes(
+      input.filter,
+    ) &&
+    !input.search?.trim() &&
+    !input.sort
+  ) {
+    const pagination = getCatalogPageWindow({
+      page: input.page,
+      pageSize: CATALOG_PAGE_SIZE,
+      totalRows: input.totalRows,
+    });
+
+    return {
+      mode: "database-page" as const,
+      pagination,
+      take: pagination.pageSize,
+    };
+  }
+
+  return { mode: "computed-full" as const };
+}
+
 export function getCatalogSnapshotLookupIds(input: {
   maxLookupRows: number;
   rows: Array<{ id: string }>;

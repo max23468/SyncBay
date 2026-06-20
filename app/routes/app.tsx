@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Outlet, useLoaderData, useRouteError } from "react-router";
+import { Link, Outlet, useLoaderData, useRouteError } from "react-router";
 import { NavMenu, TitleBar } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
@@ -20,15 +20,15 @@ export default function App() {
     <AppProvider embedded apiKey={apiKey}>
       <TitleBar title={SYNCBAY_APP_NAME} />
       <NavMenu>
-        <a href="/app" rel="home">
+        <Link to="/app" rel="home">
           {SYNCBAY_APP_NAME}
-        </a>
-        <a href="/app">Panoramica</a>
-        <a href="/app/catalog">Catalogo</a>
-        <a href="/app/conflicts">Conflitti</a>
-        <a href="/app/import-preview">Importazione</a>
-        <a href="/app/activity">Attività</a>
-        <a href="/app/settings">Impostazioni</a>
+        </Link>
+        <Link to="/app">Panoramica</Link>
+        <Link to="/app/catalog">Catalogo</Link>
+        <Link to="/app/conflicts">Conflitti</Link>
+        <Link to="/app/import-preview">Importazione</Link>
+        <Link to="/app/activity">Attività</Link>
+        <Link to="/app/settings">Impostazioni</Link>
       </NavMenu>
       <Outlet />
     </AppProvider>
