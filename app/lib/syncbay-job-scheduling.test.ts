@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, isSchedulableSyncJob, isStaleInternalShopifyImportJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -211,5 +211,47 @@ test("keeps the newest Shopify change job per shop topic and resource", () => {
       },
     ]),
     ["older-product"],
+  );
+});
+
+test("coalesces Shopify change jobs that only carry normalized admin graphql ids", () => {
+  assert.deepEqual(
+    getDuplicateShopifyChangeJobIdsToCancel([
+      {
+        createdAt: new Date("2026-06-20T10:00:00.000Z"),
+        id: "older-product-admin-id",
+        payload: {
+          adminGraphqlApiId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        shopId: "shop-1",
+      },
+      {
+        createdAt: new Date("2026-06-20T10:00:01.000Z"),
+        id: "newer-product-admin-id",
+        payload: {
+          admin_graphql_api_id: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        shopId: "shop-1",
+      },
+    ]),
+    ["older-product-admin-id"],
+  );
+});
+
+test("keeps every usable Shopify change resource key for runtime matching", () => {
+  assert.deepEqual(
+    getShopifyChangeJobResourceKeys({
+      adminGraphqlApiId: "gid://shopify/Product/1",
+      admin_graphql_api_id: "gid://shopify/Product/1",
+      inventoryItemGid: "gid://shopify/InventoryItem/1",
+      resourceId: "gid://shopify/InventoryLevel/1",
+    }),
+    [
+      "gid://shopify/InventoryLevel/1",
+      "gid://shopify/InventoryItem/1",
+      "gid://shopify/Product/1",
+    ],
   );
 });

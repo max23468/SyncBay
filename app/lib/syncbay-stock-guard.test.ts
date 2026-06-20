@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, isEbayStockRealWriteAllowed, selectEbayTradingInventorySku, selectShopifyOrderCurrency, shouldDryRunEbayStockLine, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
+import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, isEbayStockRealWriteAllowed, isPositiveShopifyOrderQuantity, selectEbayTradingInventorySku, selectShopifyOrderCurrency, shouldDryRunEbayStockLine, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
   assert.equal(getExpectedMarketplaceCurrency("EBAY_IT"), "EUR");
@@ -242,4 +242,12 @@ test("selects Shopify presentment currency before shop currency", () => {
     }),
     "USD",
   );
+});
+
+test("accepts only positive integer Shopify order quantities for stock updates", () => {
+  assert.equal(isPositiveShopifyOrderQuantity(1), true);
+  assert.equal(isPositiveShopifyOrderQuantity(2), true);
+  assert.equal(isPositiveShopifyOrderQuantity(1.5), false);
+  assert.equal(isPositiveShopifyOrderQuantity(0), false);
+  assert.equal(isPositiveShopifyOrderQuantity(-1), false);
 });

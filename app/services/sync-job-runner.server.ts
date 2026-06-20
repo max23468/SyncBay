@@ -69,6 +69,7 @@ import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-reco
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
   isEbayStockDryRunEnabled,
+  isPositiveShopifyOrderQuantity,
   shouldDryRunEbayStockLine,
   validateEbayStockCurrency,
   validateEbayStockOrderCurrency,
@@ -2854,7 +2855,13 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
     const lineItemObject = getJsonObject(lineItem);
     const quantity = getJsonNumber(lineItemObject?.quantity);
 
-    if (!lineItemObject || !quantity || quantity <= 0) return [];
+    if (
+      !lineItemObject ||
+      !quantity ||
+      !isPositiveShopifyOrderQuantity(quantity)
+    ) {
+      return [];
+    }
 
     return [
       {

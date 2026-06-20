@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.13] — 2026-06-20
+
+### Correzioni
+
+- Webhook ordini Shopify: le quantità frazionarie vengono scartate prima di
+  pianificare aggiornamenti stock eBay, evitando riduzioni non rappresentabili
+  sulla disponibilità marketplace.
+
+### Sotto il cofano
+
+- Coda Shopify: la coalescenza dei job `DETECT_SHOPIFY_CHANGES` riconosce anche
+  chiavi risorsa `admin_graphql_api_id`/`adminGraphqlApiId`, oltre a
+  `resourceId` e `inventoryItemGid`.
+
 ## [0.42.12] — 2026-06-20
 
 ### Correzioni
@@ -2226,6 +2240,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.13]: #04213--2026-06-20
 [0.42.12]: #04212--2026-06-20
 [0.42.7]: #0427--2026-06-20
 [0.42.6]: #0426--2026-06-20

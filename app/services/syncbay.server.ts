@@ -84,6 +84,7 @@ import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
+import { getShopifyChangeJobResourceKeys } from "../lib/syncbay-job-scheduling";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -3535,29 +3536,26 @@ function getCoalescedWebhookMatchers(
   details: Prisma.JsonObject,
 ): Prisma.SyncJobWhereInput[] {
   const topic = getJsonString(details.topic);
-  const resourceId = getJsonString(details.resourceId);
-  const inventoryItemGid = getJsonString(details.inventoryItemGid);
+  const resourceKeys = getShopifyChangeJobResourceKeys(details);
   const topicMatcher = topic
     ? { payload: { path: ["topic"], equals: topic } }
     : null;
   const matchers: Prisma.SyncJobWhereInput[] = [];
 
-  if (resourceId) {
-    matchers.push({
-      AND: [
-        ...(topicMatcher ? [topicMatcher] : []),
-        { payload: { path: ["resourceId"], equals: resourceId } },
-      ],
-    });
-  }
-
-  if (inventoryItemGid) {
-    matchers.push({
-      AND: [
-        ...(topicMatcher ? [topicMatcher] : []),
-        { payload: { path: ["inventoryItemGid"], equals: inventoryItemGid } },
-      ],
-    });
+  for (const resourceKey of resourceKeys) {
+    for (const path of [
+      ["resourceId"],
+      ["inventoryItemGid"],
+      ["adminGraphqlApiId"],
+      ["admin_graphql_api_id"],
+    ]) {
+      matchers.push({
+        AND: [
+          ...(topicMatcher ? [topicMatcher] : []),
+          { payload: { path, equals: resourceKey } },
+        ],
+      });
+    }
   }
 
   return matchers;

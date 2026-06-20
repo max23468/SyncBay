@@ -10,6 +10,10 @@ export function isEbayStockDryRunEnabled(value: string | undefined) {
   return value?.trim().toLowerCase() === "true";
 }
 
+export function isPositiveShopifyOrderQuantity(value: number) {
+  return Number.isInteger(value) && value > 0;
+}
+
 export function shouldDryRunEbayStockLine(input: {
   allowlist?: string | null;
   ebayItemId: string;
