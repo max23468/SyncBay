@@ -60,6 +60,7 @@ import {
   isStaleInternalShopifyImportJob,
 } from "../lib/syncbay-job-scheduling";
 import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
+import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
   STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
@@ -211,6 +212,7 @@ export async function runDueSyncJobs(
   );
   const archivedStaleFailedJobCount =
     await archiveSupersededFailedIncrementalSyncJobs({ now });
+  const retentionCleanup = await runRetentionCleanup({ now });
 
   return {
     archivedStaleFailedJobCount,
@@ -221,6 +223,7 @@ export async function runDueSyncJobs(
       (result) => result.status === "skipped",
     ).length,
     cleanedInternalImportJobCount,
+    retentionCleanup,
     succeededCount: completedResults.filter(
       (result) => result.status === "succeeded",
     ).length,

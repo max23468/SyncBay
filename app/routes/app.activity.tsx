@@ -21,6 +21,7 @@ import {
 import { LiveSync, useActionToast } from "../components/SyncBayLive";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
+import { classifySyncJobQuarantine } from "../lib/syncbay-job-quarantine";
 import {
   formatSyncJobStatus as formatJobStatus,
   getActivityBadgeState,
@@ -438,7 +439,7 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       meta: `${getTimelineCategoryLabel(category)} · ${formatJobStatus(job.status)}`,
       timestamp: job.createdAt,
       title: getJobTitle(job.type),
-      tone: getJobTone(job.status),
+      tone: getJobQueueTone(job),
       type: "job" as const,
     };
   });
@@ -531,6 +532,33 @@ function getJobDetail(
   }).join(". ")}.`;
 }
 
+/**
+ * Tono coda per la timeline: un job fallito che la coda ritenta ancora resta
+ * "warning" (rumore ordinario), mentre uno in quarantena — tentativi esauriti,
+ * nessun retry automatico — diventa "critical" perché richiede un intervento.
+ */
+function getJobQueueTone(job: ActivityJob) {
+  const state = classifySyncJobQuarantine(job);
+
+  if (state === "actionable") return "critical";
+  if (job.status === "FAILED") return "warning";
+
+  return getJobTone(job.status);
+}
+
+function getJobQueueLabel(job: ActivityJob) {
+  const state = classifySyncJobQuarantine(job);
+
+  if (state === "actionable") {
+    return "In quarantena: tentativi esauriti, richiede un intervento.";
+  }
+  if (state === "retrying") {
+    return "In coda: SyncBay riproverà automaticamente.";
+  }
+
+  return "Conclusa.";
+}
+
 function ActivityTechnicalDetails({
   diagnostic,
   job,
@@ -547,6 +575,7 @@ function ActivityTechnicalDetails({
         <s-list-item>
           Tentativi: {job.attempts}/{job.maxAttempts}
         </s-list-item>
+        <s-list-item>Coda: {getJobQueueLabel(job)}</s-list-item>
         <s-list-item>
           Prossima esecuzione: {formatDateTime(job.runAfter)}
         </s-list-item>
