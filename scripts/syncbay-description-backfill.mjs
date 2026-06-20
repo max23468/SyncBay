@@ -6,16 +6,22 @@ import { spawnSync } from "node:child_process";
 import { XMLParser } from "fast-xml-parser";
 
 import {
+  buildDescriptionBackfillApplyFile,
   buildDescriptionBackfillApplyPlan,
   buildDescriptionBackfillReport,
   buildDescriptionBackfillRow,
   buildDescriptionBackfillSnapshotPayload,
+  filterDescriptionBackfillApplyFileRows,
 } from "../app/lib/syncbay-description-backfill.ts";
 import {
   buildDescriptionCleanupReportRow,
   cleanEbayDescriptionHtml,
 } from "../app/lib/syncbay-description-cleanup.ts";
 import { hashNullableText } from "../app/lib/syncbay-description-hash.ts";
+import {
+  buildGetSellerListRequest,
+  buildTradingItemCache,
+} from "../app/lib/syncbay-ebay-trading-bulk.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
@@ -23,6 +29,9 @@ import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const GET_ITEM_CONCURRENCY = 4;
+const GET_SELLER_LIST_ENTRIES_PER_PAGE = 200;
+// eBay requires the GetSellerList time range to stay below 120 days.
+const GET_SELLER_LIST_WINDOW_DAYS = 119;
 const APPLY_CONCURRENCY = 4;
 const SHOPIFY_ADMIN_API_VERSION = "2026-04";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
@@ -79,6 +88,12 @@ await main().catch((error) => {
 });
 
 async function main() {
+  if (args.applyPlan && (!args.apply || !args.confirmApply)) {
+    throw new Error(
+      "--apply-plan richiede --apply --confirm-apply per scrivere su Shopify.",
+    );
+  }
+
   if (args.apply && !args.confirmApply) {
     throw new Error(
       "Apply descrizioni bloccato: aggiungi --confirm-apply per scrivere su Shopify.",
@@ -90,7 +105,7 @@ async function main() {
   }
 
   const state = getBackfillState();
-  if (!state.connection) {
+  if (!args.applyPlan && !state.connection) {
     throw new Error(`Nessuna connessione eBay attiva per ${shopDomain}.`);
   }
 
@@ -108,6 +123,67 @@ async function main() {
     );
   }
 
+  if (args.applyPlan) {
+    const applyFile = readDescriptionBackfillApplyFile(args.applyPlan);
+    if (applyFile.shopDomain !== shopDomain) {
+      throw new Error(
+        `Apply plan per ${applyFile.shopDomain}, ma lo shop richiesto e' ${shopDomain}.`,
+      );
+    }
+
+    const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession);
+    const shopifyProducts = await loadShopifyProducts({
+      accessToken: shopifyAccessToken,
+      productGids: applyFile.rows
+        .map((row) => row.shopifyProductGid)
+        .filter(Boolean),
+    });
+    const guardedPlan = filterDescriptionBackfillApplyFileRows({
+      currentShopifyDescriptionHashes: new Map(
+        applyFile.rows
+          .filter((row) => row.shopifyProductGid)
+          .map((row) => [
+            row.shopifyProductGid,
+            shopifyProducts.has(row.shopifyProductGid)
+              ? hashNullableText(
+                  shopifyProducts.get(row.shopifyProductGid)?.descriptionHtml ??
+                    null,
+                )
+              : undefined,
+          ]),
+      ),
+      file: applyFile,
+    });
+    const report = buildDescriptionBackfillReport({
+      rows: [...guardedPlan.rows, ...guardedPlan.skippedRows],
+      shopDomain,
+    });
+    const applyResult = await applyDescriptionPlan({
+      accessToken: shopifyAccessToken,
+      plan: guardedPlan,
+      shopId: state.shop.id,
+    });
+    const output = {
+      ...report,
+      activeMappingsTotal: applyFile.rows.length,
+      analyzed: applyFile.rows.length,
+      apply: applyResult,
+      applyPlanFile: args.applyPlan,
+      partial: false,
+    };
+
+    if (args.json) {
+      console.log(JSON.stringify(sanitizeOutput(output), null, 2));
+      if (applyResult.failed > 0) process.exitCode = 1;
+      return;
+    }
+
+    printReport(output);
+    printApplySummary(output.apply);
+    if (applyResult.failed > 0) process.exitCode = 1;
+    return;
+  }
+
   const allMappings = Array.isArray(state.mappings) ? state.mappings : [];
   const mappings = args.limit ? allMappings.slice(0, args.limit) : allMappings;
 
@@ -123,6 +199,14 @@ async function main() {
   const { accessToken: ebayAccessToken } = await getAccessToken(
     state.connection,
   );
+  const tradingItemCache =
+    args.ebaySource === "seller-list"
+      ? await loadTradingSellerListItemCache({
+          accessToken: ebayAccessToken,
+          connection: state.connection,
+          itemIds: mappings.map((mapping) => mapping.ebayItemId),
+        })
+      : null;
   const rows = await mapWithConcurrency(
     mappings,
     GET_ITEM_CONCURRENCY,
@@ -132,6 +216,7 @@ async function main() {
         connection: state.connection,
         mapping,
         shopifyProduct: shopifyProducts.get(mapping.shopifyProductGid) ?? null,
+        tradingItemCache,
       }),
   );
   const report = buildDescriptionBackfillReport({
@@ -139,6 +224,19 @@ async function main() {
     shopDomain,
   });
   const applyPlan = buildDescriptionBackfillApplyPlan(report);
+  if (args.writeApplyPlan) {
+    fs.writeFileSync(
+      args.writeApplyPlan,
+      JSON.stringify(
+        buildDescriptionBackfillApplyFile({
+          generatedAt: new Date().toISOString(),
+          report,
+        }),
+        null,
+        2,
+      ),
+    );
+  }
   const applyResult = args.apply
     ? await applyDescriptionPlan({
         accessToken: shopifyAccessToken,
@@ -155,6 +253,8 @@ async function main() {
       requested: false,
       skipped: applyPlan.skipped,
     },
+    applyPlanFile: args.writeApplyPlan ?? null,
+    ebaySource: args.ebaySource ?? "get-item",
     partial: Boolean(args.limit && args.limit < allMappings.length),
   };
 
@@ -202,17 +302,21 @@ async function buildReportRow(input) {
   }
 
   try {
-    const item = await getTradingItem({
-      accessToken: input.accessToken,
-      connection: input.connection,
-      itemId: input.mapping.ebayItemId,
-    });
+    const cachedItem = input.tradingItemCache?.get(input.mapping.ebayItemId);
+    const item =
+      cachedItem ??
+      (await getTradingItem({
+        accessToken: input.accessToken,
+        connection: input.connection,
+        itemId: input.mapping.ebayItemId,
+      }));
 
     return buildRowFromDescriptions({
       ...baseInput,
-      ebayDescriptionHtml: getString(item, "Description"),
+      ebayDescriptionHtml:
+        "descriptionHtml" in item ? item.descriptionHtml : getString(item, "Description"),
       title:
-        getString(item, "Title") ??
+        ("title" in item ? item.title : getString(item, "Title")) ??
         input.mapping.title ??
         input.shopifyProduct?.title ??
         null,
@@ -225,6 +329,16 @@ async function buildReportRow(input) {
       ebayLookupFailureReason: formatError(error),
     });
   }
+}
+
+function readDescriptionBackfillApplyFile(path) {
+  const parsed = JSON.parse(fs.readFileSync(path, "utf8"));
+
+  if (parsed?.version !== 1 || !Array.isArray(parsed.rows)) {
+    throw new Error("Apply plan descrizioni non valido.");
+  }
+
+  return parsed;
 }
 
 function buildRowFromDescriptions(input) {
@@ -580,6 +694,83 @@ async function getTradingItem(input) {
   return asRecord(body?.Item) ?? {};
 }
 
+async function loadTradingSellerListItemCache(input) {
+  const targetItemIds = new Set(input.itemIds.filter(Boolean));
+  const foundItems = new Map();
+  const windowStart = new Date();
+  const windowEnd = new Date(
+    windowStart.getTime() + GET_SELLER_LIST_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+  let pageNumber = 1;
+  let totalPages = null;
+
+  while (totalPages === null || pageNumber <= totalPages) {
+    if (foundItems.size >= targetItemIds.size) break;
+
+    const body = await getTradingSellerListPage({
+      accessToken: input.accessToken,
+      connection: input.connection,
+      pageNumber,
+      windowEnd,
+      windowStart,
+    });
+    const pageItems = getTradingItems(asRecord(body));
+    const pageCache = buildTradingItemCache(pageItems);
+
+    for (const [itemId, item] of pageCache) {
+      if (targetItemIds.has(itemId) && !foundItems.has(itemId)) {
+        foundItems.set(itemId, item);
+      }
+    }
+
+    totalPages ??= getTotalPages(body);
+    if (pageItems.length === 0) break;
+
+    pageNumber += 1;
+  }
+
+  return foundItems;
+}
+
+async function getTradingSellerListPage(input) {
+  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
+    body: buildGetSellerListRequest({
+      entriesPerPage: GET_SELLER_LIST_ENTRIES_PER_PAGE,
+      pageNumber: input.pageNumber,
+      windowEnd: input.windowEnd,
+      windowStart: input.windowStart,
+    }),
+    headers: {
+      "Content-Type": "text/xml; charset=utf-8",
+      "X-EBAY-API-CALL-NAME": "GetSellerList",
+      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
+      "X-EBAY-API-IAF-TOKEN": input.accessToken,
+      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+    },
+    method: "POST",
+  });
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`eBay Trading API GetSellerList HTTP ${response.status}.`);
+  }
+
+  const body = asRecord(
+    asRecord(xmlParser.parse(responseText))?.GetSellerListResponse,
+  );
+  const ack = getString(body, "Ack");
+  if (ack && !["Success", "Warning"].includes(ack)) {
+    const errors = asRecord(body?.Errors);
+    throw new Error(
+      getString(errors, "LongMessage") ??
+        getString(errors, "ShortMessage") ??
+        "eBay GetSellerList non riuscita.",
+    );
+  }
+
+  return body ?? {};
+}
+
 async function getShopifyAccessToken(session) {
   if (!session?.accessToken) {
     throw new Error(`Sessione offline Shopify non disponibile per ${shopDomain}.`);
@@ -903,6 +1094,29 @@ function parseArgs(rawArgs) {
       continue;
     }
 
+    if (arg === "--write-apply-plan") {
+      parsed.writeApplyPlan = rawArgs[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--apply-plan") {
+      parsed.applyPlan = rawArgs[index + 1];
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--ebay-source") {
+      const source = rawArgs[index + 1];
+      if (!["get-item", "seller-list"].includes(source)) {
+        throw new Error("--ebay-source supporta solo get-item o seller-list.");
+      }
+
+      parsed.ebaySource = source;
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Argomento non supportato: ${arg}`);
   }
 
@@ -910,7 +1124,7 @@ function parseArgs(rawArgs) {
 }
 
 function printUsage() {
-  console.log(`Uso: npm run descriptions:backfill-cleanup -- [--shop dominio.myshopify.com] [--marketplace EBAY_IT] [--limit N] [--json] [--apply --confirm-apply]
+  console.log(`Uso: npm run descriptions:backfill-cleanup -- [--shop dominio.myshopify.com] [--marketplace EBAY_IT] [--limit N] [--json] [--apply --confirm-apply] [--write-apply-plan file.json] [--apply-plan file.json] [--ebay-source get-item|seller-list]
 
 Dry-run predefinito. Analizza prodotti ACTIVE/OUT_OF_STOCK collegati, legge la
 descrizione eBay corrente da Trading API, calcola la versione pulita e pianifica
@@ -918,6 +1132,15 @@ l'aggiornamento Shopify solo per prodotti senza conflitti aperti. Non modifica
 eBay. Con --json non stampa HTML completo delle descrizioni.
 
   --limit N         Analizza solo i primi N mapping.
+  --write-apply-plan file.json
+                    Scrive un piano locale con HTML pulito completo per apply
+                    successivo senza nuove letture eBay; non committare il file.
+  --apply-plan file.json
+                    Applica un piano scritto in precedenza, rileggendo solo
+                    Shopify per bloccare modifiche manuali successive.
+  --ebay-source seller-list
+                    Prova a leggere descrizioni in bulk via GetSellerList e usa
+                    GetItem solo per i listing non trovati nel bulk.
   --apply           Applica su Shopify solo le righe applicabili.
   --confirm-apply   Conferma obbligatoria per qualunque scrittura prodotto Shopify.`);
 }
@@ -1063,6 +1286,13 @@ function asRecord(value) {
     : null;
 }
 
+function asArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value == null) return [];
+
+  return [value];
+}
+
 function getString(record, key) {
   const value = asRecord(record)?.[key];
   if (typeof value === "string") return value;
@@ -1074,6 +1304,23 @@ function getString(record, key) {
   return typeof text === "string" || typeof text === "number"
     ? String(text)
     : null;
+}
+
+function getTradingItems(container) {
+  const itemArray = asRecord(container?.ItemArray);
+
+  return asArray(itemArray?.Item).flatMap((item) => {
+    const record = asRecord(item);
+    return record ? [record] : [];
+  });
+}
+
+function getTotalPages(container) {
+  const total = Number(
+    getString(asRecord(container?.PaginationResult), "TotalNumberOfPages"),
+  );
+
+  return Number.isInteger(total) && total > 0 ? total : null;
 }
 
 function escapeXml(value) {
