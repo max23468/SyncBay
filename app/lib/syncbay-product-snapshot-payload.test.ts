@@ -7,6 +7,7 @@ import * as productSnapshotPayload from "./syncbay-product-snapshot-payload.ts";
 const {
   buildEbayProductSnapshotPayload,
   getProductFacetsFromSnapshotPayload,
+  getProductSnapshotThumbnailUrlByMappingIdFromRows,
   getProductSnapshotThumbnailUrl,
   getProductSnapshotThumbnailUrlFromPayloads,
 } = productSnapshotPayload;
@@ -253,4 +254,44 @@ test("falls back to older payloads when the latest snapshot has no image", () =>
     ]),
     "https://i.ebayimg.example/older.jpg",
   );
+});
+
+test("keeps the first safe thumbnail URL per mapping from ordered candidate rows", () => {
+  const thumbnailUrlByMappingId =
+    getProductSnapshotThumbnailUrlByMappingIdFromRows([
+      {
+        mappingId: "mapping-1",
+        thumbnailUrl: "https://user:pass@example.com/private.jpg",
+      },
+      {
+        mappingId: "mapping-1",
+        thumbnailUrl: "https://i.ebayimg.example/latest.jpg",
+      },
+      {
+        mappingId: "mapping-1",
+        thumbnailUrl: "https://i.ebayimg.example/older.jpg",
+      },
+      {
+        mappingId: "mapping-2",
+        thumbnailUrl: "ftp://example.com/product.jpg",
+      },
+      {
+        mappingId: "mapping-2",
+        thumbnailUrl: "http://i.ebayimg.example/fallback.jpg",
+      },
+      {
+        mappingId: null,
+        thumbnailUrl: "https://i.ebayimg.example/missing-mapping.jpg",
+      },
+    ]);
+
+  assert.equal(
+    thumbnailUrlByMappingId.get("mapping-1"),
+    "https://i.ebayimg.example/latest.jpg",
+  );
+  assert.equal(
+    thumbnailUrlByMappingId.get("mapping-2"),
+    "http://i.ebayimg.example/fallback.jpg",
+  );
+  assert.equal(thumbnailUrlByMappingId.size, 2);
 });

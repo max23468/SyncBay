@@ -116,6 +116,30 @@ export function getProductSnapshotThumbnailUrlFromPayloads(values: unknown[]) {
   return null;
 }
 
+export type ProductSnapshotThumbnailCandidateRow = {
+  mappingId: string | null;
+  thumbnailUrl: string | null;
+};
+
+export function getProductSnapshotThumbnailUrlByMappingIdFromRows(
+  rows: ProductSnapshotThumbnailCandidateRow[],
+) {
+  const thumbnailUrlByMappingId = new Map<string, string>();
+
+  for (const row of rows) {
+    if (!row.mappingId || thumbnailUrlByMappingId.has(row.mappingId)) {
+      continue;
+    }
+
+    const thumbnailUrl = getString(row.thumbnailUrl);
+    if (!thumbnailUrl || !isSafeImageUrl(thumbnailUrl)) continue;
+
+    thumbnailUrlByMappingId.set(row.mappingId, thumbnailUrl);
+  }
+
+  return thumbnailUrlByMappingId;
+}
+
 export function getProductFacetsFromSnapshotPayload(
   value: unknown,
 ): SyncBayProductFacet[] {
