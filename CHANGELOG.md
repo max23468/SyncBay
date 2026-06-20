@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- CI: il workflow React Doctor usa lo script locale del progetto invece
+  dell'action composita, evitando il warning GitHub Actions su `actions/cache`
+  basato su Node 20.
+
 ## [0.42.1] — 2026-06-20
 
 ### Correzioni
