@@ -214,6 +214,13 @@ export function buildDescriptionBackfillApplyFile(input: {
 }
 
 export function filterDescriptionBackfillApplyFileRows(input: {
+  currentMappingRows?: Map<
+    string,
+    {
+      openConflictFields?: string[];
+      shopifyProductGid?: string | null;
+    }
+  >;
   currentShopifyDescriptionHashes: Map<string, string | null>;
   file: DescriptionBackfillApplyFile;
 }) {
@@ -221,6 +228,43 @@ export function filterDescriptionBackfillApplyFileRows(input: {
   const skippedRows: DescriptionBackfillRow[] = [];
 
   for (const row of input.file.rows) {
+    const currentMapping = input.currentMappingRows?.get(row.mappingId);
+    const currentConflictFields = normalizeConflictFields(
+      currentMapping?.openConflictFields,
+    );
+
+    if (input.currentMappingRows && !currentMapping) {
+      skippedRows.push({
+        ...row,
+        reason: "mapping_not_currently_applicable",
+        status: "conflict_skipped",
+      });
+      continue;
+    }
+
+    if (currentConflictFields.length > 0) {
+      skippedRows.push({
+        ...row,
+        openConflictFields: currentConflictFields,
+        reason: "open_conflicts",
+        status: "conflict_skipped",
+      });
+      continue;
+    }
+
+    if (
+      currentMapping &&
+      currentMapping.shopifyProductGid !== row.shopifyProductGid
+    ) {
+      skippedRows.push({
+        ...row,
+        reason: "shopify_product_mapping_changed_since_apply_file",
+        shopifyProductGid: currentMapping.shopifyProductGid ?? null,
+        status: "conflict_skipped",
+      });
+      continue;
+    }
+
     const currentHash = row.shopifyProductGid
       ? input.currentShopifyDescriptionHashes.get(row.shopifyProductGid)
       : undefined;
