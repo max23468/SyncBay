@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.10] — 2026-06-20
+
+### Correzioni
+
+- Navigazione embedded: la capsule di transizione usa `s-text` Shopify per
+  allineare il font al resto dell'admin, senza override tipografici custom.
+
 ## [0.42.9] — 2026-06-20
 
 ### Correzioni
