@@ -259,6 +259,50 @@
   padding-block-end: 2px;
 }
 
+.syncbay-route-pending {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 10px 18px;
+  border-block-end: 1px solid var(--syncbay-mist);
+  background: color-mix(in srgb, var(--syncbay-paper) 92%, var(--syncbay-accent-tint));
+  color: var(--syncbay-info-text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.syncbay-route-pending__dot {
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 999px;
+  background: var(--syncbay-info);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--syncbay-info) 32%, transparent);
+  animation: syncbay-route-pending-pulse 1s ease-in-out infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes syncbay-route-pending-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syncbay-route-pending__dot {
+    animation: none;
+  }
+}
+
 .syncbay-product-placeholder {
   display: inline-flex;
   align-items: center;
