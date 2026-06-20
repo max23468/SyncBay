@@ -153,33 +153,35 @@ export default function CatalogRoute() {
             />
             {rows.length > 0 ? (
               <s-stack gap="base">
-                <s-table>
-                  <s-table-header-row>
-                    <s-table-header listSlot="kicker">Immagine</s-table-header>
-                    <s-table-header listSlot="primary">Prodotto</s-table-header>
-                    <s-table-header listSlot="inline">Collegamento</s-table-header>
-                    <s-table-header format="numeric" listSlot="labeled">
-                      Disponibilità
-                    </s-table-header>
-                    <s-table-header format="numeric" listSlot="inline">
-                      Prezzo
-                    </s-table-header>
-                    <s-table-header listSlot="secondary">
-                      Aggiornato
-                    </s-table-header>
-                    <s-table-header listSlot="inline">Stato</s-table-header>
-                    <s-table-header listSlot="labeled">Azioni</s-table-header>
-                  </s-table-header-row>
-                  <s-table-body>
-                    {rows.map((row) => (
-                      <CatalogTableRow
-                        key={row.id}
-                        row={row}
-                        shopDomain={catalog.shop.domain}
-                      />
-                    ))}
-                  </s-table-body>
-                </s-table>
+                <div className="syncbay-table-scroll">
+                  <s-table>
+                    <s-table-header-row>
+                      <s-table-header listSlot="kicker">Immagine</s-table-header>
+                      <s-table-header listSlot="primary">Prodotto</s-table-header>
+                      <s-table-header listSlot="inline">Collegamento</s-table-header>
+                      <s-table-header format="numeric" listSlot="labeled">
+                        Disponibilità
+                      </s-table-header>
+                      <s-table-header format="numeric" listSlot="inline">
+                        Prezzo
+                      </s-table-header>
+                      <s-table-header listSlot="secondary">
+                        Aggiornato
+                      </s-table-header>
+                      <s-table-header listSlot="inline">Stato</s-table-header>
+                      <s-table-header listSlot="labeled">Azioni</s-table-header>
+                    </s-table-header-row>
+                    <s-table-body>
+                      {rows.map((row) => (
+                        <CatalogTableRow
+                          key={row.id}
+                          row={row}
+                          shopDomain={catalog.shop.domain}
+                        />
+                      ))}
+                    </s-table-body>
+                  </s-table>
+                </div>
                 <CatalogPagination
                   activeFilter={activeFilter}
                   activeSearch={activeSearch}
