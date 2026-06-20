@@ -29,6 +29,7 @@ import {
   type CatalogSortKey,
   catalogRowMatchesSearch,
   getCatalogPageWindow,
+  getCatalogQueryPlan,
   getCatalogSnapshotLookupIds,
   isCatalogRowNeedingCheck,
 } from "../lib/syncbay-catalog-page";
@@ -479,11 +480,115 @@ export async function getCatalogPageState(
   } = {},
 ) {
   const shop = await ensureShopForSession(session);
+  const activeFilter = input.filter ?? "all";
+  const activePage = input.page ?? 1;
+  const activeSearch = input.search ?? "";
+  const activeSort = input.sort ?? null;
+  const activeSortDir = input.sortDir ?? "asc";
   const where = {
     marketplaceId: getEbayMarketplaceId(),
     shopId: shop.id,
   };
-  const [mappings, totalAvailableCount, linkedCount, latestIncrementalJob] =
+  const totalAvailableCount = await prisma.productMapping.count({ where });
+  const queryPlan = getCatalogQueryPlan({
+    filter: activeFilter,
+    page: activePage,
+    search: activeSearch,
+    sort: activeSort,
+    sortDir: activeSortDir,
+    totalRows: totalAvailableCount,
+  });
+
+  if (queryPlan.mode === "database-page") {
+    const [
+      [mappings, linkedCount, latestIncrementalJob],
+      summary,
+    ] =
+      await Promise.all([
+        prisma.$transaction([
+          prisma.productMapping.findMany({
+            include: {
+              conflicts: {
+                select: {
+                  field: true,
+                  id: true,
+                },
+                where: { status: SyncConflictStatus.OPEN },
+              },
+            },
+            orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+            skip: queryPlan.pagination.offset,
+            take: queryPlan.take,
+            where,
+          }),
+          prisma.productMapping.count({
+            where: {
+              ...where,
+              shopifyProductGid: { not: null },
+            },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { finishedAt: true },
+            where: getCompletedCatalogVerificationJobWhere(shop.id),
+          }),
+        ]),
+        getCatalogSummaryCounts({
+          now: new Date(),
+          shopId: shop.id,
+          syncTargetSeconds: shop.syncTargetSeconds,
+        }),
+      ]);
+    const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
+    const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
+      mappings.map((mapping) => mapping.id),
+    );
+    const now = new Date();
+    const pageRows = mappings.map((mapping) =>
+      formatCatalogPageRow({
+        catalogVerifiedAt,
+        latestSnapshot: latestSnapshotByMappingId.get(mapping.id) ?? null,
+        mapping,
+        now,
+        syncTargetSeconds: shop.syncTargetSeconds,
+        thumbnailPayload: null,
+      }),
+    );
+
+    return {
+      filters: [
+        "all",
+        "linked",
+        "fresh",
+        "needs_check",
+        "conflicts",
+        "not_updated",
+        "archived",
+      ] as const,
+      pagination: {
+        ...queryPlan.pagination,
+        cappedAtMaxProducts: totalAvailableCount > CATALOG_IMPORT_MAX_PRODUCTS,
+        maxLoadedRows: pageRows.length,
+        maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+        totalAvailableCount,
+      },
+      rows: await getCatalogRowsWithThumbnails({
+        rows: pageRows,
+        shopDomain: shop.shopDomain,
+      }),
+      shop: {
+        domain: shop.shopDomain,
+        syncTargetSeconds: shop.syncTargetSeconds,
+      },
+      summary: {
+        ...summary,
+        linkedCount,
+        totalCount: totalAvailableCount,
+      },
+    };
+  }
+
+  const [mappings, linkedCount, latestIncrementalJob] =
     await prisma.$transaction([
       prisma.productMapping.findMany({
         include: {
@@ -499,7 +604,6 @@ export async function getCatalogPageState(
         take: CATALOG_IMPORT_MAX_PRODUCTS,
         where,
       }),
-      prisma.productMapping.count({ where }),
       prisma.productMapping.count({
         where: {
           ...where,
@@ -533,18 +637,17 @@ export async function getCatalogPageState(
       thumbnailPayload: null,
     }),
   );
-  const activeFilter = input.filter ?? "all";
   const filteredRows = filterCatalogPageRows(
-    searchCatalogPageRows(allRows, input.search ?? ""),
+    searchCatalogPageRows(allRows, activeSearch),
     activeFilter,
   );
   const sortedRows = sortCatalogPageRows(
     filteredRows,
-    input.sort ?? null,
-    input.sortDir ?? "asc",
+    activeSort,
+    activeSortDir,
   );
   const pagination = getCatalogPageWindow({
-    page: input.page ?? 1,
+    page: activePage,
     pageSize: CATALOG_PAGE_SIZE,
     totalRows: sortedRows.length,
   });
@@ -552,42 +655,10 @@ export async function getCatalogPageState(
     pagination.offset,
     pagination.offset + pagination.pageSize,
   );
-  const thumbnailPayloadByMappingId =
-    await getLatestThumbnailPayloadByMappingId(
-      getCatalogSnapshotLookupIds({
-        maxLookupRows: CATALOG_PAGE_SIZE,
-        rows: pageRows,
-      }),
-    );
-  const pageRowsWithSnapshotThumbs = pageRows.map((row) => {
-    if (row.thumbnailUrl) return row;
-    const payload = thumbnailPayloadByMappingId.get(row.id) ?? null;
-
-    return {
-      ...row,
-      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([payload]),
-    };
+  const rowsWithThumbnails = await getCatalogRowsWithThumbnails({
+    rows: pageRows,
+    shopDomain: shop.shopDomain,
   });
-  const shopifyThumbnailUrlByProductGid =
-    await getShopifyThumbnailUrlByProductGid({
-      productGids: pageRowsWithSnapshotThumbs.flatMap((row) =>
-        !row.thumbnailUrl && row.shopifyProductGid
-          ? [row.shopifyProductGid as string]
-          : [],
-      ),
-      shopDomain: shop.shopDomain,
-    });
-  const rowsWithThumbnails = pageRowsWithSnapshotThumbs.map((row) =>
-    row.thumbnailUrl
-      ? row
-      : {
-          ...row,
-          thumbnailUrl:
-            (row.shopifyProductGid
-              ? shopifyThumbnailUrlByProductGid.get(row.shopifyProductGid)
-              : null) ?? null,
-        },
-  );
 
   return {
     filters: [
@@ -2800,6 +2871,141 @@ type ShopifyProductThumbnailsResponse = {
 };
 
 type CatalogPageRow = ReturnType<typeof formatCatalogPageRow>;
+
+async function getCatalogRowsWithThumbnails(input: {
+  rows: CatalogPageRow[];
+  shopDomain: string;
+}) {
+  const thumbnailPayloadByMappingId =
+    await getLatestThumbnailPayloadByMappingId(
+      getCatalogSnapshotLookupIds({
+        maxLookupRows: CATALOG_PAGE_SIZE,
+        rows: input.rows,
+      }),
+    );
+  const pageRowsWithSnapshotThumbs = input.rows.map((row) => {
+    if (row.thumbnailUrl) return row;
+    const payload = thumbnailPayloadByMappingId.get(row.id) ?? null;
+
+    return {
+      ...row,
+      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([payload]),
+    };
+  });
+  const shopifyThumbnailUrlByProductGid =
+    await getShopifyThumbnailUrlByProductGid({
+      productGids: pageRowsWithSnapshotThumbs.flatMap((row) =>
+        !row.thumbnailUrl && row.shopifyProductGid
+          ? [row.shopifyProductGid as string]
+          : [],
+      ),
+      shopDomain: input.shopDomain,
+    });
+
+  return pageRowsWithSnapshotThumbs.map((row) =>
+    row.thumbnailUrl
+      ? row
+      : {
+          ...row,
+          thumbnailUrl:
+            (row.shopifyProductGid
+              ? shopifyThumbnailUrlByProductGid.get(row.shopifyProductGid)
+              : null) ?? null,
+        },
+  );
+}
+
+async function getCatalogSummaryCounts(input: {
+  now: Date;
+  shopId: string;
+  syncTargetSeconds: number;
+}) {
+  const latestIncrementalJob = await prisma.syncJob.findFirst({
+    orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+    select: { finishedAt: true },
+    where: getCompletedCatalogVerificationJobWhere(input.shopId),
+  });
+  const catalogVerifiedAtMs = latestIncrementalJob?.finishedAt?.getTime() ?? 0;
+  const freshnessThresholdMs =
+    input.now.getTime() - Math.max(input.syncTargetSeconds, 60) * 1000 * 2;
+  const marketplaceId = getEbayMarketplaceId();
+  const [summary] = await prisma.$queryRaw<
+    Array<{
+      archivedCount: number;
+      conflictCount: number;
+      freshCount: number;
+      needsCheckCount: number;
+    }>
+  >`
+    WITH latest_snapshot AS (
+      SELECT DISTINCT ON ("mappingId")
+        "mappingId",
+        "quantity"
+      FROM "ProductSnapshot"
+      WHERE
+        "shopId" = ${input.shopId}
+        AND "mappingId" IS NOT NULL
+      ORDER BY "mappingId", "capturedAt" DESC
+    ),
+    open_conflicts AS (
+      SELECT
+        "mappingId",
+        COUNT(*)::integer AS "openConflictCount",
+        BOOL_OR("field" = 'quantity') AS "hasQuantityConflict"
+      FROM "SyncConflict"
+      WHERE
+        "shopId" = ${input.shopId}
+        AND "status"::text = 'OPEN'
+        AND "mappingId" IS NOT NULL
+      GROUP BY "mappingId"
+    ),
+    catalog_rows AS (
+      SELECT
+        CASE
+          WHEN m."status"::text IN ('OUT_OF_STOCK', 'ARCHIVED') THEN 'archived'
+          WHEN m."status"::text = 'ERROR' OR m."lastErrorCode" IS NOT NULL THEN 'mapping_error'
+          WHEN COALESCE(oc."openConflictCount", 0) > 0 THEN 'open_conflict'
+          WHEN
+            m."status"::text = 'PAUSED'
+            OR m."lastSyncedAt" IS NULL
+            OR GREATEST(EXTRACT(EPOCH FROM m."lastSyncedAt") * 1000, ${catalogVerifiedAtMs}) < ${freshnessThresholdMs}
+          THEN 'stale_sync'
+          ELSE 'active_fresh'
+        END AS "status",
+        CASE
+          WHEN m."status"::text = 'ERROR' OR m."lastErrorCode" IS NOT NULL THEN 'blocked'
+          WHEN COALESCE(oc."hasQuantityConflict", false) THEN 'needs_check'
+          WHEN ls."quantity" IS NULL THEN 'unknown'
+          ELSE 'aligned'
+        END AS "availability"
+      FROM "ProductMapping" m
+      LEFT JOIN latest_snapshot ls ON ls."mappingId" = m."id"
+      LEFT JOIN open_conflicts oc ON oc."mappingId" = m."id"
+      WHERE
+        m."shopId" = ${input.shopId}
+        AND m."marketplaceId" = ${marketplaceId}
+    )
+    SELECT
+      COUNT(*) FILTER (WHERE "status" = 'archived')::integer AS "archivedCount",
+      COUNT(*) FILTER (WHERE "status" = 'open_conflict')::integer AS "conflictCount",
+      COUNT(*) FILTER (WHERE "status" = 'active_fresh')::integer AS "freshCount",
+      COUNT(*) FILTER (
+        WHERE
+          "status" IN ('mapping_error', 'stale_sync')
+          OR ("status" <> 'archived' AND "availability" <> 'aligned')
+      )::integer AS "needsCheckCount"
+    FROM catalog_rows
+  `;
+
+  return (
+    summary ?? {
+      archivedCount: 0,
+      conflictCount: 0,
+      freshCount: 0,
+      needsCheckCount: 0,
+    }
+  );
+}
 
 function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {
   if (!query.trim()) return rows;

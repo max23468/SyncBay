@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.3] — 2026-06-20
+
+### Correzioni
+
+- Panoramica: il battito del sync mantiene una sola descrizione per screen
+  reader, evitando duplicazioni dopo il passaggio a semantica `figure`.
+- Catalogo: l'indicatore di caricamento parziale torna a confrontare il totale
+  con il limite massimo prodotti invece che con sé stesso.
+
+### Sotto il cofano
+
+- Catalogo: il caricamento predefinito senza filtri, ricerca o ordinamento legge
+  solo la pagina visibile dal database e risolve le miniature solo per le righe
+  mostrate.
+- Lo smoke UI riconosce anche i link React Router nel menu embedded, mantenendo
+  il controllo sulle stesse voci di navigazione.
+
 ## [0.42.2] — 2026-06-20
 
 ### Sotto il cofano
@@ -2130,6 +2147,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.3]: #0423--2026-06-20
 [0.42.2]: #0422--2026-06-20
 [0.42.1]: #0421--2026-06-20
 [0.42.0]: #0420--2026-06-20
