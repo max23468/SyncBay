@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.11] — 2026-06-20
+
+### Correzioni
+
+- Navigazione embedded: la capsule di transizione forza lo stack sans di
+  sistema, evitando il fallback serif quando l'iframe non eredita il font
+  Shopify.
+
 ## [0.42.10] — 2026-06-20
 
 ### Correzioni
