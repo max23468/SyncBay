@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
 
 concurrency:
   group: react-doctor-${{ github.event.pull_request.number || github.ref }}
@@ -21,14 +24,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: millionco/react-doctor@v2
         with:
           node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run React Doctor
-        run: npm run quality:react-doctor
+          version: 0.5.8
+          # Niente commento riassuntivo "sticky": le PR pulite non ricevono
+          # commenti. L'action mantiene il gate sui file cambiati nelle PR e
+          # usa Node 24 senza cache package-manager interna.
+          comment: false
