@@ -490,16 +490,23 @@ export async function getCatalogPageState(
     shopId: shop.id,
   };
   const totalAvailableCount = await prisma.productMapping.count({ where });
+  const databasePageWhere =
+    !activeSearch.trim() && !activeSort
+      ? getCatalogDatabasePageWhere(where, activeFilter)
+      : null;
+  const databasePageTotalCount = databasePageWhere
+    ? await prisma.productMapping.count({ where: databasePageWhere })
+    : totalAvailableCount;
   const queryPlan = getCatalogQueryPlan({
     filter: activeFilter,
     page: activePage,
     search: activeSearch,
     sort: activeSort,
     sortDir: activeSortDir,
-    totalRows: totalAvailableCount,
+    totalRows: databasePageTotalCount,
   });
 
-  if (queryPlan.mode === "database-page") {
+  if (queryPlan.mode === "database-page" && databasePageWhere) {
     const [
       [mappings, linkedCount, latestIncrementalJob],
       summary,
@@ -519,7 +526,7 @@ export async function getCatalogPageState(
             orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
             skip: queryPlan.pagination.offset,
             take: queryPlan.take,
-            where,
+            where: databasePageWhere,
           }),
           prisma.productMapping.count({
             where: {
@@ -2871,6 +2878,41 @@ type ShopifyProductThumbnailsResponse = {
 };
 
 type CatalogPageRow = ReturnType<typeof formatCatalogPageRow>;
+
+function getCatalogDatabasePageWhere(
+  baseWhere: { marketplaceId: string; shopId: string },
+  filter: CatalogPageFilter,
+): Prisma.ProductMappingWhereInput | null {
+  if (filter === "all") return baseWhere;
+  if (filter === "linked") {
+    return {
+      ...baseWhere,
+      shopifyProductGid: { not: null },
+    };
+  }
+  if (filter === "conflicts") {
+    return {
+      ...baseWhere,
+      conflicts: { some: { status: SyncConflictStatus.OPEN } },
+    };
+  }
+  if (filter === "not_updated") {
+    return {
+      ...baseWhere,
+      lastSyncedAt: null,
+    };
+  }
+  if (filter === "archived") {
+    return {
+      ...baseWhere,
+      status: {
+        in: [ProductMappingStatus.ARCHIVED, ProductMappingStatus.OUT_OF_STOCK],
+      },
+    };
+  }
+
+  return null;
+}
 
 async function getCatalogRowsWithThumbnails(input: {
   rows: CatalogPageRow[];

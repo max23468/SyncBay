@@ -124,7 +124,13 @@ export function getCatalogQueryPlan(input: {
   sortDir: CatalogSortDir;
   totalRows: number;
 }) {
-  if (input.filter === "all" && !input.search?.trim() && !input.sort) {
+  if (
+    ["all", "linked", "conflicts", "not_updated", "archived"].includes(
+      input.filter,
+    ) &&
+    !input.search?.trim() &&
+    !input.sort
+  ) {
     const pagination = getCatalogPageWindow({
       page: input.page,
       pageSize: CATALOG_PAGE_SIZE,

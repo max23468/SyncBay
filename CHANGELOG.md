@@ -17,9 +17,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Sotto il cofano
 
-- Catalogo: il caricamento predefinito senza filtri, ricerca o ordinamento legge
-  solo la pagina visibile dal database e risolve le miniature solo per le righe
-  mostrate.
+- Catalogo: il caricamento senza ricerca o ordinamento, sui filtri semplici,
+  legge solo la pagina visibile dal database e risolve le miniature solo per le
+  righe mostrate.
 - Lo smoke UI riconosce anche i link React Router nel menu embedded, mantenendo
   il controllo sulle stesse voci di navigazione.
 

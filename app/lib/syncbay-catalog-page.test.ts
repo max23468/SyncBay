@@ -68,10 +68,10 @@ test("computes catalog pagination windows", () => {
   );
 });
 
-test("plans default catalog loads as a single visible database page", () => {
+test("plans simple catalog views as a single visible database page", () => {
   assert.deepEqual(
     getCatalogQueryPlan({
-      filter: "all",
+      filter: "archived",
       page: 2,
       search: "",
       sort: null,
@@ -107,6 +107,22 @@ test("keeps computed catalog views on the full in-memory plan", () => {
       sort: "price",
       sortDir: "asc",
       totalRows: 1154,
+    }),
+    {
+      mode: "computed-full",
+    },
+  );
+});
+
+test("keeps searched catalog views on the full in-memory plan", () => {
+  assert.deepEqual(
+    getCatalogQueryPlan({
+      filter: "archived",
+      page: 1,
+      search: "lire",
+      sort: null,
+      sortDir: "asc",
+      totalRows: 274,
     }),
     {
       mode: "computed-full",
