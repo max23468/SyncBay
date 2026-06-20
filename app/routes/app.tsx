@@ -72,8 +72,8 @@ function RoutePendingIndicator({
           <s-icon type="refresh" tone="info" size="base" />
         </span>
         <span className="syncbay-route-pending__body">
-          <span className="syncbay-route-pending__title">{copy.title}</span>
-          <span className="syncbay-route-pending__detail">{copy.detail}</span>
+          <s-text type="strong">{copy.title}</s-text>
+          <s-text color="subdued">{copy.detail}</s-text>
         </span>
       </span>
     </div>

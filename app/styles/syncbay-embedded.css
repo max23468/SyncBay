@@ -288,7 +288,6 @@
   box-shadow: 0 4px 12px
     color-mix(in srgb, var(--syncbay-info) 8%, transparent);
   color: var(--syncbay-ink);
-  font: inherit;
 }
 
 .syncbay-route-pending__icon {
@@ -312,22 +311,6 @@
   flex-direction: column;
   gap: 2px;
   min-inline-size: 0;
-}
-
-.syncbay-route-pending__title {
-  color: var(--syncbay-info-text);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.28;
-}
-
-.syncbay-route-pending__detail {
-  color: var(--syncbay-slate);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.35;
 }
 
 @keyframes syncbay-route-pending-icon {
