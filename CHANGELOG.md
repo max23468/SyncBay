@@ -9,7 +9,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Non versionato
 
 - CI: il workflow React Doctor usa l'action composita con Node 24 e mantiene
-  il gate sui file cambiati nelle PR, evitando blocchi da backlog preesistente.
+  il gate bloccante sui file cambiati nelle PR, evitando blocchi da backlog
+  preesistente.
 
 ## [0.42.1] — 2026-06-20
 

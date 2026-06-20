@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 24
           version: 0.5.8
+          blocking: error
           # Niente commento riassuntivo "sticky": le PR pulite non ricevono
           # commenti. L'action mantiene il gate sui file cambiati nelle PR e
           # usa Node 24 senza cache package-manager interna.
