@@ -67,11 +67,15 @@ const ALLOWED_TAGS = new Set([
 
 const STRONG_TEMPLATE_PHRASES = [
   /\baggiungi(?:ci)? ai preferiti\b/i,
+  /\baltri (?:nostri )?(?:oggetti|articoli|annunci) in vendita\b/i,
   /\bebay store\b/i,
   /\bfeedback\b/i,
+  /\biscriviti alla newsletter\b/i,
   /\bnegozio ebay\b/i,
+  /\bpotrebbe(?:ro)? (?:anche )?interessart[ie]\b/i,
   /\bpowered by\b/i,
   /\bpromozioni\b/i,
+  /\bseguici su\b/i,
   /\btemplate\b/i,
   /\bvisita il nostro negozio\b/i,
   /\bvisita lo store\b/i,
@@ -90,6 +94,11 @@ const TEMPLATE_TAIL_MARKERS = [
   /\bspedizioni rapide\b/i,
   /\breso facile\b/i,
   /\bservizio clienti\b/i,
+  /\bpotrebbe(?:ro)? (?:anche )?interessart[ie]\b/i,
+  /\bseguici su\b/i,
+  /\btutti i diritti riservati\b/i,
+  /\bpartita iva\b/i,
+  /\bp\.\s?iva\b/i,
 ];
 
 const TEMPLATE_SIGNAL_PATTERNS = [

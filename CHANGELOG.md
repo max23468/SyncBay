@@ -6,6 +6,27 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.0] — 2026-06-20
+
+### Novità
+
+- Panoramica: nuovo battito sync che riassume in una riga lo stato delle ultime
+  24 ore — prodotti sincronizzati, conflitti aperti, prodotti da risolvere ed
+  eventuale ritardo sul target — con un giudizio immediato fra in salute, da
+  tenere d'occhio e richiede attenzione.
+- Attività: i job falliti distinguono ora chi verrà riprovato in automatico da
+  chi è in quarantena perché ha esaurito i tentativi e richiede un intervento.
+- Panoramica: il centro salute catalogo segnala i prodotti collegati in errore
+  da recuperare.
+
+### Sotto il cofano
+
+- Pulizia descrizioni eBay più profonda: oltre a template e colori vengono
+  rimossi anche richiami social, blocchi cross-sell e footer legali ricorrenti.
+- Cleanup retention automatico e idempotente dei dati scaduti, eseguito nel tick
+  del cron e attivo per default, disattivabile con
+  `SYNCBAY_RETENTION_CLEANUP_ENABLED=false` (ADR 0018).
+
 ## [0.43.1] — 2026-06-20
 
 ### Correzioni
@@ -2268,6 +2289,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.0]: #0440--2026-06-20
 [0.43.1]: #0431--2026-06-20
 [0.43.0]: #0430--2026-06-20
 [0.42.13]: #04213--2026-06-20

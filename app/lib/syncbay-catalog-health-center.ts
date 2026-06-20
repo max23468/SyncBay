@@ -2,6 +2,7 @@ export type CatalogHealthCenterTone = "critical" | "info" | "success" | "warning
 
 export interface CatalogHealthCause {
   code:
+    | "errored_mappings"
     | "failed_jobs"
     | "incremental_running"
     | "needs_check"
@@ -22,6 +23,7 @@ export interface CatalogHealthCenter {
 
 export function buildCatalogHealthCenter(input: {
   activeIncrementalJobCount: number;
+  erroredMappingCount: number;
   failedJobCount: number;
   needsCheckCount: number;
   openConflictCount: number;
@@ -53,6 +55,13 @@ export function buildCatalogHealthCenter(input: {
     detail: "Decisioni Shopify aperte bloccano l'allineamento automatico.",
     label: "Conflitti aperti",
     tone: "warning",
+  });
+  pushCause(causes, input.erroredMappingCount, {
+    code: "errored_mappings",
+    detail:
+      "Alcuni prodotti collegati sono in errore e non si allineano: vanno recuperati.",
+    label: "Prodotti in errore",
+    tone: "critical",
   });
   pushCause(causes, input.failedJobCount, {
     code: "failed_jobs",

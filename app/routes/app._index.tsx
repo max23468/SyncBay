@@ -131,6 +131,7 @@ export default function Index() {
   const contextualActions = getContextualActions(dashboard, importIncomplete);
   const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
   const reliability = dashboard.metrics.reliability;
+  const syncPulse = getSyncPulse(dashboard.sync.healthDigest);
   const newMappings = dashboard.metrics.trends.newMappings24h;
   const newConflicts = dashboard.metrics.trends.newConflicts24h;
 
@@ -246,6 +247,10 @@ export default function Index() {
               value={`ogni ${minutes} min`}
             />
           </s-grid>
+          <div className="syncbay-health-pulse">
+            <s-badge tone={syncPulse.tone}>{syncPulse.label}</s-badge>
+            <s-text color="subdued">{syncPulse.detail}</s-text>
+          </div>
           <div className="syncbay-reliability">
             <s-text color="subdued">
               {reliability.totalJobs > 0
@@ -357,6 +362,36 @@ function getBadgeLabel(firstRun: boolean, working: boolean) {
   if (firstRun) return "Configurazione iniziale";
 
   return working ? "Sincronizzazione in corso" : "Tutto sincronizzato";
+}
+
+function getSyncPulse(digest: Dashboard["sync"]["healthDigest"]): {
+  detail: string;
+  label: string;
+  tone: SyncBayTone;
+} {
+  const parts = [`${formatNumber(digest.syncedCount)} sincronizzati`];
+
+  if (digest.conflictsOpen > 0) {
+    parts.push(`${formatNumber(digest.conflictsOpen)} in conflitto`);
+  }
+  if (digest.quarantinedCount > 0) {
+    parts.push(`${formatNumber(digest.quarantinedCount)} da risolvere`);
+  }
+  if (digest.lagBreached) {
+    const lateMinutes = Math.max(1, Math.round(digest.lagSeconds / 60));
+    parts.push(`in ritardo di ${lateMinutes} min`);
+  }
+
+  const detail = `Ultime ${digest.windowHours}h · ${parts.join(" · ")}.`;
+
+  if (digest.headline === "degraded") {
+    return { detail, label: "Richiede attenzione", tone: "critical" };
+  }
+  if (digest.headline === "attention") {
+    return { detail, label: "Da tenere d'occhio", tone: "warning" };
+  }
+
+  return { detail, label: "Sincronizzazione in salute", tone: "success" };
 }
 
 function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {

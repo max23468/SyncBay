@@ -174,3 +174,35 @@ test("removes unsafe script and style blocks", () => {
     "<p>Descrizione pulita</p>",
   );
 });
+
+test("truncates cross-sell, social and legal footer tails", () => {
+  assert.equal(
+    cleanEbayDescriptionHtml(
+      "<p>Moneta da 2 euro commemorativa in conservazione FDC.</p><p>Potrebbe interessarti anche il nostro album da collezione.</p>",
+    ).html,
+    "<p>Moneta da 2 euro commemorativa in conservazione FDC.</p>",
+  );
+
+  assert.equal(
+    cleanEbayDescriptionHtml(
+      "<p>Francobollo raro del 1950 in ottimo stato.</p><p>Seguici su Facebook e Instagram per le novita.</p>",
+    ).html,
+    "<p>Francobollo raro del 1950 in ottimo stato.</p>",
+  );
+
+  assert.equal(
+    cleanEbayDescriptionHtml(
+      "<p>Orologio vintage funzionante e revisionato.</p><p>Tutti i diritti riservati. Partita IVA 01234567890.</p>",
+    ).html,
+    "<p>Orologio vintage funzionante e revisionato.</p>",
+  );
+});
+
+test("drops cross-sell template blocks", () => {
+  assert.equal(
+    cleanEbayDescriptionHtml(
+      "<p>Vaso in ceramica decorato a mano.</p><table><tr><td>Altri nostri oggetti in vendita</td></tr></table>",
+    ).html,
+    "<p>Vaso in ceramica decorato a mano.</p>",
+  );
+});

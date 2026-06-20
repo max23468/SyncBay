@@ -12,6 +12,7 @@ const {
 test("breaks catalog health into concrete operational causes", () => {
   const health = buildCatalogHealthCenter({
     activeIncrementalJobCount: 2,
+    erroredMappingCount: 5,
     failedJobCount: 1,
     needsCheckCount: 12,
     openConflictCount: 3,
@@ -26,6 +27,7 @@ test("breaks catalog health into concrete operational causes", () => {
       ["needs_check", 12, "warning"],
       ["unknown_availability", 4, "warning"],
       ["open_conflicts", 3, "warning"],
+      ["errored_mappings", 5, "critical"],
       ["failed_jobs", 1, "critical"],
       ["incremental_running", 2, "info"],
     ],
@@ -36,6 +38,7 @@ test("breaks catalog health into concrete operational causes", () => {
 test("summarizes healthy catalog state", () => {
   const health = buildCatalogHealthCenter({
     activeIncrementalJobCount: 0,
+    erroredMappingCount: 0,
     failedJobCount: 0,
     needsCheckCount: 0,
     openConflictCount: 0,

@@ -29,6 +29,7 @@ Usa un ADR quando una scelta:
 - `0015-mapping-categorie-ebay-shopify.md`: mapping categorie eBay -> Shopify per nuovi import e backfill controllato, senza tag categoria e senza apply massivo automatico.
 - `0016-faccette-storefront-import.md`: import controllato di cinque faccette storefront da eBay verso metafield Shopify `syncbay_facets.*`.
 - `0017-retention-dati-operativi.md`: retention tecnica per dati operativi del pilota.
+- `0018-cleanup-retention-automatico.md`: cleanup retention automatico e idempotente nel tick cron, attivo per default.
 
 ## Convenzioni
 

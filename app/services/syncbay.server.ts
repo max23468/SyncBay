@@ -34,6 +34,8 @@ import {
   isCatalogRowNeedingCheck,
 } from "../lib/syncbay-catalog-page";
 import { summarizeReliability } from "../lib/syncbay-dashboard-metrics";
+import { summarizeSyncJobQuarantine } from "../lib/syncbay-job-quarantine";
+import { buildSyncHealthDigest } from "../lib/syncbay-sync-health-digest";
 import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import {
@@ -227,6 +229,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       reliabilityJobs,
       newMappings24h,
       newConflicts24h,
+      erroredMappingCount,
     ],
     latestImportRun,
   ] = await Promise.all([
@@ -329,7 +332,12 @@ export async function getDashboardState(session: ShopifySessionLike) {
       }),
       prisma.syncJob.findMany({
         orderBy: { createdAt: "asc" },
-        select: { createdAt: true, status: true },
+        select: {
+          attempts: true,
+          createdAt: true,
+          maxAttempts: true,
+          status: true,
+        },
         take: 2000,
         where: { createdAt: { gte: weekAgo }, shopId: shop.id },
       }),
@@ -342,6 +350,13 @@ export async function getDashboardState(session: ShopifySessionLike) {
       }),
       prisma.syncConflict.count({
         where: { detectedAt: { gte: dayAgo }, shopId: shop.id },
+      }),
+      prisma.productMapping.count({
+        where: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+          status: ProductMappingStatus.ERROR,
+        },
       }),
     ]),
     getLatestImportRunSummary(shop.id),
@@ -369,6 +384,24 @@ export async function getDashboardState(session: ShopifySessionLike) {
     importPreview.summary,
   ];
   const reliability = summarizeReliability(reliabilityJobs, now);
+  const catalogSyncHealth = getCatalogSyncHealth({
+    activeIncrementalJobCount,
+    latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt ?? null,
+    now,
+    syncEnabled: shop.syncEnabled,
+    syncTargetSeconds: shop.syncTargetSeconds,
+  });
+  const quarantinedJobCount = summarizeSyncJobQuarantine(
+    reliabilityJobs.filter((job) => job.createdAt >= dayAgo),
+  ).actionableCount;
+  const syncHealthDigest = buildSyncHealthDigest({
+    conflictsOpen: openConflictCount,
+    healthStatus: catalogSyncHealth.status,
+    jobs: reliabilityJobs,
+    now,
+    quarantinedCount: quarantinedJobCount,
+    secondsUntilDue: catalogSyncHealth.secondsUntilDue,
+  });
   const lastRunCounts = {
     requested: readJobResultCount(
       latestIncrementalWorkJob?.result,
@@ -386,6 +419,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
   ).length;
   const catalogHealthCenter = buildCatalogHealthCenter({
     activeIncrementalJobCount,
+    erroredMappingCount,
     failedJobCount,
     needsCheckCount: catalogSummary.needsCheckCount,
     openConflictCount,
@@ -483,20 +517,21 @@ export async function getDashboardState(session: ShopifySessionLike) {
         type: job.type,
       })),
       catalogHealth: {
-        ...formatCatalogSyncHealth(
-          getCatalogSyncHealth({
-            activeIncrementalJobCount,
-            latestIncrementalFinishedAt:
-              latestIncrementalJob?.finishedAt ?? null,
-            now: new Date(),
-            syncEnabled: shop.syncEnabled,
-            syncTargetSeconds: shop.syncTargetSeconds,
-          }),
-        ),
+        ...formatCatalogSyncHealth(catalogSyncHealth),
         activeIncrementalJobCount,
         latestIncrementalFinishedAt:
           latestIncrementalJob?.finishedAt?.toISOString() ?? null,
         latestIncrementalStatus: latestIncrementalJob?.status ?? null,
+      },
+      healthDigest: {
+        conflictsOpen: syncHealthDigest.conflictsOpen,
+        failedCount: syncHealthDigest.failedCount,
+        headline: syncHealthDigest.headline,
+        lagBreached: syncHealthDigest.lagBreached,
+        lagSeconds: syncHealthDigest.lagSeconds,
+        quarantinedCount: syncHealthDigest.quarantinedCount,
+        syncedCount: syncHealthDigest.syncedCount,
+        windowHours: syncHealthDigest.windowHours,
       },
       catalogHealthCenter,
       fullReconcile,

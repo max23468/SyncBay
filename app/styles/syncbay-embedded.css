@@ -843,6 +843,16 @@
 
 /* Striscia affidabilità: testo a sinistra, sparkline a destra, filo divisorio
    sopra. Si fonde col blocco metriche per ridurre il numero di cornici. */
+.syncbay-health-pulse {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 12px;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--syncbay-mist);
+}
+
 .syncbay-reliability {
   display: flex;
   align-items: center;

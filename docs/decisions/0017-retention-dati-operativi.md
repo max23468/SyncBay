@@ -35,8 +35,8 @@ La retention operativa del pilota viene fissata così:
 | Richieste eBay account deletion | 365 giorni | Idempotenza, compliance e prova di gestione richiesta senza payload raw. |
 
 Queste finestre sono il riferimento per UI, documentazione, cleanup operativo e
-future automazioni. Il cleanup automatico resta da implementare o schedulare in
-modo esplicito prima della beta pubblica.
+future automazioni. Il cleanup automatico è stato implementato e attivato in
+ADR 0018 (`docs/decisions/0018-cleanup-retention-automatico.md`).
 
 ## Conseguenze
 
