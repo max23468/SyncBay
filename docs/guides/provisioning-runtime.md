@@ -31,6 +31,7 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 | Root directory    | `.`                                   |
 | Node.js           | `24.x` (`>=24.15`)                    |
 | Framework         | `react-router`                        |
+| Function region   | `fra1`                                |
 | Production domain | `https://syncbay.vercel.app`          |
 | Ultimo deployment | `READY`                               |
 | Link locale       | Creato in `.vercel/`, ignorato da Git |
@@ -38,6 +39,9 @@ Lo schema Prisma iniziale include sessioni Shopify, shop installati, connessione
 Note:
 
 - Il framework preset Vercel è `react-router`.
+- La regione delle Vercel Functions è versionata in `vercel.json` come
+  `regions: ["fra1"]`, coerente con il deployment production osservato e vicina
+  al database Supabase in `eu-west-1`.
 - Il build runtime esegue `prisma generate` prima di `react-router build`, così il Prisma Client resta coerente con `prisma/schema.prisma` anche quando Vercel riusa cache di installazione.
 - Esiste un deployment production Vercel, ma non è ancora una release pubblica Shopify App Store.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
@@ -114,6 +118,12 @@ Note:
   query GraphQL arbitrarie e limita la verifica prodotti a batch di massimo 20
   GID Shopify per richiesta. Lo script `npm run import:verify` lo usa come
   sorgente Shopify predefinita.
+- `/api/diagnostics/database` è l'endpoint diagnostico interno per verificare la
+  configurazione database effettiva del runtime. È protetto da `APP_SECRET` e
+  restituisce solo classificazioni redatte, come tipo host pooler/direct,
+  presenza dei parametri Prisma `connection_limit` e `pool_timeout`, regione
+  Vercel runtime e presenza delle URL attese; non espone hostname completi,
+  credenziali o stringhe di connessione.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop

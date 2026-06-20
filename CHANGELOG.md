@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.3] — 2026-06-20
+
+### Sotto il cofano
+
+- Diagnostica interna protetta per verificare regione runtime Vercel,
+  pooling Supabase e parametri Prisma effettivi senza esporre stringhe di
+  connessione o credenziali.
+
 ## [0.44.2] — 2026-06-20
 
 ### Correzioni
@@ -2310,7 +2318,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+<<<<<<< HEAD
 [0.44.2]: #0442--2026-06-20
+=======
+>>>>>>> 7e6c3ea (chore: add database runtime diagnostics)
 [0.44.1]: #0441--2026-06-20
 [0.44.0]: #0440--2026-06-20
 [0.43.1]: #0431--2026-06-20

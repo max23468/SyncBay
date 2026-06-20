@@ -24,6 +24,9 @@ Vincoli principali:
 Per l'MVP/pilota SyncBay userà:
 
 - **Vercel** come hosting dell'app Shopify embedded, backend HTTP, endpoint OAuth e webhook;
+- **Vercel Functions in `fra1`** come regione runtime primaria, esplicitata in
+  `vercel.json` per mantenere le function vicine al database Supabase in
+  `eu-west-1`;
 - **Vercel Web Analytics e Speed Insights** come baseline di osservabilità e performance;
 - **Supabase Postgres** come database applicativo;
 - **Prisma** come ORM iniziale;
@@ -37,6 +40,10 @@ Per l'MVP/pilota SyncBay userà:
 ### Hosting e app URL
 
 Vercel ospiterà l'app web e gli endpoint pubblici.
+
+Le Vercel Functions devono restare configurate in `fra1` tramite `vercel.json`.
+La scelta evita drift rispetto alla dashboard Vercel e mantiene bassa la latenza
+verso Supabase Postgres in `eu-west-1`.
 
 Gli URL reali verranno decisi quando verrà creato il progetto Vercel:
 
