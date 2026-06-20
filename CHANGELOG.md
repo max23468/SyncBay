@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.6] — 2026-06-20
+
+### Correzioni
+
+- Backfill descrizioni: l'apply da piano salvato ricontrolla mapping corrente,
+  conflitti aperti e prodotto Shopify collegato prima di scrivere.
+
 ## [0.42.5] — 2026-06-20
 
 ### Correzioni
@@ -2164,6 +2171,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.6]: #0426--2026-06-20
 [0.42.5]: #0425--2026-06-20
 [0.42.4]: #0424--2026-06-20
 [0.42.3]: #0423--2026-06-20

@@ -139,6 +139,15 @@ async function main() {
         .filter(Boolean),
     });
     const guardedPlan = filterDescriptionBackfillApplyFileRows({
+      currentMappingRows: new Map(
+        (Array.isArray(state.mappings) ? state.mappings : []).map((mapping) => [
+          mapping.mappingId,
+          {
+            openConflictFields: mapping.openConflictFields,
+            shopifyProductGid: mapping.shopifyProductGid,
+          },
+        ]),
+      ),
       currentShopifyDescriptionHashes: new Map(
         applyFile.rows
           .filter((row) => row.shopifyProductGid)

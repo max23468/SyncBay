@@ -251,6 +251,65 @@ test("filters apply file rows against current Shopify descriptions without eBay 
   assert.equal(plan.skipped.analyzed, 1);
 });
 
+test("filters apply file rows against current mapping eligibility", () => {
+  const conflictRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Vecchia</p>",
+    ebayDescriptionHtml: '<p style="color:red">Bella moneta.</p>',
+    ebayItemId: "1014",
+    mappingId: "mapping-14",
+    shopifyProductGid: "gid://shopify/Product/14",
+    title: "Moneta con conflitto",
+  });
+  const remappedRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Vecchia</p>",
+    ebayDescriptionHtml: '<p style="color:red">Altra moneta.</p>',
+    ebayItemId: "1015",
+    mappingId: "mapping-15",
+    shopifyProductGid: "gid://shopify/Product/15",
+    title: "Moneta rimappata",
+  });
+  const applyFile = buildDescriptionBackfillApplyFile({
+    generatedAt: "2026-06-20T12:00:00.000Z",
+    report: buildDescriptionBackfillReport({
+      rows: [conflictRow, remappedRow],
+      shopDomain: "syncbay-dev.myshopify.com",
+    }),
+  });
+
+  const plan = filterDescriptionBackfillApplyFileRows({
+    currentMappingRows: new Map([
+      [
+        "mapping-14",
+        {
+          mappingId: "mapping-14",
+          openConflictFields: ["description"],
+          shopifyProductGid: "gid://shopify/Product/14",
+        },
+      ],
+      [
+        "mapping-15",
+        {
+          mappingId: "mapping-15",
+          openConflictFields: [],
+          shopifyProductGid: "gid://shopify/Product/999",
+        },
+      ],
+    ]),
+    currentShopifyDescriptionHashes: new Map([
+      ["gid://shopify/Product/14", hashNullableText("<p>Vecchia</p>")],
+      ["gid://shopify/Product/15", hashNullableText("<p>Vecchia</p>")],
+    ]),
+    file: applyFile,
+  });
+
+  assert.deepEqual(plan.rows, []);
+  assert.equal(plan.skipped.conflictSkipped, 2);
+  assert.deepEqual(
+    plan.skippedRows.map((row) => row.reason),
+    ["open_conflicts", "shopify_product_mapping_changed_since_apply_file"],
+  );
+});
+
 function buildTestBackfillRow(input: {
   currentShopifyDescriptionHtml?: string | null;
   ebayDescriptionHtml?: string | null;
