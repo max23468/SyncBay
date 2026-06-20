@@ -9,6 +9,10 @@
           "app/routes/app.settings.tsx"
         ],
         "rules": ["react-doctor/only-export-components"]
+      },
+      {
+        "files": ["app/components/SyncBayLive.tsx"],
+        "rules": ["react-doctor/no-event-handler"]
       }
     ]
   },

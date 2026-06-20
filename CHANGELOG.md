@@ -6,11 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.42.2] — 2026-06-20
+
+### Sotto il cofano
 
 - CI: il workflow React Doctor usa l'action composita con Node 24 e mantiene
   il gate bloccante sui file cambiati nelle PR, evitando blocchi da backlog
   preesistente.
+- React Doctor: lo score full passa a 100/100 separando il toast App Bridge dal
+  file componente, usando semantica nativa per il battito del sync e
+  configurando l'override mirato per gli effetti live asincroni.
 
 ## [0.42.1] — 2026-06-20
 
@@ -2125,6 +2130,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.2]: #0422--2026-06-20
 [0.42.1]: #0421--2026-06-20
 [0.42.0]: #0420--2026-06-20
 [0.41.5]: #0415--2026-06-19

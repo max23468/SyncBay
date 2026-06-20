@@ -101,12 +101,11 @@ export function SyncPulse({
   working,
 }: SyncPulseProps) {
   return (
-    <div
+    <figure
       aria-label={`Flusso di sincronizzazione da ${marketplaceLabel} a Shopify, ${
         working ? "in corso" : "a riposo"
       }. ${readLabel}. ${appliedLabel}.`}
       className="syncbay-pulse"
-      role="img"
     >
       <span aria-hidden="true" className="syncbay-pulse__stage">
         <span className="syncbay-pulse__node">
@@ -152,7 +151,7 @@ export function SyncPulse({
         <s-text>Shopify</s-text>
         <s-text color="subdued">vetrina</s-text>
       </span>
-    </div>
+    </figure>
   );
 }
 

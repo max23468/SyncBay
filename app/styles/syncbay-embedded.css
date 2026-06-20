@@ -589,6 +589,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  margin: 0;
 }
 
 .syncbay-pulse__stage {
