@@ -37,6 +37,7 @@ import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import {
   getSafeBatchConflictResolutions,
+  isStaleConflictResolutionError,
   summarizeConflictDecisionModes,
 } from "../lib/syncbay-conflict-actions";
 import {
@@ -987,7 +988,8 @@ export async function resolveBatchSafeConflicts(session: ShopifySessionLike) {
         resolution: safeResolution,
       });
       resolvedCount += 1;
-    } catch {
+    } catch (error) {
+      if (!isStaleConflictResolutionError(error)) throw error;
       // Conflitto già risolto o non più valido: salta senza fermare il blocco.
     }
   }

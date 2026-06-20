@@ -8,6 +8,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [0.42.1] — 2026-06-20
 
+### Correzioni
+
+- Conflitti: la risoluzione in blocco segnala gli errori inattesi invece di
+  mostrare un esito riuscito quando una risoluzione sicura fallisce.
+
 ### Sotto il cofano
 
 - Aggiornato React Doctor alla patch `0.5.8` per mantenere allineato il gate di
