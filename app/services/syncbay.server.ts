@@ -90,6 +90,7 @@ import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
 import {
   DEFAULT_DESCRIPTION_RULE,
+  type DescriptionRuleMode,
   getDescriptionRuleSummary,
   normalizeDescriptionRule,
   normalizeDescriptionRuleFormInput,
@@ -345,6 +346,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
     ]),
     getLatestImportRunSummary(shop.id),
   ]);
+  const descriptionRule = await getExistingDescriptionRuleForSettings(shop.id);
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -353,6 +355,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
   const complianceReadiness = getComplianceReadiness();
   const importPreview = getImportPreviewReadiness({
     defaultProductStatus,
+    descriptionRuleMode: descriptionRule.mode,
     ebayConnected: ebayConnection?.status === EbayConnectionStatus.CONNECTED,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
@@ -426,7 +429,10 @@ export async function getDashboardState(session: ShopifySessionLike) {
     },
     supabase: supabaseReadiness,
     vercel: vercelReadiness,
-    onboarding: getOnboardingReadiness({ defaultProductStatus }),
+    onboarding: getOnboardingReadiness({
+      defaultProductStatus,
+      descriptionRuleMode: descriptionRule.mode,
+    }),
     importPreview,
     imports: {
       latestRun: latestImportRun,
@@ -1370,6 +1376,7 @@ export async function getImportWizardState(
   const selectedPublicationIds = parseProductPublicationGids(
     shop.productPublicationGids,
   );
+  const descriptionRule = await getExistingDescriptionRuleForSettings(shop.id);
   const ebayConnection = await prisma.ebayConnection.findUnique({
     where: {
       shopId_marketplaceId: {
@@ -1383,10 +1390,13 @@ export async function getImportWizardState(
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const preview =
     ebayConnected && ebayConnection
-      ? await getEbayLiveImportPreview(ebayConnection)
-      : getMockImportPreviewState();
+      ? await getEbayLiveImportPreview(ebayConnection, {
+          descriptionRuleMode: descriptionRule.mode,
+        })
+      : getMockImportPreviewState(descriptionRule.mode);
   const importPreview = getImportPreviewReadiness({
     defaultProductStatus,
+    descriptionRuleMode: descriptionRule.mode,
     ebayConnected,
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
@@ -1411,7 +1421,10 @@ export async function getImportWizardState(
       status: ebayConnection?.status ?? EbayConnectionStatus.NOT_CONNECTED,
     },
     importPreview,
-    onboarding: getOnboardingReadiness({ defaultProductStatus }),
+    onboarding: getOnboardingReadiness({
+      defaultProductStatus,
+      descriptionRuleMode: descriptionRule.mode,
+    }),
     previewPlan: getImportPreviewPlan(),
     previewResult,
     previewSource: {
@@ -1468,7 +1481,7 @@ async function loadExistingShopifyProductsForMatching(
         nodes {
           id
           title
-          variants(first: 1) {
+          variants(first: 100) {
             nodes {
               barcode
               id
@@ -1486,19 +1499,15 @@ async function loadExistingShopifyProductsForMatching(
   if (json.errors?.length) return [];
 
   return (json.data?.products?.nodes ?? []).flatMap((product) => {
-    const variant = product.variants?.nodes?.[0] ?? null;
-
     if (!product.id || !product.title) return [];
 
-    return [
-      {
-        barcode: normalizeNullableString(variant?.barcode),
+    return (product.variants?.nodes ?? [null]).map((variant) => ({
+      barcode: normalizeNullableString(variant?.barcode),
         productGid: product.id,
         sku: normalizeNullableString(variant?.sku),
         title: product.title,
         variantGid: variant?.id ?? null,
-      },
-    ];
+    }));
   });
 }
 
@@ -2787,11 +2796,12 @@ function getComplianceReadiness() {
 }
 
 function getOnboardingReadiness(input: {
+  descriptionRuleMode: DescriptionRuleMode;
   defaultProductStatus: ImportProductStatus;
 }) {
   return {
     defaults: {
-      descriptionMode: "HTML pulito senza template",
+      descriptionMode: getDescriptionRuleSummary(input.descriptionRuleMode),
       imageImport: "Tutte le immagini",
       productStatus: getImportProductStatusLabelCapitalized(
         input.defaultProductStatus,
@@ -2807,8 +2817,10 @@ function getOnboardingReadiness(input: {
   };
 }
 
-function getMockImportPreviewState() {
-  const previewResult = getMockImportPreview();
+function getMockImportPreviewState(
+  descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML",
+) {
+  const previewResult = getMockImportPreview(descriptionRuleMode);
 
   return {
     coverageNote:
@@ -2826,6 +2838,7 @@ function getMockImportPreviewState() {
 }
 
 function getImportPreviewReadiness(input: {
+  descriptionRuleMode: DescriptionRuleMode;
   defaultProductStatus: ImportProductStatus;
   ebayConnected: boolean;
   hasDefaultLocation: boolean;
@@ -2848,7 +2861,7 @@ function getImportPreviewReadiness(input: {
   return {
     blockers,
     defaults: {
-      descriptionMode: "HTML pulito senza template",
+      descriptionMode: getDescriptionRuleSummary(input.descriptionRuleMode),
       imageImport: "Tutte le immagini",
       productStatus: getImportProductStatusLabelCapitalized(
         input.defaultProductStatus,

@@ -1,4 +1,8 @@
 import {
+  applyDescriptionRuleToHtml,
+  type DescriptionRuleMode,
+} from "../lib/syncbay-description-rules";
+import {
   buildDescriptionCleanupReportRow,
   cleanEbayDescriptionHtml,
 } from "../lib/syncbay-description-cleanup";
@@ -107,8 +111,11 @@ const MAX_SIMPLE_VARIANTS = 1;
 export function buildImportPreview(
   candidates: ImportPreviewListingCandidate[],
   mode: ImportPreviewResult["mode"] = "live",
+  options: { descriptionRuleMode?: DescriptionRuleMode } = {},
 ): ImportPreviewResult {
-  const items = candidates.map(buildPreviewItem);
+  const items = candidates.map((candidate) =>
+    buildPreviewItem(candidate, options),
+  );
   const summary = summarizePreviewItems(items);
 
   return {
@@ -146,7 +153,9 @@ export function getEmptyImportPreview(
   return buildImportPreview([], mode);
 }
 
-export function getMockImportPreview() {
+export function getMockImportPreview(
+  descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML",
+) {
   return buildImportPreview(
     [
       {
@@ -198,6 +207,7 @@ export function getMockImportPreview() {
       },
     ],
     "mock",
+    { descriptionRuleMode },
   );
 }
 
@@ -243,16 +253,22 @@ export function getImportPreviewValidationRules() {
 
 function buildPreviewItem(
   candidate: ImportPreviewListingCandidate,
+  options: { descriptionRuleMode?: DescriptionRuleMode } = {},
 ): ImportPreviewItem {
   const descriptionCleanup = cleanEbayDescriptionHtml(
     candidate.descriptionHtml,
   );
+  const descriptionProjection = applyDescriptionRuleToHtml({
+    cleanedHtml: descriptionCleanup.html,
+    html: candidate.descriptionHtml,
+    mode: options.descriptionRuleMode ?? "CLEAN_HTML",
+  });
   const descriptionReport = buildDescriptionCleanupReportRow({
     descriptionHtml: candidate.descriptionHtml,
     itemId: candidate.itemId,
     title: candidate.title,
   });
-  const issues = getPreviewIssues(candidate, descriptionReport.wasChanged);
+  const issues = getPreviewIssues(candidate, descriptionProjection.wasChanged);
   const hasErrors = issues.some((issue) => issue.severity === "error");
   const ebayPrimaryCategoryName = normalizeText(
     candidate.ebayPrimaryCategoryName,
@@ -274,7 +290,7 @@ function buildPreviewItem(
   const sku = normalizeText(candidate.sku);
   const qualityChecklist = buildImportQualityChecklist({
     categoryConfidence: categoryProposal.confidence,
-    descriptionWasChanged: descriptionReport.wasChanged,
+    descriptionWasChanged: descriptionProjection.wasChanged,
     imageCount,
     priceAmount,
     quantity,
@@ -297,15 +313,17 @@ function buildPreviewItem(
     normalized: {
       categoryProposal,
       currency: normalizeCurrency(candidate.currency),
-      descriptionCleanedLength: descriptionReport.cleanedLength,
-      descriptionCleanedTextExcerpt: descriptionReport.cleanedTextExcerpt,
-      descriptionHtml: descriptionCleanup.html,
-      descriptionMode: descriptionCleanup.mode,
+      descriptionCleanedLength: descriptionProjection.html?.length ?? 0,
+      descriptionCleanedTextExcerpt: normalizePreviewDescriptionExcerpt(
+        descriptionProjection.html,
+      ),
+      descriptionHtml: descriptionProjection.html,
+      descriptionMode: descriptionProjection.mode,
       descriptionOriginalLength: descriptionReport.rawLength,
       descriptionOriginalTextExcerpt: descriptionReport.rawTextExcerpt,
-      descriptionRemovedPercent: descriptionReport.removedPercent,
+      descriptionRemovedPercent: descriptionProjection.removedPercent,
       descriptionTemplateSignalCount: descriptionReport.templateSignalCount,
-      descriptionWasChanged: descriptionReport.wasChanged,
+      descriptionWasChanged: descriptionProjection.wasChanged,
       ebayPrimaryCategoryId: normalizeText(candidate.ebayPrimaryCategoryId),
       ebayPrimaryCategoryName,
       ebayPrimaryCategoryPath,
@@ -330,6 +348,16 @@ function buildPreviewItem(
     },
     status: hasErrors ? "error" : "importable",
   };
+}
+
+function normalizePreviewDescriptionExcerpt(value: string | null | undefined) {
+  return (
+    value
+      ?.replace(/<[^>]+>/gu, " ")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .slice(0, 180) ?? ""
+  );
 }
 
 function getPreviewIssues(

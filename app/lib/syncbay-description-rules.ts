@@ -65,3 +65,68 @@ export function getDescriptionRuleDetail(mode: DescriptionRuleMode) {
 
   return "SyncBay rimuove template, colori e markup non essenziale prima di scrivere su Shopify.";
 }
+
+export function applyDescriptionRuleToHtml(input: {
+  cleanedHtml: string | null;
+  html: string | null | undefined;
+  mode: DescriptionRuleMode;
+}) {
+  const html = input.html ?? null;
+  const selectedHtml =
+    input.mode === "FULL_HTML"
+      ? html
+      : input.mode === "TEXT_ONLY"
+        ? html
+          ? htmlToPlainText(html)
+          : null
+        : input.cleanedHtml;
+
+  return {
+    html: selectedHtml,
+    mode: input.mode,
+    removedPercent: getRemovedPercent(html, selectedHtml),
+    wasChanged: selectedHtml !== html,
+  };
+}
+
+function htmlToPlainText(html: string) {
+  return normalizePlainText(
+    decodeBasicHtmlEntities(
+      html
+        .replace(/<script[\s\S]*?<\/script>/giu, " ")
+        .replace(/<style[\s\S]*?<\/style>/giu, " ")
+        .replace(/<[^>]+>/gu, " ")
+        .replace(/\s+/gu, " ")
+        .trim(),
+    ),
+  );
+}
+
+function normalizePlainText(value: string) {
+  return value.replace(/\s+/gu, " ").trim();
+}
+
+function decodeBasicHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/giu, " ")
+    .replace(/&amp;/giu, "&")
+    .replace(/&lt;/giu, "<")
+    .replace(/&gt;/giu, ">")
+    .replace(/&quot;/giu, '"')
+    .replace(/&#39;/giu, "'");
+}
+
+function getRemovedPercent(
+  originalHtml: string | null,
+  selectedHtml: string | null,
+) {
+  const originalLength = originalHtml?.length ?? 0;
+  const selectedLength = selectedHtml?.length ?? 0;
+
+  return originalLength
+    ? Math.max(
+        0,
+        Math.round(((originalLength - selectedLength) / originalLength) * 100),
+      )
+    : 0;
+}

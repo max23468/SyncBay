@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.43.1] — 2026-06-20
+
+### Correzioni
+
+- Impostazioni e navigazione embedded: la versione runtime torna raggiungibile
+  dalla dashboard tecnica e lo stato di cambio sezione usa semantica nativa
+  `output`, chiudendo i warning React Doctor rimasti.
+- Importazione e attività: le anteprime rispettano la regola descrizione
+  salvata, il centro salute include le righe da verificare e il matching
+  Shopify considera tutte le varianti senza duplicare lo stesso prodotto.
+
 ## [0.43.0] — 2026-06-20
 
 ### Novità
@@ -2257,6 +2268,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.43.1]: #0431--2026-06-20
 [0.43.0]: #0430--2026-06-20
 [0.42.13]: #04213--2026-06-20
 [0.42.12]: #04212--2026-06-20

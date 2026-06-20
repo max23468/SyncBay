@@ -61,6 +61,38 @@ test("uses item id references as conservative match signals", () => {
   ]);
 });
 
+test("keeps the strongest variant match for each Shopify product", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: {
+      itemId: "555",
+      sku: "MATCH-555",
+      title: "Moneta commemorativa",
+    },
+    shopifyProducts: [
+      {
+        barcode: null,
+        productGid: "gid://shopify/Product/5",
+        sku: "OTHER",
+        title: "Moneta commemorativa",
+        variantGid: "gid://shopify/ProductVariant/51",
+      },
+      {
+        barcode: null,
+        productGid: "gid://shopify/Product/5",
+        sku: "MATCH-555",
+        title: "Moneta commemorativa",
+        variantGid: "gid://shopify/ProductVariant/52",
+      },
+    ],
+  });
+
+  assert.equal(suggestions.length, 1);
+  assert.equal(suggestions[0]?.productGid, "gid://shopify/Product/5");
+  assert.equal(suggestions[0]?.variantGid, "gid://shopify/ProductVariant/52");
+  assert.equal(suggestions[0]?.confidence, "high");
+});
+
+
 test("formats match suggestion summaries without implying automatic linking", () => {
   assert.equal(
     getMatchSuggestionSummary({ confidence: "high", reasons: ["SKU identico"] }),
