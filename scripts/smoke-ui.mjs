@@ -25,6 +25,8 @@ const checks = [
       "NavMenu",
       "TitleBar",
       "SYNCBAY_APP_NAME",
+      "useNavigation",
+      "RoutePendingIndicator",
       "Panoramica",
       "Catalogo",
       "Conflitti",
