@@ -71,6 +71,13 @@ export interface DescriptionBackfillSummary {
   shopifyLookupFailed: number;
 }
 
+export interface DescriptionBackfillApplyFile {
+  generatedAt: string;
+  rows: DescriptionBackfillRow[];
+  shopDomain: string;
+  version: 1;
+}
+
 export function buildDescriptionBackfillRow(
   input: DescriptionBackfillInput,
 ): DescriptionBackfillRow {
@@ -192,6 +199,52 @@ export function buildDescriptionBackfillApplyPlan(
   );
 
   return { rows, skipped };
+}
+
+export function buildDescriptionBackfillApplyFile(input: {
+  generatedAt: string;
+  report: DescriptionBackfillReport;
+}): DescriptionBackfillApplyFile {
+  return {
+    generatedAt: input.generatedAt,
+    rows: buildDescriptionBackfillApplyPlan(input.report).rows,
+    shopDomain: input.report.shopDomain,
+    version: 1,
+  };
+}
+
+export function filterDescriptionBackfillApplyFileRows(input: {
+  currentShopifyDescriptionHashes: Map<string, string | null>;
+  file: DescriptionBackfillApplyFile;
+}) {
+  const rows: DescriptionBackfillRow[] = [];
+  const skippedRows: DescriptionBackfillRow[] = [];
+
+  for (const row of input.file.rows) {
+    const currentHash = row.shopifyProductGid
+      ? input.currentShopifyDescriptionHashes.get(row.shopifyProductGid)
+      : undefined;
+
+    if (currentHash === row.currentShopifyDescriptionHash) {
+      rows.push(row);
+      continue;
+    }
+
+    skippedRows.push({
+      ...row,
+      reason:
+        currentHash === undefined
+          ? "shopify_product_not_loaded"
+          : "shopify_description_changed_since_apply_file",
+      status: currentHash === undefined ? "shopify_lookup_failed" : "conflict_skipped",
+    });
+  }
+
+  return {
+    rows,
+    skipped: summarizeRows(skippedRows),
+    skippedRows,
+  };
 }
 
 export function buildDescriptionBackfillSnapshotPayload(input: {

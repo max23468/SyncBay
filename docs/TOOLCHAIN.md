@@ -138,11 +138,18 @@ la pulizia descrizioni rimuove template, colori e markup non essenziale. Stampa
 metriche e brevi estratti testuali; non scrive su eBay né su Shopify e aggiorna
 solo il token eBay cifrato se scaduto.
 `npm run descriptions:backfill-cleanup` usa Supabase CLI linked, Trading API
-`GetItem` e sessione offline Shopify per pianificare l'applicazione retroattiva
-delle descrizioni pulite ai prodotti già importati. È dry-run di default,
-non stampa HTML completo delle descrizioni, salta prodotti con conflitti aperti
-o senza mapping Shopify, non modifica eBay e richiede `--apply --confirm-apply`
-per scrivere `descriptionHtml` su Shopify e registrare snapshot `SYNCBAY`.
+`GetItem` o, in via sperimentale, `GetSellerList` con
+`--ebay-source seller-list`, e sessione offline Shopify per pianificare
+l'applicazione retroattiva delle descrizioni pulite ai prodotti già importati.
+È dry-run di default, non stampa HTML completo delle descrizioni, salta prodotti
+con conflitti aperti o senza mapping Shopify, non modifica eBay e richiede
+`--apply --confirm-apply` per scrivere `descriptionHtml` su Shopify e registrare
+snapshot `SYNCBAY`. Per backfill lunghi usa prima
+`--write-apply-plan /tmp/syncbay-description-apply-plan.json`: il file locale
+contiene l'HTML pulito completo e non va committato. Il piano può essere ripreso
+con `--apply-plan /tmp/syncbay-description-apply-plan.json --apply
+--confirm-apply`, che rilegge solo Shopify per bloccare modifiche manuali
+successive e non consuma quota eBay.
 `npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.

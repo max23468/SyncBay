@@ -9,9 +9,11 @@ import * as cleanupModule from "./syncbay-description-cleanup.ts";
 import * as descriptionHashModule from "./syncbay-description-hash.ts";
 
 const {
+  buildDescriptionBackfillApplyFile,
   buildDescriptionBackfillApplyPlan,
   buildDescriptionBackfillReport,
   buildDescriptionBackfillRow,
+  filterDescriptionBackfillApplyFileRows,
 } = backfillModule;
 const { buildDescriptionCleanupReportRow, cleanEbayDescriptionHtml } =
   cleanupModule;
@@ -165,6 +167,88 @@ test("summarizes rows and builds an apply plan only from applicable rows", () =>
   assert.equal(plan.rows.length, 1);
   assert.equal(plan.rows[0]?.ebayItemId, "1006");
   assert.equal(plan.skipped.alreadyCorrect, 1);
+});
+
+test("serializes an apply file with only applicable rows and full cleaned html", () => {
+  const applicableRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Vecchia</p>",
+    ebayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    ebayItemId: "1010",
+    mappingId: "mapping-10",
+    openConflictFields: [],
+    shopifyProductGid: "gid://shopify/Product/10",
+    title: "Moneta Regno",
+  });
+  const alreadyCorrectRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Bella moneta.</p>",
+    ebayDescriptionHtml:
+      '<p style="color:red" class="rosso"><font color="#ff0000">Bella moneta.</font></p>',
+    ebayItemId: "1011",
+    mappingId: "mapping-11",
+    openConflictFields: [],
+    shopifyProductGid: "gid://shopify/Product/11",
+    title: "Moneta gia corretta",
+  });
+
+  const applyFile = buildDescriptionBackfillApplyFile({
+    generatedAt: "2026-06-20T12:00:00.000Z",
+    report: buildDescriptionBackfillReport({
+      rows: [applicableRow, alreadyCorrectRow],
+      shopDomain: "syncbay-dev.myshopify.com",
+    }),
+  });
+
+  assert.equal(applyFile.version, 1);
+  assert.equal(applyFile.shopDomain, "syncbay-dev.myshopify.com");
+  assert.equal(applyFile.rows.length, 1);
+  assert.equal(applyFile.rows[0]?.ebayItemId, "1010");
+  assert.equal(applyFile.rows[0]?.cleanedDescriptionHtml, "<p>Bella moneta.</p>");
+  assert.equal(
+    applyFile.rows[0]?.currentShopifyDescriptionHash,
+    hashNullableText("<p>Vecchia</p>"),
+  );
+});
+
+test("filters apply file rows against current Shopify descriptions without eBay lookups", () => {
+  const matchingRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Vecchia</p>",
+    ebayDescriptionHtml: '<p style="color:red">Bella moneta.</p>',
+    ebayItemId: "1012",
+    mappingId: "mapping-12",
+    shopifyProductGid: "gid://shopify/Product/12",
+    title: "Moneta valida",
+  });
+  const staleRow = buildTestBackfillRow({
+    currentShopifyDescriptionHtml: "<p>Prima descrizione</p>",
+    ebayDescriptionHtml: '<p style="color:red">Altra moneta.</p>',
+    ebayItemId: "1013",
+    mappingId: "mapping-13",
+    shopifyProductGid: "gid://shopify/Product/13",
+    title: "Moneta cambiata",
+  });
+  const applyFile = buildDescriptionBackfillApplyFile({
+    generatedAt: "2026-06-20T12:00:00.000Z",
+    report: buildDescriptionBackfillReport({
+      rows: [matchingRow, staleRow],
+      shopDomain: "syncbay-dev.myshopify.com",
+    }),
+  });
+
+  const plan = filterDescriptionBackfillApplyFileRows({
+    currentShopifyDescriptionHashes: new Map([
+      ["gid://shopify/Product/12", hashNullableText("<p>Vecchia</p>")],
+      ["gid://shopify/Product/13", hashNullableText("<p>Modifica manuale</p>")],
+    ]),
+    file: applyFile,
+  });
+
+  assert.deepEqual(
+    plan.rows.map((row) => row.ebayItemId),
+    ["1012"],
+  );
+  assert.equal(plan.skipped.conflictSkipped, 1);
+  assert.equal(plan.skipped.analyzed, 1);
 });
 
 function buildTestBackfillRow(input: {

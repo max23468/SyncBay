@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Backfill descrizioni: aggiunti piani apply locali riusabili per riprendere
+  gli aggiornamenti Shopify senza rifare una scansione eBay completa, più un
+  percorso sperimentale `GetSellerList` per leggere descrizioni eBay in bulk
+  prima del fallback puntuale `GetItem`.
+
 ## [0.42.3] — 2026-06-20
 
 ### Correzioni
