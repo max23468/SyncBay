@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.9] — 2026-06-20
+
+### Correzioni
+
+- Navigazione embedded: la capsule di transizione usa una tipografia più
+  vicina all'admin Shopify e rimuove la barra laterale decorativa, mantenendo
+  solo l'icona animata come segnale di attività.
+
 ## [0.42.8] — 2026-06-20
 
 ### Correzioni

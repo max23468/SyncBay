@@ -75,7 +75,6 @@ function RoutePendingIndicator({
           <span className="syncbay-route-pending__title">{copy.title}</span>
           <span className="syncbay-route-pending__detail">{copy.detail}</span>
         </span>
-        <span aria-hidden="true" className="syncbay-route-pending__rail" />
       </span>
     </div>
   );
