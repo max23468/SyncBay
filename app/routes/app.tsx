@@ -25,7 +25,7 @@ export default function App() {
   const isRoutePending =
     navigation.state === "loading" &&
     navigation.location?.pathname.startsWith("/app") === true;
-  const pendingLabel = getRoutePendingLabel(
+  const pendingCopy = getRoutePendingCopy(
     navigation.location?.pathname,
   );
 
@@ -43,7 +43,7 @@ export default function App() {
         <Link to="/app/activity">Attività</Link>
         <Link to="/app/settings">Impostazioni</Link>
       </NavMenu>
-      <RoutePendingIndicator isVisible={isRoutePending} label={pendingLabel} />
+      <RoutePendingIndicator copy={pendingCopy} isVisible={isRoutePending} />
       <div aria-busy={isRoutePending}>
         <Outlet />
       </div>
@@ -52,38 +52,87 @@ export default function App() {
 }
 
 function RoutePendingIndicator({
+  copy,
   isVisible,
-  label,
 }: {
+  copy: RoutePendingCopy;
   isVisible: boolean;
-  label: string;
 }) {
   if (!isVisible) return null;
 
   return (
     <div
       aria-live="polite"
+      aria-label={`${copy.title}. ${copy.detail}`}
       className="syncbay-route-pending"
       role="status"
     >
-      <span aria-hidden="true" className="syncbay-route-pending__dot" />
-      <span>{label}</span>
+      <span className="syncbay-route-pending__surface">
+        <span aria-hidden="true" className="syncbay-route-pending__icon">
+          <s-icon type="refresh" tone="info" size="base" />
+        </span>
+        <span className="syncbay-route-pending__body">
+          <span className="syncbay-route-pending__title">{copy.title}</span>
+          <span className="syncbay-route-pending__detail">{copy.detail}</span>
+        </span>
+        <span aria-hidden="true" className="syncbay-route-pending__rail" />
+      </span>
     </div>
   );
 }
 
-function getRoutePendingLabel(pathname: string | undefined) {
-  if (!pathname) return "Aggiorno sezione...";
+type RoutePendingCopy = {
+  detail: string;
+  title: string;
+};
 
-  if (pathname.startsWith("/app/catalog")) return "Carico Catalogo...";
-  if (pathname.startsWith("/app/conflicts")) return "Carico Conflitti...";
-  if (pathname.startsWith("/app/import-preview")) {
-    return "Carico Importazione...";
+function getRoutePendingCopy(pathname: string | undefined): RoutePendingCopy {
+  if (!pathname) {
+    return {
+      detail: "Preparo la prossima vista.",
+      title: "Aggiorno sezione",
+    };
   }
-  if (pathname.startsWith("/app/activity")) return "Carico Attività...";
-  if (pathname.startsWith("/app/settings")) return "Carico Impostazioni...";
 
-  return "Carico Panoramica...";
+  if (pathname.startsWith("/app/catalog")) {
+    return {
+      detail: "Prodotti e filtri in preparazione.",
+      title: "Apro Catalogo",
+    };
+  }
+
+  if (pathname.startsWith("/app/conflicts")) {
+    return {
+      detail: "Decisioni e stato conflitti in preparazione.",
+      title: "Apro Conflitti",
+    };
+  }
+
+  if (pathname.startsWith("/app/import-preview")) {
+    return {
+      detail: "Anteprima e controlli in preparazione.",
+      title: "Apro Importazione",
+    };
+  }
+
+  if (pathname.startsWith("/app/activity")) {
+    return {
+      detail: "Eventi e diagnosi in preparazione.",
+      title: "Apro Attività",
+    };
+  }
+
+  if (pathname.startsWith("/app/settings")) {
+    return {
+      detail: "Regole e collegamenti in preparazione.",
+      title: "Apro Impostazioni",
+    };
+  }
+
+  return {
+    detail: "Stato operativo in preparazione.",
+    title: "Apro Panoramica",
+  };
 }
 
 // Shopify needs React Router to catch some thrown responses, so that their headers are included in the response.

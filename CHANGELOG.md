@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.8] — 2026-06-20
+
+### Correzioni
+
+- Navigazione embedded: lo stato di transizione usa una capsule informativa
+  coerente con SyncBay, con micro-animazione rispettosa di `prefers-reduced-motion`.
+
 ## [0.42.7] — 2026-06-20
 
 ### Correzioni
