@@ -43,6 +43,7 @@ docs/
     0006-versioning-runtime-locale.md
     0008-tag-e-github-release.md
     0009-shopify-token-offline-a-scadenza.md
+    0017-retention-dati-operativi.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -82,6 +83,7 @@ docs/
 | Capire versioning runtime locale | `decisions/0006-versioning-runtime-locale.md` |
 | Capire tag e GitHub Release | `decisions/0008-tag-e-github-release.md` |
 | Capire token offline Shopify a scadenza | `decisions/0009-shopify-token-offline-a-scadenza.md` |
+| Capire retention dati operativi pilota | `decisions/0017-retention-dati-operativi.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |

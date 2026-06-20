@@ -219,6 +219,7 @@ export default function ActivityRoute() {
               tone={getCatalogHealthTone(activity)}
               title="Aggiornamento catalogo"
             />
+            <CatalogHealthCenterDetails activity={activity} />
             <StatusRow
               detail={
                 activity.sync.catalogHealth.activeIncrementalJobCount > 0
@@ -239,6 +240,13 @@ export default function ActivityRoute() {
               title="Aggiornamento automatico"
             />
             <StatusRow
+              detail={getFullReconcileDetail(activity)}
+              icon="refresh"
+              label={getFullReconcileLabel(activity)}
+              tone={getFullReconcileTone(activity)}
+              title="Riconciliazione completa"
+            />
+            <StatusRow
               detail={`${activity.conflicts.openCount} decisioni aperte nella coda conflitti.`}
               label={
                 activity.conflicts.openCount > 0 ? "Da gestire" : "Pulito"
@@ -257,6 +265,44 @@ export default function ActivityRoute() {
 export const headers: HeadersFunction = (headersArgs) => {
   return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
 };
+
+function CatalogHealthCenterDetails({ activity }: { activity: Activity }) {
+  const center = activity.sync.catalogHealthCenter;
+
+  if (center.causes.length === 0) {
+    return (
+      <StatusRow
+        detail={center.summary}
+        icon="check-circle"
+        label="Pulito"
+        tone="success"
+        title="Centro salute catalogo"
+      />
+    );
+  }
+
+  return (
+    <s-stack gap="small-200">
+      <StatusRow
+        detail={center.summary}
+        icon="alert-circle"
+        label={getCatalogHealthCenterLabel(activity)}
+        tone={getCatalogHealthCenterTone(activity)}
+        title="Centro salute catalogo"
+      />
+      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-stack gap="small-200">
+          <s-text type="strong">Cause rilevate</s-text>
+          {center.causes.map((cause) => (
+            <s-text color="subdued" key={cause.code}>
+              {cause.label}: {cause.detail}
+            </s-text>
+          ))}
+        </s-stack>
+      </s-box>
+    </s-stack>
+  );
+}
 
 function ActivityTimelineRow({
   isLast,
@@ -505,6 +551,9 @@ function ActivityTechnicalDetails({
           Prossima esecuzione: {formatDateTime(job.runAfter)}
         </s-list-item>
         <s-list-item>Retry: {diagnostic.retry.reason}</s-list-item>
+        {diagnostic.rateLimit ? (
+          <s-list-item>{diagnostic.rateLimit.summary}</s-list-item>
+        ) : null}
         {job.errorMessage ? (
           <s-list-item>Errore: {job.errorMessage}</s-list-item>
         ) : null}
@@ -559,6 +608,57 @@ function getCatalogHealthDetail(activity: Activity) {
   if (next) return `Prossimo controllo ${formatDateTime(next)}.`;
 
   return "Nessun aggiornamento incrementale completato.";
+}
+
+function getCatalogHealthCenterLabel(activity: Activity) {
+  const status = activity.sync.catalogHealthCenter.status;
+
+  if (status === "critical") return "Critico";
+  if (status === "warning") return "Da controllare";
+  if (status === "info") return "In corso";
+
+  return "Pulito";
+}
+
+function getCatalogHealthCenterTone(activity: Activity): ActivityRow["tone"] {
+  const status = activity.sync.catalogHealthCenter.status;
+
+  if (status === "critical") return "critical";
+  if (status === "warning") return "warning";
+  if (status === "info") return "info";
+
+  return "success";
+}
+
+function getFullReconcileLabel(activity: Activity) {
+  const status = activity.sync.fullReconcile.status;
+
+  if (status === "missing") return "Mai eseguita";
+  if (status === "overdue") return "In ritardo";
+  if (status === "due_soon") return "In scadenza";
+
+  return "Aggiornata";
+}
+
+function getFullReconcileTone(activity: Activity): ActivityRow["tone"] {
+  const status = activity.sync.fullReconcile.status;
+
+  if (status === "missing" || status === "overdue") return "warning";
+  if (status === "due_soon") return "info";
+
+  return "success";
+}
+
+function getFullReconcileDetail(activity: Activity) {
+  const policy = activity.sync.fullReconcile;
+  const pieces = [
+    policy.latestFinishedAt
+      ? `ultima ${formatDateTime(policy.latestFinishedAt)}`
+      : "nessuna riconciliazione completa registrata",
+    `prossima ${formatDateTime(policy.nextDueAt)}`,
+  ];
+
+  return `Controllo completo ogni ${policy.intervalHours} ore: ${pieces.join(", ")}.`;
 }
 
 const itNumberFormatter = new Intl.NumberFormat("it-IT");

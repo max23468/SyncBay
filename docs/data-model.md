@@ -12,10 +12,18 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - audit log operativo (`AuditLog`);
 - mapping prodotto eBay -> Shopify (`ProductMapping`);
 - snapshot prodotto (`ProductSnapshot`);
-- conflitti Shopify (`SyncConflict`).
-- richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`).
+- conflitti Shopify (`SyncConflict`);
+- richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`);
+- regola descrizione persistente per shop (`DescriptionRule`).
 
-Il modello resta iniziale: include mapping, snapshot, conflitti e una regola prezzo globale per shop, ma non include ancora regole descrizione persistenti, regole prezzo per categoria o asset media dedicati. La preview import normalizza candidati listing e classifica errori MVP; l'import controllato registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per prodotti Shopify creati o riusati, includendo product GID, variant GID, stato dell'allineamento scorte, prezzo Shopify calcolato e diagnostica del riallineamento immagini scritto da SyncBay.
+Il modello resta iniziale: include mapping, snapshot, conflitti, una regola
+prezzo globale per shop e una regola descrizione globale per shop, ma non
+include ancora regole prezzo per categoria o asset media dedicati. La preview
+import normalizza candidati listing e classifica errori MVP; l'import controllato
+registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per
+prodotti Shopify creati o riusati, includendo product GID, variant GID, stato
+dell'allineamento scorte, prezzo Shopify calcolato e diagnostica del
+riallineamento immagini scritto da SyncBay.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -153,6 +161,14 @@ minimo, margine minimo e regole per categoria.
 
 Definiscono come trasformare descrizioni eBay.
 
+Schema iniziale:
+
+- una regola globale per shop;
+- modalità `CLEAN_HTML`, `FULL_HTML` o `TEXT_ONLY`;
+- default `CLEAN_HTML`, per rimuovere template eBay mantenendo contenuto utile;
+- applicazione ai nuovi import e alle anteprime successive, senza riscrittura
+  automatica dei prodotti già pubblicati.
+
 Modalità:
 
 - HTML completo;
@@ -252,3 +268,6 @@ Requisiti:
 - Nessun dato reale in test, fixture o documenti.
 - Archiviazione Shopify, non cancellazione automatica, quando un listing eBay sparisce.
 - Snapshot e mapping sono necessari per rollback e diagnostica.
+- Retention pilota secondo ADR 0017: audit log 180 giorni, job 90 giorni,
+  snapshot 180 giorni, state OAuth 7 giorni e richieste eBay account deletion
+  365 giorni.

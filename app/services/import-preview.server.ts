@@ -11,6 +11,16 @@ import {
   type EbayItemSpecific,
   type SyncBayProductFacet,
 } from "../lib/syncbay-product-facets";
+import {
+  buildExistingProductMatchSuggestions,
+  type ExistingProductMatchSuggestion,
+  type ShopifyMatchCandidate,
+} from "../lib/syncbay-product-matching";
+import {
+  buildImportQualityChecklist,
+  getQualityChecklistSummary,
+  type ImportQualityChecklistItem,
+} from "../lib/syncbay-quality-checklist";
 
 type ImportPreviewSeverity = "info" | "warning" | "error";
 type ImportPreviewStatus = "importable" | "skipped" | "error";
@@ -21,6 +31,7 @@ export interface ImportPreviewListingCandidate {
   ebayPrimaryCategoryId?: string | null;
   ebayPrimaryCategoryName?: string | null;
   ebayPrimaryCategoryPath?: string | null;
+  existingShopifyProducts?: ShopifyMatchCandidate[];
   imageUrls?: string[];
   itemId: string;
   itemSpecifics?: EbayItemSpecific[];
@@ -43,6 +54,7 @@ interface ImportPreviewIssue {
 export interface ImportPreviewItem {
   itemId: string;
   issues: ImportPreviewIssue[];
+  matchSuggestions: ExistingProductMatchSuggestion[];
   normalized: {
     categoryProposal: ShopifyCategoryProposal;
     currency: string | null;
@@ -62,6 +74,8 @@ export interface ImportPreviewItem {
     imageCount: number;
     priceAmount: number | null;
     productFacets: SyncBayProductFacet[];
+    qualityChecklist: ImportQualityChecklistItem[];
+    qualitySummary: string;
     productStatus: string;
     quantity: number | null;
     sku: string | null;
@@ -101,6 +115,28 @@ export function buildImportPreview(
     items,
     mode,
     summary,
+  };
+}
+
+export function addExistingProductMatchSuggestions(
+  preview: ImportPreviewResult,
+  shopifyProducts: ShopifyMatchCandidate[],
+): ImportPreviewResult {
+  if (shopifyProducts.length === 0) return preview;
+
+  return {
+    ...preview,
+    items: preview.items.map((item) => ({
+      ...item,
+      matchSuggestions: buildExistingProductMatchSuggestions({
+        ebay: {
+          itemId: item.itemId,
+          sku: item.normalized.sku,
+          title: item.normalized.title,
+        },
+        shopifyProducts,
+      }),
+    })),
   };
 }
 
@@ -226,17 +262,40 @@ function buildPreviewItem(
   );
   const storeCategoryName = normalizeText(candidate.storeCategoryName);
   const title = normalizeText(candidate.title) ?? "Titolo non disponibile";
+  const categoryProposal = resolveShopifyCategoryProposal({
+    ebayPrimaryCategoryName,
+    ebayPrimaryCategoryPath,
+    ebayStoreCategoryName: storeCategoryName,
+    title,
+  });
+  const imageCount = candidate.imageUrls?.length ?? 0;
+  const priceAmount = normalizeNumber(candidate.priceAmount);
+  const quantity = normalizeInteger(candidate.quantity);
+  const sku = normalizeText(candidate.sku);
+  const qualityChecklist = buildImportQualityChecklist({
+    categoryConfidence: categoryProposal.confidence,
+    descriptionWasChanged: descriptionReport.wasChanged,
+    imageCount,
+    priceAmount,
+    quantity,
+    sku,
+    skuGenerated: Boolean(candidate.skuGenerated),
+    variantCount: candidate.variantCount,
+  });
 
   return {
     itemId: candidate.itemId,
     issues,
-    normalized: {
-      categoryProposal: resolveShopifyCategoryProposal({
-        ebayPrimaryCategoryName,
-        ebayPrimaryCategoryPath,
-        ebayStoreCategoryName: storeCategoryName,
+    matchSuggestions: buildExistingProductMatchSuggestions({
+      ebay: {
+        itemId: candidate.itemId,
+        sku,
         title,
-      }),
+      },
+      shopifyProducts: candidate.existingShopifyProducts ?? [],
+    }),
+    normalized: {
+      categoryProposal,
       currency: normalizeCurrency(candidate.currency),
       descriptionCleanedLength: descriptionReport.cleanedLength,
       descriptionCleanedTextExcerpt: descriptionReport.cleanedTextExcerpt,
@@ -251,17 +310,19 @@ function buildPreviewItem(
       ebayPrimaryCategoryName,
       ebayPrimaryCategoryPath,
       imageUrls: candidate.imageUrls ?? [],
-      imageCount: candidate.imageUrls?.length ?? 0,
-      priceAmount: normalizeNumber(candidate.priceAmount),
+      imageCount,
+      priceAmount,
       productFacets: buildSyncBayProductFacets({
         ebayPrimaryCategoryName,
         itemSpecifics: candidate.itemSpecifics ?? [],
         storeCategoryName,
         title,
       }),
+      qualityChecklist,
+      qualitySummary: getQualityChecklistSummary(qualityChecklist),
       productStatus: DEFAULT_PRODUCT_STATUS,
-      quantity: normalizeInteger(candidate.quantity),
-      sku: normalizeText(candidate.sku),
+      quantity,
+      sku,
       skuGenerated: Boolean(candidate.skuGenerated),
       storeCategoryId: normalizeText(candidate.storeCategoryId),
       storeCategoryName,

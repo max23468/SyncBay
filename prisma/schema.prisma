@@ -72,6 +72,12 @@ enum PriceRoundingMode {
   WHOLE_EURO
 }
 
+enum DescriptionRuleMode {
+  CLEAN_HTML
+  FULL_HTML
+  TEXT_ONLY
+}
+
 enum SyncConflictStatus {
   OPEN
   RESOLVED
@@ -153,6 +159,7 @@ model Shop {
   productMappings  ProductMapping[]
   productSnapshots ProductSnapshot[]
   pricingRule      PricingRule?
+  descriptionRule  DescriptionRule?
   syncConflicts    SyncConflict[]
 }
 
@@ -163,6 +170,18 @@ model PricingRule {
   roundingMode    PriceRoundingMode @default(CENTS)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+}
+
+model DescriptionRule {
+  id        String              @id @default(cuid())
+  shopId    String              @unique
+  mode      DescriptionRuleMode @default(CLEAN_HTML)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 

@@ -79,6 +79,11 @@ test("shows the next retry window for active eBay cooldowns", () => {
 
   assert.match(diagnostic.nextAction, /05\/06\/26, 13:30/);
   assert.match(diagnostic.nextAction, /non forzare/i);
+  assert.deepEqual(diagnostic.rateLimit, {
+    provider: "eBay Trading API",
+    retryAfter: "2026-06-05T11:30:00.000Z",
+    summary: "eBay Trading API ha imposto un cooldown fino al 05/06/26, 13:30.",
+  });
 });
 
 test("blocks manual retry when incremental enqueue failed because of eBay cooldown", () => {
