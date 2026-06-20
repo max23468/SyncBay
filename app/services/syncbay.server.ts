@@ -1865,7 +1865,7 @@ export async function updateSyncTargetSeconds(
 
   if (seconds === null) {
     return {
-      message: "Intervallo non valido. Scegli tra 1, 2, 3 o 5 minuti.",
+      message: "Intervallo non valido. Scegli tra 2, 3 o 5 minuti.",
       status: "blocked" as const,
       syncTargetSeconds: shop.syncTargetSeconds,
     };
@@ -3040,14 +3040,24 @@ async function getLatestThumbnailUrlByMappingId(mappingIds: string[]) {
         "mappingId" IN (${Prisma.join(uniqueMappingIds)})
         AND candidate.url IS NOT NULL
         AND candidate.url <> ''
-        AND candidate.url ~* '^https?://'
-        AND candidate.url !~* '^[a-z][a-z0-9+.-]*://[^/?#]*@'
+        AND candidate.url ~* '^https?://[^[:space:]/?#@:]+(:[0-9]+)?([/?#]|$)'
+    ),
+    ranked_candidates AS (
+      SELECT
+        "mappingId",
+        "thumbnailUrl",
+        row_number() OVER (
+          PARTITION BY "mappingId"
+          ORDER BY "capturedAt" DESC, priority, ordinality
+        ) AS candidate_rank
+      FROM candidate_urls
     )
-    SELECT DISTINCT ON ("mappingId")
+    SELECT
       "mappingId",
       "thumbnailUrl"
-    FROM candidate_urls
-    ORDER BY "mappingId", "capturedAt" DESC, priority, ordinality
+    FROM ranked_candidates
+    WHERE candidate_rank <= 8
+    ORDER BY "mappingId", candidate_rank
   `;
 
   return getProductSnapshotThumbnailUrlByMappingIdFromRows(rows);

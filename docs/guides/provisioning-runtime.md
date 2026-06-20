@@ -106,7 +106,7 @@ Note:
   gennaio 2027. Se il refresh token manca o scade, riaprire l'app Shopify per
   ripetere il flusso di autorizzazione/migrazione; non usare token offline a
   durata illimitata come workaround.
-- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni minuto e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
+- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni 2 minuti e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - `/api/diagnostics/shopify-admin` è l'endpoint diagnostico interno per verificare
   Shopify Admin usando la sessione offline SyncBay e il refresh token lato
   runtime, senza passare da `shopify store auth`. È protetto da `APP_SECRET`
@@ -158,7 +158,7 @@ Non salvarla in Git e non stamparla nei log.
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
-- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni minuto tramite `pg_net` e secret in Supabase Vault
+- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault
 - retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
 - batch reale storico da 50 prodotti verificato sul dev store: job
   `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24
@@ -200,7 +200,7 @@ Primitive Supabase tracciate:
 - coda `syncbay_jobs`;
 - estensione `pg_cron`;
 - estensione `pg_net`;
-- schedule `syncbay-run-due-jobs` ogni minuto per riprendere job `IMPORT_CATALOG` dovuti;
+- schedule `syncbay-run-due-jobs` ogni 2 minuti per riprendere job `IMPORT_CATALOG` dovuti;
 - bucket privato `syncbay-import-staging` per staging temporaneo immagini, usato
   per generare URL firmate quando Shopify rifiuta le URL immagine eBay dirette.
 

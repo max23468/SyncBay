@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.2] — 2026-06-20
+
+### Correzioni
+
+- Catalogo e conflitti: la selezione delle miniature conserva i fallback validi
+  quando uno snapshot più recente contiene un URL malformato.
+- Impostazioni sync: il target minimo selezionabile passa a 2 minuti, coerente
+  con la nuova cadenza del runner automatico.
+
+### Sotto il cofano
+
+- Supabase Cron: la schedule del runner passa a ogni 2 minuti, riducendo il
+  polling a vuoto restando nel target di sync entro 5 minuti.
+
 ## [0.44.1] — 2026-06-20
 
 ### Correzioni
@@ -2296,6 +2310,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.2]: #0442--2026-06-20
 [0.44.1]: #0441--2026-06-20
 [0.44.0]: #0440--2026-06-20
 [0.43.1]: #0431--2026-06-20

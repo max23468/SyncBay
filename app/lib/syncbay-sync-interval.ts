@@ -3,11 +3,10 @@
  *
  * Il target guida la cadenza del sync incrementale (vedi
  * `getNextIncrementalEnqueueAt`) e la soglia "in ritardo". Resta vincolato a
- * "entro massimo 5 minuti" (ADR 0012): valori ammessi 60-300 secondi.
+ * "entro massimo 5 minuti" (ADR 0012): valori ammessi 120-300 secondi.
  */
 
 export const SYNC_TARGET_OPTIONS = [
-  { label: "1 minuto", value: 60 },
   { label: "2 minuti", value: 120 },
   { label: "3 minuti", value: 180 },
   { label: "5 minuti", value: 300 },
