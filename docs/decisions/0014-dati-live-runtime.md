@@ -33,14 +33,14 @@ embedded:
    Panoramica, quando una sincronizzazione in corso si completa tra due
    revalidation; sulle superfici con azioni (Conflitti, Attività) come esito di
    retry/risoluzione, in fase di propagazione.
-3. **Transizioni di navigazione (best-effort).** Opt-in CSS
-   `@view-transition { navigation: auto }` con rispetto di
-   `prefers-reduced-motion`. È un miglioramento progressivo: la navigazione
-   embedded passa per App Bridge e per gli anchor dei web component `s-*` (non
-   per `<Link>` di React Router), quindi la transizione non è garantita su tutti
-   i percorsi. Dove non si applica, degrada senza effetti collaterali. Il
-   controllo pieno richiederebbe convertire la navigazione interna a `<Link>`
-   RR: valutazione rimandata alla propagazione.
+3. **Transizioni di navigazione: RIMOSSE (aggiornamento 2026-06-19).** L'opt-in
+   CSS `@view-transition { navigation: auto }` era stato aggiunto come
+   miglioramento progressivo, ma la navigazione embedded passa per App Bridge e
+   per gli anchor dei web component `s-*` (non per `<Link>` di React Router),
+   quindi non produceva una transizione verificabile su questi percorsi. Non
+   essendo confermabile né nell'harness né senza convertire la navigazione a
+   `<Link>` RR, è stata rimossa per non lasciare codice morto. Si potrà
+   rivalutare se e quando la navigazione interna passerà a `<Link>` RR.
 
 ## Conseguenze
 
@@ -49,8 +49,8 @@ embedded:
   piano. Da rivedere se la scala dei job cresce molto.
 - I comportamenti vivono solo nell'admin reale (App Bridge): l'harness statico
   non li mostra, la verifica locale è typecheck/lint/build + ragionamento.
-- Le transizioni restano parziali finché la navigazione interna non passa a
-  `<Link>` RR.
+- Le transizioni di navigazione sono fuori finché la navigazione interna non
+  passa a `<Link>` RR (vedi aggiornamento 2026-06-19).
 - Se in futuro il loader dovesse fare ping provider lenti, `defer` andrà
   rivalutato (questa ADR non lo vieta in assoluto, lo esclude oggi per assenza
   di segmenti lenti).

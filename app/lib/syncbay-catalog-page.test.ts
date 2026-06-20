@@ -5,6 +5,7 @@ import test from "node:test";
 import * as catalogPage from "./syncbay-catalog-page.ts";
 
 const {
+  catalogRowMatchesSearch,
   getCatalogSnapshotLookupIds,
   getCatalogPageWindow,
   isCatalogRowNeedingCheck,
@@ -22,6 +23,29 @@ test("normalizes catalog page numbers", () => {
   assert.equal(normalizeCatalogPage("3"), 3);
   assert.equal(normalizeCatalogPage("0"), 1);
   assert.equal(normalizeCatalogPage("abc"), 1);
+});
+
+test("matches catalog rows by title, SKU or eBay item id", () => {
+  const row = {
+    ebayItemId: "123456789",
+    sku: "SYNC-TAZZA-001",
+    title: "Set tazze ceramica",
+  };
+
+  assert.equal(catalogRowMatchesSearch(row, ""), true);
+  assert.equal(catalogRowMatchesSearch(row, "  "), true);
+  assert.equal(catalogRowMatchesSearch(row, "tazze"), true);
+  assert.equal(catalogRowMatchesSearch(row, "TAZZE"), true);
+  assert.equal(catalogRowMatchesSearch(row, "sync-tazza"), true);
+  assert.equal(catalogRowMatchesSearch(row, "456789"), true);
+  assert.equal(catalogRowMatchesSearch(row, "lampada"), false);
+  assert.equal(
+    catalogRowMatchesSearch(
+      { ebayItemId: null, sku: null, title: null },
+      "tazze",
+    ),
+    false,
+  );
 });
 
 test("computes catalog pagination windows", () => {

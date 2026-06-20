@@ -22,8 +22,11 @@ import { LiveSync, useActionToast } from "../components/SyncBayLive";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { getSyncJobDiagnostic } from "../lib/syncbay-job-diagnostics";
 import {
+  formatSyncJobStatus as formatJobStatus,
   getActivityBadgeState,
   getConflictFieldLabel,
+  getSyncJobTitle as getJobTitle,
+  getSyncJobTone as getJobTone,
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
 } from "../lib/syncbay-ui-state";
@@ -469,16 +472,6 @@ function getTimelineCategoryFromJobType(type: string): TimelineCategoryKind {
   return "FAILED_JOB";
 }
 
-function getJobTitle(type: string) {
-  if (type === "IMPORT_CATALOG") return "Importazione catalogo";
-  if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
-  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità eBay";
-  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica Shopify rilevata";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto segnato come esaurito";
-
-  return "Attività SyncBay";
-}
-
 function getJobDetail(
   job: ActivityJob,
   diagnostic: ReturnType<typeof getSyncJobDiagnostic>,
@@ -522,25 +515,6 @@ function ActivityTechnicalDetails({
 
 function formatSentenceFragment(value: string) {
   return value.trim().replace(/[.!?]+$/u, "");
-}
-
-function formatJobStatus(status: string) {
-  if (status === "PENDING") return "In coda";
-  if (status === "RUNNING") return "In corso";
-  if (status === "SUCCEEDED") return "Completato";
-  if (status === "FAILED") return "Errore";
-  if (status === "RETRYING") return "Riproverà automaticamente";
-  if (status === "CANCELLED") return "Annullato";
-
-  return status;
-}
-
-function getJobTone(status: string): ActivityRow["tone"] {
-  if (status === "SUCCEEDED") return "success";
-  if (status === "FAILED") return "critical";
-  if (status === "RETRYING") return "warning";
-
-  return "info";
 }
 
 function getActivityToneLabel(tone: ActivityRow["tone"]) {

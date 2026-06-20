@@ -466,3 +466,36 @@ export function getTimelineCategoryLabel(category: TimelineCategoryKind) {
 
   return "Errori";
 }
+
+// Etichette canoniche dei job sync, condivise da Panoramica e Attività (prima
+// duplicate e divergenti): unica fonte di verità per questo microcopy.
+export function getSyncJobTitle(type: string) {
+  if (type === "IMPORT_CATALOG") return "Importazione catalogo";
+  if (type === "SYNC_INCREMENTAL") return "Aggiornamento catalogo";
+  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata su eBay";
+  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica rilevata su Shopify";
+  if (type === "ARCHIVE_INACTIVE_LISTING") {
+    return "Prodotto segnato come esaurito";
+  }
+
+  return "Attività SyncBay";
+}
+
+export function formatSyncJobStatus(status: string) {
+  if (status === "PENDING") return "In coda";
+  if (status === "RUNNING") return "In corso";
+  if (status === "SUCCEEDED") return "Completata";
+  if (status === "FAILED") return "Errore";
+  if (status === "RETRYING") return "Riprova automatica in corso";
+  if (status === "CANCELLED") return "Annullata";
+
+  return status;
+}
+
+export function getSyncJobTone(status: string): Tone {
+  if (status === "SUCCEEDED") return "success";
+  if (status === "FAILED") return "critical";
+  if (status === "RETRYING") return "warning";
+
+  return "info";
+}

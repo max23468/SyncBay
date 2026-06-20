@@ -39,21 +39,6 @@
   --syncbay-accent-tint: #e7f0fb;
 }
 
-/* Transizioni di navigazione (ADR 0014): miglioramento progressivo. Dove il
-   browser e il contesto embedded lo supportano, le navigazioni same-document
-   sfumano invece di lampeggiare; altrove degrada senza effetti. */
-@view-transition {
-  navigation: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
-
 /* Disclosure tecnici nativi: unica eccezione CSS preesistente. */
 .syncbay-row-details {
   max-width: 42ch;

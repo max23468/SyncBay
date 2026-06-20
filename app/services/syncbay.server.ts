@@ -27,10 +27,12 @@ import {
   type CatalogPageFilter,
   type CatalogSortDir,
   type CatalogSortKey,
+  catalogRowMatchesSearch,
   getCatalogPageWindow,
   getCatalogSnapshotLookupIds,
   isCatalogRowNeedingCheck,
 } from "../lib/syncbay-catalog-page";
+import { summarizeReliability } from "../lib/syncbay-dashboard-metrics";
 import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import {
@@ -465,36 +467,6 @@ function readJobResultCount(
  * realmente registrati: totale, riusciti, tasso e serie giornaliera per la
  * sparkline. Nessun dato sintetico: se non ci sono job, la finestra è vuota.
  */
-function summarizeReliability(
-  jobs: { createdAt: Date; status: SyncJobStatus }[],
-  now: Date,
-) {
-  const windowDays = 7;
-  const totalJobs = jobs.length;
-  const succeededJobs = jobs.filter(
-    (job) => job.status === SyncJobStatus.SUCCEEDED,
-  ).length;
-  const successRate =
-    totalJobs > 0 ? Math.round((succeededJobs / totalJobs) * 100) : 100;
-  const daily: number[] = [];
-
-  for (let offset = windowDays - 1; offset >= 0; offset -= 1) {
-    const dayStart = new Date(now);
-    dayStart.setHours(0, 0, 0, 0);
-    dayStart.setDate(dayStart.getDate() - offset);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
-    daily.push(
-      jobs.filter(
-        (job) => job.createdAt >= dayStart && job.createdAt < dayEnd,
-      ).length,
-    );
-  }
-
-  return { daily, succeededJobs, successRate, totalJobs, windowDays };
-}
-
 export async function getCatalogPageState(
   session: ShopifySessionLike,
   input: {
@@ -2828,15 +2800,9 @@ type ShopifyProductThumbnailsResponse = {
 type CatalogPageRow = ReturnType<typeof formatCatalogPageRow>;
 
 function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {
-  const needle = query.trim().toLowerCase();
+  if (!query.trim()) return rows;
 
-  if (!needle) return rows;
-
-  return rows.filter((row) =>
-    [row.title, row.sku, row.ebayItemId].some(
-      (field) => field?.toLowerCase().includes(needle) ?? false,
-    ),
-  );
+  return rows.filter((row) => catalogRowMatchesSearch(row, query));
 }
 
 function filterCatalogPageRows(

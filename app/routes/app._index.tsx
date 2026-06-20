@@ -24,8 +24,11 @@ import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  formatSyncJobStatus as formatJobStatus,
   getNextAction,
   getOverviewSyncWakeAt,
+  getSyncJobTitle as getJobTitle,
+  getSyncJobTone as getJobTone,
   isOverviewSyncWorking,
   shouldShowOverviewStatusHero,
   type NextActionKind,
@@ -624,35 +627,6 @@ function getContextualActions(
   }
 
   return actions;
-}
-
-function getJobTitle(type: string) {
-  if (type === "IMPORT_CATALOG") return "Importazione catalogo";
-  if (type === "SYNC_INCREMENTAL") return "Allineamento catalogo";
-  if (type === "UPDATE_EBAY_STOCK") return "Disponibilità aggiornata su eBay";
-  if (type === "DETECT_SHOPIFY_CHANGES") return "Modifica rilevata su Shopify";
-  if (type === "ARCHIVE_INACTIVE_LISTING") return "Prodotto segnato come esaurito";
-
-  return "Attività SyncBay";
-}
-
-function formatJobStatus(status: string) {
-  if (status === "PENDING") return "In coda";
-  if (status === "RUNNING") return "In corso";
-  if (status === "SUCCEEDED") return "Completata";
-  if (status === "FAILED") return "Errore";
-  if (status === "RETRYING") return "Riprova automatica in corso";
-  if (status === "CANCELLED") return "Annullata";
-
-  return status;
-}
-
-function getJobTone(status: string): RecentActivity["tone"] {
-  if (status === "SUCCEEDED") return "success";
-  if (status === "FAILED") return "critical";
-  if (status === "RETRYING") return "warning";
-
-  return "info";
 }
 
 const itNumberFormatter = new Intl.NumberFormat("it-IT");
