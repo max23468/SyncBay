@@ -6,6 +6,26 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.0] — 2026-06-20
+
+### Novità
+
+- Conflitti: risoluzione in blocco dei conflitti sicuri. Con un'azione SyncBay
+  sistema tutte le descrizioni in conflitto mantenendo la versione di Shopify
+  come riferimento, senza toccare eBay; le scelte delicate (titoli, immagini,
+  prezzi) restano da decidere una per una. Esito mostrato con un toast.
+- Importazione: conferma con toast all'avvio dell'import.
+
+### Sotto il cofano
+
+- Microcopy dei job sincronizzazione unificato in un'unica fonte (prima
+  duplicato e divergente tra Panoramica e Attività).
+- Il battito del sync è ora descritto agli screen reader come immagine con
+  testo equivalente.
+- Rimosse le transizioni di navigazione non verificabili nell'admin embedded.
+- Coperti da test la ricerca catalogo e l'aggregazione di affidabilità della
+  Panoramica.
+
 ## [0.41.5] — 2026-06-19
 
 ### Sotto il cofano
@@ -2087,6 +2107,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.0]: #0420--2026-06-20
 [0.41.5]: #0415--2026-06-19
 [0.41.4]: #0414--2026-06-19
 [0.41.3]: #0413--2026-06-19

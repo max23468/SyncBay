@@ -37,6 +37,23 @@ export function isCatalogRowNeedingCheck(input: {
   return input.availability !== "aligned";
 }
 
+export function catalogRowMatchesSearch(
+  row: {
+    ebayItemId: string | null;
+    sku: string | null;
+    title: string | null;
+  },
+  query: string,
+): boolean {
+  const needle = query.trim().toLowerCase();
+
+  if (!needle) return true;
+
+  return [row.title, row.sku, row.ebayItemId].some(
+    (field) => field?.toLowerCase().includes(needle) ?? false,
+  );
+}
+
 export function normalizeCatalogSort(
   value: string | null | undefined,
 ): CatalogSortKey | null {

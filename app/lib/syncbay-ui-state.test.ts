@@ -5,6 +5,7 @@ import test from "node:test";
 import * as uiState from "./syncbay-ui-state.ts";
 
 const {
+  formatSyncJobStatus,
   getCatalogAvailabilityLabel,
   getCatalogRowStatus,
   getCatalogStatusLabel,
@@ -17,6 +18,8 @@ const {
   getNextAction,
   getOverviewSyncWakeAt,
   getProductPublicationModeSummaryLabel,
+  getSyncJobTitle,
+  getSyncJobTone,
   getTimelineCategoryLabel,
   isOverviewSyncWorking,
   isCatalogMappingStale,
@@ -507,4 +510,24 @@ test("maps timeline category labels", () => {
   assert.equal(getTimelineCategoryLabel("UPDATE_EBAY_STOCK"), "Disponibilità");
   assert.equal(getTimelineCategoryLabel("CONFLICT"), "Conflitti");
   assert.equal(getTimelineCategoryLabel("FAILED_JOB"), "Errori");
+});
+
+test("maps canonical sync job titles", () => {
+  assert.equal(getSyncJobTitle("IMPORT_CATALOG"), "Importazione catalogo");
+  assert.equal(getSyncJobTitle("SYNC_INCREMENTAL"), "Aggiornamento catalogo");
+  assert.equal(
+    getSyncJobTitle("ARCHIVE_INACTIVE_LISTING"),
+    "Prodotto segnato come esaurito",
+  );
+  assert.equal(getSyncJobTitle("UNKNOWN"), "Attività SyncBay");
+});
+
+test("formats and tones sync job statuses", () => {
+  assert.equal(formatSyncJobStatus("SUCCEEDED"), "Completata");
+  assert.equal(formatSyncJobStatus("RETRYING"), "Riprova automatica in corso");
+  assert.equal(formatSyncJobStatus("WHATEVER"), "WHATEVER");
+  assert.equal(getSyncJobTone("SUCCEEDED"), "success");
+  assert.equal(getSyncJobTone("FAILED"), "critical");
+  assert.equal(getSyncJobTone("RETRYING"), "warning");
+  assert.equal(getSyncJobTone("PENDING"), "info");
 });
