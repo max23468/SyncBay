@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.1] — 2026-06-20
+
+### Correzioni
+
+- Catalogo e conflitti: le miniature leggono solo URL sintetici dagli snapshot
+  prodotto, evitando di trasferire payload JSON storici a ogni apertura pagina.
+
 ## [0.44.0] — 2026-06-20
 
 ### Novità
@@ -2289,6 +2296,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.1]: #0441--2026-06-20
 [0.44.0]: #0440--2026-06-20
 [0.43.1]: #0431--2026-06-20
 [0.43.0]: #0430--2026-06-20

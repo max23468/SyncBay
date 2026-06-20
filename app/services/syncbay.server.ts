@@ -76,7 +76,7 @@ import {
 } from "../lib/syncbay-product-publication-settings";
 import { normalizePricingRuleFormInput } from "../lib/syncbay-pricing-rules";
 import {
-  getProductSnapshotThumbnailUrl,
+  getProductSnapshotThumbnailUrlByMappingIdFromRows,
   getProductSnapshotThumbnailUrlFromPayloads,
 } from "../lib/syncbay-product-snapshot-payload";
 import type { ShopifyMatchCandidate } from "../lib/syncbay-product-matching";
@@ -664,7 +664,7 @@ export async function getCatalogPageState(
         mapping,
         now,
         syncTargetSeconds: shop.syncTargetSeconds,
-        thumbnailPayload: null,
+        thumbnailUrl: null,
       }),
     );
 
@@ -747,7 +747,7 @@ export async function getCatalogPageState(
       mapping,
       now,
       syncTargetSeconds: shop.syncTargetSeconds,
-      thumbnailPayload: null,
+      thumbnailUrl: null,
     }),
   );
   const filteredRows = filterCatalogPageRows(
@@ -885,8 +885,8 @@ export async function getConflictsPageState(
       status: { in: statusFilter },
     },
   });
-  const thumbnailPayloadByMappingId =
-    await getLatestThumbnailPayloadByMappingId(
+  const thumbnailUrlByMappingId =
+    await getLatestThumbnailUrlByMappingId(
       conflicts.flatMap((conflict) =>
         conflict.mapping?.id ? [conflict.mapping.id] : [],
       ),
@@ -901,9 +901,9 @@ export async function getConflictsPageState(
       latestSnapshot: conflict.mapping?.id
         ? (latestSnapshotByMappingId.get(conflict.mapping.id) ?? null)
         : null,
-      thumbnailPayload:
+      thumbnailUrl:
         (conflict.mapping?.id
-          ? thumbnailPayloadByMappingId.get(conflict.mapping.id)
+          ? thumbnailUrlByMappingId.get(conflict.mapping.id)
           : null) ?? null,
     }),
   );
@@ -2984,47 +2984,73 @@ function getRuntimePhaseReadiness(input: {
   ];
 }
 
-async function getLatestThumbnailPayloadByMappingId(mappingIds: string[]) {
+type LatestProductSnapshotThumbnailRow = {
+  mappingId: string | null;
+  thumbnailUrl: string | null;
+};
+
+async function getLatestThumbnailUrlByMappingId(mappingIds: string[]) {
   const uniqueMappingIds = [...new Set(mappingIds)];
-  const payloadByMappingId = new Map<string, Prisma.JsonValue | null>();
 
-  if (uniqueMappingIds.length === 0) return payloadByMappingId;
+  if (uniqueMappingIds.length === 0) return new Map<string, string>();
 
-  const snapshots = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    select: {
-      mappingId: true,
-      payload: true,
-    },
-    where: {
-      mappingId: { in: uniqueMappingIds },
-      OR: [
-        { payload: { path: ["imageUrls"], not: Prisma.JsonNull } },
-        {
-          payload: {
-            path: ["mediaSync", "sourceImageUrls"],
-            not: Prisma.JsonNull,
-          },
-        },
-        { payload: { path: ["imageUrl"], not: Prisma.JsonNull } },
-        { payload: { path: ["thumbnailUrl"], not: Prisma.JsonNull } },
-        { payload: { path: ["galleryUrl"], not: Prisma.JsonNull } },
-        { payload: { path: ["GalleryURL"], not: Prisma.JsonNull } },
-      ],
-    },
-  });
+  const rows = await prisma.$queryRaw<LatestProductSnapshotThumbnailRow[]>`
+    WITH candidate_urls AS (
+      SELECT
+        "mappingId",
+        "capturedAt",
+        candidate.priority,
+        candidate.ordinality,
+        candidate.url AS "thumbnailUrl"
+      FROM "ProductSnapshot"
+      CROSS JOIN LATERAL (
+        SELECT
+          1 AS priority,
+          image_url.ordinality,
+          image_url.value AS url
+        FROM jsonb_array_elements_text(
+          CASE
+            WHEN jsonb_typeof("payload"->'imageUrls') = 'array'
+              THEN "payload"->'imageUrls'
+            ELSE '[]'::jsonb
+          END
+        ) WITH ORDINALITY AS image_url(value, ordinality)
+        UNION ALL
+        SELECT
+          2 AS priority,
+          media_url.ordinality,
+          media_url.value AS url
+        FROM jsonb_array_elements_text(
+          CASE
+            WHEN jsonb_typeof("payload"#>'{mediaSync,sourceImageUrls}') = 'array'
+              THEN "payload"#>'{mediaSync,sourceImageUrls}'
+            ELSE '[]'::jsonb
+          END
+        ) WITH ORDINALITY AS media_url(value, ordinality)
+        UNION ALL
+        SELECT 3 AS priority, 1 AS ordinality, "payload"->>'imageUrl' AS url
+        UNION ALL
+        SELECT 4 AS priority, 1 AS ordinality, "payload"->>'thumbnailUrl' AS url
+        UNION ALL
+        SELECT 5 AS priority, 1 AS ordinality, "payload"->>'galleryUrl' AS url
+        UNION ALL
+        SELECT 6 AS priority, 1 AS ordinality, "payload"->>'GalleryURL' AS url
+      ) AS candidate
+      WHERE
+        "mappingId" IN (${Prisma.join(uniqueMappingIds)})
+        AND candidate.url IS NOT NULL
+        AND candidate.url <> ''
+        AND candidate.url ~* '^https?://'
+        AND candidate.url !~* '^[a-z][a-z0-9+.-]*://[^/?#]*@'
+    )
+    SELECT DISTINCT ON ("mappingId")
+      "mappingId",
+      "thumbnailUrl"
+    FROM candidate_urls
+    ORDER BY "mappingId", "capturedAt" DESC, priority, ordinality
+  `;
 
-  for (const snapshot of snapshots) {
-    if (!snapshot.mappingId || payloadByMappingId.has(snapshot.mappingId)) {
-      continue;
-    }
-
-    if (!getProductSnapshotThumbnailUrl(snapshot.payload)) continue;
-
-    payloadByMappingId.set(snapshot.mappingId, snapshot.payload);
-  }
-
-  return payloadByMappingId;
+  return getProductSnapshotThumbnailUrlByMappingIdFromRows(rows);
 }
 
 async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
@@ -3172,8 +3198,8 @@ async function getCatalogRowsWithThumbnails(input: {
   rows: CatalogPageRow[];
   shopDomain: string;
 }) {
-  const thumbnailPayloadByMappingId =
-    await getLatestThumbnailPayloadByMappingId(
+  const thumbnailUrlByMappingId =
+    await getLatestThumbnailUrlByMappingId(
       getCatalogSnapshotLookupIds({
         maxLookupRows: CATALOG_PAGE_SIZE,
         rows: input.rows,
@@ -3181,11 +3207,10 @@ async function getCatalogRowsWithThumbnails(input: {
     );
   const pageRowsWithSnapshotThumbs = input.rows.map((row) => {
     if (row.thumbnailUrl) return row;
-    const payload = thumbnailPayloadByMappingId.get(row.id) ?? null;
 
     return {
       ...row,
-      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([payload]),
+      thumbnailUrl: thumbnailUrlByMappingId.get(row.id) ?? null,
     };
   });
   const shopifyThumbnailUrlByProductGid =
@@ -3406,7 +3431,7 @@ function formatCatalogPageRow(input: {
   }>;
   now: Date;
   syncTargetSeconds: number;
-  thumbnailPayload: Prisma.JsonValue | null;
+  thumbnailUrl: string | null;
 }) {
   const latestSnapshot = input.latestSnapshot;
   const lastSyncedAt = input.mapping.lastSyncedAt?.toISOString() ?? null;
@@ -3451,10 +3476,9 @@ function formatCatalogPageRow(input: {
     sku: latestSnapshot?.sku ?? input.mapping.sku,
     snapshotCapturedAt: latestSnapshot?.capturedAt.toISOString() ?? null,
     status,
-    thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([
-      latestSnapshot?.payload,
-      input.thumbnailPayload,
-    ]),
+    thumbnailUrl:
+      getProductSnapshotThumbnailUrlFromPayloads([latestSnapshot?.payload]) ??
+      input.thumbnailUrl,
     title:
       latestSnapshot?.title ??
       input.mapping.sku ??
@@ -3470,7 +3494,7 @@ function formatConflictPageRow(
   }>,
   input: {
     latestSnapshot: LatestProductSnapshotForDisplay | null;
-    thumbnailPayload: Prisma.JsonValue | null;
+    thumbnailUrl: string | null;
   },
 ) {
   const latestSnapshot = input.latestSnapshot;
@@ -3483,10 +3507,9 @@ function formatConflictPageRow(
     product: {
       shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
       sku: latestSnapshot?.sku ?? conflict.mapping?.sku ?? null,
-      thumbnailUrl: getProductSnapshotThumbnailUrlFromPayloads([
-        latestSnapshot?.payload,
-        input.thumbnailPayload,
-      ]),
+      thumbnailUrl:
+        getProductSnapshotThumbnailUrlFromPayloads([latestSnapshot?.payload]) ??
+        input.thumbnailUrl,
       title:
         latestSnapshot?.title ??
         conflict.mapping?.sku ??
