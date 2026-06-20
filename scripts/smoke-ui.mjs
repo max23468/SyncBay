@@ -27,6 +27,8 @@ const checks = [
       "SYNCBAY_APP_NAME",
       "useNavigation",
       "RoutePendingIndicator",
+      "syncbay-route-pending__surface",
+      "Apro Catalogo",
       "Panoramica",
       "Catalogo",
       "Conflitti",
