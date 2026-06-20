@@ -155,16 +155,20 @@ export default function CatalogRoute() {
               <s-stack gap="base">
                 <s-table>
                   <s-table-header-row>
-                    <s-table-header>Immagine</s-table-header>
-                    <s-table-header>Prodotto</s-table-header>
-                    <s-table-header>Collegamento</s-table-header>
-                    <s-table-header format="numeric">
+                    <s-table-header listSlot="kicker">Immagine</s-table-header>
+                    <s-table-header listSlot="primary">Prodotto</s-table-header>
+                    <s-table-header listSlot="inline">Collegamento</s-table-header>
+                    <s-table-header format="numeric" listSlot="labeled">
                       Disponibilità
                     </s-table-header>
-                    <s-table-header format="numeric">Prezzo</s-table-header>
-                    <s-table-header>Aggiornato</s-table-header>
-                    <s-table-header>Stato</s-table-header>
-                    <s-table-header>Azioni</s-table-header>
+                    <s-table-header format="numeric" listSlot="inline">
+                      Prezzo
+                    </s-table-header>
+                    <s-table-header listSlot="secondary">
+                      Aggiornato
+                    </s-table-header>
+                    <s-table-header listSlot="inline">Stato</s-table-header>
+                    <s-table-header listSlot="labeled">Azioni</s-table-header>
                   </s-table-header-row>
                   <s-table-body>
                     {rows.map((row) => (

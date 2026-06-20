@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.7] — 2026-06-20
+
+### Correzioni
+
+- Catalogo: i titoli della tabella dichiarano la disposizione responsive
+  richiesta dai Web Components Shopify, riducendo gli avvisi Polaris in console
+  Safari.
+
 ## [0.42.6] — 2026-06-20
 
 ### Correzioni
@@ -2171,6 +2179,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.7]: #0427--2026-06-20
 [0.42.6]: #0426--2026-06-20
 [0.42.5]: #0425--2026-06-20
 [0.42.4]: #0424--2026-06-20
