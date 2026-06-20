@@ -63,6 +63,24 @@ test("uses the supplied clock for the eBay cooldown diagnostic", () => {
   assert.match(diagnostic.nextAction, /attendi/i);
 });
 
+test("shows the next retry window for active eBay cooldowns", () => {
+  const diagnostic = getSyncJobDiagnostic(
+    {
+      attempts: 3,
+      errorCode: "EBAY_TRADING_RATE_LIMITED",
+      errorMessage: "Call usage limit has been reached.",
+      maxAttempts: 5,
+      runAfter: "2026-06-05T11:30:00.000Z",
+      status: "FAILED",
+      type: "SYNC_INCREMENTAL",
+    },
+    now,
+  );
+
+  assert.match(diagnostic.nextAction, /05\/06\/26, 13:30/);
+  assert.match(diagnostic.nextAction, /non forzare/i);
+});
+
 test("blocks manual retry when incremental enqueue failed because of eBay cooldown", () => {
   const diagnostic = getSyncJobDiagnostic(
     {

@@ -6,8 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.42.12] — 2026-06-20
 
+### Correzioni
+
+- Catalogo: su viewport stretti la tabella resta scrollabile dentro la sezione,
+  senza allargare l'intera pagina embedded Shopify.
+- Attività: i job bloccati da cooldown eBay mostrano la prossima finestra di
+  retry e chiariscono che il retry manuale non va forzato durante la pausa.
+
+### Sotto il cofano
+
+- Screenshot live: `ui:shot-live` crea la cartella `preview/shots` anche in
+  checkout puliti prima di scrivere gli output ignorati da Git.
 - Pulizia interna: rimosso il vecchio harness preview HTML statico, snellito
   l'handoff UI storico, documentato lo screenshot live Admin e ristrette
   interfacce TypeScript non usate fuori modulo.
@@ -2215,6 +2226,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.12]: #04212--2026-06-20
 [0.42.7]: #0427--2026-06-20
 [0.42.6]: #0426--2026-06-20
 [0.42.5]: #0425--2026-06-20

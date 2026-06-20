@@ -33,6 +33,12 @@ const EBAY_TRADING_USAGE_LIMIT_PATTERNS = [
   /rate limit/i,
 ];
 
+const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "Europe/Rome",
+});
+
 export function getSyncJobDiagnostic(
   job: SyncJobDiagnosticInput,
   now = new Date(),
@@ -115,7 +121,7 @@ function getJobImpact(type: string) {
 
 function getJobNextAction(job: SyncJobDiagnosticInput, now: Date) {
   if (isEbayCooldownActive(job, now)) {
-    return "Attendi la finestra indicata da eBay, poi lascia lavorare il runner o riprova dalla dashboard.";
+    return `Attendi: eBay ha imposto una pausa fino al ${formatDateTime(job.runAfter)}. Non forzare il retry manuale; lascia lavorare il runner quando la finestra si riapre.`;
   }
   if (job.type === "DETECT_SHOPIFY_CHANGES") {
     return "Riprova il controllo e poi rivedi la pagina Conflitti.";
@@ -129,6 +135,12 @@ function getJobNextAction(job: SyncJobDiagnosticInput, now: Date) {
 
 function getTime(value: string | Date) {
   return value instanceof Date ? value.getTime() : new Date(value).getTime();
+}
+
+function formatDateTime(value: string | Date) {
+  return itDateTimeFormatter.format(
+    value instanceof Date ? value : new Date(value),
+  );
 }
 
 function isEbayTradingUsageLimitMessage(message: string) {

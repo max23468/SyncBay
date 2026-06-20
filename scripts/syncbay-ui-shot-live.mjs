@@ -15,6 +15,7 @@
  */
 
 import { dirname, join, resolve } from "node:path";
+import { mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
@@ -31,8 +32,11 @@ const name = (process.argv[3] || navLabel || "panoramica").replace(
 const baseUrl = `https://admin.shopify.com/store/${STORE}/apps/${APP_HANDLE}/app`;
 
 const profileDir = join(root, ".shopify-pw-profile");
-const outPath = join(root, `preview/shots/${name}-real.png`);
+const shotsDir = join(root, "preview/shots");
+const outPath = join(shotsDir, `${name}-real.png`);
 const loginDeadlineMs = Number(process.env.LOGIN_WAIT_MS || 540000); // 9 min
+
+mkdirSync(shotsDir, { recursive: true });
 
 const context = await chromium.launchPersistentContext(profileDir, {
   headless: process.env.HEADLESS === "1",

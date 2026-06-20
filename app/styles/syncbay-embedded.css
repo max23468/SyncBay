@@ -261,6 +261,18 @@
   padding-block-end: 2px;
 }
 
+.syncbay-table-scroll {
+  display: block;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-block-end: 2px;
+}
+
+.syncbay-table-scroll > s-table {
+  min-inline-size: 720px;
+}
+
 .syncbay-route-pending {
   position: sticky;
   inset-block-start: 8px;
