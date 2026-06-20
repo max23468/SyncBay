@@ -77,6 +77,7 @@ import {
   getProductSnapshotThumbnailUrl,
   getProductSnapshotThumbnailUrlFromPayloads,
 } from "../lib/syncbay-product-snapshot-payload";
+import type { ShopifyMatchCandidate } from "../lib/syncbay-product-matching";
 import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
@@ -85,12 +86,22 @@ import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
 import { getShopifyChangeJobResourceKeys } from "../lib/syncbay-job-scheduling";
+import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
+import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
+import {
+  DEFAULT_DESCRIPTION_RULE,
+  getDescriptionRuleSummary,
+  normalizeDescriptionRule,
+  normalizeDescriptionRuleFormInput,
+} from "../lib/syncbay-description-rules";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
+  addExistingProductMatchSuggestions,
   getImportPreviewValidationRules,
   getMockImportPreview,
+  type ImportPreviewResult,
 } from "./import-preview.server";
 import {
   DEFAULT_PRICING_RULE,
@@ -112,6 +123,25 @@ interface ShopifyAdminGraphqlClient {
     query: string,
     options?: { variables?: Record<string, unknown> },
   ) => Promise<Response>;
+}
+
+interface ShopifyExistingProductMatchResponse {
+  data?: {
+    products?: {
+      nodes?: Array<{
+        id: string;
+        title: string | null;
+        variants?: {
+          nodes?: Array<{
+            barcode: string | null;
+            id: string;
+            sku: string | null;
+          }>;
+        };
+      }>;
+    };
+  };
+  errors?: unknown[];
 }
 
 type LatestProductSnapshotForDisplay = {
@@ -192,6 +222,7 @@ export async function getDashboardState(session: ShopifySessionLike) {
       activeIncrementalJobCount,
       nextRetryJob,
       latestIncrementalWorkJob,
+      latestFullReconcileJob,
       reliabilityJobs,
       newMappings24h,
       newConflicts24h,
@@ -285,6 +316,16 @@ export async function getDashboardState(session: ShopifySessionLike) {
           type: SyncJobType.SYNC_INCREMENTAL,
         },
       }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { finishedAt: true },
+        where: {
+          payload: { path: ["source"], equals: "catalog_reconcile" },
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
       prisma.syncJob.findMany({
         orderBy: { createdAt: "asc" },
         select: { createdAt: true, status: true },
@@ -332,6 +373,27 @@ export async function getDashboardState(session: ShopifySessionLike) {
     ),
     synced: readJobResultCount(latestIncrementalWorkJob?.result, "syncedCount"),
   };
+  const catalogSummary = await getCatalogSummaryCounts({
+    now,
+    shopId: shop.id,
+    syncTargetSeconds: shop.syncTargetSeconds,
+  });
+  const failedJobCount = recentJobs.filter(
+    (job) => job.status === SyncJobStatus.FAILED,
+  ).length;
+  const catalogHealthCenter = buildCatalogHealthCenter({
+    activeIncrementalJobCount,
+    failedJobCount,
+    needsCheckCount: catalogSummary.needsCheckCount,
+    openConflictCount,
+    staleActiveCount: catalogSummary.staleActiveCount,
+    unknownAvailabilityCount: catalogSummary.unknownAvailabilityCount,
+  });
+  const fullReconcile = getFullReconcilePolicyState({
+    intervalHours: 24,
+    latestFinishedAt: latestFullReconcileJob?.finishedAt ?? null,
+    now,
+  });
 
   return {
     readiness,
@@ -430,6 +492,8 @@ export async function getDashboardState(session: ShopifySessionLike) {
           latestIncrementalJob?.finishedAt?.toISOString() ?? null,
         latestIncrementalStatus: latestIncrementalJob?.status ?? null,
       },
+      catalogHealthCenter,
+      fullReconcile,
       lastRunCounts,
     },
     metrics: {
@@ -1292,7 +1356,10 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
   };
 }
 
-export async function getImportWizardState(session: ShopifySessionLike) {
+export async function getImportWizardState(
+  session: ShopifySessionLike,
+  admin?: ShopifyAdminGraphqlClient,
+) {
   const shop = await ensureShopForSession(session);
   const defaultProductStatus = normalizeImportProductStatus(
     shop.defaultProductStatus,
@@ -1325,7 +1392,10 @@ export async function getImportWizardState(session: ShopifySessionLike) {
     listingReaderAvailable: true,
     listingReaderError: preview.errorMessage,
   });
-  const previewResult = preview.previewResult;
+  const previewResult = await getImportPreviewWithExistingShopifyMatches({
+    admin,
+    previewResult: preview.previewResult,
+  });
 
   return {
     draftImport: getDraftImportReadiness({
@@ -1371,13 +1441,85 @@ export async function getImportWizardState(session: ShopifySessionLike) {
   };
 }
 
+async function getImportPreviewWithExistingShopifyMatches(input: {
+  admin?: ShopifyAdminGraphqlClient;
+  previewResult: ImportPreviewResult;
+}) {
+  if (!input.admin || input.previewResult.items.length === 0) {
+    return input.previewResult;
+  }
+
+  const shopifyProducts = await loadExistingShopifyProductsForMatching(
+    input.admin,
+  );
+
+  return addExistingProductMatchSuggestions(
+    input.previewResult,
+    shopifyProducts,
+  );
+}
+
+async function loadExistingShopifyProductsForMatching(
+  admin: ShopifyAdminGraphqlClient,
+): Promise<ShopifyMatchCandidate[]> {
+  const response = await admin.graphql(`#graphql
+    query SyncBayExistingProductsForMatching {
+      products(first: 250, sortKey: UPDATED_AT, reverse: true) {
+        nodes {
+          id
+          title
+          variants(first: 1) {
+            nodes {
+              barcode
+              id
+              sku
+            }
+          }
+        }
+      }
+    }`);
+
+  if (!response.ok) return [];
+
+  const json = (await response.json()) as ShopifyExistingProductMatchResponse;
+
+  if (json.errors?.length) return [];
+
+  return (json.data?.products?.nodes ?? []).flatMap((product) => {
+    const variant = product.variants?.nodes?.[0] ?? null;
+
+    if (!product.id || !product.title) return [];
+
+    return [
+      {
+        barcode: normalizeNullableString(variant?.barcode),
+        productGid: product.id,
+        sku: normalizeNullableString(variant?.sku),
+        title: product.title,
+        variantGid: variant?.id ?? null,
+      },
+    ];
+  });
+}
+
+function normalizeNullableString(value: string | null | undefined) {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
+}
+
 export async function getShopSettingsState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
 ) {
   const shop = await ensureShopForSession(session);
-  const [ebayConnection, activeMappingCount, latestIncrementalJob, pricingRule] =
-    await prisma.$transaction([
+  const [
+    ebayConnection,
+    activeMappingCount,
+    latestIncrementalJob,
+    pricingRule,
+    descriptionRule,
+  ] = await prisma.$transaction([
       prisma.ebayConnection.findUnique({
         where: {
           shopId_marketplaceId: {
@@ -1407,6 +1549,10 @@ export async function getShopSettingsState(
           discountPercent: true,
           roundingMode: true,
         },
+        where: { shopId: shop.id },
+      }),
+      prisma.descriptionRule.findUnique({
+        select: { mode: true },
         where: { shopId: shop.id },
       }),
     ]);
@@ -1443,6 +1589,9 @@ export async function getShopSettingsState(
       mode: publicationMode,
       selectedPublicationIds,
     },
+    descriptionRule: normalizeDescriptionRule(
+      descriptionRule ?? DEFAULT_DESCRIPTION_RULE,
+    ),
     pricingRule: normalizePricingRule(pricingRule ?? DEFAULT_PRICING_RULE),
     shopify: {
       configuredScopes: getConfiguredShopifyScopes(),
@@ -1467,6 +1616,62 @@ export async function getShopSettingsState(
         latestIncrementalJob?.finishedAt?.toISOString() ?? null,
     },
   };
+}
+
+export async function updateDescriptionRuleSettings(
+  session: ShopifySessionLike,
+  input: { mode: string },
+) {
+  const normalized = normalizeDescriptionRuleFormInput(input);
+  const shop = await ensureShopForSession(session);
+
+  if (normalized.status === "invalid") {
+    return {
+      descriptionRule: await getExistingDescriptionRuleForSettings(shop.id),
+      message: normalized.message,
+      status: "blocked" as const,
+    };
+  }
+
+  const savedRule = await prisma.$transaction(async (tx) => {
+    const rule = await tx.descriptionRule.upsert({
+      create: {
+        mode: normalized.mode,
+        shopId: shop.id,
+      },
+      select: { mode: true },
+      update: { mode: normalized.mode },
+      where: { shopId: shop.id },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        details: {
+          descriptionMode: normalized.mode,
+        },
+        message: `Regola descrizione aggiornata: ${getDescriptionRuleSummary(normalized.mode)}.`,
+        shopId: shop.id,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    });
+
+    return rule;
+  });
+
+  return {
+    descriptionRule: normalizeDescriptionRule(savedRule),
+    message: `Regola descrizione salvata: ${getDescriptionRuleSummary(savedRule.mode)}. Verrà usata dai prossimi import e dalle prossime anteprime di pulizia.`,
+    status: "saved" as const,
+  };
+}
+
+async function getExistingDescriptionRuleForSettings(shopId: string) {
+  const descriptionRule = await prisma.descriptionRule.findUnique({
+    select: { mode: true },
+    where: { shopId },
+  });
+
+  return normalizeDescriptionRule(descriptionRule ?? DEFAULT_DESCRIPTION_RULE);
 }
 
 export async function updatePricingRuleSettings(
@@ -2978,6 +3183,8 @@ async function getCatalogSummaryCounts(input: {
       conflictCount: number;
       freshCount: number;
       needsCheckCount: number;
+      staleActiveCount: number;
+      unknownAvailabilityCount: number;
     }>
   >`
     WITH latest_snapshot AS (
@@ -3032,6 +3239,10 @@ async function getCatalogSummaryCounts(input: {
       COUNT(*) FILTER (WHERE "status" = 'archived')::integer AS "archivedCount",
       COUNT(*) FILTER (WHERE "status" = 'open_conflict')::integer AS "conflictCount",
       COUNT(*) FILTER (WHERE "status" = 'active_fresh')::integer AS "freshCount",
+      COUNT(*) FILTER (WHERE "status" = 'stale_sync')::integer AS "staleActiveCount",
+      COUNT(*) FILTER (
+        WHERE "status" <> 'archived' AND "availability" = 'unknown'
+      )::integer AS "unknownAvailabilityCount",
       COUNT(*) FILTER (
         WHERE
           "status" IN ('mapping_error', 'stale_sync')
@@ -3046,6 +3257,8 @@ async function getCatalogSummaryCounts(input: {
       conflictCount: 0,
       freshCount: 0,
       needsCheckCount: 0,
+      staleActiveCount: 0,
+      unknownAvailabilityCount: 0,
     }
   );
 }

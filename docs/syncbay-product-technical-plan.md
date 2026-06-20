@@ -380,11 +380,12 @@ MVP:
 
 - import crea nuovi prodotti Shopify con mapping stabile;
 - non tentare matching automatico aggressivo se il negoziante ha già prodotti Shopify.
+- l'anteprima può mostrare suggerimenti conservativi basati su SKU, barcode o
+  titolo, senza collegamento automatico.
 
 Roadmap prioritaria:
 
 - wizard per collegare prodotti Shopify esistenti ai listing eBay;
-- suggerimenti di match per SKU, titolo e barcode;
 - conferma manuale prima di attivare sync su prodotti già esistenti.
 
 ## Conflitti Shopify
@@ -433,6 +434,8 @@ Deve mostrare:
 - alert disponibilità critica;
 - log errori filtrabili;
 - retry manuale per job falliti.
+- centro salute catalogo con cause concrete;
+- stato riconciliazione completa programmata.
 
 ## Diagnostica self-service
 
@@ -456,6 +459,7 @@ Ogni errore deve mostrare:
 - prossima azione consigliata;
 - pulsante di retry quando sicuro;
 - riferimento tecnico interno per audit/log.
+- dettagli rate-limit provider quando il retry è bloccato da cooldown.
 
 ## Archiviazione prodotti
 
@@ -583,7 +587,8 @@ Azioni rollback MVP:
 
 Feature future da valutare:
 
-- quality score import/listing, solo se utile a spiegare rischi concreti senza appesantire il flusso del negoziante.
+- checklist qualità import/listing più ricca, senza punteggi opachi e solo se
+  utile a spiegare rischi concreti senza appesantire il flusso del negoziante.
 - comunicazione sconti/prezzi storefront pre-carrello, solo dopo valutazione
   dedicata di scope Shopify, App Store, theme app extension, coerenza tra prezzo
   reale Shopify, compare-at price, sconti carrello/checkout e messaggi

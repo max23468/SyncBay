@@ -89,7 +89,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   const [locationResult, wizard] = await Promise.all([
     fetchShopifyLocations(admin),
-    getImportWizardState(session),
+    getImportWizardState(session, admin),
   ]);
   const selectedLocation = locationResult.locations.find(
     (location) => location.id === wizard.shop.defaultLocationGid,
@@ -765,13 +765,16 @@ function PreviewExamplesSection({
                   <s-text color="subdued">
                     SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
                     {item.normalized.imageCount} ·{" "}
-                    {formatPreviewIssues(item.issues)}
+                    {formatPreviewIssues(item.issues)} ·{" "}
+                    {item.normalized.qualitySummary}
                   </s-text>
                 </s-stack>
                 <s-badge tone={getPreviewStatusTone(item.status)}>
                   {formatPreviewStatus(item.status)}
                 </s-badge>
               </s-stack>
+              <QualityChecklistDetails item={item} />
+              <MatchSuggestionDetails item={item} />
               <DescriptionPreviewDetails item={item} />
             </s-box>
           ))}
@@ -792,6 +795,47 @@ function PreviewExamplesSection({
         </s-box>
       )}
     </s-stack>
+  );
+}
+
+function QualityChecklistDetails({
+  item,
+}: {
+  item: WizardState["previewResult"]["items"][number];
+}) {
+  return (
+    <details className="syncbay-row-details">
+      <summary>Controlli qualità: {item.normalized.qualitySummary}</summary>
+      <s-unordered-list>
+        {item.normalized.qualityChecklist.map((check) => (
+          <s-list-item key={check.code}>{check.label}</s-list-item>
+        ))}
+      </s-unordered-list>
+    </details>
+  );
+}
+
+function MatchSuggestionDetails({
+  item,
+}: {
+  item: WizardState["previewResult"]["items"][number];
+}) {
+  const suggestion = item.matchSuggestions[0];
+
+  if (!suggestion) return null;
+
+  return (
+    <details className="syncbay-row-details">
+      <summary>Possibile prodotto Shopify esistente</summary>
+      <s-stack gap="small-200">
+        <s-text>
+          Confidenza {formatMatchConfidence(suggestion.confidence)}:{" "}
+          {suggestion.reasons.join(", ")}. Conferma manuale richiesta prima di
+          collegare il prodotto.
+        </s-text>
+        <s-text color="subdued">Prodotto Shopify: {suggestion.productGid}</s-text>
+      </s-stack>
+    </details>
   );
 }
 
@@ -1334,4 +1378,11 @@ function formatIssueSeverity(severity: string) {
   if (severity === "info") return "nota";
 
   return severity;
+}
+
+function formatMatchConfidence(value: string) {
+  if (value === "high") return "alta";
+  if (value === "medium") return "media";
+
+  return "bassa";
 }

@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.43.0] — 2026-06-20
+
+### Novità
+
+- Impostazioni: aggiunta la regola descrizione persistente per scegliere fra
+  HTML pulito, HTML completo e solo testo sui nuovi import.
+- Importazione: l'anteprima mostra checklist qualità esplicita e suggerimenti
+  conservativi di matching con prodotti Shopify esistenti, senza merge
+  automatico.
+- Attività: aggiunti centro salute catalogo, stato della riconciliazione
+  completa e diagnostica leggibile dei cooldown rate-limit eBay.
+
+### Sotto il cofano
+
+- Dati operativi: fissata la retention pilota per audit log, job, snapshot,
+  state OAuth e richieste eBay account deletion.
+
 ## [0.42.13] — 2026-06-20
 
 ### Correzioni
@@ -2240,6 +2257,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.43.0]: #0430--2026-06-20
 [0.42.13]: #04213--2026-06-20
 [0.42.12]: #04212--2026-06-20
 [0.42.7]: #0427--2026-06-20

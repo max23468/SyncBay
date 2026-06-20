@@ -31,6 +31,12 @@ import {
   type SyncBayPricingRule,
 } from "../lib/syncbay-pricing-rules";
 import {
+  DESCRIPTION_RULE_MODES,
+  getDescriptionRuleDetail,
+  getDescriptionRuleSummary,
+  type SyncBayDescriptionRule,
+} from "../lib/syncbay-description-rules";
+import {
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
@@ -45,6 +51,7 @@ import {
   getShopSettingsState,
   updateShopSyncEnabled,
   updateDefaultImportProductStatus,
+  updateDescriptionRuleSettings,
   updatePricingRuleSettings,
   updateProductPublicationSettings,
   updateSyncTargetSeconds,
@@ -63,6 +70,12 @@ type SettingsActionData =
       message: string;
       mode: ProductPublicationMode;
       selectedPublicationIds: string[];
+      status: "blocked" | "saved";
+    }
+  | {
+      descriptionRule: SyncBayDescriptionRule;
+      intent: "saveDescriptionRule";
+      message: string;
       status: "blocked" | "saved";
     }
   | {
@@ -95,6 +108,10 @@ type SettingsState = Awaited<ReturnType<typeof getShopSettingsState>>;
 const DEFAULT_SETTINGS_PRICING_RULE: SyncBayPricingRule = {
   discountPercent: 0,
   roundingMode: "CENTS",
+};
+
+const DEFAULT_SETTINGS_DESCRIPTION_RULE: SyncBayDescriptionRule = {
+  mode: "CLEAN_HTML",
 };
 
 export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
@@ -198,6 +215,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     } satisfies SettingsActionData);
   }
 
+  if (intent === "saveDescriptionRule") {
+    const result = await updateDescriptionRuleSettings(session, {
+      mode: String(formData.get("descriptionRuleMode") ?? ""),
+    });
+
+    return Response.json({
+      descriptionRule: result.descriptionRule,
+      intent,
+      message: result.message,
+      status: result.status,
+    } satisfies SettingsActionData);
+  }
+
   if (intent === "saveSyncTarget") {
     const result = await updateSyncTargetSeconds(
       session,
@@ -254,6 +284,10 @@ export default function SettingsRoute() {
     actionData?.intent === "savePricingRule"
       ? actionData.pricingRule
       : (settings.pricingRule ?? DEFAULT_SETTINGS_PRICING_RULE);
+  const currentDescriptionRule =
+    actionData?.intent === "saveDescriptionRule"
+      ? actionData.descriptionRule
+      : (settings.descriptionRule ?? DEFAULT_SETTINGS_DESCRIPTION_RULE);
   const configReady =
     settings.ebay.status === "CONNECTED" &&
     settings.shopify.missingScopes.length === 0 &&
@@ -295,6 +329,10 @@ export default function SettingsRoute() {
             currentPricingRule={currentPricingRule}
             isSaving={isSaving}
           />
+          <DescriptionRuleSettingsCard
+            currentDescriptionRule={currentDescriptionRule}
+            isSaving={isSaving}
+          />
         </s-grid>
 
         <AdvancedSettingsCard
@@ -303,6 +341,48 @@ export default function SettingsRoute() {
         />
       </s-stack>
     </s-page>
+  );
+}
+
+function DescriptionRuleSettingsCard({
+  currentDescriptionRule,
+  isSaving,
+}: {
+  currentDescriptionRule: SyncBayDescriptionRule;
+  isSaving: boolean;
+}) {
+  return (
+    <SettingCard
+      description="Come SyncBay prepara le descrizioni eBay per Shopify."
+      icon="product"
+      statusLabel={getDescriptionRuleSummary(currentDescriptionRule.mode)}
+      statusTone="info"
+      title="Regola descrizione"
+    >
+      <s-paragraph>{getDescriptionRuleDetail(currentDescriptionRule.mode)}</s-paragraph>
+      <Form method="post">
+        <input type="hidden" name="intent" value="saveDescriptionRule" />
+        <s-select
+          id="descriptionRuleMode"
+          label="Modalità descrizione"
+          name="descriptionRuleMode"
+          value={currentDescriptionRule.mode}
+        >
+          {DESCRIPTION_RULE_MODES.map((mode) => (
+            <s-option key={mode} value={mode}>
+              {getDescriptionRuleSummary(mode)}
+            </s-option>
+          ))}
+        </s-select>
+        <s-text color="subdued">
+          La scelta vale per i prossimi import e per le anteprime di pulizia. I
+          prodotti già importati non vengono riscritti automaticamente.
+        </s-text>
+        <s-button type="submit" disabled={isSaving}>
+          {isSaving ? "Salvataggio..." : "Salva regola descrizione"}
+        </s-button>
+      </Form>
+    </SettingCard>
   );
 }
 

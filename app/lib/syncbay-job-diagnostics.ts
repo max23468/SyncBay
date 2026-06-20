@@ -17,6 +17,11 @@ export interface ManualRetryState {
 export interface SyncJobDiagnostic {
   impact: string;
   nextAction: string;
+  rateLimit?: {
+    provider: string;
+    retryAfter: string;
+    summary: string;
+  };
   retry: ManualRetryState;
   technicalReference: string;
 }
@@ -43,9 +48,12 @@ export function getSyncJobDiagnostic(
   job: SyncJobDiagnosticInput,
   now = new Date(),
 ): SyncJobDiagnostic {
+  const rateLimit = getRateLimitDetail(job, now);
+
   return {
     impact: getJobImpact(job.type),
     nextAction: getJobNextAction(job, now),
+    ...(rateLimit ? { rateLimit } : {}),
     retry: getManualRetryState(job, now),
     technicalReference: job.errorCode || "Nessun codice tecnico",
   };
@@ -147,4 +155,16 @@ function isEbayTradingUsageLimitMessage(message: string) {
   return EBAY_TRADING_USAGE_LIMIT_PATTERNS.some((pattern) =>
     pattern.test(message),
   );
+}
+
+function getRateLimitDetail(job: SyncJobDiagnosticInput, now: Date) {
+  if (!isEbayCooldownActive(job, now)) return null;
+
+  const retryAfter = new Date(job.runAfter);
+
+  return {
+    provider: "eBay Trading API",
+    retryAfter: retryAfter.toISOString(),
+    summary: `eBay Trading API ha imposto un cooldown fino al ${formatDateTime(retryAfter)}.`,
+  };
 }
