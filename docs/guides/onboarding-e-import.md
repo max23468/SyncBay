@@ -122,7 +122,7 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   categoria affidabile;
 - l'import reale ha completato 958 listing sul dev store con mapping, snapshot,
   job e audit coerenti. La schedule Supabase Cron `syncbay-run-due-jobs`
-  riprende ogni minuto i job `IMPORT_CATALOG` dovuti.
+  riprende ogni 2 minuti i job `IMPORT_CATALOG` dovuti.
 
 Copertura attuale della preview live:
 

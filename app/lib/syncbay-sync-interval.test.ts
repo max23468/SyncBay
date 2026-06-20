@@ -14,15 +14,16 @@ test("accepts only the allowed sync target values", () => {
   }
 });
 
-test("rejects values outside the 1-5 minute set", () => {
-  for (const invalid of [0, 30, 90, 301, 600, -60, "abc", "", null, undefined]) {
+test("rejects values outside the 2-5 minute set", () => {
+  for (const invalid of [0, 30, 60, 90, 301, 600, -60, "abc", "", null, undefined]) {
     assert.equal(normalizeSyncTargetSeconds(invalid), null);
   }
 });
 
 test("labels known options and falls back for env-set values", () => {
-  assert.equal(getSyncTargetLabel(60), "1 minuto");
+  assert.equal(getSyncTargetLabel(120), "2 minuti");
   assert.equal(getSyncTargetLabel(300), "5 minuti");
+  assert.equal(getSyncTargetLabel(60), "1 minuto");
   assert.equal(getSyncTargetLabel(240), "4 minuti");
   assert.equal(getSyncTargetLabel(45), "45 s");
 });

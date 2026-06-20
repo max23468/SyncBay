@@ -44,6 +44,8 @@ docs/
     0008-tag-e-github-release.md
     0009-shopify-token-offline-a-scadenza.md
     0017-retention-dati-operativi.md
+    0018-cleanup-retention-automatico.md
+    0019-cadenza-cron-runner.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -84,6 +86,8 @@ docs/
 | Capire tag e GitHub Release | `decisions/0008-tag-e-github-release.md` |
 | Capire token offline Shopify a scadenza | `decisions/0009-shopify-token-offline-a-scadenza.md` |
 | Capire retention dati operativi pilota | `decisions/0017-retention-dati-operativi.md` |
+| Capire cleanup retention automatico | `decisions/0018-cleanup-retention-automatico.md` |
+| Capire cadenza Supabase Cron del runner | `decisions/0019-cadenza-cron-runner.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |

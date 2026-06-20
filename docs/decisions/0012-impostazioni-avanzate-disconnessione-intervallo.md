@@ -48,15 +48,16 @@ futuro.
 ### Intervallo sync configurabile
 
 Si introduce `updateSyncTargetSeconds`, che permette al negoziante di scegliere
-l'intervallo target tra valori discreti: **60, 120, 180, 300 secondi** (1, 2, 3,
+l'intervallo target tra valori discreti: **120, 180, 300 secondi** (2, 3,
 5 minuti). Il valore guida la cadenza del sync incrementale
 (`getNextIncrementalEnqueueAt`) e la soglia "in ritardo"
 (`syncbay-sync-health`).
 
 Vincoli: resta valido il target "entro massimo 5 minuti" (300 s come tetto) e il
-floor tecnico di 60 s già presente nel runner. Valori fuori dall'insieme sono
-rifiutati lato server (`normalizeSyncTargetSeconds`). Intervalli più rapidi
-aumentano carico e rate limit: la scelta resta del negoziante entro i limiti.
+floor operativo di 120 s introdotto con ADR 0019 per allineare la cadenza del
+runner Supabase Cron. Valori fuori dall'insieme sono rifiutati lato server
+(`normalizeSyncTargetSeconds`). Intervalli più rapidi aumentano carico e rate
+limit: la scelta resta del negoziante entro i limiti.
 
 ### Conferma disattivazione e ultimo aggiornamento
 
