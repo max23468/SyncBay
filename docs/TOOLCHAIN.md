@@ -73,6 +73,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Lint                          | `npm run lint`                                                                              |
 | Build                         | `npm run build`                                                                             |
 | Smoke UI                      | `npm run smoke:ui`                                                                          |
+| Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
 | Test librerie pure            | `npm run test:lib`                                                                          |
 | Coverage moduli puri          | `npm run coverage:lib`                                                                      |
 | Validazione Prisma            | `npm run prisma:validate`                                                                   |
@@ -107,6 +108,10 @@ su env mancanti.
 `npm run publish:preflight` controlla branch, worktree, changelog e script
 minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e
 `Codex feedback inbox`.
+`npm run ui:shot-live` usa Playwright con profilo persistente
+`.shopify-pw-profile/` per catturare screenshot dentro Shopify Admin. È pensato
+per QA visuale autenticato e può richiedere login, captcha o 2FA al primo
+avvio; gli output restano in `preview/shots/`.
 `npm run jobs:status` usa `supabase db query --linked` e non richiede `DATABASE_URL` locale; usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS `syncbay-supabase-db-password` quando disponibile. Evita query concorrenti ripetute perché Supabase può bloccare temporaneamente nuove connessioni dopo troppi tentativi di autenticazione.
 `npm run jobs:archive-stale-failures` usa lo stesso accesso Supabase in modalità
 dry-run di default e, con `--apply`, marca come `CANCELLED` solo i vecchi

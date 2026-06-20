@@ -1,4 +1,4 @@
-export const SHOPIFY_OFFLINE_TOKEN_REFRESH_SAFETY_MS = 5 * 60 * 1000;
+const SHOPIFY_OFFLINE_TOKEN_REFRESH_SAFETY_MS = 5 * 60 * 1000;
 
 export function shouldRefreshOfflineShopifySession(
   expires: Date | null,

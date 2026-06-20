@@ -1,6 +1,6 @@
-export const SYNCBAY_SHOPIFY_SOURCE_TAG = "Negozio eBay";
+const SYNCBAY_SHOPIFY_SOURCE_TAG = "Negozio eBay";
 
-export const SYNCBAY_LEGACY_SHOPIFY_IMPORT_TAGS = [
+const SYNCBAY_LEGACY_SHOPIFY_IMPORT_TAGS = [
   "SyncBay",
   "Import preview",
   "eBay import pilot",

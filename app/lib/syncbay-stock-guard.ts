@@ -76,7 +76,7 @@ export function selectEbayTradingInventorySku(input: {
     : sku;
 }
 
-export function normalizeCurrency(value: string | null | undefined) {
+function normalizeCurrency(value: string | null | undefined) {
   const normalized = value?.trim().toUpperCase();
 
   return normalized || null;

@@ -14,7 +14,7 @@ export async function getShopifyAdminGraphqlClient(shopDomain: string) {
   });
 }
 
-export async function getUsableOfflineShopifySession(shopDomain: string) {
+async function getUsableOfflineShopifySession(shopDomain: string) {
   const sessionId = getOfflineShopifySessionId(shopDomain);
 
   return prisma.$transaction(

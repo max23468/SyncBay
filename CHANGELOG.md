@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Pulizia interna: rimosso il vecchio harness preview HTML statico, snellito
+  l'handoff UI storico, documentato lo screenshot live Admin e ristrette
+  interfacce TypeScript non usate fuori modulo.
+
 ## [0.42.11] — 2026-06-20
 
 ### Correzioni

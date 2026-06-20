@@ -73,7 +73,7 @@ export function getManualRetryState(
   };
 }
 
-export function isEbayCooldownActive(
+function isEbayCooldownActive(
   job: SyncJobDiagnosticInput,
   now = new Date(),
 ) {

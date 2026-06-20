@@ -53,7 +53,7 @@ import { getPricingRuleForShopId } from "./pricing-rules.server";
 
 // Tag Shopify applicato ai prodotti il cui listing eBay è diventato inattivo:
 // restano in vetrina come esauriti invece di essere archiviati (ADR 0011).
-export const SYNCBAY_SOLD_OUT_TAG = "esaurito";
+const SYNCBAY_SOLD_OUT_TAG = "esaurito";
 
 interface ShopifyAdminGraphqlClient {
   graphql: (
@@ -542,7 +542,7 @@ export function getDraftImportReadiness(input: {
   };
 }
 
-export function buildShopifyDraftProductInputs(
+function buildShopifyDraftProductInputs(
   previewResult: ImportPreviewResult,
   importProductStatus: ImportProductStatus,
   pricingRule: SyncBayPricingRule = {

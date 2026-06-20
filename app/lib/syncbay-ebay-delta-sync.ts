@@ -1,9 +1,9 @@
-export const DEFAULT_EBAY_FULL_RECONCILE_INTERVAL_SECONDS = 24 * 60 * 60;
-export const EBAY_SELLER_EVENTS_MAX_LOOKBACK_SECONDS = 48 * 60 * 60;
-export const EBAY_SELLER_EVENTS_OVERLAP_SECONDS = 2 * 60;
-export const EBAY_SELLER_EVENTS_TO_BUFFER_SECONDS = 2 * 60;
+const DEFAULT_EBAY_FULL_RECONCILE_INTERVAL_SECONDS = 24 * 60 * 60;
+const EBAY_SELLER_EVENTS_MAX_LOOKBACK_SECONDS = 48 * 60 * 60;
+const EBAY_SELLER_EVENTS_OVERLAP_SECONDS = 2 * 60;
+const EBAY_SELLER_EVENTS_TO_BUFFER_SECONDS = 2 * 60;
 
-export function getEbayFullReconcileIntervalSeconds(value?: string | null) {
+function getEbayFullReconcileIntervalSeconds(value?: string | null) {
   const parsed = Number.parseInt(value?.trim() ?? "", 10);
 
   if (!Number.isFinite(parsed) || parsed <= 0) {

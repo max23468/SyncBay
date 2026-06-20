@@ -1,4 +1,4 @@
-export const MAX_SHOPIFY_ADMIN_DIAGNOSTIC_PRODUCT_IDS = 20;
+const MAX_SHOPIFY_ADMIN_DIAGNOSTIC_PRODUCT_IDS = 20;
 
 export type ShopifyAdminDiagnosticsProductInput = {
   defaultLocationGid: string | null;

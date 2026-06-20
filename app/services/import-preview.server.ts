@@ -12,8 +12,8 @@ import {
   type SyncBayProductFacet,
 } from "../lib/syncbay-product-facets";
 
-export type ImportPreviewSeverity = "info" | "warning" | "error";
-export type ImportPreviewStatus = "importable" | "skipped" | "error";
+type ImportPreviewSeverity = "info" | "warning" | "error";
+type ImportPreviewStatus = "importable" | "skipped" | "error";
 
 export interface ImportPreviewListingCandidate {
   currency?: string | null;
@@ -34,7 +34,7 @@ export interface ImportPreviewListingCandidate {
   variantCount?: number;
 }
 
-export interface ImportPreviewIssue {
+interface ImportPreviewIssue {
   code: string;
   message: string;
   severity: ImportPreviewSeverity;

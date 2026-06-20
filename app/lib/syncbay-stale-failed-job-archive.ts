@@ -37,7 +37,7 @@ export function isSupersededFailedIncrementalSyncJob(input: {
   return updatedAt <= input.now.getTime() - archiveAfterMs;
 }
 
-export function isStaleFailedIncrementalSyncErrorCode(
+function isStaleFailedIncrementalSyncErrorCode(
   errorCode?: string | null,
 ) {
   return STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES.includes(

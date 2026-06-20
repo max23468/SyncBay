@@ -1,6 +1,6 @@
 import { Prisma, ProductSnapshotSource } from "@prisma/client";
 
-export const SYNCBAY_MONITORED_CONFLICT_FIELDS = [
+const SYNCBAY_MONITORED_CONFLICT_FIELDS = [
   "title",
   "description",
   "status",
