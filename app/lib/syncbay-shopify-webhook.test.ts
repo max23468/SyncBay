@@ -99,6 +99,25 @@ test("drops paid order lines when Shopify sends a non-numeric quantity", () => {
   });
 });
 
+test("drops paid order lines when Shopify sends a fractional quantity", () => {
+  const payload = getShopifyWebhookJobPayload("orders/paid", {
+    currency: "EUR",
+    line_items: [
+      {
+        id: 99,
+        product_id: 10,
+        quantity: 1.5,
+        variant_id: 20,
+      },
+    ],
+  });
+
+  assert.deepEqual(payload, {
+    lineItems: [],
+    orderCurrency: "EUR",
+  });
+});
+
 test("falls back to shop money currency for paid orders when presentment is absent", () => {
   const payload = getShopifyWebhookJobPayload("orders/paid", {
     current_total_price_set: {

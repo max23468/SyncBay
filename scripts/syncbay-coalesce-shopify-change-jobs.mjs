@@ -42,9 +42,21 @@ ranked as (
     j.id,
     j."createdAt",
     j.payload->>'topic' as topic,
-    coalesce(j.payload->>'resourceId', j.payload->>'inventoryItemGid') as resource_key,
+    coalesce(
+      j.payload->>'resourceId',
+      j.payload->>'inventoryItemGid',
+      j.payload->>'adminGraphqlApiId',
+      j.payload->>'admin_graphql_api_id'
+    ) as resource_key,
     row_number() over (
-      partition by j."shopId", j.payload->>'topic', coalesce(j.payload->>'resourceId', j.payload->>'inventoryItemGid')
+      partition by j."shopId",
+        j.payload->>'topic',
+        coalesce(
+          j.payload->>'resourceId',
+          j.payload->>'inventoryItemGid',
+          j.payload->>'adminGraphqlApiId',
+          j.payload->>'admin_graphql_api_id'
+        )
       order by j."createdAt" desc, j.id desc
     ) as resource_rank
   from "SyncJob" j
@@ -52,7 +64,12 @@ ranked as (
     and j.type = 'DETECT_SHOPIFY_CHANGES'
     and j.status = 'PENDING'
     and j.payload->>'topic' is not null
-    and coalesce(j.payload->>'resourceId', j.payload->>'inventoryItemGid') is not null
+    and coalesce(
+      j.payload->>'resourceId',
+      j.payload->>'inventoryItemGid',
+      j.payload->>'adminGraphqlApiId',
+      j.payload->>'admin_graphql_api_id'
+    ) is not null
 ),
 candidates as (
   select *
@@ -110,7 +127,12 @@ updated as (
     "updatedAt" = now()
   where j.id in (select id from candidates)
   returning j.payload->>'topic' as topic,
-    coalesce(j.payload->>'resourceId', j.payload->>'inventoryItemGid') as resource_key,
+    coalesce(
+      j.payload->>'resourceId',
+      j.payload->>'inventoryItemGid',
+      j.payload->>'adminGraphqlApiId',
+      j.payload->>'admin_graphql_api_id'
+    ) as resource_key,
     j."updatedAt"
 )
 select jsonb_build_object(
@@ -140,7 +162,7 @@ async function querySupabaseJson(sql) {
     "npx",
     ["supabase", "db", "query", "--linked", "--output", "json", sql],
     {
-      cwd: process.cwd(),
+      cwd: process.env.SYNCBAY_SUPABASE_CWD ?? process.cwd(),
       env: await getSupabaseCliEnv(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 45_000,
@@ -237,8 +259,9 @@ function printHelp() {
   console.log(`Uso: npm run jobs:coalesce-shopify-changes -- [opzioni]
 
 Coalescenza dei job DETECT_SHOPIFY_CHANGES duplicati.
-Mantiene il job PENDING piu recente per shop/topic/risorsa e marca come
-CANCELLED i duplicati piu vecchi solo con --apply.
+Mantiene il job PENDING piu recente per shop/topic/risorsa Shopify
+resourceId, inventoryItemGid o admin_graphql_api_id e marca come CANCELLED i
+duplicati piu vecchi solo con --apply.
 
 Opzioni:
   --shop <dominio>  Shop target. Default: ${DEFAULT_SHOP_DOMAIN}

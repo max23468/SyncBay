@@ -136,13 +136,26 @@ function getShopifyChangeJobDedupeKey(input: {
   shopId: string;
 }) {
   const topic = getStringField(input.payload, "topic");
-  const resourceId =
-    getStringField(input.payload, "resourceId") ??
-    getStringField(input.payload, "inventoryItemGid");
+  const resourceId = getShopifyChangeJobResourceKey(input.payload);
 
   if (!topic || !resourceId) return null;
 
   return `${input.shopId}:${topic}:${resourceId}`;
+}
+
+export function getShopifyChangeJobResourceKey(payload: unknown) {
+  return getShopifyChangeJobResourceKeys(payload)[0] ?? null;
+}
+
+export function getShopifyChangeJobResourceKeys(payload: unknown) {
+  const keys = [
+    getStringField(payload, "resourceId"),
+    getStringField(payload, "inventoryItemGid"),
+    getStringField(payload, "adminGraphqlApiId"),
+    getStringField(payload, "admin_graphql_api_id"),
+  ].filter((value): value is string => Boolean(value));
+
+  return Array.from(new Set(keys));
 }
 
 function stableStringify(value: unknown) {

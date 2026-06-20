@@ -32,7 +32,7 @@ function extractShopifyOrderLineItems(payload: unknown) {
     const productId = getStringField(lineItemRecord, "product_id");
     const variantId = getStringField(lineItemRecord, "variant_id");
 
-    if (!quantity || quantity <= 0) return [];
+    if (!quantity || !isPositiveOrderQuantity(quantity)) return [];
 
     return [
       {
@@ -127,4 +127,8 @@ function getNumberField(record: Record<string, unknown>, key: string) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
 
   return null;
+}
+
+function isPositiveOrderQuantity(value: number) {
+  return Number.isInteger(value) && value > 0;
 }
