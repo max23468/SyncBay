@@ -8,6 +8,7 @@ const {
   getConflictFieldDecisionMode,
   getConflictResolutionSafety,
   getSafeBatchConflictResolutions,
+  isStaleConflictResolutionError,
   summarizeConflictDecisionModes,
 } = conflictActions;
 
@@ -67,6 +68,18 @@ test("treats unknown conflict fields as manual-only", () => {
     getConflictResolutionSafety("custom_field", "KEEP_SHOPIFY").detail,
     /manuale/i,
   );
+});
+
+test("treats only missing conflicts as stale batch resolution errors", () => {
+  assert.equal(
+    isStaleConflictResolutionError(new Response("missing", { status: 404 })),
+    true,
+  );
+  assert.equal(
+    isStaleConflictResolutionError(new Response("failed", { status: 500 })),
+    false,
+  );
+  assert.equal(isStaleConflictResolutionError(new Error("failed")), false);
 });
 
 test("summarizes decision modes from grouped open conflicts", () => {

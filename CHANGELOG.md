@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.42.1] — 2026-06-20
+
+### Correzioni
+
+- Conflitti: la risoluzione in blocco segnala gli errori inattesi invece di
+  mostrare un esito riuscito quando una risoluzione sicura fallisce.
+
+### Sotto il cofano
+
+- Aggiornato React Doctor alla patch `0.5.8` per mantenere allineato il gate di
+  qualità React.
+
 ## [0.42.0] — 2026-06-20
 
 ### Novità
@@ -2107,6 +2119,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.42.1]: #0421--2026-06-20
 [0.42.0]: #0420--2026-06-20
 [0.41.5]: #0415--2026-06-19
 [0.41.4]: #0414--2026-06-19

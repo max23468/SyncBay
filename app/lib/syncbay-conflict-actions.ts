@@ -57,6 +57,10 @@ export function getSafeBatchConflictResolutions(
   return [];
 }
 
+export function isStaleConflictResolutionError(error: unknown) {
+  return error instanceof Response && error.status === 404;
+}
+
 export function getConflictResolutionSafety(
   field: string,
   resolution: ConflictResolution,
