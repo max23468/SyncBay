@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Pubblicazione: la `Codex feedback inbox` ora blocca il preflight solo per
+  thread actionable della PR corrente; i thread su altre PR restano avvisi.
+- GitHub Actions: la sync inbox Codex usa scansioni mirate sugli eventi PR,
+  mantiene le PR recenti a 7 giorni e cancella i run superati.
+
 ## [0.44.4] — 2026-06-21
 
 ### Correzioni

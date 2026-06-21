@@ -106,8 +106,10 @@ e presenza delle env SyncBay senza stampare valori sensibili. Usa
 `--strict-env` quando stai preparando runtime live locale e vuoi bloccare anche
 su env mancanti.
 `npm run publish:preflight` controlla branch, worktree, changelog e script
-minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e
-`Codex feedback inbox`.
+minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e i
+review thread Codex della PR corrente. La `Codex feedback inbox` resta
+dashboard/fallback globale: thread actionable su altre PR generano avvisi, non
+bloccano la pubblicazione corrente.
 `npm run ui:shot-live` usa Playwright con profilo persistente
 `.shopify-pw-profile/` per catturare screenshot dentro Shopify Admin. È pensato
 per QA visuale autenticato e può richiedere login, captcha o 2FA al primo

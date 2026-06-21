@@ -115,13 +115,20 @@ Il workflow `.github/workflows/codex-pr-comments.yml` mantiene una issue operati
 
 Il workflow:
 
-- analizza PR aperte e recenti;
+- sugli eventi PR analizza la PR corrente e le PR già presenti nella inbox;
+- su schedule, dispatch manuale o refresh della inbox analizza PR aperte,
+  PR recenti degli ultimi 7 giorni e PR già presenti nella inbox;
+- mantiene un opt-in `CODEX_FULL_SCAN=true` per scansioni storiche complete;
 - cerca review thread scritti da account che matchano `codex`;
 - distingue thread actionable da thread risolti o outdated;
 - aggiorna la inbox;
-- quando trova thread actionable non ancora richiesti, commenta la PR con `@codex address that feedback`.
+- evita aggiornamenti della issue quando il contenuto non cambia.
 
-Prima di mergiare una PR non banale, controllare la inbox e la PR corrente. Se ci sono thread actionable, risolverli o dichiarare esplicitamente perché restano fuori scope.
+Prima di mergiare una PR non banale, controllare i review thread Codex della PR
+corrente. Il preflight remoto usa i thread GitHub della PR come fonte primaria
+e la `Codex feedback inbox` come fallback/dashboard globale. Thread actionable
+su altre PR non bloccano la pubblicazione corrente: restano avvisi e vanno
+gestiti nel loro filone.
 
 ## Docs-only
 
