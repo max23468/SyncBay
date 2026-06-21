@@ -39,7 +39,7 @@ export interface RetentionCleanupResult {
   totalDeleted: number;
 }
 
-export function isRetentionCleanupEnabled() {
+function isRetentionCleanupEnabled() {
   return process.env.SYNCBAY_RETENTION_CLEANUP_ENABLED?.trim() !== "false";
 }
 

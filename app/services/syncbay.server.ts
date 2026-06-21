@@ -217,7 +217,7 @@ export async function getOverviewState(
   return getDashboardState(session, trace);
 }
 
-export async function getDashboardState(
+async function getDashboardState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
 ) {

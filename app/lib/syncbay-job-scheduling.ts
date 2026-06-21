@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 
 const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
-export const DEFAULT_RUN_DUE_LIMIT = 10;
-export const MAX_RUN_DUE_LIMIT = 20;
+const DEFAULT_RUN_DUE_LIMIT = 10;
+const MAX_RUN_DUE_LIMIT = 20;
 
 export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
