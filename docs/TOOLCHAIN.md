@@ -73,6 +73,7 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 | Lint                          | `npm run lint`                                                                              |
 | Build                         | `npm run build`                                                                             |
 | Smoke UI                      | `npm run smoke:ui`                                                                          |
+| Misura performance loader     | `npm run perf:loaders -- --since 10m`                                                       |
 | Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
 | Test librerie pure            | `npm run test:lib`                                                                          |
 | Coverage moduli puri          | `npm run coverage:lib`                                                                      |
@@ -110,6 +111,12 @@ minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e i
 review thread Codex della PR corrente. La `Codex feedback inbox` resta
 dashboard/fallback globale: thread actionable su altre PR generano avvisi, non
 bloccano la pubblicazione corrente.
+`npm run perf:loaders` legge i log Vercel `syncbay-loader-performance` e stampa
+l'ultimo tempo osservato per Panoramica, Catalogo, Importazione, Attività,
+Conflitti e Impostazioni. Procedura consigliata: aprire le 6 route dentro
+Shopify Admin/Safari, attendere il completamento dei loader, poi eseguire
+`npm run perf:loaders -- --since 10m`. Per analisi offline è possibile passare
+log già raccolti con `--stdin`.
 `npm run ui:shot-live` usa Playwright con profilo persistente
 `.shopify-pw-profile/` per catturare screenshot dentro Shopify Admin. È pensato
 per QA visuale autenticato e può richiedere login, captcha o 2FA al primo
