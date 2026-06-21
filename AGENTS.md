@@ -340,9 +340,11 @@ Comandi runtime attuali:
 - Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
 - Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
 - I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, marcata dalla label `codex-feedback-inbox` e aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
-- Prima di PR ready, merge, pubblicazione, deploy o release controlla se la
-  `Codex feedback inbox` segnala thread actionable collegati alla PR corrente:
-  risolvili o dichiarali fuori scope prima di chiudere.
+- Prima di PR ready, merge, pubblicazione, deploy o release controlla i review
+  thread Codex della PR corrente; il preflight remoto li legge direttamente da
+  GitHub e usa la `Codex feedback inbox` come dashboard/fallback. Thread
+  actionable su altre PR non bloccano la pubblicazione corrente: trattali come
+  avvisi e lasciali al relativo filone.
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
 - Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
