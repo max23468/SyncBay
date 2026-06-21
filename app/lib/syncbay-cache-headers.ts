@@ -1,3 +1,6 @@
+import type { HeadersFunction } from "react-router";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+
 export function getEmbeddedNoStoreHeaders(headers: HeadersInit = {}) {
   const noStoreHeaders = new Headers(headers);
 
@@ -7,3 +10,7 @@ export function getEmbeddedNoStoreHeaders(headers: HeadersInit = {}) {
 
   return noStoreHeaders;
 }
+
+export const embeddedNoStoreHeaders: HeadersFunction = (headersArgs) => {
+  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
+};

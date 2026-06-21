@@ -1,11 +1,9 @@
 import type {
   ActionFunctionArgs,
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
   ActionRow,
@@ -19,7 +17,11 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   type ImportProductStatus,
 } from "../lib/import-product-status";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  formatItDateTime as formatDateTime,
+  formatItNumber as formatNumber,
+} from "../lib/syncbay-datetime-format";
 import { loadShopifyProductPublications } from "../lib/syncbay-product-publication";
 import {
   PRODUCT_PUBLICATION_MODES,
@@ -812,15 +814,7 @@ function AdvancedSettingsCard({
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
-
-const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
+export const headers = embeddedNoStoreHeaders;
 
 function getShopifyScopesDetail(settings: SettingsState) {
   const missing = settings.shopify.missingScopes.length;
@@ -877,16 +871,6 @@ function StatusRow({
       </s-stack>
     </s-box>
   );
-}
-
-function formatDateTime(value: string) {
-  return itDateTimeFormatter.format(new Date(value));
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
 }
 
 function getProductPublicationModeLabel(mode: ProductPublicationMode) {

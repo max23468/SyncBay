@@ -1,6 +1,5 @@
 import type {
   ActionFunctionArgs,
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
@@ -11,7 +10,6 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
   MetricTile,
@@ -19,7 +17,11 @@ import {
   TimelineEvent,
 } from "../components/SyncBayUi";
 import { LiveSync, useActionToast } from "../components/SyncBayLive";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  formatItDateTime as formatDateTime,
+  formatItNumber as formatNumber,
+} from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -79,12 +81,6 @@ const ACTIVITY_FILTERS: Array<{ label: string; value: ActivityFilter }> = [
   { label: "Conflitti", value: "conflicts" },
   { label: "Errori", value: "errors" },
 ];
-
-const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
 
 export const meta: MetaFunction = () => getSyncBayMeta("Attività");
 
@@ -285,9 +281,7 @@ export default function ActivityRoute() {
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const headers = embeddedNoStoreHeaders;
 
 function CatalogHealthCenterDetails({ activity }: { activity: Activity }) {
   const center = activity.sync.catalogHealthCenter;
@@ -710,16 +704,4 @@ function getFullReconcileDetail(activity: Activity) {
   ];
 
   return `Controllo completo ogni ${policy.intervalHours} ore: ${pieces.join(", ")}.`;
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "non disponibile";
-
-  return itDateTimeFormatter.format(new Date(value));
 }

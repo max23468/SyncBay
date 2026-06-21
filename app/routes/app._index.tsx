@@ -1,11 +1,9 @@
 import type {
   ActionFunctionArgs,
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
 import { useLoaderData } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
   ActionRow,
@@ -22,7 +20,11 @@ import {
 } from "../components/SyncBayUi";
 import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  formatItDateTime as formatDateTime,
+  formatItNumber as formatNumber,
+} from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -51,12 +53,6 @@ type RecentActivity = {
   tone: "critical" | "info" | "success" | "warning";
   title: string;
 };
-
-const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
-  timeZone: "Europe/Rome",
-  dateStyle: "short",
-  timeStyle: "short",
-});
 
 export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
@@ -341,9 +337,7 @@ export default function Index() {
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const headers = embeddedNoStoreHeaders;
 
 type OnboardingSteps = {
   ebay: StepStatus;
@@ -684,16 +678,4 @@ function getContextualActions(
   }
 
   return actions;
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "non disponibile";
-
-  return itDateTimeFormatter.format(new Date(value));
 }
