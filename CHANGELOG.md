@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.13] — 2026-06-21
+
+### Sotto il cofano
+
+- Importazione: l'apertura pagina non attende più la preview live eBay; la
+  lettura eBay resta disponibile come aggiornamento esplicito della preview.
+- Attività: separato il loader dalla Panoramica per caricare solo eventi,
+  diagnosi e stato operativo visibili nella pagina.
+- Catalogo: eliminate letture ridondanti nel path standard e riutilizzati i
+  conteggi già disponibili quando i filtri non richiedono una query separata.
+- Conflitti: aggregati i conteggi riepilogativi lato SQL per ridurre il tempo
+  della pagina senza cambiare i dati mostrati.
+- Navigazione embedded: rafforzato lo smoke test sul feedback accessibile di
+  cambio pagina.
+- Osservabilità: aggiunto `npm run perf:loaders` per confrontare rapidamente i
+  tempi loader production dai log Vercel.
+
 ## [0.44.12] — 2026-06-21
 
 ### Sotto il cofano
@@ -2411,6 +2428,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.13]: #04413--2026-06-21
 [0.44.12]: #04412--2026-06-21
 [0.44.11]: #04411--2026-06-21
 [0.44.10]: #04410--2026-06-21
