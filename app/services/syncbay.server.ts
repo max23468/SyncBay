@@ -210,6 +210,13 @@ const SHOPIFY_WEBHOOK_TOPICS = [
   "inventory_levels/update",
 ];
 
+export async function getOverviewState(
+  session: ShopifySessionLike,
+  trace?: SyncBayLoaderPerformanceTrace,
+) {
+  return getDashboardState(session, trace);
+}
+
 export async function getDashboardState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
@@ -575,6 +582,166 @@ export async function getDashboardState(
         newConflicts24h,
         newMappings24h,
       },
+    },
+    audit: recentAuditLogs.map((log) => ({
+      createdAt: log.createdAt.toISOString(),
+      message: log.message,
+      type: log.type,
+    })),
+  };
+}
+
+export async function getActivityState(
+  session: ShopifySessionLike,
+  trace?: SyncBayLoaderPerformanceTrace,
+) {
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "activity.shop.ensure",
+    () => ensureShopForSession(session),
+  );
+  const now = new Date();
+  const [
+    recentJobs,
+    recentAuditLogs,
+    openConflictCount,
+    openConflicts,
+    latestIncrementalJob,
+    activeIncrementalJobCount,
+    latestFullReconcileJob,
+    erroredMappingCount,
+  ] = await measureSyncBayPerformanceStage(trace, "activity.db.state", () =>
+    Promise.all([
+      prisma.syncJob.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.auditLog.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.syncConflict.findMany({
+        include: {
+          mapping: {
+            select: {
+              ebayItemId: true,
+              shopifyProductGid: true,
+            },
+          },
+        },
+        orderBy: { detectedAt: "desc" },
+        take: 8,
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        where: getCompletedCatalogVerificationJobWhere(shop.id),
+      }),
+      prisma.syncJob.count({
+        where: {
+          shopId: shop.id,
+          status: {
+            in: [
+              SyncJobStatus.PENDING,
+              SyncJobStatus.RETRYING,
+              SyncJobStatus.RUNNING,
+            ],
+          },
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { finishedAt: true },
+        where: {
+          payload: { path: ["source"], equals: "catalog_reconcile" },
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.productMapping.count({
+        where: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+          status: ProductMappingStatus.ERROR,
+        },
+      }),
+    ]),
+  );
+  const catalogSyncHealth = getCatalogSyncHealth({
+    activeIncrementalJobCount,
+    latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt ?? null,
+    now,
+    syncEnabled: shop.syncEnabled,
+    syncTargetSeconds: shop.syncTargetSeconds,
+  });
+  const failedJobCount = recentJobs.filter(
+    (job) => job.status === SyncJobStatus.FAILED,
+  ).length;
+  const catalogHealthCenter = buildCatalogHealthCenter({
+    activeIncrementalJobCount,
+    erroredMappingCount,
+    failedJobCount,
+    needsCheckCount: 0,
+    openConflictCount,
+    staleActiveCount: 0,
+    unknownAvailabilityCount: 0,
+  });
+  const fullReconcile = getFullReconcilePolicyState({
+    intervalHours: 24,
+    latestFinishedAt: latestFullReconcileJob?.finishedAt ?? null,
+    now,
+  });
+
+  return {
+    conflicts: {
+      openCount: openConflictCount,
+      recent: openConflicts.map((conflict) => ({
+        detectedAt: conflict.detectedAt.toISOString(),
+        ebayItemId: conflict.mapping?.ebayItemId ?? null,
+        field: conflict.field,
+        id: conflict.id,
+        shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
+        shopifyValue: conflict.shopifyValue,
+        syncbayValue: conflict.lastSyncBayValue,
+      })),
+    },
+    sync: {
+      pendingJobs: recentJobs.filter(
+        (job) => job.status === SyncJobStatus.PENDING,
+      ).length,
+      lastJobs: recentJobs.map((job) => ({
+        attempts: job.attempts,
+        createdAt: job.createdAt.toISOString(),
+        errorCode: job.errorCode,
+        errorMessage: job.errorMessage,
+        id: job.id,
+        maxAttempts: job.maxAttempts,
+        runAfter: job.runAfter.toISOString(),
+        status: job.status,
+        type: job.type,
+      })),
+      catalogHealth: {
+        ...formatCatalogSyncHealth(catalogSyncHealth),
+        activeIncrementalJobCount,
+        latestIncrementalFinishedAt:
+          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalStatus: latestIncrementalJob?.status ?? null,
+      },
+      catalogHealthCenter,
+      fullReconcile,
     },
     audit: recentAuditLogs.map((log) => ({
       createdAt: log.createdAt.toISOString(),

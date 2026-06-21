@@ -38,13 +38,13 @@ import {
   type NextActionKind,
 } from "../lib/syncbay-ui-state";
 import {
-  getDashboardState,
+  getOverviewState,
   requestSyncJobRetry,
   resolveSyncConflict,
 } from "../services/syncbay.server";
 import { authenticate } from "../shopify.server";
 
-type Dashboard = Awaited<ReturnType<typeof getDashboardState>>;
+type Dashboard = Awaited<ReturnType<typeof getOverviewState>>;
 type RecentActivity = {
   detail: string;
   id: string;
@@ -66,7 +66,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     authenticate.admin(request),
   );
   const dashboard = await trace.measure("overview.state", () =>
-    getDashboardState(session, trace),
+    getOverviewState(session, trace),
   );
 
   logSyncBayLoaderPerformance({
