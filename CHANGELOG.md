@@ -6,12 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.44.7] — 2026-06-21
+
+### Sotto il cofano
 
 - Pubblicazione: la `Codex feedback inbox` ora blocca il preflight solo per
   thread actionable della PR corrente; i thread su altre PR restano avvisi.
 - GitHub Actions: la sync inbox Codex usa scansioni mirate sugli eventi PR,
   mantiene le PR recenti a 7 giorni e cancella i run superati.
+- Supabase: chiuso l'accesso Data API dei ruoli client sulle tabelle operative
+  Prisma con policy deny esplicite e default privileges più restrittivi.
+- Database: rimossi indici inutilizzati su account deletion e mapping SKU
+  segnalati dagli advisor Supabase.
 
 ## [0.44.6] — 2026-06-21
 
@@ -2352,6 +2358,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.7]: #0447--2026-06-21
 [0.44.6]: #0446--2026-06-21
 [0.44.5]: #0445--2026-06-21
 [0.44.4]: #0444--2026-06-21
