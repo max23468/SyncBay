@@ -2107,12 +2107,8 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       source: ProductSnapshotSource.SYNCBAY,
       title: latestSnapshot?.title ?? null,
     } satisfies Prisma.ProductSnapshotCreateManyInput;
-    const changedStockSnapshots =
-      await filterChangedSyncBayProductSnapshots([stockSnapshot]);
-
-    if (changedStockSnapshots.length > 0) {
-      await prisma.productSnapshot.create({ data: stockSnapshot });
-    }
+    // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
+    await prisma.productSnapshot.create({ data: stockSnapshot });
     updated.push({
       currency: currencyValidation.snapshotCurrency,
       ebayItemId: mapping.ebayItemId,
