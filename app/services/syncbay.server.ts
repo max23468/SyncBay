@@ -88,6 +88,10 @@ import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
 import { getShopifyChangeJobResourceKeys } from "../lib/syncbay-job-scheduling";
+import {
+  measureSyncBayPerformanceStage,
+  type SyncBayLoaderPerformanceTrace,
+} from "../lib/syncbay-loader-performance";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
 import {
@@ -584,8 +588,13 @@ export async function getCatalogPageState(
     sort?: CatalogSortKey | null;
     sortDir?: CatalogSortDir;
   } = {},
+  trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await ensureShopForSession(session);
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "catalog.shop.ensure",
+    () => ensureShopForSession(session),
+  );
   const activeFilter = input.filter ?? "all";
   const activePage = input.page ?? 1;
   const activeSearch = input.search ?? "";
@@ -595,13 +604,21 @@ export async function getCatalogPageState(
     marketplaceId: getEbayMarketplaceId(),
     shopId: shop.id,
   };
-  const totalAvailableCount = await prisma.productMapping.count({ where });
+  const totalAvailableCount = await measureSyncBayPerformanceStage(
+    trace,
+    "catalog.db.totalAvailableCount",
+    () => prisma.productMapping.count({ where }),
+  );
   const databasePageWhere =
     !activeSearch.trim() && !activeSort
       ? getCatalogDatabasePageWhere(where, activeFilter)
       : null;
   const databasePageTotalCount = databasePageWhere
-    ? await prisma.productMapping.count({ where: databasePageWhere })
+    ? await measureSyncBayPerformanceStage(
+        trace,
+        "catalog.db.databasePageTotalCount",
+        () => prisma.productMapping.count({ where: databasePageWhere }),
+      )
     : totalAvailableCount;
   const queryPlan = getCatalogQueryPlan({
     filter: activeFilter,
@@ -613,48 +630,60 @@ export async function getCatalogPageState(
   });
 
   if (queryPlan.mode === "database-page" && databasePageWhere) {
-    const [
-      [mappings, linkedCount, latestIncrementalJob],
-      summary,
-    ] =
+    const [[mappings, linkedCount, latestIncrementalJob], summary] =
       await Promise.all([
-        prisma.$transaction([
-          prisma.productMapping.findMany({
-            include: {
-              conflicts: {
-                select: {
-                  field: true,
-                  id: true,
+        measureSyncBayPerformanceStage(
+          trace,
+          "catalog.db.databasePageTransaction",
+          () =>
+            prisma.$transaction([
+              prisma.productMapping.findMany({
+                include: {
+                  conflicts: {
+                    select: {
+                      field: true,
+                      id: true,
+                    },
+                    where: { status: SyncConflictStatus.OPEN },
+                  },
                 },
-                where: { status: SyncConflictStatus.OPEN },
-              },
-            },
-            orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-            skip: queryPlan.pagination.offset,
-            take: queryPlan.take,
-            where: databasePageWhere,
-          }),
-          prisma.productMapping.count({
-            where: {
-              ...where,
-              shopifyProductGid: { not: null },
-            },
-          }),
-          prisma.syncJob.findFirst({
-            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { finishedAt: true },
-            where: getCompletedCatalogVerificationJobWhere(shop.id),
-          }),
-        ]),
-        getCatalogSummaryCounts({
-          now: new Date(),
-          shopId: shop.id,
-          syncTargetSeconds: shop.syncTargetSeconds,
-        }),
+                orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+                skip: queryPlan.pagination.offset,
+                take: queryPlan.take,
+                where: databasePageWhere,
+              }),
+              prisma.productMapping.count({
+                where: {
+                  ...where,
+                  shopifyProductGid: { not: null },
+                },
+              }),
+              prisma.syncJob.findFirst({
+                orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+                select: { finishedAt: true },
+                where: getCompletedCatalogVerificationJobWhere(shop.id),
+              }),
+            ]),
+        ),
+        measureSyncBayPerformanceStage(
+          trace,
+          "catalog.db.summaryCounts",
+          () =>
+            getCatalogSummaryCounts({
+              now: new Date(),
+              shopId: shop.id,
+              syncTargetSeconds: shop.syncTargetSeconds,
+            }),
+        ),
       ]);
     const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
-    const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
-      mappings.map((mapping) => mapping.id),
+    const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
+      trace,
+      "catalog.db.latestSnapshots",
+      () =>
+        getLatestProductSnapshotByMappingId(
+          mappings.map((mapping) => mapping.id),
+        ),
     );
     const now = new Date();
     const pageRows = mappings.map((mapping) =>
@@ -688,6 +717,7 @@ export async function getCatalogPageState(
       rows: await getCatalogRowsWithThumbnails({
         rows: pageRows,
         shopDomain: shop.shopDomain,
+        trace,
       }),
       shop: {
         domain: shop.shopDomain,
@@ -702,39 +732,49 @@ export async function getCatalogPageState(
   }
 
   const [mappings, linkedCount, latestIncrementalJob] =
-    await prisma.$transaction([
-      prisma.productMapping.findMany({
-        include: {
-          conflicts: {
-            select: {
-              field: true,
-              id: true,
+    await measureSyncBayPerformanceStage(
+      trace,
+      "catalog.db.fullCatalogTransaction",
+      () =>
+        prisma.$transaction([
+          prisma.productMapping.findMany({
+            include: {
+              conflicts: {
+                select: {
+                  field: true,
+                  id: true,
+                },
+                where: { status: SyncConflictStatus.OPEN },
+              },
             },
-            where: { status: SyncConflictStatus.OPEN },
-          },
-        },
-        orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-        take: CATALOG_IMPORT_MAX_PRODUCTS,
-        where,
-      }),
-      prisma.productMapping.count({
-        where: {
-          ...where,
-          shopifyProductGid: { not: null },
-        },
-      }),
-      // Watermark a livello shop: ultimo ciclo di sync incrementale riuscito
-      // (delta eventi venditore o reconcile). Stesso segnale della salute sync
-      // in dashboard, così catalogo e dashboard restano coerenti.
-      prisma.syncJob.findFirst({
-        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-        select: { finishedAt: true },
-        where: getCompletedCatalogVerificationJobWhere(shop.id),
-      }),
-    ]);
+            orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+            take: CATALOG_IMPORT_MAX_PRODUCTS,
+            where,
+          }),
+          prisma.productMapping.count({
+            where: {
+              ...where,
+              shopifyProductGid: { not: null },
+            },
+          }),
+          // Watermark a livello shop: ultimo ciclo di sync incrementale riuscito
+          // (delta eventi venditore o reconcile). Stesso segnale della salute sync
+          // in dashboard, così catalogo e dashboard restano coerenti.
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { finishedAt: true },
+            where: getCompletedCatalogVerificationJobWhere(shop.id),
+          }),
+        ]),
+    );
   const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
-  const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
-    mappings.map((mapping) => mapping.id),
+  const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
+    trace,
+    "catalog.db.latestSnapshots",
+    () =>
+      getLatestProductSnapshotByMappingId(
+        mappings.map((mapping) => mapping.id),
+      ),
   );
 
   // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
@@ -771,6 +811,7 @@ export async function getCatalogPageState(
   const rowsWithThumbnails = await getCatalogRowsWithThumbnails({
     rows: pageRows,
     shopDomain: shop.shopDomain,
+    trace,
   });
 
   return {
@@ -810,8 +851,13 @@ export async function getCatalogPageState(
 export async function getConflictsPageState(
   session: ShopifySessionLike,
   input: { filter?: ConflictFilter; page?: number } = {},
+  trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await ensureShopForSession(session);
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.shop.ensure",
+    () => ensureShopForSession(session),
+  );
   const activeFilter = input.filter ?? "open";
   const statusFilter = [
     ...getConflictStatusFilter(activeFilter),
@@ -828,40 +874,44 @@ export async function getConflictsPageState(
     totalCount,
     filteredCount,
     openConflictFields,
-  ] =
-    await prisma.$transaction([
-      prisma.syncConflict.count({
-        where: {
-          shopId: shop.id,
-          status: SyncConflictStatus.OPEN,
-        },
-      }),
-      prisma.syncConflict.count({
-        where: {
-          shopId: shop.id,
-          status: { in: resolvedStatuses },
-        },
-      }),
-      prisma.syncConflict.count({
-        where: {
-          shopId: shop.id,
-          status: { in: allStatuses },
-        },
-      }),
-      prisma.syncConflict.count({
-        where: {
-          shopId: shop.id,
-          status: { in: statusFilter },
-        },
-      }),
-      prisma.syncConflict.findMany({
-        select: { field: true },
-        where: {
-          shopId: shop.id,
-          status: SyncConflictStatus.OPEN,
-        },
-      }),
-    ]);
+  ] = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.db.summaryTransaction",
+    () =>
+      prisma.$transaction([
+        prisma.syncConflict.count({
+          where: {
+            shopId: shop.id,
+            status: SyncConflictStatus.OPEN,
+          },
+        }),
+        prisma.syncConflict.count({
+          where: {
+            shopId: shop.id,
+            status: { in: resolvedStatuses },
+          },
+        }),
+        prisma.syncConflict.count({
+          where: {
+            shopId: shop.id,
+            status: { in: allStatuses },
+          },
+        }),
+        prisma.syncConflict.count({
+          where: {
+            shopId: shop.id,
+            status: { in: statusFilter },
+          },
+        }),
+        prisma.syncConflict.findMany({
+          select: { field: true },
+          where: {
+            shopId: shop.id,
+            status: SyncConflictStatus.OPEN,
+          },
+        }),
+      ]),
+  );
   const decisionModeCounts = summarizeConflictDecisionModes(
     openConflictFields.map((conflict) => ({
       count: 1,
@@ -873,28 +923,42 @@ export async function getConflictsPageState(
     pageSize: CONFLICT_PAGE_SIZE,
     totalRows: filteredCount,
   });
-  const conflicts = await prisma.syncConflict.findMany({
-    include: {
-      mapping: true,
-    },
-    orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
-    skip: pagination.offset,
-    take: pagination.pageSize,
-    where: {
-      shopId: shop.id,
-      status: { in: statusFilter },
-    },
-  });
-  const thumbnailUrlByMappingId =
-    await getLatestThumbnailUrlByMappingId(
-      conflicts.flatMap((conflict) =>
-        conflict.mapping?.id ? [conflict.mapping.id] : [],
+  const conflicts = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.db.pageRows",
+    () =>
+      prisma.syncConflict.findMany({
+        include: {
+          mapping: true,
+        },
+        orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
+        skip: pagination.offset,
+        take: pagination.pageSize,
+        where: {
+          shopId: shop.id,
+          status: { in: statusFilter },
+        },
+      }),
+  );
+  const thumbnailUrlByMappingId = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.db.snapshotThumbnails",
+    () =>
+      getLatestThumbnailUrlByMappingId(
+        conflicts.flatMap((conflict) =>
+          conflict.mapping?.id ? [conflict.mapping.id] : [],
+        ),
       ),
-    );
-  const latestSnapshotByMappingId = await getLatestProductSnapshotByMappingId(
-    conflicts.flatMap((conflict) =>
-      conflict.mapping?.id ? [conflict.mapping.id] : [],
-    ),
+  );
+  const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.db.latestSnapshots",
+    () =>
+      getLatestProductSnapshotByMappingId(
+        conflicts.flatMap((conflict) =>
+          conflict.mapping?.id ? [conflict.mapping.id] : [],
+        ),
+      ),
   );
   const rows = conflicts.map((conflict) =>
     formatConflictPageRow(conflict, {
@@ -908,14 +972,18 @@ export async function getConflictsPageState(
     }),
   );
   const shopifyThumbnailUrlByProductGid =
-    await getShopifyThumbnailUrlByProductGid({
+    await measureSyncBayPerformanceStage(
+      trace,
+      "conflicts.shopify.thumbnails",
+      () => getShopifyThumbnailUrlByProductGid({
       productGids: rows.flatMap((row) =>
         !row.product.thumbnailUrl && row.product.shopifyProductGid
           ? [row.product.shopifyProductGid as string]
           : [],
       ),
       shopDomain: shop.shopDomain,
-    });
+      }),
+    );
   const rowsWithThumbnails = rows.map((row) =>
     row.product.thumbnailUrl
       ? row
@@ -1558,15 +1626,23 @@ function normalizeNullableString(value: string | null | undefined) {
 export async function getShopSettingsState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
+  trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await ensureShopForSession(session);
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "settings.shop.ensure",
+    () => ensureShopForSession(session),
+  );
   const [
     ebayConnection,
     activeMappingCount,
     latestIncrementalJob,
     pricingRule,
     descriptionRule,
-  ] = await prisma.$transaction([
+  ] = await measureSyncBayPerformanceStage(
+    trace,
+    "settings.db.stateTransaction",
+    () => prisma.$transaction([
       prisma.ebayConnection.findUnique({
         where: {
           shopId_marketplaceId: {
@@ -1602,7 +1678,8 @@ export async function getShopSettingsState(
         select: { mode: true },
         where: { shopId: shop.id },
       }),
-    ]);
+    ]),
+  );
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -1619,7 +1696,11 @@ export async function getShopSettingsState(
     shop.productPublicationGids,
   );
   const publicationState = admin
-    ? await loadShopSettingsPublications(admin)
+    ? await measureSyncBayPerformanceStage(
+        trace,
+        "settings.shopify.publications",
+        () => loadShopSettingsPublications(admin),
+      )
     : { availablePublications: [], errorMessage: null };
 
   return {
@@ -3210,13 +3291,18 @@ function getCatalogDatabasePageWhere(
 async function getCatalogRowsWithThumbnails(input: {
   rows: CatalogPageRow[];
   shopDomain: string;
+  trace?: SyncBayLoaderPerformanceTrace;
 }) {
   const thumbnailUrlByMappingId =
-    await getLatestThumbnailUrlByMappingId(
+    await measureSyncBayPerformanceStage(
+      input.trace,
+      "catalog.db.snapshotThumbnails",
+      () => getLatestThumbnailUrlByMappingId(
       getCatalogSnapshotLookupIds({
         maxLookupRows: CATALOG_PAGE_SIZE,
         rows: input.rows,
       }),
+      ),
     );
   const pageRowsWithSnapshotThumbs = input.rows.map((row) => {
     if (row.thumbnailUrl) return row;
@@ -3227,14 +3313,18 @@ async function getCatalogRowsWithThumbnails(input: {
     };
   });
   const shopifyThumbnailUrlByProductGid =
-    await getShopifyThumbnailUrlByProductGid({
+    await measureSyncBayPerformanceStage(
+      input.trace,
+      "catalog.shopify.thumbnails",
+      () => getShopifyThumbnailUrlByProductGid({
       productGids: pageRowsWithSnapshotThumbs.flatMap((row) =>
         !row.thumbnailUrl && row.shopifyProductGid
           ? [row.shopifyProductGid as string]
           : [],
       ),
       shopDomain: input.shopDomain,
-    });
+      }),
+    );
 
   return pageRowsWithSnapshotThumbs.map((row) =>
     row.thumbnailUrl

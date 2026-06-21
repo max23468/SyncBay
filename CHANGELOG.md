@@ -6,6 +6,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Loader embedded: aggiunta strumentazione server-side redatta per misurare
+  tempi e payload di Catalogo, Conflitti e Impostazioni.
+
 ### Non versionato
 
 - Pubblicazione: la `Codex feedback inbox` ora blocca il preflight solo per

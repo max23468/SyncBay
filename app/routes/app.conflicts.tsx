@@ -34,6 +34,10 @@ import {
 } from "../lib/syncbay-conflict-actions";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  createSyncBayLoaderPerformanceTrace,
+  logSyncBayLoaderPerformance,
+} from "../lib/syncbay-loader-performance";
+import {
   type ConflictFilter,
   normalizeConflictFilter,
 } from "../lib/syncbay-conflicts-page";
@@ -76,12 +80,38 @@ type ConflictActionData = {
 export const meta: MetaFunction = () => getSyncBayMeta("Conflitti");
 
 export const loader = async ({ request, url }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const trace = createSyncBayLoaderPerformanceTrace();
+  const { session } = await trace.measure("auth.admin", () =>
+    authenticate.admin(request),
+  );
+  const filter = normalizeConflictFilter(url.searchParams.get("filter"));
+  const page = normalizePage(url.searchParams.get("page"));
 
-  return getConflictsPageState(session, {
-    filter: normalizeConflictFilter(url.searchParams.get("filter")),
-    page: normalizePage(url.searchParams.get("page")),
+  const conflicts = await trace.measure("conflicts.state", () =>
+    getConflictsPageState(
+      session,
+      {
+        filter,
+        page,
+      },
+      trace,
+    ),
+  );
+
+  logSyncBayLoaderPerformance({
+    details: {
+      filter,
+      filteredCount: conflicts.summary.filteredCount,
+      openCount: conflicts.summary.openCount,
+      page,
+      rows: conflicts.rows.length,
+    },
+    payload: conflicts,
+    route: "conflicts",
+    trace,
   });
+
+  return conflicts;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
