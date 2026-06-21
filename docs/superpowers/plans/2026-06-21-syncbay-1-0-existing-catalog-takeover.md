@@ -44,7 +44,11 @@
 - In modalità catalogo esistente, il dry-run copre tutti i listing eBay attivi
   restituiti dalla Trading API entro il limite MVP di 2.000 prodotti, non una
   pagina campione.
-- In modalità catalogo esistente, il loader produce un dry-run con righe `applicabile`, `da_rivedere`, `bloccante`, `gia_collegato`.
+- In modalità catalogo esistente, il dry-run completo parte solo dopo richiesta
+  esplicita (`preview=live` o azione equivalente), così l'apertura del tab
+  Importazione non chiama eBay/Shopify per migliaia di prodotti.
+- Il dry-run produce righe `applicabile`, `da_rivedere`, `bloccante`,
+  `gia_collegato`.
 - Il collegamento automatico richiede almeno un segnale forte: SKU esatto, ItemID eBay su barcode/metafield/tag/handle o mapping SyncBay già coerente. Titolo simile da solo non collega.
 - Prezzo, disponibilità, varianti complesse e mapping ambiguo sono bloccanti. Descrizioni, immagini, categorie, faccette, SEO e tag possono essere eccezioni da rivedere se non compromettono vendita e mapping.
 - L'apply scrive solo righe applicabili, dopo conferma esplicita, e in modalità `reuseOnly`: se il prodotto Shopify esistente non viene riusato, SyncBay fallisce la riga invece di creare un duplicato.
@@ -779,22 +783,90 @@
 - Modify: `app/routes/app.import-preview.tsx`
 - Modify: `app/lib/syncbay-existing-catalog-takeover.ts`
 
-- [ ] **Step 1: costruire il report solo in modalità catalogo esistente**
+- [ ] **Step 1: esporre il recupero completo da Trading API**
 
-  In `getImportWizardState`:
+  In `app/services/ebay-trading-preview.server.ts`, aggiungere un helper
+  esportato che usa funzioni già presenti (`getEbayTradingCatalogImportPlan` e
+  `getEbayTradingCandidatesByItemIds`) e costruisce una `ImportPreviewResult`
+  completa.
+
+  ```ts
+  import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
+  import { buildImportPreview } from "./import-preview.server";
+
+  export async function getEbayTradingCatalogImportPreview(input: {
+    accessToken: string;
+    connection: EbayConnection;
+    descriptionRuleMode?: DescriptionRuleMode;
+    maxProducts: number;
+  }) {
+    const plan = await getEbayTradingCatalogImportPlan({
+      accessToken: input.accessToken,
+      connection: input.connection,
+      maxProducts: input.maxProducts,
+    });
+    const candidates = await getEbayTradingCandidatesByItemIds({
+      accessToken: input.accessToken,
+      connection: input.connection,
+      itemIds: plan.itemIds,
+    });
+
+    return {
+      previewResult: buildImportPreview(candidates, "live", {
+        descriptionRuleMode: input.descriptionRuleMode,
+      }),
+      readCount: plan.readCount,
+      totalAvailable: plan.totalAvailable,
+      totalPlanned: plan.itemIds.length,
+      truncatedAtMaxProducts:
+        plan.totalAvailable !== null
+          ? plan.totalAvailable > plan.itemIds.length
+          : plan.itemIds.length >= input.maxProducts,
+    };
+  }
+  ```
+
+- [ ] **Step 2: costruire il report solo dopo richiesta live**
+
+  In `app/services/syncbay.server.ts`, importare
+  `getEbayTradingCatalogImportPreview` e creare un wrapper locale che recupera
+  il token eBay:
+
+  ```ts
+  async function getExistingCatalogTakeoverPreview(input: {
+    connection: EbayConnection;
+    descriptionRuleMode: DescriptionRuleMode;
+    maxProducts: number;
+  }) {
+    const { accessToken } = await getUsableEbayAccessToken(input.connection);
+
+    return getEbayTradingCatalogImportPreview({
+      accessToken,
+      connection: input.connection,
+      descriptionRuleMode: input.descriptionRuleMode,
+      maxProducts: input.maxProducts,
+    });
+  }
+  ```
+
+  Poi in `getImportWizardState`:
 
   ```ts
   const takeoverPreviewResult =
-    catalogMode === "existing_catalog" && ebayConnection
-      ? await getExistingCatalogTakeoverPreview({
-          connection: ebayConnection,
-          descriptionRuleMode: descriptionRule.mode,
-          maxProducts: 2000,
-        })
+    catalogMode === "existing_catalog" &&
+    previewLoadMode === "live" &&
+    ebayConnection
+      ? (
+          await getExistingCatalogTakeoverPreview({
+            connection: ebayConnection,
+            descriptionRuleMode: descriptionRule.mode,
+            maxProducts: 2000,
+          })
+        ).previewResult
       : previewResult;
 
   const existingCatalogTakeover =
-    catalogMode === "existing_catalog"
+    catalogMode === "existing_catalog" && previewLoadMode === "live"
       ? buildExistingCatalogTakeoverReport({
           items: takeoverPreviewResult.items,
           shopDomain: shop.shopDomain,
@@ -806,15 +878,17 @@
   Nel return finale esistente aggiungere `catalogMode` e
   `existingCatalogTakeover` accanto a `draftImport`, `previewResult` e
   `previewSource`. In modalità `existing_catalog`, `previewResult` deve usare
-  `takeoverPreviewResult`, così filtri, paginazione e report leggono tutti i
-  listing attivi entro il limite MVP.
+  `takeoverPreviewResult` solo quando `previewLoadMode === "live"`, così
+  filtri, paginazione e report leggono tutti i listing attivi entro il limite
+  MVP solo dopo azione esplicita.
 
-  `getExistingCatalogTakeoverPreview` deve riusare `getEbayTradingCatalogImportPlan`
-  per ottenere tutti gli ItemID attivi e poi recuperare i dettagli in batch con
-  lo stesso percorso usato dal runner `IMPORT_CATALOG`; non deve fermarsi alla
-  prima pagina Inventory API.
+  `getExistingCatalogTakeoverPreview` deve chiamare
+  `getEbayTradingCatalogImportPreview`, che usa `getEbayTradingCatalogImportPlan`
+  per ottenere tutti gli ItemID attivi e poi recupera i dettagli con
+  `getEbayTradingCandidatesByItemIds`; non deve fermarsi alla prima pagina
+  Inventory API.
 
-- [ ] **Step 2: disabilitare l'azione di creazione prodotti in modalità existing**
+- [ ] **Step 3: disabilitare l'azione di creazione prodotti in modalità existing**
 
   In `DraftImportSection`, se `wizard.catalogMode === "existing_catalog"`:
 
@@ -823,7 +897,7 @@
   - disabilitare se `existingCatalogTakeover.summary.applicable === 0`;
   - disabilitare se `existingCatalogTakeover.summary.blocked > 0`.
 
-- [ ] **Step 3: aggiungere pannello report**
+- [ ] **Step 4: aggiungere pannello report**
 
   Creare `ExistingCatalogTakeoverSection` in `app/routes/app.import-preview.tsx`:
 
@@ -836,10 +910,10 @@
     return (
       <s-section heading="Collega catalogo esistente">
         <s-grid gridTemplateColumns="repeat(4, minmax(0, 1fr))" gap="base">
-          <MetricTile label="Applicabili" value={report.summary.applicable} />
-          <MetricTile label="Da rivedere" value={report.summary.review} />
-          <MetricTile label="Bloccanti" value={report.summary.blocked} />
-          <MetricTile label="Già collegati" value={report.summary.alreadyLinked} />
+          <MetricTile icon="check-circle" label="Applicabili" value={String(report.summary.applicable)} />
+          <MetricTile icon="alert-triangle" label="Da rivedere" value={String(report.summary.review)} />
+          <MetricTile icon="alert-circle" label="Bloccanti" value={String(report.summary.blocked)} />
+          <MetricTile icon="link" label="Già collegati" value={String(report.summary.alreadyLinked)} />
         </s-grid>
         <s-text color="subdued">
           SyncBay collega solo righe con segnali forti. I casi incerti restano
@@ -850,7 +924,7 @@
   }
   ```
 
-- [ ] **Step 4: mostrare status riga nei dettagli preview**
+- [ ] **Step 5: mostrare status riga nei dettagli preview**
 
   In `MatchSuggestionDetails`, se esiste `existingCatalogTakeover`, cercare la riga per `item.itemId` e mostrare:
 
@@ -861,7 +935,7 @@
   </s-text>
   ```
 
-- [ ] **Step 5: verifiche e commit**
+- [ ] **Step 6: verifiche e commit**
 
   Run:
 
@@ -875,7 +949,7 @@
   Commit:
 
   ```bash
-  git add app/services/syncbay.server.ts app/routes/app.import-preview.tsx app/lib/syncbay-existing-catalog-takeover.ts
+  git add app/services/ebay-trading-preview.server.ts app/services/syncbay.server.ts app/routes/app.import-preview.tsx app/lib/syncbay-existing-catalog-takeover.ts
   git commit -m "feat: show existing catalog takeover dry run"
   ```
 
@@ -939,6 +1013,9 @@
   - Accettare solo righe `applicabile`.
   - Se `blocked > 0`, rispondere `blocked` con messaggio italiano.
   - Richiedere `confirmation === "COLLEGA"`.
+  - Prima di scrivere claim o mapping, leggere il prodotto Shopify scelto e
+    registrare snapshot/audit pre-claim con `source: ProductSnapshotSource.SHOPIFY`,
+    così la recovery manuale ha il valore precedente.
   - Per ogni riga applicabile, scrivere `syncbay.ebay_item_id` e gli altri metafield base con `metafieldsSet`.
   - Upsert `ProductMapping` con `status: ACTIVE`, `shopifyProductGid`, `shopifyVariantGid`, `sku`.
   - Creare job `IMPORT_CATALOG` con payload:
@@ -955,6 +1032,16 @@
 
 - [ ] **Step 4: propagare `reuseOnly` nel runner**
 
+  In `app/services/sync-job-runner.server.ts`, aggiungere un helper accanto a
+  `getStringFromPayload`:
+
+  ```ts
+  function getBooleanFromPayload(payload: Prisma.JsonValue | null, key: string) {
+    const value = getJsonObject(payload)?.[key];
+    return typeof value === "boolean" ? value : false;
+  }
+  ```
+
   In `runImportCatalogJob`:
 
   ```ts
@@ -965,7 +1052,7 @@
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
-    reuseOnly: getBooleanPayloadValue(job.payload, "reuseOnly"),
+    reuseOnly: getBooleanFromPayload(job.payload, "reuseOnly"),
     shopDomain: job.shop.shopDomain,
   });
   ```
