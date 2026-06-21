@@ -1275,7 +1275,6 @@ async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
       descriptionHash: true,
       payload: true,
     },
-    take: 20,
     where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
   });
 
