@@ -83,14 +83,23 @@ function buildReport(args) {
     args.remote && (pr || publishedMainPreflight)
       ? readCodexInbox(pr?.number ?? null)
       : null;
+  const reviewThreads = args.remote && pr ? readCodexReviewThreads(pr.number) : null;
+  const codexFeedback =
+    args.remote && (pr || publishedMainPreflight)
+      ? buildCodexFeedbackPreflight({
+          inbox,
+          prNumber: pr?.number ?? null,
+          reviewThreads,
+        })
+      : null;
 
   if (args.remote && !pr && !publishedMainPreflight) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
-  if (args.remote && (pr || publishedMainPreflight) && !inbox?.readable) {
+  if (args.remote && (pr || publishedMainPreflight) && !codexFeedback?.readable) {
     failures.push(
-      "Codex feedback inbox non leggibile: verificare autenticazione GitHub e issue #2 prima della pubblicazione.",
+      "Feedback Codex non leggibile: verificare autenticazione GitHub, review thread PR e issue #2 prima della pubblicazione.",
     );
   }
 
@@ -102,13 +111,17 @@ function buildReport(args) {
     warnings.push(`Merge state PR: ${pr.mergeStateStatus}.`);
   }
 
-  if (inbox?.globalActionable) {
+  if (codexFeedback?.actionable) {
     failures.push(
-      "Codex feedback inbox segnala thread actionable nella sezione Da risolvere ora.",
+      pr
+        ? `Codex segnala thread actionable su PR #${pr.number}.`
+        : "Codex feedback inbox segnala thread actionable nella sezione Da risolvere ora.",
     );
-  } else if (inbox?.actionable) {
-    failures.push(
-      `Codex feedback inbox segnala thread actionable su PR #${pr.number}.`,
+  }
+
+  if (codexFeedback?.globalActionable && !codexFeedback.actionable) {
+    warnings.push(
+      "Codex feedback inbox segnala thread actionable su altre PR: non blocca questa pubblicazione.",
     );
   }
 
@@ -123,7 +136,7 @@ function buildReport(args) {
       requiredScripts: REQUIRED_SCRIPTS,
     },
     failures,
-    inbox,
+    inbox: codexFeedback,
     ok: failures.length === 0,
     pr,
     statusLines: status ? status.split(/\r?\n/).filter(Boolean) : [],
@@ -293,9 +306,84 @@ function readCodexInbox(prNumber) {
   return {
     actionable: prNumber ? hasActionableThreads(prSection) : false,
     globalActionable: hasActionableThreads(actionableSection),
+    prActionable: prNumber ? hasActionableThreads(prSection) : false,
     readable: true,
     updatedAt: parsed.updatedAt,
     url: parsed.url,
+  };
+}
+
+function readCodexReviewThreads(prNumber) {
+  const output = runGh([
+    "api",
+    "graphql",
+    "-f",
+    "owner=max23468",
+    "-f",
+    "repo=SyncBay",
+    "-F",
+    `number=${prNumber}`,
+    "-f",
+    "query=query($owner:String!, $repo:String!, $number:Int!) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100) { nodes { isResolved isOutdated comments(first:100) { nodes { author { login } } } } } } } }",
+  ]);
+
+  if (!output) {
+    return {
+      actionable: null,
+      readable: false,
+      source: "reviewThreads",
+    };
+  }
+
+  const parsed = JSON.parse(output);
+  const threads =
+    parsed.data?.repository?.pullRequest?.reviewThreads?.nodes ?? [];
+  const codexLoginPattern = new RegExp(
+    process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex",
+    "i",
+  );
+  const actionable = threads.some(
+    (thread) =>
+      !thread.isResolved &&
+      !thread.isOutdated &&
+      thread.comments.nodes.some((comment) =>
+        codexLoginPattern.test(comment.author?.login ?? ""),
+      ),
+  );
+
+  return {
+    actionable,
+    readable: true,
+    source: "reviewThreads",
+  };
+}
+
+export function buildCodexFeedbackPreflight(input) {
+  const inbox = input.inbox ?? {
+    globalActionable: false,
+    prActionable: false,
+    readable: false,
+  };
+  const reviewThreads = input.reviewThreads ?? {
+    actionable: null,
+    readable: false,
+    source: "reviewThreads",
+  };
+  const canUseReviewThreads =
+    Boolean(input.prNumber) && reviewThreads.readable;
+  const actionable = canUseReviewThreads
+    ? Boolean(reviewThreads.actionable)
+    : input.prNumber
+      ? Boolean(inbox.prActionable ?? inbox.actionable)
+      : Boolean(inbox.globalActionable);
+
+  return {
+    actionable,
+    globalActionable: Boolean(inbox.globalActionable),
+    readable: Boolean(reviewThreads.readable || inbox.readable),
+    source: canUseReviewThreads ? reviewThreads.source : "inbox",
+    updatedAt: inbox.updatedAt ?? null,
+    url: inbox.url ?? null,
   };
 }
 

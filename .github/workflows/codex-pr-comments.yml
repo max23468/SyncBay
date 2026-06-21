@@ -22,13 +22,13 @@ permissions:
 
 concurrency:
   group: codex-pr-comments
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   codex-pr-comments:
     name: Sync Codex feedback inbox
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 10
 
     steps:
       - name: Checkout trusted workflow code

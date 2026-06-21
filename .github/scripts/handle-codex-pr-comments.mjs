@@ -2,6 +2,13 @@
 
 import { readFile } from "node:fs/promises";
 import process from "node:process";
+import {
+  getCodexPrScanMode,
+  getEventPullRequestNumber,
+  getRecentPrDays,
+  parsePositiveInteger,
+  shouldPatchInboxIssue,
+} from "./codex-pr-comments-helpers.mjs";
 
 const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
@@ -15,10 +22,15 @@ const inboxMarker =
 const dryRun = process.env.DRY_RUN === "true";
 const eventName = process.env.GITHUB_EVENT_NAME ?? "";
 const eventPayload = await readGitHubEventPayload();
-const fullScan = shouldRunFullScan();
+const scanMode = getCodexPrScanMode({
+  codeFullScan: process.env.CODEX_FULL_SCAN === "true",
+  eventName,
+  eventPayload,
+  inboxIssueTitle,
+});
 const eventPullRequestNumber = getEventPullRequestNumber(eventPayload);
 const recentPrLimit = parsePositiveInteger(process.env.CODEX_RECENT_PR_LIMIT, 50);
-const recentPrDays = parsePositiveInteger(process.env.CODEX_RECENT_PR_DAYS, 30);
+const recentPrDays = getRecentPrDays(process.env.CODEX_RECENT_PR_DAYS);
 const historyPrLimit = parsePositiveInteger(process.env.CODEX_HISTORY_PR_LIMIT, 8);
 const historyThreadLimit = parsePositiveInteger(process.env.CODEX_HISTORY_THREAD_LIMIT, 5);
 const actionablePrLimit = parsePositiveInteger(process.env.CODEX_ACTIONABLE_PR_LIMIT, 20);
@@ -76,10 +88,10 @@ console.log(
       closedDuplicateInboxIssues: inboxIssue.closedDuplicateNumbers,
       dryRun,
       eventName,
-      fullScan,
       inboxIssue: inboxIssue.issue?.html_url ?? null,
       prsScanned: prs.length,
       prsWithCodexThreads: inboxEntries.length,
+      scanMode,
       totalActionableThreads: inboxEntries.reduce(
         (total, entry) => total + entry.actionableThreads.length,
         0,
@@ -95,16 +107,18 @@ console.log(
 );
 
 async function listPullRequests() {
-  if (fullScan) return listAllPullRequests();
+  if (scanMode === "full-history") return listAllPullRequests();
 
   const prsByNumber = new Map();
 
-  for (const pr of await listOpenPullRequests()) {
-    prsByNumber.set(pr.number, pr);
-  }
+  if (scanMode === "broad") {
+    for (const pr of await listOpenPullRequests()) {
+      prsByNumber.set(pr.number, pr);
+    }
 
-  for (const pr of await listRecentPullRequests()) {
-    prsByNumber.set(pr.number, pr);
+    for (const pr of await listRecentPullRequests()) {
+      prsByNumber.set(pr.number, pr);
+    }
   }
 
   for (const prNumber of await listInboxPullRequestNumbers()) {
@@ -332,6 +346,20 @@ async function upsertInboxIssue(entries) {
   }
 
   if (existingIssue) {
+    if (
+      !shouldPatchInboxIssue({
+        body: existingIssue.body,
+        isLabeledInboxIssue: isLabeledInboxIssue(existingIssue),
+        nextBody: body,
+        state: existingIssue.state,
+      })
+    ) {
+      return {
+        closedDuplicateNumbers,
+        issue: existingIssue,
+      };
+    }
+
     return {
       closedDuplicateNumbers,
       issue: await githubJson(
@@ -615,27 +643,6 @@ async function readGitHubEventPayload() {
     console.warn(`Impossibile leggere GITHUB_EVENT_PATH: ${error.message}`);
     return null;
   }
-}
-
-function shouldRunFullScan() {
-  if (process.env.CODEX_FULL_SCAN === "true") return true;
-  if (!eventName) return true;
-  if (eventName === "schedule" || eventName === "workflow_dispatch") return true;
-
-  return eventName === "issue_comment" && eventPayload?.issue?.title === inboxIssueTitle;
-}
-
-function getEventPullRequestNumber(payload) {
-  if (payload?.pull_request?.number) return payload.pull_request.number;
-  if (payload?.issue?.pull_request) return payload.issue.number;
-
-  return null;
-}
-
-function parsePositiveInteger(value, fallback) {
-  const parsed = Number.parseInt(value ?? "", 10);
-
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function normalizeInboxMarkerName(value) {
