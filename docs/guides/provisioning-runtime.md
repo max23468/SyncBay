@@ -169,6 +169,9 @@ Non salvarla in Git e non stamparla nei log.
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
 - schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault; il runner anticipa i sync incrementali in scadenza entro il tick successivo
+- schedule Supabase Cron `syncbay-maintain-supabase-internal-tables` applicata
+  via migration; pulisce ogni giorno `cron.job_run_details` oltre 7 giorni e
+  `net._http_response` oltre 1 giorno per limitare bloat interno Supabase.
 - retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
 - batch reale storico da 50 prodotti verificato sul dev store: job
   `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24
@@ -211,6 +214,8 @@ Primitive Supabase tracciate:
 - estensione `pg_cron`;
 - estensione `pg_net`;
 - schedule `syncbay-run-due-jobs` ogni 2 minuti per riprendere job `IMPORT_CATALOG` dovuti;
+- schedule `syncbay-maintain-supabase-internal-tables` giornaliera per retention
+  interna `pg_cron`/`pg_net`;
 - bucket privato `syncbay-import-staging` per staging temporaneo immagini, usato
   per generare URL firmate quando Shopify rifiuta le URL immagine eBay dirette.
 

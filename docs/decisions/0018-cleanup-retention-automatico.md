@@ -43,6 +43,11 @@ senza nuovi worker né workflow.
   pianificazione (dry-run) senza cancellare.
 - I conteggi rimossi sono loggati e inclusi nella risposta del cron, così la
   cancellazione resta osservabile.
+- La manutenzione delle tabelle interne Supabase non contenenti dati
+  applicativi (`cron.job_run_details` e `net._http_response`) è separata dalla
+  retention SyncBay: una migration crea un cron giornaliero
+  `syncbay-maintain-supabase-internal-tables` che conserva 7 giorni di dettagli
+  `pg_cron` e 1 giorno di risposte `pg_net`.
 
 ## Conseguenze
 
@@ -73,3 +78,4 @@ senza nuovi worker né workflow.
 - `app/lib/syncbay-retention-cleanup.ts`
 - `app/services/retention-cleanup.server.ts`
 - `.env.example`
+- `prisma/migrations/20260621100000_egress_maintenance_actions/migration.sql`

@@ -100,7 +100,28 @@ import {
 } from "./shopify-draft-import.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
 
-type DueSyncJob = Prisma.SyncJobGetPayload<{ include: { shop: true } }>;
+const dueSyncJobSelect = Prisma.validator<Prisma.SyncJobSelect>()({
+  attempts: true,
+  createdAt: true,
+  finishedAt: true,
+  id: true,
+  idempotencyKey: true,
+  maxAttempts: true,
+  payload: true,
+  result: true,
+  shop: {
+    select: {
+      defaultLocationGid: true,
+      shopDomain: true,
+    },
+  },
+  shopId: true,
+  startedAt: true,
+  status: true,
+  type: true,
+});
+
+type DueSyncJob = Prisma.SyncJobGetPayload<{ select: typeof dueSyncJobSelect }>;
 type DueSyncJobRunResult = {
   errorMessage?: string;
   jobId: string;
@@ -245,8 +266,8 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
     if (remainingLimit <= 0) break;
 
     const typedJobs = await prisma.syncJob.findMany({
-      include: { shop: true },
       orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
+      select: dueSyncJobSelect,
       take: remainingLimit,
       where: {
         ...getSchedulableSyncJobWhere(),
@@ -342,7 +363,7 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
     if (claimed.count !== 1) return null;
 
     return tx.syncJob.findUniqueOrThrow({
-      include: { shop: true },
+      select: dueSyncJobSelect,
       where: { id: job.id },
     });
   });
@@ -534,13 +555,15 @@ async function lockShopForUpdate(tx: Prisma.TransactionClient, shopId: string) {
 
 async function enqueueIncrementalSyncJobs(now: Date) {
   const shops = await prisma.shop.findMany({
-    include: {
+    select: {
       ebayConnections: {
         where: {
           marketplaceId: DEFAULT_MARKETPLACE_ID,
           status: EbayConnectionStatus.CONNECTED,
         },
       },
+      id: true,
+      syncTargetSeconds: true,
     },
     where: {
       installationStatus: "INSTALLED",
