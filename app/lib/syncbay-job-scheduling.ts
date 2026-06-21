@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
+export const DEFAULT_RUN_DUE_LIMIT = 10;
+export const MAX_RUN_DUE_LIMIT = 20;
 
 export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
@@ -35,6 +37,12 @@ export function isStaleInternalShopifyImportJob(input: {
   if (!input.startedAt) return true;
 
   return input.startedAt.getTime() <= input.now.getTime() - input.staleAfterMs;
+}
+
+export function normalizeRunDueLimit(limit?: number) {
+  if (!Number.isInteger(limit)) return DEFAULT_RUN_DUE_LIMIT;
+
+  return Math.min(Math.max(Number(limit), 1), MAX_RUN_DUE_LIMIT);
 }
 
 export function getDuplicateShopifyChangeJobIdsToCancel(
