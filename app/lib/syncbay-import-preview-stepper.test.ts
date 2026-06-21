@@ -28,6 +28,14 @@ test("does not complete the preview step from mock or failed previews", () => {
     isLiveImportPreviewStepComplete({
       importableCount: 2,
       previewErrorMessage: null,
+      previewSource: "deferred",
+    }),
+    false,
+  );
+  assert.equal(
+    isLiveImportPreviewStepComplete({
+      importableCount: 2,
+      previewErrorMessage: null,
       previewSource: "mock",
     }),
     false,

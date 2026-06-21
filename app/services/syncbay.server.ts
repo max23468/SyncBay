@@ -92,6 +92,7 @@ import {
   measureSyncBayPerformanceStage,
   type SyncBayLoaderPerformanceTrace,
 } from "../lib/syncbay-loader-performance";
+import type { ImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
 import {
@@ -106,6 +107,7 @@ import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
   addExistingProductMatchSuggestions,
+  getEmptyImportPreview,
   getImportPreviewValidationRules,
   getMockImportPreview,
   type ImportPreviewResult,
@@ -1485,6 +1487,7 @@ export async function getImportWizardState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
   trace?: SyncBayLoaderPerformanceTrace,
+  options: { previewLoadMode?: ImportPreviewLoadMode } = {},
 ) {
   const shop = await measureSyncBayPerformanceStage(
     trace,
@@ -1520,8 +1523,9 @@ export async function getImportWizardState(
   const ebayRuntime = getEbayRuntimeReadiness();
   const ebayConnected =
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const previewLoadMode = options.previewLoadMode ?? "deferred";
   const preview =
-    ebayConnected && ebayConnection
+    ebayConnected && ebayConnection && previewLoadMode === "live"
       ? await measureSyncBayPerformanceStage(
           trace,
           "import.ebay.preview",
@@ -1530,7 +1534,9 @@ export async function getImportWizardState(
               descriptionRuleMode: descriptionRule.mode,
             }),
         )
-      : getMockImportPreviewState(descriptionRule.mode);
+      : ebayConnected
+        ? getDeferredImportPreviewState()
+        : getMockImportPreviewState(descriptionRule.mode);
   const importPreview = getImportPreviewReadiness({
     defaultProductStatus,
     descriptionRuleMode: descriptionRule.mode,
@@ -1538,6 +1544,7 @@ export async function getImportWizardState(
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
     listingReaderError: preview.errorMessage,
+    listingReaderPending: preview.source === "deferred",
   });
   const previewResult = await measureSyncBayPerformanceStage(
     trace,
@@ -2992,6 +2999,22 @@ function getMockImportPreviewState(
   };
 }
 
+function getDeferredImportPreviewState() {
+  return {
+    coverageNote:
+      "Preview live non ancora aggiornata in questa apertura: usa l'azione dedicata per leggere eBay in sola lettura.",
+    errorMessage: null,
+    previewResult: getEmptyImportPreview("empty"),
+    readCount: 0,
+    readCounts: {
+      inventoryApi: 0,
+      tradingApi: 0,
+    },
+    source: "deferred" as const,
+    totalAvailable: null,
+  };
+}
+
 function getImportPreviewReadiness(input: {
   descriptionRuleMode: DescriptionRuleMode;
   defaultProductStatus: ImportProductStatus;
@@ -2999,12 +3022,14 @@ function getImportPreviewReadiness(input: {
   hasDefaultLocation: boolean;
   listingReaderError?: string | null;
   listingReaderAvailable?: boolean;
+  listingReaderPending?: boolean;
 }) {
   const blockers = [
     !input.ebayConnected ? "account eBay non collegato" : null,
     !input.hasDefaultLocation
       ? "location Shopify predefinita non confermata"
       : null,
+    input.listingReaderPending ? "preview live non ancora aggiornata" : null,
     input.listingReaderError
       ? `lettura listing eBay non riuscita: ${input.listingReaderError}`
       : null,
