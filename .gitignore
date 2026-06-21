@@ -32,5 +32,8 @@ coverage/
 # Screenshot generati dalla preview UI locale
 preview/shots/
 
+# Audit reali store/clienti: dati operativi e raw evidence non versionati
+audits/
+
 # Profilo Playwright per QA live (sessione Shopify)
 .shopify-pw-profile/
