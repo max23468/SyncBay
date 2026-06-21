@@ -1061,60 +1061,26 @@ export async function getConflictsPageState(
   const resolvedStatuses = [
     ...getConflictStatusFilter("resolved"),
   ] as SyncConflictStatus[];
-  const [
-    openCount,
-    resolvedCount,
-    totalCount,
-    filteredCount,
-    openConflictFields,
-  ] = await measureSyncBayPerformanceStage(
+  const [summaryCounts, openConflictFields] = await measureSyncBayPerformanceStage(
     trace,
     "conflicts.db.summaryTransaction",
-    () =>
-      prisma.$transaction([
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: SyncConflictStatus.OPEN,
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: resolvedStatuses },
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: allStatuses },
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: statusFilter },
-          },
-        }),
-        prisma.syncConflict.findMany({
-          select: { field: true },
-          where: {
-            shopId: shop.id,
-            status: SyncConflictStatus.OPEN,
-          },
-        }),
-      ]),
+    () => getConflictSummaryCounts({
+      allStatuses,
+      resolvedStatuses,
+      shopId: shop.id,
+      statusFilter,
+    }),
   );
   const decisionModeCounts = summarizeConflictDecisionModes(
     openConflictFields.map((conflict) => ({
-      count: 1,
+      count: conflict.count,
       field: conflict.field,
     })),
   );
   const pagination = getPageWindow({
     page: input.page ?? 1,
     pageSize: CONFLICT_PAGE_SIZE,
-    totalRows: filteredCount,
+    totalRows: summaryCounts.filteredCount,
   });
   const conflicts = await measureSyncBayPerformanceStage(
     trace,
@@ -1127,9 +1093,9 @@ export async function getConflictsPageState(
         orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
         skip: pagination.offset,
         take: pagination.pageSize,
-        where: {
-          shopId: shop.id,
-          status: { in: statusFilter },
+      where: {
+        shopId: shop.id,
+        status: { in: statusFilter },
         },
       }),
   );
@@ -1190,12 +1156,62 @@ export async function getConflictsPageState(
     },
     summary: {
       ...decisionModeCounts,
-      filteredCount,
-      openCount,
-      resolvedCount,
-      totalCount,
+      filteredCount: summaryCounts.filteredCount,
+      openCount: summaryCounts.openCount,
+      resolvedCount: summaryCounts.resolvedCount,
+      totalCount: summaryCounts.totalCount,
     },
   };
+}
+
+async function getConflictSummaryCounts(input: {
+  allStatuses: SyncConflictStatus[];
+  resolvedStatuses: SyncConflictStatus[];
+  shopId: string;
+  statusFilter: SyncConflictStatus[];
+}) {
+  const [summary] = await prisma.$queryRaw<
+    Array<{
+      filteredCount: number;
+      openCount: number;
+      resolvedCount: number;
+      totalCount: number;
+    }>
+  >`
+    SELECT
+      COUNT(*) FILTER (WHERE "status"::text = 'OPEN')::integer AS "openCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.resolvedStatuses)})
+      )::integer AS "resolvedCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.allStatuses)})
+      )::integer AS "totalCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.statusFilter)})
+      )::integer AS "filteredCount"
+    FROM "SyncConflict"
+    WHERE "shopId" = ${input.shopId}
+  `;
+  const openConflictFields = await prisma.$queryRaw<
+    Array<{ count: number; field: string }>
+  >`
+    SELECT "field", COUNT(*)::integer AS "count"
+    FROM "SyncConflict"
+    WHERE
+      "shopId" = ${input.shopId}
+      AND "status"::text = 'OPEN'
+    GROUP BY "field"
+  `;
+
+  return [
+    summary ?? {
+      filteredCount: 0,
+      openCount: 0,
+      resolvedCount: 0,
+      totalCount: 0,
+    },
+    openConflictFields,
+  ] as const;
 }
 
 export async function requestSyncJobRetry(
