@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.4] — 2026-06-21
+
+### Correzioni
+
+- Runner sync: con Supabase Cron ogni 2 minuti, i sync incrementali in scadenza
+  entro il tick successivo vengono enqueueati subito, preservando il target
+  massimo di 5 minuti.
+
 ## [0.44.3] — 2026-06-20
 
 ### Sotto il cofano
@@ -2318,6 +2326,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.4]: #0444--2026-06-21
 [0.44.3]: #0443--2026-06-20
 [0.44.2]: #0442--2026-06-20
 [0.44.1]: #0441--2026-06-20
