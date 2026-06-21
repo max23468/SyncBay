@@ -36,7 +36,10 @@ import {
   calculateShopifyPricing,
   type SyncBayPricingRule,
 } from "../lib/syncbay-pricing-rules";
-import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import {
+  buildEbayProductSnapshotPayload,
+  getProductSnapshotThumbnailUrl,
+} from "../lib/syncbay-product-snapshot-payload";
 import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import { buildSyncBayProductMetafields as buildSyncBayBaseProductMetafields } from "../lib/syncbay-shopify-product-metafields";
@@ -2993,6 +2996,12 @@ async function recordDraftImportPersistence(input: {
         const now = new Date();
         const variantGid =
           getFirstProductVariant(pair.result.product)?.id ?? null;
+        const ebaySnapshot = buildEbayProductSnapshot({
+          draftProduct: pair.draftProduct,
+          mappingId: "",
+          shopId: input.shopId,
+        });
+        const thumbnailUrl = getProductSnapshotThumbnailUrl(ebaySnapshot.payload);
         const mapping = await tx.productMapping.upsert({
           where: {
             shopId_marketplaceId_ebayItemId: {
@@ -3010,6 +3019,7 @@ async function recordDraftImportPersistence(input: {
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,
+            thumbnailUrl,
           },
           update: {
             lastErrorCode: null,
@@ -3019,16 +3029,13 @@ async function recordDraftImportPersistence(input: {
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,
+            ...(thumbnailUrl ? { thumbnailUrl } : {}),
           },
         });
 
         await tx.productSnapshot.createMany({
           data: [
-            buildEbayProductSnapshot({
-              draftProduct: pair.draftProduct,
-              mappingId: mapping.id,
-              shopId: input.shopId,
-            }),
+            { ...ebaySnapshot, mappingId: mapping.id },
             buildSyncBayProductSnapshot({
               draftProduct: pair.draftProduct,
               importProductStatus: normalizeImportProductStatus(

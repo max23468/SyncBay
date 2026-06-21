@@ -49,6 +49,7 @@ import {
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
+import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
 import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
@@ -524,20 +525,6 @@ async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) 
     if (archived.count === 0) continue;
 
     archivedCount += archived.count;
-    await prisma.auditLog.create({
-      data: {
-        details: {
-          archiveCutoff: archiveCutoff.toISOString(),
-          archivedCount: archived.count,
-          latestSuccessfulIncrementalSyncAt: latestSuccessAt.toISOString(),
-          reason: "superseded_failed_incremental_sync",
-        } satisfies Prisma.JsonObject,
-        message:
-          "Fallimenti incrementali storici archiviati dopo un sync riuscito più recente.",
-        shopId,
-        type: AuditEventType.CONNECTION_CHECK,
-      },
-    });
   }
 
   return archivedCount;
@@ -1129,6 +1116,7 @@ async function recoverStaleRunningSyncJobs(
     where: getStaleRunningSyncJobWhere(staleCutoff, input.shopId),
   });
   let recoveredCount = 0;
+  const recoveredJobSummaries: Prisma.JsonObject[] = [];
 
   for (const staleJob of staleJobs) {
     const nextAttempts = staleJob.attempts + 1;
@@ -1157,18 +1145,30 @@ async function recoverStaleRunningSyncJobs(
       where: { id: staleJob.id },
     });
 
+    recoveredJobSummaries.push({
+      id: staleJob.id,
+      retryScheduledAt: retryAt?.toISOString() ?? null,
+      type: staleJob.type,
+      willRetry: Boolean(retryAt),
+    });
+    recoveredCount += 1;
+  }
+
+  if (recoveredCount > 0) {
     await tx.auditLog.create({
       data: {
-        details: result,
-        message: retryAt
-          ? "Job SyncBay RUNNING stantio recuperato; retry pianificato dal runner."
-          : "Job SyncBay RUNNING stantio segnato come fallito dal runner.",
+        details: {
+          recoveredCount,
+          recoveredJobs: recoveredJobSummaries,
+          runnerErrorCode: STALE_RUNNING_SYNC_JOB_ERROR_CODE,
+          staleAfterSeconds: RUNNING_SYNC_JOB_STALE_AFTER_MS / 1000,
+        } satisfies Prisma.JsonObject,
+        message:
+          "Job SyncBay RUNNING stantii recuperati dal runner.",
         shopId: input.shopId,
         type: AuditEventType.SYNC_JOB_FAILED,
       },
     });
-
-    recoveredCount += 1;
   }
 
   return recoveredCount;
@@ -1785,14 +1785,19 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     const syncedMappingIds = syncBaySnapshots
       .map((snapshot) => snapshot.mappingId)
       .filter((mappingId): mappingId is string => Boolean(mappingId));
+    const changedSyncBaySnapshots =
+      await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
 
-    await prisma.$transaction([
-      prisma.productSnapshot.createMany({ data: syncBaySnapshots }),
-      prisma.productMapping.updateMany({
+    await prisma.$transaction(async (tx) => {
+      if (changedSyncBaySnapshots.length > 0) {
+        await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+      }
+
+      await tx.productMapping.updateMany({
         data: { lastSyncedAt: now },
         where: { id: { in: syncedMappingIds } },
-      }),
-    ]);
+      });
+    });
   }
 
   await markJobSucceeded({
@@ -2080,30 +2085,34 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       sku: mapping.sku,
       skuGenerated: getSnapshotSkuGenerated(latestSkuPolicySnapshot?.payload),
     });
-    await prisma.productSnapshot.create({
-      data: {
-        ebayItemId: mapping.ebayItemId,
-        mappingId: mapping.id,
-        payload: {
-          ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
-          previousQuantity,
-          orderLineItemKey: lineItem.lineItemKey,
-          reason: "shopify_order_paid",
-          syncJobId: job.id,
-          updatedEbayFromShopifyOrder: true,
-        } satisfies Prisma.JsonObject,
-        currency: currencyValidation.snapshotCurrency,
-        priceAmount: latestSnapshot?.priceAmount ?? null,
-        productStatus: latestSnapshot?.productStatus ?? null,
-        quantity: nextQuantity,
-        shopId: job.shopId,
-        shopifyProductGid: mapping.shopifyProductGid,
-        shopifyVariantGid: mapping.shopifyVariantGid,
-        sku: mapping.sku,
-        source: ProductSnapshotSource.SYNCBAY,
-        title: latestSnapshot?.title ?? null,
-      },
-    });
+    const stockSnapshot = {
+      ebayItemId: mapping.ebayItemId,
+      mappingId: mapping.id,
+      payload: {
+        ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
+        previousQuantity,
+        orderLineItemKey: lineItem.lineItemKey,
+        reason: "shopify_order_paid",
+        syncJobId: job.id,
+        updatedEbayFromShopifyOrder: true,
+      } satisfies Prisma.JsonObject,
+      currency: currencyValidation.snapshotCurrency,
+      priceAmount: latestSnapshot?.priceAmount ?? null,
+      productStatus: latestSnapshot?.productStatus ?? null,
+      quantity: nextQuantity,
+      shopId: job.shopId,
+      shopifyProductGid: mapping.shopifyProductGid,
+      shopifyVariantGid: mapping.shopifyVariantGid,
+      sku: mapping.sku,
+      source: ProductSnapshotSource.SYNCBAY,
+      title: latestSnapshot?.title ?? null,
+    } satisfies Prisma.ProductSnapshotCreateManyInput;
+    const changedStockSnapshots =
+      await filterChangedSyncBayProductSnapshots([stockSnapshot]);
+
+    if (changedStockSnapshots.length > 0) {
+      await prisma.productSnapshot.create({ data: stockSnapshot });
+    }
     updated.push({
       currency: currencyValidation.snapshotCurrency,
       ebayItemId: mapping.ebayItemId,
@@ -2143,6 +2152,75 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     status: "succeeded" as const,
     type: job.type,
   };
+}
+
+type LatestSyncBayProductSnapshotForDedupe = {
+  currency: string | null;
+  descriptionHash: string | null;
+  ebayItemId: string | null;
+  imageCount: number | null;
+  mappingId: string | null;
+  payload: Prisma.JsonValue | null;
+  priceAmount: Prisma.Decimal | null;
+  productStatus: string | null;
+  quantity: number | null;
+  shopifyProductGid: string | null;
+  shopifyVariantGid: string | null;
+  sku: string | null;
+  source: ProductSnapshotSource;
+  title: string | null;
+};
+
+async function filterChangedSyncBayProductSnapshots(
+  snapshots: Prisma.ProductSnapshotCreateManyInput[],
+) {
+  const mappingIds = [
+    ...new Set(
+      snapshots
+        .map((snapshot) => snapshot.mappingId)
+        .filter((mappingId): mappingId is string => Boolean(mappingId)),
+    ),
+  ];
+
+  if (mappingIds.length === 0) return snapshots;
+
+  const previousSnapshots =
+    await prisma.$queryRaw<LatestSyncBayProductSnapshotForDedupe[]>`
+      SELECT DISTINCT ON ("mappingId")
+        "currency",
+        "descriptionHash",
+        "ebayItemId",
+        "imageCount",
+        "mappingId",
+        "payload",
+        "priceAmount",
+        "productStatus",
+        "quantity",
+        "shopifyProductGid",
+        "shopifyVariantGid",
+        "sku",
+        "source",
+        "title"
+      FROM "ProductSnapshot"
+      WHERE
+        "mappingId" IN (${Prisma.join(mappingIds)})
+        AND "source" = 'SYNCBAY'::"ProductSnapshotSource"
+      ORDER BY "mappingId", "capturedAt" DESC
+    `;
+  const previousSnapshotByMappingId = new Map(
+    previousSnapshots.flatMap((snapshot) =>
+      snapshot.mappingId ? [[snapshot.mappingId, snapshot]] : [],
+    ),
+  );
+
+  return snapshots.filter((snapshot) =>
+    shouldCreateProductSnapshot({
+      next: snapshot,
+      previous: snapshot.mappingId
+        ? previousSnapshotByMappingId.get(snapshot.mappingId)
+        : null,
+    }),
+  );
 }
 
 // Job storicamente chiamato ARCHIVE_INACTIVE_LISTING: il listing eBay inattivo
@@ -2202,6 +2280,25 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
 
   const now = new Date();
 
+  const soldOutSnapshot = {
+    ebayItemId: mapping.ebayItemId,
+    mappingId: mapping.id,
+    payload: {
+      reason: "ebay_listing_inactive",
+      soldOutShopifyProduct: Boolean(mapping.shopifyProductGid),
+      syncJobId: job.id,
+    } satisfies Prisma.JsonObject,
+    // Il prodotto Shopify resta ACTIVE: è solo esaurito (scorta 0).
+    productStatus: "ACTIVE",
+    quantity: 0,
+    shopId: job.shopId,
+    shopifyProductGid: mapping.shopifyProductGid,
+    shopifyVariantGid: mapping.shopifyVariantGid,
+    sku: mapping.sku,
+    source: ProductSnapshotSource.SYNCBAY,
+  } satisfies Prisma.ProductSnapshotCreateManyInput;
+  const changedSoldOutSnapshots =
+    await filterChangedSyncBayProductSnapshots([soldOutSnapshot]);
   const [, , resolvedConflicts] = await prisma.$transaction([
     prisma.productMapping.update({
       data: {
@@ -2212,25 +2309,9 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       },
       where: { id: mapping.id },
     }),
-    prisma.productSnapshot.create({
-      data: {
-        ebayItemId: mapping.ebayItemId,
-        mappingId: mapping.id,
-        payload: {
-          reason: "ebay_listing_inactive",
-          soldOutShopifyProduct: Boolean(mapping.shopifyProductGid),
-          syncJobId: job.id,
-        } satisfies Prisma.JsonObject,
-        // Il prodotto Shopify resta ACTIVE: è solo esaurito (scorta 0).
-        productStatus: "ACTIVE",
-        quantity: 0,
-        shopId: job.shopId,
-        shopifyProductGid: mapping.shopifyProductGid,
-        shopifyVariantGid: mapping.shopifyVariantGid,
-        sku: mapping.sku,
-        source: ProductSnapshotSource.SYNCBAY,
-      },
-    }),
+    changedSoldOutSnapshots.length > 0
+      ? prisma.productSnapshot.create({ data: soldOutSnapshot })
+      : prisma.syncJob.count({ where: { id: job.id } }),
     resolveOpenConflictsForInactiveMappingMutation({
       mappingId: mapping.id,
       resolvedAt: now,

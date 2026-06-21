@@ -259,6 +259,7 @@ model ProductMapping {
   shopifyProductGid String?
   shopifyVariantGid String?
   status            ProductMappingStatus @default(ACTIVE)
+  thumbnailUrl      String?
   lastSyncedAt      DateTime?
   lastErrorCode     String?
   lastErrorMessage  String?

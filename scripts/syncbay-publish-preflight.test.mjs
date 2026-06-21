@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildCodexFeedbackPreflight,
   isPublishedMainPreflight,
+  readCodexReviewThreads,
 } from "./syncbay-publish-preflight.mjs";
 
 test("recognizes a clean main branch aligned with its upstream as post-merge verification", () => {
@@ -133,4 +134,63 @@ test("falls back to the inbox PR section when review threads are not readable", 
   assert.equal(currentPrFeedback.globalActionable, true);
   assert.equal(currentPrFeedback.readable, true);
   assert.equal(currentPrFeedback.source, "inbox");
+});
+
+test("reads paginated Codex review threads before deciding publication safety", () => {
+  const calls = [];
+  const result = readCodexReviewThreads(286, {
+    runGhFn(args) {
+      calls.push(args);
+      const afterArg = args.find((arg) => arg.startsWith("after="));
+
+      if (!afterArg) {
+        return JSON.stringify({
+          data: {
+            repository: {
+              pullRequest: {
+                reviewThreads: {
+                  pageInfo: { endCursor: "cursor-1", hasNextPage: true },
+                  nodes: [
+                    {
+                      comments: { nodes: [{ author: { login: "human" } }] },
+                      isOutdated: false,
+                      isResolved: false,
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        });
+      }
+
+      assert.equal(afterArg, "after=cursor-1");
+
+      return JSON.stringify({
+        data: {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                pageInfo: { endCursor: null, hasNextPage: false },
+                nodes: [
+                  {
+                    comments: {
+                      nodes: [{ author: { login: "codex-reviewer" } }],
+                    },
+                    isOutdated: false,
+                    isResolved: false,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+    },
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(result.actionable, true);
+  assert.equal(result.readable, true);
+  assert.equal(result.source, "reviewThreads:paginated");
 });
