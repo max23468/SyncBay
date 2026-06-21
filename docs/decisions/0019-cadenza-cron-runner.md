@@ -28,13 +28,19 @@ Il target massimo resta 5 minuti. `syncTargetSeconds` continua a guidare
 `getNextIncrementalEnqueueAt` e la soglia "in ritardo"; cambia solo il floor
 operativo.
 
+Il runner usa un look-ahead di 120 secondi, pari alla cadenza del cron: quando
+un sync incrementale scade prima del tick successivo, viene già enqueueato nel
+tick corrente. Questo mantiene la promessa "entro massimo 5 minuti" anche con
+la schedule ogni 2 minuti. Il look-ahead non anticipa `runAfter` usati come
+backoff provider, per esempio pause eBay Trading rate-limit.
+
 ## Conseguenze
 
 - Meno tick automatici a vuoto su Supabase Cron e sul backend Vercel.
 - Nessuna promessa UI o configurazione resta a 1 minuto.
-- Un job dovuto può attendere fino al tick successivo del cron da 2 minuti,
-  restando coerente con il target minimo di 2 minuti e con il tetto prodotto di
-  5 minuti.
+- Un job dovuto entro il tick successivo viene anticipato dal look-ahead del
+  runner, evitando che il target massimo di 5 minuti slitti fino alla finestra
+  cron successiva.
 - Il cambio non modifica code, dati catalogo, ordini o integrazioni provider.
 
 ## Alternative considerate
