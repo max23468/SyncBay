@@ -57,6 +57,10 @@
 - Tag legacy rimossi solo se riconosciuti come SyncBay legacy o inseriti esplicitamente nell'apply come allowlist esatta.
 - Sync automatico eBay -> Shopify resta il flusso ordinario post-takeover; `orders/paid` -> eBay resta invariato.
 - Nessun dato reale di cliente finisce in fixture, test, screenshot o repo.
+- Prima di ogni apply su store reale esiste un audit read-only completo dello
+  store target: storefront, tema, Shopify Admin, app di sync precedente,
+  catalogo eBay, dati prodotto, collezioni, URL, tag, metafield, location,
+  pubblicazioni, ordini/webhook rilevanti e rischi operativi.
 
 ## File Map
 
@@ -75,6 +79,154 @@
 - `app/routes/terms.tsx`: termini minimi SyncBay per clienti selezionati.
 - `docs/guides/onboarding-e-import.md`: aggiunge il mini kit operativo per clienti selezionati nella guida esistente.
 - `CHANGELOG.md`, `docs/INDEX.md`, `docs/ROADMAP.md`: riferimenti documentali.
+
+## Task 0: Audit Completo Store Target
+
+**Files:**
+- No repo file for raw evidence: salvare output, screenshot e JSON in una
+  cartella fuori repo o ignorata, per esempio
+  `/Users/Matteo/SyncBay-audit/$SHOP_DOMAIN/$YYYYMMDD-HHMM/`.
+- Modify after implementation only: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
+- Modify after implementation only: `docs/guides/onboarding-e-import.md`
+
+- [ ] **Step 1: creare cartella audit fuori repo**
+
+  Run:
+
+  ```bash
+  test -n "$SYNCBAY_TAKEOVER_SHOP_DOMAIN"
+  AUDIT_DIR="$HOME/SyncBay-audit/$SYNCBAY_TAKEOVER_SHOP_DOMAIN/$(date +%Y%m%d-%H%M)"
+  mkdir -p "$AUDIT_DIR"/{shopify,storefront,ebay,legacy-sync,findings}
+  printf '%s\n' "$AUDIT_DIR"
+  ```
+
+  Expected: stampa un path fuori da `/Users/Matteo/Progetti/SyncBay`.
+
+- [ ] **Step 2: audit storefront e frontend**
+
+  Obiettivo: capire cosa il cliente vede oggi e cosa non deve rompersi durante
+  takeover. Usare strumenti in questo ordine:
+
+  1. HTTP/browser read-only per home, collection principali, ricerca, pagina
+     prodotto, carrello e policy.
+  2. Shopify CLI/theme read-only quando serve leggere tema live, app embed,
+     template, metafield usati dal tema e Search & Discovery.
+  3. Computer Use con Safari o Chrome solo per superfici non raggiungibili via
+     CLI/plugin, salvando screenshot redatti fuori repo.
+
+  Salvare nel report operativo:
+
+  - tema live e versione;
+  - template prodotto e collection usati;
+  - app embed o script che toccano prodotto, prezzo, disponibilità o ricerca;
+  - navigazione, menu, filtri, search overlay, quick view e carrello;
+  - URL prodotto canonici, redirect esistenti, sitemap/robots, SEO title/meta;
+  - collezioni automatiche visibili in navigazione;
+  - problemi frontend bloccanti prima del takeover.
+
+- [ ] **Step 3: audit Shopify Admin e backend commerciale**
+
+  Usare Shopify CLI/Admin GraphQL in sola lettura. Query minime:
+
+  ```bash
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditLocations { locations(first: 20) { nodes { id name isActive fulfillsOnlineOrders } } }' --output-file "$AUDIT_DIR/shopify/locations.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditProducts { products(first: 20, sortKey: UPDATED_AT, reverse: true) { nodes { id title handle status productType tags variants(first: 5) { nodes { id sku barcode inventoryQuantity } } metafields(first: 20, namespace: "syncbay") { nodes { key value } } } } }' --output-file "$AUDIT_DIR/shopify/products-sample.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditCollections { collections(first: 100, sortKey: TITLE) { nodes { id title handle sortOrder productsCount { count } ruleSet { appliedDisjunctively rules { column relation condition } } } } }' --output-file "$AUDIT_DIR/shopify/collections.json"
+  ```
+
+  Reportare:
+
+  - location attiva da usare;
+  - numero prodotti, varianti inattese, status, pubblicazioni/canali;
+  - tag tecnici e tag commerciali da preservare;
+  - metafield esistenti, inclusi segnali della vecchia app;
+  - collezioni automatiche/manuali e regole che dipendono da titolo, tag,
+    product type, disponibilità o vendor;
+  - redirect esistenti e rischi SEO;
+  - policy store rilevanti per privacy/termini.
+
+- [ ] **Step 4: audit app di sync precedente**
+
+  Obiettivo: capire cosa scriveva la vecchia app e quali segnali lascia da
+  esportare prima della disattivazione.
+
+  Fonti:
+
+  - Shopify Admin `Apps and sales channels` via browser quando non disponibile
+    via API;
+  - prodotti/metafield/tag/vendor/type creati o aggiornati dalla vecchia app;
+  - eventuali app embed, webhook, scheduled sync, mapping export, log e
+    impostazioni disponibili nell'app;
+  - confronto tra ultimi aggiornamenti Shopify e listing eBay.
+
+  Output:
+
+  - nome app, stato installazione e ambito apparente;
+  - campi scritti dalla vecchia app;
+  - segnali utili al matching SyncBay;
+  - segnali da esportare prima della disattivazione;
+  - rischi se la vecchia app resta attiva durante apply;
+  - momento consigliato di disattivazione.
+
+- [ ] **Step 5: audit eBay e catalogo sorgente**
+
+  Usare letture eBay già previste da SyncBay/CLI/script, senza scritture.
+
+  Reportare:
+
+  - numero listing attivi letto da Trading API;
+  - listing senza SKU, SKU duplicati o SKU generati;
+  - listing con prezzo/disponibilità mancanti o non leggibili;
+  - listing con varianti;
+  - descrizioni con template pesante;
+  - immagini mancanti o incoerenti;
+  - categorie e item specifics utili a product type/faccette;
+  - listing chiusi/inattivi da mantenere Shopify esauriti secondo ADR 0011.
+
+- [ ] **Step 6: produrre report operativo redatto**
+
+  Creare fuori repo un file `findings/audit-summary.md` con:
+
+  ```markdown
+  # Store Takeover Audit
+
+  ## Scope
+  - Shop:
+  - Date:
+  - Auditor:
+  - Read-only sources:
+
+  ## Executive Summary
+  - Go / No-go:
+  - Blockers:
+  - Review exceptions:
+
+  ## Storefront
+  ## Shopify Admin
+  ## Legacy Sync App
+  ## eBay Catalog
+  ## Mapping Signals
+  ## Field Policies
+  ## Freeze Plan
+  ## Apply Preconditions
+  ## Manual Verification Checklist
+  ```
+
+  Non committare screenshot, JSON grezzi, dati prodotti reali, ordini o dati
+  cliente. Nel repo può entrare solo una sintesi generica se cambia una regola
+  SyncBay riusabile.
+
+- [ ] **Step 7: bloccare apply se l'audit è incompleto**
+
+  Prima di Task 6, verificare:
+
+  - audit storefront completato;
+  - audit Shopify Admin completato;
+  - audit vecchia app completato o limite documentato;
+  - audit eBay completo fino al limite MVP;
+  - segnali legacy esportati o dichiarati assenti;
+  - freeze plan approvato;
+  - elenco eccezioni `da_rivedere` accettato dal maintainer/operatore.
 
 ## Task 1: Modalità Catalogo Nel Tab Importazione
 
@@ -1390,6 +1542,8 @@
 
 ## Sequenza Di Esecuzione Consigliata
 
+0. Task 0 prima di qualunque apply reale: audit completo read-only dello store
+   target e report operativo fuori repo.
 1. Task 1-3 in una PR piccola: modalità + matching + report dry-run, senza scritture.
 2. Task 4-5 in una PR: caricamento Shopify paginato e UI dry-run completa.
 3. Task 6-7 in una PR runtime critica: apply `reuseOnly`, tag policy e runner.
@@ -1409,6 +1563,7 @@ store.
 | 1.0 come custom app privata, App Store pubblico in 2.0 | `Non Obiettivi 1.0`, Task 8 |
 | Target eBay.it-only, cataloghi di numismatica/collezionismo con prodotti singoli | `Target 1.0`, `Gate Go-Live 1.0` |
 | Capacità generica, non Numisleo-specifica | `Architecture`, `Non Obiettivi 1.0`, Task 1 |
+| Audit completo del primo store reale, inclusi frontend, backend Shopify e vecchia app di sync | Task 0 |
 | L'altra app verrà disattivata, anche prima se migliora il takeover | `Rischi E Mitigazioni`, Task 9, gate audit/dry-run/freeze |
 | Audit sola lettura, dry-run, export segnali legacy e freeze prima dell'apply | Task 6, Task 9, `Rischi E Mitigazioni` |
 | Tutti i prodotti entro limite MVP, non un campione | `Target 1.0`; Task 4 carica fino a 2.000 prodotti; Task 5 costruisce il dry-run da tutti gli ItemID Trading API; Task 6 pianifica righe applicabili |
@@ -1444,6 +1599,9 @@ store.
 - **SEO URL**: handle preservati; redirect solo in una futura correzione esplicita.
 - **Collezioni automatiche**: nessuna modifica alle regole; SyncBay aggiorna i campi prodotto.
 - **Vecchia app ancora attiva**: apply solo dopo audit, export segnali, freeze e disattivazione se utile.
+- **Audit incompleto**: Task 0 blocca l'apply finché storefront, Shopify Admin,
+  vecchia app e catalogo eBay non sono stati verificati o il limite non è stato
+  documentato.
 - **Rate limit provider**: usare batch esistenti, retry/backoff e runner; non introdurre worker separati.
 
 ## Gate Go-Live 1.0
@@ -1452,6 +1610,7 @@ store.
 - Nessun conflitto aperto critico su mapping, prezzo o disponibilità.
 - `orders/paid` -> eBay stock operativo e verificato.
 - Sync eBay -> Shopify attivo con target 300 secondi.
+- Audit completo read-only chiuso con report operativo fuori repo.
 - Listing eBay inattivi gestiti come Shopify esauriti secondo ADR 0011, senza
   cancellazione né archiviazione.
 - Privacy e termini raggiungibili.
