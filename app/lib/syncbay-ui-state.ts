@@ -291,6 +291,92 @@ export function getNextAction(input: NextActionInput): NextAction {
   };
 }
 
+export interface ProviderHealthNoticeInput {
+  lagBreached?: boolean;
+  lagSeconds?: number;
+  quarantinedCount?: number;
+}
+
+export interface ProviderHealthNotice {
+  body: string;
+  eyebrow: string;
+  kind: "quarantine" | "lag";
+  primaryActionHref: string;
+  primaryActionLabel: string;
+  title: string;
+  tone: Extract<Tone, "critical" | "warning">;
+}
+
+/**
+ * Avviso di stato del sistema quando il sync è degradato in modo che oggi non
+ * emerge in Panoramica: aggiornamenti verso eBay messi in pausa dopo errori
+ * ripetuti (quarantena) o allineamento oltre il target. La quarantena è più
+ * grave e ha la precedenza sul ritardo. Negli altri casi (conflitti, errori
+ * isolati) restano i segnali esistenti e qui torna `null`. Presenta solo dati
+ * già aggregati nel digest, senza nuove letture provider.
+ */
+export function getProviderHealthNotice(
+  input: ProviderHealthNoticeInput,
+): ProviderHealthNotice | null {
+  const quarantinedCount = Math.max(0, Math.trunc(input.quarantinedCount ?? 0));
+
+  if (quarantinedCount > 0) {
+    return {
+      body:
+        "SyncBay ha sospeso questi aggiornamenti dopo errori ripetuti su eBay. " +
+        "Riprende da solo appena eBay risponde di nuovo; intanto le " +
+        "disponibilità restano prudenti.",
+      eyebrow: PROVIDER_HEALTH_EYEBROW,
+      kind: "quarantine",
+      primaryActionHref: "/app/activity",
+      primaryActionLabel: PROVIDER_HEALTH_ACTION_LABEL,
+      title:
+        quarantinedCount === 1
+          ? "Un aggiornamento verso eBay è in pausa"
+          : `${formatInteger(quarantinedCount)} aggiornamenti verso eBay sono in pausa`,
+      tone: "critical",
+    };
+  }
+
+  if (input.lagBreached) {
+    const lagLabel = formatLagLabel(input.lagSeconds ?? 0);
+
+    return {
+      body:
+        `L'ultimo allineamento con eBay è oltre la finestra prevista${
+          lagLabel ? ` (${lagLabel})` : ""
+        }. Di solito si recupera da solo; se il ritardo persiste, controlla le ` +
+        "attività.",
+      eyebrow: PROVIDER_HEALTH_EYEBROW,
+      kind: "lag",
+      primaryActionHref: "/app/activity",
+      primaryActionLabel: PROVIDER_HEALTH_ACTION_LABEL,
+      title: "Allineamento con eBay in ritardo",
+      tone: "warning",
+    };
+  }
+
+  return null;
+}
+
+const PROVIDER_HEALTH_EYEBROW = "Stato del sistema";
+const PROVIDER_HEALTH_ACTION_LABEL = "Vedi le attività";
+
+function formatLagLabel(lagSeconds: number) {
+  const seconds = Math.max(0, Math.trunc(lagSeconds));
+
+  if (seconds <= 0) return "";
+  if (seconds < 3600) {
+    const minutes = Math.max(1, Math.round(seconds / 60));
+
+    return minutes === 1 ? "1 minuto di ritardo" : `${minutes} minuti di ritardo`;
+  }
+
+  const hours = Math.round(seconds / 3600);
+
+  return hours === 1 ? "1 ora di ritardo" : `${hours} ore di ritardo`;
+}
+
 export function getEbayConnectionAction(
   input: EbayConnectionActionInput,
 ): EbayConnectionAction {

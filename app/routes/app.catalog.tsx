@@ -4,7 +4,7 @@ import type {
 } from "react-router";
 import { Form, useLoaderData, useSearchParams } from "react-router";
 
-import { MetricTile } from "../components/SyncBayUi";
+import { EmptyState, MetricTile } from "../components/SyncBayUi";
 import {
   type CatalogPageFilter,
   type CatalogSortDir,
@@ -15,6 +15,7 @@ import {
   normalizeCatalogSortDir,
 } from "../lib/syncbay-catalog-page";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {
   formatItDateTime,
   formatItNumber as formatNumber,
@@ -188,18 +189,47 @@ export default function CatalogRoute() {
                   <s-table>
                     <s-table-header-row>
                       <s-table-header listSlot="kicker">Immagine</s-table-header>
-                      <s-table-header listSlot="primary">Prodotto</s-table-header>
+                      <SortableHeader
+                        activeFilter={activeFilter}
+                        activeSearch={activeSearch}
+                        activeSort={activeSort}
+                        activeSortDir={activeSortDir}
+                        label="Prodotto"
+                        listSlot="primary"
+                        sortKey="product"
+                      />
                       <s-table-header listSlot="inline">Collegamento</s-table-header>
                       <s-table-header format="numeric" listSlot="labeled">
                         Disponibilità
                       </s-table-header>
-                      <s-table-header format="numeric" listSlot="inline">
-                        Prezzo
-                      </s-table-header>
-                      <s-table-header listSlot="secondary">
-                        Aggiornato
-                      </s-table-header>
-                      <s-table-header listSlot="inline">Stato</s-table-header>
+                      <SortableHeader
+                        activeFilter={activeFilter}
+                        activeSearch={activeSearch}
+                        activeSort={activeSort}
+                        activeSortDir={activeSortDir}
+                        format="numeric"
+                        label="Prezzo"
+                        listSlot="inline"
+                        sortKey="price"
+                      />
+                      <SortableHeader
+                        activeFilter={activeFilter}
+                        activeSearch={activeSearch}
+                        activeSort={activeSort}
+                        activeSortDir={activeSortDir}
+                        label="Aggiornato"
+                        listSlot="secondary"
+                        sortKey="updated"
+                      />
+                      <SortableHeader
+                        activeFilter={activeFilter}
+                        activeSearch={activeSearch}
+                        activeSort={activeSort}
+                        activeSortDir={activeSortDir}
+                        label="Stato"
+                        listSlot="inline"
+                        sortKey="status"
+                      />
                       <s-table-header listSlot="labeled">Azioni</s-table-header>
                     </s-table-header-row>
                     <s-table-body>
@@ -510,46 +540,111 @@ function EmptyCatalogState({
   activeSearch: string;
 }) {
   if (activeSearch) {
+    const copy = SYNCBAY_COPY.emptyState.catalogSearch(activeSearch);
+
     return (
-      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-        <s-stack gap="base">
-          <s-heading>Nessun prodotto per «{activeSearch}»</s-heading>
-          <s-text>
-            Controlla il testo o cerca per titolo, SKU o ItemID eBay.
-          </s-text>
-          <s-button href="/app/catalog" variant="primary">
-            Azzera la ricerca
-          </s-button>
-        </s-stack>
-      </s-box>
+      <EmptyState
+        actionHref="/app/catalog"
+        actionLabel={copy.actionLabel}
+        actionVariant="secondary"
+        body={copy.body}
+        icon="product"
+        title={copy.title}
+      />
     );
   }
 
   if (activeFilter === "all") {
+    const copy = SYNCBAY_COPY.emptyState.catalogUnlinked;
+
     return (
-      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-        <s-stack gap="base">
-          <s-heading>Nessun prodotto collegato</s-heading>
-          <s-text>
-            Completa l&apos;importazione iniziale per creare i collegamenti tra
-            inserzioni eBay e prodotti Shopify.
-          </s-text>
-          <s-button href="/app/import-preview" variant="primary">
-            Apri importazione
-          </s-button>
-        </s-stack>
-      </s-box>
+      <EmptyState
+        actionHref="/app/import-preview"
+        actionLabel={copy.actionLabel}
+        body={copy.body}
+        icon="import"
+        title={copy.title}
+      />
     );
   }
 
+  const copy = SYNCBAY_COPY.emptyState.catalogFilter;
+
   return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="base">
-        <s-heading>Nessun risultato per questo filtro</s-heading>
-        <s-text>Prova con il filtro Tutti o torna alla Panoramica.</s-text>
-        <s-button href="/app/catalog">Mostra tutti</s-button>
-      </s-stack>
-    </s-box>
+    <EmptyState
+      actionHref="/app/catalog"
+      actionLabel={copy.actionLabel}
+      actionVariant="secondary"
+      body={copy.body}
+      icon="product"
+      title={copy.title}
+    />
+  );
+}
+
+// Direzione iniziale al primo clic su una colonna non ancora attiva: i dati
+// più "interessanti" devono comparire per primi (recenti in alto per data,
+// crescente per nome/prezzo). I clic successivi sulla stessa colonna invertono.
+const SORT_DEFAULT_DIR: Record<CatalogSortKey, CatalogSortDir> = {
+  availability: "asc",
+  link: "asc",
+  price: "asc",
+  product: "asc",
+  status: "asc",
+  updated: "desc",
+};
+
+function SortableHeader({
+  activeFilter,
+  activeSearch,
+  activeSort,
+  activeSortDir,
+  format,
+  label,
+  listSlot,
+  sortKey,
+}: {
+  activeFilter: CatalogPageFilter;
+  activeSearch: string;
+  activeSort: CatalogSortKey | null;
+  activeSortDir: CatalogSortDir;
+  format?: "numeric";
+  label: string;
+  listSlot: "primary" | "inline" | "secondary";
+  sortKey: CatalogSortKey;
+}) {
+  const active = activeSort === sortKey;
+  const targetDir: CatalogSortDir = active
+    ? activeSortDir === "asc"
+      ? "desc"
+      : "asc"
+    : SORT_DEFAULT_DIR[sortKey];
+  const indicator = !active ? "↕" : activeSortDir === "asc" ? "↑" : "↓";
+
+  return (
+    <s-table-header
+      aria-sort={
+        active ? (activeSortDir === "asc" ? "ascending" : "descending") : "none"
+      }
+      format={format}
+      listSlot={listSlot}
+    >
+      <s-clickable
+        href={getCatalogHref(activeFilter, 1, sortKey, targetDir, activeSearch)}
+      >
+        <span className="syncbay-th-sort">
+          {label}
+          <span
+            aria-hidden="true"
+            className={`syncbay-th-sort__arrow${
+              active ? " syncbay-th-sort__arrow--active" : ""
+            }`}
+          >
+            {indicator}
+          </span>
+        </span>
+      </s-clickable>
+    </s-table-header>
   );
 }
 

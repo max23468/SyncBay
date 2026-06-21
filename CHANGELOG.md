@@ -13,6 +13,35 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
   implementativo versionato per il takeover di cataloghi Shopify esistenti.
 
+## [0.45.0] — 2026-06-21
+
+### Novità
+
+- Panoramica: nuovo avviso "Stato del sistema" quando il sync è degradato —
+  aggiornamenti verso eBay in pausa dopo errori ripetuti o allineamento oltre
+  il target previsto — con causa in italiano e rimando alle attività.
+- Catalogo: ordinamento per colonna direttamente dalle intestazioni
+  (Prodotto, Prezzo, Aggiornato, Stato), con indicatore di direzione e
+  `aria-sort` per l'accessibilità.
+- Primo avvio: il marchio SyncBay e la tagline compaiono nella schermata di
+  benvenuto dell'app embedded.
+- Stati vuoti uniformati su Catalogo, Conflitti e Attività con un unico
+  componente icona-led (titolo che dichiara la causa, corpo con l'azione).
+
+### Correzioni
+
+- Accessibilità: corretto il contrasto del segno di spunta negli step
+  completati dell'importazione, ora conforme allo standard AA.
+
+### Sotto il cofano
+
+- Numeri tabulari su metriche, prezzi e conteggi: le cifre restano incolonnate
+  e non si disallineano quando i valori si aggiornano in tempo reale.
+- Scheletro di caricamento mostrato durante la navigazione tra le sezioni per
+  un riscontro immediato, rispettoso di `prefers-reduced-motion`.
+- Dizionario microcopy centrale per la copy statica degli stati vuoti, pronto
+  per una traduzione futura.
+
 ## [0.44.16] — 2026-06-21
 
 ### Sotto il cofano
@@ -2465,6 +2494,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.45.0]: #0450--2026-06-21
 [0.44.16]: #04416--2026-06-21
 [0.44.15]: #04415--2026-06-21
 [0.44.14]: #04414--2026-06-21

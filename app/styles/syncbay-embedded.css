@@ -273,6 +273,27 @@
   min-inline-size: 720px;
 }
 
+/* Intestazione di colonna ordinabile: etichetta + freccia di direzione. La
+   colonna attiva evidenzia la freccia in accento; le altre mostrano un segnale
+   neutro che invita al clic. Il link copre l'header via s-clickable. */
+.syncbay-th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.syncbay-th-sort__arrow {
+  color: var(--syncbay-slate);
+  font-size: 12px;
+  opacity: 0.55;
+}
+
+.syncbay-th-sort__arrow--active {
+  color: var(--syncbay-accent);
+  opacity: 1;
+}
+
 .syncbay-route-pending {
   position: sticky;
   inset-block-start: 8px;
@@ -513,7 +534,10 @@
 .syncbay-step--completed .syncbay-step__node {
   background: var(--syncbay-tint-success);
   border-color: var(--syncbay-success);
-  color: var(--syncbay-success);
+  /* Glifo "✓" come testo: usa la variante scura (-text), non l'hue di marca.
+     L'hue verde su tinta verde è 1.9:1 (sotto AA); -text è 5.7:1. Gli hue di
+     marca restano per bordi/icone/accenti, mai come testo. Vedi ADR 0013. */
+  color: var(--syncbay-success-text);
 }
 
 .syncbay-step--completed .syncbay-step__line {
@@ -826,6 +850,55 @@
   align-self: center;
 }
 
+/* Stato vuoto (Catalogo, Conflitti, Attività): nodo icona neutro + testo +
+   azione, per uniformare gli "nessun risultato" prima resi a mano con s-box. */
+.syncbay-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 22px;
+  border: 1px solid var(--syncbay-mist);
+  border-radius: 12px;
+  background: var(--syncbay-paper);
+}
+
+.syncbay-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  border-radius: 12px;
+  background: var(--syncbay-tint-neutral);
+  border: 1px solid var(--syncbay-mist);
+  flex: 0 0 auto;
+}
+
+.syncbay-empty__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-inline-size: 0;
+}
+
+.syncbay-empty__actions {
+  margin-block-start: 2px;
+}
+
+/* Numeri tabulari su metriche, conteggi, prezzi e quantità: le cifre restano
+   incolonnate e non "ballano" quando il valore cambia in live polling
+   (richiesto da BRAND.md). font-variant-numeric è ereditato, quindi applicarlo
+   ai wrapper light-DOM raggiunge il testo nei componenti s-*. */
+.syncbay-tile,
+.syncbay-pulse,
+.syncbay-reliability,
+.syncbay-health-pulse,
+.syncbay-table-scroll,
+.syncbay-activity-row__status {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Variazione (tendenza) nella tile metrica: piccola riga sotto il valore. */
 .syncbay-tile__trend {
   display: inline-flex;
@@ -865,6 +938,76 @@
 
 .syncbay-reliability__spark {
   flex: 0 0 auto;
+}
+
+/* Scheletro di sezione (cambio rotta): blocchi neutri con shimmer che imitano
+   intestazione, tile metriche e righe, per dare struttura immediata mentre il
+   loader risponde. Decorativo: l'annuncio accessibile lo fa l'indicatore live. */
+.syncbay-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.syncbay-skeleton__grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.syncbay-skeleton__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.syncbay-skeleton__line,
+.syncbay-skeleton__tile,
+.syncbay-skeleton__row {
+  display: block;
+  border-radius: 10px;
+  background: linear-gradient(
+    100deg,
+    var(--syncbay-tint-neutral) 30%,
+    var(--syncbay-cloud) 50%,
+    var(--syncbay-tint-neutral) 70%
+  );
+  background-size: 220% 100%;
+  animation: syncbay-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.syncbay-skeleton__line--title {
+  inline-size: 220px;
+  max-inline-size: 60%;
+  block-size: 28px;
+}
+
+.syncbay-skeleton__tile {
+  block-size: 84px;
+  border-radius: 12px;
+}
+
+.syncbay-skeleton__row {
+  block-size: 44px;
+}
+
+@keyframes syncbay-skeleton-shimmer {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syncbay-skeleton__line,
+  .syncbay-skeleton__tile,
+  .syncbay-skeleton__row {
+    animation: none;
+    background: var(--syncbay-tint-neutral);
+  }
 }
 
 /* Rispetto del movimento ridotto: il battito diventa statico, i pallini

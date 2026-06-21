@@ -13,6 +13,7 @@ import {
 
 import {
   EbayMark,
+  EmptyState,
   MetricTile,
   ShopifyMark,
   StatusHero,
@@ -31,6 +32,7 @@ import {
   getConflictResolutionSafety,
 } from "../lib/syncbay-conflict-actions";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {
   formatItDateTime as formatDateTime,
   formatItNumber as formatNumber,
@@ -529,27 +531,31 @@ function EmptyConflictState({
   activeFilter: ConflictFilter;
 }) {
   if (activeFilter === "open") {
+    const copy = SYNCBAY_COPY.emptyState.conflictsOpen;
+
     return (
-      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-        <s-stack gap="base">
-          <s-heading>Nessun conflitto aperto</s-heading>
-          <s-text>
-            Le modifiche Shopify non richiedono decisioni in questo momento.
-          </s-text>
-          <s-button href="/app/catalog">Apri catalogo</s-button>
-        </s-stack>
-      </s-box>
+      <EmptyState
+        actionHref="/app/catalog"
+        actionLabel={copy.actionLabel}
+        actionVariant="secondary"
+        body={copy.body}
+        icon="check-circle"
+        title={copy.title}
+      />
     );
   }
 
+  const copy = SYNCBAY_COPY.emptyState.conflictsFilter;
+
   return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack gap="base">
-        <s-heading>Nessun conflitto in questa vista</s-heading>
-        <s-text>Prova con il filtro Tutti o torna ai conflitti aperti.</s-text>
-        <s-button href="/app/conflicts">Mostra aperti</s-button>
-      </s-stack>
-    </s-box>
+    <EmptyState
+      actionHref="/app/conflicts"
+      actionLabel={copy.actionLabel}
+      actionVariant="secondary"
+      body={copy.body}
+      icon="alert-triangle"
+      title={copy.title}
+    />
   );
 }
 
