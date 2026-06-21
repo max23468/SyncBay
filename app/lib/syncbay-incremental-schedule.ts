@@ -30,11 +30,7 @@ export function isIncrementalProviderBackoffGate(input: {
   if (!input.latestJob) return false;
 
   const base = input.latestJob.finishedAt ?? input.latestJob.createdAt;
-  const targetNextRunAt = new Date(
-    base.getTime() + input.syncTargetSeconds * 1000,
-  );
-
-  return input.latestJob.runAfter > targetNextRunAt;
+  return input.latestJob.runAfter > base;
 }
 
 export function shouldEnqueueIncrementalSyncNow(input: {

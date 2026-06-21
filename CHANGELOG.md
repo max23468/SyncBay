@@ -6,6 +6,29 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.8] — 2026-06-21
+
+### Correzioni
+
+- Pubblicazione: il preflight pagina tutti i review thread Codex della PR
+  prima di decidere se la pubblicazione è bloccata.
+- Runner sync: i cooldown provider eBay bloccano sempre il lookahead del cron,
+  anche quando il `runAfter` è più breve della cadenza incrementale ordinaria.
+
+### Sotto il cofano
+
+- Catalogo e conflitti: aggiunta `thumbnailUrl` dedicata su `ProductMapping`,
+  popolata in import e backfillata dagli snapshot per evitare letture payload
+  nelle pagine catalogo.
+- Catalogo e conflitti: aggiunta cache breve del fallback miniature Shopify per
+  ridurre chiamate ripetute quando la colonna dedicata non è ancora disponibile.
+- Snapshot prodotto: gli snapshot SyncBay consecutivi identici non vengono più
+  riscritti; il confronto ignora metadati volatili dei job e mantiene nuovi
+  snapshot quando cambiano prezzo, quantità, descrizione, immagini o payload
+  prodotto.
+- Audit log: ridotto il rumore dei recuperi/archivi runner ripetitivi, tenendo
+  un audit aggregato per i job RUNNING stantii recuperati.
+
 ## [0.44.7] — 2026-06-21
 
 ### Sotto il cofano
@@ -2358,6 +2381,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.8]: #0448--2026-06-21
 [0.44.7]: #0447--2026-06-21
 [0.44.6]: #0446--2026-06-21
 [0.44.5]: #0445--2026-06-21

@@ -116,3 +116,39 @@ test("does not bypass eBay cooldowns inside the runner lookahead", () => {
     false,
   );
 });
+
+test("treats shorter provider cooldowns as lookahead gates", () => {
+  const latestJob = {
+    createdAt: new Date("2026-06-03T07:00:00.000Z"),
+    finishedAt: new Date("2026-06-03T07:01:00.000Z"),
+    runAfter: new Date("2026-06-03T07:05:00.000Z"),
+  };
+  const nowInsideCooldown = new Date("2026-06-03T07:04:00.000Z");
+  const syncTargetSeconds = 300;
+  const nextRunAfter = getNextIncrementalEnqueueAt({
+    latestJob,
+    now: nowInsideCooldown,
+    syncTargetSeconds,
+  });
+
+  assert.equal(nextRunAfter.toISOString(), "2026-06-03T07:06:00.000Z");
+  assert.equal(
+    isIncrementalProviderBackoffGate({
+      latestJob,
+      syncTargetSeconds,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldEnqueueIncrementalSyncNow({
+      allowLookahead: !isIncrementalProviderBackoffGate({
+        latestJob,
+        syncTargetSeconds,
+      }),
+      nextRunAfter,
+      now: nowInsideCooldown,
+      runnerLookaheadSeconds: 120,
+    }),
+    false,
+  );
+});

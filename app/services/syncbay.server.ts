@@ -79,6 +79,11 @@ import {
   getProductSnapshotThumbnailUrlByMappingIdFromRows,
   getProductSnapshotThumbnailUrlFromPayloads,
 } from "../lib/syncbay-product-snapshot-payload";
+import {
+  readFreshThumbnailCacheEntries,
+  type ThumbnailCacheEntry,
+  writeThumbnailCacheEntries,
+} from "../lib/syncbay-thumbnail-cache";
 import type { ShopifyMatchCandidate } from "../lib/syncbay-product-matching";
 import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
@@ -185,6 +190,8 @@ const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
 const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
 const PRICING_RULE_SYNC_BATCH_SIZE = 10;
 const RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS = 4;
+const SHOPIFY_THUMBNAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+const shopifyThumbnailCache = new Map<string, ThumbnailCacheEntry>();
 const REQUIRED_SHOPIFY_SCOPES = [
   "read_products",
   "write_products",
@@ -693,7 +700,7 @@ export async function getCatalogPageState(
         mapping,
         now,
         syncTargetSeconds: shop.syncTargetSeconds,
-        thumbnailUrl: null,
+        thumbnailUrl: mapping.thumbnailUrl,
       }),
     );
 
@@ -787,7 +794,7 @@ export async function getCatalogPageState(
       mapping,
       now,
       syncTargetSeconds: shop.syncTargetSeconds,
-      thumbnailUrl: null,
+      thumbnailUrl: mapping.thumbnailUrl,
     }),
   );
   const filteredRows = filterCatalogPageRows(
@@ -946,7 +953,9 @@ export async function getConflictsPageState(
     () =>
       getLatestThumbnailUrlByMappingId(
         conflicts.flatMap((conflict) =>
-          conflict.mapping?.id ? [conflict.mapping.id] : [],
+          conflict.mapping?.id && !conflict.mapping.thumbnailUrl
+            ? [conflict.mapping.id]
+            : [],
         ),
       ),
   );
@@ -966,6 +975,7 @@ export async function getConflictsPageState(
         ? (latestSnapshotByMappingId.get(conflict.mapping.id) ?? null)
         : null,
       thumbnailUrl:
+        conflict.mapping?.thumbnailUrl ??
         (conflict.mapping?.id
           ? thumbnailUrlByMappingId.get(conflict.mapping.id)
           : null) ?? null,
@@ -3187,10 +3197,40 @@ async function getShopifyThumbnailUrlByProductGid(input: {
 
   if (uniqueProductGids.length === 0) return thumbnailUrlByProductGid;
 
+  const cacheKeyByProductGid = new Map(
+    uniqueProductGids.map((productGid) => [
+      productGid,
+      `${input.shopDomain}:${productGid}`,
+    ]),
+  );
+  const productGidByCacheKey = new Map(
+    [...cacheKeyByProductGid].map(([productGid, cacheKey]) => [
+      cacheKey,
+      productGid,
+    ]),
+  );
+  const cached = readFreshThumbnailCacheEntries({
+    cache: shopifyThumbnailCache,
+    keys: [...cacheKeyByProductGid.values()],
+    nowMs: Date.now(),
+  });
+
+  for (const [cacheKey, thumbnailUrl] of cached.hits) {
+    const productGid = productGidByCacheKey.get(cacheKey);
+    if (productGid) thumbnailUrlByProductGid.set(productGid, thumbnailUrl);
+  }
+
+  const missingProductGids = cached.misses.flatMap((cacheKey) => {
+    const productGid = productGidByCacheKey.get(cacheKey);
+    return productGid ? [productGid] : [];
+  });
+
+  if (missingProductGids.length === 0) return thumbnailUrlByProductGid;
+
   try {
     const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
 
-    for (const productGidBatch of chunkArray(uniqueProductGids, 50)) {
+    for (const productGidBatch of chunkArray(missingProductGids, 50)) {
       const response = await admin.graphql(
         `#graphql
         query SyncBayCatalogProductThumbnails($ids: [ID!]!) {
@@ -3235,6 +3275,23 @@ async function getShopifyThumbnailUrlByProductGid(input: {
   } catch {
     return thumbnailUrlByProductGid;
   }
+
+  writeThumbnailCacheEntries({
+    cache: shopifyThumbnailCache,
+    keys: missingProductGids.flatMap((productGid) => {
+      const cacheKey = cacheKeyByProductGid.get(productGid);
+      return cacheKey ? [cacheKey] : [];
+    }),
+    nowMs: Date.now(),
+    ttlMs: SHOPIFY_THUMBNAIL_CACHE_TTL_MS,
+    values: new Map(
+      missingProductGids.flatMap((productGid) => {
+        const cacheKey = cacheKeyByProductGid.get(productGid);
+        const thumbnailUrl = thumbnailUrlByProductGid.get(productGid);
+        return cacheKey && thumbnailUrl ? [[cacheKey, thumbnailUrl]] : [];
+      }),
+    ),
+  });
 
   return thumbnailUrlByProductGid;
 }

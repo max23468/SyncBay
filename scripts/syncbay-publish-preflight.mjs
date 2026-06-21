@@ -313,31 +313,50 @@ function readCodexInbox(prNumber) {
   };
 }
 
-function readCodexReviewThreads(prNumber) {
-  const output = runGh([
-    "api",
-    "graphql",
-    "-f",
-    "owner=max23468",
-    "-f",
-    "repo=SyncBay",
-    "-F",
-    `number=${prNumber}`,
-    "-f",
-    "query=query($owner:String!, $repo:String!, $number:Int!) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100) { nodes { isResolved isOutdated comments(first:100) { nodes { author { login } } } } } } } }",
-  ]);
+export function readCodexReviewThreads(prNumber, options = {}) {
+  const runGhFn = options.runGhFn ?? runGh;
+  const threads = [];
+  let after = null;
 
-  if (!output) {
-    return {
-      actionable: null,
-      readable: false,
-      source: "reviewThreads",
-    };
-  }
+  do {
+    const args = [
+      "api",
+      "graphql",
+      "-f",
+      "owner=max23468",
+      "-f",
+      "repo=SyncBay",
+      "-F",
+      `number=${prNumber}`,
+      "-f",
+      "query=query($owner:String!, $repo:String!, $number:Int!, $after:String) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100, after:$after) { pageInfo { hasNextPage endCursor } nodes { isResolved isOutdated comments(first:100) { nodes { author { login } } } } } } } }",
+    ];
 
-  const parsed = JSON.parse(output);
-  const threads =
-    parsed.data?.repository?.pullRequest?.reviewThreads?.nodes ?? [];
+    if (after) {
+      args.push("-f", `after=${after}`);
+    }
+
+    const output = runGhFn(args);
+
+    if (!output) {
+      return {
+        actionable: null,
+        readable: false,
+        source: "reviewThreads:paginated",
+      };
+    }
+
+    const parsed = JSON.parse(output);
+    const connection =
+      parsed.data?.repository?.pullRequest?.reviewThreads ?? null;
+
+    threads.push(...(connection?.nodes ?? []));
+    after =
+      connection?.pageInfo?.hasNextPage && connection.pageInfo.endCursor
+        ? connection.pageInfo.endCursor
+        : null;
+  } while (after);
+
   const codexLoginPattern = new RegExp(
     process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex",
     "i",
@@ -354,7 +373,7 @@ function readCodexReviewThreads(prNumber) {
   return {
     actionable,
     readable: true,
-    source: "reviewThreads",
+    source: "reviewThreads:paginated",
   };
 }
 
