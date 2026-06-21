@@ -109,6 +109,17 @@ export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   return input.syncBayImageCount === 0 && input.shopifyImageCount > 0;
 }
 
+export function shouldSkipDescriptionConflictWhenEbayHasNoDescription(input: {
+  syncBayDescriptionHash: string | null;
+  shopifyDescriptionHash: string | null;
+}) {
+  const hasSyncBayBaseline =
+    typeof input.syncBayDescriptionHash === "string" &&
+    input.syncBayDescriptionHash.trim().length > 0;
+
+  return !hasSyncBayBaseline && input.shopifyDescriptionHash !== null;
+}
+
 function getJsonObject(value: Prisma.JsonValue | null | undefined) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 

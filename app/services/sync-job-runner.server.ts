@@ -21,6 +21,7 @@ import {
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
+  shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
   shouldUseSyncBayDescriptionBaselinePayload,
@@ -3243,13 +3244,24 @@ function getDetectedShopifyConflicts(
   })
     ? null
     : buildConflict("images", snapshot.imageCount, readyImageCount);
+  const shopifyDescriptionHash = hashNullableText(
+    product.descriptionHtml ?? null,
+  );
+  const descriptionConflict = shouldSkipDescriptionConflictWhenEbayHasNoDescription(
+    {
+      shopifyDescriptionHash,
+      syncBayDescriptionHash: snapshot.descriptionHash,
+    },
+  )
+    ? null
+    : buildConflict(
+        "description",
+        snapshot.descriptionHash,
+        shopifyDescriptionHash,
+      );
   const fields = [
     buildConflict("title", snapshot.title, product.title),
-    buildConflict(
-      "description",
-      snapshot.descriptionHash,
-      hashNullableText(product.descriptionHtml ?? null),
-    ),
+    descriptionConflict,
     buildConflict("status", snapshot.productStatus, product.status),
     buildPriceConflict({
       lastCompareAtPrice: snapshot.compareAtPriceAmount,
