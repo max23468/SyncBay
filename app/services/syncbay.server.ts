@@ -1057,9 +1057,8 @@ export async function resolveSyncConflict(
   let baselineSnapshot: Prisma.ProductSnapshotGetPayload<
     Record<string, never>
   > | null = null;
-  let descriptionBaselineSnapshot: Prisma.ProductSnapshotGetPayload<
-    Record<string, never>
-  > | null = null;
+  let descriptionBaselineSnapshot: { descriptionHash: string | null } | null =
+    null;
   if (resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId) {
     [baselineSnapshot, descriptionBaselineSnapshot] = await Promise.all([
       prisma.productSnapshot.findFirst({
@@ -1272,6 +1271,11 @@ function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
 async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
   const candidates = await prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
+    select: {
+      descriptionHash: true,
+      payload: true,
+    },
+    take: 20,
     where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
   });
 

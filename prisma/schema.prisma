@@ -356,5 +356,7 @@ model EbayAccountDeletionRequest {
   updatedAt           DateTime                         @updatedAt
 
   @@index([hashedUserId, receivedAt])
+  @@index([hashedUserId, eventDate, status])
+  @@index([hashedUserId, publishDate, status])
   @@index([status, receivedAt])
 }

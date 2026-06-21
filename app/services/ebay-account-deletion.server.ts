@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { getAccountDeletionDedupAnchor } from "../lib/syncbay-account-deletion-dedup";
 import { hashSecretIdentifier } from "./crypto.server";
 import { verifyEbayNotificationSignature } from "./ebay-notifications.server";
 
@@ -55,6 +56,21 @@ export async function processEbayAccountDeletionNotification(input: {
       matchedShopCount: existing.matchedShopCount,
       requestId: existing.id,
       status: existing.status,
+    };
+  }
+
+  const duplicate = await findProcessedDuplicateAccountDeletionRequest({
+    hashedUserId,
+    notification,
+  });
+
+  if (duplicate) {
+    return {
+      duplicateOfRequestId: duplicate.id,
+      idempotent: true,
+      matchedShopCount: duplicate.matchedShopCount,
+      requestId: duplicate.id,
+      status: duplicate.status,
     };
   }
 
@@ -136,6 +152,40 @@ export async function processEbayAccountDeletionNotification(input: {
     requestId: request.id,
     status,
   };
+}
+
+async function findProcessedDuplicateAccountDeletionRequest(input: {
+  hashedUserId: string;
+  notification: AccountDeletionNotification;
+}) {
+  const anchor = getAccountDeletionDedupAnchor({
+    eventDate: input.notification.eventDate,
+    publishDate: input.notification.publishDate,
+  });
+
+  if (!anchor) return null;
+
+  return prisma.ebayAccountDeletionRequest.findFirst({
+    orderBy: [{ processedAt: "asc" }, { receivedAt: "asc" }],
+    select: {
+      id: true,
+      matchedShopCount: true,
+      status: true,
+    },
+    where: {
+      hashedUserId: input.hashedUserId,
+      notificationId: { not: input.notification.notificationId },
+      status: {
+        in: [
+          EbayAccountDeletionRequestStatus.PROCESSED,
+          EbayAccountDeletionRequestStatus.NO_MATCH,
+        ],
+      },
+      ...(anchor.field === "eventDate"
+        ? { eventDate: anchor.value }
+        : { publishDate: anchor.value }),
+    },
+  });
 }
 
 function parseAccountDeletionNotification(body: string): AccountDeletionNotification {

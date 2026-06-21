@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.4] — 2026-06-21
+
+### Sotto il cofano
+
+- Database: ridotte query larghe nel runner e nella baseline descrizioni,
+  evitando di caricare colonne non usate nei path più frequenti.
+- eBay account deletion: aggiunta deduplica difensiva delle notifiche ripetute
+  con stesso utente e stesso timestamp evento, mantenendo la retention
+  compliance a 365 giorni.
+- Supabase: aggiunta manutenzione interna giornaliera di `cron.job_run_details`
+  e `net._http_response`, con primo cleanup idempotente in migration.
+
 ## [0.44.3] — 2026-06-20
 
 ### Sotto il cofano
@@ -2318,6 +2330,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.4]: #0444--2026-06-21
 [0.44.3]: #0443--2026-06-20
 [0.44.2]: #0442--2026-06-20
 [0.44.1]: #0441--2026-06-20
