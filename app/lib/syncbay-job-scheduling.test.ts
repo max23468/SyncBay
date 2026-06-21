@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -130,6 +130,14 @@ test("detects stale internal Shopify import traces", () => {
     }),
     false,
   );
+});
+
+test("normalizes run-due job limits for cron drain batches", () => {
+  assert.equal(normalizeRunDueLimit(), 10);
+  assert.equal(normalizeRunDueLimit(Number.NaN), 10);
+  assert.equal(normalizeRunDueLimit(0), 1);
+  assert.equal(normalizeRunDueLimit(12), 12);
+  assert.equal(normalizeRunDueLimit(999), 20);
 });
 
 test("includes run identity in split job idempotency keys", () => {

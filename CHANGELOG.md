@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.15] — 2026-06-21
+
+### Correzioni
+
+- Runner sync: l'accodamento dei webhook Shopify serializza ora la coalescenza
+  per shop, evitando duplicati concorrenti sullo stesso prodotto/topic quando
+  arrivano raffiche di `products/update`.
+- Runner sync: il batch cron sale a 10 job per tick (tetto manuale 20) per
+  drenare code webhook reali senza cambiare la cadenza Supabase Cron a 2
+  minuti; il timeout HTTP del cron sale a 30 secondi per completare il batch.
+
 ## [0.44.14] — 2026-06-21
 
 ### Correzioni
@@ -2439,6 +2450,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.15]: #04415--2026-06-21
 [0.44.14]: #04414--2026-06-21
 [0.44.13]: #04413--2026-06-21
 [0.44.12]: #04412--2026-06-21

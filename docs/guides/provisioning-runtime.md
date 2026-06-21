@@ -168,7 +168,7 @@ Non salvarla in Git e non stamparla nei log.
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
-- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault; il runner anticipa i sync incrementali in scadenza entro il tick successivo
+- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=10` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault, con timeout HTTP 30 s; il runner anticipa i sync incrementali in scadenza entro il tick successivo
 - schedule Supabase Cron `syncbay-maintain-supabase-internal-tables` applicata
   via migration; pulisce ogni giorno `cron.job_run_details` oltre 7 giorni e
   `net._http_response` oltre 1 giorno per limitare bloat interno Supabase.
@@ -234,7 +234,7 @@ Scope Shopify richiesti dal pilota runtime:
   `orderCreate` sul dev store; se manca dalla sessione offline, riaprire e
   autorizzare l'app Shopify dopo il deploy degli scope aggiornati.
 
-La schedule Cron attuale richiama il runner `/api/jobs/run-due`, che drena
+La schedule Cron attuale richiama il runner `/api/jobs/run-due?limit=10`, che drena
 import catalogo, sync incrementale, rilevazione conflitti Shopify e job stock
 eBay secondo priorità.
 

@@ -2650,14 +2650,15 @@ export async function recordShopifyWebhookPlaceholder(
       status: SyncJobStatus.PENDING,
       type: jobType,
     };
-    const coalescedJob = await findCoalescedWebhookJob({
-      details,
-      jobType,
-      shopId: shop.id,
-    });
-
     await prisma.$transaction(async (tx) => {
       let coalesced = false;
+      await lockShopForWebhookCoalescing(tx, shop.id);
+
+      const coalescedJob = await findCoalescedWebhookJob(tx, {
+        details,
+        jobType,
+        shopId: shop.id,
+      });
 
       if (coalescedJob) {
         const updated = await tx.syncJob.updateMany({
@@ -4081,18 +4082,33 @@ function splitScopes(scopes?: string | null) {
     : [];
 }
 
-async function findCoalescedWebhookJob(input: {
-  details: Prisma.JsonObject;
-  jobType: SyncJobType;
-  shopId: string;
-}) {
+async function lockShopForWebhookCoalescing(
+  tx: Prisma.TransactionClient,
+  shopId: string,
+) {
+  await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT id
+    FROM "Shop"
+    WHERE id = ${shopId}
+    FOR UPDATE
+  `;
+}
+
+async function findCoalescedWebhookJob(
+  tx: Prisma.TransactionClient,
+  input: {
+    details: Prisma.JsonObject;
+    jobType: SyncJobType;
+    shopId: string;
+  },
+) {
   if (input.jobType !== SyncJobType.DETECT_SHOPIFY_CHANGES) return null;
 
   const matchers = getCoalescedWebhookMatchers(input.details);
 
   if (matchers.length === 0) return null;
 
-  return prisma.syncJob.findFirst({
+  return tx.syncJob.findFirst({
     select: { id: true },
     orderBy: { createdAt: "desc" },
     where: {

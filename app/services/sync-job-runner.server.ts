@@ -64,6 +64,7 @@ import {
   buildEbayItemJobSplitPayloads,
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
+  normalizeRunDueLimit,
 } from "../lib/syncbay-job-scheduling";
 import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
 import { runRetentionCleanup } from "./retention-cleanup.server";
@@ -185,8 +186,6 @@ type ShopifyPricingVariantUpdateResponse = {
   };
   errors?: Array<{ message: string }>;
 };
-const DEFAULT_RUN_DUE_LIMIT = 5;
-const MAX_RUN_DUE_LIMIT = 10;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
@@ -3613,12 +3612,6 @@ function getRetryAfter(attempts: number, from = new Date()) {
   const retryDelaySeconds = attempts <= 1 ? 60 : attempts === 2 ? 300 : 900;
 
   return new Date(from.getTime() + retryDelaySeconds * 1000);
-}
-
-function normalizeRunDueLimit(limit?: number) {
-  if (!Number.isInteger(limit)) return DEFAULT_RUN_DUE_LIMIT;
-
-  return Math.min(Math.max(Number(limit), 1), MAX_RUN_DUE_LIMIT);
 }
 
 function getErrorMessage(error: unknown) {
