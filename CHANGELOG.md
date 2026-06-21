@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.14] — 2026-06-21
+
+### Correzioni
+
+- Conflitti: non viene più aperto un conflitto di descrizione quando manca del
+  tutto una baseline eBay/SyncBay (hash assente) mentre Shopify ha una
+  descrizione. Senza baseline non esiste una divergenza reale da segnalare: il
+  rilevamento ora salta il caso, in linea con il comportamento già adottato per
+  le immagini. I conflitti di descrizione falsi positivi già aperti si chiudono
+  da soli al successivo controllo Shopify.
+
 ## [0.44.13] — 2026-06-21
 
 ### Sotto il cofano
@@ -2428,6 +2439,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.14]: #04414--2026-06-21
 [0.44.13]: #04413--2026-06-21
 [0.44.12]: #04412--2026-06-21
 [0.44.11]: #04411--2026-06-21

@@ -13,6 +13,7 @@ const {
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
+  shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
 } = conflictDetection;
@@ -227,6 +228,40 @@ test("keeps non-description or missing live description hashes open", () => {
       currentShopifyDescriptionHash: "hash-1",
       field: "description",
       latestSyncBayDescriptionHash: null,
+    }),
+    false,
+  );
+});
+
+test("skips description conflicts when there is no eBay/SyncBay baseline but Shopify has one", () => {
+  assert.equal(
+    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
+      shopifyDescriptionHash: "hash-shopify",
+      syncBayDescriptionHash: null,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
+      shopifyDescriptionHash: "hash-shopify",
+      syncBayDescriptionHash: "   ",
+    }),
+    true,
+  );
+});
+
+test("keeps description conflicts when a baseline exists or Shopify is also empty", () => {
+  assert.equal(
+    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
+      shopifyDescriptionHash: "hash-shopify",
+      syncBayDescriptionHash: "hash-baseline",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
+      shopifyDescriptionHash: null,
+      syncBayDescriptionHash: null,
     }),
     false,
   );
