@@ -10,12 +10,8 @@ export interface EbayItemSpecific {
   values: string[];
 }
 
-export interface SyncBayProductFacet {
-  key: SyncBayProductFacetKey;
+export interface SyncBayProductFacet extends ShopifyProductFacetMetafield {
   label: string;
-  namespace: "syncbay_facets";
-  type: "single_line_text_field" | "list.single_line_text_field";
-  value: string;
 }
 
 export interface ShopifyProductFacetMetafield {

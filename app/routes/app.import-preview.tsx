@@ -1,6 +1,5 @@
 import type {
   ActionFunctionArgs,
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
@@ -12,7 +11,6 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
 import { useActionToast } from "../components/SyncBayLive";
@@ -20,7 +18,8 @@ import {
   getImportedProductsLabel,
   getImportedProductSingularLabel,
 } from "../lib/import-product-status";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -408,9 +407,7 @@ function getStepStatusLabel(status: StepStatus, activeLabel: string) {
   return "In attesa";
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const headers = embeddedNoStoreHeaders;
 
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 type WizardState = LoaderData["wizard"];
@@ -1396,12 +1393,6 @@ function getPreviewStatusMessage(source: {
   }
 
   return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
 }
 
 function formatPreviewIssues(

@@ -1,9 +1,22 @@
+import type { PriceRoundingMode as PrismaPriceRoundingMode } from "@prisma/client";
+
 const PRICING_DISCOUNT_MIN_PERCENT = 0;
 const PRICING_DISCOUNT_MAX_PERCENT = 90;
 
-export const PRICE_ROUNDING_MODES = ["CENTS", "WHOLE_EURO"] as const;
+export const PRICE_ROUNDING_MODES = [
+  "CENTS",
+  "WHOLE_EURO",
+] as const satisfies readonly PrismaPriceRoundingMode[];
 
-export type PriceRoundingMode = (typeof PRICE_ROUNDING_MODES)[number];
+export type PriceRoundingMode = PrismaPriceRoundingMode;
+
+type MissingPrismaPriceRoundingMode = Exclude<
+  PrismaPriceRoundingMode,
+  (typeof PRICE_ROUNDING_MODES)[number]
+>;
+type AssertNoMissingPriceRoundingMode<T extends never> = T;
+export type PriceRoundingModesCoverPrisma =
+  AssertNoMissingPriceRoundingMode<MissingPrismaPriceRoundingMode>;
 
 export interface SyncBayPricingRule {
   discountPercent: number;

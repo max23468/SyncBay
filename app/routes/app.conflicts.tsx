@@ -1,6 +1,5 @@
 import type {
   ActionFunctionArgs,
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
@@ -11,7 +10,6 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import {
   EbayMark,
@@ -32,7 +30,11 @@ import {
   getConflictFieldDecisionMode,
   getConflictResolutionSafety,
 } from "../lib/syncbay-conflict-actions";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  formatItDateTime as formatDateTime,
+  formatItNumber as formatNumber,
+} from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -64,12 +66,6 @@ const CONFLICT_RESOLUTIONS: ConflictResolution[] = [
   "KEEP_SHOPIFY",
   "IGNORE_FIELD",
 ];
-
-const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
 
 type ConflictActionData = {
   intent: "resolveBatchSafe" | "resolveConflict";
@@ -289,9 +285,7 @@ export default function ConflictsRoute() {
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const headers = embeddedNoStoreHeaders;
 
 function ConflictItem({
   isSaving,
@@ -568,16 +562,6 @@ function getConflictHref(filter: ConflictFilter, page = 1) {
   const queryString = params.toString();
 
   return queryString ? `/app/conflicts?${queryString}` : "/app/conflicts";
-}
-
-function formatDateTime(value: string) {
-  return itDateTimeFormatter.format(new Date(value));
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
 }
 
 function getDecisionModeTone(

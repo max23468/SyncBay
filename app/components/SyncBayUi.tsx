@@ -11,6 +11,8 @@
 
 import type { ReactNode } from "react";
 
+import type { ImportStepStatus } from "../lib/syncbay-import-step-status";
+
 export type SyncBayTone =
   | "neutral"
   | "info"
@@ -258,7 +260,7 @@ export function RiskLens({ body, count, href, title }: RiskLensProps) {
   );
 }
 
-export type StepStatus = "completed" | "active" | "pending";
+export type StepStatus = ImportStepStatus;
 
 type StepProps = {
   children: ReactNode;

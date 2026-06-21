@@ -2,6 +2,10 @@ import { EbayConnectionStatus, type EbayConnection } from "@prisma/client";
 
 import prisma from "../db.server";
 import { decryptSecret, encryptSecret } from "./crypto.server";
+import {
+  getEbayBasicAuthHeader,
+  getEbayTokenUrl,
+} from "./ebay-environment.server";
 
 interface EbayTokenResponse {
   access_token?: string;
@@ -11,10 +15,6 @@ interface EbayTokenResponse {
   scope?: string;
 }
 
-const EBAY_TOKEN_URLS = {
-  production: "https://api.ebay.com/identity/v1/oauth2/token",
-  sandbox: "https://api.sandbox.ebay.com/identity/v1/oauth2/token",
-};
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 7200;
 
@@ -73,10 +73,10 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
   let json: EbayTokenResponse;
 
   try {
-    response = await fetch(getTokenUrl(connection.environment), {
+    response = await fetch(getEbayTokenUrl(connection.environment), {
       body,
       headers: {
-        Authorization: `Basic ${getBasicAuthHeader()}`,
+        Authorization: `Basic ${getEbayBasicAuthHeader()}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       method: "POST",
@@ -132,32 +132,12 @@ async function markReconnectRequired(connectionId: string) {
   });
 }
 
-function getBasicAuthHeader() {
-  return Buffer.from(
-    `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-    "utf8",
-  ).toString("base64");
-}
-
-function getTokenUrl(environment: string) {
-  return environment === "production"
-    ? EBAY_TOKEN_URLS.production
-    : EBAY_TOKEN_URLS.sandbox;
-}
-
 function isAuthTokenError(error?: string) {
   if (!error) return false;
 
   return ["invalid_grant", "invalid_request", "invalid_client", "unauthorized_client"].includes(
     error.toLowerCase(),
   );
-}
-
-function requiredEnv(key: string) {
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} non configurata.`);
-
-  return value;
 }
 
 function secondsFromNow(seconds: number) {

@@ -1,7 +1,6 @@
-export type ConflictResolution =
-  | "REALIGN_FROM_EBAY"
-  | "KEEP_SHOPIFY"
-  | "IGNORE_FIELD";
+import type { SyncConflictResolution } from "@prisma/client";
+
+export type ConflictResolution = SyncConflictResolution;
 
 export type ConflictDecisionMode =
   | "batch_safe"

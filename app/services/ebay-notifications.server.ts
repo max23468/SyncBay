@@ -1,5 +1,11 @@
 import crypto from "node:crypto";
 
+import {
+  getEbayBasicAuthHeader,
+  getEbayEnvironment,
+  getEbayTokenUrl,
+} from "./ebay-environment.server";
+
 interface EbayApplicationTokenResponse {
   access_token: string;
   expires_in?: number;
@@ -27,11 +33,6 @@ interface CachedPublicKey {
   key: string;
   expiresAt: number;
 }
-
-const EBAY_TOKEN_URLS = {
-  production: "https://api.ebay.com/identity/v1/oauth2/token",
-  sandbox: "https://api.sandbox.ebay.com/identity/v1/oauth2/token",
-};
 
 const EBAY_PUBLIC_KEY_URLS = {
   production: "https://api.ebay.com/commerce/notification/v1/public_key",
@@ -160,13 +161,13 @@ async function getEbayApplicationAccessToken() {
     return cachedApplicationToken.accessToken;
   }
 
-  const response = await fetch(getTokenUrl(), {
+  const response = await fetch(getEbayTokenUrl(), {
     body: new URLSearchParams({
       grant_type: "client_credentials",
       scope: EBAY_APPLICATION_SCOPE,
     }),
     headers: {
-      Authorization: `Basic ${getBasicAuthHeader()}`,
+      Authorization: `Basic ${getEbayBasicAuthHeader()}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     method: "POST",
@@ -216,32 +217,8 @@ function decodeBase64(value: string) {
   }
 }
 
-function getBasicAuthHeader() {
-  return Buffer.from(
-    `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-    "utf8",
-  ).toString("base64");
-}
-
 function getPublicKeyBaseUrl() {
   return getEbayEnvironment() === "production"
     ? EBAY_PUBLIC_KEY_URLS.production
     : EBAY_PUBLIC_KEY_URLS.sandbox;
-}
-
-function getTokenUrl() {
-  return getEbayEnvironment() === "production"
-    ? EBAY_TOKEN_URLS.production
-    : EBAY_TOKEN_URLS.sandbox;
-}
-
-function getEbayEnvironment() {
-  return process.env.EBAY_ENVIRONMENT === "production" ? "production" : "sandbox";
-}
-
-function requiredEnv(key: string) {
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} non configurata.`);
-
-  return value;
 }

@@ -1,3 +1,5 @@
+import type { ConflictResolution } from "./syncbay-conflict-actions";
+
 type Tone = "critical" | "warning" | "info" | "success";
 
 export interface ActivityBadgeStateInput {
@@ -69,10 +71,7 @@ export interface EbayConnectionAction {
   variant?: "primary";
 }
 
-export type ConflictResolution =
-  | "REALIGN_FROM_EBAY"
-  | "KEEP_SHOPIFY"
-  | "IGNORE_FIELD";
+export type { ConflictResolution };
 
 export type CatalogStatusKind =
   | "active_fresh"

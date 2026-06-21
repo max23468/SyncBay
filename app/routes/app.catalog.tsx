@@ -1,10 +1,8 @@
 import type {
-  HeadersFunction,
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
 import { Form, useLoaderData, useSearchParams } from "react-router";
-import { boundary } from "@shopify/shopify-app-react-router/server";
 
 import { MetricTile } from "../components/SyncBayUi";
 import {
@@ -16,7 +14,11 @@ import {
   normalizeCatalogSort,
   normalizeCatalogSortDir,
 } from "../lib/syncbay-catalog-page";
-import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import {
+  formatItDateTime,
+  formatItNumber as formatNumber,
+} from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -74,12 +76,6 @@ const CATALOG_ORDER_OPTIONS: Array<{
     value: "price:asc",
   },
 ];
-
-const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
-  dateStyle: "short",
-  timeStyle: "short",
-  timeZone: "Europe/Rome",
-});
 
 export const meta: MetaFunction = () => getSyncBayMeta("Catalogo");
 
@@ -238,9 +234,7 @@ export default function CatalogRoute() {
   );
 }
 
-export const headers: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const headers = embeddedNoStoreHeaders;
 
 function CatalogTableRow({
   row,
@@ -644,13 +638,5 @@ function formatPrice(price: { amount: string; currency: string | null } | null) 
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) return "Non ancora";
-
-  return itDateTimeFormatter.format(new Date(value));
-}
-
-const itNumberFormatter = new Intl.NumberFormat("it-IT");
-
-function formatNumber(value: number) {
-  return itNumberFormatter.format(value);
+  return formatItDateTime(value, "Non ancora");
 }

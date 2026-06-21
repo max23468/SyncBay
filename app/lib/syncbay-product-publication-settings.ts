@@ -1,17 +1,35 @@
+import type { ProductPublicationMode as PrismaProductPublicationMode } from "@prisma/client";
+
 export const PRODUCT_PUBLICATION_MODES = [
   "ALL",
   "SELECTED",
   "NONE",
-] as const;
+] as const satisfies readonly PrismaProductPublicationMode[];
 
-export type ProductPublicationMode = (typeof PRODUCT_PUBLICATION_MODES)[number];
+export type ProductPublicationMode = PrismaProductPublicationMode;
+
+type MissingPrismaProductPublicationMode = Exclude<
+  PrismaProductPublicationMode,
+  (typeof PRODUCT_PUBLICATION_MODES)[number]
+>;
+type AssertNoMissingProductPublicationMode<T extends never> = T;
+export type ProductPublicationModesCoverPrisma =
+  AssertNoMissingProductPublicationMode<MissingPrismaProductPublicationMode>;
+
+const PRODUCT_PUBLICATION_MODE_SET: ReadonlySet<string> = new Set(
+  PRODUCT_PUBLICATION_MODES,
+);
 
 export function normalizeProductPublicationMode(
   value: string | null | undefined,
 ): ProductPublicationMode {
-  return PRODUCT_PUBLICATION_MODES.includes(value as ProductPublicationMode)
-    ? (value as ProductPublicationMode)
-    : "ALL";
+  return isProductPublicationMode(value) ? value : "ALL";
+}
+
+function isProductPublicationMode(
+  value: string | null | undefined,
+): value is ProductPublicationMode {
+  return typeof value === "string" && PRODUCT_PUBLICATION_MODE_SET.has(value);
 }
 
 export function parseProductPublicationGids(value: string | null | undefined) {

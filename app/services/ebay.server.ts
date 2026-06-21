@@ -3,6 +3,12 @@ import { AuditEventType, EbayConnectionStatus } from "@prisma/client";
 import prisma from "../db.server";
 import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
 import {
+  getEbayBasicAuthHeader,
+  getEbayEnvironment,
+  getEbayTokenUrl,
+  requiredEnv,
+} from "./ebay-environment.server";
+import {
   ensureShopForSession,
   getEbayRuntimeReadiness,
 } from "./syncbay.server";
@@ -29,11 +35,6 @@ interface EbayUserResponse {
 const EBAY_AUTH_URLS = {
   production: "https://auth.ebay.com/oauth2/authorize",
   sandbox: "https://auth.sandbox.ebay.com/oauth2/authorize",
-};
-
-const EBAY_TOKEN_URLS = {
-  production: "https://api.ebay.com/identity/v1/oauth2/token",
-  sandbox: "https://api.sandbox.ebay.com/identity/v1/oauth2/token",
 };
 
 const EBAY_IDENTITY_URLS = {
@@ -196,14 +197,14 @@ async function fetchEbayUser(accessToken: string) {
 }
 
 async function exchangeAuthorizationCode(code: string) {
-  const response = await fetch(getTokenUrl(), {
+  const response = await fetch(getEbayTokenUrl(), {
     body: new URLSearchParams({
       code,
       grant_type: "authorization_code",
       redirect_uri: requiredEnv("EBAY_RU_NAME"),
     }),
     headers: {
-      Authorization: `Basic ${getBasicAuthHeader()}`,
+      Authorization: `Basic ${getEbayBasicAuthHeader()}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     method: "POST",
@@ -220,33 +221,16 @@ async function exchangeAuthorizationCode(code: string) {
   return json as EbayTokenResponse;
 }
 
-function getBasicAuthHeader() {
-  return Buffer.from(
-    `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-    "utf8",
-  ).toString("base64");
-}
-
 function getAuthorizeUrl() {
   return getEbayEnvironment() === "production"
     ? EBAY_AUTH_URLS.production
     : EBAY_AUTH_URLS.sandbox;
 }
 
-function getTokenUrl() {
-  return getEbayEnvironment() === "production"
-    ? EBAY_TOKEN_URLS.production
-    : EBAY_TOKEN_URLS.sandbox;
-}
-
 function getIdentityUserUrl() {
   return getEbayEnvironment() === "production"
     ? EBAY_IDENTITY_URLS.production
     : EBAY_IDENTITY_URLS.sandbox;
-}
-
-function getEbayEnvironment() {
-  return process.env.EBAY_ENVIRONMENT === "production" ? "production" : "sandbox";
 }
 
 function getEbayMarketplaceId() {
@@ -260,13 +244,6 @@ function getEbayScopes() {
       const trimmedScope = scope.trim();
       return trimmedScope ? [trimmedScope] : [];
     });
-}
-
-function requiredEnv(key: string) {
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} non configurata.`);
-
-  return value;
 }
 
 function minutesFromNow(minutes: number) {

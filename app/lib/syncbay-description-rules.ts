@@ -1,10 +1,24 @@
+import type { DescriptionRuleMode as PrismaDescriptionRuleMode } from "@prisma/client";
+
 export const DESCRIPTION_RULE_MODES = [
   "CLEAN_HTML",
   "FULL_HTML",
   "TEXT_ONLY",
-] as const;
+] as const satisfies readonly PrismaDescriptionRuleMode[];
 
-export type DescriptionRuleMode = (typeof DESCRIPTION_RULE_MODES)[number];
+export type DescriptionRuleMode = PrismaDescriptionRuleMode;
+
+type MissingPrismaDescriptionRuleMode = Exclude<
+  PrismaDescriptionRuleMode,
+  (typeof DESCRIPTION_RULE_MODES)[number]
+>;
+type AssertNoMissingDescriptionRuleMode<T extends never> = T;
+export type DescriptionRuleModesCoverPrisma =
+  AssertNoMissingDescriptionRuleMode<MissingPrismaDescriptionRuleMode>;
+
+const DESCRIPTION_RULE_MODE_SET: ReadonlySet<string> = new Set(
+  DESCRIPTION_RULE_MODES,
+);
 
 export interface SyncBayDescriptionRule {
   mode: DescriptionRuleMode;
@@ -19,8 +33,8 @@ export function normalizeDescriptionRuleMode(
 ): DescriptionRuleMode {
   const normalized = value?.trim().toUpperCase();
 
-  return DESCRIPTION_RULE_MODES.includes(normalized as DescriptionRuleMode)
-    ? (normalized as DescriptionRuleMode)
+  return isDescriptionRuleMode(normalized)
+    ? normalized
     : DEFAULT_DESCRIPTION_RULE.mode;
 }
 
@@ -37,8 +51,8 @@ export function normalizeDescriptionRuleFormInput(input: {
   | { message: string; status: "invalid" } {
   const normalized = input.mode?.trim().toUpperCase();
 
-  if (DESCRIPTION_RULE_MODES.includes(normalized as DescriptionRuleMode)) {
-    return { mode: normalized as DescriptionRuleMode, status: "valid" };
+  if (isDescriptionRuleMode(normalized)) {
+    return { mode: normalized, status: "valid" };
   }
 
   return {
@@ -46,6 +60,12 @@ export function normalizeDescriptionRuleFormInput(input: {
       "Modalità descrizione non valida. Scegli HTML pulito, HTML eBay completo o solo testo.",
     status: "invalid",
   };
+}
+
+function isDescriptionRuleMode(
+  value: string | null | undefined,
+): value is DescriptionRuleMode {
+  return typeof value === "string" && DESCRIPTION_RULE_MODE_SET.has(value);
 }
 
 export function getDescriptionRuleSummary(mode: DescriptionRuleMode) {
