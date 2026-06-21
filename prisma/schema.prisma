@@ -272,7 +272,6 @@ model ProductMapping {
   @@unique([shopId, marketplaceId, ebayItemId])
   @@index([shopId, status])
   @@index([shopifyProductGid])
-  @@index([sku])
 }
 
 model ProductSnapshot {
@@ -356,7 +355,5 @@ model EbayAccountDeletionRequest {
   updatedAt           DateTime                         @updatedAt
 
   @@index([hashedUserId, receivedAt])
-  @@index([hashedUserId, eventDate, status])
-  @@index([hashedUserId, publishDate, status])
   @@index([status, receivedAt])
 }
