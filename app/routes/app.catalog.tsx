@@ -18,6 +18,10 @@ import {
 } from "../lib/syncbay-catalog-page";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  createSyncBayLoaderPerformanceTrace,
+  logSyncBayLoaderPerformance,
+} from "../lib/syncbay-loader-performance";
+import {
   getCatalogAvailabilityLabel,
   getCatalogStatusLabel,
 } from "../lib/syncbay-ui-state";
@@ -80,16 +84,47 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
 export const meta: MetaFunction = () => getSyncBayMeta("Catalogo");
 
 export const loader = async ({ request, url }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const trace = createSyncBayLoaderPerformanceTrace();
+  const { session } = await trace.measure("auth.admin", () =>
+    authenticate.admin(request),
+  );
   const order = normalizeCatalogOrder(url.searchParams.get("order"));
+  const filter = normalizeCatalogPageFilter(url.searchParams.get("filter"));
+  const page = normalizeCatalogPage(url.searchParams.get("page"));
+  const search = url.searchParams.get("q") ?? undefined;
+  const sort = order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort"));
+  const sortDir =
+    order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir"));
 
-  return getCatalogPageState(session, {
-    filter: normalizeCatalogPageFilter(url.searchParams.get("filter")),
-    page: normalizeCatalogPage(url.searchParams.get("page")),
-    search: url.searchParams.get("q") ?? undefined,
-    sort: order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort")),
-    sortDir: order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir")),
+  const catalog = await trace.measure("catalog.state", () =>
+    getCatalogPageState(
+      session,
+      {
+        filter,
+        page,
+        search,
+        sort,
+        sortDir,
+      },
+      trace,
+    ),
+  );
+
+  logSyncBayLoaderPerformance({
+    details: {
+      filter,
+      hasSearch: Boolean(search?.trim()),
+      maxLoadedRows: catalog.pagination.maxLoadedRows,
+      page,
+      rows: catalog.rows.length,
+      totalAvailableCount: catalog.pagination.totalAvailableCount,
+    },
+    payload: catalog,
+    route: "catalog",
+    trace,
   });
+
+  return catalog;
 };
 
 export default function CatalogRoute() {

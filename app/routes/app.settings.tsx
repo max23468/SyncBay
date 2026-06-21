@@ -37,6 +37,10 @@ import {
   type SyncBayDescriptionRule,
 } from "../lib/syncbay-description-rules";
 import {
+  createSyncBayLoaderPerformanceTrace,
+  logSyncBayLoaderPerformance,
+} from "../lib/syncbay-loader-performance";
+import {
   getEbayConnectionStatusLabel,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
@@ -118,9 +122,29 @@ const DEFAULT_SETTINGS_DESCRIPTION_RULE: SyncBayDescriptionRule = {
 export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const trace = createSyncBayLoaderPerformanceTrace();
+  const { admin, session } = await trace.measure("auth.admin", () =>
+    authenticate.admin(request),
+  );
 
-  return getShopSettingsState(session, admin);
+  const settings = await trace.measure("settings.state", () =>
+    getShopSettingsState(session, admin, trace),
+  );
+
+  logSyncBayLoaderPerformance({
+    details: {
+      activeMappingCount: settings.sync.activeMappingCount,
+      ebayStatus: settings.ebay.status,
+      publicationCount:
+        settings.productPublications.availablePublications.length,
+      syncBlockerCount: settings.sync.enablementBlockers.length,
+    },
+    payload: settings,
+    route: "settings",
+    trace,
+  });
+
+  return settings;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
