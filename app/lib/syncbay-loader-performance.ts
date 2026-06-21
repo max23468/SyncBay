@@ -1,4 +1,10 @@
-export type SyncBayLoaderRoute = "catalog" | "conflicts" | "settings";
+export type SyncBayLoaderRoute =
+  | "activity"
+  | "catalog"
+  | "conflicts"
+  | "import"
+  | "overview"
+  | "settings";
 
 export type SyncBayLoaderPerformanceMetric = {
   durationMs: number;
