@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.9] — 2026-06-21
+
+### Correzioni
+
+- Webhook ordini Shopify: gli snapshot di aggiornamento stock eBay restano
+  sempre scritti come marker durevoli di idempotenza anche quando lo stato
+  prodotto non cambia.
+
 ## [0.44.8] — 2026-06-21
 
 ### Correzioni
@@ -2381,6 +2389,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.9]: #0449--2026-06-21
 [0.44.8]: #0448--2026-06-21
 [0.44.7]: #0447--2026-06-21
 [0.44.6]: #0446--2026-06-21
