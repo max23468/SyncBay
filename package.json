@@ -15,6 +15,7 @@
     "setup": "prisma generate && prisma migrate deploy",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "quality:react-doctor": "react-doctor --scope full --blocking error .",
+    "perf:loaders": "node scripts/measure-loader-performance.mjs",
     "smoke:ui": "node scripts/smoke-ui.mjs",
     "ui:render": "node scripts/syncbay-ui-render.mjs",
     "ui:preview": "npm run ui:preview:panoramica && npm run ui:preview:catalogo && npm run ui:preview:conflitti && npm run ui:preview:importazione && npm run ui:preview:attivita && npm run ui:preview:impostazioni",

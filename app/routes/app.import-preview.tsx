@@ -25,6 +25,7 @@ import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
 } from "../lib/syncbay-loader-performance";
+import { normalizeImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import {
   getPageWindow,
   normalizePage,
@@ -91,13 +92,17 @@ export const meta: MetaFunction = () => getSyncBayMeta("Importazione");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
+  const url = new URL(request.url);
+  const previewLoadMode = normalizeImportPreviewLoadMode(
+    url.searchParams.get("preview"),
+  );
   const { admin, session } = await trace.measure("auth.admin", () =>
     authenticate.admin(request),
   );
   const [locationResult, wizard] = await Promise.all([
     trace.measure("import.shopify.locations", () => fetchShopifyLocations(admin)),
     trace.measure("import.wizard", () =>
-      getImportWizardState(session, admin, trace),
+      getImportWizardState(session, admin, trace, { previewLoadMode }),
     ),
   ]);
   const selectedLocation = locationResult.locations.find(
@@ -123,6 +128,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       importableCount: wizard.draftImport.importableCount,
       locations: locationResult.locations.length,
       plannedCreateCount: wizard.draftImport.plannedCreateCount,
+      previewLoadMode,
       previewSource: wizard.previewSource.source,
     },
     payload: state,
@@ -692,6 +698,11 @@ function PreviewStatusSection({
       <s-text color="subdued">
         Modalità: {previewModeLabel}. {wizard.previewSource.coverageNote}
       </s-text>
+      <s-stack direction="inline" gap="small-200">
+        <s-button href="/app/import-preview?preview=live" variant="primary">
+          Aggiorna preview live
+        </s-button>
+      </s-stack>
       {wizard.importPreview.blockers.length > 0 ? (
         <s-paragraph>
           Blocchi: {wizard.importPreview.blockers.join(", ")}.
@@ -1330,6 +1341,10 @@ function getPreviewIntro(source: string) {
     return "La preview live legge eBay in sola lettura e non scrive su Shopify senza conferma esplicita.";
   }
 
+  if (source === "deferred") {
+    return "La pagina si apre senza interrogare eBay; aggiorna la preview live quando vuoi leggere i listing in sola lettura.";
+  }
+
   return "La preview mock usa dati fittizi e resta in sola lettura finché non viene confermata una scrittura esplicita su Shopify.";
 }
 
@@ -1344,6 +1359,7 @@ function getPreviewModeLabel(mode: string) {
 function formatPreviewSource(source: string) {
   if (source === "inventory_api") return "Inventory API eBay";
   if (source === "trading_api") return "Trading API eBay";
+  if (source === "deferred") return "preview live da aggiornare";
   if (source === "mock") return "mock locale";
 
   return source;
@@ -1352,6 +1368,7 @@ function formatPreviewSource(source: string) {
 function getPreviewReadLabel(source: string) {
   if (source === "inventory_api") return "Elementi Inventory API letti";
   if (source === "trading_api") return "Elementi Trading API letti";
+  if (source === "deferred") return "Nessuna lettura eBay all'apertura";
   if (source === "mock") return "Elementi mock letti";
 
   return "Elementi letti";
@@ -1372,6 +1389,10 @@ function getPreviewStatusMessage(source: {
 
   if (source.source === "trading_api") {
     return `Preview live pronta: letti ${source.readCount} elementi Trading API eBay.`;
+  }
+
+  if (source.source === "deferred") {
+    return "Preview live non ancora aggiornata in questa apertura.";
   }
 
   return "Preview mock pronta: puoi verificare conteggi, validazioni e messaggi senza collegamenti esterni.";

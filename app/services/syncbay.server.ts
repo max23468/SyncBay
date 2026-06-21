@@ -92,6 +92,7 @@ import {
   measureSyncBayPerformanceStage,
   type SyncBayLoaderPerformanceTrace,
 } from "../lib/syncbay-loader-performance";
+import type { ImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
 import {
@@ -106,6 +107,7 @@ import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
 import {
   addExistingProductMatchSuggestions,
+  getEmptyImportPreview,
   getImportPreviewValidationRules,
   getMockImportPreview,
   type ImportPreviewResult,
@@ -207,6 +209,13 @@ const SHOPIFY_WEBHOOK_TOPICS = [
   "products/update",
   "inventory_levels/update",
 ];
+
+export async function getOverviewState(
+  session: ShopifySessionLike,
+  trace?: SyncBayLoaderPerformanceTrace,
+) {
+  return getDashboardState(session, trace);
+}
 
 export async function getDashboardState(
   session: ShopifySessionLike,
@@ -582,6 +591,166 @@ export async function getDashboardState(
   };
 }
 
+export async function getActivityState(
+  session: ShopifySessionLike,
+  trace?: SyncBayLoaderPerformanceTrace,
+) {
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "activity.shop.ensure",
+    () => ensureShopForSession(session),
+  );
+  const now = new Date();
+  const [
+    recentJobs,
+    recentAuditLogs,
+    openConflictCount,
+    openConflicts,
+    latestIncrementalJob,
+    activeIncrementalJobCount,
+    latestFullReconcileJob,
+    erroredMappingCount,
+  ] = await measureSyncBayPerformanceStage(trace, "activity.db.state", () =>
+    Promise.all([
+      prisma.syncJob.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.auditLog.findMany({
+        where: { shopId: shop.id },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      prisma.syncConflict.count({
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.syncConflict.findMany({
+        include: {
+          mapping: {
+            select: {
+              ebayItemId: true,
+              shopifyProductGid: true,
+            },
+          },
+        },
+        orderBy: { detectedAt: "desc" },
+        take: 8,
+        where: {
+          shopId: shop.id,
+          status: SyncConflictStatus.OPEN,
+        },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        where: getCompletedCatalogVerificationJobWhere(shop.id),
+      }),
+      prisma.syncJob.count({
+        where: {
+          shopId: shop.id,
+          status: {
+            in: [
+              SyncJobStatus.PENDING,
+              SyncJobStatus.RETRYING,
+              SyncJobStatus.RUNNING,
+            ],
+          },
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.syncJob.findFirst({
+        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+        select: { finishedAt: true },
+        where: {
+          payload: { path: ["source"], equals: "catalog_reconcile" },
+          shopId: shop.id,
+          status: SyncJobStatus.SUCCEEDED,
+          type: SyncJobType.SYNC_INCREMENTAL,
+        },
+      }),
+      prisma.productMapping.count({
+        where: {
+          marketplaceId: getEbayMarketplaceId(),
+          shopId: shop.id,
+          status: ProductMappingStatus.ERROR,
+        },
+      }),
+    ]),
+  );
+  const catalogSyncHealth = getCatalogSyncHealth({
+    activeIncrementalJobCount,
+    latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt ?? null,
+    now,
+    syncEnabled: shop.syncEnabled,
+    syncTargetSeconds: shop.syncTargetSeconds,
+  });
+  const failedJobCount = recentJobs.filter(
+    (job) => job.status === SyncJobStatus.FAILED,
+  ).length;
+  const catalogHealthCenter = buildCatalogHealthCenter({
+    activeIncrementalJobCount,
+    erroredMappingCount,
+    failedJobCount,
+    needsCheckCount: 0,
+    openConflictCount,
+    staleActiveCount: 0,
+    unknownAvailabilityCount: 0,
+  });
+  const fullReconcile = getFullReconcilePolicyState({
+    intervalHours: 24,
+    latestFinishedAt: latestFullReconcileJob?.finishedAt ?? null,
+    now,
+  });
+
+  return {
+    conflicts: {
+      openCount: openConflictCount,
+      recent: openConflicts.map((conflict) => ({
+        detectedAt: conflict.detectedAt.toISOString(),
+        ebayItemId: conflict.mapping?.ebayItemId ?? null,
+        field: conflict.field,
+        id: conflict.id,
+        shopifyProductGid: conflict.mapping?.shopifyProductGid ?? null,
+        shopifyValue: conflict.shopifyValue,
+        syncbayValue: conflict.lastSyncBayValue,
+      })),
+    },
+    sync: {
+      pendingJobs: recentJobs.filter(
+        (job) => job.status === SyncJobStatus.PENDING,
+      ).length,
+      lastJobs: recentJobs.map((job) => ({
+        attempts: job.attempts,
+        createdAt: job.createdAt.toISOString(),
+        errorCode: job.errorCode,
+        errorMessage: job.errorMessage,
+        id: job.id,
+        maxAttempts: job.maxAttempts,
+        runAfter: job.runAfter.toISOString(),
+        status: job.status,
+        type: job.type,
+      })),
+      catalogHealth: {
+        ...formatCatalogSyncHealth(catalogSyncHealth),
+        activeIncrementalJobCount,
+        latestIncrementalFinishedAt:
+          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalStatus: latestIncrementalJob?.status ?? null,
+      },
+      catalogHealthCenter,
+      fullReconcile,
+    },
+    audit: recentAuditLogs.map((log) => ({
+      createdAt: log.createdAt.toISOString(),
+      message: log.message,
+      type: log.type,
+    })),
+  };
+}
+
 /**
  * Legge in modo difensivo un conteggio numerico dal `result` JSON di un job.
  * Il result varia di forma per tipo di job; se il campo manca o non è numerico
@@ -640,11 +809,13 @@ export async function getCatalogPageState(
       ? getCatalogDatabasePageWhere(where, activeFilter)
       : null;
   const databasePageTotalCount = databasePageWhere
-    ? await measureSyncBayPerformanceStage(
-        trace,
-        "catalog.db.databasePageTotalCount",
-        () => prisma.productMapping.count({ where: databasePageWhere }),
-      )
+    ? databasePageWhere === where
+      ? totalAvailableCount
+      : await measureSyncBayPerformanceStage(
+          trace,
+          "catalog.db.databasePageTotalCount",
+          () => prisma.productMapping.count({ where: databasePageWhere }),
+        )
     : totalAvailableCount;
   const queryPlan = getCatalogQueryPlan({
     filter: activeFilter,
@@ -656,7 +827,7 @@ export async function getCatalogPageState(
   });
 
   if (queryPlan.mode === "database-page" && databasePageWhere) {
-    const [[mappings, linkedCount, latestIncrementalJob], summary] =
+    const [[mappings, linkedCount], summary] =
       await Promise.all([
         measureSyncBayPerformanceStage(
           trace,
@@ -684,11 +855,6 @@ export async function getCatalogPageState(
                   shopifyProductGid: { not: null },
                 },
               }),
-              prisma.syncJob.findFirst({
-                orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-                select: { finishedAt: true },
-                where: getCompletedCatalogVerificationJobWhere(shop.id),
-              }),
             ]),
         ),
         measureSyncBayPerformanceStage(
@@ -702,7 +868,8 @@ export async function getCatalogPageState(
             }),
         ),
       ]);
-    const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
+    const { latestIncrementalFinishedAt, ...summaryCounts } = summary;
+    const catalogVerifiedAt = latestIncrementalFinishedAt;
     const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
       trace,
       "catalog.db.latestSnapshots",
@@ -750,7 +917,7 @@ export async function getCatalogPageState(
         syncTargetSeconds: shop.syncTargetSeconds,
       },
       summary: {
-        ...summary,
+        ...summaryCounts,
         linkedCount,
         totalCount: totalAvailableCount,
       },
@@ -894,60 +1061,26 @@ export async function getConflictsPageState(
   const resolvedStatuses = [
     ...getConflictStatusFilter("resolved"),
   ] as SyncConflictStatus[];
-  const [
-    openCount,
-    resolvedCount,
-    totalCount,
-    filteredCount,
-    openConflictFields,
-  ] = await measureSyncBayPerformanceStage(
+  const [summaryCounts, openConflictFields] = await measureSyncBayPerformanceStage(
     trace,
     "conflicts.db.summaryTransaction",
-    () =>
-      prisma.$transaction([
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: SyncConflictStatus.OPEN,
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: resolvedStatuses },
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: allStatuses },
-          },
-        }),
-        prisma.syncConflict.count({
-          where: {
-            shopId: shop.id,
-            status: { in: statusFilter },
-          },
-        }),
-        prisma.syncConflict.findMany({
-          select: { field: true },
-          where: {
-            shopId: shop.id,
-            status: SyncConflictStatus.OPEN,
-          },
-        }),
-      ]),
+    () => getConflictSummaryCounts({
+      allStatuses,
+      resolvedStatuses,
+      shopId: shop.id,
+      statusFilter,
+    }),
   );
   const decisionModeCounts = summarizeConflictDecisionModes(
     openConflictFields.map((conflict) => ({
-      count: 1,
+      count: conflict.count,
       field: conflict.field,
     })),
   );
   const pagination = getPageWindow({
     page: input.page ?? 1,
     pageSize: CONFLICT_PAGE_SIZE,
-    totalRows: filteredCount,
+    totalRows: summaryCounts.filteredCount,
   });
   const conflicts = await measureSyncBayPerformanceStage(
     trace,
@@ -960,9 +1093,9 @@ export async function getConflictsPageState(
         orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
         skip: pagination.offset,
         take: pagination.pageSize,
-        where: {
-          shopId: shop.id,
-          status: { in: statusFilter },
+      where: {
+        shopId: shop.id,
+        status: { in: statusFilter },
         },
       }),
   );
@@ -1023,12 +1156,62 @@ export async function getConflictsPageState(
     },
     summary: {
       ...decisionModeCounts,
-      filteredCount,
-      openCount,
-      resolvedCount,
-      totalCount,
+      filteredCount: summaryCounts.filteredCount,
+      openCount: summaryCounts.openCount,
+      resolvedCount: summaryCounts.resolvedCount,
+      totalCount: summaryCounts.totalCount,
     },
   };
+}
+
+async function getConflictSummaryCounts(input: {
+  allStatuses: SyncConflictStatus[];
+  resolvedStatuses: SyncConflictStatus[];
+  shopId: string;
+  statusFilter: SyncConflictStatus[];
+}) {
+  const [summary] = await prisma.$queryRaw<
+    Array<{
+      filteredCount: number;
+      openCount: number;
+      resolvedCount: number;
+      totalCount: number;
+    }>
+  >`
+    SELECT
+      COUNT(*) FILTER (WHERE "status"::text = 'OPEN')::integer AS "openCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.resolvedStatuses)})
+      )::integer AS "resolvedCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.allStatuses)})
+      )::integer AS "totalCount",
+      COUNT(*) FILTER (
+        WHERE "status"::text IN (${Prisma.join(input.statusFilter)})
+      )::integer AS "filteredCount"
+    FROM "SyncConflict"
+    WHERE "shopId" = ${input.shopId}
+  `;
+  const openConflictFields = await prisma.$queryRaw<
+    Array<{ count: number; field: string }>
+  >`
+    SELECT "field", COUNT(*)::integer AS "count"
+    FROM "SyncConflict"
+    WHERE
+      "shopId" = ${input.shopId}
+      AND "status"::text = 'OPEN'
+    GROUP BY "field"
+  `;
+
+  return [
+    summary ?? {
+      filteredCount: 0,
+      openCount: 0,
+      resolvedCount: 0,
+      totalCount: 0,
+    },
+    openConflictFields,
+  ] as const;
 }
 
 export async function requestSyncJobRetry(
@@ -1485,6 +1668,7 @@ export async function getImportWizardState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
   trace?: SyncBayLoaderPerformanceTrace,
+  options: { previewLoadMode?: ImportPreviewLoadMode } = {},
 ) {
   const shop = await measureSyncBayPerformanceStage(
     trace,
@@ -1520,8 +1704,9 @@ export async function getImportWizardState(
   const ebayRuntime = getEbayRuntimeReadiness();
   const ebayConnected =
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const previewLoadMode = options.previewLoadMode ?? "deferred";
   const preview =
-    ebayConnected && ebayConnection
+    ebayConnected && ebayConnection && previewLoadMode === "live"
       ? await measureSyncBayPerformanceStage(
           trace,
           "import.ebay.preview",
@@ -1530,7 +1715,9 @@ export async function getImportWizardState(
               descriptionRuleMode: descriptionRule.mode,
             }),
         )
-      : getMockImportPreviewState(descriptionRule.mode);
+      : ebayConnected
+        ? getDeferredImportPreviewState()
+        : getMockImportPreviewState(descriptionRule.mode);
   const importPreview = getImportPreviewReadiness({
     defaultProductStatus,
     descriptionRuleMode: descriptionRule.mode,
@@ -1538,6 +1725,7 @@ export async function getImportWizardState(
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     listingReaderAvailable: true,
     listingReaderError: preview.errorMessage,
+    listingReaderPending: preview.source === "deferred",
   });
   const previewResult = await measureSyncBayPerformanceStage(
     trace,
@@ -2992,6 +3180,22 @@ function getMockImportPreviewState(
   };
 }
 
+function getDeferredImportPreviewState() {
+  return {
+    coverageNote:
+      "Preview live non ancora aggiornata in questa apertura: usa l'azione dedicata per leggere eBay in sola lettura.",
+    errorMessage: null,
+    previewResult: getEmptyImportPreview("empty"),
+    readCount: 0,
+    readCounts: {
+      inventoryApi: 0,
+      tradingApi: 0,
+    },
+    source: "deferred" as const,
+    totalAvailable: null,
+  };
+}
+
 function getImportPreviewReadiness(input: {
   descriptionRuleMode: DescriptionRuleMode;
   defaultProductStatus: ImportProductStatus;
@@ -2999,12 +3203,14 @@ function getImportPreviewReadiness(input: {
   hasDefaultLocation: boolean;
   listingReaderError?: string | null;
   listingReaderAvailable?: boolean;
+  listingReaderPending?: boolean;
 }) {
   const blockers = [
     !input.ebayConnected ? "account eBay non collegato" : null,
     !input.hasDefaultLocation
       ? "location Shopify predefinita non confermata"
       : null,
+    input.listingReaderPending ? "preview live non ancora aggiornata" : null,
     input.listingReaderError
       ? `lettura listing eBay non riuscita: ${input.listingReaderError}`
       : null,
@@ -3409,16 +3615,17 @@ async function getCatalogSummaryCounts(input: {
     FROM catalog_rows
   `;
 
-  return (
-    summary ?? {
+  return {
+    ...(summary ?? {
       archivedCount: 0,
       conflictCount: 0,
       freshCount: 0,
       needsCheckCount: 0,
       staleActiveCount: 0,
       unknownAvailabilityCount: 0,
-    }
-  );
+    }),
+    latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt ?? null,
+  };
 }
 
 function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {

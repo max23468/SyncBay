@@ -5,6 +5,7 @@ export function isLiveImportPreviewStepComplete(input: {
 }) {
   return (
     input.previewSource !== "mock" &&
+    input.previewSource !== "deferred" &&
     !input.previewErrorMessage &&
     input.importableCount > 0
   );

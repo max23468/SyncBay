@@ -37,12 +37,12 @@ import {
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
-  getDashboardState,
+  getActivityState,
   requestSyncJobRetry,
 } from "../services/syncbay.server";
 import { authenticate } from "../shopify.server";
 
-type Activity = Awaited<ReturnType<typeof getDashboardState>>;
+type Activity = Awaited<ReturnType<typeof getActivityState>>;
 type ActivityConflict = Activity["conflicts"]["recent"][number];
 type ActivityJob = Activity["sync"]["lastJobs"][number];
 type ActivityFilter =
@@ -94,7 +94,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     authenticate.admin(request),
   );
   const activity = await trace.measure("activity.state", () =>
-    getDashboardState(session, trace),
+    getActivityState(session, trace),
   );
 
   logSyncBayLoaderPerformance({
