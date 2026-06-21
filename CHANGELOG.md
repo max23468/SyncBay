@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Documentazione: definito il perimetro SyncBay 1.0 come custom app privata per
+  pochi clienti selezionati e introdotto il piano generico `Collega catalogo
+  esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
+  implementativo versionato per il takeover di cataloghi Shopify esistenti.
+
 ## [0.44.16] — 2026-06-21
 
 ### Sotto il cofano

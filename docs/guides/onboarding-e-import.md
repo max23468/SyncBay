@@ -27,6 +27,40 @@ Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e 
 8. Conferma import.
 9. Vede avanzamento job e risultati.
 
+## Flusso 1.0 per catalogo Shopify esistente
+
+Per la 1.0 custom privata, il tab Importazione deve supportare anche una
+modalità generica **Collega catalogo esistente**. Serve quando lo store Shopify
+ha già prodotti creati da una precedente app o da lavoro manuale e SyncBay deve
+diventare l'unico gestore del flusso eBay -> Shopify.
+
+Questo flusso non deve diventare una migrazione Numisleo-specifica. Le decisioni
+store-specifiche vivono nel runbook; il prodotto espone capacità riusabili:
+
+1. leggere prodotti Shopify esistenti e listing eBay;
+2. proporre match forti e casi incerti;
+3. mostrare dry-run e campi che verrebbero modificati;
+4. separare righe applicabili, eccezioni da rivedere e blocchi critici;
+5. applicare solo righe sicure dopo conferma;
+6. salvare snapshot, audit e report per recovery manuale;
+7. consegnare lo shop al sync ordinario SyncBay.
+
+Regole chiave:
+
+- match automatico solo con segnali forti, non da titolo simile da solo;
+- eBay resta sorgente di verità quando il dato è presente e valido;
+- dato eBay assente o non affidabile = eccezione da rivedere, non svuotamento
+  Shopify;
+- prezzo e disponibilità vengono riallineati a eBay quando validi;
+- descrizioni pulite secondo la regola descrizione SyncBay;
+- immagini corrette solo se mancanti, rotte o chiaramente incoerenti;
+- URL prodotto preservati di default; cambio handle solo con redirect e riga
+  esplicita nel report;
+- collezioni automatiche esistenti preservate di default, aggiornando i campi
+  prodotto che le alimentano;
+- vecchia app disattivabile prima dell'apply finale solo dopo audit, dry-run,
+  export segnali utili e freeze operativo.
+
 ## Stato preparatorio implementato
 
 La dashboard embedded mostra già una readiness operativa per:
@@ -170,6 +204,8 @@ La preview import resta bloccata finché non sono disponibili:
 - Una sola location Shopify predefinita.
 - Nessun matching automatico aggressivo con prodotti Shopify esistenti.
 - Nessun publish massivo senza conferma.
+- Per cataloghi Shopify esistenti, preservare gli URL prodotto e le regole delle
+  collezioni automatiche, salvo correzioni approvate nel report.
 
 ## Errori da mostrare chiaramente
 

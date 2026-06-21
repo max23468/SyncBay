@@ -46,6 +46,7 @@ docs/
     0017-retention-dati-operativi.md
     0018-cleanup-retention-automatico.md
     0019-cadenza-cron-runner.md
+    0020-1-0-custom-privata-catalogo-esistente.md
   guides/
     architettura.md
     git-e-pubblicazione.md
@@ -63,6 +64,7 @@ docs/
   superpowers/
     plans/
       2026-06-03-syncbay-ui-redesign.md
+      2026-06-21-syncbay-1-0-existing-catalog-takeover.md
 ```
 
 ## Quando consultare cosa
@@ -88,6 +90,8 @@ docs/
 | Capire retention dati operativi pilota | `decisions/0017-retention-dati-operativi.md` |
 | Capire cleanup retention automatico | `decisions/0018-cleanup-retention-automatico.md` |
 | Capire cadenza Supabase Cron del runner | `decisions/0019-cadenza-cron-runner.md` |
+| Capire perimetro e go-live 1.0 custom privata | `decisions/0020-1-0-custom-privata-catalogo-esistente.md` |
+| Implementare takeover catalogo esistente 1.0 | `superpowers/plans/2026-06-21-syncbay-1-0-existing-catalog-takeover.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |

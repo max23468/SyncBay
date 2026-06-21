@@ -14,7 +14,11 @@ Questo glossario guida UI, documentazione e microcopy.
 | Copia Shopify | Il catalogo derivato da eBay dentro Shopify. |
 | Sincronizzazione | Azione ricorrente di allineamento. "Sync" resta ammesso solo in contesti tecnici o label molto compatte. |
 | Import | Prima creazione/collegamento dei prodotti Shopify da eBay. |
+| Collega catalogo esistente | Modalità di prima configurazione per collegare prodotti Shopify già presenti ai listing eBay senza creare duplicati. |
 | Anteprima import | Anteprima prima di scrivere su Shopify. |
+| Takeover | Passaggio controllato in cui SyncBay diventa l'unico gestore del flusso eBay -> Shopify dopo una precedente app o gestione manuale. |
+| Freeze operativo | Finestra concordata in cui non si modificano manualmente eBay o Shopify durante dry-run, apply e verifica. |
+| Eccezione da rivedere | Riga non applicata automaticamente perché il dato eBay è assente, non affidabile o il match non è sicuro. |
 | Ripristino | Azione per annullare o archiviare modifiche fatte da SyncBay. |
 | Conflitto | Divergenza tra eBay, ultimo valore SyncBay è valore Shopify modificato manualmente. |
 | Modalità prudente | Stato di protezione quando disponibilità o sincronizzazione non sono affidabili. |

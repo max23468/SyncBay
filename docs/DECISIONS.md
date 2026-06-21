@@ -31,6 +31,7 @@ Usa un ADR quando una scelta:
 - `0017-retention-dati-operativi.md`: retention tecnica per dati operativi del pilota.
 - `0018-cleanup-retention-automatico.md`: cleanup retention automatico e idempotente nel tick cron, attivo per default.
 - `0019-cadenza-cron-runner.md`: cadenza Supabase Cron del runner ogni 2 minuti con target sync minimo a 120 s.
+- `0020-1-0-custom-privata-catalogo-esistente.md`: perimetro 1.0 custom privata e collegamento di cataloghi Shopify esistenti senza funzioni Numisleo-specifiche.
 
 ## Convenzioni
 

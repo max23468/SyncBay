@@ -465,10 +465,17 @@ Ogni errore deve mostrare:
 
 Se un listing eBay risulta chiuso, rimosso o non più attivo:
 
-- Shopify product status -> archived;
+- il prodotto Shopify resta pubblicato/servito come esaurito, non archiviato;
+- la scorta viene portata a `0` con politica `DENY`;
+- viene applicato un marcatore operativo `esaurito`;
+- il mapping passa a `OUT_OF_STOCK`;
 - conservare mapping e snapshot;
 - loggare motivo e timestamp;
 - non cancellare prodotto né immagini in automatico.
+
+Questa sezione segue ADR 0011: il nome storico di alcuni job può ancora
+contenere `ARCHIVE_INACTIVE_LISTING`, ma il comportamento atteso è messa in
+esaurito per preservare la SEO.
 
 ## Privacy, compliance e sicurezza
 

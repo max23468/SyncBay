@@ -7,6 +7,11 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
+- Modellare nel tab Importazione la modalità generica `Collega catalogo
+  esistente` per la 1.0 custom privata: matching conservativo, dry-run,
+  eccezioni, report e apply controllato, senza funzioni Numisleo-specifiche.
+- Preparare privacy policy generale SyncBay, termini d'uso minimi e mini kit
+  per clienti selezionati prima del primo go-live privato.
 - Verificare in produzione pilota le nuove classificazioni dei conflitti su
   coda reale: `Sicuri`, `Da rivedere`, `Da decidere`.
 - Raccogliere screenshot prodotto puliti delle sei superfici embedded
@@ -23,18 +28,20 @@ esteso della vecchia roadmap di fondazione sta in
   aggiungere pulizia descrizioni eBay più profonda.
 - Rafforzare la vista Attività con dettagli operativi progressivi quando i
   volumi reali rendono chiari i pattern di errore.
+- Eseguire audit e dry-run del primo store reale solo dopo aver chiuso la
+  modalità catalogo esistente e il runbook di freeze/takeover.
 
 ## Più avanti
 
 - Matching prodotti Shopify esistenti, varianti migliorate, multi-location
   avanzato e growth tier fino a 10.000 prodotti.
-- Billing e app pubblica Shopify solo dopo privacy, governance, stabilità MVP e
-  decisione esplicita sul modello commerciale.
+- Billing e app pubblica Shopify solo dalla 2.0, dopo privacy, governance,
+  stabilità 1.0 privata e decisione esplicita sul modello commerciale.
 
 ## Bloccato
 
-- App pubblica, billing e growth tier restano bloccati finché MVP, privacy,
-  token, GDPR, rate limit e operatività sync non sono maturi.
+- App pubblica, billing e growth tier restano bloccati fino alla 2.0; la 1.0 è
+  custom privata per pochi clienti selezionati.
 - Nuove integrazioni provider o cambi infrastrutturali richiedono ADR o
   decisione dedicata.
 
