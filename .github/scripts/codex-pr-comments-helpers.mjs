@@ -1,4 +1,4 @@
-export const DEFAULT_RECENT_PR_DAYS = 7;
+const DEFAULT_RECENT_PR_DAYS = 7;
 
 export function getRecentPrDays(value) {
   return parsePositiveInteger(value, DEFAULT_RECENT_PR_DAYS);

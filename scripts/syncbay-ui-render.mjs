@@ -3,7 +3,7 @@
  * Render headless di una superficie embedded SyncBay.
  *
  * Come: carica l'env di runtime, esegue il componente di route REALE via Vite
- * SSR + React Router static handler, alimentato dai loader reali (`getDashboardState`,
+ * SSR + React Router static handler, alimentato dai loader reali (`getOverviewState`,
  * ecc.) letti dalla sessione offline nel database. La chrome dei componenti
  * Polaris `s-*` è simulata (esistono solo dentro Admin embedded: verificato a
  * livello di app-bridge.js, che li registra solo dopo l'handshake col frame
@@ -93,7 +93,7 @@ const PAGES = {
     fixture: getDashboardFixture,
     loader: async (_mod, session) => {
       const services = await loadServices();
-      return services.getDashboardState(session);
+      return services.getOverviewState(session);
     },
   },
   catalogo: {
@@ -135,7 +135,7 @@ const PAGES = {
     fixture: getDashboardFixture,
     loader: async (mod, session) => {
       const services = await loadServices();
-      return services.getDashboardState(session);
+      return services.getOverviewState(session);
     },
   },
 };
@@ -561,6 +561,16 @@ function getDashboardFixture() {
         latestIncrementalStatus: "SUCCEEDED",
         nextDueAt: "2026-06-11T15:55:00.000Z",
         status: "fresh",
+      },
+      healthDigest: {
+        conflictsOpen: 1,
+        failedCount: 0,
+        headline: "attention",
+        lagBreached: false,
+        lagSeconds: 0,
+        quarantinedCount: 0,
+        syncedCount: 8,
+        windowHours: 24,
       },
       catalogHealthCenter: {
         causes: [

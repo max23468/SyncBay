@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.16] — 2026-06-21
+
+### Sotto il cofano
+
+- Manutenzione: ridotta la superficie pubblica interna rimuovendo export non
+  importati e mantenendo lo script di render UI agganciato al loader pubblico
+  della Panoramica.
+
 ## [0.44.15] — 2026-06-21
 
 ### Correzioni
@@ -2450,6 +2458,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.16]: #04416--2026-06-21
 [0.44.15]: #04415--2026-06-21
 [0.44.14]: #04414--2026-06-21
 [0.44.13]: #04413--2026-06-21
