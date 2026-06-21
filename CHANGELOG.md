@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.44.11] — 2026-06-21
+
+### Sotto il cofano
+
+- Catalogo: ottimizzata l'aggregazione dei conteggi di salute evitando lo scan
+  globale degli snapshot storici per ogni apertura pagina.
+
 ## [0.44.10] — 2026-06-21
 
 ### Sotto il cofano
@@ -2397,6 +2404,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.44.11]: #04411--2026-06-21
 [0.44.10]: #04410--2026-06-21
 [0.44.9]: #0449--2026-06-21
 [0.44.8]: #0448--2026-06-21

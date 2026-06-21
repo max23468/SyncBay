@@ -3299,17 +3299,7 @@ async function getCatalogSummaryCounts(input: {
       unknownAvailabilityCount: number;
     }>
   >`
-    WITH latest_snapshot AS (
-      SELECT DISTINCT ON ("mappingId")
-        "mappingId",
-        "quantity"
-      FROM "ProductSnapshot"
-      WHERE
-        "shopId" = ${input.shopId}
-        AND "mappingId" IS NOT NULL
-      ORDER BY "mappingId", "capturedAt" DESC
-    ),
-    open_conflicts AS (
+    WITH open_conflicts AS (
       SELECT
         "mappingId",
         COUNT(*)::integer AS "openConflictCount",
@@ -3341,7 +3331,15 @@ async function getCatalogSummaryCounts(input: {
           ELSE 'aligned'
         END AS "availability"
       FROM "ProductMapping" m
-      LEFT JOIN latest_snapshot ls ON ls."mappingId" = m."id"
+      LEFT JOIN LATERAL (
+        SELECT ps."quantity"
+        FROM "ProductSnapshot" ps
+        WHERE
+          ps."mappingId" = m."id"
+          AND ps."shopId" = ${input.shopId}
+        ORDER BY ps."capturedAt" DESC
+        LIMIT 1
+      ) ls ON true
       LEFT JOIN open_conflicts oc ON oc."mappingId" = m."id"
       WHERE
         m."shopId" = ${input.shopId}
