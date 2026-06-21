@@ -12,12 +12,14 @@ import {
 } from "react-router";
 
 import {
+  EmptyState,
   MetricTile,
   type SyncBayIcon,
   TimelineEvent,
 } from "../components/SyncBayUi";
 import { LiveSync, useActionToast } from "../components/SyncBayLive";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {
   formatItDateTime as formatDateTime,
   formatItNumber as formatNumber,
@@ -216,16 +218,14 @@ export default function ActivityRoute() {
               ))}
             </ol>
           ) : (
-            <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-              <s-stack gap="base">
-                <s-heading>Nessuna attività per questo filtro</s-heading>
-                <s-text>
-                  Torna a Tutte oppure avvia l&apos;importazione quando eBay e
-                  Shopify sono pronti.
-                </s-text>
-                <s-button href="/app/activity">Mostra tutte</s-button>
-              </s-stack>
-            </s-box>
+            <EmptyState
+              actionHref="/app/activity"
+              actionLabel={SYNCBAY_COPY.emptyState.activityFilter.actionLabel}
+              actionVariant="secondary"
+              body={SYNCBAY_COPY.emptyState.activityFilter.body}
+              icon="clock"
+              title={SYNCBAY_COPY.emptyState.activityFilter.title}
+            />
           )}
         </s-section>
 

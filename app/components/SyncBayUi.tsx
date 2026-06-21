@@ -2,8 +2,8 @@
  * Componenti del design layer SyncBay (ADR 0010).
  *
  * Lista chiusa: tile metrica, hero di stato, scheda connessione, decision card
- * conflitto, pannello sorgente, tappa stepper, evento timeline e scheda
- * impostazione. Sono wrapper in light DOM con
+ * conflitto, pannello sorgente, tappa stepper, evento timeline, scheda
+ * impostazione, stato vuoto e scheletro di sezione. Sono wrapper in light DOM con
  * CSS minimo (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris
  * Web Components nativi. Non aggiungere altri wrapper custom senza aggiornare
  * l'ADR.
@@ -408,6 +408,49 @@ export function ActionRow({
   );
 }
 
+type EmptyStateProps = {
+  actionHref?: string;
+  actionLabel?: string;
+  actionVariant?: "primary" | "secondary";
+  body: string;
+  icon: SyncBayIcon;
+  title: string;
+};
+
+/**
+ * Stato vuoto del design layer (Catalogo, Conflitti, Attività e simili). Nodo
+ * icona neutro + titolo che dichiara la causa + corpo che spiega cosa fare, con
+ * un'azione opzionale. Uniforma gli stati "nessun risultato" finora hand-rolled
+ * con `s-box`, così le superfici parlano la stessa lingua visiva. Vedi ADR 0010.
+ */
+export function EmptyState({
+  actionHref,
+  actionLabel,
+  actionVariant = "primary",
+  body,
+  icon,
+  title,
+}: EmptyStateProps) {
+  return (
+    <div className="syncbay-empty">
+      <span aria-hidden="true" className="syncbay-empty__icon">
+        <s-icon type={icon} tone="neutral" size="base" />
+      </span>
+      <div className="syncbay-empty__body">
+        <s-heading>{title}</s-heading>
+        <s-text color="subdued">{body}</s-text>
+      </div>
+      {actionHref && actionLabel ? (
+        <span className="syncbay-empty__actions">
+          <s-button href={actionHref} variant={actionVariant}>
+            {actionLabel}
+          </s-button>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 type StatusHeroProps = {
   actionHref?: string;
   actionLabel?: string;
@@ -444,6 +487,34 @@ export function StatusHero({
           </s-button>
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Scheletro di sezione mostrato durante la navigazione tra le superfici, finché
+ * il loader della pagina di destinazione non risponde: dà un riscontro
+ * strutturale immediato (velocità percepita) senza ricorrere allo streaming
+ * `defer`, scartato perché i loader sono DB-bound (ADR 0014). È puramente
+ * decorativo: `aria-hidden`, perché l'annuncio accessibile lo fa già
+ * l'indicatore live di cambio rotta. Lo shimmer si ferma con
+ * `prefers-reduced-motion`. Vedi ADR 0010.
+ */
+export function RouteSkeleton() {
+  return (
+    <div aria-hidden="true" className="syncbay-skeleton">
+      <span className="syncbay-skeleton__line syncbay-skeleton__line--title" />
+      <div className="syncbay-skeleton__grid">
+        <span className="syncbay-skeleton__tile" />
+        <span className="syncbay-skeleton__tile" />
+        <span className="syncbay-skeleton__tile" />
+      </div>
+      <div className="syncbay-skeleton__rows">
+        <span className="syncbay-skeleton__row" />
+        <span className="syncbay-skeleton__row" />
+        <span className="syncbay-skeleton__row" />
+        <span className="syncbay-skeleton__row" />
+      </div>
     </div>
   );
 }

@@ -19,7 +19,11 @@ import {
   type SyncBayTone,
 } from "../components/SyncBayUi";
 import { LiveSync } from "../components/SyncBayLive";
-import { getSyncBayMeta } from "../lib/syncbay-brand";
+import {
+  getSyncBayMeta,
+  SYNCBAY_BRAND_ASSETS,
+  SYNCBAY_TAGLINE,
+} from "../lib/syncbay-brand";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   formatItDateTime as formatDateTime,
@@ -33,6 +37,7 @@ import {
   formatSyncJobStatus as formatJobStatus,
   getNextAction,
   getOverviewSyncWakeAt,
+  getProviderHealthNotice,
   getSyncJobTitle as getJobTitle,
   getSyncJobTone as getJobTone,
   isOverviewSyncWorking,
@@ -145,6 +150,11 @@ export default function Index() {
     settingsMissing,
   });
   const showBlocker = shouldShowOverviewStatusHero(nextAction.kind);
+  const providerNotice = getProviderHealthNotice({
+    lagBreached: dashboard.sync.healthDigest.lagBreached,
+    lagSeconds: dashboard.sync.healthDigest.lagSeconds,
+    quarantinedCount: dashboard.sync.healthDigest.quarantinedCount,
+  });
   const recentActivity = getRecentActivity(dashboard);
   const contextualActions = getContextualActions(dashboard, importIncomplete);
   const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
@@ -163,6 +173,18 @@ export default function Index() {
         {firstRun ? <FirstRunOnboarding steps={onboardingSteps} /> : null}
         {firstRun ? null : (
         <>
+        {providerNotice ? (
+          <StatusHero
+            actionHref={providerNotice.primaryActionHref}
+            actionLabel={providerNotice.primaryActionLabel}
+            body={providerNotice.body}
+            eyebrow={providerNotice.eyebrow}
+            icon={providerNotice.kind === "quarantine" ? "alert-circle" : "clock"}
+            title={providerNotice.title}
+            tone={providerNotice.tone}
+          />
+        ) : null}
+
         {showBlocker ? (
           <StatusHero
             actionHref={nextAction.primaryActionHref}
@@ -415,7 +437,17 @@ function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
       <s-stack gap="base">
         <s-stack gap="small-200">
+          <s-box inlineSize="180px">
+            <s-image
+              alt="SyncBay"
+              aspectRatio="4/1"
+              loading="eager"
+              objectFit="contain"
+              src={SYNCBAY_BRAND_ASSETS.logoHorizontal}
+            />
+          </s-box>
           <s-heading>Benvenuto in SyncBay</s-heading>
+          <s-text>{SYNCBAY_TAGLINE}</s-text>
           <s-text color="subdued">
             Tre passi e il tuo catalogo eBay è su Shopify, pronto a vendere. Ti
             guidiamo uno alla volta.

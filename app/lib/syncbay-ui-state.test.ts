@@ -18,6 +18,7 @@ const {
   getNextAction,
   getOverviewSyncWakeAt,
   getProductPublicationModeSummaryLabel,
+  getProviderHealthNotice,
   getSyncJobTitle,
   getSyncJobTone,
   getTimelineCategoryLabel,
@@ -530,4 +531,43 @@ test("formats and tones sync job statuses", () => {
   assert.equal(getSyncJobTone("FAILED"), "critical");
   assert.equal(getSyncJobTone("RETRYING"), "warning");
   assert.equal(getSyncJobTone("PENDING"), "info");
+});
+
+test("surfaces quarantined updates as a critical provider notice", () => {
+  const notice = getProviderHealthNotice({
+    quarantinedCount: 2,
+    lagBreached: true,
+    lagSeconds: 600,
+  });
+
+  assert.equal(notice?.kind, "quarantine");
+  assert.equal(notice?.tone, "critical");
+  assert.equal(notice?.primaryActionHref, "/app/activity");
+  assert.match(notice?.title ?? "", /2 aggiornamenti/);
+});
+
+test("uses singular copy for a single quarantined update", () => {
+  const notice = getProviderHealthNotice({ quarantinedCount: 1 });
+
+  assert.equal(notice?.kind, "quarantine");
+  assert.match(notice?.title ?? "", /Un aggiornamento/);
+});
+
+test("falls back to a warning lag notice when nothing is quarantined", () => {
+  const notice = getProviderHealthNotice({
+    quarantinedCount: 0,
+    lagBreached: true,
+    lagSeconds: 420,
+  });
+
+  assert.equal(notice?.kind, "lag");
+  assert.equal(notice?.tone, "warning");
+  assert.match(notice?.body ?? "", /7 minuti di ritardo/);
+});
+
+test("returns no provider notice when the sync is healthy", () => {
+  assert.equal(
+    getProviderHealthNotice({ quarantinedCount: 0, lagBreached: false }),
+    null,
+  );
 });

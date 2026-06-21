@@ -10,6 +10,7 @@ import { NavMenu, TitleBar } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
+import { RouteSkeleton } from "../components/SyncBayUi";
 import { SYNCBAY_APP_NAME } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 
@@ -45,7 +46,7 @@ export default function App() {
       </NavMenu>
       <RoutePendingIndicator copy={pendingCopy} isVisible={isRoutePending} />
       <div aria-busy={isRoutePending}>
-        <Outlet />
+        {isRoutePending ? <RouteSkeleton /> : <Outlet />}
       </div>
     </AppProvider>
   );
