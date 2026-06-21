@@ -809,11 +809,13 @@ export async function getCatalogPageState(
       ? getCatalogDatabasePageWhere(where, activeFilter)
       : null;
   const databasePageTotalCount = databasePageWhere
-    ? await measureSyncBayPerformanceStage(
-        trace,
-        "catalog.db.databasePageTotalCount",
-        () => prisma.productMapping.count({ where: databasePageWhere }),
-      )
+    ? databasePageWhere === where
+      ? totalAvailableCount
+      : await measureSyncBayPerformanceStage(
+          trace,
+          "catalog.db.databasePageTotalCount",
+          () => prisma.productMapping.count({ where: databasePageWhere }),
+        )
     : totalAvailableCount;
   const queryPlan = getCatalogQueryPlan({
     filter: activeFilter,
@@ -825,7 +827,7 @@ export async function getCatalogPageState(
   });
 
   if (queryPlan.mode === "database-page" && databasePageWhere) {
-    const [[mappings, linkedCount, latestIncrementalJob], summary] =
+    const [[mappings, linkedCount], summary] =
       await Promise.all([
         measureSyncBayPerformanceStage(
           trace,
@@ -853,11 +855,6 @@ export async function getCatalogPageState(
                   shopifyProductGid: { not: null },
                 },
               }),
-              prisma.syncJob.findFirst({
-                orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-                select: { finishedAt: true },
-                where: getCompletedCatalogVerificationJobWhere(shop.id),
-              }),
             ]),
         ),
         measureSyncBayPerformanceStage(
@@ -871,7 +868,8 @@ export async function getCatalogPageState(
             }),
         ),
       ]);
-    const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
+    const { latestIncrementalFinishedAt, ...summaryCounts } = summary;
+    const catalogVerifiedAt = latestIncrementalFinishedAt;
     const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
       trace,
       "catalog.db.latestSnapshots",
@@ -919,7 +917,7 @@ export async function getCatalogPageState(
         syncTargetSeconds: shop.syncTargetSeconds,
       },
       summary: {
-        ...summary,
+        ...summaryCounts,
         linkedCount,
         totalCount: totalAvailableCount,
       },
@@ -3601,16 +3599,17 @@ async function getCatalogSummaryCounts(input: {
     FROM catalog_rows
   `;
 
-  return (
-    summary ?? {
+  return {
+    ...(summary ?? {
       archivedCount: 0,
       conflictCount: 0,
       freshCount: 0,
       needsCheckCount: 0,
       staleActiveCount: 0,
       unknownAvailabilityCount: 0,
-    }
-  );
+    }),
+    latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt ?? null,
+  };
 }
 
 function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {
