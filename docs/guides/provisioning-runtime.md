@@ -110,7 +110,7 @@ Note:
   gennaio 2027. Se il refresh token manca o scade, riaprire l'app Shopify per
   ripetere il flusso di autorizzazione/migrazione; non usare token offline a
   durata illimitata come workaround.
-- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni 2 minuti e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
+- `/api/jobs/run-due` è il runner HTTP protetto da `CRON_SECRET` per riprendere job `IMPORT_CATALOG` dovuti. La schedule Supabase Cron `syncbay-run-due-jobs` è attiva ogni 2 minuti e legge il secret da Supabase Vault, senza valore segreto in repo o documentazione. Il runner usa un look-ahead di 120 secondi per enqueueare i sync incrementali che scadono prima del tick successivo, mantenendo il target massimo di 5 minuti; non anticipa invece i `runAfter` usati come backoff provider. I retry reali recuperano i listing per `ItemID` via Trading API `GetItem` e chiudono il job originale senza lasciarlo `RUNNING`.
 - `/api/diagnostics/shopify-admin` è l'endpoint diagnostico interno per verificare
   Shopify Admin usando la sessione offline SyncBay e il refresh token lato
   runtime, senza passare da `shopify store auth`. È protetto da `APP_SECRET`
@@ -168,7 +168,7 @@ Non salvarla in Git e non stamparla nei log.
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
-- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault
+- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` ogni 2 minuti tramite `pg_net` e secret in Supabase Vault; il runner anticipa i sync incrementali in scadenza entro il tick successivo
 - schedule Supabase Cron `syncbay-maintain-supabase-internal-tables` applicata
   via migration; pulisce ogni giorno `cron.job_run_details` oltre 7 giorni e
   `net._http_response` oltre 1 giorno per limitare bloat interno Supabase.
