@@ -160,6 +160,7 @@ function parseLoaderPerformanceRecords(rawLogs) {
         details: metric.details ?? {},
         metrics: Array.isArray(metric.metrics) ? metric.metrics : [],
         observedAt: item.observedAt,
+        observedAtMs: normalizeObservedAt(item.observedAt),
         observationIndex: lineIndex,
         payloadBytes: metric.payloadBytes ?? null,
         route: String(metric.route ?? "unknown"),
@@ -245,10 +246,39 @@ function getLatestRecordsByRoute(records) {
   const latestByRoute = new Map();
 
   for (const record of records) {
-    latestByRoute.set(record.route, record);
+    const current = latestByRoute.get(record.route);
+
+    if (!current || compareRecordRecency(record, current) > 0) {
+      latestByRoute.set(record.route, record);
+    }
   }
 
   return [...latestByRoute.values()].sort(compareRoutes);
+}
+
+function compareRecordRecency(a, b) {
+  if (a.observedAtMs !== null && b.observedAtMs !== null) {
+    return a.observedAtMs - b.observedAtMs;
+  }
+
+  if (a.observedAtMs !== null) return 1;
+  if (b.observedAtMs !== null) return -1;
+
+  return a.observationIndex - b.observationIndex;
+}
+
+function normalizeObservedAt(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+
+  if (typeof value === "string" && value.trim()) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+
+    const parsedDate = Date.parse(value);
+    if (Number.isFinite(parsedDate)) return parsedDate;
+  }
+
+  return null;
 }
 
 function compareRoutes(a, b) {
