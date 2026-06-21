@@ -24,6 +24,10 @@ import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  createSyncBayLoaderPerformanceTrace,
+  logSyncBayLoaderPerformance,
+} from "../lib/syncbay-loader-performance";
+import {
   formatSyncJobStatus as formatJobStatus,
   getNextAction,
   getOverviewSyncWakeAt,
@@ -57,9 +61,27 @@ const itDateTimeFormatter = new Intl.DateTimeFormat("it-IT", {
 export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const trace = createSyncBayLoaderPerformanceTrace();
+  const { session } = await trace.measure("auth.admin", () =>
+    authenticate.admin(request),
+  );
+  const dashboard = await trace.measure("overview.state", () =>
+    getDashboardState(session, trace),
+  );
 
-  return getDashboardState(session);
+  logSyncBayLoaderPerformance({
+    details: {
+      mappingCount: dashboard.imports.mappingCount,
+      openConflictCount: dashboard.conflicts.openCount,
+      pendingJobs: dashboard.sync.pendingJobs,
+      recentJobs: dashboard.sync.lastJobs.length,
+    },
+    payload: dashboard,
+    route: "overview",
+    trace,
+  });
+
+  return dashboard;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {

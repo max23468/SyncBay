@@ -208,8 +208,15 @@ const SHOPIFY_WEBHOOK_TOPICS = [
   "inventory_levels/update",
 ];
 
-export async function getDashboardState(session: ShopifySessionLike) {
-  const shop = await ensureShopForSession(session);
+export async function getDashboardState(
+  session: ShopifySessionLike,
+  trace?: SyncBayLoaderPerformanceTrace,
+) {
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "dashboard.shop.ensure",
+    () => ensureShopForSession(session),
+  );
   const defaultProductStatus = normalizeImportProductStatus(
     shop.defaultProductStatus,
   );
@@ -238,135 +245,148 @@ export async function getDashboardState(session: ShopifySessionLike) {
     ],
     latestImportRun,
   ] = await Promise.all([
-    prisma.$transaction([
-      prisma.ebayConnection.findUnique({
-        where: {
-          shopId_marketplaceId: {
-            marketplaceId: getEbayMarketplaceId(),
-            shopId: shop.id,
-          },
-        },
-      }),
-      prisma.syncJob.findMany({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-      prisma.syncJob.findMany({
-        where: { shopId: shop.id, type: SyncJobType.IMPORT_CATALOG },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-      prisma.auditLog.findMany({
-        where: { shopId: shop.id },
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-      prisma.productMapping.count({
-        where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
-      }),
-      prisma.syncConflict.count({
-        where: {
-          shopId: shop.id,
-          status: SyncConflictStatus.OPEN,
-        },
-      }),
-      prisma.syncConflict.findMany({
-        include: {
-          mapping: {
-            select: {
-              ebayItemId: true,
-              shopifyProductGid: true,
+    measureSyncBayPerformanceStage(
+      trace,
+      "dashboard.db.mainTransaction",
+      () =>
+        prisma.$transaction([
+          prisma.ebayConnection.findUnique({
+            where: {
+              shopId_marketplaceId: {
+                marketplaceId: getEbayMarketplaceId(),
+                shopId: shop.id,
+              },
             },
-          },
-        },
-        orderBy: { detectedAt: "desc" },
-        take: 8,
-        where: {
-          shopId: shop.id,
-          status: SyncConflictStatus.OPEN,
-        },
-      }),
-      prisma.productSnapshot.count({
-        where: { shopId: shop.id },
-      }),
-      prisma.syncJob.findFirst({
-        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-        where: getCompletedCatalogVerificationJobWhere(shop.id),
-      }),
-      prisma.syncJob.count({
-        where: {
-          shopId: shop.id,
-          status: {
-            in: [
-              SyncJobStatus.PENDING,
-              SyncJobStatus.RETRYING,
-              SyncJobStatus.RUNNING,
-            ],
-          },
-          type: SyncJobType.SYNC_INCREMENTAL,
-        },
-      }),
-      prisma.syncJob.findFirst({
-        orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
-        select: { runAfter: true },
-        where: {
-          runAfter: { gt: now },
-          shopId: shop.id,
-          status: SyncJobStatus.RETRYING,
-        },
-      }),
-      prisma.syncJob.findFirst({
-        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-        select: { result: true },
-        where: {
-          shopId: shop.id,
-          status: SyncJobStatus.SUCCEEDED,
-          type: SyncJobType.SYNC_INCREMENTAL,
-        },
-      }),
-      prisma.syncJob.findFirst({
-        orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-        select: { finishedAt: true },
-        where: {
-          payload: { path: ["source"], equals: "catalog_reconcile" },
-          shopId: shop.id,
-          status: SyncJobStatus.SUCCEEDED,
-          type: SyncJobType.SYNC_INCREMENTAL,
-        },
-      }),
-      prisma.syncJob.findMany({
-        orderBy: { createdAt: "asc" },
-        select: {
-          attempts: true,
-          createdAt: true,
-          maxAttempts: true,
-          status: true,
-        },
-        take: 2000,
-        where: { createdAt: { gte: weekAgo }, shopId: shop.id },
-      }),
-      prisma.productMapping.count({
-        where: {
-          createdAt: { gte: dayAgo },
-          marketplaceId: getEbayMarketplaceId(),
-          shopId: shop.id,
-        },
-      }),
-      prisma.syncConflict.count({
-        where: { detectedAt: { gte: dayAgo }, shopId: shop.id },
-      }),
-      prisma.productMapping.count({
-        where: {
-          marketplaceId: getEbayMarketplaceId(),
-          shopId: shop.id,
-          status: ProductMappingStatus.ERROR,
-        },
-      }),
-    ]),
-    getLatestImportRunSummary(shop.id),
+          }),
+          prisma.syncJob.findMany({
+            where: { shopId: shop.id },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          }),
+          prisma.syncJob.findMany({
+            where: { shopId: shop.id, type: SyncJobType.IMPORT_CATALOG },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          }),
+          prisma.auditLog.findMany({
+            where: { shopId: shop.id },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          }),
+          prisma.productMapping.count({
+            where: { marketplaceId: getEbayMarketplaceId(), shopId: shop.id },
+          }),
+          prisma.syncConflict.count({
+            where: {
+              shopId: shop.id,
+              status: SyncConflictStatus.OPEN,
+            },
+          }),
+          prisma.syncConflict.findMany({
+            include: {
+              mapping: {
+                select: {
+                  ebayItemId: true,
+                  shopifyProductGid: true,
+                },
+              },
+            },
+            orderBy: { detectedAt: "desc" },
+            take: 8,
+            where: {
+              shopId: shop.id,
+              status: SyncConflictStatus.OPEN,
+            },
+          }),
+          prisma.productSnapshot.count({
+            where: { shopId: shop.id },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            where: getCompletedCatalogVerificationJobWhere(shop.id),
+          }),
+          prisma.syncJob.count({
+            where: {
+              shopId: shop.id,
+              status: {
+                in: [
+                  SyncJobStatus.PENDING,
+                  SyncJobStatus.RETRYING,
+                  SyncJobStatus.RUNNING,
+                ],
+              },
+              type: SyncJobType.SYNC_INCREMENTAL,
+            },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
+            select: { runAfter: true },
+            where: {
+              runAfter: { gt: now },
+              shopId: shop.id,
+              status: SyncJobStatus.RETRYING,
+            },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { result: true },
+            where: {
+              shopId: shop.id,
+              status: SyncJobStatus.SUCCEEDED,
+              type: SyncJobType.SYNC_INCREMENTAL,
+            },
+          }),
+          prisma.syncJob.findFirst({
+            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+            select: { finishedAt: true },
+            where: {
+              payload: { path: ["source"], equals: "catalog_reconcile" },
+              shopId: shop.id,
+              status: SyncJobStatus.SUCCEEDED,
+              type: SyncJobType.SYNC_INCREMENTAL,
+            },
+          }),
+          prisma.syncJob.findMany({
+            orderBy: { createdAt: "asc" },
+            select: {
+              attempts: true,
+              createdAt: true,
+              maxAttempts: true,
+              status: true,
+            },
+            take: 2000,
+            where: { createdAt: { gte: weekAgo }, shopId: shop.id },
+          }),
+          prisma.productMapping.count({
+            where: {
+              createdAt: { gte: dayAgo },
+              marketplaceId: getEbayMarketplaceId(),
+              shopId: shop.id,
+            },
+          }),
+          prisma.syncConflict.count({
+            where: { detectedAt: { gte: dayAgo }, shopId: shop.id },
+          }),
+          prisma.productMapping.count({
+            where: {
+              marketplaceId: getEbayMarketplaceId(),
+              shopId: shop.id,
+              status: ProductMappingStatus.ERROR,
+            },
+          }),
+        ]),
+    ),
+    measureSyncBayPerformanceStage(
+      trace,
+      "dashboard.db.latestImportRun",
+      () => getLatestImportRunSummary(shop.id),
+    ),
   ]);
-  const descriptionRule = await getExistingDescriptionRuleForSettings(shop.id);
+  const descriptionRule = await measureSyncBayPerformanceStage(
+    trace,
+    "dashboard.db.descriptionRule",
+    () => getExistingDescriptionRuleForSettings(shop.id),
+  );
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -414,11 +434,16 @@ export async function getDashboardState(session: ShopifySessionLike) {
     ),
     synced: readJobResultCount(latestIncrementalWorkJob?.result, "syncedCount"),
   };
-  const catalogSummary = await getCatalogSummaryCounts({
-    now,
-    shopId: shop.id,
-    syncTargetSeconds: shop.syncTargetSeconds,
-  });
+  const catalogSummary = await measureSyncBayPerformanceStage(
+    trace,
+    "dashboard.db.catalogSummaryCounts",
+    () =>
+      getCatalogSummaryCounts({
+        now,
+        shopId: shop.id,
+        syncTargetSeconds: shop.syncTargetSeconds,
+      }),
+  );
   const failedJobCount = recentJobs.filter(
     (job) => job.status === SyncJobStatus.FAILED,
   ).length;
@@ -1459,8 +1484,13 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
 export async function getImportWizardState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
+  trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await ensureShopForSession(session);
+  const shop = await measureSyncBayPerformanceStage(
+    trace,
+    "import.shop.ensure",
+    () => ensureShopForSession(session),
+  );
   const defaultProductStatus = normalizeImportProductStatus(
     shop.defaultProductStatus,
   );
@@ -1470,23 +1500,36 @@ export async function getImportWizardState(
   const selectedPublicationIds = parseProductPublicationGids(
     shop.productPublicationGids,
   );
-  const descriptionRule = await getExistingDescriptionRuleForSettings(shop.id);
-  const ebayConnection = await prisma.ebayConnection.findUnique({
-    where: {
-      shopId_marketplaceId: {
-        marketplaceId: getEbayMarketplaceId(),
-        shopId: shop.id,
-      },
-    },
-  });
+  const [descriptionRule, ebayConnection] = await Promise.all([
+    measureSyncBayPerformanceStage(
+      trace,
+      "import.db.descriptionRule",
+      () => getExistingDescriptionRuleForSettings(shop.id),
+    ),
+    measureSyncBayPerformanceStage(trace, "import.db.ebayConnection", () =>
+      prisma.ebayConnection.findUnique({
+        where: {
+          shopId_marketplaceId: {
+            marketplaceId: getEbayMarketplaceId(),
+            shopId: shop.id,
+          },
+        },
+      }),
+    ),
+  ]);
   const ebayRuntime = getEbayRuntimeReadiness();
   const ebayConnected =
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const preview =
     ebayConnected && ebayConnection
-      ? await getEbayLiveImportPreview(ebayConnection, {
-          descriptionRuleMode: descriptionRule.mode,
-        })
+      ? await measureSyncBayPerformanceStage(
+          trace,
+          "import.ebay.preview",
+          () =>
+            getEbayLiveImportPreview(ebayConnection, {
+              descriptionRuleMode: descriptionRule.mode,
+            }),
+        )
       : getMockImportPreviewState(descriptionRule.mode);
   const importPreview = getImportPreviewReadiness({
     defaultProductStatus,
@@ -1496,10 +1539,15 @@ export async function getImportWizardState(
     listingReaderAvailable: true,
     listingReaderError: preview.errorMessage,
   });
-  const previewResult = await getImportPreviewWithExistingShopifyMatches({
-    admin,
-    previewResult: preview.previewResult,
-  });
+  const previewResult = await measureSyncBayPerformanceStage(
+    trace,
+    "import.shopify.existingMatches",
+    () =>
+      getImportPreviewWithExistingShopifyMatches({
+        admin,
+        previewResult: preview.previewResult,
+      }),
+  );
 
   return {
     draftImport: getDraftImportReadiness({

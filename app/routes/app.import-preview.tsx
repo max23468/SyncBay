@@ -22,6 +22,10 @@ import {
 } from "../lib/import-product-status";
 import { getEmbeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
+  createSyncBayLoaderPerformanceTrace,
+  logSyncBayLoaderPerformance,
+} from "../lib/syncbay-loader-performance";
+import {
   getPageWindow,
   normalizePage,
 } from "../lib/syncbay-pagination";
@@ -86,10 +90,15 @@ type ImportPreviewActionData =
 export const meta: MetaFunction = () => getSyncBayMeta("Importazione");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const trace = createSyncBayLoaderPerformanceTrace();
+  const { admin, session } = await trace.measure("auth.admin", () =>
+    authenticate.admin(request),
+  );
   const [locationResult, wizard] = await Promise.all([
-    fetchShopifyLocations(admin),
-    getImportWizardState(session, admin),
+    trace.measure("import.shopify.locations", () => fetchShopifyLocations(admin)),
+    trace.measure("import.wizard", () =>
+      getImportWizardState(session, admin, trace),
+    ),
   ]);
   const selectedLocation = locationResult.locations.find(
     (location) => location.id === wizard.shop.defaultLocationGid,
@@ -100,13 +109,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     selectedLocationName: selectedLocation?.name ?? null,
   });
 
-  return {
+  const state = {
     canWriteLocations: hasSessionScope(session.scope, "write_locations"),
     locationRename,
     locationError: locationResult.errorMessage,
     locations: locationResult.locations,
     wizard,
   };
+
+  logSyncBayLoaderPerformance({
+    details: {
+      draftImportEnabled: wizard.draftImport.enabled,
+      importableCount: wizard.draftImport.importableCount,
+      locations: locationResult.locations.length,
+      plannedCreateCount: wizard.draftImport.plannedCreateCount,
+      previewSource: wizard.previewSource.source,
+    },
+    payload: state,
+    route: "import",
+    trace,
+  });
+
+  return state;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
