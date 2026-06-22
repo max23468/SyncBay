@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Tooling: migrato il lint a ESLint 10 con configurazione flat nativa,
+  sostituendo i plugin legacy `import`, `react` e `jsx-a11y` con alternative
+  compatibili e rimuovendo compatibilità/tipi ESLint obsoleti.
+
 ## [0.45.1] — 2026-06-22
 
 ### Correzioni

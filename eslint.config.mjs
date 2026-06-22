@@ -1,14 +1,28 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import eslintReact from "@eslint-react/eslint-plugin";
 import js from "@eslint/js";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import tsEslint from "@typescript-eslint/eslint-plugin";
+import tsParser from "@typescript-eslint/parser";
+import globals from "globals";
+import importX from "eslint-plugin-import-x";
+import jsxA11yX from "eslint-plugin-jsx-a11y-x";
+import reactHooks from "eslint-plugin-react-hooks";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const sourceFiles = ["**/*.{js,jsx,ts,tsx}"];
+const jsxFiles = ["**/*.{jsx,tsx}"];
+const tsFiles = ["**/*.{ts,tsx}"];
+const nodeFiles = [
+  "eslint.config.mjs",
+  ".github/scripts/**/*.mjs",
+  "vite.config.{js,ts}",
+  ".graphqlrc.{js,ts}",
+  "shopify.server.{js,ts}",
+  "scripts/**/*.mjs",
+  "**/*.server.{js,ts}",
+];
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
+const applyTo = (config, files) => ({
+  ...config,
+  files: config.files ?? files,
 });
 
 export default [
@@ -24,85 +38,82 @@ export default [
       ".vercel/**",
     ],
   },
-  ...compat.config({
-    parserOptions: {
+  {
+    files: sourceFiles,
+    languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
-      ecmaFeatures: {
-        jsx: true,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.commonjs,
+        ...globals.es2021,
+        shopify: "readonly",
       },
     },
-    env: {
-      browser: true,
-      commonjs: true,
-      es6: true,
+    settings: {
+      react: {
+        version: "detect",
+      },
+      formComponents: ["Form"],
+      linkComponents: [
+        { name: "Link", linkAttribute: "to" },
+        { name: "NavLink", linkAttribute: "to" },
+      ],
     },
-    ignorePatterns: ["!**/.server", "!**/.client"],
-    extends: ["eslint:recommended"],
-    overrides: [
-      {
-        files: ["**/*.{js,jsx,ts,tsx}"],
-        plugins: ["react", "jsx-a11y"],
-        extends: [
-          "plugin:react/recommended",
-          "plugin:react/jsx-runtime",
-          "plugin:react-hooks/recommended",
-          "plugin:jsx-a11y/recommended",
-        ],
-        settings: {
-          react: {
-            version: "detect",
-          },
-          formComponents: ["Form"],
-          linkComponents: [
-            { name: "Link", linkAttribute: "to" },
-            { name: "NavLink", linkAttribute: "to" },
-          ],
-          "import/resolver": {
-            typescript: {},
-          },
-        },
-        rules: {
-          "react/no-unknown-property": ["error", { ignore: ["variant"] }],
-        },
-      },
-      {
-        files: ["**/*.{ts,tsx}"],
-        plugins: ["@typescript-eslint", "import"],
-        parser: "@typescript-eslint/parser",
-        settings: {
-          "import/internal-regex": "^~/",
-          "import/resolver": {
-            node: {
-              extensions: [".ts", ".tsx"],
-            },
-            typescript: {
-              alwaysTryTypes: true,
-            },
-          },
-        },
-        extends: [
-          "plugin:@typescript-eslint/recommended",
-          "plugin:import/recommended",
-          "plugin:import/typescript",
-        ],
-      },
-      {
-        files: [
-          "eslint.config.mjs",
-          "vite.config.{js,ts}",
-          ".graphqlrc.{js,ts}",
-          "shopify.server.{js,ts}",
-          "scripts/**/*.mjs",
-          "**/*.server.{js,ts}",
-        ],
-        env: {
-          node: true,
-        },
-      },
-    ],
-    globals: {
-      shopify: "readonly",
+  },
+  {
+    files: tsFiles,
+    languageOptions: {
+      parser: tsParser,
     },
-  }),
+  },
+  js.configs.recommended,
+  ...tsEslint.configs["flat/recommended"].map((config) =>
+    applyTo(config, tsFiles),
+  ),
+  applyTo(importX.flatConfigs.recommended, sourceFiles),
+  applyTo(
+    {
+      ...importX.flatConfigs.typescript,
+      settings: {
+        ...importX.flatConfigs.typescript.settings,
+        "import-x/internal-regex": "^~/",
+        "import-x/resolver": {
+          node: {
+            extensions: [".ts", ".tsx"],
+          },
+          typescript: {
+            alwaysTryTypes: true,
+          },
+        },
+      },
+    },
+    tsFiles,
+  ),
+  applyTo(eslintReact.configs["recommended-typescript"], sourceFiles),
+  {
+    files: sourceFiles,
+    ...reactHooks.configs.flat.recommended,
+  },
+  applyTo(jsxA11yX.configs.recommended, jsxFiles),
+  {
+    files: sourceFiles,
+    rules: {
+      "@eslint-react/dom-no-unknown-property": [
+        "error",
+        { ignore: ["variant"] },
+      ],
+    },
+  },
+  {
+    files: nodeFiles,
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
 ];

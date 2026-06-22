@@ -29,17 +29,17 @@ export function useActionToast<T>(
   fetcher: { data: T | undefined; state: string },
   getToast: (data: T) => ActionToastResult,
 ) {
-  const lastData = useRef<T | undefined>(undefined);
+  const lastDataRef = useRef<T | undefined>(undefined);
 
   useEffect(() => {
     if (
       fetcher.state !== "idle" ||
       fetcher.data === undefined ||
-      fetcher.data === lastData.current
+      fetcher.data === lastDataRef.current
     ) {
       return;
     }
-    lastData.current = fetcher.data;
+    lastDataRef.current = fetcher.data;
     const result = getToast(fetcher.data);
     if (result) {
       showSyncBayToast(result.message, { isError: result.isError });
@@ -60,17 +60,17 @@ export function LiveSync({
 }: LiveSyncProps) {
   const revalidator = useRevalidator();
   const revalidateRef = useRef(revalidator.revalidate);
-  const wasWorking = useRef(working);
+  const wasWorkingRef = useRef(working);
 
   useEffect(() => {
     revalidateRef.current = revalidator.revalidate;
   });
 
   useEffect(() => {
-    if (wasWorking.current && !working && !nextRevalidateAt) {
+    if (wasWorkingRef.current && !working && !nextRevalidateAt) {
       showSyncBayToast("Sincronizzazione completata");
     }
-    wasWorking.current = working;
+    wasWorkingRef.current = working;
   }, [nextRevalidateAt, working]);
 
   useEffect(() => {
