@@ -31,9 +31,12 @@ L'intervallo target configurabile nelle Impostazioni passa ai soli valori:
 Eventuali shop salvati sotto 5 minuti vengono normalizzati a 300 secondi dalla
 migration. Valori fuori dall'insieme restano rifiutati lato server.
 
-Il runner usa un look-ahead di 300 secondi, pari alla nuova cadenza cron, per
-enqueueare nel tick corrente i sync incrementali che scadono prima del tick
-successivo. Il look-ahead non anticipa `runAfter` usati come backoff provider.
+Il runner pianifica i sync incrementali solo quando il prossimo `runAfter`
+calcolato è già scaduto. Non usa più un look-ahead per anticipare i sync che
+cadono prima del tick successivo: altrimenti un negozio con intervallo 10, 15,
+20 o 30 minuti potrebbe essere controllato un tick prima, consumando egress e
+spostando in avanti i marker no-op. I `runAfter` usati come backoff provider
+restano comunque rispettati.
 
 Il batch automatico resta `limit=5`, come deciso dalla patch egress precedente.
 
@@ -46,6 +49,9 @@ Il batch automatico resta `limit=5`, come deciso dalla patch egress precedente.
   minuti e il massimo 30 minuti.
 - L'app deve comunicare il target come finestra indicativa configurabile, non
   come SLA rigido.
+- Un sync può partire al tick cron successivo rispetto alla scadenza del target,
+  invece di essere anticipato; questo preserva l'intervallo scelto e riduce i
+  controlli a vuoto.
 - In caso di import/backfill massivi va valutata una corsia temporanea più
   aggressiva o un'esecuzione manuale controllata, senza rendere il polling
   ordinario più costoso.

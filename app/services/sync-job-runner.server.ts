@@ -56,7 +56,6 @@ import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
 import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
 import {
   getNextIncrementalEnqueueAt,
-  isIncrementalProviderBackoffGate,
   shouldEnqueueIncrementalSyncNow,
 } from "../lib/syncbay-incremental-schedule";
 import {
@@ -194,7 +193,6 @@ const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
 const CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK = 5;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
-const INCREMENTAL_SYNC_RUNNER_LOOKAHEAD_SECONDS = 300;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
 const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
@@ -601,13 +599,8 @@ async function enqueueIncrementalSyncJobs(now: Date) {
 
     if (
       !shouldEnqueueIncrementalSyncNow({
-        allowLookahead: !isIncrementalProviderBackoffGate({
-          latestJob: lastJob,
-          syncTargetSeconds: shop.syncTargetSeconds,
-        }),
         nextRunAfter,
         now,
-        runnerLookaheadSeconds: INCREMENTAL_SYNC_RUNNER_LOOKAHEAD_SECONDS,
       })
     ) {
       continue;

@@ -6,7 +6,6 @@ import * as incrementalSchedule from "./syncbay-incremental-schedule.ts";
 
 const { getNextIncrementalEnqueueAt, shouldEnqueueIncrementalSyncNow } =
   incrementalSchedule;
-const { isIncrementalProviderBackoffGate } = incrementalSchedule;
 
 const now = new Date("2026-06-03T12:00:00.000Z");
 
@@ -51,7 +50,7 @@ test("schedules immediately when no incremental job exists", () => {
   );
 });
 
-test("treats an incremental sync due before the next runner tick as enqueueable", () => {
+test("keeps a selected future sync interval pending", () => {
   const nextRunAfter = getNextIncrementalEnqueueAt({
     latestJob: {
       createdAt: new Date("2026-06-03T11:50:01.000Z"),
@@ -66,24 +65,22 @@ test("treats an incremental sync due before the next runner tick as enqueueable"
     shouldEnqueueIncrementalSyncNow({
       nextRunAfter,
       now,
-      runnerLookaheadSeconds: 300,
-    }),
-    true,
-  );
-});
-
-test("keeps future incremental syncs outside the runner lookahead pending", () => {
-  assert.equal(
-    shouldEnqueueIncrementalSyncNow({
-      nextRunAfter: new Date("2026-06-03T12:05:01.000Z"),
-      now,
-      runnerLookaheadSeconds: 300,
     }),
     false,
   );
 });
 
-test("does not bypass eBay cooldowns inside the runner lookahead", () => {
+test("keeps future incremental syncs pending", () => {
+  assert.equal(
+    shouldEnqueueIncrementalSyncNow({
+      nextRunAfter: new Date("2026-06-03T12:05:01.000Z"),
+      now,
+    }),
+    false,
+  );
+});
+
+test("keeps eBay cooldown runAfter pending", () => {
   const latestJob = {
     createdAt: new Date("2026-06-03T11:58:00.000Z"),
     finishedAt: new Date("2026-06-03T11:58:00.000Z"),
@@ -97,27 +94,15 @@ test("does not bypass eBay cooldowns inside the runner lookahead", () => {
   });
 
   assert.equal(
-    isIncrementalProviderBackoffGate({
-      latestJob,
-      syncTargetSeconds,
-    }),
-    true,
-  );
-  assert.equal(
     shouldEnqueueIncrementalSyncNow({
-      allowLookahead: !isIncrementalProviderBackoffGate({
-        latestJob,
-        syncTargetSeconds,
-      }),
       nextRunAfter,
       now,
-      runnerLookaheadSeconds: 300,
     }),
     false,
   );
 });
 
-test("treats shorter provider cooldowns as lookahead gates", () => {
+test("treats shorter provider cooldowns as future gates", () => {
   const latestJob = {
     createdAt: new Date("2026-06-03T07:00:00.000Z"),
     finishedAt: new Date("2026-06-03T07:01:00.000Z"),
@@ -133,21 +118,9 @@ test("treats shorter provider cooldowns as lookahead gates", () => {
 
   assert.equal(nextRunAfter.toISOString(), "2026-06-03T07:06:00.000Z");
   assert.equal(
-    isIncrementalProviderBackoffGate({
-      latestJob,
-      syncTargetSeconds,
-    }),
-    true,
-  );
-  assert.equal(
     shouldEnqueueIncrementalSyncNow({
-      allowLookahead: !isIncrementalProviderBackoffGate({
-        latestJob,
-        syncTargetSeconds,
-      }),
       nextRunAfter,
       now: nowInsideCooldown,
-      runnerLookaheadSeconds: 300,
     }),
     false,
   );

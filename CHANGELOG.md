@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.1] — 2026-06-23
+
+### Correzioni
+
+- Runner sync: la pianificazione incrementale non considera più eseguibili i
+  sync solo perché ricadono entro il prossimo tick cron, preservando
+  l'intervallo scelto dal negoziante e riducendo cicli anticipati a vuoto.
+
 ## [0.46.0] — 2026-06-23
 
 ### Novità
@@ -2545,6 +2553,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.1]: #0461--2026-06-23
 [0.46.0]: #0460--2026-06-23
 [0.45.2]: #0452--2026-06-23
 [0.45.1]: #0451--2026-06-22
