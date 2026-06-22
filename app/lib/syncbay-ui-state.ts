@@ -309,8 +309,8 @@ export interface ProviderHealthNotice {
 
 /**
  * Avviso di stato del sistema quando il sync è degradato in modo che oggi non
- * emerge in Panoramica: aggiornamenti verso eBay messi in pausa dopo errori
- * ripetuti (quarantena) o allineamento oltre il target. La quarantena è più
+ * emerge in Panoramica: attività con tentativi esauriti che richiedono
+ * intervento (quarantena) o allineamento oltre il target. La quarantena è più
  * grave e ha la precedenza sul ritardo. Negli altri casi (conflitti, errori
  * isolati) restano i segnali esistenti e qui torna `null`. Presenta solo dati
  * già aggregati nel digest, senza nuove letture provider.
@@ -323,17 +323,17 @@ export function getProviderHealthNotice(
   if (quarantinedCount > 0) {
     return {
       body:
-        "SyncBay ha sospeso questi aggiornamenti dopo errori ripetuti su eBay. " +
-        "Riprende da solo appena eBay risponde di nuovo; intanto le " +
-        "disponibilità restano prudenti.",
+        "SyncBay ha messo in pausa queste attività dopo errori ripetuti. " +
+        "Non ripartono automaticamente: apri Attività, controlla la causa e " +
+        "usa Riprova quando disponibile.",
       eyebrow: PROVIDER_HEALTH_EYEBROW,
       kind: "quarantine",
       primaryActionHref: "/app/activity",
       primaryActionLabel: PROVIDER_HEALTH_ACTION_LABEL,
       title:
         quarantinedCount === 1
-          ? "Un aggiornamento verso eBay è in pausa"
-          : `${formatInteger(quarantinedCount)} aggiornamenti verso eBay sono in pausa`,
+          ? "Un'attività richiede intervento"
+          : `${formatInteger(quarantinedCount)} attività richiedono intervento`,
       tone: "critical",
     };
   }
