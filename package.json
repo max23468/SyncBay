@@ -75,7 +75,7 @@
     "@react-router/dev": "^7.18.0",
     "@react-router/fs-routes": "^7.18.0",
     "@react-router/node": "^7.18.0",
-    "@react-router/serve": "^7.18.0",
+    "@react-router/serve": "^8.0.1",
     "@shopify/app-bridge-react": "^4.2.11",
     "@shopify/cli": "4.2.0",
     "@shopify/shopify-app-react-router": "^1.2.0",
