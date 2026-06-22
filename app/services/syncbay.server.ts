@@ -4171,7 +4171,7 @@ async function findRecentShopifyProductChangeJob(
     where: {
       OR: matchers,
       shopId: input.shopId,
-      status: { in: [SyncJobStatus.RUNNING, SyncJobStatus.SUCCEEDED] },
+      status: SyncJobStatus.RUNNING,
       type: SyncJobType.DETECT_SHOPIFY_CHANGES,
       updatedAt: {
         gte: new Date(

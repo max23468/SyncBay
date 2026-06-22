@@ -264,7 +264,7 @@ test("keeps every usable Shopify change resource key for runtime matching", () =
   );
 });
 
-test("skips recent product update webhooks already covered by a finished change job", () => {
+test("skips recent product update webhooks already covered by a running change job", () => {
   assert.equal(
     shouldSkipRecentShopifyProductChangeJob({
       now: new Date("2026-06-23T08:01:30.000Z"),
@@ -273,19 +273,19 @@ test("skips recent product update webhooks already covered by a finished change 
         topic: "products/update",
       },
       recentJob: {
-        finishedAt: new Date("2026-06-23T08:00:30.000Z"),
         payload: {
           adminGraphqlApiId: "gid://shopify/Product/1",
           topic: "products/update",
         },
-        status: "SUCCEEDED",
+        startedAt: new Date("2026-06-23T08:00:30.000Z"),
+        status: "RUNNING",
       },
     }),
     true,
   );
 });
 
-test("does not skip old, failed, or non-product Shopify change webhooks", () => {
+test("does not skip old, completed, failed, or non-product Shopify change webhooks", () => {
   const now = new Date("2026-06-23T08:05:00.000Z");
 
   assert.equal(
@@ -297,6 +297,24 @@ test("does not skip old, failed, or non-product Shopify change webhooks", () => 
       },
       recentJob: {
         finishedAt: new Date("2026-06-23T08:00:00.000Z"),
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        status: "SUCCEEDED",
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipRecentShopifyProductChangeJob({
+      now,
+      payload: {
+        resourceId: "gid://shopify/Product/1",
+        topic: "products/update",
+      },
+      recentJob: {
+        finishedAt: new Date("2026-06-23T08:04:30.000Z"),
         payload: {
           resourceId: "gid://shopify/Product/1",
           topic: "products/update",

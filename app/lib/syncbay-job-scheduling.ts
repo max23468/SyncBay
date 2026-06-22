@@ -181,7 +181,7 @@ export function shouldSkipRecentShopifyProductChangeJob(input: {
 }) {
   if (getStringField(input.payload, "topic") !== "products/update") return false;
   if (!input.recentJob) return false;
-  if (!["RUNNING", "SUCCEEDED"].includes(input.recentJob.status)) return false;
+  if (input.recentJob.status !== "RUNNING") return false;
   if (!hasSharedShopifyChangeResourceKey(input.payload, input.recentJob.payload)) {
     return false;
   }
