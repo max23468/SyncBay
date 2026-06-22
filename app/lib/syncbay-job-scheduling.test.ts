@@ -264,7 +264,7 @@ test("keeps every usable Shopify change resource key for runtime matching", () =
   );
 });
 
-test("skips recent product update webhooks already covered by a running change job", () => {
+test("does not skip product update webhooks behind a running change job", () => {
   assert.equal(
     shouldSkipRecentShopifyProductChangeJob({
       now: new Date("2026-06-23T08:01:30.000Z"),
@@ -281,7 +281,7 @@ test("skips recent product update webhooks already covered by a running change j
         status: "RUNNING",
       },
     }),
-    true,
+    false,
   );
 });
 

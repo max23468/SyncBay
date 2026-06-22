@@ -4,8 +4,6 @@ const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 20;
-export const SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS = 2 * 60 * 1000;
-
 export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
 };
@@ -179,28 +177,10 @@ export function shouldSkipRecentShopifyProductChangeJob(input: {
     updatedAt?: Date | null;
   } | null;
 }) {
-  if (getStringField(input.payload, "topic") !== "products/update") return false;
-  if (!input.recentJob) return false;
-  if (input.recentJob.status !== "RUNNING") return false;
-  if (!hasSharedShopifyChangeResourceKey(input.payload, input.recentJob.payload)) {
-    return false;
-  }
-
-  const referenceDate =
-    input.recentJob.finishedAt ??
-    input.recentJob.startedAt ??
-    input.recentJob.updatedAt;
-  if (!referenceDate || !Number.isFinite(referenceDate.getTime())) return false;
-
-  const cooldownMs = input.cooldownMs ?? SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS;
-  return input.now.getTime() - referenceDate.getTime() <= cooldownMs;
-}
-
-function hasSharedShopifyChangeResourceKey(left: unknown, right: unknown) {
-  const leftKeys = new Set(getShopifyChangeJobResourceKeys(left));
-  if (leftKeys.size === 0) return false;
-
-  return getShopifyChangeJobResourceKeys(right).some((key) => leftKeys.has(key));
+  // A running or completed detection job cannot prove it observed a later
+  // merchant edit, so webhook bursts are coalesced only while still queued.
+  void input;
+  return false;
 }
 
 function stableStringify(value: unknown) {

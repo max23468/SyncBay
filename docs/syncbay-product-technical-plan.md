@@ -15,7 +15,7 @@ La sorgente di verità del catalogo resta eBay. SyncBay importa e mantiene aggio
 - Marketplace iniziale: eBay.it.
 - Prima distribuzione: custom app per pilota controllato.
 - Obiettivo successivo: app pubblica Shopify App Store.
-- Latenza target: sync entro massimo 5 minuti.
+- Latenza target: finestra configurabile 5-30 minuti.
 - Scala MVP: fino a 2.000 prodotti per shop.
 - Listing da coprire: tutti i listing eBay attivi del negoziante, inclusi quelli storici/non creati da SyncBay.
 - Prodotto chiuso o rimosso da eBay: prodotto Shopify mantenuto attivo come
@@ -36,7 +36,7 @@ Le app Shopify App Store già pubblicate coprono soprattutto integrazione market
 - conflitti Shopify visibili;
 - diagnostica comprensibile e azioni guidate senza supporto umano;
 - protezione delle disponibilità anche senza sync bidirezionale completo;
-- promessa chiara: sync entro 5 minuti, con real-time dove tecnicamente possibile e sostenibile.
+- promessa chiara: sync entro una finestra configurabile, con real-time dove tecnicamente possibile e sostenibile.
 
 Formula prodotto:
 
@@ -69,7 +69,7 @@ Merchant
 eBay.it
   -> import iniziale listing
   -> notifiche/revisioni dove disponibili
-  -> polling incrementale <= 5 minuti
+  -> polling incrementale configurabile
 
 SyncBay backend
   -> normalizza catalogo del negozio eBay
@@ -211,16 +211,16 @@ Default consigliato:
 - copia fisica delle immagini su Shopify, non dipendenza permanente dagli URL eBay;
 - location Shopify predefinita selezionata durante onboarding.
 
-## Sync entro 5 minuti
+## Sync a finestra configurabile
 
-La promessa MVP deve essere "sync entro 5 minuti", non "real-time assoluto" indiscriminato.
+La promessa MVP è una finestra target configurabile, non "real-time assoluto" indiscriminato.
 
-Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, SyncBay deve preferirlo. Il polling entro 5 minuti resta la rete di sicurezza obbligatoria per eventi non coperti o notifiche perse.
+Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, SyncBay deve preferirlo. Il polling configurato resta la rete di sicurezza per eventi non coperti o notifiche perse.
 
 Strategia:
 
 - notifiche eBay dove disponibili per accelerare revisioni;
-- polling incrementale ogni massimo 5 minuti;
+- polling incrementale secondo target configurato;
 - coda job prioritaria per inventario;
 - scheduler Supabase Cron per creare/drenare job a batch;
 - idempotenza su ogni job;
@@ -552,7 +552,7 @@ Azioni rollback MVP:
 
 ### Fase 3 - Sync catalogo
 
-- Polling incrementale <= 5 minuti.
+- Polling incrementale secondo target configurato.
 - Aggiornamento prezzo, quantità, titolo, descrizione, immagini.
 - Archiviazione prodotti non più attivi.
 - Audit log e retry.
@@ -609,8 +609,8 @@ Feature future da valutare:
 
 - Import 10 prodotti eBay.it di test con immagini.
 - Import 2.000 prodotti con resume dopo errore simulato.
-- Prezzo modificato su eBay aggiornato su Shopify entro 5 minuti.
-- Quantità modificata su eBay aggiornata su Shopify entro 5 minuti.
+- Prezzo modificato su eBay aggiornato su Shopify entro la finestra target configurata.
+- Quantità modificata su eBay aggiornata su Shopify entro la finestra target configurata.
 - Ordine Shopify pagato riduce disponibilità eBay o genera alert critico con retry.
 - Modifica manuale Shopify apre conflitto.
 - Listing eBay chiuso mantiene il prodotto Shopify in vetrina come esaurito.
@@ -621,7 +621,7 @@ Feature future da valutare:
 ## Rischi principali
 
 - Alcuni listing eBay storici potrebbero richiedere Trading API e non Inventory API.
-- Le notifiche eBay potrebbero non coprire tutti gli eventi necessari: il polling entro 5 minuti resta obbligatorio.
+- Le notifiche eBay potrebbero non coprire tutti gli eventi necessari: il polling configurato resta obbligatorio.
 - Aggiornare la disponibilità eBay da ordini Shopify è il punto più critico per ridurre vendite di prodotti non disponibili e rispettare i rate limit.
 - Le descrizioni eBay possono contenere HTML pesante o template difficili da pulire senza falsi positivi.
 - Le varianti complesse possono aumentare molto la complessità: vanno isolate dal MVP base.

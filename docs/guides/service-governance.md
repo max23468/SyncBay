@@ -31,7 +31,7 @@ SyncBay MVP e:
 | Catalogo | 2.000 prodotti per shop | Bloccare import o richiedere piano Growth. |
 | Account eBay | 1 per shop | Rimandare multi-account a decisione post-MVP. |
 | Location Shopify | 1 predefinita | Mostrare limite in onboarding. |
-| Sync | Entro 5 minuti; real-time dove sostenibile | Usare polling come fallback obbligatorio. |
+| Sync | Finestra configurabile 5-30 minuti; real-time dove sostenibile | Usare polling come fallback obbligatorio. |
 | Errori ordinari | Self-service | Mostrare causa, impatto, retry e azione consigliata. |
 | Supporto umano | Non previsto come requisito MVP | Progettare diagnostica e runbook interno. |
 

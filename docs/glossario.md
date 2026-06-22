@@ -29,7 +29,7 @@ Questo glossario guida UI, documentazione e microcopy.
 
 | Termine | Nota |
 | --- | --- |
-| Real-time | Evitare come promessa assoluta. Usare "entro 5 minuti" come garanzia base; usare real-time/quasi real-time solo dove tecnicamente possibile e sostenibile. |
+| Real-time | Evitare come promessa assoluta. Usare la finestra target configurabile come garanzia base; usare real-time/quasi real-time solo dove tecnicamente possibile e sostenibile. |
 | Bidirezionale | Non usarlo per il MVP, salvo spiegare l'eccezione sulla disponibilità dopo ordini Shopify. |
 | Marketplace globale | Fuori dal MVP. |
 | Supporto umano | Non deve essere pilastro prodotto nella prima fase. Preferire "diagnostica self-service". |

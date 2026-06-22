@@ -4,9 +4,9 @@ Questa guida descrive il comportamento atteso del motore di sincronizzazione.
 
 ## Promessa
 
-SyncBay promette sync entro massimo 5 minuti, non real-time assoluto indiscriminato.
+SyncBay usa una finestra target configurabile da 5 a 30 minuti, non real-time assoluto indiscriminato.
 
-Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, va raggiunto. Il polling entro 5 minuti resta obbligatorio come fallback e riconciliazione.
+Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, va raggiunto. Il polling configurato resta il fallback di riconciliazione.
 
 ## Sorgente di verità
 

@@ -28,7 +28,7 @@ La direzione confermata:
 - eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili;
 - marketplace iniziale: eBay.it;
 - prima custom app per pilota controllato, poi app pubblica Shopify App Store;
-- sync target entro massimo 5 minuti;
+- sync target configurabile 5-30 minuti in modalità pilota risparmio egress;
 - scala MVP fino a 2.000 prodotti per shop;
 - prodotti non più attivi su eBay mantenuti su Shopify come esauriti (scorta 0, non archiviati né cancellati) per preservarne la SEO (ADR 0011);
 - modifiche manuali Shopify gestite come conflitti visibili, non sovrascritte silenziosamente;
@@ -146,7 +146,7 @@ basso rischio, cleanup o modifiche meccaniche già determinate.
 
 ## Errori comuni da evitare
 
-- Non promettere "real-time assoluto" indiscriminato: il target confermato è sync entro 5 minuti.
+- Non promettere "real-time assoluto" indiscriminato: il target confermato è una finestra configurabile 5-30 minuti.
 - Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, preferiscilo e documenta il fallback.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
 - Non assumere che Shopify sia la sorgente di verità: per il catalogo MVP la sorgente è eBay.

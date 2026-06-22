@@ -6,7 +6,7 @@
 
 ## Contesto
 
-SyncBay deve diventare una Shopify app embedded con backend HTTP, OAuth Shopify/eBay, webhook pubblici, job asincroni, sync entro massimo 5 minuti, import fino a 2.000 prodotti per shop e token provider cifrati a riposo.
+SyncBay deve diventare una Shopify app embedded con backend HTTP, OAuth Shopify/eBay, webhook pubblici, job asincroni, sync a finestra configurabile, import fino a 2.000 prodotti per shop e token provider cifrati a riposo.
 
 Al momento della decisione il repository era ancora in fase documentale: questa
 ADR ha chiuso i blocchi tecnici prima dello scaffold. Lo scaffold, il runtime
@@ -56,7 +56,7 @@ Gli URL reali verranno decisi quando verrà creato il progetto Vercel:
 - endpoint eBay marketplace account deletion;
 - webhook pubblici.
 
-Non usare Vercel Cron come meccanismo primario per il sync entro 5 minuti. Su piani Vercel non adatti, i cron frequenti possono essere limitati; il polling applicativo resta affidato a Supabase Cron.
+Non usare Vercel Cron come meccanismo primario per il sync ricorrente. Su piani Vercel non adatti, i cron frequenti possono essere limitati; il polling applicativo resta affidato a Supabase Cron.
 
 Vercel Analytics e Speed Insights sono ammessi per metriche aggregate di pagina
 e performance. Non inviare eventi custom contenenti dati di negoziante,
