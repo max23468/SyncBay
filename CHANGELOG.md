@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Documentazione: riallineate le regole operative al pilota runtime attuale,
+  distinguendo le superfici MVP già implementate da nuovi runtime, nuove code,
+  CI completa, deploy stabile e App Store ancora da decidere.
 - Documentazione: definito il perimetro SyncBay 1.0 come custom app privata per
   pochi clienti selezionati e introdotto il piano generico `Collega catalogo
   esistente`, senza funzioni Numisleo-specifiche permanenti, con piano

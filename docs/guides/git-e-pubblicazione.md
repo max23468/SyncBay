@@ -14,7 +14,9 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Dependabot configurato per GitHub Actions e npm.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment pilota Vercel production attivo per verifiche controllate.
-- Nessuna CI runtime definita.
+- Gate PR parziali attivi: titolo Conventional Commit, test/coverage `app/lib`,
+  React Doctor, verifica Doppler e workflow `Codex PR comments`. Una CI runtime
+  completa con deploy/smoke stabili resta da decidere.
 
 ## Regola base
 
@@ -156,6 +158,7 @@ Finché SyncBay resta in deployment pilota:
 - usare Vercel production solo per verifiche controllate del dev store;
 - non creare GitHub Release o tag SemVer fuori da una release prodotto reale;
 - non introdurre Release Please senza ADR;
-- non aggiungere CI runtime senza comandi reali e policy esplicita.
+- non aggiungere nuovi workflow CI/runtime o deploy senza comandi reali e policy
+  esplicita; i gate PR esistenti restano limitati al perimetro documentato.
 
 Il versioning locale è definito in `docs/decisions/0006-versioning-runtime-locale.md`. Tag e GitHub Release sono definiti in `docs/decisions/0008-tag-e-github-release.md`. La policy futura di CI e deploy è definita in `docs/decisions/0004-runtime-ci-release-future.md`.

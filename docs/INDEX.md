@@ -2,7 +2,11 @@
 
 Questa cartella raccoglie la documentazione approfondita del progetto.
 
-SyncBay ha lo scaffold Shopify CLI React Router iniziale. La documentazione resta la fonte principale per decidere cosa costruire prima di aggiungere sync, worker o integrazioni eBay reali.
+SyncBay ha lo scaffold Shopify CLI React Router e un pilota runtime con import,
+runner, sync, conflitti e integrazioni Shopify/eBay nel perimetro MVP già
+implementati. La documentazione resta la fonte principale per decidere cosa
+estendere prima di aggiungere nuovi runtime, nuove integrazioni provider o
+superfici fuori dal perimetro approvato.
 
 ## Struttura
 

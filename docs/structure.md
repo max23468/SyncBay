@@ -121,7 +121,9 @@ SyncBay/
 
 ## Regole
 
-Non creare ancora worker dedicati, consumer Supabase Queues, sync catalogo o cartelle applicative ulteriori fuori dallo scaffold senza decisione esplicita.
+Non creare nuovi worker dedicati, nuovi runtime, nuove code esterne,
+integrazioni provider fuori dal perimetro MVP già deciso o cartelle applicative
+ulteriori fuori dallo scaffold senza decisione esplicita.
 
 Non committare output generati, cache, sessioni browser, staging locali o
 snapshot provider. In Git restano codice, schema, migration, fixture sintetiche

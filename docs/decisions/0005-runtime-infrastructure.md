@@ -8,7 +8,10 @@
 
 SyncBay deve diventare una Shopify app embedded con backend HTTP, OAuth Shopify/eBay, webhook pubblici, job asincroni, sync entro massimo 5 minuti, import fino a 2.000 prodotti per shop e token provider cifrati a riposo.
 
-Il repository è ancora in fase documentale: questa decisione chiude i blocchi tecnici prima dello scaffold, ma non crea runtime, deploy, database o CI.
+Al momento della decisione il repository era ancora in fase documentale: questa
+ADR ha chiuso i blocchi tecnici prima dello scaffold. Lo scaffold, il runtime
+pilota, il database Supabase e il deploy Vercel production controllato sono ora
+stati creati seguendo questa decisione.
 
 Vincoli principali:
 
@@ -99,9 +102,11 @@ Ogni job deve essere:
 - dotato di retry/backoff;
 - associato a diagnostica leggibile in dashboard.
 
-La prima baseline tecnica abilita `pgmq`, la coda `syncbay_jobs`, `pg_cron` e
-il bucket privato `syncbay-import-staging`. Le schedule cron e il consumer queue
-restano fuori finché non esiste la logica import/sync da eseguire.
+La baseline tecnica abilita `pgmq`, la coda `syncbay_jobs`, `pg_cron` e il
+bucket privato `syncbay-import-staging`. Nel pilota runtime esiste già il runner
+HTTP `/api/jobs/run-due`, invocato da Supabase Cron, che drena i job applicativi
+a batch; eventuali consumer dedicati o nuovi runtime restano decisioni
+separate.
 
 ### Storage immagini
 
