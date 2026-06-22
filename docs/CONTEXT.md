@@ -4,7 +4,8 @@ Questo file è un handoff rapido. Per i dettagli completi vedi `syncbay-product-
 
 ## Stato progetto
 
-- Fase: import iniziale controllato su scaffold Shopify CLI React Router.
+- Fase: pilota runtime controllato su scaffold Shopify CLI React Router, in
+  preparazione alla 1.0 custom privata.
 - Produzione tecnica: Vercel production `https://syncbay.vercel.app`, distinta
   da release pubblica Shopify App Store.
 - Source of truth operative: `AGENTS.md`, `docs/INDEX.md`, `docs/TOOLCHAIN.md`,

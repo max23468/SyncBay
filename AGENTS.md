@@ -82,11 +82,16 @@ Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione
 
 ## Stato attuale del repository
 
-Il repository è nella fase di import iniziale controllato su scaffold Shopify
-CLI React Router: esiste una produzione tecnica Vercel pilota, distinta da
-release pubblica Shopify App Store e da billing.
+Il repository è nella fase di pilota runtime controllato su scaffold Shopify CLI
+React Router: import catalogo, runner, sync incrementale, conflitti Shopify e
+aggiornamento disponibilità eBay da ordini Shopify sono già superfici
+implementate nel perimetro MVP. Esiste una produzione tecnica Vercel pilota,
+distinta da release pubblica Shopify App Store e da billing.
 
-Regola importante: non creare worker dedicati, sync catalogo, job queue runtime, integrazioni eBay oltre OAuth o cartelle applicative ulteriori fuori dallo scaffold senza richiesta esplicita del maintainer.
+Regola importante: non creare nuovi worker dedicati, nuovi runtime, nuove code
+esterne, integrazioni provider fuori dal perimetro MVP già deciso o cartelle
+applicative ulteriori fuori dallo scaffold senza richiesta esplicita del
+maintainer e, se stabile, ADR.
 
 La struttura documentale attuale è descritta in `docs/structure.md`.
 
@@ -419,7 +424,8 @@ Una modifica è pronta se:
 
 - risolve la richiesta senza allargare inutilmente lo scope;
 - resta coerente con perimetro e documenti di SyncBay;
-- non introduce worker, sync o integrazioni produttive senza approvazione;
+- non introduce nuovi worker, nuovi runtime o integrazioni provider fuori dal
+  perimetro approvato senza conferma esplicita;
 - non sovrascrive modifiche non tue;
 - aggiorna documenti/ADR quando una decisione cambia davvero;
 - non lascia segreti, dati personali, file temporanei o modifiche non correlate;

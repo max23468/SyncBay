@@ -249,12 +249,12 @@ Eseguire prima con `--dry-run`; il comando usa `publishablePublish` sui
 `ProductMapping` attivi e, con `--configure-settings`, salva la policy canali
 dello shop su `SELECTED`.
 
-## Cosa resta da fare
+## Residui operativi pilota
 
-Durante o subito dopo lo scaffold:
+Durante il pilota runtime:
 
 - mantenere allineate le migration Prisma su Supabase Postgres;
-- definire `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider, non nel repo;
+- tenere `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider runtime, non nel repo;
 - completare gli env Vercel preview quando viene scelto il branch target o via dashboard;
-- verificare gli advisor Supabase con `npm run db:verify` quando le credenziali linked sono disponibili;
-- aggiornare URL Shopify/eBay con il primo URL Vercel utilizzabile.
+- verificare gli advisor Supabase con `npm run db:verify` quando il lavoro tocca database, RLS o migration;
+- mantenere URL Shopify/eBay, callback OAuth e webhook allineati quando cambia dominio, ambiente o policy di deploy.

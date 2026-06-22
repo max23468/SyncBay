@@ -110,7 +110,11 @@ Direzione corrente:
 
 La decisione infrastrutturale MVP è tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
-Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura delle decisioni tecniche bloccanti. Import, sync, worker e OAuth eBay restano fuori dallo scaffold iniziale.
+Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura delle
+decisioni tecniche bloccanti. Import, OAuth eBay, runner HTTP, Supabase
+Cron/Queues, sync incrementale e aggiornamento stock eBay da ordini Shopify
+sono ora superfici implementate nel pilota MVP; nuovi runtime o consumer
+dedicati restano decisioni separate.
 
 ## API e integrazioni
 

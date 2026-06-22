@@ -14,7 +14,9 @@ Il maintainer vuole una disciplina simile alle repo operative esistenti:
 - DocMolder come riferimento per branch dedicati, PR verso `main`, cleanup branch e flusso completo quando una modifica è rilasciabile;
 - FiscalBay come riferimento per Conventional Commit, separazione tra pubblicazione codice, deploy operativo e release versionata.
 
-Il vincolo specifico di SyncBay è non introdurre workflow CI, deploy o automazioni remote di release prima che siano decisi.
+Il vincolo specifico di SyncBay è non introdurre nuovi workflow CI/runtime,
+policy deploy o automazioni remote di release fuori dalle decisioni già
+approvate.
 
 ## Decisione
 
@@ -83,14 +85,17 @@ Usare `git branch -D` solo se non ci sono commit unici da conservare.
 - "Pubblica" resta la chiusura del flusso completo (release locale per diff
   versionati, PR/merge, verifiche e cleanup degli spazi temporanei); "deploya"
   entra nel flusso quando previsto dal contesto corrente.
-- Il changelog resta utile anche nella fase documentale.
+- Il changelog resta utile per distinguere modifiche runtime versionate e
+  governance `Non versionato`.
 - Il flusso SemVer locale è attivo senza introdurre deploy automatici; tag e
   GitHub Release sono regolati da ADR 0008.
 
 ## Alternative considerate
 
-- **Copiare Release Please da DocMolder**: scartato per ora, perché SyncBay non ha runtime né package.
-- **Copiare script release/deploy da FiscalBay**: scartato per ora, perché SyncBay non ha VPS o runtime operativo.
+- **Copiare Release Please da DocMolder**: scartato perché SyncBay usa il
+  versioning locale in ADR 0006 e non ha adottato release PR automatiche.
+- **Copiare script release/deploy da FiscalBay**: scartato perché SyncBay usa
+  Vercel/Supabase e non una VPS con script deploy equivalenti.
 - **Copiare Pratix con `APP_VERSION` subito**: inizialmente scartato; adottato dopo lo scaffold con ADR 0006.
 
 ## Riferimenti

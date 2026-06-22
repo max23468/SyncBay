@@ -1,6 +1,9 @@
 # Guida architettura
 
-Questa guida descrive l'architettura prevista. Non sostituisce l'ADR stack e non è ancora implementazione.
+Questa guida descrive l'architettura corrente e target di SyncBay. Non
+sostituisce l'ADR stack: le superfici già implementate restano documentate nelle
+guide operative e nel contesto rapido, mentre estensioni strutturali richiedono
+decisione esplicita.
 
 ## Obiettivo architetturale
 
@@ -74,4 +77,4 @@ I job devono restare piccoli, idempotenti e riprendibili. Se il consumer queue r
 ## Decisioni ancora aperte
 
 - Billing e distribuzione App Store.
-- Ambienti production/staging e smoke test effettivi, da definire quando esiste lo scaffold.
+- Policy production/staging oltre il pilota e smoke test post-deploy stabili.

@@ -27,15 +27,15 @@ Lo scaffold deve restare coerente con ADR 0001:
 - Vercel;
 - Supabase Storage per staging immagini temporaneo quando serve.
 
-Le decisioni tecniche bloccanti sono chiuse da ADR 0005. Restano da completare:
-
-- definizione degli URL reali;
-- inserimento dei secret nei provider, non nel repo;
-- verifica del keyset eBay quando eBay lo approva.
+Le decisioni tecniche bloccanti sono chiuse da ADR 0005. Per il pilota runtime
+sono già stati configurati URL reali, secret nei provider e keyset eBay
+dedicato; resta da definire una policy production stabile oltre il pilota.
 
 ## CI futura
 
-Quando la CI verrà attivata, la CI dovrà essere introdotta con un workflow dedicato e comandi reali nel repo.
+Quando la CI runtime completa verrà attivata, dovrà essere introdotta con
+workflow dedicati e comandi reali nel repo. I gate PR già presenti restano
+parziali e non sostituiscono una CI di release/deploy stabile.
 
 Gate minimi attesi:
 

@@ -17,6 +17,7 @@ export default [
       "node_modules/**",
       "build/**",
       "public/build/**",
+      "audits/**",
       "**/*.yml",
       ".react-router/**",
       ".shopify/**",

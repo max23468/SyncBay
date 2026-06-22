@@ -543,14 +543,17 @@ test("surfaces quarantined updates as a critical provider notice", () => {
   assert.equal(notice?.kind, "quarantine");
   assert.equal(notice?.tone, "critical");
   assert.equal(notice?.primaryActionHref, "/app/activity");
-  assert.match(notice?.title ?? "", /2 aggiornamenti/);
+  assert.match(notice?.title ?? "", /2 attività/);
+  assert.match(notice?.body ?? "", /Non ripartono automaticamente/);
+  assert.match(notice?.body ?? "", /Riprova/);
+  assert.doesNotMatch(notice?.body ?? "", /riprende da solo/i);
 });
 
 test("uses singular copy for a single quarantined update", () => {
   const notice = getProviderHealthNotice({ quarantinedCount: 1 });
 
   assert.equal(notice?.kind, "quarantine");
-  assert.match(notice?.title ?? "", /Un aggiornamento/);
+  assert.match(notice?.title ?? "", /Un'attività/);
 });
 
 test("falls back to a warning lag notice when nothing is quarantined", () => {

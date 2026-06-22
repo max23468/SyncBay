@@ -6,8 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.45.1] — 2026-06-22
 
+### Correzioni
+
+- Panoramica: l'avviso per attività in quarantena non promette più una ripresa
+  automatica e rimanda ad Attività/Riprova quando i job hanno esaurito i
+  tentativi.
+
+### Sotto il cofano
+
+- Lint: esclusi gli audit locali ignorati da Git dal flat config ESLint, così
+  i report operativi fuori repository non rompono i gate locali.
+- Documentazione: riallineate le regole operative al pilota runtime attuale,
+  distinguendo le superfici MVP già implementate da nuovi runtime, nuove code,
+  CI completa, deploy stabile e App Store ancora da decidere.
 - Documentazione: definito il perimetro SyncBay 1.0 come custom app privata per
   pochi clienti selezionati e introdotto il piano generico `Collega catalogo
   esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
@@ -2494,6 +2507,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.45.1]: #0451--2026-06-22
 [0.45.0]: #0450--2026-06-21
 [0.44.16]: #04416--2026-06-21
 [0.44.15]: #04415--2026-06-21
