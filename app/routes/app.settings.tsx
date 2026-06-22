@@ -486,8 +486,8 @@ function SyncCatalogSettingsCard({
           ))}
         </s-select>
         <s-text color="subdued">
-          Tempo entro cui SyncBay punta ad allineare il catalogo (massimo 5
-          minuti). Attuale: {getSyncTargetLabel(currentSyncTarget)}.
+          Finestra indicativa entro cui SyncBay punta ad allineare il catalogo.
+          Attuale: {getSyncTargetLabel(currentSyncTarget)}.
         </s-text>
         <s-button type="submit" disabled={isSaving}>
           {isSaving ? "Salvataggio..." : "Salva intervallo"}

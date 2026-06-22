@@ -499,7 +499,7 @@ function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
           >
             <s-text color="subdued">
               Da qui SyncBay tiene Shopify allineato a eBay e protegge le
-              disponibilità, entro 5 minuti.
+              disponibilità secondo la finestra scelta.
             </s-text>
             {steps.sync === "active" ? (
               <div>

@@ -1,6 +1,6 @@
 /**
  * Circuit breaker per le chiamate verso i provider (eBay Trading/Inventory e
- * Shopify Admin GraphQL). Protegge il target di sync entro 5 minuti senza
+ * Shopify Admin GraphQL). Protegge il target di sync configurato senza
  * bruciare quota: quando un provider risponde con errori ripetuti di rate limit
  * o outage (429/5xx), il breaker "apre" e sospende il batch, rischedulando con
  * backoff dichiarato. Dopo il cooldown passa a `half_open` per un singolo

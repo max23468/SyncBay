@@ -66,7 +66,7 @@ test("treats an incremental sync due before the next runner tick as enqueueable"
     shouldEnqueueIncrementalSyncNow({
       nextRunAfter,
       now,
-      runnerLookaheadSeconds: 120,
+      runnerLookaheadSeconds: 300,
     }),
     true,
   );
@@ -75,9 +75,9 @@ test("treats an incremental sync due before the next runner tick as enqueueable"
 test("keeps future incremental syncs outside the runner lookahead pending", () => {
   assert.equal(
     shouldEnqueueIncrementalSyncNow({
-      nextRunAfter: new Date("2026-06-03T12:02:01.000Z"),
+      nextRunAfter: new Date("2026-06-03T12:05:01.000Z"),
       now,
-      runnerLookaheadSeconds: 120,
+      runnerLookaheadSeconds: 300,
     }),
     false,
   );
@@ -111,7 +111,7 @@ test("does not bypass eBay cooldowns inside the runner lookahead", () => {
       }),
       nextRunAfter,
       now,
-      runnerLookaheadSeconds: 120,
+      runnerLookaheadSeconds: 300,
     }),
     false,
   );
@@ -147,7 +147,7 @@ test("treats shorter provider cooldowns as lookahead gates", () => {
       }),
       nextRunAfter,
       now: nowInsideCooldown,
-      runnerLookaheadSeconds: 120,
+      runnerLookaheadSeconds: 300,
     }),
     false,
   );

@@ -158,7 +158,7 @@ Feature futura da valutare:
 - Non presentarsi come "l'ennesima app marketplace bidirezionale".
 - Non partire con multi-marketplace.
 - Non mettere ordini/spedizioni avanzate nel cuore del messaggio MVP.
-- Non promettere real-time assoluto indiscriminato; raggiungerlo dove possibile e sostenibile, mantenendo la garanzia entro 5 minuti.
+- Non promettere real-time assoluto indiscriminato; raggiungerlo dove possibile e sostenibile, mantenendo la finestra target configurabile.
 
 ### Cosa enfatizzare
 

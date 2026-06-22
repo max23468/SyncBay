@@ -23,7 +23,7 @@ La sorgente principale resta eBay. Shopify diventa una copia pulita, vendibile e
 - Eccezione obbligatoria: ordine Shopify pagato -> aggiornamento disponibilità eBay.
 - Marketplace iniziale: eBay.it.
 - Prima custom app, poi app pubblica Shopify App Store.
-- Target sync: entro 5 minuti.
+- Target sync: finestra configurabile 5-30 minuti.
 - Real-time dove possibile e sostenibile, senza compromettere prestazioni, rate limit, costi o stabilità.
 - Scala MVP: 2.000 prodotti per shop.
 - Prodotto self-service: diagnostica, retry e azioni guidate invece di supporto umano.
@@ -84,7 +84,7 @@ Provisioning minimo:
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
 - Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, applica la regola prezzo globale Shopify-only con eventuale compare-at price, riallinea lo stato dei prodotti Shopify riusati al default dello shop, pubblica i prodotti attivi secondo la policy canali Shopify dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nell'app embedded, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
 - Sync catalogo eBay -> Shopify: dopo l'import, il polling incrementale resta
-  controllato da `syncEnabled` e target `300` secondi. Le Impostazioni embedded
+  controllato da `syncEnabled` e target configurabile 300-1800 secondi. Le Impostazioni embedded
   permettono di attivare/disattivare il sync automatico solo quando eBay è
   collegato, la location Shopify è impostata e ci sono prodotti importati. A
   ogni finestra il runner legge i listing eBay attivi via Trading API, pianifica

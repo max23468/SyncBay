@@ -1,6 +1,6 @@
 # ADR 0019 - Cadenza Supabase Cron del runner
 
-- **Stato**: Accettato
+- **Stato**: Sostituito da ADR 0021
 - **Data**: 2026-06-20
 - **Decisori**: maintainer, Codex
 

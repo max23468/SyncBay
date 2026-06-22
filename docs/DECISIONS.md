@@ -24,14 +24,15 @@ Usa un ADR quando una scelta:
 - `0009-shopify-token-offline-a-scadenza.md`: token offline Shopify a scadenza e refresh come requisito per i job automatici.
 - `0010-ui-design-layer-e-marchi-terzi.md`: design layer UI minimo documentato e uso dei marchi eBay/Shopify.
 - `0011-listing-inattivo-esaurito.md`: listing eBay inattivo mantenuto su Shopify come esaurito invece di archiviato, per preservare la SEO.
-- `0012-impostazioni-avanzate-disconnessione-intervallo.md`: disconnessione eBay self-service reversibile e intervallo target sync configurabile (120-300 s).
+- `0012-impostazioni-avanzate-disconnessione-intervallo.md`: disconnessione eBay self-service reversibile e intervallo target sync configurabile storico (120-300 s), aggiornato da ADR 0021.
 - `0013-accento-ui-bay-blue-e-tema.md`: accento UI sul Bay Blue del logo con uso disciplinato e strategia tema chiaro theme-ready.
 - `0015-mapping-categorie-ebay-shopify.md`: mapping categorie eBay -> Shopify per nuovi import e backfill controllato, senza tag categoria e senza apply massivo automatico.
 - `0016-faccette-storefront-import.md`: import controllato di cinque faccette storefront da eBay verso metafield Shopify `syncbay_facets.*`.
 - `0017-retention-dati-operativi.md`: retention tecnica per dati operativi del pilota.
 - `0018-cleanup-retention-automatico.md`: cleanup retention automatico e idempotente nel tick cron, attivo per default.
-- `0019-cadenza-cron-runner.md`: cadenza Supabase Cron del runner ogni 2 minuti con target sync minimo a 120 s.
+- `0019-cadenza-cron-runner.md`: cadenza Supabase Cron del runner ogni 2 minuti con target sync minimo a 120 s, sostituita da ADR 0021.
 - `0020-1-0-custom-privata-catalogo-esistente.md`: perimetro 1.0 custom privata e collegamento di cataloghi Shopify esistenti senza funzioni Numisleo-specifiche.
+- `0021-cadenza-cron-e-target-risparmio-egress.md`: cadenza Supabase Cron ogni 5 minuti e target sync configurabile 5-30 minuti in modalità risparmio egress.
 
 ## Convenzioni
 

@@ -11,7 +11,7 @@
  *
  * `lagSeconds` espone di quanto il sync reale è in ritardo rispetto al target
  * configurato (0 quando è in pari o in anticipo), così la deriva dal target di
- * 5 minuti diventa visibile invece che silenziosa.
+ * sync configurato diventa visibile invece che silenziosa.
  *
  * Il modulo resta puro e autonomo (solo `import type` dai fratelli): il loader
  * della Panoramica compone i tre lib e passa qui i risultati.

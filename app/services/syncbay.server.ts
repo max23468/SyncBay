@@ -88,9 +88,7 @@ import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
 import {
-  SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS,
   getShopifyChangeJobResourceKeys,
-  shouldSkipRecentShopifyProductChangeJob,
 } from "../lib/syncbay-job-scheduling";
 import {
   measureSyncBayPerformanceStage,
@@ -2177,7 +2175,7 @@ export async function updateSyncTargetSeconds(
 
   if (seconds === null) {
     return {
-      message: "Intervallo non valido. Scegli tra 2, 3 o 5 minuti.",
+      message: "Intervallo non valido. Scegli tra 5, 10, 15, 20 o 30 minuti.",
       status: "blocked" as const,
       syncTargetSeconds: shop.syncTargetSeconds,
     };
@@ -2647,7 +2645,6 @@ export async function recordShopifyWebhookPlaceholder(
     const idempotencyKey = input.webhookId
       ? `shopify:${shop.id}:${normalizedTopic}:${input.webhookId}`
       : null;
-    const now = new Date();
     const jobData = {
       idempotencyKey,
       payload: details,
@@ -2657,7 +2654,6 @@ export async function recordShopifyWebhookPlaceholder(
     };
     await prisma.$transaction(async (tx) => {
       let coalesced = false;
-      let skippedRecentProductChange = false;
       await lockShopForWebhookCoalescing(tx, shop.id);
 
       const coalescedJob = await findCoalescedWebhookJob(tx, {
@@ -2686,24 +2682,6 @@ export async function recordShopifyWebhookPlaceholder(
       }
 
       if (!coalesced) {
-        const recentProductChangeJob = await findRecentShopifyProductChangeJob(
-          tx,
-          {
-            details,
-            now,
-            shopId: shop.id,
-          },
-        );
-
-        skippedRecentProductChange = shouldSkipRecentShopifyProductChangeJob({
-          cooldownMs: SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS,
-          now,
-          payload: details,
-          recentJob: recentProductChangeJob,
-        });
-      }
-
-      if (!coalesced && !skippedRecentProductChange) {
         if (idempotencyKey) {
           await tx.syncJob.upsert({
             where: { idempotencyKey },
@@ -2714,8 +2692,6 @@ export async function recordShopifyWebhookPlaceholder(
           await tx.syncJob.create({ data: jobData });
         }
       }
-
-      if (skippedRecentProductChange) return;
 
       await tx.auditLog.create({
         data: {
@@ -4142,42 +4118,6 @@ async function findCoalescedWebhookJob(
       shopId: input.shopId,
       status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
       type: input.jobType,
-    },
-  });
-}
-
-async function findRecentShopifyProductChangeJob(
-  tx: Prisma.TransactionClient,
-  input: {
-    details: Prisma.JsonObject;
-    now: Date;
-    shopId: string;
-  },
-) {
-  if (getJsonString(input.details.topic) !== "products/update") return null;
-
-  const matchers = getCoalescedWebhookMatchers(input.details);
-  if (matchers.length === 0) return null;
-
-  return tx.syncJob.findFirst({
-    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    select: {
-      finishedAt: true,
-      payload: true,
-      startedAt: true,
-      status: true,
-      updatedAt: true,
-    },
-    where: {
-      OR: matchers,
-      shopId: input.shopId,
-      status: SyncJobStatus.RUNNING,
-      type: SyncJobType.DETECT_SHOPIFY_CHANGES,
-      updatedAt: {
-        gte: new Date(
-          input.now.getTime() - SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS,
-        ),
-      },
     },
   });
 }

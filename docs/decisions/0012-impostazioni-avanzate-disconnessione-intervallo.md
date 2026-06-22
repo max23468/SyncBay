@@ -4,6 +4,9 @@
 - **Data**: 2026-06-12
 - **Decisori**: maintainer, Claude
 
+Nota 2026-06-23: la parte sull'intervallo target è aggiornata da ADR 0021,
+che porta le opzioni correnti a 5-30 minuti per ridurre l'egress del pilota.
+
 ## Contesto
 
 Le Impostazioni esponevano lo stato del collegamento eBay e l'intervallo target
