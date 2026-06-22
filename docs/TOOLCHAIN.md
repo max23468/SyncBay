@@ -41,6 +41,20 @@ forzare installazioni o downgrade dentro la repo.
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights |
 | Quality React               | React Doctor                          |
 
+## Aggiornamenti automatici
+
+Dependabot è abilitato per npm e GitHub Actions, ma i major accoppiati restano
+manuali quando la catena peer o il runtime non sono già compatibili. In
+particolare React Router 8 non deve essere aperto come bump parziale: SyncBay
+usa il preset `@vercel/react-router` e la versione `1.3.1` dichiara peer su
+React Router 7. La migrazione a React Router 8 va quindi fatta in una branch
+dedicata aggiornando insieme `react-router`, i pacchetti `@react-router/*` e il
+preset Vercel solo quando esiste una versione compatibile.
+
+Anche Prisma 7 e i tipi Node oltre la major del runtime dichiarato richiedono
+un pass manuale: Prisma perché cambia generator/config/import del client, Node
+perché il runtime repo resta `>=24.15 <25`.
+
 ## Tool agenti Shopify
 
 Per sviluppo assistito su superfici Shopify, questa postazione può usare anche

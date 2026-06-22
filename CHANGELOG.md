@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Tooling: bloccati in Dependabot i major accoppiati che richiedono migrazioni
+  manuali, evitando PR parziali React Router 8 non installabili e deploy Vercel
+  falliti.
 - Tooling: migrato il lint a ESLint 10 con configurazione flat nativa,
   sostituendo i plugin legacy `import`, `react` e `jsx-a11y` con alternative
   compatibili e rimuovendo compatibilità/tipi ESLint obsoleti.
