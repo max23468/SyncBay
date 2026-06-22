@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -133,8 +133,8 @@ test("detects stale internal Shopify import traces", () => {
 });
 
 test("normalizes run-due job limits for cron drain batches", () => {
-  assert.equal(normalizeRunDueLimit(), 10);
-  assert.equal(normalizeRunDueLimit(Number.NaN), 10);
+  assert.equal(normalizeRunDueLimit(), 5);
+  assert.equal(normalizeRunDueLimit(Number.NaN), 5);
   assert.equal(normalizeRunDueLimit(0), 1);
   assert.equal(normalizeRunDueLimit(12), 12);
   assert.equal(normalizeRunDueLimit(999), 20);
@@ -261,5 +261,85 @@ test("keeps every usable Shopify change resource key for runtime matching", () =
       "gid://shopify/InventoryItem/1",
       "gid://shopify/Product/1",
     ],
+  );
+});
+
+test("skips recent product update webhooks already covered by a finished change job", () => {
+  assert.equal(
+    shouldSkipRecentShopifyProductChangeJob({
+      now: new Date("2026-06-23T08:01:30.000Z"),
+      payload: {
+        resourceId: "gid://shopify/Product/1",
+        topic: "products/update",
+      },
+      recentJob: {
+        finishedAt: new Date("2026-06-23T08:00:30.000Z"),
+        payload: {
+          adminGraphqlApiId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        status: "SUCCEEDED",
+      },
+    }),
+    true,
+  );
+});
+
+test("does not skip old, failed, or non-product Shopify change webhooks", () => {
+  const now = new Date("2026-06-23T08:05:00.000Z");
+
+  assert.equal(
+    shouldSkipRecentShopifyProductChangeJob({
+      now,
+      payload: {
+        resourceId: "gid://shopify/Product/1",
+        topic: "products/update",
+      },
+      recentJob: {
+        finishedAt: new Date("2026-06-23T08:00:00.000Z"),
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        status: "SUCCEEDED",
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipRecentShopifyProductChangeJob({
+      now,
+      payload: {
+        resourceId: "gid://shopify/Product/1",
+        topic: "products/update",
+      },
+      recentJob: {
+        finishedAt: new Date("2026-06-23T08:04:30.000Z"),
+        payload: {
+          resourceId: "gid://shopify/Product/1",
+          topic: "products/update",
+        },
+        status: "FAILED",
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldSkipRecentShopifyProductChangeJob({
+      now,
+      payload: {
+        inventoryItemGid: "gid://shopify/InventoryItem/1",
+        topic: "inventory_levels/update",
+      },
+      recentJob: {
+        finishedAt: new Date("2026-06-23T08:04:30.000Z"),
+        payload: {
+          inventoryItemGid: "gid://shopify/InventoryItem/1",
+          topic: "inventory_levels/update",
+        },
+        status: "SUCCEEDED",
+      },
+    }),
+    false,
   );
 });
