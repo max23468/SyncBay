@@ -7,7 +7,10 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
-import { getAccountDeletionDedupAnchor } from "../lib/syncbay-account-deletion-dedup";
+import {
+  getAccountDeletionDedupAnchor,
+  getAccountDeletionPersistenceMode,
+} from "../lib/syncbay-account-deletion-dedup";
 import { hashSecretIdentifier } from "./crypto.server";
 import { verifyEbayNotificationSignature } from "./ebay-notifications.server";
 
@@ -90,6 +93,16 @@ export async function processEbayAccountDeletionNotification(input: {
     matchedShopCount > 0
       ? EbayAccountDeletionRequestStatus.PROCESSED
       : EbayAccountDeletionRequestStatus.NO_MATCH;
+
+  if (getAccountDeletionPersistenceMode({ matchedShopCount }) === "noop") {
+    return {
+      idempotent: false,
+      matchedShopCount,
+      persisted: false,
+      requestId: null,
+      status,
+    };
+  }
 
   const request = await prisma.$transaction(async (tx) => {
     const deletionRequest = await tx.ebayAccountDeletionRequest.upsert({

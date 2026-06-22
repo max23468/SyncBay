@@ -8,6 +8,8 @@ export interface AccountDeletionDedupAnchor {
   value: Date;
 }
 
+export type AccountDeletionPersistenceMode = "noop" | "persist";
+
 /**
  * eBay retries should reuse `notificationId`, but the pilot observed bursts that
  * looked like repeated pings. When the ID changes, dedupe only on the strongest
@@ -26,6 +28,12 @@ export function getAccountDeletionDedupAnchor(
   }
 
   return null;
+}
+
+export function getAccountDeletionPersistenceMode(input: {
+  matchedShopCount: number;
+}): AccountDeletionPersistenceMode {
+  return input.matchedShopCount > 0 ? "persist" : "noop";
 }
 
 function isValidDate(value: Date | null): value is Date {

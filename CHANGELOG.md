@@ -15,6 +15,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   sostituendo i plugin legacy `import`, `react` e `jsx-a11y` con alternative
   compatibili e rimuovendo compatibilità/tipi ESLint obsoleti.
 
+## [0.45.2] — 2026-06-23
+
+### Sotto il cofano
+
+- Runner sync: il batch automatico del cron torna a 5 job per tick per ridurre
+  il traffico Supabase durante il pilota, mantenendo il tetto manuale a 20.
+- Webhook Shopify: i `products/update` ripetuti sullo stesso prodotto entro un
+  cooldown breve vengono assorbiti se esiste già una rilevazione recente in
+  corso o riuscita, evitando job e audit ridondanti nelle raffiche generate da
+  import e riallineamenti SyncBay.
+- eBay account deletion: le notifiche firmate che non corrispondono ad alcuno
+  shop collegato vengono trattate come no-op senza creare audit o record
+  persistenti, riducendo scritture e retention per utenti esterni al pilota.
+
 ## [0.45.1] — 2026-06-22
 
 ### Correzioni
@@ -2516,6 +2530,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.45.2]: #0452--2026-06-23
 [0.45.1]: #0451--2026-06-22
 [0.45.0]: #0450--2026-06-21
 [0.44.16]: #04416--2026-06-21

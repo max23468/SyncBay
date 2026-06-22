@@ -2,8 +2,9 @@ import { createHash } from "node:crypto";
 
 const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
-const DEFAULT_RUN_DUE_LIMIT = 10;
+const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 20;
+export const SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS = 2 * 60 * 1000;
 
 export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
@@ -164,6 +165,42 @@ export function getShopifyChangeJobResourceKeys(payload: unknown) {
   ].filter((value): value is string => Boolean(value));
 
   return Array.from(new Set(keys));
+}
+
+export function shouldSkipRecentShopifyProductChangeJob(input: {
+  cooldownMs?: number;
+  now: Date;
+  payload: unknown;
+  recentJob: {
+    finishedAt?: Date | null;
+    payload: unknown;
+    startedAt?: Date | null;
+    status: string;
+    updatedAt?: Date | null;
+  } | null;
+}) {
+  if (getStringField(input.payload, "topic") !== "products/update") return false;
+  if (!input.recentJob) return false;
+  if (input.recentJob.status !== "RUNNING") return false;
+  if (!hasSharedShopifyChangeResourceKey(input.payload, input.recentJob.payload)) {
+    return false;
+  }
+
+  const referenceDate =
+    input.recentJob.finishedAt ??
+    input.recentJob.startedAt ??
+    input.recentJob.updatedAt;
+  if (!referenceDate || !Number.isFinite(referenceDate.getTime())) return false;
+
+  const cooldownMs = input.cooldownMs ?? SHOPIFY_PRODUCT_CHANGE_COOLDOWN_MS;
+  return input.now.getTime() - referenceDate.getTime() <= cooldownMs;
+}
+
+function hasSharedShopifyChangeResourceKey(left: unknown, right: unknown) {
+  const leftKeys = new Set(getShopifyChangeJobResourceKeys(left));
+  if (leftKeys.size === 0) return false;
+
+  return getShopifyChangeJobResourceKeys(right).some((key) => leftKeys.has(key));
 }
 
 function stableStringify(value: unknown) {
