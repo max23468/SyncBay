@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import {
-  buildEgressBudgetReport,
-  getEgressBudgetReadRows,
-} from "./syncbay-egress-budget.ts";
+import { buildEgressBudgetReport, getEgressBudgetReadRows, isEgressReadStatementQuery } from "./syncbay-egress-budget.ts";
 
 test("computes the 5 GB monthly egress budget without inventing byte data", () => {
   const report = buildEgressBudgetReport({
@@ -73,5 +70,55 @@ test("falls back to total rows when SELECT rows are unavailable", () => {
       totalRows: 1_641,
     }),
     1_641,
+  );
+});
+
+test("classifies simple SELECT and read-only CTE queries as egress reads", () => {
+  assert.equal(
+    isEgressReadStatementQuery(
+      'SELECT "public"."Shop"."id" FROM "public"."Shop" WHERE "id" = $1',
+    ),
+    true,
+  );
+
+  assert.equal(
+    isEgressReadStatementQuery(`
+      WITH open_conflicts AS (
+        SELECT "mappingId", COUNT(*)::integer AS "openConflictCount"
+        FROM "SyncConflict"
+        GROUP BY "mappingId"
+      ),
+      catalog_rows AS (
+        SELECT m."id", COALESCE(oc."openConflictCount", 0) AS conflicts
+        FROM "ProductMapping" m
+        LEFT JOIN open_conflicts oc ON oc."mappingId" = m."id"
+      )
+      SELECT COUNT(*)::integer AS "freshCount"
+      FROM catalog_rows
+    `),
+    true,
+  );
+});
+
+test("keeps DML statements out of the egress read classifier", () => {
+  assert.equal(
+    isEgressReadStatementQuery(
+      'DELETE FROM "public"."EbayAccountDeletionRequest" WHERE "createdAt" <= $1',
+    ),
+    false,
+  );
+
+  assert.equal(
+    isEgressReadStatementQuery(`
+      WITH stale_rows AS (
+        SELECT "id"
+        FROM "SyncJob"
+        WHERE "createdAt" <= $1
+      )
+      DELETE FROM "SyncJob"
+      USING stale_rows
+      WHERE "SyncJob"."id" = stale_rows."id"
+    `),
+    false,
   );
 });

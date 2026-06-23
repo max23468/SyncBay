@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import {
   buildEgressBudgetReport,
   getEgressBudgetReadRows,
+  SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN,
 } from "../app/lib/syncbay-egress-budget.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
@@ -30,6 +31,12 @@ statement_rows as (
   where query not ilike '%pg_stat_statements%'
     and query not ilike '%pg_stat_statements_info%'
 ),
+classified_statement_rows as (
+  select
+    *,
+    regexp_replace(query, '\\s+', ' ', 'g') ~* '${SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN}' as is_read_query
+  from statement_rows
+),
 summary as (
   select
     count(*)::int as statement_count,
@@ -44,8 +51,8 @@ select_summary as (
     coalesce(sum(calls), 0)::bigint as total_calls,
     coalesce(sum(rows), 0)::bigint as total_rows,
     coalesce(round((sum(rows)::numeric / nullif(sum(calls), 0)), 3), 0) as avg_rows_per_call
-  from statement_rows
-  where query ~* '^\\s*select'
+  from classified_statement_rows
+  where is_read_query
 ),
 reset_info as (
   select stats_reset, now() as observed_at
@@ -66,8 +73,8 @@ payload_reads as (
     count(*)::int as statement_count,
     coalesce(sum(calls), 0)::bigint as calls,
     coalesce(sum(rows), 0)::bigint as rows
-  from statement_rows
-  where query ~* '^\\s*select'
+  from classified_statement_rows
+  where is_read_query
     and query ilike '%ProductSnapshot%'
     and query ilike '%payload%'
 ),
@@ -84,8 +91,8 @@ top_by_select_rows as (
         'avgRowsPerCall', coalesce(round((rows::numeric / nullif(calls, 0)), 3), 0),
         'queryPreview', left(regexp_replace(query, '\\s+', ' ', 'g'), 240)
       ) as row_payload
-    from statement_rows
-    where query ~* '^\\s*select'
+    from classified_statement_rows
+    where is_read_query
     order by rows desc, calls desc
     limit ${topLimit}
   ) ranked_rows
