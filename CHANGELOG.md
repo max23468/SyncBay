@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.8] — 2026-06-23
+
+### Sotto il cofano
+
+- Pricing sync: i job solo-prezzo saltano la mutation Shopify quando prezzo e
+  compare-at calcolati coincidono con l'ultimo valore già scritto da SyncBay,
+  evitando snapshot e chiamate provider ridondanti.
+- Monitor egress: le CTE read-only basate su `VALUES` vengono conteggiate come
+  query con righe restituite, senza riaprire il conteggio delle CTE DML.
+
 ## [0.46.7] — 2026-06-23
 
 ### Correzioni
@@ -2616,6 +2626,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.8]: #0468--2026-06-23
 [0.46.7]: #0467--2026-06-23
 [0.46.6]: #0466--2026-06-23
 [0.46.5]: #0465--2026-06-23

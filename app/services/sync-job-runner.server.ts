@@ -54,7 +54,11 @@ import {
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
-import { calculateShopifyPricing } from "../lib/syncbay-pricing-rules";
+import {
+  calculateShopifyPricing,
+  shouldWriteShopifyPricing,
+  type SyncBayPricingWriteBaseline,
+} from "../lib/syncbay-pricing-rules";
 import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
 import {
   getNextIncrementalEnqueueAt,
@@ -1664,8 +1668,11 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         : [],
     ),
   );
+  const latestSyncBayPricingBaselinesByItemId =
+    buildLatestSyncBayPricingBaselinesByItemId(snapshots);
   const synced: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
+  const unchanged: Prisma.JsonObject[] = [];
   const syncBaySnapshots: Prisma.ProductSnapshotCreateManyInput[] = [];
   const now = new Date();
 
@@ -1711,6 +1718,23 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       skipped.push({
         ebayItemId: itemId,
         reason: "ebay_price_missing",
+      });
+      continue;
+    }
+
+    if (
+      !shouldWriteShopifyPricing({
+        next: { compareAtPrice, price },
+        previous: latestSyncBayPricingBaselinesByItemId.get(itemId) ?? null,
+      })
+    ) {
+      unchanged.push({
+        compareAtPrice,
+        ebayItemId: itemId,
+        price,
+        reason: "unchanged_pricing",
+        shopifyProductGid: mapping.shopifyProductGid,
+        shopifyVariantGid: mapping.shopifyVariantGid,
       });
       continue;
     }
@@ -1797,6 +1821,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       skippedCount: skipped.length,
       synced,
       syncedCount: synced.length,
+      unchanged,
+      unchangedCount: unchanged.length,
     },
     warnings:
       skipped.length > 0
@@ -1812,6 +1838,59 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     status: "succeeded" as const,
     type: input.job.type,
   };
+}
+
+type SyncBayPricingBaselineSnapshot = {
+  capturedAt: Date;
+  ebayItemId: string | null;
+  payload: Prisma.JsonValue | null;
+  priceAmount: Prisma.Decimal | null;
+  source: ProductSnapshotSource;
+};
+
+function buildLatestSyncBayPricingBaselinesByItemId(
+  snapshots: SyncBayPricingBaselineSnapshot[],
+) {
+  const baselines = new Map<string, SyncBayPricingWriteBaseline>();
+  const sortedSnapshots = [...snapshots].sort(
+    (left, right) => right.capturedAt.getTime() - left.capturedAt.getTime(),
+  );
+
+  for (const snapshot of sortedSnapshots) {
+    if (
+      snapshot.source !== ProductSnapshotSource.SYNCBAY ||
+      !snapshot.ebayItemId ||
+      baselines.has(snapshot.ebayItemId)
+    ) {
+      continue;
+    }
+
+    const priceAmount =
+      getPricingPayloadMoneyAmount(snapshot.payload, "priceAmount") ??
+      getSnapshotPriceAmountForPricingWriteBaseline(snapshot);
+
+    if (priceAmount === null) continue;
+
+    baselines.set(snapshot.ebayItemId, {
+      compareAtPriceAmount: getPricingPayloadMoneyAmount(
+        snapshot.payload,
+        "compareAtPriceAmount",
+      ),
+      priceAmount,
+    });
+  }
+
+  return baselines;
+}
+
+function getSnapshotPriceAmountForPricingWriteBaseline(
+  snapshot: SyncBayPricingBaselineSnapshot,
+) {
+  if (snapshot.priceAmount === null) return null;
+
+  const priceAmount = Number(snapshot.priceAmount);
+
+  return Number.isFinite(priceAmount) ? priceAmount.toFixed(2) : null;
 }
 
 async function updateShopifyVariantPricingOnly(

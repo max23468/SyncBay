@@ -98,6 +98,17 @@ test("classifies simple SELECT and read-only CTE queries as egress reads", () =>
     `),
     true,
   );
+
+  assert.equal(
+    isEgressReadStatementQuery(`
+      WITH ids(id) AS (
+        VALUES ($1), ($2)
+      )
+      SELECT id
+      FROM ids
+    `),
+    true,
+  );
 });
 
 test("keeps DML statements out of the egress read classifier", () => {

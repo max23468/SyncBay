@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { calculateShopifyPricing, normalizePricingRuleFormInput } from "./syncbay-pricing-rules.ts";
+import { calculateShopifyPricing, normalizePricingRuleFormInput, shouldWriteShopifyPricing } from "./syncbay-pricing-rules.ts";
 
 test("applies an integer percent discount and keeps eBay price as compare-at price", () => {
   const pricing = calculateShopifyPricing({
@@ -135,5 +135,76 @@ test("rejects decimal or out-of-range discount percent from settings form input"
       message: "Inserisci uno sconto intero tra 0 e 90.",
       status: "invalid",
     },
+  );
+});
+
+test("skips Shopify pricing writes when SyncBay already wrote the same values", () => {
+  assert.equal(
+    shouldWriteShopifyPricing({
+      next: {
+        compareAtPrice: "120.00",
+        price: "110.40",
+      },
+      previous: {
+        compareAtPriceAmount: 120,
+        priceAmount: 110.4,
+      },
+    }),
+    false,
+  );
+
+  assert.equal(
+    shouldWriteShopifyPricing({
+      next: {
+        compareAtPrice: null,
+        price: "50.00",
+      },
+      previous: {
+        compareAtPriceAmount: null,
+        priceAmount: "50.00",
+      },
+    }),
+    false,
+  );
+});
+
+test("writes Shopify pricing when the calculated values changed or no baseline exists", () => {
+  assert.equal(
+    shouldWriteShopifyPricing({
+      next: {
+        compareAtPrice: "120.00",
+        price: "110.40",
+      },
+      previous: null,
+    }),
+    true,
+  );
+
+  assert.equal(
+    shouldWriteShopifyPricing({
+      next: {
+        compareAtPrice: "120.00",
+        price: "110.40",
+      },
+      previous: {
+        compareAtPriceAmount: 120,
+        priceAmount: 110,
+      },
+    }),
+    true,
+  );
+
+  assert.equal(
+    shouldWriteShopifyPricing({
+      next: {
+        compareAtPrice: null,
+        price: "50.00",
+      },
+      previous: {
+        compareAtPriceAmount: 60,
+        priceAmount: 50,
+      },
+    }),
+    true,
   );
 });
