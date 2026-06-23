@@ -30,10 +30,14 @@ export interface SyncBayEgressBudgetReadRowsInput {
   totalRows: number;
 }
 
+export const SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN =
+  "^[[:space:]]*(select([^[:alnum:]_]|$)|with([^[:alnum:]_]|$).*\\)[[:space:]]*select([^[:alnum:]_]|$))";
+
 const DEFAULT_MONTHLY_BUDGET_GB = 5;
 const DAYS_PER_BUDGET_MONTH = 30;
 const MB_BYTES = 1_000_000;
 const MINUTES_PER_DAY = 24 * 60;
+const READ_QUERY_JS_PATTERN = /^\s*(select\b|with\b.*\)\s*select\b)/i;
 
 export function buildEgressBudgetReport(
   input: SyncBayEgressBudgetInput,
@@ -106,6 +110,10 @@ export function getEgressBudgetReadRows(input: SyncBayEgressBudgetReadRowsInput)
   return normalizeNonNegativeInteger(input.totalRows);
 }
 
+export function isEgressReadStatementQuery(query: string) {
+  return READ_QUERY_JS_PATTERN.test(normalizeSqlWhitespace(query));
+}
+
 function classifyBudgetUsageRatio(
   budgetUsageRatio: number | null,
 ): SyncBayEgressBudgetStatus {
@@ -138,6 +146,10 @@ function normalizeOptionalPositiveNumber(value: number | null | undefined) {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : null;
+}
+
+function normalizeSqlWhitespace(query: string) {
+  return query.replaceAll(/\s+/g, " ").trim();
 }
 
 function round2(value: number) {
