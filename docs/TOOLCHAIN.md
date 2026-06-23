@@ -77,6 +77,22 @@ documentazione del progetto o verifiche locali. Le skill installate manualmente
 non si aggiornano da sole: prima di usarle per decisioni sensibili su API,
 App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 
+## Tool agenti memoria
+
+Questa postazione può usare `mex-agent` come scaffold di memoria locale per
+Codex, Claude Code e altri agenti. Lo scaffold vive in `.mex/` ed è una memoria
+operativa routata, non una dipendenza runtime di SyncBay.
+
+Regole d'uso:
+
+- Codex e Claude Code devono leggere prima `AGENTS.md`; poi, se presente, usare
+  `.mex/ROUTER.md` per aprire solo i file `context/` e `patterns/` pertinenti.
+- Le fonti canoniche restano `AGENTS.md`, `docs/INDEX.md`, ADR e documentazione
+  in `docs/`; se mex è in conflitto, va considerato stale.
+- Usare `npx mex-agent check --quiet` per un controllo rapido e
+  `npx mex-agent sync --dry-run` per preparare un aggiornamento mirato.
+- Non committare `.mex/telemetry-id`, segreti, output locali o dati reali.
+
 ## Comandi locali
 
 | Scopo                         | Comando                                                                                     |

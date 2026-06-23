@@ -95,6 +95,29 @@ maintainer e, se stabile, ADR.
 
 La struttura documentale attuale è descritta in `docs/structure.md`.
 
+## Memoria mex per Codex e Claude
+
+Questa postazione può usare `mex-agent` come scaffold di memoria locale in
+`.mex/`.
+
+Per Codex e Claude Code: dopo aver letto questo `AGENTS.md`, e prima di un
+lavoro non banale, se `.mex/ROUTER.md` esiste leggilo come indice di contesto
+routato. Apri solo i file `context/` e `patterns/` pertinenti al task corrente.
+
+La memoria mex non prevale su istruzioni di sistema/developer, `AGENTS.md`
+più profondi, questo `AGENTS.md`, ADR o documentazione canonica in `docs/`. Se
+una nota mex è in conflitto con quelle fonti, considera mex stale e aggiorna lo
+scaffold chirurgicamente.
+
+Comandi utili:
+
+- `npx mex-agent check --quiet`
+- `npx mex-agent check`
+- `npx mex-agent sync --dry-run`
+
+Non committare `.mex/telemetry-id`, segreti, output locali o dati reali dentro
+lo scaffold mex.
+
 ## Stack deciso
 
 La decisione stack corrente è documentata in `docs/decisions/0001-stack.md`.
