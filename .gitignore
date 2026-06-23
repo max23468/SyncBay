@@ -19,6 +19,9 @@ build/
 .shopify/
 .vercel/
 
+# Local agent memory scaffold
+.mex/
+
 # Logs
 *.log
 npm-debug.log*

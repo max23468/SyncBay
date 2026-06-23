@@ -80,8 +80,8 @@ App Store, compliance o CLI, verifica la documentazione Shopify corrente.
 ## Tool agenti memoria
 
 Questa postazione può usare `mex-agent` come scaffold di memoria locale per
-Codex, Claude Code e altri agenti. Lo scaffold vive in `.mex/` ed è una memoria
-operativa routata, non una dipendenza runtime di SyncBay.
+Codex, Claude Code e altri agenti. Lo scaffold vive in `.mex/`, ignorata da
+Git, ed è una memoria operativa routata, non una dipendenza runtime di SyncBay.
 
 Regole d'uso:
 
