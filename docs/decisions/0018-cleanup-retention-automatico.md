@@ -7,9 +7,10 @@
 ## Contesto
 
 ADR 0017 ha fissato le finestre di retention operativa del pilota (audit 180
-giorni, job 90, snapshot 180, OAuth state 7, richieste account deletion 365), ma
-lasciava esplicitamente aperto il cleanup: «resta da implementare o schedulare in
-modo esplicito prima della beta pubblica».
+giorni, job 90, snapshot 180, OAuth state 7, richieste account deletion senza
+match 7, richieste account deletion collegate 365), ma lasciava esplicitamente
+aperto il cleanup: «resta da implementare o schedulare in modo esplicito prima
+della beta pubblica».
 
 Finché il cleanup non è automatico, i dati scaduti restano nel runtime, in
 contraddizione con la policy dichiarata e con l'obiettivo di non accumulare dati
@@ -38,6 +39,9 @@ senza nuovi worker né workflow.
   solo i pochi record appena scaduti.
 - I job vengono cancellati solo se in stato terminale
   (`SUCCEEDED`/`FAILED`/`CANCELLED`), per non rimuovere lavoro ancora in coda.
+- Le richieste eBay account deletion `NO_MATCH` con `matchedShopCount = 0`
+  seguono una finestra stretta di 7 giorni; la retention a 365 giorni esclude
+  questi record e resta dedicata alle richieste non `NO_MATCH`.
 - La cancellazione è abilitata per default e disattivabile con
   `SYNCBAY_RETENTION_CLEANUP_ENABLED=false`, che riporta al solo comportamento di
   pianificazione (dry-run) senza cancellare.

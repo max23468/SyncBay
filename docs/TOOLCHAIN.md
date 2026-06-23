@@ -112,6 +112,7 @@ Regole d'uso:
 | Doctor locale                 | `npm run doctor:local`                                                                      |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
+| Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop syncbay-dev.myshopify.com --apply`           |
 | Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop syncbay-dev.myshopify.com [--apply]`       |
 | Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                              |

@@ -1,6 +1,7 @@
 import { AuditEventType, EbayConnectionStatus } from "@prisma/client";
 
 import prisma from "../db.server";
+import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
 import {
   getEbayBasicAuthHeader,
@@ -63,6 +64,7 @@ export async function createEbayAuthorizationRedirect(session: ShopifySessionLik
     },
   });
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       message: "Connessione eBay avviata.",
       shopId: shop.id,
@@ -145,6 +147,7 @@ export async function completeEbayAuthorization({
       },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         message: "Account eBay collegato.",
         shopId: oauthState.shopId,
