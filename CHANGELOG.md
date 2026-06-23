@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.5] — 2026-06-23
+
+### Correzioni
+
+- Monitor egress: il comando `egress:budget` usa le righe delle sole `SELECT`
+  come proxy della banda in uscita, separandole dalle righe modificate da
+  `DELETE`/DML che `pg_stat_statements` conta in `rows` ma non rappresentano
+  letture restituite al client.
+
 ## [0.46.4] — 2026-06-23
 
 ### Sotto il cofano
@@ -2591,6 +2600,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.5]: #0465--2026-06-23
 [0.46.4]: #0464--2026-06-23
 [0.46.3]: #0463--2026-06-23
 [0.46.2]: #0462--2026-06-23

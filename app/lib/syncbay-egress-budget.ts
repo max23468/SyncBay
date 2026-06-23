@@ -25,6 +25,11 @@ export interface SyncBayEgressBudgetInput {
   windowMinutes: number;
 }
 
+export interface SyncBayEgressBudgetReadRowsInput {
+  selectRows?: number | null;
+  totalRows: number;
+}
+
 const DEFAULT_MONTHLY_BUDGET_GB = 5;
 const DAYS_PER_BUDGET_MONTH = 30;
 const MB_BYTES = 1_000_000;
@@ -93,6 +98,14 @@ export function buildEgressBudgetReport(
   };
 }
 
+export function getEgressBudgetReadRows(input: SyncBayEgressBudgetReadRowsInput) {
+  const selectRows = normalizeOptionalNonNegativeInteger(input.selectRows);
+
+  if (selectRows !== null) return selectRows;
+
+  return normalizeNonNegativeInteger(input.totalRows);
+}
+
 function classifyBudgetUsageRatio(
   budgetUsageRatio: number | null,
 ): SyncBayEgressBudgetStatus {
@@ -107,6 +120,18 @@ function normalizePositiveNumber(value: number | null | undefined, fallback: num
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;
+}
+
+function normalizeNonNegativeInteger(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.trunc(value)
+    : 0;
+}
+
+function normalizeOptionalNonNegativeInteger(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.trunc(value)
+    : null;
 }
 
 function normalizeOptionalPositiveNumber(value: number | null | undefined) {
