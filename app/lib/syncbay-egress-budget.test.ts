@@ -121,4 +121,21 @@ test("keeps DML statements out of the egress read classifier", () => {
     `),
     false,
   );
+
+  assert.equal(
+    isEgressReadStatementQuery(`
+      WITH updated_mappings AS (
+        UPDATE "ProductMapping"
+        SET status = 'OUT_OF_STOCK'
+        WHERE status = 'ARCHIVED'
+        RETURNING *
+      )
+      INSERT INTO "ProductSnapshot"
+        (id, "mappingId", payload)
+      SELECT
+        gen_random_uuid()::text, m.id, jsonb_build_object('backfill', true)
+      FROM updated_mappings m
+    `),
+    false,
+  );
 });

@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import {
   buildEgressBudgetReport,
   getEgressBudgetReadRows,
-  SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN,
+  isEgressReadStatementQuery,
 } from "../app/lib/syncbay-egress-budget.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
@@ -17,130 +17,32 @@ const MASSIVE_PAYLOAD_ROWS_THRESHOLD = 1_000;
 const MASSIVE_PAYLOAD_AVG_ROWS_PER_CALL_THRESHOLD = 20;
 
 const diagnosticsSql = `
-with raw_statement_rows as (
+with statement_rows as (
   select
-    queryid,
+    queryid::text as "queryId",
     calls::bigint as calls,
     rows::bigint as rows,
     query
   from pg_stat_statements
-),
-statement_rows as (
-  select *
-  from raw_statement_rows
   where query not ilike '%pg_stat_statements%'
     and query not ilike '%pg_stat_statements_info%'
-),
-classified_statement_rows as (
-  select
-    *,
-    regexp_replace(query, '\\s+', ' ', 'g') ~* '${SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN}' as is_read_query
-  from statement_rows
-),
-summary as (
-  select
-    count(*)::int as statement_count,
-    coalesce(sum(calls), 0)::bigint as total_calls,
-    coalesce(sum(rows), 0)::bigint as total_rows,
-    coalesce(round((sum(rows)::numeric / nullif(sum(calls), 0)), 3), 0) as avg_rows_per_call
-  from statement_rows
-),
-select_summary as (
-  select
-    count(*)::int as statement_count,
-    coalesce(sum(calls), 0)::bigint as total_calls,
-    coalesce(sum(rows), 0)::bigint as total_rows,
-    coalesce(round((sum(rows)::numeric / nullif(sum(calls), 0)), 3), 0) as avg_rows_per_call
-  from classified_statement_rows
-  where is_read_query
 ),
 reset_info as (
   select stats_reset, now() as observed_at
   from pg_stat_statements_info
   limit 1
-),
-payload_statements as (
-  select
-    count(*)::int as statement_count,
-    coalesce(sum(calls), 0)::bigint as calls,
-    coalesce(sum(rows), 0)::bigint as rows
-  from statement_rows
-  where query ilike '%ProductSnapshot%'
-    and query ilike '%payload%'
-),
-payload_reads as (
-  select
-    count(*)::int as statement_count,
-    coalesce(sum(calls), 0)::bigint as calls,
-    coalesce(sum(rows), 0)::bigint as rows
-  from classified_statement_rows
-  where is_read_query
-    and query ilike '%ProductSnapshot%'
-    and query ilike '%payload%'
-),
-top_by_select_rows as (
-  select coalesce(jsonb_agg(row_payload order by rows desc, calls desc), '[]'::jsonb) as rows
-  from (
-    select
-      rows,
-      calls,
-      jsonb_build_object(
-        'queryId', queryid::text,
-        'calls', calls,
-        'rows', rows,
-        'avgRowsPerCall', coalesce(round((rows::numeric / nullif(calls, 0)), 3), 0),
-        'queryPreview', left(regexp_replace(query, '\\s+', ' ', 'g'), 240)
-      ) as row_payload
-    from classified_statement_rows
-    where is_read_query
-    order by rows desc, calls desc
-    limit ${topLimit}
-  ) ranked_rows
-),
-top_by_calls as (
-  select coalesce(jsonb_agg(row_payload order by calls desc, rows desc), '[]'::jsonb) as rows
-  from (
-    select
-      rows,
-      calls,
-      jsonb_build_object(
-        'queryId', queryid::text,
-        'calls', calls,
-        'rows', rows,
-        'avgRowsPerCall', coalesce(round((rows::numeric / nullif(calls, 0)), 3), 0),
-        'queryPreview', left(regexp_replace(query, '\\s+', ' ', 'g'), 240)
-      ) as row_payload
-    from statement_rows
-    order by calls desc, rows desc
-    limit ${topLimit}
-  ) ranked_calls
 )
 select jsonb_build_object(
   'observedAt', reset_info.observed_at,
   'statsReset', reset_info.stats_reset,
   'windowMinutes', round((extract(epoch from (reset_info.observed_at - reset_info.stats_reset)) / 60)::numeric, 2),
-  'statementCount', summary.statement_count,
-  'totalCalls', summary.total_calls,
-  'totalRows', summary.total_rows,
-  'avgRowsPerCall', summary.avg_rows_per_call,
-  'selectStatementCount', select_summary.statement_count,
-  'selectCalls', select_summary.total_calls,
-  'selectRows', select_summary.total_rows,
-  'selectAvgRowsPerCall', select_summary.avg_rows_per_call,
-  'productSnapshotPayloadStatements', jsonb_build_object(
-    'statementCount', payload_statements.statement_count,
-    'calls', payload_statements.calls,
-    'rows', payload_statements.rows
-  ),
-  'productSnapshotPayloadReads', jsonb_build_object(
-    'statementCount', payload_reads.statement_count,
-    'calls', payload_reads.calls,
-    'rows', payload_reads.rows
-  ),
-  'topBySelectRows', top_by_select_rows.rows,
-  'topByCalls', top_by_calls.rows
+  'statements',
+  coalesce(
+    (select jsonb_agg(to_jsonb(statement_rows) order by rows desc, calls desc) from statement_rows),
+    '[]'::jsonb
+  )
 ) as diagnostics
-from summary, select_summary, reset_info, payload_statements, payload_reads, top_by_select_rows, top_by_calls;
+from reset_info;
 `;
 
 await main().catch((error) => {
@@ -150,7 +52,7 @@ await main().catch((error) => {
 
 async function main() {
   const result = await querySupabaseJson(diagnosticsSql);
-  const diagnostics = result.rows?.[0]?.diagnostics;
+  const diagnostics = buildDiagnostics(result.rows?.[0]?.diagnostics);
 
   if (!diagnostics) {
     throw new Error("Supabase CLI non ha restituito le statistiche attese.");
@@ -173,6 +75,88 @@ async function main() {
   }
 
   printSummary(payload);
+}
+
+function buildDiagnostics(rawDiagnostics) {
+  if (!rawDiagnostics) return null;
+
+  const statementRows = normalizeStatementRows(rawDiagnostics.statements ?? []);
+  const selectRows = statementRows.filter((row) =>
+    isEgressReadStatementQuery(row.query),
+  );
+  const payloadStatementRows = statementRows.filter(hasProductSnapshotPayload);
+  const payloadReadRows = selectRows.filter(hasProductSnapshotPayload);
+  const statementSummary = summarizeStatements(statementRows);
+  const selectSummary = summarizeStatements(selectRows);
+
+  return {
+    avgRowsPerCall: statementSummary.avgRowsPerCall,
+    observedAt: rawDiagnostics.observedAt,
+    productSnapshotPayloadReads: summarizeStatements(payloadReadRows),
+    productSnapshotPayloadStatements: summarizeStatements(payloadStatementRows),
+    selectAvgRowsPerCall: selectSummary.avgRowsPerCall,
+    selectCalls: selectSummary.calls,
+    selectRows: selectSummary.rows,
+    selectStatementCount: selectSummary.statementCount,
+    statementCount: statementSummary.statementCount,
+    statsReset: rawDiagnostics.statsReset,
+    topByCalls: buildTopQueries(statementRows, "calls"),
+    topBySelectRows: buildTopQueries(selectRows, "rows"),
+    totalCalls: statementSummary.calls,
+    totalRows: statementSummary.rows,
+    windowMinutes: Number(rawDiagnostics.windowMinutes ?? 0),
+  };
+}
+
+function normalizeStatementRows(rows) {
+  if (!Array.isArray(rows)) return [];
+
+  return rows.map((row) => ({
+    calls: normalizeCount(row.calls),
+    query: String(row.query ?? ""),
+    queryId: String(row.queryId ?? ""),
+    rows: normalizeCount(row.rows),
+  }));
+}
+
+function summarizeStatements(rows) {
+  const totals = rows.reduce(
+    (summary, row) => ({
+      calls: summary.calls + row.calls,
+      rows: summary.rows + row.rows,
+      statementCount: summary.statementCount + 1,
+    }),
+    { calls: 0, rows: 0, statementCount: 0 },
+  );
+
+  return {
+    ...totals,
+    avgRowsPerCall: totals.calls > 0 ? round3(totals.rows / totals.calls) : 0,
+  };
+}
+
+function buildTopQueries(rows, primarySort) {
+  return [...rows]
+    .sort((left, right) => {
+      if (primarySort === "calls") {
+        return right.calls - left.calls || right.rows - left.rows;
+      }
+
+      return right.rows - left.rows || right.calls - left.calls;
+    })
+    .slice(0, topLimit)
+    .map((row) => ({
+      avgRowsPerCall: row.calls > 0 ? round3(row.rows / row.calls) : 0,
+      calls: row.calls,
+      queryId: row.queryId,
+      queryPreview: normalizeSqlWhitespace(row.query).slice(0, 240),
+      rows: row.rows,
+    }));
+}
+
+function hasProductSnapshotPayload(row) {
+  const query = row.query.toLowerCase();
+  return query.includes("productsnapshot") && query.includes("payload");
 }
 
 async function querySupabaseJson(sql) {
@@ -287,6 +271,19 @@ function printTopQueries(title, rows) {
       `- rows ${row.rows}, calls ${row.calls}, avg ${row.avgRowsPerCall}: ${row.queryPreview}`,
     );
   }
+}
+
+function normalizeCount(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
+}
+
+function normalizeSqlWhitespace(query) {
+  return String(query).replaceAll(/\s+/g, " ").trim();
+}
+
+function round3(value) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function parseArgs(rawArgs) {

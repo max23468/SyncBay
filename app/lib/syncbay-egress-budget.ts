@@ -30,14 +30,10 @@ export interface SyncBayEgressBudgetReadRowsInput {
   totalRows: number;
 }
 
-export const SYNCBAY_EGRESS_READ_QUERY_SQL_PATTERN =
-  "^[[:space:]]*(select([^[:alnum:]_]|$)|with([^[:alnum:]_]|$).*\\)[[:space:]]*select([^[:alnum:]_]|$))";
-
 const DEFAULT_MONTHLY_BUDGET_GB = 5;
 const DAYS_PER_BUDGET_MONTH = 30;
 const MB_BYTES = 1_000_000;
 const MINUTES_PER_DAY = 24 * 60;
-const READ_QUERY_JS_PATTERN = /^\s*(select\b|with\b.*\)\s*select\b)/i;
 
 export function buildEgressBudgetReport(
   input: SyncBayEgressBudgetInput,
@@ -111,7 +107,13 @@ export function getEgressBudgetReadRows(input: SyncBayEgressBudgetReadRowsInput)
 }
 
 export function isEgressReadStatementQuery(query: string) {
-  return READ_QUERY_JS_PATTERN.test(normalizeSqlWhitespace(query));
+  const sql = query.trim();
+  const firstKeyword = readKeyword(sql, 0);
+
+  if (firstKeyword?.keyword === "select") return true;
+  if (firstKeyword?.keyword !== "with") return false;
+
+  return isReadOnlyWithSelectStatement(sql);
 }
 
 function classifyBudgetUsageRatio(
@@ -148,10 +150,152 @@ function normalizeOptionalPositiveNumber(value: number | null | undefined) {
     : null;
 }
 
-function normalizeSqlWhitespace(query: string) {
-  return query.replaceAll(/\s+/g, " ").trim();
-}
-
 function round2(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function isReadOnlyWithSelectStatement(sql: string) {
+  const withKeyword = readKeyword(sql, 0);
+  if (withKeyword?.keyword !== "with") return false;
+
+  let index = skipWhitespace(sql, withKeyword.end);
+  const recursiveKeyword = readKeyword(sql, index);
+  if (recursiveKeyword?.keyword === "recursive") {
+    index = skipWhitespace(sql, recursiveKeyword.end);
+  }
+
+  while (index < sql.length) {
+    const nameEnd = skipSqlIdentifier(sql, index);
+    if (nameEnd === null) return false;
+
+    index = skipWhitespace(sql, nameEnd);
+    if (sql[index] === "(") {
+      const columnListEnd = findMatchingParen(sql, index);
+      if (columnListEnd === null) return false;
+      index = skipWhitespace(sql, columnListEnd + 1);
+    }
+
+    const asKeyword = readKeyword(sql, index);
+    if (asKeyword?.keyword !== "as") return false;
+
+    index = skipWhitespace(sql, asKeyword.end);
+    if (sql[index] !== "(") return false;
+
+    const bodyStart = index + 1;
+    const bodyEnd = findMatchingParen(sql, index);
+    if (bodyEnd === null) return false;
+
+    if (!isEgressReadStatementQuery(sql.slice(bodyStart, bodyEnd))) {
+      return false;
+    }
+
+    index = skipWhitespace(sql, bodyEnd + 1);
+    if (sql[index] === ",") {
+      index = skipWhitespace(sql, index + 1);
+      continue;
+    }
+
+    return readKeyword(sql, index)?.keyword === "select";
+  }
+
+  return false;
+}
+
+function readKeyword(sql: string, index: number) {
+  const start = skipWhitespace(sql, index);
+  const match = /^[a-z_][a-z0-9_]*/i.exec(sql.slice(start));
+
+  if (!match) return null;
+
+  return {
+    end: start + match[0].length,
+    keyword: match[0].toLowerCase(),
+  };
+}
+
+function skipWhitespace(sql: string, index: number) {
+  let cursor = index;
+
+  while (cursor < sql.length && /\s/.test(sql[cursor] ?? "")) {
+    cursor += 1;
+  }
+
+  return cursor;
+}
+
+function skipSqlIdentifier(sql: string, index: number) {
+  const start = skipWhitespace(sql, index);
+
+  if (sql[start] === '"') {
+    const end = skipDoubleQuotedIdentifier(sql, start);
+    return end === null ? null : end + 1;
+  }
+
+  const match = /^[a-z_][a-z0-9_$]*/i.exec(sql.slice(start));
+  return match ? start + match[0].length : null;
+}
+
+function skipDoubleQuotedIdentifier(sql: string, index: number) {
+  let cursor = index + 1;
+
+  while (cursor < sql.length) {
+    if (sql[cursor] === '"' && sql[cursor + 1] === '"') {
+      cursor += 2;
+      continue;
+    }
+
+    if (sql[cursor] === '"') return cursor;
+
+    cursor += 1;
+  }
+
+  return null;
+}
+
+function findMatchingParen(sql: string, openIndex: number) {
+  let depth = 0;
+  let cursor = openIndex;
+
+  while (cursor < sql.length) {
+    const char = sql[cursor];
+
+    if (char === "'") {
+      cursor = skipSingleQuotedString(sql, cursor);
+      continue;
+    }
+
+    if (char === '"') {
+      const end = skipDoubleQuotedIdentifier(sql, cursor);
+      if (end === null) return null;
+      cursor = end + 1;
+      continue;
+    }
+
+    if (char === "(") depth += 1;
+    if (char === ")") {
+      depth -= 1;
+      if (depth === 0) return cursor;
+    }
+
+    cursor += 1;
+  }
+
+  return null;
+}
+
+function skipSingleQuotedString(sql: string, index: number) {
+  let cursor = index + 1;
+
+  while (cursor < sql.length) {
+    if (sql[cursor] === "'" && sql[cursor + 1] === "'") {
+      cursor += 2;
+      continue;
+    }
+
+    if (sql[cursor] === "'") return cursor + 1;
+
+    cursor += 1;
+  }
+
+  return sql.length;
 }

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.7] — 2026-06-23
+
+### Correzioni
+
+- Monitor egress: il classificatore delle CTE distingue le query read-only dalle
+  mutation `WITH ... INSERT ... SELECT`, evitando di ricontare righe DML come
+  proxy di egress.
+
 ## [0.46.6] — 2026-06-23
 
 ### Correzioni
@@ -2608,6 +2616,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.7]: #0467--2026-06-23
 [0.46.6]: #0466--2026-06-23
 [0.46.5]: #0465--2026-06-23
 [0.46.4]: #0464--2026-06-23
