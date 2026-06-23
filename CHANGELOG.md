@@ -6,13 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.46.3] — 2026-06-23
 
-- Tooling agenti: configurato `mex-agent` come memoria locale routata per Codex
-  e Claude Code, mantenendo `AGENTS.md` e la documentazione canonica come fonti
-  primarie.
-- Tooling agenti: ignorata la directory locale `.mex/` per evitare commit
-  accidentali dello scaffold di memoria e del suo stato locale.
+### Correzioni
+
+- Runner sync: la repair automatica delle immagini Catalogo esclude i mapping
+  con conflitti aperti direttamente nella query candidati, evitando che
+  conflitti vecchi saturino la finestra di repair giornaliera.
 
 ## [0.46.2] — 2026-06-23
 
@@ -21,6 +21,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Runner sync: la repair automatica delle immagini Catalogo non legge più
   snapshot JSON in massa; usa il `thumbnailUrl` denormalizzato sul mapping e
   scansiona solo prodotti ancora senza miniatura.
+
+### Non versionato
+
+- Tooling agenti: configurato `mex-agent` come memoria locale routata per Codex
+  e Claude Code, mantenendo `AGENTS.md` e la documentazione canonica come fonti
+  primarie.
+- Tooling agenti: ignorata la directory locale `.mex/` per evitare commit
+  accidentali dello scaffold di memoria e del suo stato locale.
 
 ## [0.46.1] — 2026-06-23
 
@@ -2569,6 +2577,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.3]: #0463--2026-06-23
 [0.46.2]: #0462--2026-06-23
 [0.46.1]: #0461--2026-06-23
 [0.46.0]: #0460--2026-06-23

@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getCatalogImageRepairItemIds, getCatalogImageRepairRunKey } from "./syncbay-catalog-image-repair.ts";
+import * as catalogImageRepair from "./syncbay-catalog-image-repair.ts";
+
+const {
+  getCatalogImageRepairCandidateWhere,
+  getCatalogImageRepairItemIds,
+  getCatalogImageRepairRunKey,
+} = catalogImageRepair;
 
 test("selects only active mapped products without thumbnails for catalog image repair", () => {
   assert.deepEqual(
@@ -71,6 +77,25 @@ test("deduplicates and limits catalog image repair candidates", () => {
       ],
     }),
     ["1", "2"],
+  );
+});
+
+test("excludes open-conflict mappings before capping catalog image repair candidates", () => {
+  assert.deepEqual(
+    getCatalogImageRepairCandidateWhere({
+      activeStatus: "ACTIVE",
+      marketplaceId: "EBAY_IT",
+      openConflictStatus: "OPEN",
+      shopId: "shop-1",
+    }),
+    {
+      conflicts: { none: { status: "OPEN" } },
+      marketplaceId: "EBAY_IT",
+      shopId: "shop-1",
+      shopifyProductGid: { not: null },
+      status: "ACTIVE",
+      thumbnailUrl: null,
+    },
   );
 });
 

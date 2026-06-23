@@ -35,6 +35,7 @@ import {
   isCatalogReconcileScanComplete,
 } from "../lib/syncbay-catalog-reconcile";
 import {
+  getCatalogImageRepairCandidateWhere,
   getCatalogImageRepairItemIds,
   getCatalogImageRepairRunKey,
 } from "../lib/syncbay-catalog-image-repair";
@@ -859,30 +860,23 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
   const mappings = await prisma.productMapping.findMany({
     orderBy: [{ updatedAt: "asc" }, { createdAt: "asc" }],
     select: {
-      conflicts: {
-        select: { id: true },
-        take: 1,
-        where: { status: SyncConflictStatus.OPEN },
-      },
       ebayItemId: true,
       shopifyProductGid: true,
       thumbnailUrl: true,
     },
     take: Math.min(limit * 2, CATALOG_RECONCILE_MAX_PRODUCTS),
-    where: {
+    where: getCatalogImageRepairCandidateWhere({
+      activeStatus: ProductMappingStatus.ACTIVE,
       marketplaceId: DEFAULT_MARKETPLACE_ID,
+      openConflictStatus: SyncConflictStatus.OPEN,
       shopId: input.shopId,
-      shopifyProductGid: { not: null },
-      status: ProductMappingStatus.ACTIVE,
-      thumbnailUrl: null,
-    },
+    }),
   });
   const ebayItemIds = getCatalogImageRepairItemIds({
     limit,
     mappings: mappings.map((mapping) => ({
       ebayItemId: mapping.ebayItemId,
       hasThumbnailUrl: Boolean(mapping.thumbnailUrl),
-      hasOpenConflicts: mapping.conflicts.length > 0,
       shopifyProductGid: mapping.shopifyProductGid,
     })),
   });
