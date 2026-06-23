@@ -1,7 +1,7 @@
 export type CatalogImageRepairMapping = {
   ebayItemId: string | null;
+  hasThumbnailUrl: boolean;
   hasOpenConflicts: boolean;
-  hasSnapshotThumbnailUrl: boolean;
   shopifyProductGid: string | null;
 };
 
@@ -17,7 +17,7 @@ export function getCatalogImageRepairItemIds(input: {
   for (const mapping of input.mappings) {
     if (itemIds.length >= input.limit) break;
     if (mapping.hasOpenConflicts) continue;
-    if (mapping.hasSnapshotThumbnailUrl) continue;
+    if (mapping.hasThumbnailUrl) continue;
     if (!mapping.shopifyProductGid?.trim()) continue;
 
     const ebayItemId = mapping.ebayItemId?.trim();

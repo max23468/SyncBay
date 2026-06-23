@@ -65,7 +65,6 @@ import {
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
 } from "../lib/syncbay-job-scheduling";
-import { getProductSnapshotThumbnailUrlFromPayloads } from "../lib/syncbay-product-snapshot-payload";
 import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
@@ -190,7 +189,6 @@ const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
 const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;
 const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
-const CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK = 5;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -868,30 +866,23 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
       },
       ebayItemId: true,
       shopifyProductGid: true,
-      snapshots: {
-        orderBy: { capturedAt: "desc" },
-        select: { payload: true },
-        take: CATALOG_IMAGE_REPAIR_SNAPSHOT_LOOKBACK,
-      },
+      thumbnailUrl: true,
     },
-    take: CATALOG_RECONCILE_MAX_PRODUCTS,
+    take: Math.min(limit * 2, CATALOG_RECONCILE_MAX_PRODUCTS),
     where: {
       marketplaceId: DEFAULT_MARKETPLACE_ID,
       shopId: input.shopId,
       shopifyProductGid: { not: null },
       status: ProductMappingStatus.ACTIVE,
+      thumbnailUrl: null,
     },
   });
   const ebayItemIds = getCatalogImageRepairItemIds({
     limit,
     mappings: mappings.map((mapping) => ({
       ebayItemId: mapping.ebayItemId,
+      hasThumbnailUrl: Boolean(mapping.thumbnailUrl),
       hasOpenConflicts: mapping.conflicts.length > 0,
-      hasSnapshotThumbnailUrl: Boolean(
-        getProductSnapshotThumbnailUrlFromPayloads(
-          mapping.snapshots.map((snapshot) => snapshot.payload),
-        ),
-      ),
       shopifyProductGid: mapping.shopifyProductGid,
     })),
   });

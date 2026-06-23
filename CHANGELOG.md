@@ -14,6 +14,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Tooling agenti: ignorata la directory locale `.mex/` per evitare commit
   accidentali dello scaffold di memoria e del suo stato locale.
 
+## [0.46.2] — 2026-06-23
+
+### Correzioni
+
+- Runner sync: la repair automatica delle immagini Catalogo non legge più
+  snapshot JSON in massa; usa il `thumbnailUrl` denormalizzato sul mapping e
+  scansiona solo prodotti ancora senza miniatura.
+
 ## [0.46.1] — 2026-06-23
 
 ### Correzioni
@@ -2561,6 +2569,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.2]: #0462--2026-06-23
 [0.46.1]: #0461--2026-06-23
 [0.46.0]: #0460--2026-06-23
 [0.45.2]: #0452--2026-06-23
