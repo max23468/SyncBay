@@ -23,6 +23,19 @@ export interface SyncBayPricingRule {
   roundingMode: PriceRoundingMode;
 }
 
+export interface SyncBayPricingWriteBaseline {
+  compareAtPriceAmount?: number | string | null;
+  priceAmount?: number | string | null;
+}
+
+export interface SyncBayPricingWriteCandidate {
+  next: {
+    compareAtPrice: string | null;
+    price: string | null;
+  };
+  previous: SyncBayPricingWriteBaseline | null;
+}
+
 export function calculateShopifyPricing(input: {
   discountPercent: number;
   ebayPriceAmount: number | null;
@@ -82,6 +95,25 @@ export function calculateShopifyPricing(input: {
   };
 }
 
+export function shouldWriteShopifyPricing(
+  input: SyncBayPricingWriteCandidate,
+) {
+  if (!input.previous) return true;
+
+  const previousPriceCents = normalizeMoneyComparisonCents(
+    input.previous.priceAmount,
+  );
+  const nextPriceCents = normalizeMoneyComparisonCents(input.next.price);
+
+  if (previousPriceCents === null || nextPriceCents === null) return true;
+
+  return (
+    previousPriceCents !== nextPriceCents ||
+    normalizeMoneyComparisonCents(input.previous.compareAtPriceAmount) !==
+      normalizeMoneyComparisonCents(input.next.compareAtPrice)
+  );
+}
+
 export function normalizePricingRuleFormInput(input: {
   discountPercent: string;
   roundingMode: string;
@@ -139,6 +171,18 @@ function toMoneyCents(value: number | null) {
   }
 
   return Math.round(value * 100);
+}
+
+function normalizeMoneyComparisonCents(
+  value: number | string | null | undefined,
+) {
+  if (value === null || value === undefined) return null;
+
+  const amount = typeof value === "number" ? value : Number(value.trim());
+
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  return Math.round(amount * 100);
 }
 
 function centsToAmount(cents: number) {

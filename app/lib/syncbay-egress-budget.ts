@@ -110,7 +110,9 @@ export function isEgressReadStatementQuery(query: string) {
   const sql = query.trim();
   const firstKeyword = readKeyword(sql, 0);
 
-  if (firstKeyword?.keyword === "select") return true;
+  if (firstKeyword?.keyword === "select" || firstKeyword?.keyword === "values") {
+    return true;
+  }
   if (firstKeyword?.keyword !== "with") return false;
 
   return isReadOnlyWithSelectStatement(sql);
