@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEgressBudgetReport } from "./syncbay-egress-budget.ts";
+import {
+  buildEgressBudgetReport,
+  getEgressBudgetReadRows,
+} from "./syncbay-egress-budget.ts";
 
 test("computes the 5 GB monthly egress budget without inventing byte data", () => {
   const report = buildEgressBudgetReport({
@@ -50,5 +53,25 @@ test("classifies estimated egress against the monthly budget", () => {
       windowMinutes: 60,
     }).status,
     "over_budget",
+  );
+});
+
+test("uses SELECT rows as the egress proxy when DML rows affected are high", () => {
+  assert.equal(
+    getEgressBudgetReadRows({
+      selectRows: 1_775,
+      totalRows: 42_435,
+    }),
+    1_775,
+  );
+});
+
+test("falls back to total rows when SELECT rows are unavailable", () => {
+  assert.equal(
+    getEgressBudgetReadRows({
+      selectRows: null,
+      totalRows: 1_641,
+    }),
+    1_641,
   );
 });

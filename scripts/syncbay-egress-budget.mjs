@@ -2,7 +2,10 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { buildEgressBudgetReport } from "../app/lib/syncbay-egress-budget.ts";
+import {
+  buildEgressBudgetReport,
+  getEgressBudgetReadRows,
+} from "../app/lib/syncbay-egress-budget.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -35,6 +38,15 @@ summary as (
     coalesce(round((sum(rows)::numeric / nullif(sum(calls), 0)), 3), 0) as avg_rows_per_call
   from statement_rows
 ),
+select_summary as (
+  select
+    count(*)::int as statement_count,
+    coalesce(sum(calls), 0)::bigint as total_calls,
+    coalesce(sum(rows), 0)::bigint as total_rows,
+    coalesce(round((sum(rows)::numeric / nullif(sum(calls), 0)), 3), 0) as avg_rows_per_call
+  from statement_rows
+  where query ~* '^\\s*select'
+),
 reset_info as (
   select stats_reset, now() as observed_at
   from pg_stat_statements_info
@@ -59,7 +71,7 @@ payload_reads as (
     and query ilike '%ProductSnapshot%'
     and query ilike '%payload%'
 ),
-top_by_rows as (
+top_by_select_rows as (
   select coalesce(jsonb_agg(row_payload order by rows desc, calls desc), '[]'::jsonb) as rows
   from (
     select
@@ -73,6 +85,7 @@ top_by_rows as (
         'queryPreview', left(regexp_replace(query, '\\s+', ' ', 'g'), 240)
       ) as row_payload
     from statement_rows
+    where query ~* '^\\s*select'
     order by rows desc, calls desc
     limit ${topLimit}
   ) ranked_rows
@@ -103,6 +116,10 @@ select jsonb_build_object(
   'totalCalls', summary.total_calls,
   'totalRows', summary.total_rows,
   'avgRowsPerCall', summary.avg_rows_per_call,
+  'selectStatementCount', select_summary.statement_count,
+  'selectCalls', select_summary.total_calls,
+  'selectRows', select_summary.total_rows,
+  'selectAvgRowsPerCall', select_summary.avg_rows_per_call,
   'productSnapshotPayloadStatements', jsonb_build_object(
     'statementCount', payload_statements.statement_count,
     'calls', payload_statements.calls,
@@ -113,10 +130,10 @@ select jsonb_build_object(
     'calls', payload_reads.calls,
     'rows', payload_reads.rows
   ),
-  'topByRows', top_by_rows.rows,
+  'topBySelectRows', top_by_select_rows.rows,
   'topByCalls', top_by_calls.rows
 ) as diagnostics
-from summary, reset_info, payload_statements, payload_reads, top_by_rows, top_by_calls;
+from summary, select_summary, reset_info, payload_statements, payload_reads, top_by_select_rows, top_by_calls;
 `;
 
 await main().catch((error) => {
@@ -135,7 +152,10 @@ async function main() {
   const budget = buildEgressBudgetReport({
     estimatedAverageBytesPerRow: args.avgBytesPerRow,
     monthlyBudgetGb: args.budgetGb,
-    totalRows: Number(diagnostics.totalRows ?? 0),
+    totalRows: getEgressBudgetReadRows({
+      selectRows: Number(diagnostics.selectRows ?? 0),
+      totalRows: Number(diagnostics.totalRows ?? 0),
+    }),
     windowMinutes: Number(diagnostics.windowMinutes ?? 0),
   });
   const payload = { budget, diagnostics };
@@ -191,9 +211,12 @@ function printSummary({ budget, diagnostics }) {
     `- finestra: ${budget.windowMinutes} min, calls ${diagnostics.totalCalls}, rows ${diagnostics.totalRows}, avg rows/call ${diagnostics.avgRowsPerCall}`,
   );
   console.log(
+    `- SELECT proxy egress: calls ${diagnostics.selectCalls}, rows ${diagnostics.selectRows}, avg rows/call ${diagnostics.selectAvgRowsPerCall}`,
+  );
+  console.log(
     `- budget: ${budget.monthlyBudgetGb} GB/mese = ${budget.dailyBudgetMb} MB/giorno; finestra corrente ${budget.windowBudgetMb} MB`,
   );
-  console.log(`- pendenza righe: ${budget.rowsPerDay} rows/giorno`);
+  console.log(`- pendenza righe SELECT: ${budget.rowsPerDay} rows/giorno`);
 
   if (budget.status === "unestimated") {
     console.log(
@@ -226,7 +249,7 @@ function printSummary({ budget, diagnostics }) {
     );
   }
 
-  printTopQueries("Top rows", diagnostics.topByRows ?? []);
+  printTopQueries("Top SELECT rows", diagnostics.topBySelectRows ?? []);
   printTopQueries("Top calls", diagnostics.topByCalls ?? []);
 }
 
