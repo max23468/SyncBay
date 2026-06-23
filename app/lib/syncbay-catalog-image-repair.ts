@@ -1,9 +1,28 @@
 export type CatalogImageRepairMapping = {
   ebayItemId: string | null;
   hasThumbnailUrl: boolean;
-  hasOpenConflicts: boolean;
+  hasOpenConflicts?: boolean;
   shopifyProductGid: string | null;
 };
+
+export function getCatalogImageRepairCandidateWhere<
+  TActiveStatus extends string,
+  TOpenConflictStatus extends string,
+>(input: {
+  activeStatus: TActiveStatus;
+  marketplaceId: string;
+  openConflictStatus: TOpenConflictStatus;
+  shopId: string;
+}) {
+  return {
+    conflicts: { none: { status: input.openConflictStatus } },
+    marketplaceId: input.marketplaceId,
+    shopId: input.shopId,
+    shopifyProductGid: { not: null },
+    status: input.activeStatus,
+    thumbnailUrl: null,
+  };
+}
 
 export function getCatalogImageRepairItemIds(input: {
   limit: number;
