@@ -11,6 +11,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Tooling agenti: configurato `mex-agent` come memoria locale routata per Codex
   e Claude Code, mantenendo `AGENTS.md` e la documentazione canonica come fonti
   primarie.
+- Tooling agenti: ignorata la directory locale `.mex/` per evitare commit
+  accidentali dello scaffold di memoria e del suo stato locale.
 
 ## [0.46.1] — 2026-06-23
 
