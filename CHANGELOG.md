@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Tooling agenti: configurato `mex-agent` come memoria locale routata per Codex
+  e Claude Code, mantenendo `AGENTS.md` e la documentazione canonica come fonti
+  primarie.
+
 ## [0.46.1] — 2026-06-23
 
 ### Correzioni
