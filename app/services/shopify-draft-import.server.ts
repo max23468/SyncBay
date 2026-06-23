@@ -40,6 +40,7 @@ import {
   buildEbayProductSnapshotPayload,
   getProductSnapshotThumbnailUrl,
 } from "../lib/syncbay-product-snapshot-payload";
+import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import { buildSyncBayProductMetafields as buildSyncBayBaseProductMetafields } from "../lib/syncbay-shopify-product-metafields";
@@ -2962,6 +2963,7 @@ async function startDraftImportJob(input: {
   });
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       details: payload,
       message: "Import Shopify avviato.",
@@ -3192,6 +3194,7 @@ async function finishDraftImportJob(input: {
       where: { id: input.jobId },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: finalResultPayload,
         message: success

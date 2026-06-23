@@ -6,6 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.4] — 2026-06-23
+
+### Sotto il cofano
+
+- Osservabilità egress: aggiunto `npm run egress:budget` per misurare in sola
+  lettura la pendenza post-reset di `pg_stat_statements` rispetto al budget
+  pilota di 5 GB/mese, evidenziando anche SELECT su `ProductSnapshot.payload`.
+- Audit log: gli inserimenti Prisma degli `AuditLog` ritornano solo l'`id`,
+  mantenendo invariati messaggi e `details` ma riducendo il traffico di ritorno
+  delle scritture.
+- Retention: le vecchie richieste eBay account deletion `NO_MATCH` senza shop
+  collegato usano una finestra stretta di 7 giorni, separata dalla retention
+  privacy a 365 giorni dei record effettivamente collegati al pilota.
+
 ## [0.46.3] — 2026-06-23
 
 ### Correzioni
@@ -2577,6 +2591,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.4]: #0464--2026-06-23
 [0.46.3]: #0463--2026-06-23
 [0.46.2]: #0462--2026-06-23
 [0.46.1]: #0461--2026-06-23

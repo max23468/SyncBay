@@ -1,6 +1,7 @@
 export interface SyncBayRetentionPolicy {
   area:
     | "account_deletion_requests"
+    | "account_deletion_no_match_requests"
     | "audit_logs"
     | "oauth_states"
     | "product_snapshots"
@@ -35,6 +36,13 @@ export const SYNCBAY_RETENTION_POLICIES: SyncBayRetentionPolicy[] = [
     label: "State OAuth",
     retentionDays: 7,
     scope: "State hash temporanei e metadati minimi anti-CSRF.",
+  },
+  {
+    area: "account_deletion_no_match_requests",
+    label: "Richieste account deletion senza match",
+    retentionDays: 7,
+    scope:
+      "Notifiche eBay senza shop collegato al pilota, conservate brevemente per deduplica e diagnostica.",
   },
   {
     area: "account_deletion_requests",

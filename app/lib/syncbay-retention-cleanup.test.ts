@@ -28,6 +28,7 @@ test("builds a plan covering every retention policy", () => {
 
   const areas = plan.map((target: { area: string }) => target.area).sort();
   assert.deepEqual(areas, [
+    "account_deletion_no_match_requests",
     "account_deletion_requests",
     "audit_logs",
     "oauth_states",
@@ -51,6 +52,19 @@ test("can restrict the plan to specific areas", () => {
 
   assert.equal(plan.length, 1);
   assert.equal(plan[0].area, "oauth_states");
+  assert.equal(plan[0].cutoff.toISOString(), "2026-06-13T00:00:00.000Z");
+});
+
+test("plans a strict short cleanup window for no-match account deletion rows", () => {
+  const plan = buildRetentionCleanupPlan({
+    areas: ["account_deletion_no_match_requests"],
+    now,
+    policies: SYNCBAY_RETENTION_POLICIES,
+  });
+
+  assert.equal(plan.length, 1);
+  assert.equal(plan[0].area, "account_deletion_no_match_requests");
+  assert.equal(plan[0].retentionDays, 7);
   assert.equal(plan[0].cutoff.toISOString(), "2026-06-13T00:00:00.000Z");
 });
 

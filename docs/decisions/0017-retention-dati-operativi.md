@@ -32,11 +32,17 @@ La retention operativa del pilota viene fissata così:
 | Job sync/import | 90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito. |
 | Snapshot prodotto | 180 giorni | Conflitti, rollback e confronto con ultimo valore scritto da SyncBay. |
 | State OAuth temporanei | 7 giorni | Anti-CSRF e debugging breve del flusso OAuth senza conservare stato vecchio. |
+| Richieste eBay account deletion senza match | 7 giorni | Notifiche eBay non collegate ad alcuno shop del pilota, utili solo per deduplica e diagnostica breve. |
 | Richieste eBay account deletion | 365 giorni | Idempotenza, compliance e prova di gestione richiesta senza payload raw. |
 
 Queste finestre sono il riferimento per UI, documentazione, cleanup operativo e
 future automazioni. Il cleanup automatico è stato implementato e attivato in
 ADR 0018 (`docs/decisions/0018-cleanup-retention-automatico.md`).
+
+La finestra a 365 giorni si applica alle notifiche account deletion collegate a
+shop del pilota o comunque non classificate `NO_MATCH`. Le notifiche `NO_MATCH`
+con `matchedShopCount = 0` non rappresentano un obbligo di prova verso un
+negoziante SyncBay collegato e usano quindi la finestra stretta di 7 giorni.
 
 ## Conseguenze
 

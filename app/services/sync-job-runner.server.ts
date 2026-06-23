@@ -12,6 +12,7 @@ import {
 
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
+import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
 import {
   getAlignedOpenConflictFields,
@@ -460,6 +461,7 @@ async function markStaleInternalShopifyImportJobsFailed(input: {
       if (updated.count !== 1) return false;
 
       await tx.auditLog.create({
+        select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
         data: {
           details: result,
           message: "Traccia interna import Shopify stantia chiusa dal runner.",
@@ -728,6 +730,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
           },
         }),
         prisma.auditLog.create({
+          select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
           data: {
             details: result,
             message:
@@ -1134,6 +1137,7 @@ async function recoverStaleRunningSyncJobs(
 
   if (recoveredCount > 0) {
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           recoveredCount,
@@ -2722,6 +2726,7 @@ async function markJobFailedOrRetrying(input: {
     if (updated.count !== 1) return;
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: result,
         message: retryAt
@@ -2761,6 +2766,7 @@ async function markJobSucceeded(input: {
     if (updated.count !== 1) return;
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: result,
         message: "Job SyncBay completato dal runner.",
@@ -2827,6 +2833,7 @@ async function splitOversizedEbayItemJobIfNeeded(
     });
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: result,
         message:

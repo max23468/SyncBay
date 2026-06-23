@@ -11,6 +11,7 @@ import {
   getAccountDeletionDedupAnchor,
   getAccountDeletionPersistenceMode,
 } from "../lib/syncbay-account-deletion-dedup";
+import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { hashSecretIdentifier } from "./crypto.server";
 import { verifyEbayNotificationSignature } from "./ebay-notifications.server";
 
@@ -133,6 +134,7 @@ export async function processEbayAccountDeletionNotification(input: {
     });
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           accountDeletionRequestId: deletionRequest.id,

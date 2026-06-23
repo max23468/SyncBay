@@ -51,6 +51,7 @@
     "orders:paid-readiness": "node scripts/syncbay-orders-paid-readiness.mjs",
     "conflicts:doctor": "node scripts/syncbay-conflicts-doctor.mjs",
     "conflicts:repair-description": "node scripts/syncbay-repair-description-conflicts.mjs",
+    "egress:budget": "node --experimental-strip-types scripts/syncbay-egress-budget.mjs",
     "descriptions:cleanup-report": "node --experimental-strip-types scripts/syncbay-description-cleanup-report.mjs",
     "descriptions:backfill-cleanup": "node --experimental-strip-types scripts/syncbay-description-backfill.mjs",
     "stock:restore-ebay": "node scripts/syncbay-restore-ebay-stock.mjs",

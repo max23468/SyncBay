@@ -22,6 +22,7 @@ import {
   IMPORT_PRODUCT_STATUS_VALUES,
   normalizeImportProductStatus,
 } from "../lib/import-product-status";
+import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import {
   CATALOG_PAGE_SIZE,
   type CatalogPageFilter,
@@ -1287,6 +1288,7 @@ export async function requestSyncJobRetry(
       where: { id: job.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details,
         message: "Retry job richiesto dalla dashboard.",
@@ -1356,6 +1358,7 @@ export async function resolveSyncConflict(
       where: { id: conflict.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           conflictId: conflict.id,
@@ -1651,6 +1654,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
   } satisfies Prisma.JsonObject;
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       details: resultPayload,
       message: "Import catalogo eBay pianificato in batch.",
@@ -1999,6 +2003,7 @@ export async function updateDescriptionRuleSettings(
     });
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           descriptionMode: normalized.mode,
@@ -2120,6 +2125,7 @@ export async function updatePricingRuleSettings(
     }
 
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           discountPercent: normalized.discountPercent,
@@ -2187,6 +2193,7 @@ export async function updateSyncTargetSeconds(
       where: { id: shop.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: { syncTargetSeconds: seconds },
         message: `Intervallo target di aggiornamento impostato a ${seconds} secondi dalle impostazioni.`,
@@ -2272,6 +2279,7 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
       where: { id: shop.id },
     });
     await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: { cancelledSyncJobCount: cancelledJobs.count },
         message:
@@ -2368,6 +2376,7 @@ export async function updateDefaultShopifyLocation(
       where: { id: shop.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           locationGid: selectedLocation.id,
@@ -2394,6 +2403,7 @@ export async function recordShopifyLocationRenamed(
   const shop = await ensureShopForSession(session);
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       details: {
         locationGid: input.locationGid,
@@ -2428,6 +2438,7 @@ export async function updateDefaultImportProductStatus(
       where: { id: shop.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           defaultProductStatus: normalizedStatus,
@@ -2482,6 +2493,7 @@ export async function updateProductPublicationSettings(
       where: { id: shop.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           productPublicationGids: serializedPublicationIds,
@@ -2545,6 +2557,7 @@ export async function updateShopSyncEnabled(
       where: { id: shop.id },
     }),
     prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
           activeMappingCount,
@@ -2583,6 +2596,7 @@ export async function markShopUninstalled(shopDomain: string) {
   });
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       message: "Shopify app disinstallata.",
       shopId: shop.id,
@@ -2609,6 +2623,7 @@ export async function updateShopifyScopes(
   });
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       message: "Scope Shopify aggiornati.",
       shopId: shop.id,
@@ -2694,6 +2709,7 @@ export async function recordShopifyWebhookPlaceholder(
       }
 
       await tx.auditLog.create({
+        select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
         data: {
           details,
           message: "Webhook Shopify ricevuto e tracciato.",
@@ -2706,6 +2722,7 @@ export async function recordShopifyWebhookPlaceholder(
   }
 
   await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
     data: {
       details,
       message: "Webhook Shopify ricevuto e tracciato.",
