@@ -11,26 +11,26 @@ test("selects only active mapped products without thumbnails for catalog image r
       mappings: [
         {
           ebayItemId: "1",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/1",
         },
         {
           ebayItemId: "2",
+          hasThumbnailUrl: false,
           hasOpenConflicts: true,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/2",
         },
         {
           ebayItemId: "3",
+          hasThumbnailUrl: true,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: true,
           shopifyProductGid: "gid://shopify/Product/3",
         },
         {
           ebayItemId: "4",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: null,
         },
       ],
@@ -46,26 +46,26 @@ test("deduplicates and limits catalog image repair candidates", () => {
       mappings: [
         {
           ebayItemId: "1",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/1",
         },
         {
           ebayItemId: "1",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/1",
         },
         {
           ebayItemId: "2",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/2",
         },
         {
           ebayItemId: "3",
+          hasThumbnailUrl: false,
           hasOpenConflicts: false,
-          hasSnapshotThumbnailUrl: false,
           shopifyProductGid: "gid://shopify/Product/3",
         },
       ],
