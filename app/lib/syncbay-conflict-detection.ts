@@ -35,6 +35,21 @@ export function shouldUseSyncBayDescriptionBaselinePayload(
   return objectPayload.conflictResolution != null;
 }
 
+export const SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL = Prisma.sql`
+  (
+    "payload" IS NULL
+    OR jsonb_typeof("payload") <> 'object'
+    OR NOT (
+      "payload" @> '{"updatedEbayFromShopifyOrder": true}'::jsonb
+      OR "payload" @> '{"restoredEbayAfterTest": true}'::jsonb
+    )
+    OR (
+      "payload" ? 'conflictResolution'
+      AND "payload"->'conflictResolution' <> 'null'::jsonb
+    )
+  )
+`;
+
 export function getAlignedOpenConflictFields(input: {
   detectedConflictFields: string[];
   openConflictFields: string[];

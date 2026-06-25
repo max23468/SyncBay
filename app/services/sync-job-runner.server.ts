@@ -15,8 +15,8 @@ import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
 import {
+  SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL,
   getAlignedOpenConflictFields,
-  getLatestSyncBayDescriptionBaselineWhere,
   isLiveDescriptionConflictAligned,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
@@ -25,7 +25,6 @@ import {
   shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
-  shouldUseSyncBayDescriptionBaselinePayload,
 } from "../lib/syncbay-conflict-detection";
 import {
   deserializeIncrementalPreviewCandidate,
@@ -2609,17 +2608,11 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
     titleSnapshot,
   ] = await Promise.all([
     findLatestSyncBayDescriptionBaseline(mappingId),
-    findLatestSyncBaySnapshotWithField(mappingId, {
-      imageCount: { not: null },
-    }),
-    findLatestSyncBaySnapshotWithField(mappingId, {
-      priceAmount: { not: null },
-    }),
-    findLatestSyncBaySnapshotWithField(mappingId, {
-      productStatus: { not: null },
-    }),
-    findLatestSyncBaySnapshotWithField(mappingId, { quantity: { not: null } }),
-    findLatestSyncBaySnapshotWithField(mappingId, { title: { not: null } }),
+    findLatestSyncBayImageSnapshot(mappingId),
+    findLatestSyncBayPriceSnapshot(mappingId),
+    findLatestSyncBayStatusSnapshot(mappingId),
+    findLatestSyncBayQuantitySnapshot(mappingId),
+    findLatestSyncBayTitleSnapshot(mappingId),
   ]);
 
   if (
@@ -2647,16 +2640,62 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
   };
 }
 
-async function findLatestSyncBaySnapshotWithField(
-  mappingId: string,
-  fieldWhere: Prisma.ProductSnapshotWhereInput,
-) {
+async function findLatestSyncBayImageSnapshot(mappingId: string) {
   return prisma.productSnapshot.findFirst({
     orderBy: { capturedAt: "desc" },
+    select: { imageCount: true },
+    where: {
+      imageCount: { not: null },
+      mappingId,
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+}
+
+async function findLatestSyncBayPriceSnapshot(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    select: { payload: true, priceAmount: true },
+    where: {
+      mappingId,
+      priceAmount: { not: null },
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+}
+
+async function findLatestSyncBayStatusSnapshot(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    select: { productStatus: true },
+    where: {
+      mappingId,
+      productStatus: { not: null },
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+}
+
+async function findLatestSyncBayQuantitySnapshot(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    select: { quantity: true },
+    where: {
+      mappingId,
+      quantity: { not: null },
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+}
+
+async function findLatestSyncBayTitleSnapshot(mappingId: string) {
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    select: { title: true },
     where: {
       mappingId,
       source: ProductSnapshotSource.SYNCBAY,
-      ...fieldWhere,
+      title: { not: null },
     },
   });
 }
@@ -2691,16 +2730,19 @@ function getSnapshotPricingPayloadObject(
 }
 
 async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
-  const candidates = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
-  });
+  const rows = await prisma.$queryRaw<{ descriptionHash: string | null }[]>`
+    SELECT "descriptionHash"
+    FROM "ProductSnapshot"
+    WHERE
+      "mappingId" = ${mappingId}
+      AND "source" = 'SYNCBAY'::"ProductSnapshotSource"
+      AND "descriptionHash" IS NOT NULL
+      AND ${SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL}
+    ORDER BY "capturedAt" DESC
+    LIMIT 1
+  `;
 
-  return (
-    candidates.find((snapshot) =>
-      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload),
-    ) ?? null
-  );
+  return rows[0] ?? null;
 }
 
 async function getImportPreviewResultByItemIds(
@@ -3517,24 +3559,26 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
     return { conflictIds: [], count: 0 };
   }
 
-  const latestDescriptionSnapshots = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    select: { descriptionHash: true, mappingId: true, payload: true },
-    where: {
-      descriptionHash: { not: null },
-      mappingId: { in: mappingIds },
-      shopId: input.shopId,
-      source: ProductSnapshotSource.SYNCBAY,
-    },
-  });
+  const latestDescriptionSnapshots = await prisma.$queryRaw<
+    { descriptionHash: string | null; mappingId: string | null }[]
+  >`
+    SELECT DISTINCT ON ("mappingId") "descriptionHash", "mappingId"
+    FROM "ProductSnapshot"
+    WHERE
+      "mappingId" IN (${Prisma.join(mappingIds)})
+      AND "shopId" = ${input.shopId}
+      AND "source" = 'SYNCBAY'::"ProductSnapshotSource"
+      AND "descriptionHash" IS NOT NULL
+      AND ${SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL}
+    ORDER BY "mappingId", "capturedAt" DESC
+  `;
   const latestDescriptionHashByMappingId = new Map<string, string>();
 
   for (const snapshot of latestDescriptionSnapshots) {
     if (
       snapshot.mappingId &&
       snapshot.descriptionHash &&
-      !latestDescriptionHashByMappingId.has(snapshot.mappingId) &&
-      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload)
+      !latestDescriptionHashByMappingId.has(snapshot.mappingId)
     ) {
       latestDescriptionHashByMappingId.set(
         snapshot.mappingId,
