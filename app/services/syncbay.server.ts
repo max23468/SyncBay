@@ -43,10 +43,7 @@ import {
   isStaleConflictResolutionError,
   summarizeConflictDecisionModes,
 } from "../lib/syncbay-conflict-actions";
-import {
-  getLatestSyncBayDescriptionBaselineWhere,
-  shouldUseSyncBayDescriptionBaselinePayload,
-} from "../lib/syncbay-conflict-detection";
+import { SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL } from "../lib/syncbay-conflict-detection";
 import {
   CONFLICT_PAGE_SIZE,
   type ConflictFilter,
@@ -1538,20 +1535,19 @@ function getKeepShopifyBaselinePayload(value: Prisma.JsonValue | undefined) {
 }
 
 async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
-  const candidates = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    select: {
-      descriptionHash: true,
-      payload: true,
-    },
-    where: getLatestSyncBayDescriptionBaselineWhere(mappingId),
-  });
+  const rows = await prisma.$queryRaw<{ descriptionHash: string | null }[]>`
+    SELECT "descriptionHash"
+    FROM "ProductSnapshot"
+    WHERE
+      "mappingId" = ${mappingId}
+      AND "source" = 'SYNCBAY'::"ProductSnapshotSource"
+      AND "descriptionHash" IS NOT NULL
+      AND ${SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL}
+    ORDER BY "capturedAt" DESC
+    LIMIT 1
+  `;
 
-  return (
-    candidates.find((snapshot) =>
-      shouldUseSyncBayDescriptionBaselinePayload(snapshot.payload),
-    ) ?? null
-  );
+  return rows[0] ?? null;
 }
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {

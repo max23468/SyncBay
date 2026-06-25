@@ -52,6 +52,13 @@ test("skips stock-test description baselines unless they came from conflict reso
   );
   assert.equal(
     shouldUseSyncBayDescriptionBaselinePayload({
+      conflictResolution: null,
+      updatedEbayFromShopifyOrder: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseSyncBayDescriptionBaselinePayload({
       conflictResolution: { conflictId: "conflict-1" },
       updatedEbayFromShopifyOrder: true,
     }),

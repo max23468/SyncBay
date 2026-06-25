@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.46.9] — 2026-06-25
+
+### Sotto il cofano
+
+- Egress Supabase: la baseline dei conflitti Shopify legge solo le colonne
+  necessarie da `ProductSnapshot` e filtra in SQL le descrizioni valide,
+  evitando scan ripetuti di `payload` durante le raffiche webhook.
+
 ## [0.46.8] — 2026-06-23
 
 ### Sotto il cofano
@@ -2626,6 +2634,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.46.9]: #0469--2026-06-25
 [0.46.8]: #0468--2026-06-23
 [0.46.7]: #0467--2026-06-23
 [0.46.6]: #0466--2026-06-23
