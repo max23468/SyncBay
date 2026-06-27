@@ -61,6 +61,68 @@ test("uses item id references as conservative match signals", () => {
   ]);
 });
 
+test("uses syncbay metafield item id as a strong match signal", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: { itemId: "156986744184", sku: null, title: "Moneta argento" },
+    shopifyProducts: [
+      {
+        metafields: [
+          {
+            key: "ebay_item_id",
+            namespace: "syncbay",
+            value: "156986744184",
+          },
+        ],
+        productGid: "gid://shopify/Product/10",
+        title: "Moneta argento",
+        variantGid: "gid://shopify/ProductVariant/10",
+      },
+    ],
+  });
+
+  assert.equal(suggestions[0]?.confidence, "high");
+  assert.equal(suggestions[0]?.autoLinkable, true);
+  assert.deepEqual(suggestions[0]?.reasonCodes, [
+    "syncbay_metafield_item_id",
+    "title_very_similar",
+  ]);
+});
+
+test("does not mark title-only matches as auto linkable", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: { itemId: "1", sku: null, title: "Moneta argento Regno Italia" },
+    shopifyProducts: [
+      {
+        productGid: "gid://shopify/Product/11",
+        title: "Moneta argento Regno Italia",
+        variantGid: "gid://shopify/ProductVariant/11",
+      },
+    ],
+  });
+
+  assert.equal(suggestions[0]?.confidence, "medium");
+  assert.equal(suggestions[0]?.autoLinkable, false);
+  assert.deepEqual(suggestions[0]?.reasonCodes, ["title_very_similar"]);
+});
+
+test("uses item id embedded in handle as a strong conservative signal", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: { itemId: "987654321", sku: null, title: "Lire argento" },
+    shopifyProducts: [
+      {
+        handle: "lire-argento-987654321",
+        productGid: "gid://shopify/Product/12",
+        title: "Lire argento",
+        variantGid: "gid://shopify/ProductVariant/12",
+      },
+    ],
+  });
+
+  assert.equal(suggestions[0]?.confidence, "high");
+  assert.equal(suggestions[0]?.autoLinkable, true);
+  assert.ok(suggestions[0]?.reasonCodes.includes("handle_item_id"));
+});
+
 test("keeps the strongest variant match for each Shopify product", () => {
   const suggestions = buildExistingProductMatchSuggestions({
     ebay: {

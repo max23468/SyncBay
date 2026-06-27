@@ -92,6 +92,8 @@ import {
   measureSyncBayPerformanceStage,
   type SyncBayLoaderPerformanceTrace,
 } from "../lib/syncbay-loader-performance";
+import { buildExistingCatalogTakeoverReport } from "../lib/syncbay-existing-catalog-takeover";
+import type { ImportCatalogMode } from "../lib/syncbay-import-catalog-mode";
 import type { ImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
@@ -1670,7 +1672,10 @@ export async function getImportWizardState(
   session: ShopifySessionLike,
   admin?: ShopifyAdminGraphqlClient,
   trace?: SyncBayLoaderPerformanceTrace,
-  options: { previewLoadMode?: ImportPreviewLoadMode } = {},
+  options: {
+    catalogMode?: ImportCatalogMode;
+    previewLoadMode?: ImportPreviewLoadMode;
+  } = {},
 ) {
   const shop = await measureSyncBayPerformanceStage(
     trace,
@@ -1706,6 +1711,7 @@ export async function getImportWizardState(
   const ebayRuntime = getEbayRuntimeReadiness();
   const ebayConnected =
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const catalogMode = options.catalogMode ?? "new_products";
   const previewLoadMode = options.previewLoadMode ?? "deferred";
   const preview =
     ebayConnected && ebayConnection && previewLoadMode === "live"
@@ -1729,7 +1735,7 @@ export async function getImportWizardState(
     listingReaderError: preview.errorMessage,
     listingReaderPending: preview.source === "deferred",
   });
-  const previewResult = await measureSyncBayPerformanceStage(
+  const matchedPreviewResult = await measureSyncBayPerformanceStage(
     trace,
     "import.shopify.existingMatches",
     () =>
@@ -1738,8 +1744,19 @@ export async function getImportWizardState(
         previewResult: preview.previewResult,
       }),
   );
+  const previewResult =
+    catalogMode === "existing_catalog"
+      ? {
+          ...matchedPreviewResult,
+          existingCatalogTakeover: buildExistingCatalogTakeoverReport({
+            items: matchedPreviewResult.items,
+            shopDomain: shop.shopDomain,
+          }),
+        }
+      : matchedPreviewResult;
 
   return {
+    catalogMode,
     draftImport: getDraftImportReadiness({
       defaultProductStatus,
       hasDefaultLocation: Boolean(shop.defaultLocationGid),

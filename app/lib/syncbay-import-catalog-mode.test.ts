@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+// @ts-expect-error Node --experimental-strip-types resolves this test import.
+import * as importCatalogMode from "./syncbay-import-catalog-mode.ts";
+
+const {
+  getImportCatalogModeLabel,
+  normalizeImportCatalogMode,
+} = importCatalogMode;
+
+test("defaults to new product import mode", () => {
+  assert.equal(normalizeImportCatalogMode(null), "new_products");
+  assert.equal(normalizeImportCatalogMode(""), "new_products");
+  assert.equal(normalizeImportCatalogMode("legacy"), "new_products");
+});
+
+test("accepts existing catalog takeover mode", () => {
+  assert.equal(normalizeImportCatalogMode("existing"), "existing_catalog");
+});
+
+test("formats labels in Italian", () => {
+  assert.equal(getImportCatalogModeLabel("new_products"), "Nuovi prodotti");
+  assert.equal(
+    getImportCatalogModeLabel("existing_catalog"),
+    "Collega catalogo esistente",
+  );
+});

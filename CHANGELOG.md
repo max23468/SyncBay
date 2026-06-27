@@ -6,7 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.47.0] — 2026-06-27
+
+### Novità
+
+- Importazione: aggiunta la modalità `Collega catalogo esistente`, con stato
+  loader dedicato e selettore nel tab Importazione senza avviare nuove
+  scritture.
+- Catalogo esistente: il matching produce reason code stabili e distingue i
+  match auto-collegabili solo quando la confidenza alta include segnali forti;
+  il dry-run genera un report `applicabile`, `da_rivedere` e `bloccante`.
+
+### Sotto il cofano
 
 - CI: attivata la CI runtime completa con il nuovo workflow
   `.github/workflows/ci.yml` (install deterministico, lint, typecheck,
@@ -2642,6 +2653,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.47.0]: #0470--2026-06-27
 [0.46.9]: #0469--2026-06-25
 [0.46.8]: #0468--2026-06-23
 [0.46.7]: #0467--2026-06-23

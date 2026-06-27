@@ -6,21 +6,49 @@ export interface EbayMatchCandidate {
   title?: string | null;
 }
 
+export type ExistingProductMatchReasonCode =
+  | "barcode_item_id"
+  | "handle_item_id"
+  | "sku_exact"
+  | "syncbay_metafield_item_id"
+  | "tag_item_id"
+  | "title_similar"
+  | "title_very_similar";
+
+export interface ShopifyMatchMetafieldCandidate {
+  key: string;
+  namespace: string;
+  value?: string | null;
+}
+
 export interface ShopifyMatchCandidate {
   barcode?: string | null;
+  handle?: string | null;
+  metafields?: ShopifyMatchMetafieldCandidate[];
   productGid: string;
   sku?: string | null;
+  tags?: string[];
   title?: string | null;
   variantGid?: string | null;
 }
 
 export interface ExistingProductMatchSuggestion {
+  autoLinkable: boolean;
   confidence: MatchConfidence;
   productGid: string;
+  reasonCodes: ExistingProductMatchReasonCode[];
   reasons: string[];
   score: number;
   variantGid: string | null;
 }
+
+const STRONG_AUTO_LINK_CODES = new Set<ExistingProductMatchReasonCode>([
+  "barcode_item_id",
+  "handle_item_id",
+  "sku_exact",
+  "syncbay_metafield_item_id",
+  "tag_item_id",
+]);
 
 export function buildExistingProductMatchSuggestions(input: {
   ebay: EbayMatchCandidate;
@@ -34,32 +62,55 @@ export function buildExistingProductMatchSuggestions(input: {
   const bestByProduct = new Map<string, ExistingProductMatchSuggestion>();
 
   for (const product of input.shopifyProducts) {
+    const reasonCodes: ExistingProductMatchReasonCode[] = [];
     const reasons: string[] = [];
     let score = 0;
 
+    if (sameToken(input.ebay.itemId, getSyncBayItemId(product.metafields))) {
+      score += 98;
+      reasonCodes.push("syncbay_metafield_item_id");
+      reasons.push("ItemID eBay trovato nei metafield SyncBay");
+    }
     if (sameToken(input.ebay.sku, product.sku)) {
       score += 100;
+      reasonCodes.push("sku_exact");
       reasons.push("SKU identico");
     }
     if (sameToken(input.ebay.itemId, product.barcode)) {
       score += 95;
+      reasonCodes.push("barcode_item_id");
       reasons.push("ItemID eBay trovato su barcode");
+    }
+    if (containsToken(product.handle, input.ebay.itemId)) {
+      score += 92;
+      reasonCodes.push("handle_item_id");
+      reasons.push("ItemID eBay trovato nell'handle Shopify");
+    }
+    if ((product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))) {
+      score += 80;
+      reasonCodes.push("tag_item_id");
+      reasons.push("ItemID eBay trovato nei tag Shopify");
     }
 
     const titleSimilarity = getTitleSimilarity(input.ebay.title, product.title);
     if (titleSimilarity >= 0.8) {
       score += 40;
+      reasonCodes.push("title_very_similar");
       reasons.push("Titolo molto simile");
     } else if (titleSimilarity >= 0.55) {
       score += 24;
+      reasonCodes.push("title_similar");
       reasons.push("Titolo simile");
     }
 
     if (score < 20) continue;
 
+    const confidence = getConfidence(score);
     const suggestion = {
-      confidence: getConfidence(score),
+      autoLinkable: isAutoLinkable(confidence, reasonCodes),
+      confidence,
       productGid: product.productGid,
+      reasonCodes,
       reasons,
       score,
       variantGid: product.variantGid ?? null,
@@ -96,6 +147,25 @@ function getConfidenceLabel(confidence: MatchConfidence) {
   return "bassa";
 }
 
+function isAutoLinkable(
+  confidence: MatchConfidence,
+  reasonCodes: ExistingProductMatchReasonCode[],
+) {
+  return (
+    confidence === "high" &&
+    reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code))
+  );
+}
+
+function getSyncBayItemId(
+  metafields: ShopifyMatchMetafieldCandidate[] | null | undefined,
+) {
+  return metafields?.find(
+    (metafield) =>
+      metafield.namespace === "syncbay" && metafield.key === "ebay_item_id",
+  )?.value;
+}
+
 function sameToken(first: string | null | undefined, second: string | null | undefined) {
   const a = normalizeToken(first);
   const b = normalizeToken(second);
@@ -103,9 +173,28 @@ function sameToken(first: string | null | undefined, second: string | null | und
   return Boolean(a && b && a === b);
 }
 
+function containsToken(value: string | null | undefined, token: string | null | undefined) {
+  const normalizedToken = normalizeToken(token);
+
+  if (!normalizedToken) return false;
+
+  return tokenizeIdentifier(value).some(
+    (candidate) => candidate === normalizedToken,
+  );
+}
+
 function normalizeToken(value: string | null | undefined) {
   const normalized = value?.trim().toUpperCase();
   return normalized && normalized.length > 0 ? normalized : null;
+}
+
+function tokenizeIdentifier(value: string | null | undefined) {
+  return (
+    value
+      ?.toUpperCase()
+      .split(/[^A-Z0-9]+/u)
+      .filter((token) => token.length > 0) ?? []
+  );
 }
 
 function getTitleSimilarity(

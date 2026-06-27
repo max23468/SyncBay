@@ -6,6 +6,7 @@ import {
   buildDescriptionCleanupReportRow,
   cleanEbayDescriptionHtml,
 } from "../lib/syncbay-description-cleanup";
+import type { ExistingCatalogTakeoverReport } from "../lib/syncbay-existing-catalog-takeover";
 import {
   resolveShopifyCategoryProposal,
   type ShopifyCategoryProposal,
@@ -100,6 +101,7 @@ export interface ImportPreviewSummary {
 }
 
 export interface ImportPreviewResult {
+  existingCatalogTakeover?: ExistingCatalogTakeoverReport;
   items: ImportPreviewItem[];
   mode: "empty" | "mock" | "live";
   summary: ImportPreviewSummary;
