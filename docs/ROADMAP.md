@@ -24,8 +24,12 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Prossimo
 
-- Estendere le regole prezzo Shopify-only oltre lo sconto percentuale globale e
-  aggiungere pulizia descrizioni eBay più profonda.
+- Misurare con `npm run descriptions:cleanup-report` sui dati reali importati se
+  restano segnali template residui nelle descrizioni e approfondire la pulizia
+  eBay solo se la misura lo giustifica. Il cleaner attuale rimuove già blocchi
+  template, attributi/colori, tabelle template e code legali/spedizione; i
+  limiti noti sono le frasi template tarate su Numisleo e le tabelle di
+  specifiche legittime appiattite a testo.
 - Rafforzare la vista Attività con dettagli operativi progressivi quando i
   volumi reali rendono chiari i pattern di errore.
 - Eseguire audit e dry-run del primo store reale solo dopo aver chiuso la
