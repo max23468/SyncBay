@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.48.1] — 2026-06-27
+
+### Correzioni
+
+- Importazione: la preview live di `Collega catalogo esistente` legge tutte le
+  inserzioni attive da `GetMyeBaySelling` ma limita gli arricchimenti `GetItem`
+  per evitare timeout e rate limit nel loader; il matching Shopify conta il
+  limite MVP sui prodotti letti, non sui candidati variante.
+
 ## [0.48.0] — 2026-06-27
 
 ### Novità
@@ -2671,6 +2680,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.48.1]: #0481--2026-06-27
 [0.48.0]: #0480--2026-06-27
 [0.47.1]: #0471--2026-06-27
 [0.47.0]: #0470--2026-06-27

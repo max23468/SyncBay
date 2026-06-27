@@ -122,28 +122,110 @@ export async function getEbayTradingCatalogImportPreview(input: {
   descriptionRuleMode?: DescriptionRuleMode;
   maxProducts: number;
 }): Promise<EbayTradingCatalogImportPreview> {
-  const plan = await getEbayTradingCatalogImportPlan({
+  const catalogPreview = await getEbayTradingCatalogPreviewCandidates({
     accessToken: input.accessToken,
     connection: input.connection,
     maxProducts: input.maxProducts,
-  });
-  const candidates = await getEbayTradingCandidatesByItemIds({
-    accessToken: input.accessToken,
-    connection: input.connection,
-    itemIds: plan.itemIds,
   });
   const metadata = buildExistingCatalogPreviewMetadata({
     maxProducts: input.maxProducts,
-    readCount: plan.readCount,
-    totalAvailable: plan.totalAvailable,
-    totalPlanned: plan.itemIds.length,
+    readCount: catalogPreview.readCount,
+    totalAvailable: catalogPreview.totalAvailable,
+    totalPlanned: catalogPreview.totalPlanned,
   });
 
   return {
-    previewResult: buildImportPreview(candidates, "live", {
+    previewResult: buildImportPreview(catalogPreview.candidates, "live", {
       descriptionRuleMode: input.descriptionRuleMode,
     }),
     ...metadata,
+  };
+}
+
+async function getEbayTradingCatalogPreviewCandidates(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  maxProducts: number;
+}) {
+  const maxProducts = normalizePositiveInteger(input.maxProducts);
+  const entriesPerPage = Math.min(
+    maxProducts,
+    TRADING_API_MAX_ENTRIES_PER_PAGE,
+  );
+  const candidates: ImportPreviewListingCandidate[] = [];
+  const seenItemIds = new Set<string>();
+  let pageNumber = 1;
+  let readCount = 0;
+  let totalAvailable: number | null = null;
+  let totalPages: number | null = null;
+  let totalPlanned = 0;
+
+  while (totalPlanned < maxProducts) {
+    if (totalPages !== null && pageNumber > totalPages) break;
+
+    const xml = buildGetMyeBaySellingRequest({
+      entriesPerPage,
+      pageNumber,
+    });
+    const body = await fetchTradingXml({
+      accessToken: input.accessToken,
+      callName: "GetMyeBaySelling",
+      connection: input.connection,
+      requestXml: xml,
+    });
+    const activeList = asRecord(body.ActiveList);
+    const items = getTradingItems(activeList);
+    const previewItems: Array<{ index: number; item: XmlRecord }> = [];
+
+    readCount += items.length;
+    totalAvailable ??= getTotalEntries(activeList);
+    totalPages ??= getTotalPages(activeList);
+
+    for (const item of items) {
+      const itemId = getString(item, "ItemID");
+      if (!itemId || seenItemIds.has(itemId)) continue;
+
+      seenItemIds.add(itemId);
+      previewItems.push({ index: totalPlanned, item });
+      totalPlanned += 1;
+
+      if (totalPlanned >= maxProducts) break;
+    }
+
+    const pageCandidates = await mapWithConcurrency(
+      previewItems,
+      GET_ITEM_LOOKUP_CONCURRENCY,
+      async ({ index, item }) => {
+        if (index < GET_ITEM_DETAIL_LOOKUP_LIMIT) {
+          return getEnrichedTradingCandidate(input, item);
+        }
+
+        const listCandidate = mapTradingItemToCandidate(
+          item,
+          input.connection.marketplaceId,
+        );
+        return listCandidate ? withFallbackSku(listCandidate) : null;
+      },
+    );
+    candidates.push(
+      ...pageCandidates.filter(
+        (candidate): candidate is ImportPreviewListingCandidate =>
+          Boolean(candidate),
+      ),
+    );
+
+    if (items.length === 0) break;
+    if (totalAvailable !== null && readCount >= totalAvailable) break;
+    if (items.length < entriesPerPage && totalPages === null) break;
+
+    pageNumber += 1;
+  }
+
+  return {
+    candidates,
+    readCount,
+    totalAvailable,
+    totalPlanned,
   };
 }
 
@@ -297,7 +379,7 @@ class EbayTradingPreviewError extends Error {
 }
 
 async function getEnrichedTradingCandidate(
-  input: EbayTradingPreviewInput,
+  input: EbayTradingRequestContext,
   item: XmlRecord,
 ): Promise<ImportPreviewListingCandidate | null> {
   const listCandidate = mapTradingItemToCandidate(
