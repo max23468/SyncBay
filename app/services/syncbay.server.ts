@@ -91,11 +91,18 @@ import {
   measureSyncBayPerformanceStage,
   type SyncBayLoaderPerformanceTrace,
 } from "../lib/syncbay-loader-performance";
-import { buildExistingCatalogTakeoverReport } from "../lib/syncbay-existing-catalog-takeover";
+import {
+  buildExistingCatalogTakeoverApplyPlan,
+  buildExistingCatalogTakeoverReport,
+  type ExistingCatalogTakeoverApplyRow,
+} from "../lib/syncbay-existing-catalog-takeover";
 import type { ImportCatalogMode } from "../lib/syncbay-import-catalog-mode";
 import type { ImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
 import { getFullReconcilePolicyState } from "../lib/syncbay-full-reconcile-policy";
+import { hashNullableText } from "../lib/syncbay-description-hash";
+import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
+import { buildSyncBayProductMetafields } from "../lib/syncbay-shopify-product-metafields";
 import {
   DEFAULT_DESCRIPTION_RULE,
   type DescriptionRuleMode,
@@ -165,11 +172,55 @@ interface ShopifyLocationInput {
   name: string;
 }
 
+interface ExistingCatalogTakeoverProductNode {
+  descriptionHtml?: string | null;
+  handle?: string | null;
+  id: string;
+  metafields?: {
+    nodes?: Array<{
+      key?: string | null;
+      namespace?: string | null;
+      value?: string | null;
+    }> | null;
+  } | null;
+  status?: string | null;
+  tags?: string[] | null;
+  title?: string | null;
+  variants?: {
+    nodes?: Array<{
+      compareAtPrice?: string | null;
+      id?: string | null;
+      price?: string | null;
+      sku?: string | null;
+    }> | null;
+  } | null;
+}
+
+interface ExistingCatalogTakeoverProductsResponse {
+  data?: {
+    nodes?: Array<ExistingCatalogTakeoverProductNode | null> | null;
+  };
+  errors?: Array<{ message: string }>;
+}
+
+interface ShopifyMetafieldsSetResponse {
+  data?: {
+    metafieldsSet?: {
+      userErrors?: Array<{
+        field?: string[] | null;
+        message: string;
+      }> | null;
+    } | null;
+  };
+  errors?: Array<{ message: string }>;
+}
+
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
 const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
+const TAKEOVER_METAFIELDS_SET_BATCH_SIZE = 20;
 const PRICING_RULE_SYNC_BATCH_SIZE = 10;
 const RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS = 4;
 const SHOPIFY_THUMBNAIL_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -1600,7 +1651,9 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
       ebayItemIds,
       importProductStatus,
       now,
+      reuseOnly: false,
       shopId: shop.id,
+      source: "trading_api",
       totalAvailable: plan.totalAvailable,
       totalPlanned: plan.itemIds.length,
     });
@@ -1640,6 +1693,180 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     data: {
       details: resultPayload,
       message: "Import catalogo eBay pianificato in batch.",
+      shopId: shop.id,
+      type: AuditEventType.SYNC_JOB_CREATED,
+    },
+  });
+
+  return {
+    ...resultPayload,
+    blockers: [],
+    status: "queued" as const,
+  };
+}
+
+export async function startExistingCatalogTakeoverJobs(
+  session: ShopifySessionLike,
+  admin: ShopifyAdminGraphqlClient,
+  input: { confirmation: string },
+) {
+  const shop = await ensureShopForSession(session);
+  const importProductStatus = normalizeImportProductStatus(
+    shop.defaultProductStatus,
+  );
+  const connection = await prisma.ebayConnection.findUnique({
+    where: {
+      shopId_marketplaceId: {
+        marketplaceId: getEbayMarketplaceId(),
+        shopId: shop.id,
+      },
+    },
+  });
+  const blockers = [
+    input.confirmation !== "COLLEGA"
+      ? "Conferma takeover mancante: digita COLLEGA prima di scrivere sul catalogo esistente."
+      : null,
+    ...getCatalogImportBlockers({
+      connection,
+      hasDefaultLocation: Boolean(shop.defaultLocationGid),
+    }),
+  ].filter((blocker): blocker is string => Boolean(blocker));
+
+  if (blockers.length > 0) {
+    return {
+      blockers,
+      status: "blocked" as const,
+    };
+  }
+
+  const wizard = await getImportWizardState(session, admin, undefined, {
+    catalogMode: "existing_catalog",
+    previewLoadMode: "live",
+  });
+  const report = wizard.previewResult.existingCatalogTakeover;
+  const dryRunBlockers = [
+    wizard.previewSource.errorMessage
+      ? `Dry-run catalogo esistente non completato: ${wizard.previewSource.errorMessage}`
+      : null,
+    report ? null : "Dry-run catalogo esistente non disponibile.",
+  ].filter((blocker): blocker is string => Boolean(blocker));
+
+  if (dryRunBlockers.length > 0 || !report) {
+    return {
+      blockers: dryRunBlockers,
+      status: "blocked" as const,
+    };
+  }
+
+  const applyPlan = buildExistingCatalogTakeoverApplyPlan(report);
+
+  if (applyPlan.blockers.length > 0) {
+    return {
+      blockers: applyPlan.blockers,
+      status: "blocked" as const,
+    };
+  }
+
+  const previewItemsByItemId = new Map(
+    wizard.previewResult.items.map((item) => [item.itemId, item]),
+  );
+  const missingPreviewItemIds = applyPlan.rows
+    .filter((row) => !previewItemsByItemId.has(row.itemId))
+    .map((row) => row.itemId);
+
+  if (missingPreviewItemIds.length > 0) {
+    return {
+      blockers: [
+        `${missingPreviewItemIds.length} righe applicabili non hanno più il dettaglio preview necessario all'apply.`,
+      ],
+      status: "blocked" as const,
+    };
+  }
+
+  try {
+    await applyExistingCatalogTakeoverClaims({
+      admin,
+      now: new Date(),
+      previewItemsByItemId,
+      rows: applyPlan.rows,
+      shopId: shop.id,
+    });
+  } catch (error) {
+    return {
+      blockers: [
+        error instanceof Error
+          ? error.message
+          : "Takeover catalogo esistente non completato prima della coda import.",
+      ],
+      status: "blocked" as const,
+    };
+  }
+
+  const draftLimit = getDraftImportLimit();
+  const batches = chunkArray(applyPlan.ebayItemIds, draftLimit);
+  const now = new Date();
+  const catalogImportRunId = buildCatalogImportRunId({
+    now,
+    shopId: shop.id,
+  });
+  let createdJobCount = 0;
+  let existingJobCount = 0;
+  let requeuedJobCount = 0;
+  let resumedJobCount = 0;
+
+  for (const [batchIndex, ebayItemIds] of batches.entries()) {
+    const result = await upsertCatalogImportBatchJob({
+      batchCount: batches.length,
+      batchIndex,
+      catalogImportRunId,
+      draftLimit,
+      ebayItemIds,
+      importProductStatus,
+      now,
+      reuseOnly: true,
+      shopId: shop.id,
+      source: "existing_catalog_takeover",
+      totalAvailable: wizard.previewSource.totalAvailable,
+      totalPlanned: applyPlan.ebayItemIds.length,
+    });
+
+    if (result === "created") createdJobCount += 1;
+    if (result === "existing") existingJobCount += 1;
+    if (result === "requeued") requeuedJobCount += 1;
+    if (result === "resumed") resumedJobCount += 1;
+  }
+
+  await prisma.shop.update({
+    data: { syncEnabled: true },
+    where: { id: shop.id },
+  });
+
+  const resultPayload = {
+    batchCount: batches.length,
+    catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+    claimedMappingCount: applyPlan.rows.length,
+    createdJobCount,
+    draftLimit,
+    existingJobCount,
+    importProductStatus,
+    plannedListingCount: applyPlan.ebayItemIds.length,
+    readCount: wizard.previewSource.readCount,
+    requeuedJobCount,
+    resumedJobCount,
+    reuseOnly: true,
+    source: "existing_catalog_takeover",
+    totalAvailable: wizard.previewSource.totalAvailable,
+    truncatedAtMaxProducts:
+      wizard.previewSource.totalAvailable !== null
+        ? wizard.previewSource.totalAvailable > wizard.previewResult.items.length
+        : wizard.previewResult.items.length >= CATALOG_IMPORT_MAX_PRODUCTS,
+  } satisfies Prisma.JsonObject;
+
+  await prisma.auditLog.create({
+    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+    data: {
+      details: resultPayload,
+      message: "Takeover catalogo esistente pianificato in batch reuse-only.",
       shopId: shop.id,
       type: AuditEventType.SYNC_JOB_CREATED,
     },
@@ -1879,6 +2106,297 @@ async function getExistingCatalogTakeoverPreview(input: {
       totalAvailable: null,
     };
   }
+}
+
+async function applyExistingCatalogTakeoverClaims(input: {
+  admin: ShopifyAdminGraphqlClient;
+  now: Date;
+  previewItemsByItemId: Map<string, ImportPreviewResult["items"][number]>;
+  rows: ExistingCatalogTakeoverApplyRow[];
+  shopId: string;
+}) {
+  const productGids = [...new Set(input.rows.map((row) => row.productGid))];
+  const productsById = await loadExistingCatalogTakeoverProducts(
+    input.admin,
+    productGids,
+  );
+  const missingProductGids = productGids.filter(
+    (productGid) => !productsById.has(productGid),
+  );
+
+  if (missingProductGids.length > 0) {
+    throw new Error(
+      `${missingProductGids.length} prodotti Shopify applicabili non sono più leggibili prima del takeover.`,
+    );
+  }
+
+  const snapshots = input.rows.map((row) =>
+    buildExistingCatalogTakeoverShopifySnapshot({
+      now: input.now,
+      product: productsById.get(row.productGid)!,
+      row,
+      shopId: input.shopId,
+    }),
+  );
+
+  if (snapshots.length > 0) {
+    await prisma.productSnapshot.createMany({ data: snapshots });
+    await prisma.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+      data: {
+        details: {
+          claimedRows: input.rows.length,
+          source: "existing_catalog_takeover",
+        },
+        message:
+          "Snapshot Shopify pre-claim registrato per takeover catalogo esistente.",
+        shopId: input.shopId,
+        type: AuditEventType.SYNC_JOB_CREATED,
+      },
+    });
+  }
+
+  await applyExistingCatalogTakeoverMetafields(input.admin, {
+    previewItemsByItemId: input.previewItemsByItemId,
+    rows: input.rows,
+  });
+
+  for (const rows of chunkArray(input.rows, 100)) {
+    await prisma.$transaction(
+      rows.map((row) => {
+        const previewItem = input.previewItemsByItemId.get(row.itemId);
+
+        return prisma.productMapping.upsert({
+          where: {
+            shopId_marketplaceId_ebayItemId: {
+              ebayItemId: row.itemId,
+              marketplaceId: getEbayMarketplaceId(),
+              shopId: input.shopId,
+            },
+          },
+          create: {
+            ebayItemId: row.itemId,
+            marketplaceId: getEbayMarketplaceId(),
+            shopId: input.shopId,
+            shopifyProductGid: row.productGid,
+            shopifyVariantGid: row.variantGid,
+            sku: row.sku,
+            status: ProductMappingStatus.ACTIVE,
+            thumbnailUrl: previewItem?.normalized.imageUrls[0] ?? null,
+          },
+          update: {
+            lastErrorCode: null,
+            lastErrorMessage: null,
+            shopifyProductGid: row.productGid,
+            shopifyVariantGid: row.variantGid,
+            sku: row.sku,
+            status: ProductMappingStatus.ACTIVE,
+            ...(previewItem?.normalized.imageUrls[0]
+              ? { thumbnailUrl: previewItem.normalized.imageUrls[0] }
+              : {}),
+          },
+        });
+      }),
+    );
+  }
+}
+
+async function loadExistingCatalogTakeoverProducts(
+  admin: ShopifyAdminGraphqlClient,
+  productGids: string[],
+) {
+  const productsById = new Map<string, ExistingCatalogTakeoverProductNode>();
+
+  for (const ids of chunkArray([...new Set(productGids)], 100)) {
+    const response = await admin.graphql(
+      `#graphql
+      query SyncBayExistingCatalogTakeoverProducts($ids: [ID!]!) {
+        nodes(ids: $ids) {
+          ... on Product {
+            id
+            descriptionHtml
+            handle
+            status
+            tags
+            title
+            metafields(first: 20, namespace: "syncbay") {
+              nodes {
+                key
+                namespace
+                value
+              }
+            }
+            variants(first: 100) {
+              nodes {
+                compareAtPrice
+                id
+                price
+                sku
+              }
+            }
+          }
+        }
+      }`,
+      { variables: { ids } },
+    );
+    const json =
+      (await response.json()) as ExistingCatalogTakeoverProductsResponse;
+
+    if (!response.ok) {
+      throw new Error(
+        `Shopify lettura prodotti takeover ha risposto con stato HTTP ${response.status}.`,
+      );
+    }
+
+    if (json.errors?.length) {
+      throw new Error(formatGraphqlErrors(json.errors));
+    }
+
+    for (const product of json.data?.nodes ?? []) {
+      if (product?.id) productsById.set(product.id, product);
+    }
+  }
+
+  return productsById;
+}
+
+function buildExistingCatalogTakeoverShopifySnapshot(input: {
+  now: Date;
+  product: ExistingCatalogTakeoverProductNode;
+  row: ExistingCatalogTakeoverApplyRow;
+  shopId: string;
+}): Prisma.ProductSnapshotCreateManyInput {
+  const variant = getExistingCatalogTakeoverVariant(input.product, input.row);
+  const priceAmount = parseNullableMoneyAmount(variant?.price);
+
+  return {
+    capturedAt: input.now,
+    currency: null,
+    descriptionHash: hashNullableText(input.product.descriptionHtml),
+    ebayItemId: input.row.itemId,
+    imageCount: null,
+    payload: {
+      handle: input.product.handle ?? null,
+      metafields: input.product.metafields?.nodes ?? [],
+      source: "existing_catalog_takeover_pre_claim",
+      tags: input.product.tags ?? [],
+      variantGid: variant?.id ?? input.row.variantGid,
+      variants: input.product.variants?.nodes ?? [],
+    } satisfies Prisma.JsonObject,
+    priceAmount,
+    productStatus: input.product.status ?? null,
+    quantity: null,
+    shopId: input.shopId,
+    shopifyProductGid: input.product.id,
+    shopifyVariantGid: variant?.id ?? input.row.variantGid,
+    sku: input.row.sku ?? variant?.sku ?? null,
+    source: ProductSnapshotSource.SHOPIFY,
+    title: input.product.title ?? null,
+  };
+}
+
+function getExistingCatalogTakeoverVariant(
+  product: ExistingCatalogTakeoverProductNode,
+  row: ExistingCatalogTakeoverApplyRow,
+) {
+  const variants = product.variants?.nodes ?? [];
+
+  return (
+    variants.find((variant) => variant.id === row.variantGid) ??
+    variants[0] ??
+    null
+  );
+}
+
+async function applyExistingCatalogTakeoverMetafields(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    previewItemsByItemId: Map<string, ImportPreviewResult["items"][number]>;
+    rows: ExistingCatalogTakeoverApplyRow[];
+  },
+) {
+  const metafields = input.rows.flatMap((row) => {
+    const item = input.previewItemsByItemId.get(row.itemId);
+    if (!item) return [];
+
+    return buildExistingCatalogTakeoverMetafields(item).map((metafield) => ({
+      ...metafield,
+      ownerId: row.productGid,
+    }));
+  });
+
+  for (const metafieldBatch of chunkArray(
+    metafields,
+    TAKEOVER_METAFIELDS_SET_BATCH_SIZE,
+  )) {
+    const response = await admin.graphql(
+      `#graphql
+      mutation SyncBayExistingCatalogTakeoverMetafields($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          userErrors {
+            field
+            message
+          }
+        }
+      }`,
+      { variables: { metafields: metafieldBatch } },
+    );
+    const json = (await response.json()) as ShopifyMetafieldsSetResponse;
+
+    if (!response.ok) {
+      throw new Error(
+        `Shopify metafieldsSet takeover ha risposto con stato HTTP ${response.status}.`,
+      );
+    }
+
+    if (json.errors?.length) {
+      throw new Error(formatGraphqlErrors(json.errors));
+    }
+
+    const userErrors = json.data?.metafieldsSet?.userErrors ?? [];
+    if (userErrors.length > 0) {
+      throw new Error(
+        userErrors
+          .map((error) =>
+            error.field?.length
+              ? `${error.field.join(".")}: ${error.message}`
+              : error.message,
+          )
+          .join("; "),
+      );
+    }
+  }
+}
+
+function buildExistingCatalogTakeoverMetafields(
+  item: ImportPreviewResult["items"][number],
+) {
+  return [
+    ...buildSyncBayProductMetafields({
+      ebayItemId: item.itemId,
+      ebayPrimaryCategoryId: item.normalized.ebayPrimaryCategoryId,
+      ebayPrimaryCategoryName: item.normalized.ebayPrimaryCategoryName,
+      ebayPrimaryCategoryPath: item.normalized.ebayPrimaryCategoryPath,
+      priceAmount: item.normalized.priceAmount,
+      quantity: item.normalized.quantity,
+      sku: item.normalized.sku,
+      skuGenerated: item.normalized.skuGenerated,
+      storeCategoryId: item.normalized.storeCategoryId,
+      storeCategoryName: item.normalized.storeCategoryName,
+    }),
+    ...buildShopifyProductFacetMetafields(item.normalized.productFacets),
+  ];
+}
+
+function parseNullableMoneyAmount(value: string | null | undefined) {
+  if (!value) return null;
+
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatGraphqlErrors(errors: Array<{ message: string }>) {
+  return errors.map((error) => error.message).join("; ");
 }
 
 export async function getShopSettingsState(
@@ -2896,7 +3414,9 @@ async function upsertCatalogImportBatchJob(input: {
   ebayItemIds: string[];
   importProductStatus: ImportProductStatus;
   now: Date;
+  reuseOnly: boolean;
   shopId: string;
+  source: "existing_catalog_takeover" | "trading_api";
   totalAvailable: number | null;
   totalPlanned: number;
 }) {
@@ -2987,7 +3507,9 @@ function buildCatalogImportBatchPayload(input: {
   draftLimit: number;
   ebayItemIds: string[];
   importProductStatus: ImportProductStatus;
+  reuseOnly: boolean;
   shopId: string;
+  source: "existing_catalog_takeover" | "trading_api";
   totalAvailable: number | null;
   totalPlanned: number;
 }) {
@@ -3002,8 +3524,9 @@ function buildCatalogImportBatchPayload(input: {
     marketplaceId: getEbayMarketplaceId(),
     previewMode: "live",
     requestedCount: input.ebayItemIds.length,
+    ...(input.reuseOnly ? { reuseOnly: true } : {}),
     shopId: input.shopId,
-    source: "trading_api",
+    source: input.source,
     totalAvailable: input.totalAvailable,
     totalPlanned: input.totalPlanned,
   } satisfies Prisma.JsonObject;
@@ -3017,7 +3540,9 @@ function buildCatalogImportBatchIdempotencyKey(input: {
   batchIndex: number;
   ebayItemIds: string[];
   importProductStatus: ImportProductStatus;
+  reuseOnly: boolean;
   shopId: string;
+  source: "existing_catalog_takeover" | "trading_api";
 }) {
   const hash = createHash("sha256")
     .update(
@@ -3027,6 +3552,9 @@ function buildCatalogImportBatchIdempotencyKey(input: {
         importProductStatus: input.importProductStatus,
         marketplaceId: getEbayMarketplaceId(),
         shopId: input.shopId,
+        ...(input.reuseOnly
+          ? { reuseOnly: true, source: input.source }
+          : {}),
       }),
     )
     .digest("hex")

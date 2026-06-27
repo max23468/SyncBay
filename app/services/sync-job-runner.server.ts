@@ -1317,6 +1317,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
+    reuseOnly: getBooleanFromPayload(job.payload, "reuseOnly"),
     shopDomain: job.shop.shopDomain,
   });
 
@@ -3706,6 +3707,12 @@ function formatShopifyUserErrors(errors: ShopifyUserError[]) {
 
 function getStringFromPayload(payload: Prisma.JsonValue | null, key: string) {
   return getJsonString(getJsonObject(payload)?.[key]);
+}
+
+function getBooleanFromPayload(payload: Prisma.JsonValue | null, key: string) {
+  const value = getJsonObject(payload)?.[key];
+
+  return typeof value === "boolean" ? value : false;
 }
 
 function getDateFromPayload(payload: Prisma.JsonValue | null, key: string) {

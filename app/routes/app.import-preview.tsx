@@ -56,6 +56,7 @@ import {
 import {
   getImportWizardState,
   recordShopifyLocationRenamed,
+  startExistingCatalogTakeoverJobs,
   startCatalogImportJobs,
   updateDefaultShopifyLocation,
 } from "../services/syncbay.server";
@@ -87,6 +88,13 @@ type ImportPreviewActionData =
       intent: "createDraftProducts";
       jobCount?: number;
       message?: string;
+    }
+  | {
+      count?: number;
+      intent: "applyExistingCatalogTakeover";
+      jobCount?: number;
+      message?: string;
+      status: "blocked" | "queued";
     }
   | {
       intent: "saveLocation";
@@ -186,6 +194,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           ? formatCatalogImportQueuedMessage(result)
           : result.blockers.join(", "),
     });
+  }
+
+  if (intent === "applyExistingCatalogTakeover") {
+    const result = await startExistingCatalogTakeoverJobs(session, admin, {
+      confirmation: String(formData.get("confirmation") ?? ""),
+    });
+
+    return Response.json(
+      {
+        count:
+          result.status === "queued"
+            ? result.plannedListingCount
+            : undefined,
+        intent,
+        jobCount: result.status === "queued" ? result.batchCount : undefined,
+        message:
+          result.status === "queued"
+            ? formatCatalogImportQueuedMessage(result)
+            : result.blockers.join(", "),
+        status: result.status,
+      },
+      { status: result.status === "queued" ? 200 : 409 },
+    );
   }
 
   if (intent === "renameLocation") {
@@ -297,18 +328,29 @@ export default function ImportPreview() {
   const isRenamingLocation = isSaving && activeIntent === "renameLocation";
   const isSavingLocation = isSaving && activeIntent === "saveLocation";
   const isCreatingDrafts = isSaving && activeIntent === "createDraftProducts";
+  const isApplyingTakeover =
+    isSaving && activeIntent === "applyExistingCatalogTakeover";
   const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
   const previewReadLabel = getPreviewReadLabel(wizard.previewSource.source);
   const draftActionData =
     actionData?.intent === "createDraftProducts" ? actionData : null;
+  const takeoverActionData =
+    actionData?.intent === "applyExistingCatalogTakeover" ? actionData : null;
   const draftStatus =
     draftActionData?.draftStatus ??
     (searchParams.get("draft") as ShopifyDraftImportStatus | null);
+  const takeoverQueued = takeoverActionData?.status === "queued";
 
   useActionToast(
-    { data: draftActionData ?? undefined, state: navigation.state },
+    {
+      data: draftActionData ?? takeoverActionData ?? undefined,
+      state: navigation.state,
+    },
     (data) => ({
-      isError: data.draftStatus !== "queued",
+      isError:
+        data.intent === "applyExistingCatalogTakeover"
+          ? data.status !== "queued"
+          : data.draftStatus !== "queued",
       message: data.message ?? "",
     }),
   );
@@ -333,7 +375,7 @@ export default function ImportPreview() {
       previewErrorMessage: wizard.previewSource.errorMessage,
       previewSource: wizard.previewSource.source,
     }),
-    draftStatus === "created" || draftStatus === "queued",
+    takeoverQueued || draftStatus === "created" || draftStatus === "queued",
   ];
   const stepStatuses = computeSequentialStepStatuses(stepDone);
 
@@ -397,13 +439,21 @@ export default function ImportPreview() {
           title="Importazione"
         >
           <DraftImportSection
-            draftCount={draftActionData?.count ?? searchParams.get("count")}
-            draftMessage={
-              draftActionData?.message ?? searchParams.get("message")
+            draftCount={
+              takeoverActionData?.count ??
+              draftActionData?.count ??
+              searchParams.get("count")
             }
-            draftStatus={draftStatus}
+            draftMessage={
+              takeoverActionData?.message ??
+              draftActionData?.message ??
+              searchParams.get("message")
+            }
+            draftStatus={takeoverQueued ? "queued" : draftStatus}
             isCreatingDrafts={isCreatingDrafts}
+            isApplyingTakeover={isApplyingTakeover}
             isSaving={isSaving}
+            takeoverActionData={takeoverActionData}
             wizard={wizard}
           />
         </Step>
@@ -1248,15 +1298,24 @@ function DraftImportSection({
   draftCount,
   draftMessage,
   draftStatus,
+  isApplyingTakeover,
   isCreatingDrafts,
   isSaving,
+  takeoverActionData,
   wizard,
 }: {
   draftCount?: number | string | null;
   draftMessage?: string | null;
   draftStatus: ShopifyDraftImportStatus | null;
+  isApplyingTakeover: boolean;
   isCreatingDrafts: boolean;
   isSaving: boolean;
+  takeoverActionData:
+    | Extract<
+        ImportPreviewActionData,
+        { intent: "applyExistingCatalogTakeover" }
+      >
+    | null;
   wizard: WizardState;
 }) {
   const catalogModeBlocker = getCatalogModeDraftImportBlocker(
@@ -1265,6 +1324,11 @@ function DraftImportSection({
   const isDraftImportBlockedByCatalogMode = Boolean(catalogModeBlocker);
   const takeoverReport = wizard.previewResult.existingCatalogTakeover;
   const isExistingCatalogMode = wizard.catalogMode === "existing_catalog";
+  const isTakeoverBlocked =
+    !takeoverReport ||
+    takeoverReport.summary.applicable === 0 ||
+    takeoverReport.summary.blocked > 0;
+  const takeoverStatus = takeoverActionData?.status ?? null;
 
   return (
     <>
@@ -1284,11 +1348,16 @@ function DraftImportSection({
         </s-paragraph>
       ) : draftStatus === "queued" ? (
         <s-paragraph>
-          Import pianificato:{" "}
-          {formatDraftImportCount(
-            draftCount,
-            wizard.draftImport.importProductStatus,
-          )}
+          {isExistingCatalogMode
+            ? "Takeover pianificato"
+            : "Import pianificato"}
+          :{" "}
+          {isExistingCatalogMode
+            ? formatTakeoverApplyCount(draftCount)
+            : formatDraftImportCount(
+                draftCount,
+                wizard.draftImport.importProductStatus,
+              )}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "blocked" ? (
@@ -1298,6 +1367,11 @@ function DraftImportSection({
       ) : draftStatus === "failed" ? (
         <s-paragraph>
           Import Shopify non completato: {draftMessage ?? "errore Shopify"}.
+        </s-paragraph>
+      ) : takeoverStatus === "blocked" ? (
+        <s-paragraph>
+          Takeover catalogo esistente bloccato:{" "}
+          {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : null}
       <s-unordered-list>
@@ -1347,28 +1421,52 @@ function DraftImportSection({
           <s-list-item>Modalità catalogo: {catalogModeBlocker}</s-list-item>
         ) : null}
       </s-unordered-list>
-      <Form method="post">
-        <input type="hidden" name="intent" value="createDraftProducts" />
-        <input
-          type="hidden"
-          name="catalogMode"
-          value={getImportCatalogModeParam(wizard.catalogMode)}
-        />
-        <s-button
-          type="submit"
-          disabled={
-            isSaving ||
-            isDraftImportBlockedByCatalogMode ||
-            wizard.draftImport.blockers.length > 0
-          }
-        >
-          {isDraftImportBlockedByCatalogMode
-            ? "Riallineamento in simulazione"
-            : isCreatingDrafts
-              ? "Avvio in corso..."
-              : "Avvia import catalogo"}
-        </s-button>
-      </Form>
+      {isExistingCatalogMode ? (
+        <Form method="post">
+          <input
+            type="hidden"
+            name="intent"
+            value="applyExistingCatalogTakeover"
+          />
+          <input type="hidden" name="confirmation" value="COLLEGA" />
+          <s-button
+            type="submit"
+            variant="primary"
+            disabled={
+              isSaving ||
+              isTakeoverBlocked ||
+              wizard.draftImport.blockers.length > 0
+            }
+          >
+            {isApplyingTakeover
+              ? "Pianificazione in corso..."
+              : "Applica takeover righe sicure"}
+          </s-button>
+        </Form>
+      ) : (
+        <Form method="post">
+          <input type="hidden" name="intent" value="createDraftProducts" />
+          <input
+            type="hidden"
+            name="catalogMode"
+            value={getImportCatalogModeParam(wizard.catalogMode)}
+          />
+          <s-button
+            type="submit"
+            disabled={
+              isSaving ||
+              isDraftImportBlockedByCatalogMode ||
+              wizard.draftImport.blockers.length > 0
+            }
+          >
+            {isDraftImportBlockedByCatalogMode
+              ? "Riallineamento in simulazione"
+              : isCreatingDrafts
+                ? "Avvio in corso..."
+                : "Avvia import catalogo"}
+          </s-button>
+        </Form>
+      )}
     </>
   );
 }
@@ -1486,6 +1584,18 @@ function formatDraftImportCount(
   }
 
   return `${normalizedCount} ${getImportedProductsLabel(importProductStatus)} gestiti dalla preview.`;
+}
+
+function formatTakeoverApplyCount(count: number | string | null | undefined) {
+  const parsed =
+    typeof count === "number"
+      ? count
+      : Number.parseInt(String(count ?? "0"), 10);
+  const value = Number.isFinite(parsed) ? parsed : 0;
+
+  return value === 1
+    ? "1 riga sicura"
+    : `${formatNumber(value)} righe sicure`;
 }
 
 async function fetchShopifyLocations(

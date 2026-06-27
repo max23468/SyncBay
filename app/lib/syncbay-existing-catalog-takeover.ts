@@ -43,6 +43,7 @@ export interface ExistingCatalogTakeoverRow {
   plannedOperations: ExistingCatalogPlannedOperation[];
   productGid: string | null;
   reasons: ExistingCatalogTakeoverReason[];
+  sku: string | null;
   status: ExistingCatalogTakeoverStatus;
   variantGid: string | null;
 }
@@ -53,6 +54,19 @@ export interface ExistingCatalogTakeoverSummary {
   blocked: number;
   review: number;
   total: number;
+}
+
+export interface ExistingCatalogTakeoverApplyPlan {
+  blockers: string[];
+  ebayItemIds: string[];
+  rows: ExistingCatalogTakeoverApplyRow[];
+}
+
+export interface ExistingCatalogTakeoverApplyRow {
+  itemId: string;
+  productGid: string;
+  sku: string | null;
+  variantGid: string | null;
 }
 
 const APPLICABLE_PLANNED_OPERATIONS: ExistingCatalogPlannedOperation[] = [
@@ -81,6 +95,46 @@ export function buildExistingCatalogTakeoverReport(input: {
   };
 }
 
+export function buildExistingCatalogTakeoverApplyPlan(
+  report: ExistingCatalogTakeoverReport,
+): ExistingCatalogTakeoverApplyPlan {
+  const blockers = [
+    report.summary.blocked > 0
+      ? `Il dry-run catalogo esistente contiene ${report.summary.blocked} righe bloccanti da risolvere prima dell'apply.`
+      : null,
+  ].filter((blocker): blocker is string => Boolean(blocker));
+
+  if (blockers.length > 0) {
+    return {
+      blockers,
+      ebayItemIds: [],
+      rows: [],
+    };
+  }
+
+  const rows = report.rows.flatMap((row): ExistingCatalogTakeoverApplyRow[] =>
+    row.status === "applicabile" && row.productGid
+      ? [
+          {
+            itemId: row.itemId,
+            productGid: row.productGid,
+            sku: row.sku,
+            variantGid: row.variantGid,
+          },
+        ]
+      : [],
+  );
+
+  return {
+    blockers:
+      rows.length === 0
+        ? ["Nessuna riga applicabile nel dry-run catalogo esistente."]
+        : [],
+    ebayItemIds: rows.map((row) => row.itemId),
+    rows,
+  };
+}
+
 function buildExistingCatalogTakeoverRow(
   item: ImportPreviewItem,
 ): ExistingCatalogTakeoverRow {
@@ -102,6 +156,7 @@ function buildExistingCatalogTakeoverRow(
       status === "applicabile" ? APPLICABLE_PLANNED_OPERATIONS : [],
     productGid: matchSuggestion?.productGid ?? null,
     reasons,
+    sku: item.normalized.sku,
     status,
     variantGid: matchSuggestion?.variantGid ?? null,
   };
