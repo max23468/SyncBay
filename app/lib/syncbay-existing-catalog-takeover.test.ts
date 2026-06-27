@@ -7,7 +7,10 @@ import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching"
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as existingCatalogTakeover from "./syncbay-existing-catalog-takeover.ts";
 
-const { buildExistingCatalogTakeoverReport } = existingCatalogTakeover;
+const {
+  buildExistingCatalogTakeoverApplyPlan,
+  buildExistingCatalogTakeoverReport,
+} = existingCatalogTakeover;
 
 test("marks one auto-linkable valid row as applicable", () => {
   const report = buildExistingCatalogTakeoverReport({
@@ -99,6 +102,81 @@ test("blocks invalid price and complex variants", () => {
   ]);
 });
 
+test("builds a reuse-only apply plan from applicable rows only", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        itemId: "1001",
+        matchSuggestions: [
+          makeAutoMatch({
+            productGid: "gid://shopify/Product/1",
+            variantGid: "gid://shopify/ProductVariant/11",
+          }),
+        ],
+        priceAmount: 12,
+        quantity: 1,
+      }),
+      makePreviewItem({
+        itemId: "1002",
+        matchSuggestions: [
+          {
+            autoLinkable: false,
+            confidence: "medium",
+            productGid: "gid://shopify/Product/2",
+            reasonCodes: ["title_very_similar"],
+            reasons: ["Titolo molto simile"],
+            score: 40,
+            variantGid: "gid://shopify/ProductVariant/22",
+          },
+        ],
+        priceAmount: 15,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  const plan = buildExistingCatalogTakeoverApplyPlan(report);
+
+  assert.equal(plan.blockers.length, 0);
+  assert.deepEqual(plan.ebayItemIds, ["1001"]);
+  assert.equal(plan.rows.length, 1);
+  assert.deepEqual(plan.rows[0], {
+    itemId: "1001",
+    productGid: "gid://shopify/Product/1",
+    sku: "SKU-1001",
+    variantGid: "gid://shopify/ProductVariant/11",
+  });
+});
+
+test("blocks apply while the dry-run still has blocking rows", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        itemId: "1003",
+        issueCodes: ["invalid_price"],
+        matchSuggestions: [
+          makeAutoMatch({
+            productGid: "gid://shopify/Product/3",
+            variantGid: "gid://shopify/ProductVariant/33",
+          }),
+        ],
+        priceAmount: null,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  const plan = buildExistingCatalogTakeoverApplyPlan(report);
+
+  assert.deepEqual(plan.ebayItemIds, []);
+  assert.deepEqual(plan.rows, []);
+  assert.deepEqual(plan.blockers, [
+    "Il dry-run catalogo esistente contiene 1 righe bloccanti da risolvere prima dell'apply.",
+  ]);
+});
+
 function makePreviewItem(input: {
   issueCodes?: string[];
   itemId: string;
@@ -156,5 +234,20 @@ function makePreviewItem(input: {
     status: issueCodes.some((code) => code !== "missing_images")
       ? "error"
       : "importable",
+  };
+}
+
+function makeAutoMatch(input: {
+  productGid: string;
+  variantGid: string;
+}): ExistingProductMatchSuggestion {
+  return {
+    autoLinkable: true,
+    confidence: "high",
+    productGid: input.productGid,
+    reasonCodes: ["sku_exact"],
+    reasons: ["SKU identico"],
+    score: 100,
+    variantGid: input.variantGid,
   };
 }

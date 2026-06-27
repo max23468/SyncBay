@@ -598,11 +598,13 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
   previewResult: ImportPreviewResult;
+  reuseOnly?: boolean;
   shopDomain: string;
 }) {
   const shop = await ensureDraftImportShop(input.shopDomain);
   const pricingRule = await getPricingRuleForShopId(shop.id);
   const admin = createShopifyAdminGraphqlClientWithBackoff(input.admin);
+  const reuseOnly = input.reuseOnly === true;
   const importProductStatus =
     input.importProductStatusOverride ??
     normalizeImportProductStatus(shop.defaultProductStatus);
@@ -650,6 +652,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     importProductStatus,
     previewMode: input.previewResult.mode,
     products: draftProducts,
+    reuseOnly,
     shopId: shop.id,
   });
   const results = await mapWithConcurrency(
@@ -660,6 +663,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
         defaultLocationGid: input.defaultLocationGid ?? null,
         jobId: job.id,
         publicationOptions: publicationOptions.options,
+        reuseOnly,
         shopId: shop.id,
       }),
   );
@@ -830,6 +834,7 @@ async function createShopifyDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
   context: {
+    reuseOnly: boolean;
     shopId: string;
   },
 ): Promise<ShopifyDraftProductCreateResult> {
@@ -861,6 +866,14 @@ async function createShopifyDraftProduct(
     };
   }
 
+  if (context.reuseOnly) {
+    return {
+      errorMessage:
+        "Takeover catalogo esistente bloccato: prodotto Shopify esistente non riusato, nessun duplicato creato.",
+      status: "failed",
+    };
+  }
+
   return createShopifyDraftProductRequest(admin, {
     ...draftProduct,
     media: [],
@@ -874,11 +887,13 @@ async function createShopifyDraftProductSafely(
     defaultLocationGid: string | null;
     jobId: string;
     publicationOptions?: DraftImportPublicationOptions;
+    reuseOnly: boolean;
     shopId: string;
   },
 ): Promise<ShopifyDraftProductResult> {
   try {
     const result = await createShopifyDraftProduct(admin, draftProduct, {
+      reuseOnly: context.reuseOnly,
       shopId: context.shopId,
     });
 
@@ -2930,6 +2945,7 @@ async function startDraftImportJob(input: {
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
+  reuseOnly: boolean;
   shopId: string;
 }) {
   const now = new Date();
@@ -3426,6 +3442,7 @@ function buildDraftImportJobPayload(input: {
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
+  reuseOnly: boolean;
   shopId: string;
 }) {
   return {
@@ -3436,8 +3453,11 @@ function buildDraftImportJobPayload(input: {
     marketplaceId: getEbayMarketplaceId(),
     previewMode: input.previewMode,
     requestedCount: input.products.length,
+    ...(input.reuseOnly ? { reuseOnly: true } : {}),
     shopId: input.shopId,
-    source: "shopify_import",
+    source: input.reuseOnly
+      ? "existing_catalog_takeover"
+      : "shopify_import",
   } satisfies Prisma.JsonObject;
 }
 
@@ -3446,6 +3466,7 @@ function buildDraftImportJobIdempotencyKey(input: {
   importProductStatus: ImportProductStatus;
   previewMode: ImportPreviewResult["mode"];
   products: ShopifyDraftProductInput[];
+  reuseOnly: boolean;
   shopId: string;
 }) {
   const keyPayload: {
@@ -3454,6 +3475,7 @@ function buildDraftImportJobIdempotencyKey(input: {
     importProductStatus: ImportProductStatus;
     marketplaceId: string;
     previewMode: ImportPreviewResult["mode"];
+    reuseOnly?: boolean;
     shopId: string;
   } = {
     ebayItemIds: input.products.map((product) => product.source.ebayItemId),
@@ -3465,6 +3487,9 @@ function buildDraftImportJobIdempotencyKey(input: {
 
   if (input.catalogImportRunId) {
     keyPayload.catalogImportRunId = input.catalogImportRunId;
+  }
+  if (input.reuseOnly) {
+    keyPayload.reuseOnly = true;
   }
 
   const hash = createHash("sha256")

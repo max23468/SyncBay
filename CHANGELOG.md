@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.49.0] — 2026-06-28
+
+### Novità
+
+- Importazione: la modalità `Collega catalogo esistente` può applicare il
+  takeover delle sole righe sicure, con conferma `COLLEGA`, claim metafield
+  SyncBay, mapping `ProductMapping` e job `IMPORT_CATALOG` in modalità
+  `reuseOnly`, così il riallineamento riusa i prodotti Shopify esistenti senza
+  creare duplicati.
+
 ## [0.48.1] — 2026-06-27
 
 ### Correzioni
@@ -2680,6 +2690,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.49.0]: #0490--2026-06-28
 [0.48.1]: #0481--2026-06-27
 [0.48.0]: #0480--2026-06-27
 [0.47.1]: #0471--2026-06-27
