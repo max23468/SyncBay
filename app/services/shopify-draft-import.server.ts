@@ -48,6 +48,7 @@ import {
   buildSyncBayProductLookupQueries,
   buildSyncBayShopifyImportTags,
 } from "../lib/syncbay-shopify-tags";
+import { selectShopifyVariantForSync } from "../lib/syncbay-shopify-variant-selection";
 import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
 import type {
   ImportPreviewItem,
@@ -161,6 +162,23 @@ interface ShopifyDraftProductLookupNode extends ShopifyDraftProductNode {
   metafield?: {
     value: string;
   } | null;
+}
+
+interface ShopifyDraftProductVariantLookupNode
+  extends ShopifyDraftProductVariantNode {
+  product?: {
+    id?: string | null;
+  } | null;
+}
+
+interface ShopifyMappedProductLookupResponse {
+  data?: {
+    productNode?: ShopifyDraftProductLookupNode | null;
+    variantNode?: ShopifyDraftProductVariantLookupNode | null;
+  };
+  errors?: Array<{
+    message: string;
+  }>;
 }
 
 interface ShopifyInventoryItemUpdateResponse {
@@ -1089,6 +1107,7 @@ async function findExistingSyncBayDraftProduct(
   admin: ShopifyAdminGraphqlClient,
   draftProduct: ShopifyDraftProductInput,
   context: {
+    reuseOnly: boolean;
     shopId: string;
   },
 ) {
@@ -1098,6 +1117,7 @@ async function findExistingSyncBayDraftProduct(
   });
 
   if (mappedProduct) return mappedProduct;
+  if (context.reuseOnly) return null;
 
   const handleLookupResponse = await admin.graphql(
     `#graphql
@@ -1166,6 +1186,7 @@ async function findMappedSyncBayDraftProduct(
   const mapping = await prisma.productMapping.findUnique({
     select: {
       shopifyProductGid: true,
+      shopifyVariantGid: true,
     },
     where: {
       shopId_marketplaceId_ebayItemId: {
@@ -1178,58 +1199,145 @@ async function findMappedSyncBayDraftProduct(
 
   if (!mapping?.shopifyProductGid) return null;
 
-  const response = await admin.graphql(
-    `#graphql
-    query SyncBayFindMappedProduct($id: ID!) {
-      node(id: $id) {
-        ... on Product {
-          descriptionHtml
-          id
-          media(first: 250) {
-            nodes {
-              alt
+  const response = mapping.shopifyVariantGid
+    ? await admin.graphql(
+        `#graphql
+        query SyncBayFindMappedProductVariant($productId: ID!, $variantId: ID!) {
+          productNode: node(id: $productId) {
+            ... on Product {
+              descriptionHtml
               id
-              mediaContentType
-              preview {
-                status
+              media(first: 250) {
+                nodes {
+                  alt
+                  id
+                  mediaContentType
+                  preview {
+                    status
+                  }
+                }
+              }
+              status
+              title
+              variants(first: 1) {
+                nodes {
+                  id
+                  price
+                  compareAtPrice
+                  inventoryItem {
+                    id
+                    tracked
+                  }
+                }
+              }
+              metafield(namespace: "syncbay", key: "ebay_item_id") {
+                value
               }
             }
           }
-          status
-          title
-          variants(first: 1) {
-            nodes {
+          variantNode: node(id: $variantId) {
+            ... on ProductVariant {
               id
               price
               compareAtPrice
+              sku
               inventoryItem {
                 id
                 tracked
               }
+              product {
+                id
+              }
             }
           }
-          metafield(namespace: "syncbay", key: "ebay_item_id") {
-            value
+        }`,
+        {
+          variables: {
+            productId: mapping.shopifyProductGid,
+            variantId: mapping.shopifyVariantGid,
+          },
+        },
+      )
+    : await admin.graphql(
+        `#graphql
+        query SyncBayFindMappedProduct($id: ID!) {
+          node(id: $id) {
+            ... on Product {
+              descriptionHtml
+              id
+              media(first: 250) {
+                nodes {
+                  alt
+                  id
+                  mediaContentType
+                  preview {
+                    status
+                  }
+                }
+              }
+              status
+              title
+              variants(first: 1) {
+                nodes {
+                  id
+                  price
+                  compareAtPrice
+                  inventoryItem {
+                    id
+                    tracked
+                  }
+                }
+              }
+              metafield(namespace: "syncbay", key: "ebay_item_id") {
+                value
+              }
+            }
           }
-        }
-      }
-    }`,
-    {
-      variables: {
-        id: mapping.shopifyProductGid,
-      },
-    },
-  );
+        }`,
+        {
+          variables: {
+            id: mapping.shopifyProductGid,
+          },
+        },
+      );
 
   if (!response.ok) return null;
 
-  const json = (await response.json()) as ShopifyProductLookupResponse;
+  const json = mapping.shopifyVariantGid
+    ? ((await response.json()) as ShopifyMappedProductLookupResponse)
+    : ((await response.json()) as ShopifyProductLookupResponse);
 
   if (json.errors?.length) return null;
 
-  return json.data?.node?.metafield?.value === input.ebayItemId
-    ? json.data.node
-    : null;
+  const product = mapping.shopifyVariantGid
+    ? (json as ShopifyMappedProductLookupResponse).data?.productNode
+    : (json as ShopifyProductLookupResponse).data?.node;
+
+  if (product?.metafield?.value !== input.ebayItemId) return null;
+
+  if (!mapping.shopifyVariantGid) return product;
+
+  const mappedJson = json as ShopifyMappedProductLookupResponse;
+  const variant =
+    mappedJson.data?.variantNode?.product?.id === product.id
+      ? mappedJson.data.variantNode
+      : null;
+  const selectedVariant = selectShopifyVariantForSync({
+    preferredVariantGid: mapping.shopifyVariantGid,
+    variants: [
+      ...(variant ? [variant] : []),
+      ...(product.variants?.nodes ?? []),
+    ],
+  });
+
+  if (!selectedVariant) return null;
+
+  return {
+    ...product,
+    variants: {
+      nodes: [selectedVariant],
+    },
+  };
 }
 
 async function findExistingSyncBayDraftProductByMetafieldScan(
@@ -3404,7 +3512,9 @@ function getMediaSyncWarning(result: ShopifyMediaSyncResult) {
 }
 
 function getFirstProductVariant(product: ShopifyDraftProductNode) {
-  return product.variants?.nodes?.[0] ?? null;
+  return selectShopifyVariantForSync({
+    variants: product.variants?.nodes,
+  });
 }
 
 function getProductMediaIds(product: ShopifyDraftProductNode) {
