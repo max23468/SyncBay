@@ -55,7 +55,6 @@ Vincoli da rispettare prima di promuoverla:
 | Rimozione override `ajv` | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata. |
 | Policy production e App Store | Aperta | Esiste un deployment Vercel production per il pilota, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi. |
-| Logo eBay consent page | Aperta | Riprovare upload logo su eBay Developer: il portale rifiuta PNG e JPG SyncBay con errore generico, mentre About URL e branding testuale sono configurabili. |
 
 ## Decisioni collegate
 
