@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { selectShopifyVariantForSync } from "./syncbay-shopify-variant-selection.ts";
+import * as variantSelection from "./syncbay-shopify-variant-selection.ts";
+
+const {
+  preserveSelectedShopifyVariantForSync,
+  selectShopifyVariantForSync,
+} = variantSelection;
 
 test("selects the persisted mapped variant instead of the first product variant", () => {
   const selected = selectShopifyVariantForSync({
@@ -36,4 +41,73 @@ test("falls back to the first variant only when no preferred variant is stored",
   assert.deepEqual(selected, {
     id: "gid://shopify/ProductVariant/first",
   });
+});
+
+test("keeps the selected mapped variant when productUpdate returns the first variant", () => {
+  const product = preserveSelectedShopifyVariantForSync({
+    previousProduct: {
+      id: "gid://shopify/Product/1",
+      title: "Prima",
+      variants: {
+        nodes: [
+          {
+            id: "gid://shopify/ProductVariant/target",
+            price: "12.00",
+          },
+        ],
+      },
+    },
+    updatedProduct: {
+      id: "gid://shopify/Product/1",
+      title: "Dopo",
+      variants: {
+        nodes: [
+          {
+            id: "gid://shopify/ProductVariant/first",
+            price: "99.00",
+          },
+        ],
+      },
+    },
+  });
+
+  assert.equal(product.title, "Dopo");
+  assert.deepEqual(product.variants.nodes, [
+    {
+      id: "gid://shopify/ProductVariant/target",
+      price: "12.00",
+    },
+  ]);
+});
+
+test("uses the updated selected variant when productUpdate returns it", () => {
+  const product = preserveSelectedShopifyVariantForSync({
+    previousProduct: {
+      variants: {
+        nodes: [
+          {
+            id: "gid://shopify/ProductVariant/target",
+            price: "12.00",
+          },
+        ],
+      },
+    },
+    updatedProduct: {
+      variants: {
+        nodes: [
+          {
+            id: "gid://shopify/ProductVariant/target",
+            price: "13.00",
+          },
+        ],
+      },
+    },
+  });
+
+  assert.deepEqual(product.variants.nodes, [
+    {
+      id: "gid://shopify/ProductVariant/target",
+      price: "13.00",
+    },
+  ]);
 });

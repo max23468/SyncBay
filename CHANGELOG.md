@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.49.2] — 2026-06-28
+
+### Correzioni
+
+- Importazione: il takeover su catalogo esistente mantiene la variante Shopify
+  mappata anche dopo `productUpdate`, evitando che prezzo, SKU, scorte e
+  snapshot ricadano sulla prima variante del prodotto.
+- Importazione: il matching del catalogo Shopify esistente limita i candidati
+  variante per prodotto prima del dry-run, riducendo il rischio di timeout su
+  cataloghi con molte varianti.
+
 ## [0.49.1] — 2026-06-28
 
 ### Correzioni
@@ -2698,6 +2709,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.49.2]: #0492--2026-06-28
 [0.49.1]: #0491--2026-06-28
 [0.49.0]: #0490--2026-06-28
 [0.48.1]: #0481--2026-06-27
