@@ -16,7 +16,7 @@ Usa un ADR quando una scelta:
 - `0001-stack.md`: stack iniziale SyncBay.
 - `0002-branding.md`: branding iniziale SyncBay.
 - `0003-git-pubblicazione-versioning.md`: policy GitHub, pubblicazione e versioning.
-- `0004-runtime-ci-release-future.md`: policy futura per runtime, CI e release dopo lo scaffold.
+- `0004-runtime-ci-release-future.md`: runtime, CI e release dopo lo scaffold; CI runtime completa (`ci.yml`) attivata il 2026-06-27, deploy/release remoti ancora prudenti.
 - `0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
 - `0006-versioning-runtime-locale.md`: versioning SemVer locale in linea con Pratix.
 - `0007-privacy-provvisoria-pilota.md`: privacy policy provvisoria per RuName eBay e pilota controllato.

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- CI: attivata la CI runtime completa con il nuovo workflow
+  `.github/workflows/ci.yml` (install deterministico, lint, typecheck,
+  test/coverage `app/lib`, build, validazione schema Prisma, smoke UI e audit
+  dipendenze di produzione). Rimosso `pr-quality.yml`, ora sussunto. Aggiornati
+  ADR 0004, `docs/DECISIONS.md` e `docs/DECISIONS_PENDING.md`.
+
 ## [0.46.9] — 2026-06-25
 
 ### Sotto il cofano
