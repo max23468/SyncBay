@@ -2,9 +2,14 @@ import type { EbayConnection } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 
 import { getEbayStorefrontMetadata } from "../lib/syncbay-ebay-storefront";
+import { buildExistingCatalogPreviewMetadata } from "../lib/syncbay-existing-catalog-preview";
 import { parseEbayTradingItemSpecifics } from "../lib/syncbay-product-facets";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
-import type { ImportPreviewListingCandidate } from "./import-preview.server";
+import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
+import {
+  buildImportPreview,
+  type ImportPreviewListingCandidate,
+} from "./import-preview.server";
 
 interface EbayTradingPreviewInput {
   accessToken: string;
@@ -27,6 +32,14 @@ export interface EbayTradingCatalogImportPlan {
   itemIds: string[];
   readCount: number;
   totalAvailable: number | null;
+}
+
+export interface EbayTradingCatalogImportPreview {
+  previewResult: ReturnType<typeof buildImportPreview>;
+  readCount: number;
+  totalAvailable: number | null;
+  totalPlanned: number;
+  truncatedAtMaxProducts: boolean;
 }
 
 export interface EbayTradingSellerEventsDelta {
@@ -100,6 +113,37 @@ export async function getEbayTradingImportPreview(
     ),
     readCount: items.length,
     totalAvailable: getTotalEntries(activeList),
+  };
+}
+
+export async function getEbayTradingCatalogImportPreview(input: {
+  accessToken: string;
+  connection: EbayConnection;
+  descriptionRuleMode?: DescriptionRuleMode;
+  maxProducts: number;
+}): Promise<EbayTradingCatalogImportPreview> {
+  const plan = await getEbayTradingCatalogImportPlan({
+    accessToken: input.accessToken,
+    connection: input.connection,
+    maxProducts: input.maxProducts,
+  });
+  const candidates = await getEbayTradingCandidatesByItemIds({
+    accessToken: input.accessToken,
+    connection: input.connection,
+    itemIds: plan.itemIds,
+  });
+  const metadata = buildExistingCatalogPreviewMetadata({
+    maxProducts: input.maxProducts,
+    readCount: plan.readCount,
+    totalAvailable: plan.totalAvailable,
+    totalPlanned: plan.itemIds.length,
+  });
+
+  return {
+    previewResult: buildImportPreview(candidates, "live", {
+      descriptionRuleMode: input.descriptionRuleMode,
+    }),
+    ...metadata,
   };
 }
 

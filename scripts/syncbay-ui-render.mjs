@@ -646,7 +646,17 @@ function getImportPreviewFixture() {
     {
       itemId: "123456789001",
       issues: [],
-      matchSuggestions: [],
+      matchSuggestions: [
+        {
+          autoLinkable: true,
+          confidence: "high",
+          productGid: "gid://shopify/Product/preview-strong",
+          reasonCodes: ["sku_exact"],
+          reasons: ["SKU identico"],
+          score: 100,
+          variantGid: "gid://shopify/ProductVariant/preview-strong",
+        },
+      ],
       normalized: {
         descriptionCleanedLength: 0,
         descriptionCleanedTextExcerpt: "",
@@ -676,8 +686,10 @@ function getImportPreviewFixture() {
       ],
       matchSuggestions: [
         {
+          autoLinkable: false,
           confidence: "medium",
           productGid: "gid://shopify/Product/preview-existing",
+          reasonCodes: ["title_very_similar"],
           reasons: ["Titolo simile"],
           score: 40,
           variantGid: "gid://shopify/ProductVariant/preview-existing",
@@ -742,6 +754,7 @@ function getImportPreviewFixture() {
     },
     locations,
     wizard: {
+      catalogMode: "existing_catalog",
       draftImport: {
         blockers: [],
         draftLimit: 25,
@@ -771,6 +784,56 @@ function getImportPreviewFixture() {
         },
       },
       previewResult: {
+        existingCatalogTakeover: {
+          rows: [
+            {
+              itemId: "123456789001",
+              matchSuggestion: items[0].matchSuggestions[0],
+              plannedOperations: [
+                "claim_mapping",
+                "sync_title",
+                "sync_description",
+                "sync_price",
+                "sync_quantity",
+                "sync_category",
+                "sync_facets",
+                "sync_seo",
+                "add_syncbay_tag",
+                "preserve_handle",
+              ],
+              productGid: "gid://shopify/Product/preview-strong",
+              reasons: [],
+              status: "applicabile",
+              variantGid: "gid://shopify/ProductVariant/preview-strong",
+            },
+            {
+              itemId: "123456789005",
+              matchSuggestion: null,
+              plannedOperations: [],
+              productGid: null,
+              reasons: ["match_non_automatico"],
+              status: "da_rivedere",
+              variantGid: null,
+            },
+            {
+              itemId: "123456789006",
+              matchSuggestion: null,
+              plannedOperations: [],
+              productGid: null,
+              reasons: ["match_shopify_mancante", "immagini_mancanti"],
+              status: "bloccante",
+              variantGid: null,
+            },
+          ],
+          shopDomain: "syncbay-preview.myshopify.com",
+          summary: {
+            alreadyLinked: 0,
+            applicable: 1,
+            blocked: 1,
+            review: 1,
+            total: 3,
+          },
+        },
         items,
         mode: "live",
         summary: {

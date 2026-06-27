@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Novità
+
+- Importazione: la modalità `Collega catalogo esistente` legge il catalogo
+  Shopify esistente in modo paginato fino al limite MVP di 2.000 prodotti e usa
+  la Trading API eBay per costruire una simulazione completa su tutti gli
+  ItemID attivi, con report applicabili/da rivedere/bloccanti nel tab
+  Importazione.
+
 ## [0.47.1] — 2026-06-27
 
 ### Correzioni
