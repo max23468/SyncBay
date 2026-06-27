@@ -48,7 +48,10 @@ import {
   buildSyncBayProductLookupQueries,
   buildSyncBayShopifyImportTags,
 } from "../lib/syncbay-shopify-tags";
-import { selectShopifyVariantForSync } from "../lib/syncbay-shopify-variant-selection";
+import {
+  preserveSelectedShopifyVariantForSync,
+  selectShopifyVariantForSync,
+} from "../lib/syncbay-shopify-variant-selection";
 import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
 import type {
   ImportPreviewItem,
@@ -1651,7 +1654,10 @@ async function updateShopifyProductFromEbay(
   }
 
   return {
-    product: updatedProduct,
+    product: preserveSelectedShopifyVariantForSync({
+      previousProduct: product,
+      updatedProduct,
+    }),
     status: "synced",
     warnings,
   };

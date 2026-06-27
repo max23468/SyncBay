@@ -113,6 +113,7 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
   });
 
   assert.deepEqual(calls.map((variables) => variables?.first), [2]);
+  assert.deepEqual(calls.map((variables) => variables?.variantFirst), [10]);
   assert.deepEqual(
     products.map((product) => product.productGid),
     [
@@ -125,6 +126,45 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
     products.map((product) => product.sku),
     ["ALBUM-A", "ALBUM-B", "COIN-2"],
   );
+});
+
+test("caps variant candidates per product before matching", async () => {
+  const admin = {
+    async graphql(
+      _query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
+      const variantLimit = Number(options?.variables?.variantFirst ?? 0);
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "set-varianti",
+                sku: "SET-1",
+                title: "Set varianti",
+                variantId: "10",
+                variantSkus: Array.from(
+                  { length: Math.max(variantLimit + 5, 15) },
+                  (_, index) => `SET-${index + 1}`,
+                ).slice(0, variantLimit),
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 1,
+  });
+
+  assert.equal(products.length, 10);
+  assert.equal(products.at(0)?.sku, "SET-1");
+  assert.equal(products.at(-1)?.sku, "SET-10");
 });
 
 function makeProductNode(

@@ -42,9 +42,10 @@ interface ExistingProductNode {
 
 const DEFAULT_EXISTING_PRODUCT_LIMIT = 2000;
 const SHOPIFY_PRODUCTS_PAGE_SIZE = 250;
+const SHOPIFY_VARIANT_MATCH_CANDIDATE_LIMIT = 10;
 
 const EXISTING_PRODUCTS_QUERY = `#graphql
-  query SyncBayExistingProductsForMatching($first: Int!, $after: String) {
+  query SyncBayExistingProductsForMatching($first: Int!, $after: String, $variantFirst: Int!) {
     products(first: $first, after: $after, sortKey: UPDATED_AT, reverse: true) {
       nodes {
         id
@@ -64,7 +65,7 @@ const EXISTING_PRODUCTS_QUERY = `#graphql
           description
           title
         }
-        variants(first: 100) {
+        variants(first: $variantFirst) {
           nodes {
             barcode
             id
@@ -111,6 +112,7 @@ async function fetchExistingProductsPage(
     variables: {
       after: input.cursor,
       first: input.first,
+      variantFirst: SHOPIFY_VARIANT_MATCH_CANDIDATE_LIMIT,
     },
   });
 
