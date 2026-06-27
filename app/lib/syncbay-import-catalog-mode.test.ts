@@ -5,6 +5,8 @@ import test from "node:test";
 import * as importCatalogMode from "./syncbay-import-catalog-mode.ts";
 
 const {
+  canCreateDraftProductsForCatalogMode,
+  getCatalogModeDraftImportBlocker,
   getImportCatalogModeLabel,
   normalizeImportCatalogMode,
 } = importCatalogMode;
@@ -24,5 +26,15 @@ test("formats labels in Italian", () => {
   assert.equal(
     getImportCatalogModeLabel("existing_catalog"),
     "Collega catalogo esistente",
+  );
+});
+
+test("blocks normal draft import in existing catalog mode", () => {
+  assert.equal(canCreateDraftProductsForCatalogMode("new_products"), true);
+  assert.equal(canCreateDraftProductsForCatalogMode("existing_catalog"), false);
+  assert.equal(getCatalogModeDraftImportBlocker("new_products"), null);
+  assert.equal(
+    getCatalogModeDraftImportBlocker("existing_catalog"),
+    "In modalità catalogo esistente l'import normale è disattivato: usa il dry-run e il takeover dedicato.",
   );
 });

@@ -21,6 +21,7 @@ import {
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
+  getCatalogModeDraftImportBlocker,
   getImportCatalogModeLabel,
   getImportCatalogModeParam,
   normalizeImportCatalogMode,
@@ -159,6 +160,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = String(formData.get("intent") ?? "saveLocation");
 
   if (intent === "createDraftProducts") {
+    const catalogMode = normalizeImportCatalogMode(formData.get("catalogMode"));
+    const catalogModeBlocker = getCatalogModeDraftImportBlocker(catalogMode);
+
+    if (catalogModeBlocker) {
+      return Response.json(
+        {
+          draftStatus: "blocked",
+          intent,
+          message: catalogModeBlocker,
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await startCatalogImportJobs(session);
 
     return Response.json({
@@ -446,6 +461,10 @@ const IMPORT_PREVIEW_FILTERS: Array<{
   { label: "Già importati", value: "imported" },
   { label: "Da reimportare", value: "reimport" },
   { label: "Errore", value: "error" },
+];
+const IMPORT_CATALOG_MODES: ImportCatalogMode[] = [
+  "new_products",
+  "existing_catalog",
 ];
 const IMPORT_PREVIEW_PAGE_SIZE = 10;
 
@@ -1028,11 +1047,9 @@ function ImportCatalogModeSelector({
   activeMode: ImportCatalogMode;
   searchParams: URLSearchParams;
 }) {
-  const modes: ImportCatalogMode[] = ["new_products", "existing_catalog"];
-
   return (
     <s-stack direction="inline" gap="small-200">
-      {modes.map((mode) => (
+      {IMPORT_CATALOG_MODES.map((mode) => (
         <s-button
           href={getImportCatalogModeHref(searchParams, mode)}
           key={mode}
@@ -1133,11 +1150,17 @@ function DraftImportSection({
   isSaving: boolean;
   wizard: WizardState;
 }) {
+  const catalogModeBlocker = getCatalogModeDraftImportBlocker(
+    wizard.catalogMode,
+  );
+  const isDraftImportBlockedByCatalogMode = Boolean(catalogModeBlocker);
+
   return (
     <>
       <s-text color="subdued">
-        Avvia la creazione o il riuso dei prodotti Shopify dopo aver controllato
-        anteprima, location e impostazioni.
+        {isDraftImportBlockedByCatalogMode
+          ? "Il catalogo esistente resta in dry-run: l'import normale è disattivato per evitare duplicati."
+          : "Avvia la creazione o il riuso dei prodotti Shopify dopo aver controllato anteprima, location e impostazioni."}
       </s-text>
       {draftStatus === "created" ? (
         <s-paragraph>
@@ -1192,16 +1215,30 @@ function DraftImportSection({
             Blocchi: {wizard.draftImport.blockers.join(", ")}
           </s-list-item>
         ) : null}
+        {catalogModeBlocker ? (
+          <s-list-item>Modalità catalogo: {catalogModeBlocker}</s-list-item>
+        ) : null}
       </s-unordered-list>
       <Form method="post">
         <input type="hidden" name="intent" value="createDraftProducts" />
+        <input
+          type="hidden"
+          name="catalogMode"
+          value={getImportCatalogModeParam(wizard.catalogMode)}
+        />
         <s-button
           type="submit"
-          disabled={isSaving || wizard.draftImport.blockers.length > 0}
+          disabled={
+            isSaving ||
+            isDraftImportBlockedByCatalogMode ||
+            wizard.draftImport.blockers.length > 0
+          }
         >
-          {isCreatingDrafts
-            ? "Avvio in corso..."
-            : "Avvia import catalogo"}
+          {isDraftImportBlockedByCatalogMode
+            ? "Import normale disattivato"
+            : isCreatingDrafts
+              ? "Avvio in corso..."
+              : "Avvia import catalogo"}
         </s-button>
       </Form>
     </>
