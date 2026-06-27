@@ -24,12 +24,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: millionco/react-doctor@v2
+      - name: React Doctor sui file cambiati
+        if: github.event_name == 'pull_request'
+        uses: millionco/react-doctor@v2
         with:
           node-version: 24
           version: 0.5.8
           blocking: error
+          scope: changed
           # Niente commento riassuntivo "sticky": le PR pulite non ricevono
           # commenti. L'action mantiene il gate sui file cambiati nelle PR e
           # usa Node 24 senza cache package-manager interna.
           comment: false
+          review-comments: true
+
+      - name: React Doctor full su main
+        if: github.event_name != 'pull_request'
+        uses: millionco/react-doctor@v2
+        with:
+          node-version: 24
+          version: 0.5.8
+          blocking: error
+          scope: full
+          comment: false
+          review-comments: false
