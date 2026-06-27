@@ -6,7 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+### Novità
+
+- Importazione: aggiunta la modalità `Collega catalogo esistente`, con stato
+  loader dedicato e selettore nel tab Importazione senza avviare nuove
+  scritture.
+- Catalogo esistente: il matching produce reason code stabili e distingue i
+  match auto-collegabili solo quando la confidenza alta include segnali forti;
+  il dry-run genera un report `applicabile`, `da_rivedere` e `bloccante`.
+
+### Sotto il cofano
 
 - CI: attivata la CI runtime completa con il nuovo workflow
   `.github/workflows/ci.yml` (install deterministico, lint, typecheck,

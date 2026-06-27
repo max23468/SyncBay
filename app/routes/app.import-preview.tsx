@@ -21,6 +21,12 @@ import {
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
+  getImportCatalogModeLabel,
+  getImportCatalogModeParam,
+  normalizeImportCatalogMode,
+  type ImportCatalogMode,
+} from "../lib/syncbay-import-catalog-mode";
+import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
 } from "../lib/syncbay-loader-performance";
@@ -95,13 +101,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const previewLoadMode = normalizeImportPreviewLoadMode(
     url.searchParams.get("preview"),
   );
+  const catalogMode = normalizeImportCatalogMode(
+    url.searchParams.get("catalogMode"),
+  );
   const { admin, session } = await trace.measure("auth.admin", () =>
     authenticate.admin(request),
   );
   const [locationResult, wizard] = await Promise.all([
     trace.measure("import.shopify.locations", () => fetchShopifyLocations(admin)),
     trace.measure("import.wizard", () =>
-      getImportWizardState(session, admin, trace, { previewLoadMode }),
+      getImportWizardState(session, admin, trace, {
+        catalogMode,
+        previewLoadMode,
+      }),
     ),
   ]);
   const selectedLocation = locationResult.locations.find(
@@ -125,6 +137,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     details: {
       draftImportEnabled: wizard.draftImport.enabled,
       importableCount: wizard.draftImport.importableCount,
+      catalogMode,
       locations: locationResult.locations.length,
       plannedCreateCount: wizard.draftImport.plannedCreateCount,
       previewLoadMode,
@@ -358,6 +371,7 @@ export default function ImportPreview() {
             activePage={activePreviewPage}
             previewModeLabel={previewModeLabel}
             previewReadLabel={previewReadLabel}
+            searchParams={searchParams}
             wizard={wizard}
           />
         </Step>
@@ -677,12 +691,14 @@ function PreviewStatusSection({
   activePage,
   previewModeLabel,
   previewReadLabel,
+  searchParams,
   wizard,
 }: {
   activeFilter: ImportPreviewFilter;
   activePage: number;
   previewModeLabel: string;
   previewReadLabel: string;
+  searchParams: URLSearchParams;
   wizard: WizardState;
 }) {
   const errorCount = wizard.previewResult.summary.errorCount;
@@ -695,8 +711,15 @@ function PreviewStatusSection({
       <s-text color="subdued">
         Modalità: {previewModeLabel}. {wizard.previewSource.coverageNote}
       </s-text>
+      <ImportCatalogModeSelector
+        activeMode={wizard.catalogMode}
+        searchParams={searchParams}
+      />
       <s-stack direction="inline" gap="small-200">
-        <s-button href="/app/import-preview?preview=live" variant="primary">
+        <s-button
+          href={getImportPreviewLiveHref(wizard.catalogMode)}
+          variant="primary"
+        >
           Aggiorna preview live
         </s-button>
       </s-stack>
@@ -742,7 +765,10 @@ function PreviewStatusSection({
           value={formatNumber(errorCount)}
         />
       </s-grid>
-      <ImportPreviewFilterNav activeFilter={activeFilter} />
+      <ImportPreviewFilterNav
+        activeFilter={activeFilter}
+        catalogMode={wizard.catalogMode}
+      />
       <PreviewExamplesSection
         activeFilter={activeFilter}
         activePage={activePage}
@@ -812,6 +838,7 @@ function PreviewExamplesSection({
           ))}
           <ImportPreviewPagination
             activeFilter={activeFilter}
+            catalogMode={wizard.catalogMode}
             pagination={pagination}
             totalCatalogRows={wizard.previewResult.summary.totalCount}
           />
@@ -917,10 +944,12 @@ function DescriptionPreviewDetails({
 
 function ImportPreviewPagination({
   activeFilter,
+  catalogMode,
   pagination,
   totalCatalogRows,
 }: {
   activeFilter: ImportPreviewFilter;
+  catalogMode: ImportCatalogMode;
   pagination: ReturnType<typeof getPageWindow>;
   totalCatalogRows: number;
 }) {
@@ -941,6 +970,7 @@ function ImportPreviewPagination({
             href={getImportPreviewHref(
               activeFilter,
               pagination.previousPage,
+              catalogMode,
             )}
           >
             Precedente
@@ -952,7 +982,11 @@ function ImportPreviewPagination({
         </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
           <s-button
-            href={getImportPreviewHref(activeFilter, pagination.nextPage)}
+            href={getImportPreviewHref(
+              activeFilter,
+              pagination.nextPage,
+              catalogMode,
+            )}
           >
             Successiva
           </s-button>
@@ -964,8 +998,10 @@ function ImportPreviewPagination({
 
 function ImportPreviewFilterNav({
   activeFilter,
+  catalogMode,
 }: {
   activeFilter: ImportPreviewFilter;
+  catalogMode: ImportCatalogMode;
 }) {
   return (
     <div className="syncbay-filter-nav">
@@ -974,7 +1010,7 @@ function ImportPreviewFilterNav({
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}
             color={activeFilter === filter.value ? "strong" : "base"}
-            href={getImportPreviewHref(filter.value)}
+            href={getImportPreviewHref(filter.value, 1, catalogMode)}
             key={filter.value}
           >
             {filter.label}
@@ -985,9 +1021,69 @@ function ImportPreviewFilterNav({
   );
 }
 
-function getImportPreviewHref(filter: ImportPreviewFilter, page = 1) {
+function ImportCatalogModeSelector({
+  activeMode,
+  searchParams,
+}: {
+  activeMode: ImportCatalogMode;
+  searchParams: URLSearchParams;
+}) {
+  const modes: ImportCatalogMode[] = ["new_products", "existing_catalog"];
+
+  return (
+    <s-stack direction="inline" gap="small-200">
+      {modes.map((mode) => (
+        <s-button
+          href={getImportCatalogModeHref(searchParams, mode)}
+          key={mode}
+          variant={activeMode === mode ? "primary" : undefined}
+        >
+          {getImportCatalogModeLabel(mode)}
+        </s-button>
+      ))}
+    </s-stack>
+  );
+}
+
+function getImportCatalogModeHref(
+  searchParams: URLSearchParams,
+  mode: ImportCatalogMode,
+) {
+  const params = new URLSearchParams();
+  const previewMode = normalizeImportPreviewLoadMode(
+    searchParams.get("preview"),
+  );
+  const previewFilter = getImportPreviewFilter(
+    searchParams.get("previewFilter"),
+  );
+
+  if (previewMode === "live") params.set("preview", "live");
+  if (previewFilter !== "all") params.set("previewFilter", previewFilter);
+  params.set("catalogMode", getImportCatalogModeParam(mode));
+
+  return `/app/import-preview?${params.toString()}`;
+}
+
+function getImportPreviewLiveHref(catalogMode: ImportCatalogMode) {
+  const params = new URLSearchParams({ preview: "live" });
+
+  if (catalogMode !== "new_products") {
+    params.set("catalogMode", getImportCatalogModeParam(catalogMode));
+  }
+
+  return `/app/import-preview?${params.toString()}`;
+}
+
+function getImportPreviewHref(
+  filter: ImportPreviewFilter,
+  page = 1,
+  catalogMode: ImportCatalogMode = "new_products",
+) {
   const params = new URLSearchParams();
 
+  if (catalogMode !== "new_products") {
+    params.set("catalogMode", getImportCatalogModeParam(catalogMode));
+  }
   if (filter !== "all") params.set("previewFilter", filter);
   if (page > 1) params.set("previewPage", String(page));
 
