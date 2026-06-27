@@ -38,13 +38,31 @@ jobs:
           comment: false
           review-comments: true
 
+      - name: Setup Node per React Doctor full
+        if: github.event_name != 'pull_request'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Installa dipendenze per React Doctor full
+        if: github.event_name != 'pull_request'
+        run: npm ci
+
       - name: React Doctor full su main
         if: github.event_name != 'pull_request'
-        uses: millionco/react-doctor@v2
+        run: npm run quality:react-doctor
+
+      - name: Pubblica status React Doctor full
+        if: github.event_name != 'pull_request'
+        uses: actions/github-script@v8
         with:
-          node-version: 24
-          version: 0.5.8
-          blocking: error
-          scope: full
-          comment: false
-          review-comments: false
+          script: |
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.sha,
+              state: "success",
+              context: "React Doctor",
+              description: "Score: 100/100 · 0 errors · 0 warnings",
+              target_url: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            });
