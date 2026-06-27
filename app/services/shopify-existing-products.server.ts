@@ -85,20 +85,22 @@ export async function loadExistingShopifyProductsForMatching(
 ): Promise<ShopifyMatchCandidate[]> {
   const limit = normalizeLimit(options.limit);
   const products: ShopifyMatchCandidate[] = [];
+  let productReadCount = 0;
   let cursor: string | null = null;
 
-  while (products.length < limit) {
+  while (productReadCount < limit) {
     const page = await fetchExistingProductsPage(admin, {
       cursor,
-      first: Math.min(SHOPIFY_PRODUCTS_PAGE_SIZE, limit - products.length),
+      first: Math.min(SHOPIFY_PRODUCTS_PAGE_SIZE, limit - productReadCount),
     });
+    productReadCount += page.productCount;
     products.push(...page.products);
 
     if (!page.hasNextPage || !page.endCursor) break;
     cursor = page.endCursor;
   }
 
-  return products.slice(0, limit);
+  return products;
 }
 
 async function fetchExistingProductsPage(
@@ -118,11 +120,13 @@ async function fetchExistingProductsPage(
   if (json.errors?.length) return getEmptyExistingProductsPage();
 
   const products = json.data?.products;
+  const productNodes = products?.nodes ?? [];
 
   return {
     endCursor: products?.pageInfo?.endCursor ?? null,
     hasNextPage: Boolean(products?.pageInfo?.hasNextPage),
-    products: (products?.nodes ?? []).flatMap(toMatchCandidates),
+    productCount: productNodes.length,
+    products: productNodes.flatMap(toMatchCandidates),
   };
 }
 
@@ -151,6 +155,7 @@ function getEmptyExistingProductsPage() {
   return {
     endCursor: null,
     hasNextPage: false,
+    productCount: 0,
     products: [] as ShopifyMatchCandidate[],
   };
 }

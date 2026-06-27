@@ -74,6 +74,59 @@ test("loads existing Shopify products across pages up to the requested limit", a
   ]);
 });
 
+test("counts the Shopify limit by product nodes instead of variant candidates", async () => {
+  const calls: Array<Record<string, unknown> | undefined> = [];
+  const admin = {
+    async graphql(
+      _query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
+      calls.push(options?.variables);
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "album-varianti",
+                sku: "ALBUM-A",
+                title: "Album con varianti",
+                variantId: "11",
+                variantSkus: ["ALBUM-A", "ALBUM-B"],
+              }),
+              makeProductNode("2", {
+                handle: "moneta-singola",
+                sku: "COIN-2",
+                title: "Moneta singola",
+                variantId: "21",
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 2,
+  });
+
+  assert.deepEqual(calls.map((variables) => variables?.first), [2]);
+  assert.deepEqual(
+    products.map((product) => product.productGid),
+    [
+      "gid://shopify/Product/1",
+      "gid://shopify/Product/1",
+      "gid://shopify/Product/2",
+    ],
+  );
+  assert.deepEqual(
+    products.map((product) => product.sku),
+    ["ALBUM-A", "ALBUM-B", "COIN-2"],
+  );
+});
+
 function makeProductNode(
   id: string,
   input: {
@@ -83,8 +136,11 @@ function makeProductNode(
     tags?: string[];
     title: string;
     variantId: string;
+    variantSkus?: string[];
   },
 ) {
+  const variantSkus = input.variantSkus ?? [input.sku];
+
   return {
     handle: input.handle,
     id: `gid://shopify/Product/${id}`,
@@ -94,13 +150,11 @@ function makeProductNode(
     tags: input.tags ?? [],
     title: input.title,
     variants: {
-      nodes: [
-        {
-          barcode: null,
-          id: `gid://shopify/ProductVariant/${input.variantId}`,
-          sku: input.sku,
-        },
-      ],
+      nodes: variantSkus.map((sku, index) => ({
+        barcode: null,
+        id: `gid://shopify/ProductVariant/${Number(input.variantId) + index}`,
+        sku,
+      })),
     },
   };
 }
