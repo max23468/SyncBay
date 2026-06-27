@@ -39,30 +39,59 @@ jobs:
           review-comments: true
 
       - name: Setup Node per React Doctor full
+        id: react-doctor-node
         if: github.event_name != 'pull_request'
+        continue-on-error: true
         uses: actions/setup-node@v6
         with:
           node-version: 24.15.0
           cache: npm
 
       - name: Installa dipendenze per React Doctor full
-        if: github.event_name != 'pull_request'
+        id: react-doctor-install
+        if: github.event_name != 'pull_request' && steps.react-doctor-node.outcome == 'success'
+        continue-on-error: true
         run: npm ci
 
       - name: React Doctor full su main
-        if: github.event_name != 'pull_request'
+        id: react-doctor-full
+        if: github.event_name != 'pull_request' && steps.react-doctor-install.outcome == 'success'
+        continue-on-error: true
         run: npm run quality:react-doctor
 
       - name: Pubblica status React Doctor full
-        if: github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request'
         uses: actions/github-script@v8
+        env:
+          REACT_DOCTOR_NODE_OUTCOME: ${{ steps.react-doctor-node.outcome }}
+          REACT_DOCTOR_INSTALL_OUTCOME: ${{ steps.react-doctor-install.outcome }}
+          REACT_DOCTOR_FULL_OUTCOME: ${{ steps.react-doctor-full.outcome }}
         with:
           script: |
+            const outcomes = {
+              node: process.env.REACT_DOCTOR_NODE_OUTCOME,
+              install: process.env.REACT_DOCTOR_INSTALL_OUTCOME,
+              scan: process.env.REACT_DOCTOR_FULL_OUTCOME,
+            };
+            const passed =
+              outcomes.node === "success" &&
+              outcomes.install === "success" &&
+              outcomes.scan === "success";
+            const failedStep =
+              Object.entries(outcomes).find(([, outcome]) => outcome !== "success")?.[0] ??
+              "scan";
+
             await github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.sha,
-              state: "success",
+              state: passed ? "success" : "failure",
               context: "React Doctor",
-              description: "Score: 100/100 · 0 errors · 0 warnings",
+              description: passed
+                ? "Score: 100/100 · 0 errors · 0 warnings"
+                : `React Doctor ${failedStep} failed; see workflow logs`,
               target_url: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
             });
+
+      - name: Fallisci se React Doctor full non passa
+        if: always() && github.event_name != 'pull_request' && (steps.react-doctor-node.outcome != 'success' || steps.react-doctor-install.outcome != 'success' || steps.react-doctor-full.outcome != 'success')
+        run: exit 1
