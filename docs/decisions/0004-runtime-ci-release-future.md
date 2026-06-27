@@ -10,7 +10,11 @@ SyncBay ora ha scaffold applicativo, `package.json`, build e runtime di base. Qu
 
 ## Decisione
 
-Manteniamo la policy prudente per CI, deploy e automazioni remote. Il versioning locale è attivo; workflow runtime e automazioni remote di release restano non attivati.
+Manteniamo la policy prudente per deploy e automazioni remote di release. Il
+versioning locale è attivo. La **CI runtime completa è stata attivata il
+2026-06-27** con il workflow `.github/workflows/ci.yml` (vedi sezione
+«CI futura»). Restano non attivati deploy automatico collegato a `main` e
+automazioni remote di release.
 
 ## Runtime
 
@@ -33,22 +37,48 @@ dedicato; resta da definire una policy production stabile oltre il pilota.
 
 ## CI futura
 
-Quando la CI runtime completa verrà attivata, dovrà essere introdotta con
-workflow dedicati e comandi reali nel repo. I gate PR già presenti restano
-parziali e non sostituiscono una CI di release/deploy stabile.
+La CI runtime completa è stata attivata il 2026-06-27 con il workflow
+`.github/workflows/ci.yml`, un job unico `verify` su `pull_request` verso
+`main`, `push` su `main` e `workflow_dispatch`. I comandi nascono dallo scaffold
+effettivo e sono stati verificati verdi e deterministici senza secret prima
+dell'attivazione.
 
-Gate minimi attesi:
+Gate attivi:
 
-- installazione deterministica dipendenze;
-- typecheck;
-- lint;
-- test;
-- build;
-- format/check;
-- audit dipendenze quando cambiano manifest o lockfile;
-- check mirati per eventuali migration/schema.
+- installazione deterministica dipendenze (`npm ci`);
+- lint (`npm run lint`);
+- typecheck (`npm run typecheck`, include `prisma generate`);
+- test librerie pure (`npm run test:lib`);
+- coverage librerie pure (`npm run coverage:lib`);
+- build (`npm run build`);
+- validazione schema Prisma (`npm run prisma:validate`);
+- smoke UI (`npm run smoke:ui`);
+- audit dipendenze di produzione (`npm audit --omit=dev`).
 
-Il workflow Quality di Pratix e il modello di CI prudente di DocMolder sono riferimenti, ma SyncBay non deve copiarli alla cieca: i comandi devono nascere dallo scaffold effettivo.
+Esclusioni consapevoli:
+
+- `format/check`: prettier non è ancora configurato nel repo; introdurlo è una
+  decisione separata e va fatto solo dopo un primo allineamento di formato per
+  non aprire un gate sistematicamente rosso;
+- `db:verify` e `db:push:dry-run`: girano con `--linked` contro il Supabase
+  remoto reale, quindi validano lo stato del DB live e non la PR, richiedono
+  secret e non sono deterministici; restano controlli locali o, in futuro, un
+  workflow schedulato dedicato, non un gate per-PR;
+- applicazione delle migration (`prisma migrate deploy` in CI): valutata e
+  scartata per ora. Le migration SyncBay sono Supabase-native (`pgmq`,
+  `pg_cron`, `pg_net`, schema `storage`, ruoli `anon`/`authenticated`/
+  `service_role`, `cron.job`) e fallirebbero su un Postgres vanilla effimero.
+  Un gate corretto richiederebbe l'intero stack `supabase start` in CI: resta
+  un follow-up possibile, da introdurre solo dopo verifica verde dedicata. In
+  CI lo schema è comunque coperto da `prisma:validate`;
+- qualità React: resta nel workflow dedicato `react-doctor.yml`.
+
+Il workflow precedente `pr-quality.yml` (solo `test:lib` + `coverage:lib`) è
+stato rimosso perché interamente sussunto da `ci.yml`.
+
+Il workflow Quality di Pratix e il modello di CI prudente di DocMolder sono
+riferimenti, ma SyncBay non li ha copiati alla cieca: i comandi nascono dallo
+scaffold effettivo.
 
 Non creare un workflow CI fittizio che passa senza validare prodotto reale.
 

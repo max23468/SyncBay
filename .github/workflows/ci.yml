@@ -1,0 +1,65 @@
+name: CI
+
+# CI runtime completa SyncBay (ADR 0004).
+# I comandi nascono dallo scaffold reale e sono tutti verificati verdi e
+# deterministici senza secret. I gate che richiedono Supabase linkato
+# (`db:verify`, `db:push:dry-run`) restano fuori e girano in locale.
+# La qualità React ha il workflow dedicato `react-doctor.yml`.
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verifica runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Install dipendenze deterministico
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test librerie pure
+        run: npm run test:lib
+
+      - name: Coverage librerie pure
+        run: npm run coverage:lib
+
+      - name: Build
+        run: npm run build
+
+      - name: Valida schema Prisma
+        run: npm run prisma:validate
+
+      - name: Smoke UI
+        run: npm run smoke:ui
+
+      - name: Audit dipendenze di produzione
+        run: npm audit --omit=dev
