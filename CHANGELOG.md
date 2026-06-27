@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.48.0] — 2026-06-27
+
+### Novità
+
+- Importazione: la modalità `Collega catalogo esistente` legge il catalogo
+  Shopify esistente in modo paginato fino al limite MVP di 2.000 prodotti e usa
+  la Trading API eBay per costruire una simulazione completa su tutti gli
+  ItemID attivi, con report applicabili/da rivedere/bloccanti nel tab
+  Importazione.
+
 ## [0.47.1] — 2026-06-27
 
 ### Correzioni
@@ -2661,6 +2671,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.48.0]: #0480--2026-06-27
 [0.47.1]: #0471--2026-06-27
 [0.47.0]: #0470--2026-06-27
 [0.46.9]: #0469--2026-06-25

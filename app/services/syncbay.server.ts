@@ -77,7 +77,6 @@ import {
   type ThumbnailCacheEntry,
   writeThumbnailCacheEntries,
 } from "../lib/syncbay-thumbnail-cache";
-import type { ShopifyMatchCandidate } from "../lib/syncbay-product-matching";
 import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
@@ -105,8 +104,12 @@ import {
   normalizeDescriptionRuleFormInput,
 } from "../lib/syncbay-description-rules";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
-import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
+import {
+  getEbayTradingCatalogImportPlan,
+  getEbayTradingCatalogImportPreview,
+} from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
+import { loadExistingShopifyProductsForMatching } from "./shopify-existing-products.server";
 import {
   addExistingProductMatchSuggestions,
   getEmptyImportPreview,
@@ -134,25 +137,6 @@ interface ShopifyAdminGraphqlClient {
     query: string,
     options?: { variables?: Record<string, unknown> },
   ) => Promise<Response>;
-}
-
-interface ShopifyExistingProductMatchResponse {
-  data?: {
-    products?: {
-      nodes?: Array<{
-        id: string;
-        title: string | null;
-        variants?: {
-          nodes?: Array<{
-            barcode: string | null;
-            id: string;
-            sku: string | null;
-          }>;
-        };
-      }>;
-    };
-  };
-  errors?: unknown[];
 }
 
 type LatestProductSnapshotForDisplay = {
@@ -1713,8 +1697,24 @@ export async function getImportWizardState(
     ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const catalogMode = options.catalogMode ?? "new_products";
   const previewLoadMode = options.previewLoadMode ?? "deferred";
+  const shouldLoadExistingCatalogPreview =
+    catalogMode === "existing_catalog" &&
+    ebayConnected &&
+    ebayConnection &&
+    previewLoadMode === "live";
   const preview =
-    ebayConnected && ebayConnection && previewLoadMode === "live"
+    shouldLoadExistingCatalogPreview && ebayConnection
+      ? await measureSyncBayPerformanceStage(
+          trace,
+          "import.ebay.existingCatalogPreview",
+          () =>
+            getExistingCatalogTakeoverPreview({
+              connection: ebayConnection,
+              descriptionRuleMode: descriptionRule.mode,
+              maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+            }),
+        )
+      : ebayConnected && ebayConnection && previewLoadMode === "live"
       ? await measureSyncBayPerformanceStage(
           trace,
           "import.ebay.preview",
@@ -1741,18 +1741,24 @@ export async function getImportWizardState(
     () =>
       getImportPreviewWithExistingShopifyMatches({
         admin,
+        limit:
+          catalogMode === "existing_catalog"
+            ? CATALOG_IMPORT_MAX_PRODUCTS
+            : 250,
         previewResult: preview.previewResult,
       }),
   );
   const previewResult =
     catalogMode === "existing_catalog"
-      ? {
-          ...matchedPreviewResult,
-          existingCatalogTakeover: buildExistingCatalogTakeoverReport({
-            items: matchedPreviewResult.items,
-            shopDomain: shop.shopDomain,
-          }),
-        }
+      ? previewLoadMode === "live"
+        ? {
+            ...matchedPreviewResult,
+            existingCatalogTakeover: buildExistingCatalogTakeoverReport({
+              items: matchedPreviewResult.items,
+              shopDomain: shop.shopDomain,
+            }),
+          }
+        : matchedPreviewResult
       : matchedPreviewResult;
 
   return {
@@ -1805,6 +1811,7 @@ export async function getImportWizardState(
 
 async function getImportPreviewWithExistingShopifyMatches(input: {
   admin?: ShopifyAdminGraphqlClient;
+  limit?: number;
   previewResult: ImportPreviewResult;
 }) {
   if (!input.admin || input.previewResult.items.length === 0) {
@@ -1813,6 +1820,7 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
 
   const shopifyProducts = await loadExistingShopifyProductsForMatching(
     input.admin,
+    { limit: input.limit },
   );
 
   return addExistingProductMatchSuggestions(
@@ -1821,49 +1829,56 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
   );
 }
 
-async function loadExistingShopifyProductsForMatching(
-  admin: ShopifyAdminGraphqlClient,
-): Promise<ShopifyMatchCandidate[]> {
-  const response = await admin.graphql(`#graphql
-    query SyncBayExistingProductsForMatching {
-      products(first: 250, sortKey: UPDATED_AT, reverse: true) {
-        nodes {
-          id
-          title
-          variants(first: 100) {
-            nodes {
-              barcode
-              id
-              sku
-            }
-          }
-        }
-      }
-    }`);
+async function getExistingCatalogTakeoverPreview(input: {
+  connection: EbayConnection;
+  descriptionRuleMode: DescriptionRuleMode;
+  maxProducts: number;
+}) {
+  try {
+    const { accessToken } = await getUsableEbayAccessToken(input.connection);
+    const preview = await getEbayTradingCatalogImportPreview({
+      accessToken,
+      connection: input.connection,
+      descriptionRuleMode: input.descriptionRuleMode,
+      maxProducts: input.maxProducts,
+    });
+    const totalAvailableLabel =
+      preview.totalAvailable === null
+        ? `almeno ${preview.totalPlanned}`
+        : String(preview.totalAvailable);
 
-  if (!response.ok) return [];
-
-  const json = (await response.json()) as ShopifyExistingProductMatchResponse;
-
-  if (json.errors?.length) return [];
-
-  return (json.data?.products?.nodes ?? []).flatMap((product) => {
-    if (!product.id || !product.title) return [];
-
-    return (product.variants?.nodes ?? [null]).map((variant) => ({
-      barcode: normalizeNullableString(variant?.barcode),
-        productGid: product.id,
-        sku: normalizeNullableString(variant?.sku),
-        title: product.title,
-        variantGid: variant?.id ?? null,
-    }));
-  });
-}
-
-function normalizeNullableString(value: string | null | undefined) {
-  const normalized = value?.trim();
-
-  return normalized ? normalized : null;
+    return {
+      coverageNote: preview.truncatedAtMaxProducts
+        ? `Simulazione catalogo esistente da Trading API eBay: lette ${preview.totalPlanned} inserzioni entro limite MVP ${input.maxProducts}. Il catalogo eBay dichiara ${totalAvailableLabel} inserzioni.`
+        : "Simulazione catalogo esistente da Trading API eBay: tutti gli ItemID attivi letti in sola lettura entro il limite MVP.",
+      errorMessage: null,
+      previewResult: preview.previewResult,
+      readCount: preview.readCount,
+      readCounts: {
+        inventoryApi: 0,
+        tradingApi: preview.readCount,
+      },
+      source: "trading_api" as const,
+      totalAvailable: preview.totalAvailable,
+    };
+  } catch (error) {
+    return {
+      coverageNote:
+        "Simulazione catalogo esistente da Trading API eBay: lettura completa in sola lettura non completata.",
+      errorMessage:
+        error instanceof Error
+          ? error.message
+          : "eBay Trading API non ha completato il dry-run catalogo esistente.",
+      previewResult: getEmptyImportPreview("live"),
+      readCount: 0,
+      readCounts: {
+        inventoryApi: 0,
+        tradingApi: 0,
+      },
+      source: "trading_api" as const,
+      totalAvailable: null,
+    };
+  }
 }
 
 export async function getShopSettingsState(

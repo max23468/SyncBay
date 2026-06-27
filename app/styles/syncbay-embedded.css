@@ -1081,4 +1081,7 @@
   .syncbay-setting s-grid {
     grid-template-columns: 1fr !important;
   }
+  .syncbay-existing-catalog-grid s-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
