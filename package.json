@@ -39,6 +39,7 @@
     "db:advisors:performance": "npx supabase db advisors --linked --type performance",
     "db:push:dry-run": "npx supabase db push --linked --dry-run",
     "db:verify": "npm run db:advisors:security && npm run db:advisors:performance",
+    "supabase:services": "node --experimental-strip-types scripts/syncbay-supabase-services-health.mjs",
     "doctor:local": "node scripts/syncbay-local-doctor.mjs",
     "publish:preflight": "node scripts/syncbay-publish-preflight.mjs",
     "ebay:rate-limits": "node scripts/syncbay-ebay-rate-limits.mjs",
