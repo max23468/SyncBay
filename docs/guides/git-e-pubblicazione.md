@@ -53,10 +53,12 @@ Percorso standard per lavori non banali:
 2. crea un branch `codex/<tema>`;
 3. mantieni il diff focalizzato;
 4. esegui le verifiche locali rilevanti;
-5. apri PR verso `main` usando il template;
-6. fai self-review e correggi problemi chiari;
-7. mergea quando la PR è pronta;
-8. elimina branch remoto e branch locale quando il lavoro è assorbito.
+5. esegui `npm run review:pre-pr -- --base origin/main`, fai self-review del
+   diff e correggi i problemi chiari prima di aprire o sincronizzare la PR;
+6. apri PR verso `main` usando il template;
+7. controlla eventuali review thread Codex della PR corrente e il preflight remoto;
+8. mergea quando la PR è pronta;
+9. elimina branch remoto e branch locale quando il lavoro è assorbito.
 
 Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `BRAND.md`, `docs/**` o altri documenti canonici e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
 
@@ -110,6 +112,26 @@ La configurazione iniziale segue Pratix come riferimento principale:
 - label `codex`, `autorelease: pending` e `autorelease: tagged` presenti per coerenza con le altre repo operative.
 
 Branch protection e rulesets non sono attivi sulle repo private dell'account corrente senza GitHub Pro o repo pubblica.
+
+## Self-review pre-PR
+
+Prima di aprire o sincronizzare una PR non banale, usare:
+
+```bash
+npm run review:pre-pr -- --base origin/main
+```
+
+Il comando legge il diff rispetto alla base scelta più eventuali file
+staged/unstaged e produce una checklist mirata alle aree toccate. Serve a
+spostare prima della PR i commenti Codex prevedibili: diagnosi non provata,
+root cause non isolata, fix troppo largo, guardrail server-side mancanti,
+test insufficienti, mismatch UI/backend, rischio dati/provider e
+classificazione release.
+
+Il comando non sostituisce test, build o review umana. Per docs-only piccoli
+può bastare `git diff --check` e rilettura del documento, come indicato sotto.
+Per runtime, UI, provider, database o tooling condiviso, la checklist deve
+essere chiusa prima della PR o dichiarata esplicitamente nel riepilogo.
 
 ## Commenti Codex sulle PR
 

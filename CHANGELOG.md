@@ -13,6 +13,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   come `402 exceed_egress_quota`.
 - Tooling: accettata esplicitamente l'eccezione supply-chain React Doctor per
   `@shopify/cli` 4.3.0, mantenendo il gate attivo con soglia minima 47.
+- Tooling: aggiunto il comando `npm run review:pre-pr` per generare una
+  self-review mirata del diff prima di aprire o sincronizzare PR non banali.
 
 ## [0.49.2] — 2026-06-28
 
