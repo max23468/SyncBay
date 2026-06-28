@@ -1,6 +1,7 @@
 export type SupabaseHttpServiceId = "postgrest" | "auth" | "storage";
 
 export type SupabaseHttpServiceCheck = {
+  allowRlsDenied?: boolean;
   id: SupabaseHttpServiceId;
   label: string;
   path: string;
@@ -22,6 +23,7 @@ export type SupabaseHttpServiceDiagnosis = {
 
 export const SUPABASE_HTTP_SERVICE_CHECKS: SupabaseHttpServiceCheck[] = [
   {
+    allowRlsDenied: true,
     id: "postgrest",
     label: "PostgREST",
     path: "/rest/v1/Shop?select=id&limit=1",
@@ -44,11 +46,26 @@ export function buildSupabaseServiceHeaders(apiKey: string) {
 }
 
 export function classifySupabaseServiceResponse(input: {
+  allowRlsDenied?: boolean;
   bodyText: string;
   status: number;
 }): SupabaseHttpServiceDiagnosis {
   const message = normalizeSupabaseResponseMessage(input.bodyText);
+  const rlsDeniedReason = getSupabaseRlsDeniedReason(input.bodyText);
   const restrictionReason = getSupabaseRestrictionReason(input.bodyText);
+
+  if (
+    input.allowRlsDenied &&
+    (input.status === 401 || input.status === 403) &&
+    rlsDeniedReason
+  ) {
+    return {
+      message,
+      reason: rlsDeniedReason,
+      status: "healthy",
+      statusCode: input.status,
+    };
+  }
 
   if (input.status === 402 || restrictionReason) {
     return {
@@ -99,6 +116,20 @@ export function getSupabaseRestrictionReason(bodyText: string): string | null {
     ?.trim();
 
   return firstViolation || null;
+}
+
+export function getSupabaseRlsDeniedReason(bodyText: string): string | null {
+  const normalized = bodyText.toLowerCase();
+
+  if (
+    normalized.includes("permission denied for table") ||
+    normalized.includes("row-level security") ||
+    normalized.includes("rls")
+  ) {
+    return "rls_denied";
+  }
+
+  return null;
 }
 
 function isMissingApiKeyResponse(bodyText: string) {

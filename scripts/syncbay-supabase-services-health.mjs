@@ -68,6 +68,7 @@ async function probeSupabaseService({ check, headers, supabaseUrl }) {
     });
     const bodyText = await response.text();
     const diagnosis = classifySupabaseServiceResponse({
+      allowRlsDenied: check.allowRlsDenied,
       bodyText,
       status: response.status,
     });

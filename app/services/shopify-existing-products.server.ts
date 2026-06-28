@@ -29,6 +29,11 @@ interface ExistingProductNode {
   metafields?: {
     nodes?: ShopifyMatchMetafieldCandidate[] | null;
   } | null;
+  media?: {
+    nodes?: Array<{
+      id?: string | null;
+    }> | null;
+  } | null;
   tags?: string[] | null;
   title?: string | null;
   variants?: {
@@ -37,6 +42,9 @@ interface ExistingProductNode {
       id?: string | null;
       sku?: string | null;
     }> | null;
+    pageInfo?: {
+      hasNextPage?: boolean | null;
+    } | null;
   } | null;
 }
 
@@ -61,6 +69,11 @@ const EXISTING_PRODUCTS_QUERY = `#graphql
             value
           }
         }
+        media(first: 1) {
+          nodes {
+            id
+          }
+        }
         seo {
           description
           title
@@ -70,6 +83,9 @@ const EXISTING_PRODUCTS_QUERY = `#graphql
             barcode
             id
             sku
+          }
+          pageInfo {
+            hasNextPage
           }
         }
       }
@@ -140,16 +156,19 @@ function toMatchCandidates(
   const variants = product.variants?.nodes?.length
     ? product.variants.nodes
     : [null];
+  const variantsTruncated = Boolean(product.variants?.pageInfo?.hasNextPage);
 
   return variants.map((variant) => ({
     barcode: normalizeNullableString(variant?.barcode),
     handle: normalizeNullableString(product.handle),
     metafields: product.metafields?.nodes ?? [],
     productGid: product.id as string,
+    shopifyImageCount: product.media?.nodes?.length ?? 0,
     sku: normalizeNullableString(variant?.sku),
     tags: product.tags ?? [],
     title: normalizeNullableString(product.title),
     variantGid: variant?.id ?? null,
+    variantsTruncated,
   }));
 }
 

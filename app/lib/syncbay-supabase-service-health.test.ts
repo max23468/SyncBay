@@ -8,13 +8,19 @@ const {
   SUPABASE_HTTP_SERVICE_CHECKS,
   buildSupabaseServiceHeaders,
   classifySupabaseServiceResponse,
+  getSupabaseRlsDeniedReason,
   getSupabaseRestrictionReason,
 } = supabaseServiceHealth;
 
-test("checks PostgREST through a SyncBay table query instead of the service root", () => {
-  assert.equal(
-    SUPABASE_HTTP_SERVICE_CHECKS.find((check) => check.id === "postgrest")?.path,
-    "/rest/v1/Shop?select=id&limit=1",
+test("checks PostgREST through a table query with expected RLS denial", () => {
+  assert.deepEqual(
+    SUPABASE_HTTP_SERVICE_CHECKS.find((check) => check.id === "postgrest"),
+    {
+      allowRlsDenied: true,
+      id: "postgrest",
+      label: "PostgREST",
+      path: "/rest/v1/Shop?select=id&limit=1",
+    },
   );
 });
 
@@ -64,6 +70,32 @@ test("classifies missing API key separately from quota restrictions", () => {
   );
 });
 
+test("treats expected RLS denial as a healthy PostgREST probe only when allowed", () => {
+  const response = {
+    bodyText: '{"message":"permission denied for table Shop"}',
+    status: 403,
+  };
+
+  assert.deepEqual(
+    classifySupabaseServiceResponse({
+      ...response,
+      allowRlsDenied: true,
+    }),
+    {
+      message: "permission denied for table Shop",
+      reason: "rls_denied",
+      status: "healthy",
+      statusCode: 403,
+    },
+  );
+  assert.deepEqual(classifySupabaseServiceResponse(response), {
+    message: "permission denied for table Shop",
+    reason: null,
+    status: "unhealthy",
+    statusCode: 403,
+  });
+});
+
 test("extracts known Supabase restriction reasons from response text", () => {
   assert.equal(
     getSupabaseRestrictionReason(
@@ -72,4 +104,12 @@ test("extracts known Supabase restriction reasons from response text", () => {
     "exceed_egress_quota",
   );
   assert.equal(getSupabaseRestrictionReason("temporary outage"), null);
+});
+
+test("extracts expected Supabase RLS denial reasons", () => {
+  assert.equal(
+    getSupabaseRlsDeniedReason("permission denied for table Shop"),
+    "rls_denied",
+  );
+  assert.equal(getSupabaseRlsDeniedReason("Invalid API key"), null);
 });

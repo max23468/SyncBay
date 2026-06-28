@@ -11,6 +11,34 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Tooling: aggiunta una diagnostica HTTP Supabase che usa anon/publishable key
   senza stamparla, distinguendo `401 missing_api_key` da restrizioni provider
   come `402 exceed_egress_quota`.
+- Tooling: la diagnostica HTTP Supabase classifica il diniego RLS atteso su
+  PostgREST separatamente da API key mancanti, token non autorizzati e
+  restrizioni provider.
+
+## [0.49.3] — 2026-06-28
+
+### Correzioni
+
+- Importazione: il takeover del catalogo esistente usa una policy campi
+  conservativa che preserva URL e immagini Shopify, rimuove solo i tag legacy
+  indicati e lascia intatte le collezioni automatiche basate sulle regole già
+  presenti nello store.
+- Importazione: il matching evita il collegamento automatico dei match a livello
+  prodotto quando le varianti Shopify sono troncate e manca un match visibile
+  esatto su SKU o barcode, riducendo il rischio di salvare una variante
+  Shopify errata.
+- Importazione: la policy immagini del takeover conta solo media Shopify di tipo
+  immagine, così video e modelli 3D non bloccano l'import delle immagini eBay né
+  vengono registrati come baseline immagini preservate.
+- Tooling: la self-review pre-PR fallisce quando la base Git richiesta non è
+  risolvibile e non tratta più file non classificati come diff solo
+  documentale.
+
+### Sotto il cofano
+
+- Runtime/tooling: classificato come versionato l'aggiornamento dipendenze che
+  include Shopify CLI `4.3.0` e allineata la versione documentata in
+  `docs/TOOLCHAIN.md`.
 - Tooling: accettata esplicitamente l'eccezione supply-chain React Doctor per
   `@shopify/cli` 4.3.0, mantenendo il gate attivo con soglia minima 47.
 - Tooling: aggiunto il comando `npm run review:pre-pr` per generare una
@@ -2719,6 +2747,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.49.3]: #0493--2026-06-28
 [0.49.2]: #0492--2026-06-28
 [0.49.1]: #0491--2026-06-28
 [0.49.0]: #0490--2026-06-28

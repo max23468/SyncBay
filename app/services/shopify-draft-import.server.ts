@@ -33,6 +33,12 @@ import {
   hashNullableText,
 } from "../lib/syncbay-description-hash";
 import {
+  buildExistingCatalogTagMutations,
+  getShopifyImageMediaIds,
+  shouldSyncExistingCatalogImages,
+  type ExistingCatalogFieldPolicy,
+} from "../lib/syncbay-existing-catalog-field-policy";
+import {
   calculateShopifyPricing,
   type SyncBayPricingRule,
 } from "../lib/syncbay-pricing-rules";
@@ -393,6 +399,7 @@ type ShopifyMediaSyncResult = {
     index: number;
     sourceUrl: string;
   }>;
+  preservedCount?: number;
   requestedCount: number;
   sourceImageUrls: string[];
   stagedCreatedCount: number;
@@ -574,6 +581,10 @@ function buildShopifyDraftProductInputs(
     discountPercent: 0,
     roundingMode: "CENTS",
   },
+  existingCatalogFieldPoliciesByItemId: Record<
+    string,
+    ExistingCatalogFieldPolicy
+  > = {},
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
@@ -583,6 +594,8 @@ function buildShopifyDraftProductInputs(
       );
 
       return {
+        existingCatalogFieldPolicy:
+          existingCatalogFieldPoliciesByItemId[item.itemId] ?? null,
         media: dedupeImageUrls(item.normalized.imageUrls)
           .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
           .map((imageUrl) => ({
@@ -616,6 +629,10 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   admin: ShopifyAdminGraphqlClient;
   catalogImportRunId?: string | null;
   defaultLocationGid?: string | null;
+  existingCatalogFieldPoliciesByItemId?: Record<
+    string,
+    ExistingCatalogFieldPolicy
+  >;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
   previewResult: ImportPreviewResult;
@@ -666,6 +683,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     input.previewResult,
     importProductStatus,
     pricingRule,
+    input.existingCatalogFieldPoliciesByItemId ?? {},
   );
   const job = await startDraftImportJob({
     catalogImportRunId: input.catalogImportRunId ?? null,
@@ -1636,31 +1654,123 @@ async function updateShopifyProductFromEbay(
     };
   }
 
+  const tagSyncResult = await syncShopifyExistingCatalogTags(admin, {
+    currentTags: updatedProduct.tags ?? [],
+    fieldPolicy: draftProduct.existingCatalogFieldPolicy,
+    productGid: product.id,
+  });
+
+  if (tagSyncResult.status === "failed") {
+    return tagSyncResult;
+  }
+
+  let syncedProduct = {
+    ...updatedProduct,
+    tags: applyShopifyTagMutations(updatedProduct.tags ?? [], tagSyncResult),
+  };
+  const tagWarning =
+    tagSyncResult.addedTags.length > 0 || tagSyncResult.removedTags.length > 0
+      ? `SyncBay ha aggiornato i tag del takeover: aggiunti ${tagSyncResult.addedTags.length}, rimossi ${tagSyncResult.removedTags.length}.`
+      : null;
   const warnings = [
     "SyncBay ha riallineato titolo, descrizione e stato Shopify dal listing eBay.",
+    ...(tagWarning ? [tagWarning] : []),
   ];
 
   // Rientro: se il prodotto era marcato come esaurito (listing eBay tornato
   // attivo), rimuovi il tag così non resta segnalato come esaurito. La scorta
   // viene ripristinata dal normale sync della disponibilità. Vedi ADR 0011.
-  if (updatedProduct.tags?.includes(SYNCBAY_SOLD_OUT_TAG)) {
+  if (syncedProduct.tags?.includes(SYNCBAY_SOLD_OUT_TAG)) {
     const clearTagResult = await clearShopifySoldOutTag(admin, product.id);
 
     if (clearTagResult.status === "failed") {
       warnings.push(
         `Tag esaurito non rimosso al rientro del listing: ${clearTagResult.errorMessage}`,
       );
+    } else {
+      syncedProduct = {
+        ...syncedProduct,
+        tags: syncedProduct.tags.filter((tag) => tag !== SYNCBAY_SOLD_OUT_TAG),
+      };
     }
   }
 
   return {
     product: preserveSelectedShopifyVariantForSync({
       previousProduct: product,
-      updatedProduct,
+      updatedProduct: syncedProduct,
     }),
     status: "synced",
     warnings,
   };
+}
+
+async function syncShopifyExistingCatalogTags(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    currentTags: string[];
+    fieldPolicy: ExistingCatalogFieldPolicy | null;
+    productGid: string;
+  },
+): Promise<
+  | {
+      addedTags: string[];
+      removedTags: string[];
+      status: "synced";
+    }
+  | {
+      errorMessage: string;
+      status: "failed";
+    }
+> {
+  const mutations = buildExistingCatalogTagMutations({
+    currentTags: input.currentTags,
+    fieldPolicy: input.fieldPolicy,
+  });
+
+  for (const tag of mutations.remove) {
+    const result = await updateShopifyProductTag(admin, {
+      operation: "remove",
+      productGid: input.productGid,
+      tag,
+    });
+
+    if (result.status === "failed") return result;
+  }
+
+  for (const tag of mutations.add) {
+    const result = await updateShopifyProductTag(admin, {
+      operation: "add",
+      productGid: input.productGid,
+      tag,
+    });
+
+    if (result.status === "failed") return result;
+  }
+
+  return {
+    addedTags: mutations.add,
+    removedTags: mutations.remove,
+    status: "synced",
+  };
+}
+
+function applyShopifyTagMutations(
+  currentTags: string[],
+  mutations: { addedTags: string[]; removedTags: string[] },
+) {
+  const removed = new Set(mutations.removedTags);
+  const tags = currentTags.filter((tag) => !removed.has(tag));
+  const existingTags = new Set(tags);
+
+  for (const tag of mutations.addedTags) {
+    if (existingTags.has(tag)) continue;
+
+    tags.push(tag);
+    existingTags.add(tag);
+  }
+
+  return tags;
 }
 
 async function syncShopifyVariantCommercialFieldsFromEbay(
@@ -1881,7 +1991,7 @@ async function syncShopifyMediaFromEbayImages(
     jobId: string;
   },
 ): Promise<ShopifyMediaSyncResult> {
-  const existingMediaIds = getProductMediaIds(product);
+  const existingImageMediaIds = getProductImageMediaIds(product);
   const sourceMedia = draftProduct.media;
   const stagedObjectPaths: string[] = [];
   const failedResults: ShopifyMediaSyncResult["failedResults"] = [];
@@ -1889,11 +1999,31 @@ async function syncShopifyMediaFromEbayImages(
   let stagedCreatedCount = 0;
   let deletedCount = 0;
 
-  if (existingMediaIds.length > 0 && sourceMedia.length > 0) {
+  if (
+    !shouldSyncExistingCatalogImages({
+      currentImageCount: existingImageMediaIds.length,
+      fieldPolicy: draftProduct.existingCatalogFieldPolicy,
+    })
+  ) {
+    return {
+      createdCount: 0,
+      deletedCount: 0,
+      directCreatedCount: 0,
+      failedResults: [],
+      preservedCount: existingImageMediaIds.length,
+      requestedCount: 0,
+      sourceImageUrls: [],
+      stagedCreatedCount: 0,
+      stagedObjectPaths,
+      status: "synced",
+    };
+  }
+
+  if (existingImageMediaIds.length > 0 && sourceMedia.length > 0) {
     const deleteResult = await deleteShopifyProductMediaFiles(
       admin,
       product.id,
-      existingMediaIds,
+      existingImageMediaIds,
     );
 
     if (deleteResult.status === "failed") {
@@ -3388,7 +3518,9 @@ function buildSyncBayProductSnapshot(input: {
       shopifyDescriptionHtml: input.result.product.descriptionHtml,
     }),
     ebayItemId: item.itemId,
-    imageCount: input.result.mediaSync.createdCount,
+    imageCount:
+      input.result.mediaSync.createdCount +
+      (input.result.mediaSync.preservedCount ?? 0),
     mappingId: input.mappingId,
     payload: {
       handle: input.draftProduct.product.handle,
@@ -3523,8 +3655,8 @@ function getFirstProductVariant(product: ShopifyDraftProductNode) {
   });
 }
 
-function getProductMediaIds(product: ShopifyDraftProductNode) {
-  return (product.media?.nodes ?? []).map((media) => media.id);
+function getProductImageMediaIds(product: ShopifyDraftProductNode) {
+  return getShopifyImageMediaIds(product.media?.nodes);
 }
 
 function formatShopifyGraphqlErrors(errors: Array<{ message: string }>) {

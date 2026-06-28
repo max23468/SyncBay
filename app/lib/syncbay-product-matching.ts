@@ -26,19 +26,24 @@ export interface ShopifyMatchCandidate {
   handle?: string | null;
   metafields?: ShopifyMatchMetafieldCandidate[];
   productGid: string;
+  shopifyImageCount?: number;
   sku?: string | null;
   tags?: string[];
   title?: string | null;
   variantGid?: string | null;
+  variantsTruncated?: boolean;
 }
 
 export interface ExistingProductMatchSuggestion {
   autoLinkable: boolean;
   confidence: MatchConfidence;
+  currentHandle?: string | null;
+  currentTags?: string[];
   productGid: string;
   reasonCodes: ExistingProductMatchReasonCode[];
   reasons: string[];
   score: number;
+  shopifyImageCount?: number;
   variantGid: string | null;
 }
 
@@ -48,6 +53,10 @@ const STRONG_AUTO_LINK_CODES = new Set<ExistingProductMatchReasonCode>([
   "sku_exact",
   "syncbay_metafield_item_id",
   "tag_item_id",
+]);
+const VARIANT_EXACT_AUTO_LINK_CODES = new Set<ExistingProductMatchReasonCode>([
+  "barcode_item_id",
+  "sku_exact",
 ]);
 
 export function buildExistingProductMatchSuggestions(input: {
@@ -107,12 +116,17 @@ export function buildExistingProductMatchSuggestions(input: {
 
     const confidence = getConfidence(score);
     const suggestion = {
-      autoLinkable: isAutoLinkable(confidence, reasonCodes),
+      autoLinkable: isAutoLinkable(confidence, reasonCodes, {
+        variantsTruncated: product.variantsTruncated === true,
+      }),
       confidence,
+      currentHandle: product.handle ?? null,
+      currentTags: product.tags ?? [],
       productGid: product.productGid,
       reasonCodes,
       reasons,
       score,
+      shopifyImageCount: product.shopifyImageCount ?? 0,
       variantGid: product.variantGid ?? null,
     };
     const existing = bestByProduct.get(product.productGid);
@@ -150,7 +164,15 @@ function getConfidenceLabel(confidence: MatchConfidence) {
 function isAutoLinkable(
   confidence: MatchConfidence,
   reasonCodes: ExistingProductMatchReasonCode[],
+  options: { variantsTruncated: boolean },
 ) {
+  if (
+    options.variantsTruncated &&
+    !reasonCodes.some((code) => VARIANT_EXACT_AUTO_LINK_CODES.has(code))
+  ) {
+    return false;
+  }
+
   return (
     confidence === "high" &&
     reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code))

@@ -1,7 +1,12 @@
 import type { ImportPreviewItem } from "../services/import-preview.server";
+// @ts-expect-error Node --experimental-strip-types resolves this pure module import.
+import * as existingCatalogFieldPolicy from "./syncbay-existing-catalog-field-policy.ts";
+import type { ExistingCatalogFieldPolicy } from "./syncbay-existing-catalog-field-policy";
 import type {
   ExistingProductMatchSuggestion,
 } from "./syncbay-product-matching";
+
+const { buildExistingCatalogFieldPolicy } = existingCatalogFieldPolicy;
 
 export type ExistingCatalogTakeoverStatus =
   | "applicabile"
@@ -38,6 +43,7 @@ export interface ExistingCatalogTakeoverReport {
 }
 
 export interface ExistingCatalogTakeoverRow {
+  fieldPolicy: ExistingCatalogFieldPolicy;
   itemId: string;
   matchSuggestion: ExistingProductMatchSuggestion | null;
   plannedOperations: ExistingCatalogPlannedOperation[];
@@ -63,6 +69,7 @@ export interface ExistingCatalogTakeoverApplyPlan {
 }
 
 export interface ExistingCatalogTakeoverApplyRow {
+  fieldPolicy: ExistingCatalogFieldPolicy;
   itemId: string;
   productGid: string;
   sku: string | null;
@@ -84,9 +91,14 @@ const APPLICABLE_PLANNED_OPERATIONS: ExistingCatalogPlannedOperation[] = [
 
 export function buildExistingCatalogTakeoverReport(input: {
   items: ImportPreviewItem[];
+  legacyTagsToRemove?: string[];
   shopDomain: string;
 }): ExistingCatalogTakeoverReport {
-  const rows = input.items.map(buildExistingCatalogTakeoverRow);
+  const rows = input.items.map((item) =>
+    buildExistingCatalogTakeoverRow(item, {
+      legacyTagsToRemove: input.legacyTagsToRemove ?? [],
+    }),
+  );
 
   return {
     rows,
@@ -116,6 +128,7 @@ export function buildExistingCatalogTakeoverApplyPlan(
     row.status === "applicabile" && row.productGid
       ? [
           {
+            fieldPolicy: row.fieldPolicy,
             itemId: row.itemId,
             productGid: row.productGid,
             sku: row.sku,
@@ -137,6 +150,7 @@ export function buildExistingCatalogTakeoverApplyPlan(
 
 function buildExistingCatalogTakeoverRow(
   item: ImportPreviewItem,
+  options: { legacyTagsToRemove: string[] },
 ): ExistingCatalogTakeoverRow {
   const blockingReasons = getBlockingReasons(item);
   const matchReasons = getMatchReasons(item.matchSuggestions);
@@ -150,6 +164,13 @@ function buildExistingCatalogTakeoverRow(
   });
 
   return {
+    fieldPolicy: buildExistingCatalogFieldPolicy({
+      currentHandle: matchSuggestion?.currentHandle ?? null,
+      currentTags: matchSuggestion?.currentTags ?? [],
+      legacyTagsToRemove: options.legacyTagsToRemove,
+      shopifyImageCount: matchSuggestion?.shopifyImageCount ?? 0,
+      syncbayLegacyTags: ["SyncBay", "Import preview", "eBay import pilot"],
+    }),
     itemId: item.itemId,
     matchSuggestion,
     plannedOperations:
