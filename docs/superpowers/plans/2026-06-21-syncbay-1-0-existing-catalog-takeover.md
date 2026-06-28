@@ -10,6 +10,33 @@
 
 ---
 
+## Stato Verificato Task 0-7 (2026-06-28)
+
+**Esito:** Task 0-7 sono completati al 100% per il perimetro previsto da questo
+piano: audit read-only, fondazione generica, preview live, matching, report,
+lettura Shopify paginata, apply `reuseOnly` e policy campi del takeover. Questo
+non equivale ad apply reale o go-live su Numisleo: Task 8 e Task 9 restano
+aperti prima della 1.0 pronta all'uso operativo.
+
+**Base verificata:** `main` a `3a298f5`, PR mergeate #301, #324, #325, #329,
+#330, #331, #332, #333 e #335, audit locale ignorato in
+`audits/numisleo.myshopify.com/20260621-2239/`.
+
+| Task | Stato | Evidenza | Limite esplicito |
+| --- | --- | --- | --- |
+| Task 0 | Completato | Audit read-only con report, riconciliazione, classificazione eccezioni, audit contenuti e freeze plan in `audits/numisleo.myshopify.com/20260621-2239/`; cartella audit ignorata dal repo via PR #301. | Chiuso come audit/read-only, non come apply o go-live reale. |
+| Task 1 | Completato | Modalità `new_products` / `existing_catalog`, normalizzazione e blocco import draft in `app/lib/syncbay-import-catalog-mode.ts` e `app/routes/app.import-preview.tsx`; PR #324/#325. | Nessuna scrittura catalogo introdotta in questo task. |
+| Task 2 | Completato | Reason code stabili, segnali forti, handle/tag/metafield e blocco auto-link su varianti troncate in `app/lib/syncbay-product-matching.ts`; PR #324/#333. | Titolo simile resta solo segnale da rivedere. |
+| Task 3 | Completato | Report `applicabile`, `da_rivedere`, `bloccante`, `gia_collegato` e apply plan puro in `app/lib/syncbay-existing-catalog-takeover.ts`; PR #324. | L'apply resta bloccato se il report contiene righe bloccanti. |
+| Task 4 | Completato | Loader Shopify paginato fino al limite MVP, normalizzazione prodotti e rilevazione varianti troncate in `app/services/shopify-existing-products.server.ts`; PR #330. | Il limite resta 2.000 prodotti per shop. |
+| Task 5 | Completato | Preview Trading API completa solo su richiesta live, report UI e disabilitazione creazione prodotti in modalità existing in `app/services/ebay-trading-preview.server.ts`, `app/services/syncbay.server.ts` e `app/routes/app.import-preview.tsx`; PR #329/#330. | Il tab non chiama eBay/Shopify per migliaia di prodotti all'apertura. |
+| Task 6 | Completato | Apply con conferma `COLLEGA`, claim mapping/metafield prima del job, payload `reuseOnly` e runner allineato in `app/services/syncbay.server.ts`, `app/services/shopify-draft-import.server.ts` e `app/services/sync-job-runner.server.ts`; PR #331/#332. | Se il prodotto Shopify esistente non viene riusato, la riga fallisce invece di creare duplicati. |
+| Task 7 | Completato | Policy campi generica con handle preservato, tag legacy su allowlist, immagini preservate quando Shopify ne ha già, e filtro media image-only in `app/lib/syncbay-existing-catalog-field-policy.ts` e import worker; PR #335. | Non cambia handle e non sostituisce immagini in massa. |
+
+**Verifiche fresche della revisione:** `npm run test:lib`, `npm run typecheck`,
+`npm run lint`, `npm run release:dry-run`; PR #335 mergeata con CI, React Doctor
+e Vercel verdi.
+
 ## Baseline Reale
 
 - `app/lib/syncbay-product-matching.ts` suggerisce già match conservativi con SKU, eBay ItemID su barcode e similarità titolo. Il risultato oggi è solo informativo e dice sempre "conferma manuale richiesta".
@@ -89,7 +116,7 @@
 - Modify after implementation only: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
 - Modify after implementation only: `docs/guides/onboarding-e-import.md`
 
-- [ ] **Step 1: creare cartella audit fuori repo**
+- [x] **Step 1: creare cartella audit fuori repo**
 
   Run:
 
@@ -102,7 +129,7 @@
 
   Expected: stampa un path fuori da `/Users/Matteo/Progetti/SyncBay`.
 
-- [ ] **Step 2: audit storefront e frontend**
+- [x] **Step 2: audit storefront e frontend**
 
   Obiettivo: capire cosa il cliente vede oggi e cosa non deve rompersi durante
   takeover. Usare strumenti in questo ordine:
@@ -124,7 +151,7 @@
   - collezioni automatiche visibili in navigazione;
   - problemi frontend bloccanti prima del takeover.
 
-- [ ] **Step 3: audit Shopify Admin e backend commerciale**
+- [x] **Step 3: audit Shopify Admin e backend commerciale**
 
   Usare Shopify CLI/Admin GraphQL in sola lettura. Query minime:
 
@@ -145,7 +172,7 @@
   - redirect esistenti e rischi SEO;
   - policy store rilevanti per privacy/termini.
 
-- [ ] **Step 4: audit app di sync precedente**
+- [x] **Step 4: audit app di sync precedente**
 
   Obiettivo: capire cosa scriveva la vecchia app e quali segnali lascia da
   esportare prima della disattivazione.
@@ -168,7 +195,7 @@
   - rischi se la vecchia app resta attiva durante apply;
   - momento consigliato di disattivazione.
 
-- [ ] **Step 5: audit eBay e catalogo sorgente**
+- [x] **Step 5: audit eBay e catalogo sorgente**
 
   Usare letture eBay già previste da SyncBay/CLI/script, senza scritture.
 
@@ -183,7 +210,7 @@
   - categorie e item specifics utili a product type/faccette;
   - listing chiusi/inattivi da mantenere Shopify esauriti secondo ADR 0011.
 
-- [ ] **Step 6: produrre report operativo redatto**
+- [x] **Step 6: produrre report operativo redatto**
 
   Creare fuori repo un file `findings/audit-summary.md` con:
 
@@ -216,7 +243,7 @@
   cliente. Nel repo può entrare solo una sintesi generica se cambia una regola
   SyncBay riusabile.
 
-- [ ] **Step 7: bloccare apply se l'audit è incompleto**
+- [x] **Step 7: bloccare apply se l'audit è incompleto**
 
   Prima di Task 6, verificare:
 
@@ -236,7 +263,7 @@
 - Modify: `app/routes/app.import-preview.tsx`
 - Modify: `app/services/syncbay.server.ts`
 
-- [ ] **Step 1: scrivere il test del normalizzatore**
+- [x] **Step 1: scrivere il test del normalizzatore**
 
   ```ts
   import assert from "node:assert/strict";
@@ -265,7 +292,7 @@
   });
   ```
 
-- [ ] **Step 2: verificare il fallimento**
+- [x] **Step 2: verificare il fallimento**
 
   Run:
 
@@ -275,7 +302,7 @@
 
   Expected: FAIL perché `syncbay-import-catalog-mode.ts` non esiste.
 
-- [ ] **Step 3: implementare il normalizzatore**
+- [x] **Step 3: implementare il normalizzatore**
 
   ```ts
   export type ImportCatalogMode = "existing_catalog" | "new_products";
@@ -299,7 +326,7 @@
   }
   ```
 
-- [ ] **Step 4: rendere `getImportWizardState` parametrico**
+- [x] **Step 4: rendere `getImportWizardState` parametrico**
 
   In `app/services/syncbay.server.ts`:
 
@@ -323,7 +350,7 @@
   proprietà `catalogMode` allo stesso livello di `draftImport`, `previewResult`
   e `previewSource`, senza rinominare gli altri campi.
 
-- [ ] **Step 5: leggere `catalogMode` dal loader**
+- [x] **Step 5: leggere `catalogMode` dal loader**
 
   In `app/routes/app.import-preview.tsx`:
 
@@ -344,7 +371,7 @@
   });
   ```
 
-- [ ] **Step 6: aggiungere il selettore UI senza cambiare comportamento**
+- [x] **Step 6: aggiungere il selettore UI senza cambiare comportamento**
 
   Usare `s-clickable-chip` o `s-button` con link querystring:
 
@@ -366,7 +393,7 @@
   </s-stack>
   ```
 
-- [ ] **Step 7: verifiche e commit**
+- [x] **Step 7: verifiche e commit**
 
   Run:
 
@@ -390,7 +417,7 @@
 - Modify: `app/lib/syncbay-product-matching.ts`
 - Modify: `app/lib/syncbay-product-matching.test.ts`
 
-- [ ] **Step 1: aggiungere test per metafield, handle e titolo non auto-linkabile**
+- [x] **Step 1: aggiungere test per metafield, handle e titolo non auto-linkabile**
 
   ```ts
   test("uses syncbay metafield item id as a strong match signal", () => {
@@ -456,7 +483,7 @@
   });
   ```
 
-- [ ] **Step 2: estendere tipi e scoring**
+- [x] **Step 2: estendere tipi e scoring**
 
   In `app/lib/syncbay-product-matching.ts`:
 
@@ -550,11 +577,11 @@
   }
   ```
 
-- [ ] **Step 3: mantenere compatibilità UI**
+- [x] **Step 3: mantenere compatibilità UI**
 
   Non rimuovere `reasons`. Le schermate esistenti possono continuare a usare copy italiano, mentre il report 1.0 userà `reasonCodes`.
 
-- [ ] **Step 4: verifiche e commit**
+- [x] **Step 4: verifiche e commit**
 
   Run:
 
@@ -579,7 +606,7 @@
 - Test: `app/lib/syncbay-existing-catalog-takeover.test.ts`
 - Modify: `app/services/import-preview.server.ts`
 
-- [ ] **Step 1: scrivere test per applicabile, da rivedere e bloccante**
+- [x] **Step 1: scrivere test per applicabile, da rivedere e bloccante**
 
   ```ts
   import assert from "node:assert/strict";
@@ -679,7 +706,7 @@
 
   Nel test creare un helper locale `makePreviewItem` che costruisce solo i campi usati dal report; non usare dati reali.
 
-- [ ] **Step 2: implementare tipi e regole pure**
+- [x] **Step 2: implementare tipi e regole pure**
 
   ```ts
   import type {
@@ -736,7 +763,7 @@
   }
   ```
 
-- [ ] **Step 3: aggiungere `existingCatalogTakeover` alla preview**
+- [x] **Step 3: aggiungere `existingCatalogTakeover` alla preview**
 
   In `ImportPreviewResult` aggiungere campo opzionale:
 
@@ -746,7 +773,7 @@
 
   In `addExistingProductMatchSuggestions`, non costruire ancora il report: limitarsi a mantenere `matchSuggestions`. Il report verrà creato in `getImportWizardState`, perché lì è noto `catalogMode`.
 
-- [ ] **Step 4: verifiche e commit**
+- [x] **Step 4: verifiche e commit**
 
   Run:
 
@@ -771,7 +798,7 @@
 - Test: `app/lib/syncbay-product-matching.test.ts`
 - Modify: `app/services/syncbay.server.ts`
 
-- [ ] **Step 1: estrarre il loader da `syncbay.server.ts`**
+- [x] **Step 1: estrarre il loader da `syncbay.server.ts`**
 
   Creare `app/services/shopify-existing-products.server.ts`:
 
@@ -813,7 +840,7 @@
   }
   ```
 
-- [ ] **Step 2: usare query paginata con campi utili al takeover**
+- [x] **Step 2: usare query paginata con campi utili al takeover**
 
   ```ts
   const EXISTING_PRODUCTS_QUERY = `#graphql
@@ -855,7 +882,7 @@
 
   `fetchExistingProductsPage` deve tornare `[]` su risposta GraphQL non ok o con errori, senza stampare payload sensibili.
 
-- [ ] **Step 3: normalizzare i prodotti**
+- [x] **Step 3: normalizzare i prodotti**
 
   Ogni variante produce un `ShopifyMatchCandidate`; prodotti senza varianti producono comunque una riga prodotto con `variantGid: null`.
 
@@ -905,11 +932,11 @@
   }
   ```
 
-- [ ] **Step 4: sostituire la funzione privata**
+- [x] **Step 4: sostituire la funzione privata**
 
   In `app/services/syncbay.server.ts`, rimuovere la funzione privata `loadExistingShopifyProductsForMatching` e importare quella nuova.
 
-- [ ] **Step 5: verifiche e commit**
+- [x] **Step 5: verifiche e commit**
 
   Run:
 
@@ -935,7 +962,7 @@
 - Modify: `app/routes/app.import-preview.tsx`
 - Modify: `app/lib/syncbay-existing-catalog-takeover.ts`
 
-- [ ] **Step 1: esporre il recupero completo da Trading API**
+- [x] **Step 1: esporre il recupero completo da Trading API**
 
   In `app/services/ebay-trading-preview.server.ts`, aggiungere un helper
   esportato che usa funzioni già presenti (`getEbayTradingCatalogImportPlan` e
@@ -978,7 +1005,7 @@
   }
   ```
 
-- [ ] **Step 2: costruire il report solo dopo richiesta live**
+- [x] **Step 2: costruire il report solo dopo richiesta live**
 
   In `app/services/syncbay.server.ts`, importare
   `getEbayTradingCatalogImportPreview` e creare un wrapper locale che recupera
@@ -1040,7 +1067,7 @@
   `getEbayTradingCandidatesByItemIds`; non deve fermarsi alla prima pagina
   Inventory API.
 
-- [ ] **Step 3: disabilitare l'azione di creazione prodotti in modalità existing**
+- [x] **Step 3: disabilitare l'azione di creazione prodotti in modalità existing**
 
   In `DraftImportSection`, se `wizard.catalogMode === "existing_catalog"`:
 
@@ -1049,7 +1076,7 @@
   - disabilitare se `existingCatalogTakeover.summary.applicable === 0`;
   - disabilitare se `existingCatalogTakeover.summary.blocked > 0`.
 
-- [ ] **Step 4: aggiungere pannello report**
+- [x] **Step 4: aggiungere pannello report**
 
   Creare `ExistingCatalogTakeoverSection` in `app/routes/app.import-preview.tsx`:
 
@@ -1076,7 +1103,7 @@
   }
   ```
 
-- [ ] **Step 5: mostrare status riga nei dettagli preview**
+- [x] **Step 5: mostrare status riga nei dettagli preview**
 
   In `MatchSuggestionDetails`, se esiste `existingCatalogTakeover`, cercare la riga per `item.itemId` e mostrare:
 
@@ -1087,7 +1114,7 @@
   </s-text>
   ```
 
-- [ ] **Step 6: verifiche e commit**
+- [x] **Step 6: verifiche e commit**
 
   Run:
 
@@ -1114,7 +1141,7 @@
 - Modify: `app/routes/app.import-preview.tsx`
 - Test: `app/lib/syncbay-existing-catalog-takeover.test.ts`
 
-- [ ] **Step 1: aggiungere `reuseOnly` all'import draft**
+- [x] **Step 1: aggiungere `reuseOnly` all'import draft**
 
   In `createShopifyDraftProductsIfEnabled`:
 
@@ -1139,7 +1166,7 @@
 
   Propagare a `createShopifyDraftProductSafely` e `createShopifyDraftProduct`.
 
-- [ ] **Step 2: impedire duplicati se `reuseOnly` è attivo**
+- [x] **Step 2: impedire duplicati se `reuseOnly` è attivo**
 
   In `createShopifyDraftProduct`:
 
@@ -1153,7 +1180,7 @@
   }
   ```
 
-- [ ] **Step 3: creare claim mapping + metafield prima del job**
+- [x] **Step 3: creare claim mapping + metafield prima del job**
 
   In `app/services/syncbay.server.ts`, aggiungere `startExistingCatalogTakeoverJobs(session, admin, input)`.
 
@@ -1182,7 +1209,7 @@
   }
   ```
 
-- [ ] **Step 4: propagare `reuseOnly` nel runner**
+- [x] **Step 4: propagare `reuseOnly` nel runner**
 
   In `app/services/sync-job-runner.server.ts`, aggiungere un helper accanto a
   `getStringFromPayload`:
@@ -1209,7 +1236,7 @@
   });
   ```
 
-- [ ] **Step 5: aggiungere action UI**
+- [x] **Step 5: aggiungere action UI**
 
   In `app/routes/app.import-preview.tsx`:
 
@@ -1248,7 +1275,7 @@
   }
   ```
 
-- [ ] **Step 6: verifiche e commit**
+- [x] **Step 6: verifiche e commit**
 
   Run:
 
@@ -1276,7 +1303,7 @@
 - Modify: `app/lib/syncbay-existing-catalog-takeover.ts`
 - Modify: `app/routes/app.import-preview.tsx`
 
-- [ ] **Step 1: testare policy URL e tag**
+- [x] **Step 1: testare policy URL e tag**
 
   ```ts
   import assert from "node:assert/strict";
@@ -1311,7 +1338,7 @@
   });
   ```
 
-- [ ] **Step 2: implementare helper policy**
+- [x] **Step 2: implementare helper policy**
 
   ```ts
   export function buildExistingCatalogFieldPolicy(input: {
@@ -1347,7 +1374,7 @@
   }
   ```
 
-- [ ] **Step 3: includere policy nel report**
+- [x] **Step 3: includere policy nel report**
 
   Ogni riga `ExistingCatalogTakeoverRow` deve includere:
 
@@ -1364,7 +1391,7 @@
   </s-text>
   ```
 
-- [ ] **Step 4: aggiungere input allowlist tag legacy nell'apply**
+- [x] **Step 4: aggiungere input allowlist tag legacy nell'apply**
 
   In UI, mostrare un campo testo opzionale:
 
@@ -1378,7 +1405,7 @@
 
   In action, normalizzare con split su virgola, trim, dedupe, massimo 50 tag.
 
-- [ ] **Step 5: verifiche e commit**
+- [x] **Step 5: verifiche e commit**
 
   Run:
 
@@ -1542,15 +1569,17 @@
 
 ## Sequenza Di Esecuzione Consigliata
 
-0. Task 0 prima di qualunque apply reale: audit completo read-only dello store
-   target e report operativo fuori repo.
-1. Task 1-3 in una PR piccola: modalità + matching + report dry-run, senza scritture.
-2. Task 4-5 in una PR: caricamento Shopify paginato e UI dry-run completa.
-3. Task 6-7 in una PR runtime critica: apply `reuseOnly`, tag policy e runner.
-4. Task 8 in una PR docs/UI legale separata.
-5. Task 9 come pubblicazione/release/deploy e dry-run read-only sul primo store reale.
+0. Completato: Task 0 audit read-only dello store target e report operativo
+   fuori repo.
+1. Completato: Task 1-3 modalità + matching + report dry-run, senza scritture.
+2. Completato: Task 4-5 caricamento Shopify paginato e UI dry-run completa.
+3. Completato: Task 6-7 apply `reuseOnly`, tag policy e runner.
+4. Prossimo: Task 8 in una PR docs/UI legale separata.
+5. Dopo Task 8: Task 9 come pubblicazione/release/deploy e dry-run read-only
+   sul primo store reale.
 
-Questa sequenza permette di fermarsi dopo il dry-run se emergono dati sporchi, senza aver ancora dato a SyncBay la possibilità di scrivere sul catalogo reale.
+La capacità di takeover generica è pronta nel codice, ma il go-live resta
+bloccato finché Task 8 e Task 9 non sono chiusi.
 
 ## Copertura Decisioni Grill
 
