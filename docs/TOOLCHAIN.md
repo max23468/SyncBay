@@ -109,6 +109,7 @@ Regole d'uso:
 | Coverage moduli puri          | `npm run coverage:lib`                                                                      |
 | Validazione Prisma            | `npm run prisma:validate`                                                                   |
 | Advisor Supabase              | `npm run db:verify`                                                                         |
+| Servizi HTTP Supabase         | `npm run supabase:services`                                                                 |
 | Doctor locale                 | `npm run doctor:local`                                                                      |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
@@ -133,6 +134,10 @@ Regole d'uso:
 | Release locale                | `npm run release`                                                                           |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
+`npm run supabase:services` verifica PostgREST, Auth e Storage via HTTP con
+anon/publishable key Supabase, senza stampare chiavi. Serve a distinguere un
+errore locale di chiamata anonima (`401 missing_api_key`) da restrizioni reali
+del progetto, per esempio `402 exceed_egress_quota`.
 `npm run doctor:local` verifica toolchain Node/npm, `engine-strict`, file base
 e presenza delle env SyncBay senza stampare valori sensibili. Usa
 `--strict-env` quando stai preparando runtime live locale e vuoi bloccare anche

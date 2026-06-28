@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Tooling: aggiunta una diagnostica HTTP Supabase che usa anon/publishable key
+  senza stamparla, distinguendo `401 missing_api_key` da restrizioni provider
+  come `402 exceed_egress_quota`.
+
 ## [0.49.2] — 2026-06-28
 
 ### Correzioni
