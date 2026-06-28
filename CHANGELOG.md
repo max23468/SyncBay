@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Toolchain: aggiornato il pin Node/Docker a `24.18.0`, allineata la CI alla
+  `.node-version` e aggiornato `actions/github-script` a v9 per il gate React
+  Doctor su `main`.
 - Tooling: aggiunta una diagnostica HTTP Supabase che usa anon/publishable key
   senza stamparla, distinguendo `401 missing_api_key` da restrizioni provider
   come `402 exceed_egress_quota`.

@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 24.15.0
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dipendenze deterministico
