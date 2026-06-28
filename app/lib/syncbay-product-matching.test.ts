@@ -154,6 +154,33 @@ test("keeps the strongest variant match for each Shopify product", () => {
   assert.equal(suggestions[0]?.confidence, "high");
 });
 
+test("does not auto link product-level matches when variant candidates are truncated", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: {
+      itemId: "987654",
+      sku: "HIDDEN-SKU",
+      title: "Moneta con molte varianti",
+    },
+    shopifyProducts: [
+      {
+        handle: "moneta-con-molte-varianti-987654",
+        productGid: "gid://shopify/Product/9",
+        sku: "VISIBLE-SKU",
+        title: "Moneta con molte varianti",
+        variantGid: "gid://shopify/ProductVariant/91",
+        variantsTruncated: true,
+      },
+    ],
+  });
+
+  assert.equal(suggestions[0]?.confidence, "high");
+  assert.equal(suggestions[0]?.autoLinkable, false);
+  assert.deepEqual(suggestions[0]?.reasonCodes, [
+    "handle_item_id",
+    "title_very_similar",
+  ]);
+});
+
 
 test("formats match suggestion summaries without implying automatic linking", () => {
   assert.equal(

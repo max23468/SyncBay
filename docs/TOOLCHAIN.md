@@ -31,7 +31,7 @@ forzare installazioni o downgrade dentro la repo.
 
 | Area                        | Tool                                  |
 | --------------------------- | ------------------------------------- |
-| Shopify app                 | Shopify CLI `4.2.0`                   |
+| Shopify app                 | Shopify CLI `4.3.0`                   |
 | Frontend/backend app        | React Router, React, TypeScript, Vite |
 | Hosting previsto            | Vercel                                |
 | Database                    | Supabase Postgres                     |

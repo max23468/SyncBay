@@ -96,6 +96,7 @@ import {
   buildExistingCatalogTakeoverReport,
   type ExistingCatalogTakeoverApplyRow,
 } from "../lib/syncbay-existing-catalog-takeover";
+import { serializeExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
 import type { ImportCatalogMode } from "../lib/syncbay-import-catalog-mode";
 import type { ImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import { buildCatalogHealthCenter } from "../lib/syncbay-catalog-health-center";
@@ -1708,7 +1709,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
 export async function startExistingCatalogTakeoverJobs(
   session: ShopifySessionLike,
   admin: ShopifyAdminGraphqlClient,
-  input: { confirmation: string },
+  input: { confirmation: string; legacyTagsToRemove?: string[] },
 ) {
   const shop = await ensureShopForSession(session);
   const importProductStatus = normalizeImportProductStatus(
@@ -1743,7 +1744,13 @@ export async function startExistingCatalogTakeoverJobs(
     catalogMode: "existing_catalog",
     previewLoadMode: "live",
   });
-  const report = wizard.previewResult.existingCatalogTakeover;
+  const report = wizard.previewResult.existingCatalogTakeover
+    ? buildExistingCatalogTakeoverReport({
+        items: wizard.previewResult.items,
+        legacyTagsToRemove: input.legacyTagsToRemove ?? [],
+        shopDomain: wizard.previewResult.existingCatalogTakeover.shopDomain,
+      })
+    : null;
   const dryRunBlockers = [
     wizard.previewSource.errorMessage
       ? `Dry-run catalogo esistente non completato: ${wizard.previewSource.errorMessage}`
@@ -1804,6 +1811,9 @@ export async function startExistingCatalogTakeoverJobs(
 
   const draftLimit = getDraftImportLimit();
   const batches = chunkArray(applyPlan.ebayItemIds, draftLimit);
+  const applyRowsByItemId = new Map(
+    applyPlan.rows.map((row) => [row.itemId, row]),
+  );
   const now = new Date();
   const catalogImportRunId = buildCatalogImportRunId({
     now,
@@ -1821,6 +1831,10 @@ export async function startExistingCatalogTakeoverJobs(
       catalogImportRunId,
       draftLimit,
       ebayItemIds,
+      fieldPoliciesByItemId: buildExistingCatalogFieldPoliciesByItemId({
+        ebayItemIds,
+        rowsByItemId: applyRowsByItemId,
+      }),
       importProductStatus,
       now,
       reuseOnly: true,
@@ -3412,6 +3426,10 @@ async function upsertCatalogImportBatchJob(input: {
   catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
+  fieldPoliciesByItemId?: Record<
+    string,
+    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
+  >;
   importProductStatus: ImportProductStatus;
   now: Date;
   reuseOnly: boolean;
@@ -3506,6 +3524,10 @@ function buildCatalogImportBatchPayload(input: {
   catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
+  fieldPoliciesByItemId?: Record<
+    string,
+    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
+  >;
   importProductStatus: ImportProductStatus;
   reuseOnly: boolean;
   shopId: string;
@@ -3513,6 +3535,10 @@ function buildCatalogImportBatchPayload(input: {
   totalAvailable: number | null;
   totalPlanned: number;
 }) {
+  const existingCatalogFieldPoliciesByItemId = input.fieldPoliciesByItemId
+    ? serializeExistingCatalogFieldPoliciesByItemId(input.fieldPoliciesByItemId)
+    : null;
+
   return {
     batchCount: input.batchCount,
     batchIndex: input.batchIndex + 1,
@@ -3520,6 +3546,9 @@ function buildCatalogImportBatchPayload(input: {
     catalogImportRunId: input.catalogImportRunId,
     draftLimit: input.draftLimit,
     ebayItemIds: input.ebayItemIds,
+    ...(input.reuseOnly && existingCatalogFieldPoliciesByItemId
+      ? { existingCatalogFieldPoliciesByItemId }
+      : {}),
     importProductStatus: input.importProductStatus,
     marketplaceId: getEbayMarketplaceId(),
     previewMode: "live",
@@ -3539,11 +3568,18 @@ function buildCatalogImportRunId(input: { now: Date; shopId: string }) {
 function buildCatalogImportBatchIdempotencyKey(input: {
   batchIndex: number;
   ebayItemIds: string[];
+  fieldPoliciesByItemId?: Record<
+    string,
+    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
+  >;
   importProductStatus: ImportProductStatus;
   reuseOnly: boolean;
   shopId: string;
   source: "existing_catalog_takeover" | "trading_api";
 }) {
+  const existingCatalogFieldPoliciesByItemId = input.fieldPoliciesByItemId
+    ? serializeExistingCatalogFieldPoliciesByItemId(input.fieldPoliciesByItemId)
+    : {};
   const hash = createHash("sha256")
     .update(
       JSON.stringify({
@@ -3553,7 +3589,11 @@ function buildCatalogImportBatchIdempotencyKey(input: {
         marketplaceId: getEbayMarketplaceId(),
         shopId: input.shopId,
         ...(input.reuseOnly
-          ? { reuseOnly: true, source: input.source }
+          ? {
+              existingCatalogFieldPoliciesByItemId,
+              reuseOnly: true,
+              source: input.source,
+            }
           : {}),
       }),
     )
@@ -3561,6 +3601,18 @@ function buildCatalogImportBatchIdempotencyKey(input: {
     .slice(0, 20);
 
   return `catalog-import-batch:${input.shopId}:${hash}`;
+}
+
+function buildExistingCatalogFieldPoliciesByItemId(input: {
+  ebayItemIds: string[];
+  rowsByItemId: Map<string, ExistingCatalogTakeoverApplyRow>;
+}) {
+  return Object.fromEntries(
+    input.ebayItemIds.flatMap((itemId) => {
+      const row = input.rowsByItemId.get(itemId);
+      return row ? [[itemId, row.fieldPolicy]] : [];
+    }),
+  );
 }
 
 function chunkArray<T>(items: T[], size: number) {

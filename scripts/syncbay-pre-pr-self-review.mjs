@@ -4,6 +4,7 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 const DEFAULT_BASE = "origin/main";
+const DOCS_ONLY_AREA_IDS = new Set(["documentazione", "release_governance"]);
 
 const GENERAL_REVIEW_QUESTIONS = [
   "La diagnosi è provata nel codice o nei test, oppure sto seguendo un'ipotesi non verificata?",
@@ -157,22 +158,27 @@ const AREA_DEFINITIONS = [
 const RISK_ORDER = { basso: 1, medio: 2, alto: 3 };
 
 if (isCliEntrypoint()) {
-  const args = parseArgs(process.argv.slice(2));
-  const changedFiles = readChangedFiles(args.base);
-  const dirtyFiles = readDirtyFiles();
-  const report = buildPrePrSelfReview({
-    base: args.base,
-    changedFiles,
-    dirtyFiles,
-  });
+  try {
+    const args = parseArgs(process.argv.slice(2));
+    const changedFiles = readChangedFiles(args.base);
+    const dirtyFiles = readDirtyFiles();
+    const report = buildPrePrSelfReview({
+      base: args.base,
+      changedFiles,
+      dirtyFiles,
+    });
 
-  if (args.json) {
-    console.log(JSON.stringify(report, null, 2));
-  } else {
-    printPrePrSelfReview(report);
+    if (args.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printPrePrSelfReview(report);
+    }
+
+    process.exit(report.ok ? 0 : 1);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
   }
-
-  process.exit(report.ok ? 0 : 1);
 }
 
 export function buildPrePrSelfReview({
@@ -181,26 +187,47 @@ export function buildPrePrSelfReview({
   dirtyFiles = [],
 }) {
   const files = dedupeFiles([...(changedFiles ?? []), ...dirtyFiles]);
+  const fileClassifications = files.map((file) => ({
+    definitions: AREA_DEFINITIONS.filter((definition) =>
+      definition.match(file.path),
+    ),
+    file,
+  }));
   const detectedDefinitions = AREA_DEFINITIONS.filter((definition) =>
-    files.some((file) => definition.match(file.path)),
+    fileClassifications.some(({ definitions }) =>
+      definitions.includes(definition),
+    ),
   );
   const detectedAreas = detectedDefinitions.map((definition) => definition.id);
+  const unmatchedFiles = fileClassifications
+    .filter(({ definitions }) => definitions.length === 0)
+    .map(({ file }) => file.path);
   const docsOnly =
     files.length > 0 &&
-    detectedAreas.length > 0 &&
-    detectedAreas.every((area) =>
-      ["documentazione", "release_governance"].includes(area),
+    fileClassifications.every(
+      ({ definitions }) =>
+        definitions.length > 0 &&
+        definitions.every((definition) =>
+          DOCS_ONLY_AREA_IDS.has(definition.id),
+        ),
     );
+  const detectedRiskLevel = getHighestRisk(detectedDefinitions);
   const riskLevel = files.length === 0
     ? "basso"
     : docsOnly
       ? "basso"
-      : getHighestRisk(detectedDefinitions);
+      : unmatchedFiles.length > 0 &&
+          RISK_ORDER[detectedRiskLevel] < RISK_ORDER.medio
+        ? "medio"
+        : detectedRiskLevel;
   const suggestedChecks = docsOnly
     ? ["git diff --check"]
     : unique([
         "git diff --check",
         ...detectedDefinitions.flatMap((definition) => definition.checks),
+        ...(unmatchedFiles.length > 0
+          ? ["npm run typecheck", "npm run lint", "npm run build"]
+          : []),
       ]);
   const reviewQuestions = unique([
     ...GENERAL_REVIEW_QUESTIONS,
@@ -218,6 +245,11 @@ export function buildPrePrSelfReview({
   if (dirtyFiles.length > 0) {
     warnings.push(
       "Il report include file staged/unstaged: prima della PR congela il diff o dichiarali esplicitamente.",
+    );
+  }
+  if (unmatchedFiles.length > 0) {
+    warnings.push(
+      `File non classificati dal gate pre-PR: ${unmatchedFiles.join(", ")}. Verifica manualmente lo scope e mantieni typecheck, lint e build nella corsia minima.`,
     );
   }
 
@@ -321,7 +353,14 @@ function runGit(gitArgs) {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-  if (result.status !== 0) return "";
+  if (result.status !== 0) {
+    const details =
+      result.stderr.trim() ||
+      result.stdout.trim() ||
+      `exit code ${result.status ?? "sconosciuto"}`;
+
+    throw new Error(`git ${gitArgs.join(" ")} non riuscito: ${details}`);
+  }
 
   return result.stdout.trimEnd();
 }

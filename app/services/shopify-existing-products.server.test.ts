@@ -167,6 +167,39 @@ test("caps variant candidates per product before matching", async () => {
   assert.equal(products.at(-1)?.sku, "SET-10");
 });
 
+test("marks variant candidates as truncated when Shopify has more variants", async () => {
+  const admin = {
+    async graphql() {
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "set-varianti-1001",
+                sku: "SET-1",
+                title: "Set varianti",
+                variantId: "10",
+                variantPageInfoHasNextPage: true,
+                variantSkus: ["SET-1", "SET-2"],
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 1,
+  });
+
+  assert.deepEqual(
+    products.map((product) => product.variantsTruncated),
+    [true, true],
+  );
+});
+
 function makeProductNode(
   id: string,
   input: {
@@ -176,6 +209,7 @@ function makeProductNode(
     tags?: string[];
     title: string;
     variantId: string;
+    variantPageInfoHasNextPage?: boolean;
     variantSkus?: string[];
   },
 ) {
@@ -195,6 +229,9 @@ function makeProductNode(
         id: `gid://shopify/ProductVariant/${Number(input.variantId) + index}`,
         sku,
       })),
+      pageInfo: {
+        hasNextPage: input.variantPageInfoHasNextPage ?? false,
+      },
     },
   };
 }

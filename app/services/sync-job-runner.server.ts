@@ -14,6 +14,7 @@ import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
+import { parseExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
 import {
   SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL,
   getAlignedOpenConflictFields,
@@ -1314,6 +1315,8 @@ async function runImportCatalogJob(job: DueSyncJob) {
     admin,
     catalogImportRunId: getCatalogImportRunId(job.payload),
     defaultLocationGid: job.shop.defaultLocationGid,
+    existingCatalogFieldPoliciesByItemId:
+      getExistingCatalogFieldPoliciesByItemId(job.payload),
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
@@ -3053,6 +3056,14 @@ function getCatalogImportRunId(payload: Prisma.JsonValue | null) {
   return typeof catalogImportRunId === "string" && catalogImportRunId.trim()
     ? catalogImportRunId
     : null;
+}
+
+function getExistingCatalogFieldPoliciesByItemId(
+  payload: Prisma.JsonValue | null,
+) {
+  return parseExistingCatalogFieldPoliciesByItemId(
+    getJsonObject(payload)?.existingCatalogFieldPoliciesByItemId,
+  );
 }
 
 async function getConnectedEbayConnection(job: DueSyncJob) {

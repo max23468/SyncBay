@@ -19,6 +19,7 @@ import {
   getImportedProductSingularLabel,
 } from "../lib/import-product-status";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
 import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
   getCatalogModeDraftImportBlocker,
@@ -199,6 +200,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (intent === "applyExistingCatalogTakeover") {
     const result = await startExistingCatalogTakeoverJobs(session, admin, {
       confirmation: String(formData.get("confirmation") ?? ""),
+      legacyTagsToRemove: parseExistingCatalogLegacyTagsToRemove(
+        formData.get("legacyTagsToRemove"),
+      ),
     });
 
     return Response.json(
@@ -1009,6 +1013,13 @@ function MatchSuggestionDetails({
                 .
               </s-text>
             ) : null}
+            <s-unordered-list>
+              {formatExistingCatalogFieldPolicy(takeoverRow.fieldPolicy).map(
+                (policyLine) => (
+                  <s-list-item key={policyLine}>{policyLine}</s-list-item>
+                ),
+              )}
+            </s-unordered-list>
           </>
         ) : null}
       </s-stack>
@@ -1062,6 +1073,10 @@ function ExistingCatalogTakeoverSection({
         <s-text color="subdued">
           SyncBay collega solo righe con segnali forti. I casi incerti restano
           da rivedere e non vengono scritti dalla simulazione.
+        </s-text>
+        <s-text color="subdued">
+          Le collezioni automatiche non vengono modificate: SyncBay aggiorna
+          solo i campi prodotto usati dalle regole esistenti.
         </s-text>
       </s-stack>
     </s-section>
@@ -1429,6 +1444,17 @@ function DraftImportSection({
             value="applyExistingCatalogTakeover"
           />
           <input type="hidden" name="confirmation" value="COLLEGA" />
+          <s-stack gap="small">
+            <s-text-field
+              label="Tag legacy da rimuovere"
+              name="legacyTagsToRemove"
+              placeholder="Tag esatto 1, Tag esatto 2"
+            ></s-text-field>
+            <s-text color="subdued">
+              Le collezioni automatiche non vengono modificate: SyncBay aggiorna
+              solo i campi prodotto usati dalle regole esistenti.
+            </s-text>
+          </s-stack>
           <s-button
             type="submit"
             variant="primary"
@@ -1818,6 +1844,32 @@ function formatExistingCatalogOperation(value: string) {
   };
 
   return labels[value] ?? value;
+}
+
+function formatExistingCatalogFieldPolicy(
+  policy: NonNullable<
+    NonNullable<
+      WizardState["previewResult"]["existingCatalogTakeover"]
+    >["rows"][number]["fieldPolicy"]
+  >,
+) {
+  const handleLabel = policy.handle.currentHandle
+    ? `URL preservato: ${policy.handle.currentHandle}`
+    : "URL Shopify preservato se presente";
+  const imageLabel =
+    policy.images.operation === "preserve"
+      ? "Immagini Shopify esistenti preservate"
+      : "Immagini eBay aggiunte solo se il prodotto Shopify non ha immagini";
+  const tagLabels = [
+    policy.tags.add.length > 0
+      ? `Tag aggiunti: ${policy.tags.add.join(", ")}`
+      : "Nessun tag SyncBay da aggiungere",
+    policy.tags.remove.length > 0
+      ? `Tag legacy rimossi: ${policy.tags.remove.join(", ")}`
+      : "Nessun tag legacy rimosso automaticamente",
+  ];
+
+  return [handleLabel, imageLabel, ...tagLabels];
 }
 
 function formatExistingCatalogReason(value: string) {

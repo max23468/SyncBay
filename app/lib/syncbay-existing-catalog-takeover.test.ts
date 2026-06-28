@@ -142,10 +142,66 @@ test("builds a reuse-only apply plan from applicable rows only", () => {
   assert.deepEqual(plan.ebayItemIds, ["1001"]);
   assert.equal(plan.rows.length, 1);
   assert.deepEqual(plan.rows[0], {
+    fieldPolicy: {
+      handle: {
+        currentHandle: null,
+        operation: "preserve",
+        redirectRequired: false,
+      },
+      images: {
+        operation: "sync_from_ebay_if_available",
+      },
+      tags: {
+        add: ["Negozio eBay"],
+        preserve: [],
+        remove: [],
+      },
+    },
     itemId: "1001",
     productGid: "gid://shopify/Product/1",
     sku: "SKU-1001",
     variantGid: "gid://shopify/ProductVariant/11",
+  });
+});
+
+test("adds field policies to takeover rows from Shopify match metadata", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        itemId: "1004",
+        matchSuggestions: [
+          {
+            ...makeAutoMatch({
+              productGid: "gid://shopify/Product/4",
+              variantGid: "gid://shopify/ProductVariant/44",
+            }),
+            currentHandle: "moneta-rara-1004",
+            currentTags: ["Vecchia app", "Monete rare"],
+            shopifyImageCount: 0,
+          },
+        ],
+        priceAmount: 12,
+        quantity: 1,
+      }),
+    ],
+    legacyTagsToRemove: ["Vecchia app"],
+    shopDomain: "example.myshopify.com",
+  });
+
+  assert.deepEqual(report.rows[0]?.fieldPolicy, {
+    handle: {
+      currentHandle: "moneta-rara-1004",
+      operation: "preserve",
+      redirectRequired: false,
+    },
+    images: {
+      operation: "sync_from_ebay_if_available",
+    },
+    tags: {
+      add: ["Negozio eBay"],
+      preserve: ["Monete rare"],
+      remove: ["Vecchia app"],
+    },
   });
 });
 

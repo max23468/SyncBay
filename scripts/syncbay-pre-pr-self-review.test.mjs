@@ -1,11 +1,18 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   buildPrePrSelfReview,
   parseNameStatusDiff,
   parseShortStatus,
 } from "./syncbay-pre-pr-self-review.mjs";
+
+const SCRIPT_PATH = fileURLToPath(
+  new URL("./syncbay-pre-pr-self-review.mjs", import.meta.url),
+);
+const REPO_ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 test("builds SyncBay-specific review prompts for existing catalog runtime diffs", () => {
   const review = buildPrePrSelfReview({
@@ -61,6 +68,43 @@ test("keeps docs-only diffs on the lightweight verification lane", () => {
       question.includes("decisione operativa stabile"),
     ),
   );
+});
+
+test("does not classify docs plus unknown files as docs-only", () => {
+  const review = buildPrePrSelfReview({
+    base: "origin/main",
+    changedFiles: [
+      { path: "docs/TOOLCHAIN.md", status: "M" },
+      { path: "app/routes.ts", status: "M" },
+    ],
+    dirtyFiles: [],
+  });
+
+  assert.equal(review.riskLevel, "medio");
+  assert.ok(review.suggestedChecks.includes("npm run typecheck"));
+  assert.ok(review.suggestedChecks.includes("npm run lint"));
+  assert.ok(review.suggestedChecks.includes("npm run build"));
+  assert.ok(
+    review.warnings.some((warning) =>
+      warning.includes("File non classificati"),
+    ),
+  );
+});
+
+test("fails the CLI when the requested base ref is missing", () => {
+  const missingBase = "refs/heads/syncbay-missing-base-for-test";
+  const result = spawnSync(
+    process.execPath,
+    [SCRIPT_PATH, "--base", missingBase, "--json"],
+    {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    },
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /git diff .* non riuscito/);
+  assert.match(result.stderr, /syncbay-missing-base-for-test/);
 });
 
 test("parses git name-status output including renames", () => {
