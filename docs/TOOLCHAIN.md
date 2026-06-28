@@ -7,16 +7,16 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Area                      | Valore                                        |
 | ------------------------- | --------------------------------------------- |
 | Runtime principale        | Node.js                                       |
-| Versione locale preferita | `.node-version` = `24.16.0`                   |
+| Versione locale preferita | `.node-version` = `24.18.0`                   |
 | Range supportato          | `package.json` `engines.node` = `>=24.15 <25` |
 | Enforcement engine        | `.npmrc` con `engine-strict=true`             |
 | Package manager           | `npm@11.17.0`                                 |
 | Lockfile                  | `package-lock.json`                           |
-| Immagine Docker base      | `node:24.16.0-alpine`                         |
+| Immagine Docker base      | `node:24.18.0-alpine`                         |
 
 Il floor Node `>=24.15` è richiesto dalla catena React Doctor tramite `ini@7`;
 non abbassarlo senza cambiare strategia sul quality gate. La base Docker è
-pinnata a Node 24.16.0 per evitare drift sotto il floor richiesto da `.npmrc`
+pinnata a Node 24.18.0 per evitare drift sotto il floor richiesto da `.npmrc`
 con `engine-strict=true`. Il package manager canonico è dichiarato in
 `package.json` come `npm@11.17.0`.
 

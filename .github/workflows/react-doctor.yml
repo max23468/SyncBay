@@ -44,7 +44,7 @@ jobs:
         continue-on-error: true
         uses: actions/setup-node@v6
         with:
-          node-version: 24.15.0
+          node-version-file: .node-version
           cache: npm
 
       - name: Installa dipendenze per React Doctor full
@@ -61,7 +61,7 @@ jobs:
 
       - name: Pubblica status React Doctor full
         if: always() && github.event_name != 'pull_request'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           REACT_DOCTOR_NODE_OUTCOME: ${{ steps.react-doctor-node.outcome }}
           REACT_DOCTOR_INSTALL_OUTCOME: ${{ steps.react-doctor-install.outcome }}
