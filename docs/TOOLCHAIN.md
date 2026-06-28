@@ -111,6 +111,7 @@ Regole d'uso:
 | Advisor Supabase              | `npm run db:verify`                                                                         |
 | Servizi HTTP Supabase         | `npm run supabase:services`                                                                 |
 | Doctor locale                 | `npm run doctor:local`                                                                      |
+| Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
@@ -142,6 +143,11 @@ del progetto, per esempio `402 exceed_egress_quota`.
 e presenza delle env SyncBay senza stampare valori sensibili. Usa
 `--strict-env` quando stai preparando runtime live locale e vuoi bloccare anche
 su env mancanti.
+`npm run review:pre-pr` genera una self-review mirata del diff prima
+dell'apertura o sincronizzazione della PR. Legge `origin/main...HEAD` di default
+e include eventuali file staged/unstaged; suggerisce domande e verifiche in base
+alle aree toccate, per anticipare i commenti Codex prevedibili prima del
+preflight remoto.
 `npm run publish:preflight` controlla branch, worktree, changelog e script
 minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e i
 review thread Codex della PR corrente. La `Codex feedback inbox` resta
@@ -249,6 +255,7 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 | Tipo modifica                                                       | Verifiche proporzionate                                                                                                                                |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Docs-only                                                           | Review contenuto e `git diff --check`                                                                                                                  |
+| Pre-PR non banale                                                   | `npm run review:pre-pr -- --base origin/main`, poi chiusura dei punti emersi e verifiche proporzionate al diff                                        |
 | Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                                                                                                   |
 | Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti                                                  |
 | Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
