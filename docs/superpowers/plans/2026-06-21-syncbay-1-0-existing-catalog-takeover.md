@@ -1622,7 +1622,7 @@ Doctor e Vercel production verdi.
   Run:
 
   ```bash
-  npm run release
+  npm run release -- --version 1.0.0
   npm run release:dry-run
   ```
 
@@ -1630,6 +1630,8 @@ Doctor e Vercel production verdi.
 
   - `CHANGELOG.md` contiene `## [1.0.0] — <data release>`;
   - `app/lib/version.ts` contiene `APP_VERSION = "1.0.0"`;
+  - il tag previsto nello step successivo è `v1.0.0`, allineato alla versione
+    generata dal comando release;
   - il secondo `release:dry-run` riporta `Categoria: non versionato. Nessuna
     release SemVer da preparare.`;
   - nessuna installazione Numisleo eseguita.
