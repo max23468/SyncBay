@@ -18,6 +18,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   PostgREST separatamente da API key mancanti, token non autorizzati e
   restrizioni provider.
 
+## [0.50.0] — 2026-07-01
+
+### Novità
+
+- Readiness 1.0: aggiunte informativa privacy SyncBay, termini minimi per
+  clienti selezionati e mini kit onboarding per la custom app privata.
+
 ## [0.49.3] — 2026-06-28
 
 ### Correzioni
@@ -2750,6 +2757,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.0]: #0500--2026-07-01
 [0.49.3]: #0493--2026-06-28
 [0.49.2]: #0492--2026-06-28
 [0.49.1]: #0491--2026-06-28

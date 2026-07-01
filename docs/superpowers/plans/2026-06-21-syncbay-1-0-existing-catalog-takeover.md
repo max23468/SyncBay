@@ -1432,8 +1432,9 @@ e Vercel verdi.
 - Modify: `docs/guides/onboarding-e-import.md`
 - Modify: `docs/INDEX.md`
 - Modify: `CHANGELOG.md`
+- Modify after release: `app/lib/version.ts`
 
-- [ ] **Step 1: aggiornare privacy da provvisoria pilota a 1.0 privata**
+- [x] **Step 1: aggiornare privacy da provvisoria pilota a 1.0 privata**
 
   Cambiare heading da `Informativa privacy provvisoria` a `Informativa privacy SyncBay`. Mantenere il tono veritiero: custom app privata per clienti selezionati, non App Store pubblico.
 
@@ -1447,7 +1448,7 @@ e Vercel verdi.
   - retention rimandata ad ADR 0017/0018;
   - contatto maintainer.
 
-- [ ] **Step 2: creare termini minimi**
+- [x] **Step 2: creare termini minimi**
 
   `app/routes/terms.tsx` deve usare `AppProvider embedded={false}` come `privacy.tsx` e sezioni:
 
@@ -1469,7 +1470,7 @@ e Vercel verdi.
   </s-text>
   ```
 
-- [ ] **Step 3: aggiungere mini kit alla guida onboarding esistente**
+- [x] **Step 3: aggiungere mini kit alla guida onboarding esistente**
 
   In `docs/guides/onboarding-e-import.md`, aggiungere una sezione `Mini kit
   clienti selezionati 1.0` con:
@@ -1483,7 +1484,7 @@ e Vercel verdi.
   - cosa fare se SyncBay segnala eccezioni;
   - link privacy e termini.
 
-- [ ] **Step 4: verifiche e commit**
+- [x] **Step 4: verifiche e commit**
 
   Run:
 
@@ -1491,13 +1492,15 @@ e Vercel verdi.
   npm run typecheck
   npm run lint
   npm run build
+  npm run release
+  npm run release:dry-run
   git diff --check
   ```
 
   Commit:
 
   ```bash
-  git add app/routes/privacy.tsx app/routes/terms.tsx docs/guides/onboarding-e-import.md docs/INDEX.md CHANGELOG.md
+  git add app/routes/privacy.tsx app/routes/terms.tsx docs/guides/onboarding-e-import.md docs/INDEX.md CHANGELOG.md app/lib/version.ts docs/superpowers/plans/2026-06-21-syncbay-1-0-existing-catalog-takeover.md
   git commit -m "feat: add private 1.0 readiness materials"
   ```
 
@@ -1574,12 +1577,12 @@ e Vercel verdi.
 1. Completato: Task 1-3 modalità + matching + report dry-run, senza scritture.
 2. Completato: Task 4-5 caricamento Shopify paginato e UI dry-run completa.
 3. Completato: Task 6-7 apply `reuseOnly`, tag policy e runner.
-4. Prossimo: Task 8 in una PR docs/UI legale separata.
-5. Dopo Task 8: Task 9 come pubblicazione/release/deploy e dry-run read-only
+4. Completato: Task 8 readiness legale e mini kit clienti selezionati.
+5. Prossimo: Task 9 come pubblicazione/release/deploy e dry-run read-only
    sul primo store reale.
 
 La capacità di takeover generica è pronta nel codice, ma il go-live resta
-bloccato finché Task 8 e Task 9 non sono chiusi.
+bloccato finché Task 9 non è chiuso.
 
 ## Copertura Decisioni Grill
 
