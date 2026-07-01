@@ -1,8 +1,11 @@
-import { Prisma, SyncJobStatus, SyncJobType } from "@prisma/client";
+import prismaClient from "@prisma/client";
+import type { Prisma as PrismaTypes } from "@prisma/client";
+
+const { SyncJobStatus, SyncJobType } = prismaClient;
 
 export function getCompletedCatalogVerificationJobWhere(
   shopId: string,
-): Prisma.SyncJobWhereInput {
+): PrismaTypes.SyncJobWhereInput {
   return {
     OR: [
       {

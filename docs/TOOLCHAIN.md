@@ -35,7 +35,7 @@ forzare installazioni o downgrade dentro la repo.
 | Frontend/backend app        | React Router, React, TypeScript, Vite |
 | Hosting previsto            | Vercel                                |
 | Database                    | Supabase Postgres                     |
-| ORM                         | Prisma                                |
+| ORM                         | Prisma `7.8.0` con `@prisma/adapter-pg` |
 | Queue e scheduler previsti  | Supabase Queues e Supabase Cron       |
 | Storage immagini temporaneo | Supabase Storage privato              |
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights |
@@ -51,9 +51,17 @@ React Router 7. La migrazione a React Router 8 va quindi fatta in una branch
 dedicata aggiornando insieme `react-router`, i pacchetti `@react-router/*` e il
 preset Vercel solo quando esiste una versione compatibile.
 
-Anche Prisma 7 e i tipi Node oltre la major del runtime dichiarato richiedono
-un pass manuale: Prisma perché cambia generator/config/import del client, Node
-perché il runtime repo resta `>=24.15 <25`.
+Prisma è aggiornato a 7.8.0 con `prisma.config.ts`, generator di compatibilità
+`prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
+post-generate verso il path atteso da `@prisma/client`. Questa scelta mantiene
+compatibili il test runner Node nativo e il template React Router finché il
+client `prisma-client` TypeScript non sarà adottabile senza loader dedicati. Il
+runtime usa `@prisma/adapter-pg`; lo storage sessioni Shopify è locale perché
+`@shopify/shopify-app-session-storage-prisma` non dichiara ancora compatibilità
+con Prisma 7. Future major Prisma restano manuali.
+
+I tipi Node oltre la major del runtime dichiarato richiedono un pass manuale:
+il runtime repo resta `>=24.15 <25`.
 
 ## Tool agenti Shopify
 
@@ -107,6 +115,8 @@ Regole d'uso:
 | Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
 | Test librerie pure            | `npm run test:lib`                                                                          |
 | Coverage moduli puri          | `npm run coverage:lib`                                                                      |
+| Audit produzione              | `npm run audit:prod`                                                                        |
+| Generazione Prisma            | `npm run prisma:generate`                                                                   |
 | Validazione Prisma            | `npm run prisma:validate`                                                                   |
 | Advisor Supabase              | `npm run db:verify`                                                                         |
 | Servizi HTTP Supabase         | `npm run supabase:services`                                                                 |
@@ -135,6 +145,20 @@ Regole d'uso:
 | Release locale                | `npm run release`                                                                           |
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
+Con Prisma 7, `prisma/schema.prisma` non contiene più `url` o `directUrl`:
+`prisma.config.ts` usa `DATABASE_DIRECT_URL` per la CLI/migration quando
+presente e ricade su `DATABASE_URL`. Il client generato vive in
+`prisma/generated/client`, non va committato e viene rigenerato da
+`npm run prisma:generate`, `pretypecheck` e `prebuild`.
+Il pacchetto `prisma` resta in `dependencies`, non in `devDependencies`, perché
+il Dockerfile installa con `npm ci --omit=dev` prima di eseguire il build. Lo
+script `npm run prisma:generate` esegue `prisma generate` e poi
+`scripts/link-prisma-client.mjs` per collegare il client generato al wrapper
+`@prisma/client`.
+`npm run audit:prod` esegue `npm audit --omit=dev` e accetta solo l'eccezione
+moderata nota introdotta da Prisma 7 (`GHSA-92pp-h63x-v22m` tramite
+`@prisma/dev`/`@hono/node-server`); qualunque altra vulnerabilità production
+continua a bloccare.
 `npm run supabase:services` verifica PostgREST, Auth e Storage via HTTP con
 anon/publishable key Supabase, senza stampare chiavi. Serve a distinguere un
 errore locale di chiamata anonima (`401 missing_api_key`) da restrizioni reali
@@ -248,7 +272,7 @@ runner: quando il delta eBay è vuoto, SyncBay pianifica job `SYNC_INCREMENTAL`
 con source `catalog_image_repair` per mapping attivi senza thumbnail, limitati
 da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 `npm run coverage:lib` usa solo il test runner nativo di Node e limita la coverage ai moduli puri `app/lib` già isolabili dal runtime live; la soglia Atlas corrente è `>=75%` linee e `>=65%` branch su quel perimetro.
-`npm run build` esegue sempre `prisma generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
+`npm run build` esegue sempre `npm run prisma:generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
 
 ## Verifiche per tipo di modifica
 
@@ -261,7 +285,7 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 | Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`                                                                             |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
-| Prisma/database                                                     | `npm run prisma:validate`; `npm run db:verify` se Supabase linked è disponibile                                                                        |
+| Prisma/database                                                     | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                                                 |
 | Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |
 | Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
 

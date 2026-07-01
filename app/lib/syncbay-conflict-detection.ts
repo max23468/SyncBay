@@ -1,4 +1,7 @@
-import { Prisma, ProductSnapshotSource } from "@prisma/client";
+import prismaClient from "@prisma/client";
+import type { Prisma as PrismaTypes } from "@prisma/client";
+
+const { Prisma, ProductSnapshotSource } = prismaClient;
 
 const SYNCBAY_MONITORED_CONFLICT_FIELDS = [
   "title",
@@ -11,7 +14,7 @@ const SYNCBAY_MONITORED_CONFLICT_FIELDS = [
 
 export function getLatestSyncBayDescriptionBaselineWhere(
   mappingId: string,
-): Prisma.ProductSnapshotWhereInput {
+): PrismaTypes.ProductSnapshotWhereInput {
   return {
     descriptionHash: { not: null },
     mappingId,
@@ -20,7 +23,7 @@ export function getLatestSyncBayDescriptionBaselineWhere(
 }
 
 export function shouldUseSyncBayDescriptionBaselinePayload(
-  payload: Prisma.JsonValue | null | undefined,
+  payload: PrismaTypes.JsonValue | null | undefined,
 ) {
   const objectPayload = getJsonObject(payload);
 
@@ -135,8 +138,8 @@ export function shouldSkipDescriptionConflictWhenEbayHasNoDescription(input: {
   return !hasSyncBayBaseline && input.shopifyDescriptionHash !== null;
 }
 
-function getJsonObject(value: Prisma.JsonValue | null | undefined) {
+function getJsonObject(value: PrismaTypes.JsonValue | null | undefined) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
-  return value as Prisma.JsonObject;
+  return value as PrismaTypes.JsonObject;
 }

@@ -360,7 +360,7 @@ Comandi runtime attuali:
 - `npm run prisma:validate`
 - `npm run db:verify`
 - `npm run quality:react-doctor`
-- `npm audit --omit=dev`
+- `npm run audit:prod`
 - `npm run release:dry-run`
 
 ## Git, commit e PR

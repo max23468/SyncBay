@@ -107,7 +107,7 @@ import {
 } from "./shopify-draft-import.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
 
-const dueSyncJobSelect = Prisma.validator<Prisma.SyncJobSelect>()({
+const dueSyncJobSelect = {
   attempts: true,
   createdAt: true,
   finishedAt: true,
@@ -126,7 +126,7 @@ const dueSyncJobSelect = Prisma.validator<Prisma.SyncJobSelect>()({
   startedAt: true,
   status: true,
   type: true,
-});
+} satisfies Prisma.SyncJobSelect;
 
 type DueSyncJob = Prisma.SyncJobGetPayload<{ select: typeof dueSyncJobSelect }>;
 type DueSyncJobRunResult = {

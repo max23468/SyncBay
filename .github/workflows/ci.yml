@@ -62,4 +62,4 @@ jobs:
         run: npm run smoke:ui
 
       - name: Audit dipendenze di produzione
-        run: npm audit --omit=dev
+        run: npm run audit:prod

@@ -6,6 +6,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Runtime/tooling: aggiornato Prisma a 7.8 con Prisma Config, adapter Postgres,
+  client generato in path esplicito con link verso `@prisma/client` e storage
+  sessioni Shopify locale compatibile.
+- Tooling: sostituito l'audit production diretto con un gate che accetta solo
+  l'eccezione moderata nota di Prisma 7 e continua a bloccare vulnerabilità
+  diverse.
+
+## [0.50.0] — 2026-07-01
+
+### Novità
+
+- Readiness 1.0: aggiunte informativa privacy SyncBay, termini minimi per
+  clienti selezionati e mini kit onboarding per la custom app privata.
+
 ### Non versionato
 
 - Piano 1.0: il task di release privata ora usa esplicitamente
@@ -27,13 +43,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Tooling: la diagnostica HTTP Supabase classifica il diniego RLS atteso su
   PostgREST separatamente da API key mancanti, token non autorizzati e
   restrizioni provider.
-
-## [0.50.0] — 2026-07-01
-
-### Novità
-
-- Readiness 1.0: aggiunte informativa privacy SyncBay, termini minimi per
-  clienti selezionati e mini kit onboarding per la custom app privata.
 
 ## [0.49.3] — 2026-06-28
 
