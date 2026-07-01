@@ -32,7 +32,15 @@ if (isCliEntrypoint()) {
     process.exit(0);
   }
 
-  const vulnerabilities = report.vulnerabilities ?? {};
+  let vulnerabilities;
+  try {
+    vulnerabilities = readAuditVulnerabilities(report);
+  } catch (error) {
+    console.error("Audit produzione fallito.");
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+
   const entries = Object.entries(vulnerabilities);
   const unexpected = findUnexpectedAuditEntries(vulnerabilities);
 
@@ -53,6 +61,22 @@ export function findUnexpectedAuditEntries(vulnerabilities) {
   return Object.entries(vulnerabilities).filter(([name]) => {
     return !isAllowedKnownPrisma7Vulnerability(name, vulnerabilities);
   });
+}
+
+export function readAuditVulnerabilities(report) {
+  if (isRecord(report?.error)) {
+    throw new Error(
+      "npm audit ha restituito un errore invece del report vulnerabilità.",
+    );
+  }
+
+  if (!isRecord(report?.vulnerabilities)) {
+    throw new Error(
+      "npm audit non ha restituito il blocco vulnerabilities; audit non affidabile.",
+    );
+  }
+
+  return report.vulnerabilities;
 }
 
 function isAllowedKnownPrisma7Vulnerability(
@@ -87,4 +111,8 @@ function isAllowedKnownPrisma7Vulnerability(
 
 function isCliEntrypoint() {
   return process.argv[1]?.endsWith("syncbay-audit-prod.mjs") ?? false;
+}
+
+function isRecord(value) {
+  return value && typeof value === "object" && !Array.isArray(value);
 }

@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { findUnexpectedAuditEntries } from "./syncbay-audit-prod.mjs";
+import {
+  findUnexpectedAuditEntries,
+  readAuditVulnerabilities,
+} from "./syncbay-audit-prod.mjs";
 
 const knownPrisma7Audit = {
   "@hono/node-server": {
@@ -48,4 +51,29 @@ test("rejects unrelated production vulnerabilities", () => {
   assert.deepEqual(findUnexpectedAuditEntries(vulnerabilities), [
     ["lodash", vulnerabilities.lodash],
   ]);
+});
+
+test("rejects audit transport errors without vulnerabilities", () => {
+  assert.throws(
+    () =>
+      readAuditVulnerabilities({
+        error: {
+          code: "E403",
+          summary: "Forbidden",
+        },
+      }),
+    /npm audit ha restituito un errore/,
+  );
+});
+
+test("rejects non-clean audit reports without a vulnerabilities block", () => {
+  assert.throws(
+    () =>
+      readAuditVulnerabilities({
+        metadata: {
+          vulnerabilities: {},
+        },
+      }),
+    /non ha restituito il blocco vulnerabilities/,
+  );
 });
