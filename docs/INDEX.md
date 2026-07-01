@@ -101,6 +101,7 @@ docs/
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |
 | Chiudere prerequisiti account Shopify/eBay | `guides/prerequisiti-account.md` |
 | Capire import e onboarding | `guides/onboarding-e-import.md` |
+| Preparare il mini kit clienti selezionati 1.0 | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
 | Recuperare decisioni, concept UI e fonti archiviate del redesign embedded | `guides/ui-concepts-handoff.md` |
 | Implementare il redesign UI embedded deciso nei thread | `superpowers/plans/2026-06-03-syncbay-ui-redesign.md` |
@@ -123,6 +124,11 @@ I file nella root sono punti d'ingresso convenzionali:
 - `CHANGELOG.md`: storico modifiche significative.
 - `SECURITY.md`: policy sicurezza root.
 - `.env.example`: env var previste.
+
+Pagine pubbliche dell'app:
+
+- `/privacy`: informativa privacy SyncBay per 1.0 privata.
+- `/terms`: termini minimi SyncBay per clienti selezionati.
 
 Rinvii storici rimossi:
 

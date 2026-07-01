@@ -61,6 +61,88 @@ Regole chiave:
 - vecchia app disattivabile prima dell'apply finale solo dopo audit, dry-run,
   export segnali utili e freeze operativo.
 
+## Mini kit clienti selezionati 1.0
+
+Questo mini kit accompagna la 1.0 custom privata. Non è materiale App Store
+pubblico: serve a dare a un cliente selezionato aspettative chiare prima di
+installazione, takeover e verifica finale.
+
+### Promessa prodotto
+
+SyncBay porta un catalogo eBay.it in Shopify in modo controllato: preview prima
+delle scritture, match conservativo, disponibilità protetta e conflitti visibili
+quando Shopify non è più allineato all'ultimo valore scritto da SyncBay.
+
+### Requisiti prima dell'installazione
+
+- account eBay.it corretto e accessibile;
+- accesso Shopify con permessi necessari a prodotti, inventario, media,
+  pubblicazioni, webhook e ordini pagati;
+- una location Shopify predefinita da usare per lo stock;
+- catalogo entro il limite MVP di 2.000 listing eBay attivi;
+- assenza di varianti complesse nel perimetro operativo iniziale;
+- decisione su stato prodotti, canali di pubblicazione, regola prezzo e regola
+  descrizione;
+- disponibilità a fermare modifiche manuali durante la finestra di freeze.
+
+### Limiti 1.0
+
+- marketplace supportato: eBay.it;
+- distribuzione privata per uno o pochi clienti selezionati;
+- niente App Store pubblico, billing pubblico o support policy pubblica;
+- nessun exporter Shopify -> eBay, salvo aggiornamento disponibilità eBay da
+  ordini Shopify pagati;
+- nessun rollback self-service prodotto-per-prodotto: recovery manuale tramite
+  snapshot, report e strumenti interni;
+- cambio handle/URL non automatico: richiede riga esplicita e redirect.
+
+### Checklist onboarding
+
+1. Confermare store Shopify, account eBay e location Shopify.
+2. Collegare eBay da SyncBay.
+3. Impostare default import, pubblicazioni, prezzo, descrizioni e sync.
+4. Eseguire audit read-only dello store e del catalogo eBay.
+5. Aprire `Importazione -> Collega catalogo esistente`.
+6. Generare preview live e leggere righe `applicabile`, `da_rivedere`,
+   `bloccante` e `gia_collegato`.
+7. Risolvere o accettare consapevolmente le eccezioni non critiche.
+8. Confermare freeze e disattivazione della vecchia app solo quando il runbook
+   lo consente.
+9. Applicare solo righe sicure.
+10. Verificare manualmente catalogo Shopify, listing eBay, job e conflitti.
+
+### Durante il freeze
+
+Durante il freeze non si modificano manualmente prodotti, prezzi, quantità,
+immagini, descrizioni, tag, categorie o regole di pubblicazione su eBay o
+Shopify. Non si importano nuovi prodotti con la vecchia app. Il freeze serve a
+evitare che SyncBay applichi un piano calcolato su dati già cambiati.
+
+### Controlli dopo apply
+
+- mapping prodotto e ItemID eBay collegati;
+- prezzo, disponibilità e SKU corretti;
+- immagini Shopify preservate o integrate secondo policy;
+- descrizioni pulite senza template commerciali pesanti;
+- product type, categoria e faccette coerenti;
+- URL prodotto preservati o redirect presenti quando approvati;
+- collezioni automatiche ancora alimentate dai campi corretti;
+- sync automatico eBay -> Shopify attivo al target concordato;
+- job `orders/paid` -> eBay stock pronti e monitorati;
+- conflitti critici assenti prima del go-live.
+
+### Se SyncBay segnala eccezioni
+
+Le eccezioni non vanno ignorate. Se riguardano mapping, prezzo o disponibilità,
+bloccano il go-live finché non sono risolte. Se riguardano descrizioni, immagini,
+categorie, faccette, SEO o tag, possono restare da rivedere solo se non
+compromettono vendita, disponibilità e tracciabilità del prodotto.
+
+### Link cliente
+
+- Informativa privacy: `/privacy`.
+- Termini SyncBay: `/terms`.
+
 ## Stato preparatorio implementato
 
 La dashboard embedded mostra già una readiness operativa per:
