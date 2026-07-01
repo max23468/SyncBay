@@ -199,7 +199,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (intent === "applyExistingCatalogTakeover") {
     const result = await startExistingCatalogTakeoverJobs(session, admin, {
-      confirmation: String(formData.get("confirmation") ?? ""),
+      confirmation: String(formData.get("confirmation") ?? "").trim(),
       legacyTagsToRemove: parseExistingCatalogLegacyTagsToRemove(
         formData.get("legacyTagsToRemove"),
       ),
@@ -1443,8 +1443,14 @@ function DraftImportSection({
             name="intent"
             value="applyExistingCatalogTakeover"
           />
-          <input type="hidden" name="confirmation" value="COLLEGA" />
           <s-stack gap="small">
+            <s-text-field
+              id="existingCatalogTakeoverConfirmation"
+              label="Conferma takeover"
+              name="confirmation"
+              placeholder="COLLEGA"
+              required
+            ></s-text-field>
             <s-text-field
               label="Tag legacy da rimuovere"
               name="legacyTagsToRemove"

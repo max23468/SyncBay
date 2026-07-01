@@ -32,6 +32,7 @@ interface ExistingProductNode {
   media?: {
     nodes?: Array<{
       id?: string | null;
+      mediaContentType?: string | null;
     }> | null;
   } | null;
   tags?: string[] | null;
@@ -69,9 +70,10 @@ const EXISTING_PRODUCTS_QUERY = `#graphql
             value
           }
         }
-        media(first: 1) {
+        media(first: 1, query: "media_type:IMAGE") {
           nodes {
             id
+            mediaContentType
           }
         }
         seo {
@@ -163,13 +165,21 @@ function toMatchCandidates(
     handle: normalizeNullableString(product.handle),
     metafields: product.metafields?.nodes ?? [],
     productGid: product.id as string,
-    shopifyImageCount: product.media?.nodes?.length ?? 0,
+    shopifyImageCount: countShopifyImageMedia(product),
     sku: normalizeNullableString(variant?.sku),
     tags: product.tags ?? [],
     title: normalizeNullableString(product.title),
     variantGid: variant?.id ?? null,
     variantsTruncated,
   }));
+}
+
+function countShopifyImageMedia(product: ExistingProductNode) {
+  return (
+    product.media?.nodes?.filter(
+      (media) => media?.mediaContentType === "IMAGE",
+    ).length ?? 0
+  );
 }
 
 function getEmptyExistingProductsPage() {

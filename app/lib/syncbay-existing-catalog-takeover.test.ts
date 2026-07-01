@@ -51,6 +51,63 @@ test("marks one auto-linkable valid row as applicable", () => {
   ]);
 });
 
+test("allows image-preserving rows with missing eBay photos", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        imageCount: 0,
+        issueCodes: ["missing_images"],
+        itemId: "1005",
+        matchSuggestions: [
+          makeAutoMatch({
+            productGid: "gid://shopify/Product/5",
+            shopifyImageCount: 2,
+            variantGid: "gid://shopify/ProductVariant/55",
+          }),
+        ],
+        priceAmount: 12,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  assert.equal(report.summary.applicable, 1);
+  assert.equal(report.rows[0]?.status, "applicabile");
+  assert.equal(report.rows[0]?.fieldPolicy.images.operation, "preserve");
+  assert.ok(!report.rows[0]?.reasons.includes("immagini_mancanti"));
+});
+
+test("keeps missing eBay photos in review when Shopify has no images to preserve", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        imageCount: 0,
+        issueCodes: ["missing_images"],
+        itemId: "1006",
+        matchSuggestions: [
+          makeAutoMatch({
+            productGid: "gid://shopify/Product/6",
+            shopifyImageCount: 0,
+            variantGid: "gid://shopify/ProductVariant/66",
+          }),
+        ],
+        priceAmount: 12,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  assert.equal(report.summary.review, 1);
+  assert.equal(report.rows[0]?.status, "da_rivedere");
+  assert.equal(
+    report.rows[0]?.fieldPolicy.images.operation,
+    "sync_from_ebay_if_available",
+  );
+  assert.ok(report.rows[0]?.reasons.includes("immagini_mancanti"));
+});
+
 test("marks title-only matches as review", () => {
   const report = buildExistingCatalogTakeoverReport({
     items: [
@@ -234,6 +291,7 @@ test("blocks apply while the dry-run still has blocking rows", () => {
 });
 
 function makePreviewItem(input: {
+  imageCount?: number;
   issueCodes?: string[];
   itemId: string;
   matchSuggestions?: ExistingProductMatchSuggestion[];
@@ -241,6 +299,7 @@ function makePreviewItem(input: {
   quantity?: number | null;
 }): ImportPreviewItem {
   const issueCodes = input.issueCodes ?? [];
+  const imageCount = input.imageCount ?? 1;
 
   return {
     itemId: input.itemId,
@@ -273,8 +332,9 @@ function makePreviewItem(input: {
       ebayPrimaryCategoryId: "111",
       ebayPrimaryCategoryName: "Monete",
       ebayPrimaryCategoryPath: "Collezionismo > Monete",
-      imageCount: 1,
-      imageUrls: ["https://example.invalid/syncbay/test.jpg"],
+      imageCount,
+      imageUrls:
+        imageCount > 0 ? ["https://example.invalid/syncbay/test.jpg"] : [],
       priceAmount: input.priceAmount ?? 10,
       productFacets: [],
       productStatus: "published",
@@ -295,6 +355,7 @@ function makePreviewItem(input: {
 
 function makeAutoMatch(input: {
   productGid: string;
+  shopifyImageCount?: number;
   variantGid: string;
 }): ExistingProductMatchSuggestion {
   return {
@@ -304,6 +365,7 @@ function makeAutoMatch(input: {
     reasonCodes: ["sku_exact"],
     reasons: ["SKU identico"],
     score: 100,
+    shopifyImageCount: input.shopifyImageCount ?? 0,
     variantGid: input.variantGid,
   };
 }

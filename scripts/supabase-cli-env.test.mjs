@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getSupabaseCliCwd } from "./supabase-cli-env.mjs";
+import {
+  getSupabaseCliCwd,
+  withSupabaseCliDefaults,
+} from "./supabase-cli-env.mjs";
 import { parseAdvisorType } from "./syncbay-supabase-advisors.mjs";
 
 test("uses the explicit Supabase cwd before the process cwd", () => {
@@ -46,4 +49,16 @@ test("accepts only known Supabase advisor types", () => {
   assert.equal(parseAdvisorType(["security"]), "security");
   assert.equal(parseAdvisorType(["performance"]), "performance");
   assert.throws(() => parseAdvisorType(["other"]), /security\|performance/);
+});
+
+test("disables Supabase CLI telemetry by default", () => {
+  assert.deepEqual(withSupabaseCliDefaults({ EXAMPLE: "1" }), {
+    EXAMPLE: "1",
+    SUPABASE_TELEMETRY_DISABLED: "1",
+  });
+  assert.equal(
+    withSupabaseCliDefaults({ SUPABASE_TELEMETRY_DISABLED: "0" })
+      .SUPABASE_TELEMETRY_DISABLED,
+    "0",
+  );
 });

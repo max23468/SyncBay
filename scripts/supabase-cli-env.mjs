@@ -33,19 +33,28 @@ export function getSupabaseCliCwd(
 }
 
 async function buildSupabaseCliEnv() {
+  const baseEnv = withSupabaseCliDefaults(process.env);
+
   if (process.env.SUPABASE_DB_PASSWORD) {
-    return process.env;
+    return baseEnv;
   }
 
   const password = await readSupabaseDbPasswordFromKeychain();
 
   if (!password) {
-    return process.env;
+    return baseEnv;
   }
 
   return {
-    ...process.env,
+    ...baseEnv,
     SUPABASE_DB_PASSWORD: password,
+  };
+}
+
+export function withSupabaseCliDefaults(env) {
+  return {
+    ...env,
+    SUPABASE_TELEMETRY_DISABLED: env.SUPABASE_TELEMETRY_DISABLED ?? "1",
   };
 }
 

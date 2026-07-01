@@ -154,9 +154,9 @@ function buildExistingCatalogTakeoverRow(
 ): ExistingCatalogTakeoverRow {
   const blockingReasons = getBlockingReasons(item);
   const matchReasons = getMatchReasons(item.matchSuggestions);
-  const reviewReasons = getReviewReasons(item);
-  const reasons = [...blockingReasons, ...reviewReasons, ...matchReasons];
   const matchSuggestion = getBestAutoLinkableMatch(item.matchSuggestions);
+  const reviewReasons = getReviewReasons(item, matchSuggestion);
+  const reasons = [...blockingReasons, ...reviewReasons, ...matchReasons];
   const status = getStatus({
     blockingReasons,
     matchSuggestion,
@@ -199,11 +199,18 @@ function getBlockingReasons(item: ImportPreviewItem) {
   );
 }
 
-function getReviewReasons(item: ImportPreviewItem) {
+function getReviewReasons(
+  item: ImportPreviewItem,
+  matchSuggestion: ExistingProductMatchSuggestion | null,
+) {
   const issueCodes = new Set(item.issues.map((issue) => issue.code));
+  const hasMissingEbayImages =
+    issueCodes.has("missing_images") || item.normalized.imageCount === 0;
+  const hasShopifyImagesToPreserve =
+    (matchSuggestion?.shopifyImageCount ?? 0) > 0;
 
   return [
-    issueCodes.has("missing_images") || item.normalized.imageCount === 0
+    hasMissingEbayImages && !hasShopifyImagesToPreserve
       ? "immagini_mancanti"
       : null,
     item.normalized.categoryProposal.confidence === "low"

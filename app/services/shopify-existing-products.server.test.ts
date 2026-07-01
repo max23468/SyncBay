@@ -200,10 +200,54 @@ test("marks variant candidates as truncated when Shopify has more variants", asy
   );
 });
 
+test("counts only Shopify image media for takeover matching", async () => {
+  let queryText = "";
+  const admin = {
+    async graphql(query: string) {
+      queryText = query;
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "solo-video",
+                mediaContentTypes: ["VIDEO", "MODEL_3D"],
+                sku: "VIDEO-1",
+                title: "Solo video",
+                variantId: "10",
+              }),
+              makeProductNode("2", {
+                handle: "con-immagine",
+                mediaContentTypes: ["IMAGE"],
+                sku: "IMG-2",
+                title: "Con immagine",
+                variantId: "20",
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 2,
+  });
+
+  assert.match(queryText, /media\(first: 1, query: "media_type:IMAGE"\)/);
+  assert.deepEqual(
+    products.map((product) => product.shopifyImageCount),
+    [0, 1],
+  );
+});
+
 function makeProductNode(
   id: string,
   input: {
     handle: string;
+    mediaContentTypes?: string[];
     metafields?: Array<{ key: string; namespace: string; value: string }>;
     sku: string;
     tags?: string[];
@@ -220,6 +264,12 @@ function makeProductNode(
     id: `gid://shopify/Product/${id}`,
     metafields: {
       nodes: input.metafields ?? [],
+    },
+    media: {
+      nodes: (input.mediaContentTypes ?? []).map((mediaContentType, index) => ({
+        id: `gid://shopify/Media/${id}-${index}`,
+        mediaContentType,
+      })),
     },
     tags: input.tags ?? [],
     title: input.title,

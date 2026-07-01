@@ -31,6 +31,7 @@ if (!existsSync(generatedClientPath)) {
 }
 
 for (const prismaClientPath of prismaClientPaths) {
+  rmSync(prismaClientPath, { recursive: true, force: true });
   mkdirSync(prismaClientPath, { recursive: true });
   linkGeneratedClient(resolve(prismaClientPath, "default"));
   linkGeneratedClient(resolve(prismaClientPath, "index-browser"));
@@ -38,6 +39,8 @@ for (const prismaClientPath of prismaClientPaths) {
 }
 
 function linkGeneratedClient(linkPath) {
+  removeLegacyEntrypointFiles(linkPath);
+
   if (existsSync(linkPath)) {
     const stat = lstatSync(linkPath);
 
@@ -53,4 +56,14 @@ function linkGeneratedClient(linkPath) {
   }
 
   symlinkSync(relative(dirname(linkPath), generatedClientPath), linkPath, "dir");
+}
+
+function removeLegacyEntrypointFiles(linkPath) {
+  for (const extension of [".d.mts", ".d.ts", ".js", ".js.map", ".mjs"]) {
+    const filePath = `${linkPath}${extension}`;
+
+    if (existsSync(filePath)) {
+      rmSync(filePath, { force: true });
+    }
+  }
 }
