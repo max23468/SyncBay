@@ -8,6 +8,7 @@
 
 # Dependencies
 node_modules/
+prisma/generated/
 
 # Build outputs
 dist/

@@ -1,30 +1,26 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-import { buildPrismaRuntimeDatabaseUrl } from "./lib/prisma-runtime-url";
+import { buildPrismaRuntimePoolConfig } from "./lib/prisma-runtime-url";
 
 declare global {
-  var prismaGlobal: PrismaClient;
+  var prismaGlobal: PrismaClient | undefined;
 }
 
-const runtimeDatabaseUrl = buildPrismaRuntimeDatabaseUrl(
-  process.env.DATABASE_URL,
-);
-const prismaClientOptions = runtimeDatabaseUrl
-  ? {
-      datasources: {
-        db: {
-          url: runtimeDatabaseUrl,
-        },
-      },
-    }
-  : undefined;
+function createPrismaClient() {
+  const adapter = new PrismaPg(
+    buildPrismaRuntimePoolConfig(process.env.DATABASE_URL),
+  );
+
+  return new PrismaClient({ adapter });
+}
 
 if (process.env.NODE_ENV !== "production") {
   if (!global.prismaGlobal) {
-    global.prismaGlobal = new PrismaClient(prismaClientOptions);
+    global.prismaGlobal = createPrismaClient();
   }
 }
 
-const prisma = global.prismaGlobal ?? new PrismaClient(prismaClientOptions);
+const prisma = global.prismaGlobal ?? createPrismaClient();
 
 export default prisma;

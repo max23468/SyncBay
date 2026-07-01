@@ -121,9 +121,10 @@ Note:
 - `/api/diagnostics/database` è l'endpoint diagnostico interno per verificare la
   configurazione database effettiva del runtime. È protetto da `APP_SECRET` e
   restituisce solo classificazioni redatte, come tipo host pooler/direct,
-  presenza dei parametri Prisma `connection_limit` e `pool_timeout`, regione
-  Vercel runtime e presenza delle URL attese; non espone hostname completi,
-  credenziali o stringhe di connessione.
+  presenza dei parametri logici `connection_limit` e `pool_timeout` da cui
+  Prisma 7 ricava la configurazione del pool `pg`, regione Vercel runtime e
+  presenza delle URL attese; non espone hostname completi, credenziali o
+  stringhe di connessione.
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop

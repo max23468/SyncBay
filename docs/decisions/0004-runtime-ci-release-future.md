@@ -53,7 +53,9 @@ Gate attivi:
 - build (`npm run build`);
 - validazione schema Prisma (`npm run prisma:validate`);
 - smoke UI (`npm run smoke:ui`);
-- audit dipendenze di produzione (`npm audit --omit=dev`).
+- audit dipendenze di produzione (`npm run audit:prod`, wrapper di
+  `npm audit --omit=dev` con eccezione mirata per la vulnerabilità moderata
+  nota di Prisma 7).
 
 Esclusioni consapevoli:
 

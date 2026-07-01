@@ -31,6 +31,7 @@ export default [
       "node_modules/**",
       "build/**",
       "public/build/**",
+      "prisma/generated/**",
       "audits/**",
       "**/*.yml",
       ".react-router/**",

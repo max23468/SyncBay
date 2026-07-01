@@ -25,7 +25,11 @@ Componenti previsti:
 - TypeScript.
 - Shopify Admin GraphQL per prodotti, inventario, media e webhook.
 - Supabase Postgres come database applicativo.
-- Prisma come ORM iniziale, per coerenza con il template Shopify React Router e lo storage sessioni.
+- Prisma come ORM iniziale, per coerenza con il template Shopify React Router.
+  Nello stato corrente è applicato Prisma 7 con Prisma Config, adapter
+  Postgres, client generato in path esplicito e link post-generate verso
+  `@prisma/client`. Lo storage sessioni Shopify è locale perché il pacchetto
+  Shopify prisma-specifico non è ancora compatibile con Prisma 7.
 - Supabase Queues come job queue persistente per import, sync, retry e stock update.
 - Supabase Cron come scheduler primario per polling e drenaggio queue.
 - Vercel come hosting dell'app embedded, backend HTTP, OAuth e webhook.
