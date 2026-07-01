@@ -6,11 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.50.2] — 2026-07-01
 
-- Tooling: gli advisor Supabase e `conflicts:doctor` rispettano
-  `SYNCBAY_SUPABASE_CWD`, così le worktree possono usare il checkout principale
-  già linkato senza duplicare `supabase/.temp`.
+### Correzioni
+
+- Importazione: il takeover del catalogo esistente resta applicabile quando
+  eBay non fornisce foto ma il prodotto Shopify collegato ha immagini reali da
+  preservare, senza considerare video o modelli 3D come immagini.
+- Importazione: l'apply takeover richiede una conferma `COLLEGA` digitata nella
+  UI prima di scrivere sul catalogo esistente.
 
 ## [0.50.1] — 2026-07-01
 
@@ -22,6 +26,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Tooling: sostituito l'audit production diretto con un gate che accetta solo
   l'eccezione moderata nota di Prisma 7 e continua a bloccare vulnerabilità
   diverse.
+
+### Non versionato
+
+- Tooling: gli advisor Supabase e `conflicts:doctor` rispettano
+  `SYNCBAY_SUPABASE_CWD`, così le worktree possono usare il checkout principale
+  già linkato senza duplicare `supabase/.temp`.
 
 ## [0.50.0] — 2026-07-01
 
@@ -2784,6 +2794,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.2]: #0502--2026-07-01
 [0.50.1]: #0501--2026-07-01
 [0.50.0]: #0500--2026-07-01
 [0.49.3]: #0493--2026-06-28
