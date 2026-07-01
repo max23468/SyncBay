@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Piano 1.0: il task di release privata ora usa esplicitamente
+  `npm run release -- --version 1.0.0`, così versione locale e tag `v1.0.0`
+  non possono divergere.
+- Governance agenti: documentata la precedenza di plugin, connector, MCP o app
+  provider rispetto ai fallback CLI/browser per GitHub, Vercel, Supabase,
+  Shopify e provider simili.
 - Piano 1.0: separata la release privata `1.0.0` completa dall'onboarding
   Numisleo post-release, includendo installazione privata, dry-run read-only,
   freeze, apply controllato, monitoraggio iniziale e patch `1.0.1+` per
