@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.1] — 2026-07-01
+
 ### Sotto il cofano
 
 - Runtime/tooling: aggiornato Prisma a 7.8 con Prisma Config, adapter Postgres,
@@ -2776,6 +2778,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.1]: #0501--2026-07-01
 [0.50.0]: #0500--2026-07-01
 [0.49.3]: #0493--2026-06-28
 [0.49.2]: #0492--2026-06-28
