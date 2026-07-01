@@ -144,7 +144,15 @@ Regole d'uso:
 | Release dry-run               | `npm run release:dry-run`                                                                   |
 | Release locale                | `npm run release`                                                                           |
 
-`npm run db:verify` richiede progetto Supabase linked e credenziali disponibili. Le migration remote vanno applicate esplicitamente con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura documentata in `docs/guides/provisioning-runtime.md`.
+`npm run db:verify` richiede progetto Supabase linked e credenziali disponibili.
+Quando il comando gira da una worktree che non contiene `supabase/.temp`, gli
+script cercano automaticamente una worktree dello stesso repo già linkata; puoi
+forzare il checkout Supabase con
+`SYNCBAY_SUPABASE_CWD=/Users/Matteo/Progetti/SyncBay npm run db:verify`. La
+stessa risoluzione viene usata dagli script Supabase in sola lettura, incluso
+`npm run conflicts:doctor`. Le migration remote vanno applicate esplicitamente
+con `npx prisma migrate deploy` o, se il pooler blocca Prisma, con la procedura
+documentata in `docs/guides/provisioning-runtime.md`.
 Con Prisma 7, `prisma/schema.prisma` non contiene più `url` o `directUrl`:
 `prisma.config.ts` usa `DATABASE_DIRECT_URL` per la CLI/migration quando
 presente e ricade su `DATABASE_URL`. Il client generato vive in

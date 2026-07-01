@@ -49,6 +49,7 @@ Provisioning minimo creato:
 - Prisma/setup runtime locale: `npm run setup`
 - Validazione Prisma: `npm run prisma:validate`
 - Verifica advisor Supabase collegato: `npm run db:verify`
+  (`SYNCBAY_SUPABASE_CWD` può forzare il checkout linkato dalle worktree)
 - Coalescenza job webhook Shopify duplicati: `npm run jobs:coalesce-shopify-changes -- --shop syncbay-dev.myshopify.com`
 - Migration Supabase: `npx prisma migrate deploy` da eseguire esplicitamente con `DATABASE_URL`/`DATABASE_DIRECT_URL` dell'ambiente target
 - Versioning dry-run: `npm run release:dry-run`

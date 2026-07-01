@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Tooling: gli advisor Supabase e `conflicts:doctor` rispettano
+  `SYNCBAY_SUPABASE_CWD`, così le worktree possono usare il checkout principale
+  già linkato senza duplicare `supabase/.temp`.
+
 ## [0.50.1] — 2026-07-01
 
 ### Sotto il cofano
