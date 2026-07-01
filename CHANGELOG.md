@@ -8,6 +8,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Piano 1.0: separata la release privata `1.0.0` completa dall'onboarding
+  Numisleo post-release, includendo installazione privata, dry-run read-only,
+  freeze, apply controllato, monitoraggio iniziale e patch `1.0.1+` per
+  eventuali problemi emersi sul primo cliente reale.
 - Toolchain: aggiornato il pin Node/Docker a `24.18.0`, allineata la CI alla
   `.node-version` e aggiornato `actions/github-script` a v9 per il gate React
   Doctor su `main`.

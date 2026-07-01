@@ -2,24 +2,26 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Portare SyncBay 1.0 a prendere in carico, in modo generico e controllato, un catalogo Shopify esistente già importato da un'altra app, lasciando poi SyncBay come unico gestore del flusso eBay.it -> Shopify.
+**Goal:** Portare SyncBay a una release privata 1.0 completa e installabile prima di qualunque onboarding cliente, poi usare Numisleo come primo onboarding reale post-1.0 fino a SyncBay come unico gestore del flusso eBay.it -> Shopify.
 
-**Architecture:** Non creare un flusso Numisleo-specifico. Estendere il tab `Importazione` con la modalità `Collega catalogo esistente`, costruita sopra preview, matching conservativo, mapping, snapshot, import worker e policy di conflitto già esistenti. Il takeover scrive solo dopo dry-run, conferma esplicita e claim del prodotto Shopify tramite metafield `syncbay` + `ProductMapping`; dopo il claim riusa il percorso ordinario di import/sync in modalità `reuseOnly`, così non crea duplicati.
+**Architecture:** Non creare funzionalità Numisleo-specifiche dentro l'app: la capability resta generica e vive nel tab `Importazione` con la modalità `Collega catalogo esistente`, costruita sopra preview, matching conservativo, mapping, snapshot, import worker e policy di conflitto già esistenti. Il piano è separato in due gate: prima release privata `1.0.0` completa, verificata, taggata, deployata e installabile; dopo, onboarding Numisleo come primo cliente reale, con eventuali correzioni rilasciate come `1.0.1+`. Il takeover scrive solo dopo dry-run, conferma esplicita e claim del prodotto Shopify tramite metafield `syncbay` + `ProductMapping`; dopo il claim riusa il percorso ordinario di import/sync in modalità `reuseOnly`, così non crea duplicati.
 
 **Tech Stack:** TypeScript, React Router, Shopify Web Components (`s-*`), Shopify Admin GraphQL, eBay Inventory/Trading API, Prisma/Postgres, Supabase Queues/Cron, Node test runner.
 
 ---
 
-## Stato Verificato Task 0-7 (2026-06-28)
+## Stato Verificato Task 0-8 (2026-07-01)
 
-**Esito:** Task 0-7 sono completati al 100% per il perimetro previsto da questo
+**Esito:** Task 0-8 sono completati al 100% per il perimetro previsto da questo
 piano: audit read-only, fondazione generica, preview live, matching, report,
-lettura Shopify paginata, apply `reuseOnly` e policy campi del takeover. Questo
-non equivale ad apply reale o go-live su Numisleo: Task 8 e Task 9 restano
-aperti prima della 1.0 pronta all'uso operativo.
+lettura Shopify paginata, apply `reuseOnly`, policy campi del takeover,
+readiness privacy/termini e mini kit 1.0 privata. Questo non equivale a
+release 1.0 completa, installazione, apply reale o go-live su Numisleo: Task 9
+resta aperto prima di dichiarare `1.0.0`; Task 10-11 sono onboarding Numisleo
+post-1.0.
 
-**Base verificata:** `main` a `3a298f5`, PR mergeate #301, #324, #325, #329,
-#330, #331, #332, #333 e #335, audit locale ignorato in
+**Base verificata:** `main` a `4bdfa3f`, PR mergeate #301, #324, #325, #329,
+#330, #331, #332, #333, #335, #339 e #340, audit locale ignorato in
 `audits/numisleo.myshopify.com/20260621-2239/`.
 
 | Task | Stato | Evidenza | Limite esplicito |
@@ -32,10 +34,12 @@ aperti prima della 1.0 pronta all'uso operativo.
 | Task 5 | Completato | Preview Trading API completa solo su richiesta live, report UI e disabilitazione creazione prodotti in modalità existing in `app/services/ebay-trading-preview.server.ts`, `app/services/syncbay.server.ts` e `app/routes/app.import-preview.tsx`; PR #329/#330. | Il tab non chiama eBay/Shopify per migliaia di prodotti all'apertura. |
 | Task 6 | Completato | Apply con conferma `COLLEGA`, claim mapping/metafield prima del job, payload `reuseOnly` e runner allineato in `app/services/syncbay.server.ts`, `app/services/shopify-draft-import.server.ts` e `app/services/sync-job-runner.server.ts`; PR #331/#332. | Se il prodotto Shopify esistente non viene riusato, la riga fallisce invece di creare duplicati. |
 | Task 7 | Completato | Policy campi generica con handle preservato, tag legacy su allowlist, immagini preservate quando Shopify ne ha già, e filtro media image-only in `app/lib/syncbay-existing-catalog-field-policy.ts` e import worker; PR #335. | Non cambia handle e non sostituisce immagini in massa. |
+| Task 8 | Completato | Privacy, termini minimi, mini kit clienti selezionati e release locale `0.50.0`; PR #340. | Chiuso come readiness legale/prodotto, non come installazione o onboarding Numisleo. |
 
-**Verifiche fresche della revisione:** `npm run test:lib`, `npm run typecheck`,
-`npm run lint`, `npm run release:dry-run`; PR #335 mergeata con CI, React Doctor
-e Vercel verdi.
+**Verifiche fresche della revisione:** `npm run typecheck`, `npm run lint`,
+`npm run build`, `npm run test:lib`, `npm run quality:react-doctor`,
+`npm run smoke:ui`, `npm run release:dry-run`; PR #340 mergeata con CI, React
+Doctor e Vercel production verdi.
 
 ## Baseline Reale
 
@@ -84,6 +88,17 @@ e Vercel verdi.
 - Tag legacy rimossi solo se riconosciuti come SyncBay legacy o inseriti esplicitamente nell'apply come allowlist esatta.
 - Sync automatico eBay -> Shopify resta il flusso ordinario post-takeover; `orders/paid` -> eBay resta invariato.
 - Nessun dato reale di cliente finisce in fixture, test, screenshot o repo.
+- La release privata `1.0.0` è dichiarata prima dell'installazione su Numisleo:
+  se un blocco critico emerge prima dell'installazione, si corregge e si
+  rilascia la 1.0; se emerge durante l'onboarding Numisleo, si rilascia una
+  patch `1.0.1+`.
+- L'onboarding Numisleo è parte esplicita del piano post-1.0:
+  installazione/autorizzazione privata, verifica runtime, configurazione,
+  collegamento eBay, dry-run read-only, freeze, apply controllato e monitoraggio
+  iniziale.
+- Nessun apply Numisleo può partire solo perché l'app è installata: serve prima
+  dry-run completo salvato fuori repo, classificazione eccezioni e conferma
+  esplicita dell'operatore.
 - Prima di ogni apply su store reale esiste un audit read-only completo dello
   store target: storefront, tema, Shopify Admin, app di sync precedente,
   catalogo eBay, dati prodotto, collezioni, URL, tag, metafield, location,
@@ -105,6 +120,8 @@ e Vercel verdi.
 - `app/routes/privacy.tsx`: aggiorna da privacy provvisoria pilota a informativa generale 1.0 privata.
 - `app/routes/terms.tsx`: termini minimi SyncBay per clienti selezionati.
 - `docs/guides/onboarding-e-import.md`: aggiunge il mini kit operativo per clienti selezionati nella guida esistente.
+- `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`: registra runbook e vincoli operativi del takeover 1.0.
+- `README.md`: aggiorna stato progetto e prossimo passo operativo quando onboarding Numisleo avanza.
 - `CHANGELOG.md`, `docs/INDEX.md`, `docs/ROADMAP.md`: riferimenti documentali.
 
 ## Task 0: Audit Completo Store Target
@@ -1504,23 +1521,42 @@ e Vercel verdi.
   git commit -m "feat: add private 1.0 readiness materials"
   ```
 
-## Task 9: Verifica Completa E Go-Live Dry Run
+## Task 9: Release Privata 1.0 Completa Prima Di Numisleo
 
 **Files:**
 - Modify: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
 - Modify: `docs/guides/onboarding-e-import.md`
 - Modify: `README.md`
+- Modify: `CHANGELOG.md`
+- Modify after release: `app/lib/version.ts`
 
-- [ ] **Step 1: aggiornare runbook dopo implementazione**
+- [ ] **Step 1: aggiornare runbook con boundary release 1.0 e azioni UI reali**
 
-  Inserire nel runbook i nomi reali delle azioni UI:
+  Inserire nella guida e nell'ADR 0020 una sezione `Release privata 1.0 prima
+  dell'onboarding` che renda esplicita questa sequenza, senza introdurre
+  logiche hardcoded nell'app:
+
+  1. SyncBay deve arrivare a `1.0.0` prima di essere installata su Numisleo;
+  2. la 1.0 è una custom app privata completa, non una App Store release;
+  3. nessun onboarding cliente parte se Vercel, Supabase, privacy, termini,
+     runbook, test e release non sono verdi;
+  4. Numisleo usa la 1.0 come primo onboarding reale post-release;
+  5. se durante Numisleo emergono bug, si rilascia una patch `1.0.1+`, non si
+     ridefinisce retroattivamente la 1.0.
+
+  Inserire anche i nomi reali delle azioni UI:
 
   - `Importazione -> Collega catalogo esistente`;
   - `Genera preview live`;
   - `Applica takeover righe sicure`;
   - `Attività -> job IMPORT_CATALOG`;
   - `Catalogo -> Da controllare`;
-  - `Conflitti -> Batch sicuri / Da rivedere / Manuali`.
+  - `Conflitti -> Batch sicuri / Da rivedere / Manuali`;
+  - `Impostazioni -> Sync automatico`;
+  - `Impostazioni -> Stato prodotti`;
+  - `Impostazioni -> Pubblicazioni Shopify`;
+  - `Impostazioni -> Regola prezzo`;
+  - `Impostazioni -> Regola descrizione`.
 
 - [ ] **Step 2: eseguire gate standard locale**
 
@@ -1536,39 +1572,371 @@ e Vercel verdi.
   git diff --check
   ```
 
-- [ ] **Step 3: eseguire smoke UI locale**
+  Expected: tutti PASS. Se `npm run release:dry-run` segnala una sezione
+  versionata in `CHANGELOG.md`, eseguire `npm run release` prima della
+  pubblicazione di questo task.
+
+- [ ] **Step 3: verificare runtime production prima dell'installazione**
 
   Run:
 
   ```bash
-  npm run smoke:ui
+  vercel list syncbay --environment production --format json --yes --no-color
+  npm run db:verify
   ```
 
-  Expected: PASS. Se fallisce per autenticazione embedded o dipendenza esterna, registrare output e sostituire con verifica browser manuale su dev server.
+  Expected:
 
-- [ ] **Step 4: fare dry-run read-only su store reale**
+  - deployment Vercel production `READY` sul commit `main` corrente;
+  - `npm run db:verify` PASS;
+  - nessun blocco provider `402 exceed_egress_quota`.
 
-  Usare solo letture finché non c'è conferma apply:
+  Se Supabase restituisce `402 exceed_egress_quota`, fermare Task 9: non
+  dichiarare `1.0.0`, non installare su Numisleo e registrare il blocco nel
+  riepilogo operativo.
+
+- [ ] **Step 4: verificare superfici pubbliche e installabilità senza cliente**
+
+  Aprire e verificare:
+
+  - `https://syncbay.vercel.app`;
+  - `https://syncbay.vercel.app/privacy`;
+  - `https://syncbay.vercel.app/terms`.
+
+  Verificare inoltre che il form pubblico di accesso esponga il campo `Dominio
+  shop` e che il deployment production sia quello candidato a `1.0.0`.
+
+  Expected:
+
+  - home pubblica raggiungibile;
+  - privacy e termini raggiungibili;
+  - nessun claim App Store pubblico o billing pubblico;
+  - nessuna installazione Numisleo eseguita.
+
+- [ ] **Step 5: preparare release locale 1.0.0**
+
+  Prima della release, assicurarsi che il blocco `[Non rilasciato]` contenga la
+  sezione versionata corretta per `1.0.0` e che le note solo documentali restino
+  sotto `Non versionato` quando non fanno parte della release prodotto.
+
+  Run:
 
   ```bash
-  test -n "$SYNCBAY_TAKEOVER_SHOP_DOMAIN"
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { products(first: 5) { nodes { id title handle tags } } }' --version 2026-04 --json
+  npm run release
+  npm run release:dry-run
   ```
 
-  Obiettivo: verificare autenticazione Shopify Admin e shape base senza scrivere.
+  Expected:
 
-- [ ] **Step 5: publish secondo AGENTS.md**
+  - `CHANGELOG.md` contiene `## [1.0.0] — <data release>`;
+  - `app/lib/version.ts` contiene `APP_VERSION = "1.0.0"`;
+  - il secondo `release:dry-run` riporta `Categoria: non versionato. Nessuna
+    release SemVer da preparare.`;
+  - nessuna installazione Numisleo eseguita.
 
-  Per runtime non banale:
+- [ ] **Step 6: publish, deploy, tag e GitHub Release 1.0.0**
 
-  - branch `codex/syncbay-1-0-existing-catalog-takeover`;
+  Pubblicare secondo AGENTS.md e ADR 0008, perché `1.0.0` è una release
+  prodotto reale privata:
+
+  - branch dedicata;
   - PR verso `main`;
   - self-review diff;
   - controllo Codex feedback inbox/preflight;
-  - merge;
-  - release locale se `CHANGELOG.md` contiene sezioni versionate;
-  - deploy Vercel production se richiesto dalla pubblicazione runtime;
+  - merge su `main`;
+  - verifica CI `main`;
+  - verifica Vercel production `READY` sul commit mergeato;
+  - tag Git `v1.0.0`;
+  - GitHub Release `v1.0.0`;
   - cleanup branch/worktree.
+
+  Expected: esiste una release privata `1.0.0` pubblicata su GitHub, deployata
+  in production e installabile. Numisleo non è ancora installato.
+
+- [ ] **Step 7: produrre handoff installazione Numisleo**
+
+  Aggiornare il riepilogo operativo con:
+
+  - versione installabile: `1.0.0`;
+  - URL production;
+  - stato Vercel;
+  - stato Supabase;
+  - link privacy e termini;
+  - link GitHub Release;
+  - blocchi residui pari a zero oppure no-go esplicito.
+
+  Expected: Task 9 chiuso significa SyncBay `1.0.0` completa prima di
+  installare su Numisleo.
+
+## Task 10: Onboarding Numisleo Post-1.0, Installazione E Dry-Run Read-Only
+
+**Files:**
+- No repo file for raw evidence: salvare output, screenshot e JSON in una
+  cartella fuori repo o ignorata, per esempio
+  `/Users/Matteo/SyncBay-audit/numisleo.myshopify.com/$YYYYMMDD-HHMM/`.
+- Modify only if the runbook changes: `docs/guides/onboarding-e-import.md`
+- Modify only if the ADR changes: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
+
+- [ ] **Step 1: verificare prerequisito release**
+
+  Prima di toccare Numisleo, verificare:
+
+  - Task 9 completato;
+  - tag `v1.0.0` e GitHub Release presenti;
+  - Vercel production `READY` sulla release installabile;
+  - Supabase operativo, senza `402 exceed_egress_quota`;
+  - nessun hotfix non rilasciato necessario.
+
+  Expected: se manca un punto, fermare l'onboarding e chiudere prima una patch
+  `1.0.1+` o la release `1.0.0`.
+
+- [ ] **Step 2: creare cartella run reale fuori repo**
+
+  Run:
+
+  ```bash
+  export SYNCBAY_TAKEOVER_SHOP_DOMAIN="numisleo.myshopify.com"
+  export SYNCBAY_TAKEOVER_RUN_DIR="/Users/Matteo/SyncBay-audit/numisleo.myshopify.com/$(date +%Y%m%d-%H%M)"
+  mkdir -p "$SYNCBAY_TAKEOVER_RUN_DIR"
+  ```
+
+  Expected: la cartella esiste fuori dal repo e conterrà solo evidenze locali
+  non committate.
+
+- [ ] **Step 3: installare/autorizzare SyncBay su Numisleo senza apply**
+
+  Con browser autenticato sullo store, aprire il deployment production e
+  completare OAuth Shopify per:
+
+  ```text
+  numisleo.myshopify.com
+  ```
+
+  Percorso operativo:
+
+  1. aprire `https://syncbay.vercel.app`;
+  2. inserire `numisleo.myshopify.com` nel form `Dominio shop`;
+  3. completare la schermata autorizzazione Shopify;
+  4. arrivare alla home embedded SyncBay;
+  5. non avviare import, preview live o apply in questo step.
+
+  Expected: SyncBay `1.0.0` o patch successiva risulta installata/autorizzata
+  sullo store Numisleo e la home embedded carica senza errori runtime.
+
+- [ ] **Step 4: verificare sessione, scope, webhook, location e pagine pubbliche**
+
+  Usare letture e diagnostica, senza scrivere catalogo:
+
+  ```bash
+  test -n "$SYNCBAY_TAKEOVER_SHOP_DOMAIN"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { shop { name myshopifyDomain } locations(first: 5) { nodes { id name isActive } } products(first: 5) { nodes { id title handle tags status } } }' --version 2026-04 --json
+  ```
+
+  Aprire inoltre:
+
+  - `https://syncbay.vercel.app/privacy`;
+  - `https://syncbay.vercel.app/terms`;
+  - home embedded SyncBay su Numisleo;
+  - tab `Impostazioni`.
+
+  Expected:
+
+  - store domain corretto;
+  - una location Shopify attiva scelta come default;
+  - nessuno scope richiesto da SyncBay mancante;
+  - webhook registrabili senza errore;
+  - privacy e termini raggiungibili;
+  - nessuna scrittura catalogo eseguita.
+
+- [ ] **Step 5: collegare eBay e impostazioni iniziali Numisleo**
+
+  Dalla UI SyncBay su Numisleo:
+
+  1. collegare l'account eBay.it corretto;
+  2. verificare che il marketplace operativo sia eBay.it;
+  3. impostare stato prodotti, pubblicazioni Shopify, regola prezzo e regola
+     descrizione secondo le impostazioni SyncBay concordate;
+  4. impostare target sync automatico a 300 secondi, ma non considerarlo go-live
+     finché Task 11 non ha completato apply e verifica;
+  5. annotare in un report fuori repo le impostazioni effettive.
+
+  Expected: Numisleo ha Shopify + eBay autorizzati dentro SyncBay e le
+  impostazioni base sono pronte per il dry-run, senza apply catalogo.
+
+- [ ] **Step 6: verificare letture Shopify ed eBay senza scritture**
+
+  Run:
+
+  ```bash
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { products(first: 5) { nodes { id title handle tags status } } }' --version 2026-04 --json > "$SYNCBAY_TAKEOVER_RUN_DIR/shopify-readiness-products.json"
+  ```
+
+  Dalla UI SyncBay, verificare che il collegamento eBay risulti attivo e che la
+  preview live possa leggere i listing eBay.it. Il conteggio autorevole dei
+  listing attivi resta quello restituito da Trading API/GetMyeBaySelling, non il
+  totale storico dei prodotti Shopify.
+
+  Expected: letture Shopify ed eBay funzionanti, nessuna scrittura catalogo,
+  nessun job apply creato.
+
+- [ ] **Step 7: generare preview live in modalità catalogo esistente**
+
+  Dalla UI SyncBay:
+
+  1. aprire `Importazione`;
+  2. scegliere `Collega catalogo esistente`;
+  3. avviare `Genera preview live`;
+  4. attendere la fine del caricamento;
+  5. salvare fuori repo screenshot e report con conteggi.
+
+  Expected:
+
+  - il dry-run copre tutti i listing eBay attivi entro il limite MVP 2.000;
+  - nessun prodotto Shopify viene creato;
+  - nessun mapping viene scritto se non previsto dalla preview read-only;
+  - il report espone `applicabile`, `da_rivedere`, `bloccante`,
+    `gia_collegato`.
+
+- [ ] **Step 8: riconciliare report con audit Task 0**
+
+  Confrontare il nuovo report con l'audit già salvato in
+  `audits/numisleo.myshopify.com/20260621-2239/` e classificare almeno:
+
+  - listing eBay attivi mancanti da Shopify;
+  - prodotti Shopify con stock 0 ma eBay attivo;
+  - prodotti Shopify `DRAFT` con stock positivo ma non eBay attivo;
+  - match multipli o ambigui;
+  - varianti inattese;
+  - prezzo o disponibilità non affidabili;
+  - descrizioni/template da sanificare;
+  - immagini mancanti, rotte o incoerenti;
+  - categorie, `productType`, metafield, faccette e tag legacy.
+
+  Expected: ogni riga è `applicabile`, `da_rivedere`, `bloccante` o
+  `gia_collegato`, con motivazione leggibile.
+
+- [ ] **Step 9: decidere freeze e vecchia app**
+
+  Prima di disattivare la vecchia app o applicare SyncBay, verificare:
+
+  1. export segnali legacy completato;
+  2. report dry-run salvato fuori repo;
+  3. righe `bloccante` pari a zero oppure no-go documentato;
+  4. finestra operativa di freeze confermata;
+  5. nessuna modifica manuale prevista su eBay o Shopify durante il freeze;
+  6. decisione esplicita su disattivazione vecchia app prima dell'apply.
+
+  Expected: esiste un pacchetto go/no-go. Se una condizione manca, Task 10 non
+  è chiuso e Task 11 non parte.
+
+- [ ] **Step 10: publish eventuali patch 1.0.1+ o correzioni runbook**
+
+  Se il dry-run reale rivela bug applicativi, correggerli e rilasciarli come
+  patch `1.0.1+` prima di procedere. Se rivela solo istruzioni mancanti o
+  fuorvianti, aggiornare guida/ADR e pubblicare secondo AGENTS.md. Non
+  committare evidenze reali, export, screenshot o JSON del negoziante.
+
+## Task 11: Apply Controllato, Attivazione Sync E Monitoraggio Numisleo
+
+**Files:**
+- No repo file for raw evidence: report apply, screenshot, log e JSON restano
+  fuori repo o in cartelle ignorate.
+- Modify only if documentation changes: `docs/guides/onboarding-e-import.md`
+- Modify only if a stable decision changes: `docs/decisions/`
+
+- [ ] **Step 1: confermare go prima di ogni scrittura**
+
+  Prima di applicare, verificare e registrare fuori repo:
+
+  - Task 9 completato;
+  - Task 10 completato;
+  - Numisleo installato su SyncBay `1.0.0` o patch successiva rilasciata;
+  - Supabase e Vercel production operativi;
+  - `existingCatalogTakeover.summary.blocked === 0`;
+  - vecchia app disattivata o lasciata attiva con motivo documentato;
+  - freeze operativo attivo;
+  - approvazione esplicita dell'operatore per applicare righe sicure.
+
+  Expected: senza questi punti, non premere `Applica takeover righe sicure`.
+
+- [ ] **Step 2: applicare solo righe sicure**
+
+  Dalla UI SyncBay:
+
+  1. aprire il report dry-run valido più recente;
+  2. verificare conteggi e filtri;
+  3. inserire la conferma `COLLEGA`;
+  4. premere `Applica takeover righe sicure`;
+  5. salvare fuori repo timestamp, conteggi e screenshot.
+
+  Expected:
+
+  - vengono pianificate solo righe applicabili;
+  - righe `da_rivedere` e `bloccante` restano escluse;
+  - ogni riga usa `reuseOnly`;
+  - un mancato riuso fallisce la riga invece di creare duplicati.
+
+- [ ] **Step 3: monitorare job, mapping, snapshot e conflitti**
+
+  Dalla UI e dagli strumenti diagnostici:
+
+  - `Attività -> job IMPORT_CATALOG`;
+  - `Catalogo`;
+  - `Conflitti`;
+  - diagnostica job/rate-limit;
+  - eventuali log Vercel error/fatal.
+
+  Expected:
+
+  - job completati o errori classificati;
+  - mapping `ProductMapping` coerenti con ItemID eBay;
+  - snapshot salvati;
+  - conflitti critici assenti;
+  - nessun duplicato prodotto creato da SyncBay.
+
+- [ ] **Step 4: verifica manuale finale catalogo**
+
+  L'operatore controlla manualmente:
+
+  - prezzo;
+  - disponibilità;
+  - descrizione ripulita;
+  - immagini;
+  - URL/handle preservati o redirect espliciti;
+  - categorie, `productType`, metafield e faccette;
+  - tag legacy rimossi solo se in allowlist;
+  - prodotti eBay inattivi gestiti come Shopify esauriti secondo ADR 0011.
+
+  Expected: catalogo Shopify coerente con eBay per tutte le righe applicate e
+  lista eccezioni aperte aggiornata.
+
+- [ ] **Step 5: attivare sync ordinario a 300 secondi**
+
+  Solo dopo verifica manuale:
+
+  1. attivare sync eBay -> Shopify;
+  2. confermare target 300 secondi;
+  3. verificare una run incrementale riuscita;
+  4. verificare che `orders/paid` pianifichi `UPDATE_EBAY_STOCK` senza usare
+     `orders/create`;
+  5. mantenere report fuori repo per recovery manuale.
+
+  Expected: SyncBay diventa l'unico gestore del flusso eBay.it -> Shopify per
+  Numisleo, con stock Shopify -> eBay limitato agli ordini pagati.
+
+- [ ] **Step 6: monitoraggio iniziale e chiusura onboarding**
+
+  Nella prima finestra operativa controllare:
+
+  - job falliti o in retry;
+  - conflitti Shopify aperti;
+  - rate-limit eBay;
+  - ordini reali e aggiornamenti stock;
+  - prodotti inattivi e out-of-stock;
+  - eventuali segnalazioni del negoziante.
+
+  Expected: nessun conflitto critico aperto, nessun job bloccato non spiegato,
+  vecchia app fuori dal flusso, runbook aggiornato con gli esiti reali.
 
 ## Sequenza Di Esecuzione Consigliata
 
@@ -1578,11 +1946,19 @@ e Vercel verdi.
 2. Completato: Task 4-5 caricamento Shopify paginato e UI dry-run completa.
 3. Completato: Task 6-7 apply `reuseOnly`, tag policy e runner.
 4. Completato: Task 8 readiness legale e mini kit clienti selezionati.
-5. Prossimo: Task 9 come pubblicazione/release/deploy e dry-run read-only
-   sul primo store reale.
+5. Prossimo: Task 9 come release privata `1.0.0` completa, deployata,
+   taggata, pubblicata su GitHub Release e installabile, senza installare
+   Numisleo.
+6. Poi: Task 10 come onboarding Numisleo post-1.0: installazione,
+   configurazione, dry-run read-only, classificazione eccezioni, pacchetto
+   go/no-go, freeze e decisione sulla vecchia app.
+7. Infine: Task 11 come apply controllato, attivazione sync a 300 secondi e
+   monitoraggio iniziale.
 
-La capacità di takeover generica è pronta nel codice, ma il go-live resta
-bloccato finché Task 9 non è chiuso.
+La capacità di takeover generica è pronta nel codice, ma SyncBay non diventa
+`1.0.0` finché Task 9 non è chiuso. Dopo Task 9, Numisleo riceve una 1.0 già
+completa; eventuali problemi emersi durante l'onboarding diventano patch
+`1.0.1+`, non criteri retroattivi della 1.0.
 
 ## Copertura Decisioni Grill
 
@@ -1593,19 +1969,20 @@ store.
 | Decisione raccolta | Copertura nel piano |
 | --- | --- |
 | 1.0 come custom app privata, App Store pubblico in 2.0 | `Non Obiettivi 1.0`, Task 8 |
-| Target eBay.it-only, cataloghi di numismatica/collezionismo con prodotti singoli | `Target 1.0`, `Gate Go-Live 1.0` |
+| Target eBay.it-only, cataloghi di numismatica/collezionismo con prodotti singoli | `Target 1.0`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0` |
 | Capacità generica, non Numisleo-specifica | `Architecture`, `Non Obiettivi 1.0`, Task 1 |
 | Audit completo del primo store reale, inclusi frontend, backend Shopify e vecchia app di sync | Task 0 |
-| L'altra app verrà disattivata, anche prima se migliora il takeover | `Rischi E Mitigazioni`, Task 9, gate audit/dry-run/freeze |
-| Audit sola lettura, dry-run, export segnali legacy e freeze prima dell'apply | Task 6, Task 9, `Rischi E Mitigazioni` |
+| 1.0 completa prima di installare su Numisleo; problemi Numisleo come 1.0.1+ | Task 9, Task 10 |
+| L'altra app verrà disattivata, anche prima se migliora il takeover | `Rischi E Mitigazioni`, Task 10, gate audit/dry-run/freeze |
+| Audit sola lettura, dry-run, export segnali legacy e freeze prima dell'apply | Task 6, Task 10, Task 11, `Rischi E Mitigazioni` |
 | Tutti i prodotti entro limite MVP, non un campione | `Target 1.0`; Task 4 carica fino a 2.000 prodotti; Task 5 costruisce il dry-run da tutti gli ItemID Trading API; Task 6 pianifica righe applicabili |
 | Match automatico solo con segnali forti | Task 2, Task 3, `Definition Of Done` |
 | Casi incerti come eccezioni da rivedere | Task 3, UI Task 5 |
 | Se eBay ha dato assente/vuoto/non affidabile, non svuotare Shopify | Task 3, `Rischi E Mitigazioni` |
-| Prezzo e disponibilità riallineati a eBay quando validi | Task 6, `Gate Go-Live 1.0` |
+| Prezzo e disponibilità riallineati a eBay quando validi | Task 6, `Gate Onboarding Numisleo Post-1.0` |
 | Stato e pubblicazioni seguono impostazioni SyncBay | Task 6 passa `importProductStatus` e riusa policy pubblicazioni esistente |
-| Stock Shopify -> eBay da `orders/paid`, non `orders/create` | `Definition Of Done`, `Gate Go-Live 1.0`; nessun task modifica il webhook |
-| Scrittura eBay rapida ma via runner/job esistente, non dentro webhook sincrono | `Architecture`, `Definition Of Done`, `Gate Go-Live 1.0` |
+| Stock Shopify -> eBay da `orders/paid`, non `orders/create` | `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; nessun task modifica il webhook |
+| Scrittura eBay rapida ma via runner/job esistente, non dentro webhook sincrono | `Architecture`, `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0` |
 | Descrizioni/template da sistemare | Task 3 include descrizione nel report; Task 6 riusa update descrizione; Task 7 policy campi |
 | Immagini non sostituite in massa | Task 7, `Rischi E Mitigazioni` |
 | Categorie, `productType`, metafield e faccette applicabili dopo preview | Task 3, Task 6, Task 7 |
@@ -1615,12 +1992,15 @@ store.
 | Regole collection esistenti preservate | Task 7, `Rischi E Mitigazioni` |
 | Location Shopify unica esistente | `Non Obiettivi 1.0`, Task 6 usa `defaultLocationGid` |
 | Varianti non supportate nel target, inattese come anomalie | `Non Obiettivi 1.0`, Task 3 blocca `complex_variants` |
-| Listing eBay inattivi restano Shopify esauriti, non cancellati/archiviati | `Gate Go-Live 1.0`; invariant ADR 0011 da non modificare |
-| Sync automatico dopo riallineamento, target 300 secondi | `Gate Go-Live 1.0`, Task 9 |
-| Go-live bloccato da conflitti critici su mapping/prezzo/disponibilità | `Gate Go-Live 1.0`, Task 5 |
+| Listing eBay inattivi restano Shopify esauriti, non cancellati/archiviati | `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; invariant ADR 0011 da non modificare |
+| Installazione privata SyncBay su Numisleo necessaria prima del dry-run reale | Task 10 |
+| Dry-run reale su Numisleo prima dell'apply | Task 10 |
+| Apply reale solo dopo conferma operatore e freeze | Task 11 |
+| Sync automatico dopo riallineamento, target 300 secondi | `Gate Onboarding Numisleo Post-1.0`, Task 11 |
+| Go-live bloccato da conflitti critici su mapping/prezzo/disponibilità | `Gate Onboarding Numisleo Post-1.0`, Task 5 |
 | Recovery manuale, non rollback self-service 1.0 | `Non Obiettivi 1.0`, Task 6 snapshot/report |
 | Privacy generale, termini minimi e mini kit clienti selezionati | Task 8 |
-| Verifica finale catalogo manuale | `Gate Go-Live 1.0`, Task 9 |
+| Verifica finale catalogo manuale | `Gate Onboarding Numisleo Post-1.0`, Task 11 |
 | Integrare il minimo nel tab Importazione/prima configurazione senza gonfiare SyncBay | `Architecture`, Task 1, sequenza PR 1-3 prima delle scritture |
 
 ## Rischi E Mitigazioni
@@ -1630,21 +2010,65 @@ store.
 - **Dato eBay assente che svuota Shopify**: prezzo/disponibilità invalidi bloccano; immagini mancanti restano review.
 - **SEO URL**: handle preservati; redirect solo in una futura correzione esplicita.
 - **Collezioni automatiche**: nessuna modifica alle regole; SyncBay aggiorna i campi prodotto.
-- **Vecchia app ancora attiva**: apply solo dopo audit, export segnali, freeze e disattivazione se utile.
+- **Vecchia app ancora attiva**: apply solo dopo audit, dry-run, export segnali,
+  freeze e decisione esplicita su disattivazione o mantenimento temporaneo.
+- **Installazione confusa con release 1.0 o go-live**: Task 9 chiude la release
+  installabile senza toccare Numisleo; Task 10 installa/autorizza SyncBay su
+  Numisleo solo per creare sessione, token, configurazione e dry-run; l'apply
+  resta Task 11.
+- **1.0 confusa con collaudo Numisleo**: Task 9 chiude `1.0.0` prima
+  dell'installazione cliente; se Numisleo rivela bug, si procede con patch
+  `1.0.1+`.
+- **Runtime provider bloccato**: Supabase `402 exceed_egress_quota` blocca
+  release 1.0, installazione utile, dry-run reale e apply; non aggirare il
+  blocco con comandi manuali non tracciati.
 - **Audit incompleto**: Task 0 blocca l'apply finché storefront, Shopify Admin,
   vecchia app e catalogo eBay non sono stati verificati o il limite non è stato
   documentato.
 - **Rate limit provider**: usare batch esistenti, retry/backoff e runner; non introdurre worker separati.
 
-## Gate Go-Live 1.0
+## Gate Release 1.0
 
+- Tutti i Task 0-8 completati e pubblicati.
+- Gate locale completo passato: `test:lib`, `prisma:validate`, `typecheck`,
+  `lint`, `build`, `release:dry-run`, `git diff --check`.
+- Vercel production `READY` sul commit `main` destinato alla release.
+- Supabase operativo, senza `402 exceed_egress_quota` su DB/API necessari.
+- Privacy e termini raggiungibili.
+- Runbook onboarding aggiornato e coerente con i nomi reali delle azioni UI.
+- `orders/paid` -> eBay stock operativo nel perimetro già verificabile senza
+  installazione Numisleo.
+- Listing eBay inattivi gestiti come Shopify esauriti secondo ADR 0011, senza
+  cancellazione né archiviazione.
+- Nessun claim App Store pubblico, billing pubblico o support policy pubblica.
+- `CHANGELOG.md` e `app/lib/version.ts` chiusi su `1.0.0`.
+- Tag Git `v1.0.0` e GitHub Release `v1.0.0` pubblicati.
+- Deployment production verificato dopo merge della release.
+- Nessuna installazione Numisleo eseguita prima della chiusura di questo gate.
+
+## Gate Onboarding Numisleo Post-1.0
+
+- Vercel production `READY` sul commit `main` corrente.
+- Supabase operativo, senza `402 exceed_egress_quota` su DB/API necessari.
+- SyncBay `1.0.0` o patch successiva rilasciata prima dell'installazione.
+- SyncBay installata e autorizzata su `numisleo.myshopify.com`.
+- Sessione Shopify, scope, webhook e location Numisleo verificati.
+- Account eBay.it corretto collegato nello shop Numisleo.
+- Impostazioni SyncBay iniziali confermate: stato prodotti, pubblicazioni,
+  regola prezzo, regola descrizione e target sync 300 secondi.
 - `existingCatalogTakeover.summary.blocked === 0`.
 - Nessun conflitto aperto critico su mapping, prezzo o disponibilità.
 - `orders/paid` -> eBay stock operativo e verificato.
 - Sync eBay -> Shopify attivo con target 300 secondi.
 - Audit completo read-only chiuso con report operativo fuori repo.
+- Dry-run read-only Numisleo chiuso e report salvato fuori repo.
+- Export segnali legacy vecchia app completato o limite documentato.
+- Freeze operativo confermato prima dell'apply.
+- Decisione esplicita su disattivazione vecchia app prima dell'apply.
 - Listing eBay inattivi gestiti come Shopify esauriti secondo ADR 0011, senza
   cancellazione né archiviazione.
 - Privacy e termini raggiungibili.
 - Report dry-run/apply salvato fuori repo per recovery manuale.
 - Verifica manuale finale del catalogo completata dall'operatore.
+- Monitoraggio iniziale senza job bloccati, conflitti critici o duplicati
+  creati da SyncBay.
