@@ -2,6 +2,7 @@ import { Session as ShopifySession } from "@shopify/shopify-api";
 import type { SessionStorage } from "@shopify/shopify-app-session-storage";
 
 const UNIQUE_KEY_CONSTRAINT_ERROR_CODE = "P2002";
+const RECORD_NOT_FOUND_ERROR_CODE = "P2025";
 
 type SessionTable = {
   upsert(input: {
@@ -14,7 +15,6 @@ type SessionTable = {
   deleteMany(input: { where: { id: { in: string[] } } }): Promise<unknown>;
   findMany(input: {
     where: { shop: string };
-    take: number;
     orderBy: Array<{ expires: "desc" }>;
   }): Promise<SessionRow[]>;
   count(): Promise<number>;
@@ -122,8 +122,10 @@ export class PrismaSessionStorage implements SessionStorage {
 
     try {
       await this.sessionTable.delete({ where: { id } });
-    } catch {
-      return true;
+    } catch (error) {
+      if (!isRecordNotFoundError(error)) {
+        throw error;
+      }
     }
 
     return true;
@@ -141,7 +143,6 @@ export class PrismaSessionStorage implements SessionStorage {
 
     const sessions = await this.sessionTable.findMany({
       where: { shop },
-      take: 25,
       orderBy: [{ expires: "desc" }],
     });
 
@@ -256,10 +257,18 @@ async function sleep(ms: number) {
 }
 
 function isUniqueConstraintError(error: unknown) {
+  return isPrismaErrorCode(error, UNIQUE_KEY_CONSTRAINT_ERROR_CODE);
+}
+
+function isRecordNotFoundError(error: unknown) {
+  return isPrismaErrorCode(error, RECORD_NOT_FOUND_ERROR_CODE);
+}
+
+function isPrismaErrorCode(error: unknown, code: string) {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    error.code === UNIQUE_KEY_CONSTRAINT_ERROR_CODE
+    error.code === code
   );
 }

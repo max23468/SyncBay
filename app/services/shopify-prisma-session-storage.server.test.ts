@@ -97,6 +97,82 @@ test("stores and loads Shopify sessions through the Prisma session table", async
   assert.equal(await storage.loadSession(session.id), undefined);
 });
 
+test("ignores missing rows but propagates failed session deletes", async () => {
+  const missingRowError = Object.assign(new Error("record not found"), {
+    code: "P2025",
+  });
+  const missingRowStorage = new PrismaSessionStorage(
+    {
+      session: {
+        count: async () => 1,
+        upsert: async () => {},
+        findUnique: async () => null,
+        delete: async () => {
+          throw missingRowError;
+        },
+        deleteMany: async () => {},
+        findMany: async () => [],
+      },
+    },
+    { connectionRetries: 1, connectionRetryIntervalMs: 0 },
+  );
+
+  assert.equal(await missingRowStorage.deleteSession("missing"), true);
+
+  const failedDeleteStorage = new PrismaSessionStorage(
+    {
+      session: {
+        count: async () => 1,
+        upsert: async () => {},
+        findUnique: async () => null,
+        delete: async () => {
+          throw new Error("database unavailable");
+        },
+        deleteMany: async () => {},
+        findMany: async () => [],
+      },
+    },
+    { connectionRetries: 1, connectionRetryIntervalMs: 0 },
+  );
+
+  await assert.rejects(
+    () => failedDeleteStorage.deleteSession("still-stored"),
+    /database unavailable/,
+  );
+});
+
+test("returns every persisted session for a shop", async () => {
+  const findManyInputs: unknown[] = [];
+  const rows = Array.from({ length: 30 }, (_, index) =>
+    makeStoredSessionRow(index + 1, "many-sessions.myshopify.com"),
+  );
+  const storage = new PrismaSessionStorage(
+    {
+      session: {
+        count: async () => rows.length,
+        upsert: async () => {},
+        findUnique: async () => null,
+        delete: async () => {},
+        deleteMany: async () => {},
+        findMany: async (input: unknown) => {
+          findManyInputs.push(input);
+
+          return rows;
+        },
+      },
+    },
+    { connectionRetries: 1, connectionRetryIntervalMs: 0 },
+  );
+
+  const sessions = await storage.findSessionsByShop(
+    "many-sessions.myshopify.com",
+  );
+
+  assert.equal(sessions.length, 30);
+  assert.equal(sessions.at(0)?.id, "session-1");
+  assert.equal("take" in (findManyInputs[0] as Record<string, unknown>), false);
+});
+
 test("reports readiness failures without throwing from isReady", async () => {
   const storage = new PrismaSessionStorage(
     {
@@ -116,3 +192,25 @@ test("reports readiness failures without throwing from isReady", async () => {
 
   assert.equal(await storage.isReady(), false);
 });
+
+function makeStoredSessionRow(index: number, shop: string): StoredSessionRow {
+  return {
+    accessToken: `token-${index}`,
+    accountOwner: null,
+    collaborator: null,
+    email: null,
+    emailVerified: null,
+    expires: null,
+    firstName: null,
+    id: `session-${index}`,
+    isOnline: true,
+    lastName: null,
+    locale: null,
+    refreshToken: null,
+    refreshTokenExpires: null,
+    scope: "read_products",
+    shop,
+    state: `state-${index}`,
+    userId: index,
+  };
+}

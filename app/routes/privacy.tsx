@@ -38,7 +38,7 @@ export default function Privacy() {
             <s-unordered-list>
               <s-list-item>dati shop Shopify e dati account eBay collegati;</s-list-item>
               <s-list-item>dati catalogo eBay e Shopify necessari a import, takeover e sync;</s-list-item>
-              <s-list-item>token provider trattati lato server e cifrati a riposo quando persistiti da SyncBay;</s-list-item>
+              <s-list-item>token eBay trattati lato server e cifrati a riposo quando persistiti da SyncBay;</s-list-item>
               <s-list-item>log, job, audit, mapping, snapshot prodotto e conflitti Shopify;</s-list-item>
               <s-list-item>ordini Shopify pagati limitati ai dati necessari per aggiornare la disponibilità su eBay.</s-list-item>
             </s-unordered-list>
@@ -59,9 +59,11 @@ export default function Privacy() {
         <s-section heading="Sicurezza">
           <s-stack gap="base">
             <s-text>
-              Token e segreti non vengono salvati nel repository. I token
-              provider persistiti da SyncBay sono trattati lato server e cifrati
-              a riposo quando gestiti dal runtime applicativo.
+              Token e segreti non vengono salvati nel repository. I token eBay
+              persistiti da SyncBay sono trattati lato server e cifrati a
+              riposo dal runtime applicativo. Le sessioni Shopify restano nel
+              database server-side della custom app e sono accessibili solo al
+              runtime.
             </s-text>
             <s-text>
               Le tabelle operative con token, job, audit, mapping e dati shop
