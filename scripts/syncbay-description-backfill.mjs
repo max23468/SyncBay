@@ -33,7 +33,7 @@ const GET_SELLER_LIST_ENTRIES_PER_PAGE = 200;
 // eBay requires the GetSellerList time range to stay below 120 days.
 const GET_SELLER_LIST_WINDOW_DAYS = 119;
 const APPLY_CONCURRENCY = 4;
-const SHOPIFY_ADMIN_API_VERSION = "2026-04";
+const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const APPLY_DESCRIPTION_MUTATION = `mutation SyncBayBackfillCleanDescription($product: ProductUpdateInput!) {

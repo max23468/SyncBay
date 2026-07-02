@@ -13,7 +13,7 @@ const DEFAULT_CHECK_BATCH_SIZE = 50;
 const DEFAULT_BATCH_DELAY_MS = 750;
 const DEFAULT_THROTTLE_RETRY_MS = 20_000;
 const MAX_SHOPIFY_GRAPHQL_ATTEMPTS = 5;
-const SHOPIFY_API_VERSION = "2026-04";
+const SHOPIFY_API_VERSION = "2026-07";
 
 const args = parseArgs(process.argv.slice(2));
 const shopDomain =

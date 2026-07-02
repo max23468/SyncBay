@@ -21,7 +21,7 @@ const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
 const GET_ITEM_CONCURRENCY = 4;
 const APPLY_CONCURRENCY = 4;
-const SHOPIFY_ADMIN_API_VERSION = "2026-04";
+const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const APPLY_CATEGORY_MUTATION = `mutation SyncBayApplyCategory($product: ProductUpdateInput!) {
   productUpdate(product: $product) {
     product {

@@ -28,7 +28,7 @@ const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_LIMIT = 2000;
 const DEFAULT_CHUNK_SIZE = 10;
 const SOLD_OUT_TAG = "esaurito";
-const SHOPIFY_API_VERSION = "2026-04";
+const SHOPIFY_API_VERSION = "2026-07";
 const SHOPIFY_AGENT_ENV = {
   SHOPIFY_CLI_AGENT_IDS: "s:syncbay|r:backfill-archived-to-soldout|i:codex",
   SHOPIFY_CLI_AGENT_INFO: "n:codex|v:claude|p:anthropic",

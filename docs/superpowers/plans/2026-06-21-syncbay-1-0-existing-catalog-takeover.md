@@ -173,9 +173,9 @@ Doctor e Vercel production verdi.
   Usare Shopify CLI/Admin GraphQL in sola lettura. Query minime:
 
   ```bash
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditLocations { locations(first: 20) { nodes { id name isActive fulfillsOnlineOrders } } }' --output-file "$AUDIT_DIR/shopify/locations.json"
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditProducts { products(first: 20, sortKey: UPDATED_AT, reverse: true) { nodes { id title handle status productType tags variants(first: 5) { nodes { id sku barcode inventoryQuantity } } metafields(first: 20, namespace: "syncbay") { nodes { key value } } } } }' --output-file "$AUDIT_DIR/shopify/products-sample.json"
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-04 --json --query 'query SyncBayAuditCollections { collections(first: 100, sortKey: TITLE) { nodes { id title handle sortOrder productsCount { count } ruleSet { appliedDisjunctively rules { column relation condition } } } } }' --output-file "$AUDIT_DIR/shopify/collections.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-07 --json --query 'query SyncBayAuditLocations { locations(first: 20) { nodes { id name isActive fulfillsOnlineOrders } } }' --output-file "$AUDIT_DIR/shopify/locations.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-07 --json --query 'query SyncBayAuditProducts { products(first: 20, sortKey: UPDATED_AT, reverse: true) { nodes { id title handle status productType tags variants(first: 5) { nodes { id sku barcode inventoryQuantity } } metafields(first: 20, namespace: "syncbay") { nodes { key value } } } } }' --output-file "$AUDIT_DIR/shopify/products-sample.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --version 2026-07 --json --query 'query SyncBayAuditCollections { collections(first: 100, sortKey: TITLE) { nodes { id title handle sortOrder productsCount { count } ruleSet { appliedDisjunctively rules { column relation condition } } sources { __typename id title ... on CollectionConditionsSource { targetType shareable inclusion { matchType conditions { __typename id ... on CollectionSourceInclusionConditionProductTag { relation values matchType } } } } ... on CollectionSubCollectionSource { subCollection { id title handle } } } } } }' --output-file "$AUDIT_DIR/shopify/collections.json"
   ```
 
   Reportare:
@@ -1731,7 +1731,7 @@ Doctor e Vercel production verdi.
 
   ```bash
   test -n "$SYNCBAY_TAKEOVER_SHOP_DOMAIN"
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { shop { name myshopifyDomain } locations(first: 5) { nodes { id name isActive } } products(first: 5) { nodes { id title handle tags status } } }' --version 2026-04 --json
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { shop { name myshopifyDomain } locations(first: 5) { nodes { id name isActive } } products(first: 5) { nodes { id title handle tags status } } }' --version 2026-07 --json
   ```
 
   Aprire inoltre:
@@ -1770,7 +1770,7 @@ Doctor e Vercel production verdi.
   Run:
 
   ```bash
-  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { products(first: 5) { nodes { id title handle tags status } } }' --version 2026-04 --json > "$SYNCBAY_TAKEOVER_RUN_DIR/shopify-readiness-products.json"
+  shopify store execute --store "$SYNCBAY_TAKEOVER_SHOP_DOMAIN" --query 'query SyncBayTakeoverReadiness { products(first: 5) { nodes { id title handle tags status } } }' --version 2026-07 --json > "$SYNCBAY_TAKEOVER_RUN_DIR/shopify-readiness-products.json"
   ```
 
   Dalla UI SyncBay, verificare che il collegamento eBay risulti attivo e che la
