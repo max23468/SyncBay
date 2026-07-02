@@ -105,6 +105,12 @@ export function shouldResolveLiveAlignedDescriptionConflictForMappingStatus(
   return shouldDetectShopifyConflictsForMappingStatus(mappingStatus);
 }
 
+export function shouldResolveLiveAlignedPriceConflictForMappingStatus(
+  mappingStatus: string | null,
+) {
+  return shouldDetectShopifyConflictsForMappingStatus(mappingStatus);
+}
+
 export function isLiveDescriptionConflictAligned(input: {
   currentShopifyDescriptionHash: string | null;
   field: string;

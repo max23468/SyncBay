@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.11] — 2026-07-02
+
+### Correzioni
+
+- Runtime: i conflitti prezzo già riallineati a eBay live e alla regola prezzo
+  corrente vengono riconosciuti come baseline SyncBay stale, risolti dal runner
+  e riparabili con `conflicts:repair-price` senza scrivere su Shopify o eBay.
+
 ## [0.50.10] — 2026-07-02
 
 ### Correzioni
@@ -2865,6 +2873,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.11]: #05011--2026-07-02
 [0.50.10]: #05010--2026-07-02
 [0.50.9]: #0509--2026-07-02
 [0.50.8]: #0508--2026-07-02
