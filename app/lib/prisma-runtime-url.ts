@@ -3,6 +3,9 @@ const DEFAULT_PRISMA_POOL_TIMEOUT = "10";
 const DEFAULT_DATABASE_URL = "postgresql://user:pass@localhost:5432/syncbay";
 const LIBPQ_COMPAT_PARAM = "uselibpqcompat";
 const SSL_MODE_PARAM = "sslmode";
+const SUPABASE_DIRECT_HOST_PREFIX = "db.";
+const SUPABASE_DIRECT_HOST_SUFFIX = ".supabase.co";
+const SUPABASE_POOLER_HOST_SUFFIX = ".pooler.supabase.com";
 
 export type PrismaRuntimePoolConfig = {
   connectionString: string;
@@ -22,6 +25,7 @@ export function buildPrismaRuntimeDatabaseUrl(databaseUrl?: string) {
 
     if (
       url.searchParams.get(SSL_MODE_PARAM)?.toLowerCase() === "require" &&
+      isSupabasePostgresHost(url.hostname) &&
       !url.searchParams.has(LIBPQ_COMPAT_PARAM)
     ) {
       url.searchParams.set(LIBPQ_COMPAT_PARAM, "true");
@@ -78,6 +82,16 @@ export function buildPrismaRuntimePoolConfig(
       connectionTimeoutMillis: Number(DEFAULT_PRISMA_POOL_TIMEOUT) * 1000,
     };
   }
+}
+
+function isSupabasePostgresHost(hostname: string) {
+  const host = hostname.toLowerCase();
+
+  return (
+    (host.startsWith(SUPABASE_DIRECT_HOST_PREFIX) &&
+      host.endsWith(SUPABASE_DIRECT_HOST_SUFFIX)) ||
+    host.endsWith(SUPABASE_POOLER_HOST_SUFFIX)
+  );
 }
 
 function getPositiveIntegerParam(

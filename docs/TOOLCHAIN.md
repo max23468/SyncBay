@@ -164,8 +164,11 @@ script `npm run prisma:generate` esegue `prisma generate` e poi
 `scripts/link-prisma-client.mjs` per collegare il client generato al wrapper
 `@prisma/client`.
 Nel runtime Vercel il normalizzatore Prisma aggiunge `uselibpqcompat=true`
-quando la URL Supabase usa `sslmode=require`, così `pg` mantiene TLS attivo sul
-pooler senza trattare la catena certificati Supabase come `verify-full`.
+solo per host Postgres Supabase (`db.*.supabase.co` o
+`*.pooler.supabase.com`) quando la URL usa `sslmode=require`, così `pg`
+mantiene TLS attivo sul pooler senza trattare la catena certificati Supabase
+come `verify-full`. Gli altri provider Postgres conservano la propria semantica
+TLS, salvo opt-in esplicito tramite parametro già presente nella URL.
 `npm run audit:prod` esegue `npm audit --omit=dev` e accetta solo l'eccezione
 moderata nota introdotta da Prisma 7 (`GHSA-92pp-h63x-v22m` tramite
 `@prisma/dev`/`@hono/node-server`); qualunque altra vulnerabilità production
