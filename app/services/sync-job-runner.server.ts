@@ -45,6 +45,7 @@ import {
   getSellerEventsDeltaWindow,
   getSellerEventsWatermarkAt,
   isFullCatalogReconcileDue,
+  shouldAdvanceCatalogReconcileRunWatermark,
   shouldAdvanceSellerEventsRunWatermark,
 } from "../lib/syncbay-ebay-delta-sync";
 import {
@@ -1576,6 +1577,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     warnings: result.warnings ?? [],
   });
   await maybeMarkSellerEventsRunWatermarkSucceeded(job);
+  await maybeMarkCatalogReconcileRunWatermarkSucceeded(job);
 
   return {
     jobId: job.id,
@@ -1835,6 +1837,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
         : [],
   });
   await maybeMarkSellerEventsRunWatermarkSucceeded(input.job);
+  await maybeMarkCatalogReconcileRunWatermarkSucceeded(input.job);
 
   return {
     jobId: input.job.id,
@@ -2315,6 +2318,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       warnings: ["Esaurito saltato: mapping attivo non trovato."],
     });
     await maybeMarkSellerEventsRunWatermarkSucceeded(job);
+    await maybeMarkCatalogReconcileRunWatermarkSucceeded(job);
 
     return {
       jobId: job.id,
@@ -2394,6 +2398,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
       : ["Mapping messo in esaurito senza prodotto Shopify collegato."],
   });
   await maybeMarkSellerEventsRunWatermarkSucceeded(job);
+  await maybeMarkCatalogReconcileRunWatermarkSucceeded(job);
 
   return {
     jobId: job.id,
@@ -2460,6 +2465,85 @@ async function maybeMarkSellerEventsRunWatermarkSucceeded(job: DueSyncJob) {
           source: "seller_events_delta",
           watermarkAdvanced: true,
         } satisfies Prisma.JsonObject,
+        runAfter: finishedAt,
+        shopId: job.shopId,
+        status: SyncJobStatus.SUCCEEDED,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    ],
+    skipDuplicates: true,
+  });
+}
+
+async function maybeMarkCatalogReconcileRunWatermarkSucceeded(job: DueSyncJob) {
+  const source = getStringFromPayload(job.payload, "source");
+  const runId = getStringFromPayload(job.payload, "runId");
+  const marketplaceId = getEbayMarketplaceId(job.payload);
+
+  if (source !== "catalog_reconcile" || !runId) return;
+
+  const runJobs = await prisma.syncJob.findMany({
+    select: { status: true },
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "catalog_reconcile" } },
+        { payload: { path: ["runId"], equals: runId } },
+      ],
+      shopId: job.shopId,
+      type: {
+        in: [
+          SyncJobType.SYNC_INCREMENTAL,
+          SyncJobType.ARCHIVE_INACTIVE_LISTING,
+        ],
+      },
+    },
+  });
+
+  if (
+    !shouldAdvanceCatalogReconcileRunWatermark({
+      statuses: runJobs.map((runJob) => runJob.status),
+    })
+  ) {
+    return;
+  }
+
+  const payloadObject = getJsonObject(job.payload);
+  const finishedAt = new Date();
+  const processedJobCount = runJobs.length;
+  const activeCatalogReadAt = getStringFromPayload(
+    job.payload,
+    "activeCatalogReadAt",
+  );
+  const activeCatalogReadCount = getJsonNumber(
+    payloadObject?.activeCatalogReadCount,
+  );
+  const activeCatalogTotalAvailable =
+    getJsonNumber(payloadObject?.activeCatalogTotalAvailable) ?? null;
+  const activeScanComplete = getBooleanFromPayload(
+    job.payload,
+    "activeScanComplete",
+  );
+  const markerPayload = {
+    activeCatalogReadAt,
+    activeCatalogReadCount,
+    activeCatalogTotalAvailable,
+    activeScanComplete,
+    marketplaceId,
+    processedJobCount,
+    runId,
+    source: "catalog_reconcile",
+    watermarkAdvanced: true,
+  } satisfies Prisma.JsonObject;
+
+  await prisma.syncJob.createMany({
+    data: [
+      {
+        attempts: 1,
+        finishedAt,
+        idempotencyKey: `catalog-reconcile-watermark:${job.shopId}:${marketplaceId}:${runId}`,
+        maxAttempts: 1,
+        payload: markerPayload,
+        result: markerPayload,
         runAfter: finishedAt,
         shopId: job.shopId,
         status: SyncJobStatus.SUCCEEDED,

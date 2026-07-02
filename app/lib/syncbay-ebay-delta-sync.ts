@@ -78,6 +78,15 @@ export function shouldAdvanceSellerEventsRunWatermark(input: {
   );
 }
 
+export function shouldAdvanceCatalogReconcileRunWatermark(input: {
+  statuses: string[];
+}) {
+  return (
+    input.statuses.length > 0 &&
+    input.statuses.every((status) => status === "SUCCEEDED")
+  );
+}
+
 function maxDate(first: Date | null, second: Date | null) {
   if (!first) return second;
   if (!second) return first;
