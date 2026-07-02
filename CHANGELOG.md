@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.6] — 2026-07-02
+
+### Correzioni
+
+- Runtime: la schedule Supabase Cron del runner `run-due` usa batch automatico
+  `limit=2` e timeout HTTP di 90 secondi, così i tick restano entro la finestra
+  di risposta di `pg_net` anche quando elaborano job catalogo reali.
+
 ## [0.50.5] — 2026-07-02
 
 ### Correzioni
@@ -2821,6 +2829,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.6]: #0506--2026-07-02
 [0.50.5]: #0505--2026-07-02
 [0.50.4]: #0504--2026-07-02
 [0.50.3]: #0503--2026-07-01
