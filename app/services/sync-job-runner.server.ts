@@ -3872,6 +3872,10 @@ async function resolveLiveAlignedPriceConflicts(input: {
       continue;
     }
 
+    // Lettura Shopify live per-conflitto, come resolveLiveAlignedDescriptionConflicts:
+    // limitata ai soli conflitti prezzo aperti su mapping ACTIVE (volume basso, nessuna
+    // write provider). Confronta la prima variante: assume listing eBay single-variant
+    // nel perimetro MVP, da rivedere se si importeranno listing multi-variante.
     const product = await getShopifyProductForConflict(
       admin,
       mapping.shopifyProductGid,

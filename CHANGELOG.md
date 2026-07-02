@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Commenti di chiarezza sui punti emersi nella review delle PR non riviste da
+  Codex (quota esaurita): semantica del filtro `NOT watermarkAdvanced` nei
+  conteggi dashboard, assunzione single-variant e letture Shopify live limitate
+  nel resolver conflitti prezzo, divergenza voluta tra runner (Shopify live) e
+  script `conflicts:repair-price` (valore Shopify registrato nel conflitto).
+  Nessun cambio di comportamento runtime.
+
 ## [0.50.11] — 2026-07-02
 
 ### Correzioni
