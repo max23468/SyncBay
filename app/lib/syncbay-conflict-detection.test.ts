@@ -12,6 +12,7 @@ const {
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
+  shouldResolveLiveAlignedPriceConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
@@ -190,6 +191,33 @@ test("resolves live-aligned description conflicts only for active mappings", () 
   );
   assert.equal(
     shouldResolveLiveAlignedDescriptionConflictForMappingStatus(null),
+    false,
+  );
+});
+
+test("resolves live-aligned price conflicts only for active mappings", () => {
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus("ACTIVE"),
+    true,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus("OUT_OF_STOCK"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus("ARCHIVED"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus("PAUSED"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus("ERROR"),
+    false,
+  );
+  assert.equal(
+    shouldResolveLiveAlignedPriceConflictForMappingStatus(null),
     false,
   );
 });

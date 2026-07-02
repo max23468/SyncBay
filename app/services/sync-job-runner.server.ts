@@ -5,6 +5,7 @@ import {
   ProductMappingStatus,
   ProductSnapshotSource,
   Prisma,
+  SyncConflictResolution,
   SyncConflictStatus,
   SyncJobStatus,
   SyncJobType,
@@ -22,6 +23,7 @@ import {
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
+  shouldResolveLiveAlignedPriceConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
   shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
@@ -55,6 +57,10 @@ import {
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
+import {
+  buildPriceConflictValue,
+  getAlignedPriceConflictRepair,
+} from "../lib/syncbay-price-conflict-alignment";
 import {
   calculateShopifyPricing,
   shouldWriteShopifyPricing,
@@ -1394,15 +1400,19 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     select: {
       field: true,
       id: true,
+      lastSyncBayValue: true,
       mappingId: true,
       mapping: {
         select: {
           ebayItemId: true,
           id: true,
           shopifyProductGid: true,
+          shopifyVariantGid: true,
+          sku: true,
           status: true,
         },
       },
+      shopifyValue: true,
     },
     where: {
       mapping: { ebayItemId: { in: ebayItemIds } },
@@ -1462,9 +1472,21 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   const resolvedAlignedDescriptionConflictIds = new Set(
     alignedDescriptionConflicts.conflictIds,
   );
+  const alignedPriceConflicts = await resolveLiveAlignedPriceConflicts({
+    conflicts: openConflicts,
+    defaultLocationGid: job.shop.defaultLocationGid,
+    job,
+    shopDomain: job.shop.shopDomain,
+  });
+  const resolvedAlignedPriceConflictIds = new Set(
+    alignedPriceConflicts.conflictIds,
+  );
   const openConflictItemIds = new Set(
     openConflicts.flatMap((conflict) => {
-      if (resolvedAlignedDescriptionConflictIds.has(conflict.id)) {
+      if (
+        resolvedAlignedDescriptionConflictIds.has(conflict.id) ||
+        resolvedAlignedPriceConflictIds.has(conflict.id)
+      ) {
         return [];
       }
       if (
@@ -1489,6 +1511,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       result: {
         alignedDescriptionConflictResolvedCount:
           alignedDescriptionConflicts.count,
+        alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
         conflictSkippedCount: ebayItemIds.length,
         reactivationConflictResolvedCount,
         requestedCount: ebayItemIds.length,
@@ -1510,6 +1533,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     return runPricingOnlyIncrementalSyncJob({
       alignedDescriptionConflictResolvedCount:
         alignedDescriptionConflicts.count,
+      alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
       job,
       openConflictSkippedCount: openConflictItemIds.size,
       reactivationConflictResolvedCount,
@@ -1569,6 +1593,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     result: {
       alignedDescriptionConflictResolvedCount:
         alignedDescriptionConflicts.count,
+      alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
       conflictSkippedCount: openConflictItemIds.size,
       reactivationConflictResolvedCount,
       requestedCount: ebayItemIds.length,
@@ -1588,6 +1613,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
 async function runPricingOnlyIncrementalSyncJob(input: {
   alignedDescriptionConflictResolvedCount: number;
+  alignedPriceConflictResolvedCount: number;
   job: DueSyncJob;
   openConflictSkippedCount: number;
   reactivationConflictResolvedCount: number;
@@ -1817,6 +1843,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     result: {
       alignedDescriptionConflictResolvedCount:
         input.alignedDescriptionConflictResolvedCount,
+      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       pricingOnly: true,
       reactivationConflictResolvedCount:
@@ -3728,6 +3755,243 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
       shopId: input.shopId,
       status: SyncConflictStatus.OPEN,
     },
+  });
+
+  return { conflictIds, count: result.count };
+}
+
+async function resolveLiveAlignedPriceConflicts(input: {
+  conflicts: {
+    field: string;
+    id: string;
+    lastSyncBayValue: Prisma.JsonValue | null;
+    mappingId: string | null;
+    mapping: {
+      ebayItemId: string;
+      id: string;
+      shopifyProductGid: string | null;
+      shopifyVariantGid: string | null;
+      sku: string | null;
+      status: ProductMappingStatus;
+    } | null;
+    shopifyValue: Prisma.JsonValue | null;
+  }[];
+  defaultLocationGid: string | null;
+  job: DueSyncJob;
+  shopDomain: string;
+}) {
+  const candidates = input.conflicts.filter(
+    (conflict) =>
+      conflict.field === "price" &&
+      conflict.mappingId &&
+      conflict.mapping?.ebayItemId &&
+      conflict.mapping?.shopifyProductGid &&
+      shouldResolveLiveAlignedPriceConflictForMappingStatus(
+        conflict.mapping?.status ?? null,
+      ),
+  );
+  const itemIds = [
+    ...new Set(candidates.flatMap((conflict) => conflict.mapping?.ebayItemId ?? [])),
+  ];
+  const mappingIds = [
+    ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
+  ];
+
+  if (itemIds.length === 0 || mappingIds.length === 0) {
+    return { conflictIds: [], count: 0 };
+  }
+
+  const [admin, previewResult, pricingRule, latestSyncBaySnapshots] =
+    await Promise.all([
+      getShopifyAdminGraphqlClient(input.shopDomain),
+      getIncrementalPreviewResult(input.job, itemIds),
+      getPricingRuleForShopId(input.job.shopId),
+      prisma.productSnapshot.findMany({
+        orderBy: { capturedAt: "desc" },
+        select: {
+          currency: true,
+          descriptionHash: true,
+          ebayItemId: true,
+          imageCount: true,
+          mappingId: true,
+          payload: true,
+          priceAmount: true,
+          productStatus: true,
+          quantity: true,
+          shopId: true,
+          shopifyProductGid: true,
+          shopifyVariantGid: true,
+          sku: true,
+          title: true,
+        },
+        where: {
+          mappingId: { in: mappingIds },
+          shopId: input.job.shopId,
+          source: ProductSnapshotSource.SYNCBAY,
+        },
+      }),
+    ]);
+  const previewItemsById = new Map(
+    filterPreviewResultByItemIds(previewResult, itemIds).items.map((item) => [
+      item.itemId,
+      item,
+    ]),
+  );
+  const latestSnapshotByMappingId = new Map<
+    string,
+    (typeof latestSyncBaySnapshots)[number]
+  >();
+
+  for (const snapshot of latestSyncBaySnapshots) {
+    if (snapshot.mappingId && !latestSnapshotByMappingId.has(snapshot.mappingId)) {
+      latestSnapshotByMappingId.set(snapshot.mappingId, snapshot);
+    }
+  }
+
+  const conflictIds: string[] = [];
+  const syncBaySnapshots: Prisma.ProductSnapshotCreateManyInput[] = [];
+  const now = new Date();
+
+  for (const conflict of candidates) {
+    const mapping = conflict.mapping;
+    const mappingId = conflict.mappingId;
+    const item = mapping?.ebayItemId
+      ? previewItemsById.get(mapping.ebayItemId)
+      : null;
+    const latestSnapshot = mappingId
+      ? latestSnapshotByMappingId.get(mappingId)
+      : null;
+
+    if (
+      !mapping ||
+      !mappingId ||
+      !item ||
+      !latestSnapshot ||
+      !mapping.shopifyProductGid
+    ) {
+      continue;
+    }
+
+    const product = await getShopifyProductForConflict(
+      admin,
+      mapping.shopifyProductGid,
+      input.defaultLocationGid,
+    );
+    const variant = product?.variants?.nodes?.[0] ?? null;
+    const repair = getAlignedPriceConflictRepair({
+      ebayPriceAmount: item.normalized.priceAmount,
+      field: conflict.field,
+      latestSyncBayValue: conflict.lastSyncBayValue,
+      pricingRule,
+      shopifyValue: buildPriceConflictValue({
+        compareAtPrice: variant?.compareAtPrice ?? null,
+        price: variant?.price ?? null,
+      }),
+    });
+
+    if (!repair) {
+      continue;
+    }
+
+    const latestPayload = getJsonObject(latestSnapshot.payload) ?? {};
+    const pricingPayload = getJsonObject(latestPayload.pricing) ?? {};
+
+    conflictIds.push(conflict.id);
+    syncBaySnapshots.push({
+      currency: item.normalized.currency ?? latestSnapshot.currency,
+      descriptionHash: latestSnapshot.descriptionHash,
+      ebayItemId: latestSnapshot.ebayItemId ?? item.itemId,
+      imageCount: latestSnapshot.imageCount,
+      mappingId,
+      payload: {
+        ...latestPayload,
+        conflictResolution: {
+          conflictId: conflict.id,
+          field: conflict.field,
+          resolution: SyncConflictResolution.KEEP_SHOPIFY,
+          source: "live_aligned_price_conflict_repair",
+          syncJobId: input.job.id,
+        },
+        priceConflictBaselineRepair: {
+          conflictId: conflict.id,
+          repairedAt: now.toISOString(),
+          syncJobId: input.job.id,
+        },
+        pricing: {
+          ...pricingPayload,
+          applied: repair.applied,
+          compareAtPriceAmount: repair.compareAtPriceAmount,
+          discountPercent: repair.discountPercent,
+          ebayPriceAmount: repair.ebayPriceAmount,
+          priceAmount: repair.priceAmount,
+          roundingMode: repair.roundingMode,
+        },
+      } satisfies Prisma.JsonObject,
+      priceAmount: repair.priceAmount,
+      productStatus: latestSnapshot.productStatus,
+      quantity: latestSnapshot.quantity,
+      shopId: input.job.shopId,
+      shopifyProductGid:
+        latestSnapshot.shopifyProductGid ?? mapping.shopifyProductGid,
+      shopifyVariantGid:
+        latestSnapshot.shopifyVariantGid ?? mapping.shopifyVariantGid,
+      sku: latestSnapshot.sku ?? mapping.sku,
+      source: ProductSnapshotSource.SYNCBAY,
+      title: latestSnapshot.title,
+    });
+  }
+
+  if (conflictIds.length === 0) {
+    return { conflictIds: [], count: 0 };
+  }
+
+  const changedSyncBaySnapshots =
+    await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
+  const resolvedMappingIds = [
+    ...new Set(
+      syncBaySnapshots
+        .map((snapshot) => snapshot.mappingId)
+        .filter((mappingId): mappingId is string => Boolean(mappingId)),
+    ),
+  ];
+
+  const result = await prisma.$transaction(async (tx) => {
+    if (changedSyncBaySnapshots.length > 0) {
+      await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+    }
+
+    const updatedConflicts = await tx.syncConflict.updateMany({
+      data: {
+        resolution: SyncConflictResolution.KEEP_SHOPIFY,
+        resolvedAt: now,
+        status: SyncConflictStatus.RESOLVED,
+      },
+      where: {
+        id: { in: conflictIds },
+        shopId: input.job.shopId,
+        status: SyncConflictStatus.OPEN,
+      },
+    });
+
+    await tx.productMapping.updateMany({
+      data: { lastSyncedAt: now },
+      where: { id: { in: resolvedMappingIds } },
+    });
+    await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+      data: {
+        details: {
+          conflictIds,
+          source: "live_aligned_price_conflict_repair",
+          syncJobId: input.job.id,
+        },
+        message: "Conflitti prezzo Shopify allineati risolti dal runner.",
+        shopId: input.job.shopId,
+        type: AuditEventType.CONNECTION_CHECK,
+      },
+    });
+
+    return updatedConflicts;
   });
 
   return { conflictIds, count: result.count };
