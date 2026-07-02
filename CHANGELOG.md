@@ -6,11 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.50.9] — 2026-07-02
 
-- Piano takeover: corretta e validata con Shopify CLI store auth la query
-  `2026-07` di audit collezioni, includendo `Collection.sources`, inclusion,
-  exclusion e sub-collections.
+### Correzioni
+
+- Runtime: i run `catalog_reconcile` completati con batch reali creano un
+  marker finale, così il watermark globale catalogo avanza anche quando il
+  reconcile non termina con `noWork`.
 
 ## [0.50.8] — 2026-07-02
 
@@ -18,6 +20,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Shopify: aggiornata la versione Admin GraphQL e webhook a `2026-07`,
   includendo gli script operativi che usano endpoint Admin GraphQL espliciti.
+
+### Non versionato
+
+- Piano takeover: corretta e validata con Shopify CLI store auth la query
+  `2026-07` di audit collezioni, includendo `Collection.sources`, inclusion,
+  exclusion e sub-collections.
 
 ## [0.50.7] — 2026-07-02
 
@@ -2850,6 +2858,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.9]: #0509--2026-07-02
 [0.50.8]: #0508--2026-07-02
 [0.50.7]: #0507--2026-07-02
 [0.50.6]: #0506--2026-07-02

@@ -8,6 +8,7 @@ const {
   getSellerEventsDeltaWindow,
   getSellerEventsWatermarkAt,
   isFullCatalogReconcileDue,
+  shouldAdvanceCatalogReconcileRunWatermark,
   shouldAdvanceSellerEventsRunWatermark,
 } = deltaSync;
 
@@ -141,6 +142,33 @@ test("advances seller-events watermark only after every run job succeeds", () =>
   );
   assert.equal(
     shouldAdvanceSellerEventsRunWatermark({
+      statuses: [],
+    }),
+    false,
+  );
+});
+
+test("advances catalog reconcile watermark only after every run job succeeds", () => {
+  assert.equal(
+    shouldAdvanceCatalogReconcileRunWatermark({
+      statuses: ["SUCCEEDED", "SUCCEEDED"],
+    }),
+    true,
+  );
+  assert.equal(
+    shouldAdvanceCatalogReconcileRunWatermark({
+      statuses: ["SUCCEEDED", "PENDING"],
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAdvanceCatalogReconcileRunWatermark({
+      statuses: ["SUCCEEDED", "FAILED"],
+    }),
+    false,
+  );
+  assert.equal(
+    shouldAdvanceCatalogReconcileRunWatermark({
       statuses: [],
     }),
     false,

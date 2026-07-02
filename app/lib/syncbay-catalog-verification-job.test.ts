@@ -16,7 +16,12 @@ test("selects only completed catalog verification watermarks", () => {
       {
         AND: [
           { payload: { path: ["source"], equals: "catalog_reconcile" } },
-          { result: { path: ["noWork"], equals: true } },
+          {
+            OR: [
+              { result: { path: ["noWork"], equals: true } },
+              { result: { path: ["watermarkAdvanced"], equals: true } },
+            ],
+          },
         ],
       },
     ],
