@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.10] — 2026-07-02
+
+### Correzioni
+
+- Dashboard: i marker tecnici di avanzamento watermark non vengono più usati
+  come ultimo run di lavoro nei conteggi richiesti/sincronizzati.
+
 ## [0.50.9] — 2026-07-02
 
 ### Correzioni
@@ -2858,6 +2865,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.10]: #05010--2026-07-02
 [0.50.9]: #0509--2026-07-02
 [0.50.8]: #0508--2026-07-02
 [0.50.7]: #0507--2026-07-02
