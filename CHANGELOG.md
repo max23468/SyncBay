@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Piano takeover: corretta e validata con Shopify CLI store auth la query
+  `2026-07` di audit collezioni, includendo `Collection.sources`, inclusion,
+  exclusion e sub-collections.
+
 ## [0.50.8] — 2026-07-02
 
 ### Sotto il cofano
