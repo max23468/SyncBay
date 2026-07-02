@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.5] — 2026-07-02
+
+### Correzioni
+
+- Runtime: la configurazione Prisma/pg applica `uselibpqcompat=true` quando la
+  URL Supabase usa `sslmode=require`, evitando errori TLS
+  `self-signed certificate in certificate chain` sul pooler Supabase in Vercel.
+
 ## [0.50.4] — 2026-07-02
 
 ### Sotto il cofano
@@ -2813,6 +2821,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.5]: #0505--2026-07-02
 [0.50.4]: #0504--2026-07-02
 [0.50.3]: #0503--2026-07-01
 [0.50.2]: #0502--2026-07-01

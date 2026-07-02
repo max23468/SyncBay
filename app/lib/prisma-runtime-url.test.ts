@@ -11,8 +11,21 @@ test("adds a conservative Prisma connection limit for serverless runtime", () =>
 
   assert.equal(
     url,
-    "postgresql://user:pass@example.com:5432/postgres?sslmode=require&connection_limit=1&pool_timeout=10",
+    "postgresql://user:pass@example.com:5432/postgres?sslmode=require&uselibpqcompat=true&connection_limit=1&pool_timeout=10",
   );
+});
+
+test("uses libpq-compatible TLS semantics for sslmode=require", () => {
+  const config = buildPrismaRuntimePoolConfig(
+    "postgresql://user:pass@example.com/postgres?sslmode=require",
+  );
+
+  assert.deepEqual(config, {
+    connectionString:
+      "postgresql://user:pass@example.com/postgres?sslmode=require&uselibpqcompat=true",
+    max: 1,
+    connectionTimeoutMillis: 10000,
+  });
 });
 
 test("preserves explicit Prisma pool parameters", () => {
@@ -33,7 +46,7 @@ test("translates Prisma URL pool parameters to pg adapter pool config", () => {
 
   assert.deepEqual(config, {
     connectionString:
-      "postgresql://user:pass@example.com/postgres?sslmode=require",
+      "postgresql://user:pass@example.com/postgres?sslmode=require&uselibpqcompat=true",
     max: 2,
     connectionTimeoutMillis: 5000,
   });
