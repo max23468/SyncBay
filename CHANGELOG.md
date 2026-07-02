@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [0.50.4] — 2026-07-02
+
+### Sotto il cofano
+
+- Dipendenze: aggiornate le patch sicure di React Router 7, Vite, TypeScript
+  ESLint, Prettier e `@eslint-react/eslint-plugin`; aggiornato React Doctor a
+  `0.6.0`.
+
 ## [0.50.3] — 2026-07-01
 
 ### Correzioni
@@ -2805,6 +2813,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.4]: #0504--2026-07-02
 [0.50.3]: #0503--2026-07-01
 [0.50.2]: #0502--2026-07-01
 [0.50.1]: #0501--2026-07-01
