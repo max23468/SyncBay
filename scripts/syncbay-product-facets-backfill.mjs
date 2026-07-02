@@ -21,7 +21,7 @@ import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
-const SHOPIFY_ADMIN_API_VERSION = "2026-04";
+const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
 const GET_ITEM_CONCURRENCY = 4;
 const APPLY_CONCURRENCY = 4;

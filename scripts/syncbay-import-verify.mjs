@@ -12,7 +12,7 @@ const DEFAULT_SAMPLE_LIMIT = 10;
 const DEFAULT_RUNTIME_URL = "https://syncbay.vercel.app";
 const INTERNAL_APP_SECRET_KEYCHAIN_SERVICE = "syncbay-app-secret";
 const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
-const SHOPIFY_API_VERSION = "2026-04";
+const SHOPIFY_API_VERSION = "2026-07";
 const SHOPIFY_AGENT_ENV = {
   SHOPIFY_CLI_AGENT_IDS: "s:syncbay|r:import-verify|i:codex",
   SHOPIFY_CLI_AGENT_INFO: "n:codex|v:gpt-5|p:openai",

@@ -33,7 +33,7 @@ test("creates an Admin GraphQL client backed by the offline access token", async
   assert.equal(response.ok, true);
   assert.equal(
     String(calls[0]?.input),
-    "https://syncbay-dev.myshopify.com/admin/api/2026-04/graphql.json",
+    "https://syncbay-dev.myshopify.com/admin/api/2026-07/graphql.json",
   );
   assert.equal(calls[0]?.init?.method, "POST");
   assert.equal(

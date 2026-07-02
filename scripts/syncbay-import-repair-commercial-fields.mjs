@@ -9,7 +9,7 @@ const execFileAsync = promisify(execFile);
 const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_LIMIT = 2000;
 const DEFAULT_CHUNK_SIZE = 20;
-const SHOPIFY_API_VERSION = "2026-04";
+const SHOPIFY_API_VERSION = "2026-07";
 const SHOPIFY_AGENT_ENV = {
   SHOPIFY_CLI_AGENT_IDS: "s:syncbay|r:import-repair-commercial-fields|i:codex",
   SHOPIFY_CLI_AGENT_INFO: "n:codex|v:gpt-5|p:openai",
