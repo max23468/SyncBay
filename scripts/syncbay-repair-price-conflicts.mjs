@@ -263,6 +263,10 @@ function buildRepairs(rows) {
   return rows.flatMap((row) => {
     if (!row.ebayLiveOk || row.ebayListingStatus !== "Active") return [];
 
+    // Divergenza voluta rispetto al runner: qui si usa lo shopifyValue registrato nel
+    // conflitto (stato Shopify al momento della rilevazione), non una rilettura live di
+    // Shopify. Il prezzo eBay è invece sempre live (attachLiveEbayPrices). Vedi l'help
+    // dello script e resolveLiveAlignedPriceConflicts nel runner.
     const repair = getAlignedPriceConflictRepair({
       ebayPriceAmount: parseMoney(row.ebayPriceAmount),
       field: row.field,
