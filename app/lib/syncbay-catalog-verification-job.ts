@@ -31,3 +31,17 @@ export function getCompletedCatalogVerificationJobWhere(
     type: SyncJobType.SYNC_INCREMENTAL,
   };
 }
+
+export function getCompletedIncrementalWorkJobWhere(
+  shopId: string,
+): PrismaTypes.SyncJobWhereInput {
+  return {
+    NOT: [
+      { payload: { path: ["watermarkAdvanced"], equals: true } },
+      { result: { path: ["watermarkAdvanced"], equals: true } },
+    ],
+    shopId,
+    status: SyncJobStatus.SUCCEEDED,
+    type: SyncJobType.SYNC_INCREMENTAL,
+  };
+}

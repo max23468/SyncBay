@@ -36,7 +36,10 @@ import {
 import { summarizeReliability } from "../lib/syncbay-dashboard-metrics";
 import { summarizeSyncJobQuarantine } from "../lib/syncbay-job-quarantine";
 import { buildSyncHealthDigest } from "../lib/syncbay-sync-health-digest";
-import { getCompletedCatalogVerificationJobWhere } from "../lib/syncbay-catalog-verification-job";
+import {
+  getCompletedCatalogVerificationJobWhere,
+  getCompletedIncrementalWorkJobWhere,
+} from "../lib/syncbay-catalog-verification-job";
 import { formatConflictValueForDisplay } from "../lib/syncbay-conflict-display";
 import {
   getSafeBatchConflictResolutions,
@@ -377,11 +380,7 @@ async function getDashboardState(
           prisma.syncJob.findFirst({
             orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
             select: { result: true },
-            where: {
-              shopId: shop.id,
-              status: SyncJobStatus.SUCCEEDED,
-              type: SyncJobType.SYNC_INCREMENTAL,
-            },
+            where: getCompletedIncrementalWorkJobWhere(shop.id),
           }),
           prisma.syncJob.findFirst({
             orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],

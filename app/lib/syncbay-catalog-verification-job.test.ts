@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getCompletedCatalogVerificationJobWhere } from "./syncbay-catalog-verification-job.ts";
+import * as catalogVerificationJob from "./syncbay-catalog-verification-job.ts";
+
+const {
+  getCompletedCatalogVerificationJobWhere,
+  getCompletedIncrementalWorkJobWhere,
+} = catalogVerificationJob;
 
 test("selects only completed catalog verification watermarks", () => {
   assert.deepEqual(getCompletedCatalogVerificationJobWhere("shop-1"), {
@@ -24,6 +29,18 @@ test("selects only completed catalog verification watermarks", () => {
           },
         ],
       },
+    ],
+    shopId: "shop-1",
+    status: "SUCCEEDED",
+    type: "SYNC_INCREMENTAL",
+  });
+});
+
+test("selects completed incremental work jobs without watermark markers", () => {
+  assert.deepEqual(getCompletedIncrementalWorkJobWhere("shop-1"), {
+    NOT: [
+      { payload: { path: ["watermarkAdvanced"], equals: true } },
+      { result: { path: ["watermarkAdvanced"], equals: true } },
     ],
     shopId: "shop-1",
     status: "SUCCEEDED",
