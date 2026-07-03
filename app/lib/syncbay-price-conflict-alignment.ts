@@ -3,6 +3,11 @@ import {
   type PriceRoundingMode,
 // @ts-expect-error Node --experimental-strip-types resolves this import.
 } from "./syncbay-pricing-rules.ts";
+import {
+  selectShopifyVariantForSync,
+  type ShopifyVariantSelectionCandidate,
+// @ts-expect-error Node --experimental-strip-types resolves this import.
+} from "./syncbay-shopify-variant-selection.ts";
 
 type PriceConflictValue = {
   amount?: number | string | null;
@@ -85,6 +90,37 @@ export function buildPriceConflictValue(input: {
     amount: formatShopifyMoney(input.price),
     compareAtPrice: formatShopifyMoney(input.compareAtPrice),
   };
+}
+
+export function selectPriceConflictRepairVariant<
+  Variant extends ShopifyVariantSelectionCandidate,
+>(input: {
+  preferredVariantGid?: string | null;
+  variants?: Variant[] | null;
+}) {
+  return selectShopifyVariantForSync(input);
+}
+
+export function getFinalizedPriceConflictRepairIds(input: {
+  conflictIds: string[];
+  updatedCount: number;
+}) {
+  return input.updatedCount === input.conflictIds.length
+    ? input.conflictIds
+    : [];
+}
+
+export function getPriceConflictRepairSnapshotVariantGid(input: {
+  latestSnapshotVariantGid?: string | null;
+  mappingVariantGid?: string | null;
+  selectedVariantGid?: string | null;
+}) {
+  return (
+    input.selectedVariantGid ??
+    input.mappingVariantGid ??
+    input.latestSnapshotVariantGid ??
+    null
+  );
 }
 
 function getPriceConflictValue(value: unknown): PriceConflictValue | null {

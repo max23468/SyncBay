@@ -170,10 +170,9 @@ solo per host Postgres Supabase (`db.*.supabase.co` o
 mantiene TLS attivo sul pooler senza trattare la catena certificati Supabase
 come `verify-full`. Gli altri provider Postgres conservano la propria semantica
 TLS, salvo opt-in esplicito tramite parametro già presente nella URL.
-`npm run audit:prod` esegue `npm audit --omit=dev` e accetta solo l'eccezione
-moderata nota introdotta da Prisma 7 (`GHSA-92pp-h63x-v22m` tramite
-`@prisma/dev`/`@hono/node-server`); qualunque altra vulnerabilità production
-continua a bloccare.
+`npm run audit:prod` esegue `npm audit --omit=dev` e blocca qualunque
+vulnerabilità production segnalata da npm. Le eccezioni temporanee devono
+essere rimosse appena coperte da override, aggiornamenti o fix upstream.
 `npm run supabase:services` verifica PostgREST, Auth e Storage via HTTP con
 anon/publishable key Supabase, senza stampare chiavi. Serve a distinguere un
 errore locale di chiamata anonima (`401 missing_api_key`) da restrizioni reali

@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getAlignedPriceConflictRepair } from "./syncbay-price-conflict-alignment.ts";
+import * as priceConflictAlignment from "./syncbay-price-conflict-alignment.ts";
+
+const {
+  getAlignedPriceConflictRepair,
+  getFinalizedPriceConflictRepairIds,
+  getPriceConflictRepairSnapshotVariantGid,
+  selectPriceConflictRepairVariant,
+} = priceConflictAlignment;
 
 test("recognizes a stale SyncBay price baseline when Shopify already matches eBay-derived pricing", () => {
   assert.deepEqual(
@@ -96,5 +103,55 @@ test("does not repair non-price fields or already current baselines", () => {
       },
     }),
     null,
+  );
+});
+
+test("selects the mapped Shopify variant for live price conflict repair", () => {
+  assert.deepEqual(
+    selectPriceConflictRepairVariant({
+      preferredVariantGid: "gid://shopify/ProductVariant/target",
+      variants: [
+        { id: "gid://shopify/ProductVariant/first", price: "99.00" },
+        { id: "gid://shopify/ProductVariant/target", price: "54.28" },
+      ],
+    }),
+    { id: "gid://shopify/ProductVariant/target", price: "54.28" },
+  );
+
+  assert.equal(
+    selectPriceConflictRepairVariant({
+      preferredVariantGid: "gid://shopify/ProductVariant/missing",
+      variants: [{ id: "gid://shopify/ProductVariant/first", price: "99.00" }],
+    }),
+    null,
+  );
+});
+
+test("finalizes price repair IDs only when every selected conflict was updated", () => {
+  assert.deepEqual(
+    getFinalizedPriceConflictRepairIds({
+      conflictIds: ["conflict-1", "conflict-2"],
+      updatedCount: 2,
+    }),
+    ["conflict-1", "conflict-2"],
+  );
+
+  assert.deepEqual(
+    getFinalizedPriceConflictRepairIds({
+      conflictIds: ["conflict-1", "conflict-2"],
+      updatedCount: 1,
+    }),
+    [],
+  );
+});
+
+test("records the selected mapped variant on price repair snapshots", () => {
+  assert.equal(
+    getPriceConflictRepairSnapshotVariantGid({
+      latestSnapshotVariantGid: "gid://shopify/ProductVariant/stale",
+      mappingVariantGid: "gid://shopify/ProductVariant/target",
+      selectedVariantGid: "gid://shopify/ProductVariant/target",
+    }),
+    "gid://shopify/ProductVariant/target",
   );
 });

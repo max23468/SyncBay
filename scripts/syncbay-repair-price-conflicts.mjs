@@ -375,6 +375,18 @@ with repair_rows as (
     applied boolean
   )
 ),
+updated_conflicts as (
+  update "SyncConflict" sc
+  set
+    status = 'RESOLVED',
+    resolution = 'KEEP_SHOPIFY',
+    "resolvedAt" = now(),
+    "updatedAt" = now()
+  where sc.id in (select "conflictId" from repair_rows)
+    and sc.status = 'OPEN'
+    and sc.field = 'price'
+  returning sc.id, sc."mappingId"
+),
 inserted_snapshots as (
   insert into "ProductSnapshot" (
     id,
@@ -437,19 +449,9 @@ inserted_snapshots as (
       ),
     now()
   from repair_rows r
+  join updated_conflicts uc
+    on uc.id = r."conflictId"
   returning id
-),
-updated_conflicts as (
-  update "SyncConflict" sc
-  set
-    status = 'RESOLVED',
-    resolution = 'KEEP_SHOPIFY',
-    "resolvedAt" = now(),
-    "updatedAt" = now()
-  where sc.id in (select "conflictId" from repair_rows)
-    and sc.status = 'OPEN'
-    and sc.field = 'price'
-  returning sc.id, sc."mappingId"
 ),
 updated_mappings as (
   update "ProductMapping" pm

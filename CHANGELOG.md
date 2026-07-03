@@ -6,14 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [0.50.12] — 2026-07-03
 
-- Commenti di chiarezza sui punti emersi nella review delle PR non riviste da
-  Codex (quota esaurita): semantica del filtro `NOT watermarkAdvanced` nei
-  conteggi dashboard, assunzione single-variant e letture Shopify live limitate
-  nel resolver conflitti prezzo, divergenza voluta tra runner (Shopify live) e
-  script `conflicts:repair-price` (valore Shopify registrato nel conflitto).
-  Nessun cambio di comportamento runtime.
+### Correzioni
+
+- Dashboard: i marker incrementali `noWork` di catalog reconcile non vengono
+  più conteggiati come ultimo lavoro reale nei riepiloghi richiesti e
+  sincronizzati.
+- Runtime: la riparazione dei conflitti prezzo usa la variante Shopify mappata
+  quando disponibile e non ripiega sulla prima variante del prodotto.
+- Runtime e script operativo: le baseline di repair prezzo vengono create solo
+  dopo la risoluzione effettiva del conflitto aperto corrispondente.
+
+### Sotto il cofano
+
+- Sicurezza: l'override production di `@hono/node-server` viene tracciato nella
+  release e `npm run audit:prod` torna a bloccare qualunque vulnerabilità
+  production senza allowlist Prisma/Hono stale.
 
 ## [0.50.11] — 2026-07-02
 
@@ -2882,6 +2891,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[0.50.12]: #05012--2026-07-03
 [0.50.11]: #05011--2026-07-02
 [0.50.10]: #05010--2026-07-02
 [0.50.9]: #0509--2026-07-02

@@ -59,7 +59,10 @@ import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-ded
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import {
   buildPriceConflictValue,
+  getFinalizedPriceConflictRepairIds,
   getAlignedPriceConflictRepair,
+  getPriceConflictRepairSnapshotVariantGid,
+  selectPriceConflictRepairVariant,
 } from "../lib/syncbay-price-conflict-alignment";
 import {
   calculateShopifyPricing,
@@ -169,6 +172,7 @@ type ShopifyProductForConflict = {
         } | null;
         tracked?: boolean | null;
       } | null;
+      id?: string | null;
       inventoryQuantity?: number | null;
       price?: string | null;
     }>;
@@ -203,6 +207,7 @@ const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
 const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;
 const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
+const PRICE_CONFLICT_REPAIR_VARIANT_LOOKUP_LIMIT = 50;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
@@ -3356,10 +3361,11 @@ async function getShopifyProductForConflict(
   },
   productGid: string,
   defaultLocationGid: string | null,
+  variantLimit = 1,
 ) {
   const query = defaultLocationGid
     ? `#graphql
-    query SyncBayProductForConflict($id: ID!, $locationId: ID!) {
+    query SyncBayProductForConflict($id: ID!, $locationId: ID!, $variantLimit: Int!) {
       node(id: $id) {
         ... on Product {
           id
@@ -3374,8 +3380,9 @@ async function getShopifyProductForConflict(
           }
           status
           title
-          variants(first: 1) {
+          variants(first: $variantLimit) {
             nodes {
+              id
               inventoryQuantity
               price
               compareAtPrice
@@ -3394,7 +3401,7 @@ async function getShopifyProductForConflict(
       }
     }`
     : `#graphql
-    query SyncBayProductForConflict($id: ID!) {
+    query SyncBayProductForConflict($id: ID!, $variantLimit: Int!) {
       node(id: $id) {
         ... on Product {
           id
@@ -3409,8 +3416,9 @@ async function getShopifyProductForConflict(
           }
           status
           title
-          variants(first: 1) {
+          variants(first: $variantLimit) {
             nodes {
+              id
               inventoryQuantity
               price
               compareAtPrice
@@ -3423,8 +3431,8 @@ async function getShopifyProductForConflict(
       }
     }`;
   const variables = defaultLocationGid
-    ? { id: productGid, locationId: defaultLocationGid }
-    : { id: productGid };
+    ? { id: productGid, locationId: defaultLocationGid, variantLimit }
+    : { id: productGid, variantLimit };
   const response = await admin.graphql(query, { variables });
 
   if (!response.ok) return null;
@@ -3874,14 +3882,19 @@ async function resolveLiveAlignedPriceConflicts(input: {
 
     // Lettura Shopify live per-conflitto, come resolveLiveAlignedDescriptionConflicts:
     // limitata ai soli conflitti prezzo aperti su mapping ACTIVE (volume basso, nessuna
-    // write provider). Confronta la prima variante: assume listing eBay single-variant
-    // nel perimetro MVP, da rivedere se si importeranno listing multi-variante.
+    // write provider). Quando il mapping conserva una variante Shopify specifica,
+    // valida quella invece della prima variante del prodotto.
     const product = await getShopifyProductForConflict(
       admin,
       mapping.shopifyProductGid,
       input.defaultLocationGid,
+      PRICE_CONFLICT_REPAIR_VARIANT_LOOKUP_LIMIT,
     );
-    const variant = product?.variants?.nodes?.[0] ?? null;
+    const variant = selectPriceConflictRepairVariant({
+      preferredVariantGid:
+        mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
+      variants: product?.variants?.nodes,
+    });
     const repair = getAlignedPriceConflictRepair({
       ebayPriceAmount: item.normalized.priceAmount,
       field: conflict.field,
@@ -3937,8 +3950,11 @@ async function resolveLiveAlignedPriceConflicts(input: {
       shopId: input.job.shopId,
       shopifyProductGid:
         latestSnapshot.shopifyProductGid ?? mapping.shopifyProductGid,
-      shopifyVariantGid:
-        latestSnapshot.shopifyVariantGid ?? mapping.shopifyVariantGid,
+      shopifyVariantGid: getPriceConflictRepairSnapshotVariantGid({
+        latestSnapshotVariantGid: latestSnapshot.shopifyVariantGid,
+        mappingVariantGid: mapping.shopifyVariantGid,
+        selectedVariantGid: variant?.id,
+      }),
       sku: latestSnapshot.sku ?? mapping.sku,
       source: ProductSnapshotSource.SYNCBAY,
       title: latestSnapshot.title,
@@ -3960,10 +3976,6 @@ async function resolveLiveAlignedPriceConflicts(input: {
   ];
 
   const result = await prisma.$transaction(async (tx) => {
-    if (changedSyncBaySnapshots.length > 0) {
-      await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
-    }
-
     const updatedConflicts = await tx.syncConflict.updateMany({
       data: {
         resolution: SyncConflictResolution.KEEP_SHOPIFY,
@@ -3976,6 +3988,20 @@ async function resolveLiveAlignedPriceConflicts(input: {
         status: SyncConflictStatus.OPEN,
       },
     });
+    const finalizedConflictIds = getFinalizedPriceConflictRepairIds({
+      conflictIds,
+      updatedCount: updatedConflicts.count,
+    });
+
+    if (finalizedConflictIds.length !== conflictIds.length) {
+      throw new Error(
+        "Price conflict repair skipped baseline snapshot because not all conflicts were updated.",
+      );
+    }
+
+    if (changedSyncBaySnapshots.length > 0) {
+      await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+    }
 
     await tx.productMapping.updateMany({
       data: { lastSyncedAt: now },
@@ -3985,7 +4011,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
-          conflictIds,
+          conflictIds: finalizedConflictIds,
           source: "live_aligned_price_conflict_repair",
           syncJobId: input.job.id,
         },

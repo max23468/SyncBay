@@ -21,8 +21,11 @@ const knownPrisma7Audit = {
   },
 };
 
-test("accepts only the known Prisma 7 advisory chain", () => {
-  assert.deepEqual(findUnexpectedAuditEntries(knownPrisma7Audit), []);
+test("rejects the former Prisma 7 advisory chain now covered by overrides", () => {
+  assert.deepEqual(
+    findUnexpectedAuditEntries(knownPrisma7Audit),
+    Object.entries(knownPrisma7Audit),
+  );
 });
 
 test("rejects additional advisories on allowlisted Prisma packages", () => {
@@ -34,14 +37,14 @@ test("rejects additional advisories on allowlisted Prisma packages", () => {
     },
   };
 
-  assert.deepEqual(findUnexpectedAuditEntries(vulnerabilities), [
-    ["prisma", vulnerabilities.prisma],
-  ]);
+  assert.deepEqual(
+    findUnexpectedAuditEntries(vulnerabilities),
+    Object.entries(vulnerabilities),
+  );
 });
 
 test("rejects unrelated production vulnerabilities", () => {
   const vulnerabilities = {
-    ...knownPrisma7Audit,
     lodash: {
       severity: "moderate",
       via: [{ source: 123 }],

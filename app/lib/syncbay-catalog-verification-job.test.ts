@@ -40,6 +40,7 @@ test("selects completed incremental work jobs without watermark markers", () => 
   assert.deepEqual(getCompletedIncrementalWorkJobWhere("shop-1"), {
     NOT: [
       { payload: { path: ["watermarkAdvanced"], equals: true } },
+      { result: { path: ["noWork"], equals: true } },
       { result: { path: ["watermarkAdvanced"], equals: true } },
     ],
     shopId: "shop-1",

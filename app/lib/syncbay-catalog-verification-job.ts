@@ -43,6 +43,7 @@ export function getCompletedIncrementalWorkJobWhere(
   return {
     NOT: [
       { payload: { path: ["watermarkAdvanced"], equals: true } },
+      { result: { path: ["noWork"], equals: true } },
       { result: { path: ["watermarkAdvanced"], equals: true } },
     ],
     shopId,
