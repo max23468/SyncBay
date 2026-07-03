@@ -1,13 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-const allowedPrisma7Vulnerabilities = new Set([
-  "@hono/node-server",
-  "@prisma/dev",
-  "prisma",
-]);
-const allowedAdvisorySource = 1116281;
-
 if (isCliEntrypoint()) {
   const audit = spawnSync("npm", ["audit", "--omit=dev", "--json"], {
     encoding: "utf8",
@@ -41,26 +34,19 @@ if (isCliEntrypoint()) {
     process.exit(1);
   }
 
-  const entries = Object.entries(vulnerabilities);
   const unexpected = findUnexpectedAuditEntries(vulnerabilities);
 
   if (unexpected.length > 0) {
     console.error("Audit produzione fallito.");
-    for (const [name, vulnerability] of entries) {
+    for (const [name, vulnerability] of unexpected) {
       console.error(`- ${name}: ${vulnerability.severity}`);
     }
     process.exit(1);
   }
-
-  console.warn(
-    "Audit produzione: accettata eccezione nota Prisma 7 moderata GHSA-92pp-h63x-v22m.",
-  );
 }
 
 export function findUnexpectedAuditEntries(vulnerabilities) {
-  return Object.entries(vulnerabilities).filter(([name]) => {
-    return !isAllowedKnownPrisma7Vulnerability(name, vulnerabilities);
-  });
+  return Object.entries(vulnerabilities);
 }
 
 export function readAuditVulnerabilities(report) {
@@ -77,36 +63,6 @@ export function readAuditVulnerabilities(report) {
   }
 
   return report.vulnerabilities;
-}
-
-function isAllowedKnownPrisma7Vulnerability(
-  name,
-  vulnerabilities,
-  seen = new Set(),
-) {
-  const vulnerability = vulnerabilities[name];
-
-  if (
-    !allowedPrisma7Vulnerabilities.has(name) ||
-    vulnerability?.severity !== "moderate" ||
-    seen.has(name)
-  ) {
-    return false;
-  }
-
-  seen.add(name);
-
-  return (vulnerability.via ?? []).every((item) => {
-    if (typeof item === "string") {
-      return isAllowedKnownPrisma7Vulnerability(
-        item,
-        vulnerabilities,
-        new Set(seen),
-      );
-    }
-
-    return item?.source === allowedAdvisorySource;
-  });
 }
 
 function isCliEntrypoint() {
