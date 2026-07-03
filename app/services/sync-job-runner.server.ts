@@ -62,13 +62,16 @@ import {
   getFinalizedPriceConflictRepairIds,
   getAlignedPriceConflictRepair,
   getPriceConflictRepairSnapshotVariantGid,
-  selectPriceConflictRepairVariant,
 } from "../lib/syncbay-price-conflict-alignment";
 import {
   calculateShopifyPricing,
   shouldWriteShopifyPricing,
   type SyncBayPricingWriteBaseline,
 } from "../lib/syncbay-pricing-rules";
+import {
+  getShopifyVariantLookupLimitForSync,
+  selectShopifyVariantForSync,
+} from "../lib/syncbay-shopify-variant-selection";
 import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
 import {
   getNextIncrementalEnqueueAt,
@@ -207,7 +210,6 @@ const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
 const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;
 const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
-const PRICE_CONFLICT_REPAIR_VARIANT_LOOKUP_LIMIT = 50;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
@@ -2653,17 +2655,37 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     };
   }
 
-  const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
-  const [product, snapshot] = await Promise.all([
-    getShopifyProductForConflict(
-      admin,
-      mapping.shopifyProductGid,
-      job.shop.defaultLocationGid,
-    ),
-    getLatestSyncBayConflictBaseline(mapping.id),
-  ]);
+  const snapshot = await getLatestSyncBayConflictBaseline(mapping.id);
 
-  if (!product || !snapshot) {
+  if (!snapshot) {
+    await markJobSucceeded({
+      delegatedJobId: null,
+      job,
+      result: {
+        conflictCount: 0,
+        skippedReason: "missing_product_or_snapshot",
+      },
+      warnings: ["Confronto Shopify saltato: prodotto o snapshot assente."],
+    });
+
+    return {
+      jobId: job.id,
+      status: "succeeded" as const,
+      type: job.type,
+    };
+  }
+
+  const preferredVariantGid =
+    mapping.shopifyVariantGid ?? snapshot.shopifyVariantGid;
+  const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
+  const product = await getShopifyProductForConflict(
+    admin,
+    mapping.shopifyProductGid,
+    job.shop.defaultLocationGid,
+    getShopifyVariantLookupLimitForSync({ preferredVariantGid }),
+  );
+
+  if (!product) {
     await markJobSucceeded({
       delegatedJobId: null,
       job,
@@ -2685,6 +2707,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     product,
     snapshot,
     Boolean(job.shop.defaultLocationGid),
+    preferredVariantGid,
   );
 
   for (const conflict of conflicts) {
@@ -2756,6 +2779,10 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
     priceAmount: priceSnapshot?.priceAmount ?? null,
     productStatus: statusSnapshot?.productStatus ?? null,
     quantity: quantitySnapshot?.quantity ?? null,
+    shopifyVariantGid:
+      priceSnapshot?.shopifyVariantGid ??
+      quantitySnapshot?.shopifyVariantGid ??
+      null,
     title: titleSnapshot?.title ?? null,
   };
 }
@@ -2775,7 +2802,7 @@ async function findLatestSyncBayImageSnapshot(mappingId: string) {
 async function findLatestSyncBayPriceSnapshot(mappingId: string) {
   return prisma.productSnapshot.findFirst({
     orderBy: { capturedAt: "desc" },
-    select: { payload: true, priceAmount: true },
+    select: { payload: true, priceAmount: true, shopifyVariantGid: true },
     where: {
       mappingId,
       priceAmount: { not: null },
@@ -2799,7 +2826,7 @@ async function findLatestSyncBayStatusSnapshot(mappingId: string) {
 async function findLatestSyncBayQuantitySnapshot(mappingId: string) {
   return prisma.productSnapshot.findFirst({
     orderBy: { capturedAt: "desc" },
-    select: { quantity: true },
+    select: { quantity: true, shopifyVariantGid: true },
     where: {
       mappingId,
       quantity: { not: null },
@@ -3453,11 +3480,16 @@ function getDetectedShopifyConflicts(
     priceAmount: Prisma.Decimal | null;
     productStatus: string | null;
     quantity: number | null;
+    shopifyVariantGid: string | null;
     title: string | null;
   },
   hasManagedLocation: boolean,
+  preferredVariantGid?: string | null,
 ) {
-  const variant = product.variants?.nodes?.[0] ?? null;
+  const variant = selectShopifyVariantForSync({
+    preferredVariantGid,
+    variants: product.variants?.nodes,
+  });
   const variantLocationQuantity = getVariantLocationQuantity(variant);
   const shopifyQuantity = hasManagedLocation
     ? variantLocationQuantity
@@ -3888,9 +3920,12 @@ async function resolveLiveAlignedPriceConflicts(input: {
       admin,
       mapping.shopifyProductGid,
       input.defaultLocationGid,
-      PRICE_CONFLICT_REPAIR_VARIANT_LOOKUP_LIMIT,
+      getShopifyVariantLookupLimitForSync({
+        preferredVariantGid:
+          mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
+      }),
     );
-    const variant = selectPriceConflictRepairVariant({
+    const variant = selectShopifyVariantForSync({
       preferredVariantGid:
         mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
       variants: product?.variants?.nodes,

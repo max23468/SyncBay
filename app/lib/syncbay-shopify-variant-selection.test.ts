@@ -5,6 +5,7 @@ import test from "node:test";
 import * as variantSelection from "./syncbay-shopify-variant-selection.ts";
 
 const {
+  getShopifyVariantLookupLimitForSync,
   preserveSelectedShopifyVariantForSync,
   selectShopifyVariantForSync,
 } = variantSelection;
@@ -41,6 +42,22 @@ test("falls back to the first variant only when no preferred variant is stored",
   assert.deepEqual(selected, {
     id: "gid://shopify/ProductVariant/first",
   });
+});
+
+test("expands the Shopify lookup when a preferred variant is stored", () => {
+  assert.equal(
+    getShopifyVariantLookupLimitForSync({
+      preferredVariantGid: "gid://shopify/ProductVariant/target",
+    }),
+    50,
+  );
+});
+
+test("keeps the Shopify lookup narrow when no preferred variant is stored", () => {
+  assert.equal(
+    getShopifyVariantLookupLimitForSync({ preferredVariantGid: null }),
+    1,
+  );
 });
 
 test("keeps the selected mapped variant when productUpdate returns the first variant", () => {

@@ -10,6 +10,8 @@ export interface ShopifyVariantSelectionProduct<
   } | null;
 }
 
+const SHOPIFY_MAPPED_VARIANT_LOOKUP_LIMIT = 50;
+
 export function selectShopifyVariantForSync<
   Variant extends ShopifyVariantSelectionCandidate,
 >(input: {
@@ -26,6 +28,14 @@ export function selectShopifyVariantForSync<
   }
 
   return variants[0] ?? null;
+}
+
+export function getShopifyVariantLookupLimitForSync(input: {
+  preferredVariantGid?: string | null;
+}) {
+  return input.preferredVariantGid?.trim()
+    ? SHOPIFY_MAPPED_VARIANT_LOOKUP_LIMIT
+    : 1;
 }
 
 export function preserveSelectedShopifyVariantForSync<
