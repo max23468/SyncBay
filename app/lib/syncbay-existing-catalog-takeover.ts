@@ -174,7 +174,7 @@ function buildExistingCatalogTakeoverRow(
     itemId: item.itemId,
     matchSuggestion,
     plannedOperations:
-      status === "applicabile" ? APPLICABLE_PLANNED_OPERATIONS : [],
+      status === "applicabile" ? getPlannedOperations(item) : [],
     productGid: matchSuggestion?.productGid ?? null,
     reasons,
     sku: item.normalized.sku,
@@ -208,16 +208,27 @@ function getReviewReasons(
     issueCodes.has("missing_images") || item.normalized.imageCount === 0;
   const hasShopifyImagesToPreserve =
     (matchSuggestion?.shopifyImageCount ?? 0) > 0;
+  const hasStrongAutoMatch = Boolean(matchSuggestion);
 
   return [
     hasMissingEbayImages && !hasShopifyImagesToPreserve
       ? "immagini_mancanti"
       : null,
-    item.normalized.categoryProposal.confidence === "low"
+    item.normalized.categoryProposal.confidence === "low" && !hasStrongAutoMatch
       ? "categoria_incerta"
       : null,
   ].filter((reason): reason is ExistingCatalogTakeoverReason =>
     Boolean(reason),
+  );
+}
+
+function getPlannedOperations(
+  item: ImportPreviewItem,
+): ExistingCatalogPlannedOperation[] {
+  return APPLICABLE_PLANNED_OPERATIONS.filter(
+    (operation) =>
+      operation !== "sync_category" ||
+      item.normalized.categoryProposal.confidence !== "low",
   );
 }
 

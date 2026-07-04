@@ -51,6 +51,43 @@ test("marks one auto-linkable valid row as applicable", () => {
   ]);
 });
 
+test("allows strong matches when only the category proposal is uncertain", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        categoryConfidence: "low",
+        itemId: "1007",
+        matchSuggestions: [
+          makeAutoMatch({
+            productGid: "gid://shopify/Product/7",
+            shopifyImageCount: 2,
+            variantGid: "gid://shopify/ProductVariant/77",
+          }),
+        ],
+        priceAmount: 12,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  assert.equal(report.summary.applicable, 1);
+  assert.equal(report.summary.review, 0);
+  assert.equal(report.rows[0]?.status, "applicabile");
+  assert.ok(!report.rows[0]?.reasons.includes("categoria_incerta"));
+  assert.deepEqual(report.rows[0]?.plannedOperations, [
+    "claim_mapping",
+    "sync_title",
+    "sync_description",
+    "sync_price",
+    "sync_quantity",
+    "sync_facets",
+    "sync_seo",
+    "add_syncbay_tag",
+    "preserve_handle",
+  ]);
+});
+
 test("allows image-preserving rows with missing eBay photos", () => {
   const report = buildExistingCatalogTakeoverReport({
     items: [
@@ -134,6 +171,38 @@ test("marks title-only matches as review", () => {
   assert.equal(report.summary.review, 1);
   assert.equal(report.rows[0]?.status, "da_rivedere");
   assert.ok(report.rows[0]?.reasons.includes("match_non_automatico"));
+});
+
+test("keeps weak matches with uncertain categories in review", () => {
+  const report = buildExistingCatalogTakeoverReport({
+    items: [
+      makePreviewItem({
+        categoryConfidence: "low",
+        itemId: "1008",
+        matchSuggestions: [
+          {
+            autoLinkable: false,
+            confidence: "medium",
+            productGid: "gid://shopify/Product/8",
+            reasonCodes: ["title_very_similar"],
+            reasons: ["Titolo molto simile"],
+            score: 40,
+            variantGid: "gid://shopify/ProductVariant/88",
+          },
+        ],
+        priceAmount: 15,
+        quantity: 1,
+      }),
+    ],
+    shopDomain: "example.myshopify.com",
+  });
+
+  assert.equal(report.summary.review, 1);
+  assert.equal(report.rows[0]?.status, "da_rivedere");
+  assert.deepEqual(report.rows[0]?.reasons, [
+    "categoria_incerta",
+    "match_non_automatico",
+  ]);
 });
 
 test("blocks invalid price and complex variants", () => {
@@ -291,6 +360,7 @@ test("blocks apply while the dry-run still has blocking rows", () => {
 });
 
 function makePreviewItem(input: {
+  categoryConfidence?: "high" | "medium" | "low";
   imageCount?: number;
   issueCodes?: string[];
   itemId: string;
@@ -312,7 +382,7 @@ function makePreviewItem(input: {
     normalized: {
       categoryProposal: {
         applied: false,
-        confidence: "high",
+        confidence: input.categoryConfidence ?? "high",
         productType: "Monete da collezione",
         reason: "dry_run_only",
         shopifyCategoryGid: "gid://shopify/TaxonomyCategory/1",
