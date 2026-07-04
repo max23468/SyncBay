@@ -126,6 +126,22 @@ export function isLiveDescriptionConflictAligned(input: {
   );
 }
 
+export function normalizeProductStatusConflictValue(
+  value: PrismaTypes.JsonValue | undefined,
+): PrismaTypes.JsonValue {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return value;
+
+  const normalized = value.trim().toUpperCase();
+
+  if (normalized === "PUBLISHED") return "ACTIVE";
+  if (normalized === "ACTIVE") return "ACTIVE";
+  if (normalized === "DRAFT") return "DRAFT";
+  if (normalized === "ARCHIVED") return "ARCHIVED";
+
+  return value.trim();
+}
+
 export function shouldSkipImagesConflictWhenEbayHasNoImages(input: {
   syncBayImageCount: number | null;
   shopifyImageCount: number;

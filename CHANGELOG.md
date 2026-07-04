@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.25] — 2026-07-05
+
+### Correzioni
+
+- Catalogo esistente: quando SyncBay riusa un prodotto Shopify già presente,
+  l'aggiornamento dal listing eBay passa ora anche categoria Shopify tassonomica
+  e `productType`, come già avveniva per i nuovi prodotti creati dall'import.
+- Conflitti Shopify: lo stato legacy `published` viene normalizzato come
+  `ACTIVE` nella detection, evitando falsi conflitti dopo takeover/import.
+
 ## [1.0.24] — 2026-07-04
 
 ### Correzioni
@@ -3114,6 +3124,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.25]: #1025--2026-07-05
 [1.0.24]: #1024--2026-07-04
 [1.0.23]: #1023--2026-07-04
 [1.0.22]: #1022--2026-07-04

@@ -8,6 +8,7 @@ const {
   getAlignedOpenConflictFields,
   getLatestSyncBayDescriptionBaselineWhere,
   isLiveDescriptionConflictAligned,
+  normalizeProductStatusConflictValue,
   shouldUseSyncBayDescriptionBaselinePayload,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
@@ -266,6 +267,15 @@ test("keeps non-description or missing live description hashes open", () => {
     }),
     false,
   );
+});
+
+test("normalizes legacy published product status to Shopify ACTIVE", () => {
+  assert.equal(normalizeProductStatusConflictValue("published"), "ACTIVE");
+  assert.equal(normalizeProductStatusConflictValue(" ACTIVE "), "ACTIVE");
+  assert.equal(normalizeProductStatusConflictValue("draft"), "DRAFT");
+  assert.equal(normalizeProductStatusConflictValue("ARCHIVED"), "ARCHIVED");
+  assert.equal(normalizeProductStatusConflictValue("custom"), "custom");
+  assert.equal(normalizeProductStatusConflictValue(null), null);
 });
 
 test("skips description conflicts when there is no eBay/SyncBay baseline but Shopify has one", () => {

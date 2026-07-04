@@ -49,6 +49,7 @@ import {
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
+import { buildShopifyProductUpdateFieldsFromDraft } from "../lib/syncbay-shopify-product-update-fields";
 import { buildSyncBayProductMetafields as buildSyncBayBaseProductMetafields } from "../lib/syncbay-shopify-product-metafields";
 import {
   buildSyncBayProductLookupQueries,
@@ -1569,12 +1570,10 @@ async function updateShopifyProductFromEbay(
       status: "failed";
     }
 > {
-  const productInput = {
-    descriptionHtml: draftProduct.product.descriptionHtml,
-    id: product.id,
-    status: draftProduct.product.status,
-    title: draftProduct.product.title,
-  };
+  const productInput = buildShopifyProductUpdateFieldsFromDraft({
+    product: draftProduct.product,
+    productId: product.id,
+  });
 
   const response = await admin.graphql(
     `#graphql

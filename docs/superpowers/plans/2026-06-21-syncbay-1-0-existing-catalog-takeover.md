@@ -1672,6 +1672,19 @@ Doctor e Vercel production verdi.
 
 ## Task 10: Onboarding Numisleo Post-1.0, Installazione E Dry-Run Read-Only
 
+**Stato 2026-07-04:** completato operativamente e chiuso come gate di
+onboarding/readiness Numisleo. Evidenza non segreta salvata fuori repo in
+`/Users/Matteo/SyncBay-audit/numisleo.myshopify.com/20260704-195513Z-task10-closure/`.
+La paginazione esatta della collezione `Negozio Online` conferma 883 prodotti
+listati, 883 mappati SyncBay/eBay, zero prodotti extra fuori mapping e zero
+mapping mancanti dalla collezione. Eventuali discrepanze di conteggio Shopify
+devono essere ricontrollate confrontando connection paginabile, source a
+condizioni, `productsCount(query: "collection_id:...")` e storefront, senza
+assumere che il campo aggregato `Collection.productsCount` sia da solo
+sufficiente come gate. Apply reale, coda pricing `-8%`, coda
+`DETECT_SHOPIFY_CHANGES`, conferma disattivazione vecchia app e monitoraggio
+go-live restano responsabilità di Task 11.
+
 **Files:**
 - No repo file for raw evidence: salvare output, screenshot e JSON in una
   cartella fuori repo o ignorata, per esempio
@@ -1679,7 +1692,7 @@ Doctor e Vercel production verdi.
 - Modify only if the runbook changes: `docs/guides/onboarding-e-import.md`
 - Modify only if the ADR changes: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
 
-- [ ] **Step 1: verificare prerequisito release**
+- [x] **Step 1: verificare prerequisito release**
 
   Prima di toccare Numisleo, verificare:
 
@@ -1692,7 +1705,7 @@ Doctor e Vercel production verdi.
   Expected: se manca un punto, fermare l'onboarding e chiudere prima una patch
   `1.0.1+` o la release `1.0.0`.
 
-- [ ] **Step 2: creare cartella run reale fuori repo**
+- [x] **Step 2: creare cartella run reale fuori repo**
 
   Run:
 
@@ -1705,7 +1718,7 @@ Doctor e Vercel production verdi.
   Expected: la cartella esiste fuori dal repo e conterrà solo evidenze locali
   non committate.
 
-- [ ] **Step 3: installare/autorizzare SyncBay su Numisleo senza apply**
+- [x] **Step 3: installare/autorizzare SyncBay su Numisleo senza apply**
 
   Con browser autenticato sullo store, aprire il deployment production e
   completare OAuth Shopify per:
@@ -1725,7 +1738,7 @@ Doctor e Vercel production verdi.
   Expected: SyncBay `1.0.0` o patch successiva risulta installata/autorizzata
   sullo store Numisleo e la home embedded carica senza errori runtime.
 
-- [ ] **Step 4: verificare sessione, scope, webhook, location e pagine pubbliche**
+- [x] **Step 4: verificare sessione, scope, webhook, location e pagine pubbliche**
 
   Usare letture e diagnostica, senza scrivere catalogo:
 
@@ -1750,7 +1763,7 @@ Doctor e Vercel production verdi.
   - privacy e termini raggiungibili;
   - nessuna scrittura catalogo eseguita.
 
-- [ ] **Step 5: collegare eBay e impostazioni iniziali Numisleo**
+- [x] **Step 5: collegare eBay e impostazioni iniziali Numisleo**
 
   Dalla UI SyncBay su Numisleo:
 
@@ -1765,7 +1778,7 @@ Doctor e Vercel production verdi.
   Expected: Numisleo ha Shopify + eBay autorizzati dentro SyncBay e le
   impostazioni base sono pronte per il dry-run, senza apply catalogo.
 
-- [ ] **Step 6: verificare letture Shopify ed eBay senza scritture**
+- [x] **Step 6: verificare letture Shopify ed eBay senza scritture**
 
   Run:
 
@@ -1781,7 +1794,7 @@ Doctor e Vercel production verdi.
   Expected: letture Shopify ed eBay funzionanti, nessuna scrittura catalogo,
   nessun job apply creato.
 
-- [ ] **Step 7: generare preview live in modalità catalogo esistente**
+- [x] **Step 7: generare preview live in modalità catalogo esistente**
 
   Dalla UI SyncBay:
 
@@ -1799,7 +1812,7 @@ Doctor e Vercel production verdi.
   - il report espone `applicabile`, `da_rivedere`, `bloccante`,
     `gia_collegato`.
 
-- [ ] **Step 8: riconciliare report con audit Task 0**
+- [x] **Step 8: riconciliare report con audit Task 0**
 
   Confrontare il nuovo report con l'audit già salvato in
   `audits/numisleo.myshopify.com/20260621-2239/` e classificare almeno:
@@ -1817,7 +1830,7 @@ Doctor e Vercel production verdi.
   Expected: ogni riga è `applicabile`, `da_rivedere`, `bloccante` o
   `gia_collegato`, con motivazione leggibile.
 
-- [ ] **Step 9: decidere freeze e vecchia app**
+- [x] **Step 9: decidere freeze e vecchia app**
 
   Prima di disattivare la vecchia app o applicare SyncBay, verificare:
 
@@ -1831,7 +1844,7 @@ Doctor e Vercel production verdi.
   Expected: esiste un pacchetto go/no-go. Se una condizione manca, Task 10 non
   è chiuso e Task 11 non parte.
 
-- [ ] **Step 10: publish eventuali patch 1.0.1+ o correzioni runbook**
+- [x] **Step 10: publish eventuali patch 1.0.1+ o correzioni runbook**
 
   Se il dry-run reale rivela bug applicativi, correggerli e rilasciarli come
   patch `1.0.1+` prima di procedere. Se rivela solo istruzioni mancanti o
@@ -1840,13 +1853,63 @@ Doctor e Vercel production verdi.
 
 ## Task 11: Apply Controllato, Attivazione Sync E Monitoraggio Numisleo
 
+**Stato 2026-07-04:** in corso, non ancora chiudibile. Evidenza read-only
+salvata fuori repo in
+`/Users/Matteo/SyncBay-audit/numisleo.myshopify.com/20260704-200253Z-task11-status/`.
+Il takeover è applicato: `ProductMapping` ha 883 mapping attivi, 883 ItemID
+eBay distinti, 883 prodotti Shopify distinti e nessun GID Shopify mancante. La
+collezione `Negozio Online`, verificata con paginazione esatta, lista 883
+prodotti, tutti mappati, attivi, pubblicati e con URL storefront; la pagina
+pubblica con cache-bust mostra `883 prodotti`. Non risultano conflitti o job in
+`FAILED`/`RETRYING`. Restano però pendenti 83 job `SYNC_INCREMENTAL`
+`pricing_rule_update` per 823 item e 1071 job `DETECT_SHOPIFY_CHANGES`; non
+cancellarli né forzarli, lasciarli drenare. Nel campione prezzi live 60/150
+prodotti hanno già prezzo Shopify con `-8%` e `compareAtPrice` eBay, mentre
+90/150 devono ancora ricevere il riallineamento. Restano aperte anche la
+verifica manuale finale catalogo e la conferma che la vecchia app sia fuori dal
+flusso.
+
+**Aggiornamento 2026-07-04:** l'operatore ha confermato che la verifica
+manuale finale non è richiesta per chiudere il gate e che la vecchia app è già
+stata rimossa. L'app precedente è quindi considerata fuori dal flusso sulla base
+della conferma operatore, non di verifica API `read_apps`. Il residuo Task 11
+resta il drenaggio naturale dei job pendenti e la conferma finale sync quando
+le code sono stabilizzate.
+
+**Chiusura definitiva 2026-07-05:** Task 11 completato. Verifiche runtime live:
+shop `numisleo.myshopify.com` `INSTALLED`, eBay `CONNECTED` in produzione su
+`EBAY_IT`, sync ordinario attivo con target 300 secondi, location predefinita
+presente, cron runner ripristinato al batch conservativo `limit=2`. Il DB
+SyncBay ha 883 mapping `ACTIVE`, 883 ItemID eBay distinti, 883 prodotti Shopify
+distinti e nessun GID Shopify mancante; tutti i job Numisleo risultano
+terminali (`SUCCEEDED`), senza `PENDING`, `RUNNING`, `RETRYING` o `FAILED`.
+La regola prezzo `-8%` è stata applicata a 883/883 prodotti (`syncedCount`
+883, `skippedCount` 0). La coda `DETECT_SHOPIFY_CHANGES` generata dal takeover
+e dal riallineamento prezzi è stata chiusa: 2.159 webhook su prodotti non
+mappati erano non applicabili, 865 erano superati da snapshot SyncBay
+successivi e i 5 residui sono stati processati dal runner reale. I 18 conflitti
+`status` aperti dal runner erano falsi positivi di normalizzazione
+`published`/`ACTIVE`; sono stati risolti e la patch applicativa normalizza
+questo caso per evitare riaperture. Shopify Admin GraphQL conferma 0 bozze e 0
+prodotti archiviati. Verifica mirata sulla collezione `Negozio Online`: il
+campo aggregato `Collection.productsCount` riporta 965, ma
+`productsCount(query: "collection_id:202631315501")`, la paginazione completa di
+`collection.products`, la paginazione completa della `CollectionConditionsSource`
+e lo storefront pubblico con cache-bust convergono tutti a 883 prodotti. La
+source della collezione include solo `VariantInventory GREATER_THAN 0` e non ha
+condizioni o selezioni di esclusione; anche `productsCount(query:
+"inventory_total:>0")` restituisce 883. Non è quindi dimostrato un gruppo di 82
+prodotti extra effettivamente pubblicati o paginabili: il `965` resta un
+aggregato Shopify incoerente/lagging rispetto alle superfici operative, da
+monitorare ma non bloccante per Task 11.
+
 **Files:**
 - No repo file for raw evidence: report apply, screenshot, log e JSON restano
   fuori repo o in cartelle ignorate.
 - Modify only if documentation changes: `docs/guides/onboarding-e-import.md`
 - Modify only if a stable decision changes: `docs/decisions/`
 
-- [ ] **Step 1: confermare go prima di ogni scrittura**
+- [x] **Step 1: confermare go prima di ogni scrittura**
 
   Prima di applicare, verificare e registrare fuori repo:
 
@@ -1861,7 +1924,7 @@ Doctor e Vercel production verdi.
 
   Expected: senza questi punti, non premere `Applica takeover righe sicure`.
 
-- [ ] **Step 2: applicare solo righe sicure**
+- [x] **Step 2: applicare solo righe sicure**
 
   Dalla UI SyncBay:
 
@@ -1878,7 +1941,7 @@ Doctor e Vercel production verdi.
   - ogni riga usa `reuseOnly`;
   - un mancato riuso fallisce la riga invece di creare duplicati.
 
-- [ ] **Step 3: monitorare job, mapping, snapshot e conflitti**
+- [x] **Step 3: monitorare job, mapping, snapshot e conflitti**
 
   Dalla UI e dagli strumenti diagnostici:
 
@@ -1896,7 +1959,7 @@ Doctor e Vercel production verdi.
   - conflitti critici assenti;
   - nessun duplicato prodotto creato da SyncBay.
 
-- [ ] **Step 4: verifica manuale finale catalogo**
+- [x] **Step 4: verifica manuale finale catalogo**
 
   L'operatore controlla manualmente:
 
@@ -1912,7 +1975,11 @@ Doctor e Vercel production verdi.
   Expected: catalogo Shopify coerente con eBay per tutte le righe applicate e
   lista eccezioni aperte aggiornata.
 
-- [ ] **Step 5: attivare sync ordinario a 300 secondi**
+  Stato: requisito rimosso/waived dall'operatore il 2026-07-04; la chiusura si
+  basa sulle verifiche automatiche di mapping, collezione, disponibilità,
+  prezzi progressivi e assenza conflitti.
+
+- [x] **Step 5: attivare sync ordinario a 300 secondi**
 
   Solo dopo verifica manuale:
 
@@ -1926,7 +1993,12 @@ Doctor e Vercel production verdi.
   Expected: SyncBay diventa l'unico gestore del flusso eBay.it -> Shopify per
   Numisleo, con stock Shopify -> eBay limitato agli ordini pagati.
 
-- [ ] **Step 6: monitoraggio iniziale e chiusura onboarding**
+  Stato finale: sync attivo a 300 secondi, eBay collegato in produzione,
+  pricing `-8%` completato su 883/883 prodotti e vecchia app confermata fuori
+  dal flusso dall'operatore. Il webhook `orders/paid` resta il solo percorso
+  Shopify -> eBay previsto dal perimetro 1.0.
+
+- [x] **Step 6: monitoraggio iniziale e chiusura onboarding**
 
   Nella prima finestra operativa controllare:
 
@@ -1940,6 +2012,10 @@ Doctor e Vercel production verdi.
   Expected: nessun conflitto critico aperto, nessun job bloccato non spiegato,
   vecchia app fuori dal flusso, runbook aggiornato con gli esiti reali.
 
+  Stato finale: 0 job aperti, 0 conflitti aperti, 0 bozze Shopify, 0 archiviati,
+  883 prodotti SyncBay/eBay attivi e mappati. I falsi conflitti `status`
+  `published`/`ACTIVE` sono stati corretti nel codice e risolti sul runtime.
+
 ## Sequenza Di Esecuzione Consigliata
 
 0. Completato: Task 0 audit read-only dello store target e report operativo
@@ -1948,19 +2024,20 @@ Doctor e Vercel production verdi.
 2. Completato: Task 4-5 caricamento Shopify paginato e UI dry-run completa.
 3. Completato: Task 6-7 apply `reuseOnly`, tag policy e runner.
 4. Completato: Task 8 readiness legale e mini kit clienti selezionati.
-5. Prossimo: Task 9 come release privata `1.0.0` completa, deployata,
+5. Completato: Task 9 come release privata `1.0.0` completa, deployata,
    taggata, pubblicata su GitHub Release e installabile, senza installare
    Numisleo.
-6. Poi: Task 10 come onboarding Numisleo post-1.0: installazione,
+6. Completato: Task 10 come onboarding Numisleo post-1.0: installazione,
    configurazione, dry-run read-only, classificazione eccezioni, pacchetto
    go/no-go, freeze e decisione sulla vecchia app.
-7. Infine: Task 11 come apply controllato, attivazione sync a 300 secondi e
+7. Completato: Task 11 come apply controllato, attivazione sync a 300 secondi e
    monitoraggio iniziale.
 
-La capacità di takeover generica è pronta nel codice, ma SyncBay non diventa
-`1.0.0` finché Task 9 non è chiuso. Dopo Task 9, Numisleo riceve una 1.0 già
-completa; eventuali problemi emersi durante l'onboarding diventano patch
-`1.0.1+`, non criteri retroattivi della 1.0.
+Il piano 1.0/onboarding Numisleo è chiuso definitivamente: la capacità di
+takeover generica è in produzione privata, Numisleo è installato e collegato,
+il catalogo eBay.it gestito da SyncBay è attivo e le eccezioni runtime emerse
+durante il go-live sono state risolte come patch `1.0.x`, non come nuovo scope
+di prodotto.
 
 ## Copertura Decisioni Grill
 
