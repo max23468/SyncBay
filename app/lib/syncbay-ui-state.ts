@@ -31,6 +31,7 @@ export interface NextActionInput {
   importIncomplete?: boolean;
   openConflictCount?: number;
   quantityIssueCount?: number;
+  shopDomain?: string | null;
   settingsBlockerCount?: number;
   settingsMissing?: boolean;
 }
@@ -61,6 +62,7 @@ export interface EbayConnectionActionInput {
   missingRequirementCount?: number;
   oauthEnabled?: boolean;
   oauthReady?: boolean;
+  shopDomain?: string | null;
   status?: string | null;
 }
 
@@ -107,6 +109,18 @@ const OVERVIEW_STATUS_HERO_KINDS = new Set<NextActionKind>([
   "import_incomplete",
   "settings_missing",
 ]);
+
+const EBAY_OAUTH_START_PATH = "/auth/ebay/start";
+
+export function getEbayOAuthStartHref(shopDomain?: string | null) {
+  const normalizedShopDomain = shopDomain?.trim();
+
+  if (!normalizedShopDomain) return EBAY_OAUTH_START_PATH;
+
+  return `${EBAY_OAUTH_START_PATH}?${new URLSearchParams({
+    shop: normalizedShopDomain,
+  }).toString()}`;
+}
 
 export function shouldShowOverviewStatusHero(kind: NextActionKind) {
   return OVERVIEW_STATUS_HERO_KINDS.has(kind);
@@ -216,7 +230,7 @@ export function getNextAction(input: NextActionInput): NextAction {
       body: "Ricollega l'account eBay per riprendere import, aggiornamenti e controlli sulle disponibilità.",
       kind: "ebay_connection",
       primaryActionHref: canStartOAuth
-        ? "/auth/ebay/start"
+        ? getEbayOAuthStartHref(input.shopDomain)
         : "/app/import-preview",
       primaryActionLabel: canStartOAuth
         ? "Ricollega eBay"
@@ -386,7 +400,7 @@ export function getEbayConnectionAction(
   if (input.oauthEnabled && input.oauthReady) {
     return {
       blockerText: null,
-      href: "/auth/ebay/start",
+      href: getEbayOAuthStartHref(input.shopDomain),
       label,
       variant: connected ? undefined : "primary",
     };
