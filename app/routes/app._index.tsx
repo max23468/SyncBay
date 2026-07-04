@@ -16,6 +16,7 @@ import {
   SyncPulse,
   TimelineEvent,
   type SyncBayIcon,
+  type SyncBayNavigationTarget,
   type SyncBayTone,
 } from "../components/SyncBayUi";
 import { LiveSync } from "../components/SyncBayLive";
@@ -197,6 +198,7 @@ export default function Index() {
           <StatusHero
             actionHref={nextAction.primaryActionHref}
             actionLabel={nextAction.primaryActionLabel}
+            actionTarget={nextAction.primaryActionTarget}
             body={nextAction.body}
             icon={getHeroIcon(nextAction.kind)}
             title={nextAction.title}
@@ -329,6 +331,7 @@ export default function Index() {
                   icon={action.icon}
                   key={action.label}
                   label={action.label}
+                  target={action.target}
                   tone={action.tone}
                 />
               ))}
@@ -480,7 +483,7 @@ function FirstRunOnboarding({
             </s-text>
             {steps.ebay === "active" ? (
               <div>
-                <s-button href={ebayOauthHref} variant="primary">
+                <s-button href={ebayOauthHref} target="_top" variant="primary">
                   Collega eBay
                 </s-button>
               </div>
@@ -666,6 +669,7 @@ type ContextualAction = {
   href: string;
   icon: SyncBayIcon;
   label: string;
+  target?: SyncBayNavigationTarget;
   tone: SyncBayTone;
 };
 
@@ -688,6 +692,7 @@ function getContextualActions(
         dashboard.ebay.status === "NOT_CONNECTED"
           ? "Collega eBay"
           : "Ricollega eBay",
+      target: "_top",
       tone: "critical",
     });
   }

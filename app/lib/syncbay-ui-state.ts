@@ -2,6 +2,8 @@ import type { ConflictResolution } from "./syncbay-conflict-actions";
 
 type Tone = "critical" | "warning" | "info" | "success";
 
+export type SyncBayNavigationTarget = "_blank" | "_parent" | "_self" | "_top";
+
 export interface ActivityBadgeStateInput {
   failedJobs: number;
   openConflictCount?: number | null;
@@ -41,6 +43,7 @@ export interface NextAction {
   kind: NextActionKind;
   primaryActionHref: string;
   primaryActionLabel: string;
+  primaryActionTarget?: SyncBayNavigationTarget;
   title: string;
   tone: Tone;
 }
@@ -70,6 +73,7 @@ export interface EbayConnectionAction {
   blockerText: string | null;
   href: string | null;
   label: string;
+  target?: SyncBayNavigationTarget;
   variant?: "primary";
 }
 
@@ -111,6 +115,7 @@ const OVERVIEW_STATUS_HERO_KINDS = new Set<NextActionKind>([
 ]);
 
 const EBAY_OAUTH_START_PATH = "/auth/ebay/start";
+const EBAY_OAUTH_LINK_TARGET = "_top" satisfies SyncBayNavigationTarget;
 
 export function getEbayOAuthStartHref(shopDomain?: string | null) {
   const normalizedShopDomain = shopDomain?.trim();
@@ -235,6 +240,7 @@ export function getNextAction(input: NextActionInput): NextAction {
       primaryActionLabel: canStartOAuth
         ? "Ricollega eBay"
         : "Apri importazione",
+      ...(canStartOAuth ? { primaryActionTarget: EBAY_OAUTH_LINK_TARGET } : {}),
       title: "Collegamento eBay mancante o scaduto",
       tone: "critical",
     };
@@ -402,6 +408,7 @@ export function getEbayConnectionAction(
       blockerText: null,
       href: getEbayOAuthStartHref(input.shopDomain),
       label,
+      target: EBAY_OAUTH_LINK_TARGET,
       variant: connected ? undefined : "primary",
     };
   }

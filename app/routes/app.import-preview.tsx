@@ -552,7 +552,11 @@ function PreparationSection({
       </s-text>
       <s-stack direction="inline" gap="small-200">
         {ebayAction.href ? (
-          <s-button href={ebayAction.href} variant={ebayAction.variant}>
+          <s-button
+            href={ebayAction.href}
+            target={ebayAction.target}
+            variant={ebayAction.variant}
+          >
             {ebayAction.label}
           </s-button>
         ) : null}

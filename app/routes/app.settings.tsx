@@ -765,6 +765,7 @@ function AdvancedSettingsCard({
             href={ebayOauthHref}
             icon="connect"
             label="Collega eBay"
+            target="_top"
             tone="critical"
           />
         </div>
