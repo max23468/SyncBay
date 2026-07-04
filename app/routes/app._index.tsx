@@ -35,6 +35,7 @@ import {
 } from "../lib/syncbay-loader-performance";
 import {
   formatSyncJobStatus as formatJobStatus,
+  getEbayOAuthStartHref,
   getNextAction,
   getOverviewSyncWakeAt,
   getProviderHealthNotice,
@@ -138,6 +139,7 @@ export default function Index() {
   };
   const working = isOverviewSyncWorking(overviewSyncInput);
   const nextRevalidateAt = getOverviewSyncWakeAt(overviewSyncInput);
+  const ebayOauthHref = getEbayOAuthStartHref(dashboard.shop.domain);
   const nextAction = getNextAction({
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     ebayOauthEnabled: dashboard.ebay.oauthEnabled,
@@ -147,6 +149,7 @@ export default function Index() {
     importIncomplete,
     openConflictCount: dashboard.conflicts.openCount,
     quantityIssueCount: riskCount,
+    shopDomain: dashboard.shop.domain,
     settingsMissing,
   });
   const showBlocker = shouldShowOverviewStatusHero(nextAction.kind);
@@ -170,7 +173,12 @@ export default function Index() {
       </s-badge>
       <s-stack gap="large">
         <LiveSync nextRevalidateAt={nextRevalidateAt} working={working} />
-        {firstRun ? <FirstRunOnboarding steps={onboardingSteps} /> : null}
+        {firstRun ? (
+          <FirstRunOnboarding
+            ebayOauthHref={ebayOauthHref}
+            steps={onboardingSteps}
+          />
+        ) : null}
         {firstRun ? null : (
         <>
         {providerNotice ? (
@@ -432,7 +440,13 @@ function getSyncPulse(digest: Dashboard["sync"]["healthDigest"]): {
   return { detail, label: "Sincronizzazione in salute", tone: "success" };
 }
 
-function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
+function FirstRunOnboarding({
+  ebayOauthHref,
+  steps,
+}: {
+  ebayOauthHref: string;
+  steps: OnboardingSteps;
+}) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
       <s-stack gap="base">
@@ -466,7 +480,7 @@ function FirstRunOnboarding({ steps }: { steps: OnboardingSteps }) {
             </s-text>
             {steps.ebay === "active" ? (
               <div>
-                <s-button href="/auth/ebay/start" variant="primary">
+                <s-button href={ebayOauthHref} variant="primary">
                   Collega eBay
                 </s-button>
               </div>
@@ -668,7 +682,7 @@ function getContextualActions(
   ) {
     actions.push({
       description: "Riattiva import, aggiornamenti e disponibilità.",
-      href: "/auth/ebay/start",
+      href: getEbayOAuthStartHref(dashboard.shop.domain),
       icon: "link",
       label:
         dashboard.ebay.status === "NOT_CONNECTED"

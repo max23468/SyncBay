@@ -539,6 +539,7 @@ function PreparationSection({
     missingRequirementCount: wizard.ebay.missingRequirements.length,
     oauthEnabled: wizard.ebay.oauthEnabled,
     oauthReady: wizard.ebay.oauthReady,
+    shopDomain,
     status: wizard.ebay.status,
   });
 

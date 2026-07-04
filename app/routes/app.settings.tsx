@@ -44,6 +44,7 @@ import {
 } from "../lib/syncbay-loader-performance";
 import {
   getEbayConnectionStatusLabel,
+  getEbayOAuthStartHref,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
@@ -315,6 +316,7 @@ export default function SettingsRoute() {
     actionData?.intent === "saveDescriptionRule"
       ? actionData.descriptionRule
       : (settings.descriptionRule ?? DEFAULT_SETTINGS_DESCRIPTION_RULE);
+  const ebayOauthHref = getEbayOAuthStartHref(settings.shop.domain);
   const configReady =
     settings.ebay.status === "CONNECTED" &&
     settings.shopify.missingScopes.length === 0 &&
@@ -363,6 +365,7 @@ export default function SettingsRoute() {
         </s-grid>
 
         <AdvancedSettingsCard
+          ebayOauthHref={ebayOauthHref}
           isSaving={isSaving}
           settings={settings}
         />
@@ -699,9 +702,11 @@ function PricingRuleSettingsCard({
 }
 
 function AdvancedSettingsCard({
+  ebayOauthHref,
   isSaving,
   settings,
 }: {
+  ebayOauthHref: string;
   isSaving: boolean;
   settings: SettingsState;
 }) {
@@ -757,7 +762,7 @@ function AdvancedSettingsCard({
         <div className="syncbay-action-list">
           <ActionRow
             description="Riattiva import, aggiornamenti e disponibilità."
-            href="/auth/ebay/start"
+            href={ebayOauthHref}
             icon="connect"
             label="Collega eBay"
             tone="critical"
