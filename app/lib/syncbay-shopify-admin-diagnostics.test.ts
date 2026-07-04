@@ -31,6 +31,19 @@ test("normalizes a bounded product diagnostics payload", () => {
   );
 });
 
+test("uses the explicit diagnostics shop even without a fallback", () => {
+  assert.equal(
+    normalizeShopifyAdminDiagnosticsProductInput(
+      {
+        productGids: ["gid://shopify/Product/1"],
+        shopDomain: "explicit-shop.myshopify.com",
+      },
+      { fallbackShopDomain: "" },
+    ).shopDomain,
+    "explicit-shop.myshopify.com",
+  );
+});
+
 test("rejects product diagnostics payloads that are not a safe id list", () => {
   assert.throws(
     () =>

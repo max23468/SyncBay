@@ -23,12 +23,24 @@ test("uses the loaded environment shop when no explicit shop is passed", () => {
   );
 });
 
-test("falls back to the SyncBay dev store when no shop is configured", () => {
-  assert.equal(
-    resolveCatalogImagesDoctorShopDomain({
-      args: {},
-      env: {},
-    }),
-    "syncbay-dev.myshopify.com",
+test("requires an explicit shop when no environment shop is configured", () => {
+  assert.throws(
+    () =>
+      resolveCatalogImagesDoctorShopDomain({
+        args: {},
+        env: {},
+      }),
+    /Specifica lo shop/,
+  );
+});
+
+test("rejects an empty environment shop instead of using an empty domain", () => {
+  assert.throws(
+    () =>
+      resolveCatalogImagesDoctorShopDomain({
+        args: {},
+        env: { SHOPIFY_DEV_STORE: "" },
+      }),
+    /Specifica lo shop/,
   );
 });

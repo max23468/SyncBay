@@ -3,10 +3,10 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_MAX_AGE_HOURS = 24;
 const ARCHIVABLE_ERROR_CODES = [
   "SYNCBAY_INCREMENTAL_BLOCKED",
@@ -14,8 +14,10 @@ const ARCHIVABLE_ERROR_CODES = [
 ];
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const maxAgeHours = args.maxAgeHours ?? DEFAULT_MAX_AGE_HOURS;
 
 await main().catch((error) => {

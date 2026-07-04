@@ -7,11 +7,11 @@ import { pathToFileURL } from "node:url";
 import { XMLParser } from "fast-xml-parser";
 
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_LIMIT = 20;
 const DEFAULT_EBAY_LIMIT = 10;
 
@@ -624,7 +624,7 @@ function parseArgs(rawArgs) {
 }
 
 export function resolveCatalogImagesDoctorShopDomain(input) {
-  return input.args.shop ?? input.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+  return resolveRequiredShopDomainOption(input);
 }
 
 function isCliEntrypoint() {

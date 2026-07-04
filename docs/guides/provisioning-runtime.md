@@ -75,7 +75,7 @@ Note:
   catalogo in `EUR`. Se la valuta manca o è diversa, la riga ordine viene
   saltata e non viene inviata nessuna mutation a eBay.
 - Per misurare la quota reale eBay Trading usa
-  `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`. Il comando
+  `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`. Il comando
   legge i limiti applicativi e utente via Analytics API e mostra `limit`,
   `remaining`, `reset` e `timeWindow`. Se eBay segnala quota Trading esaurita,
   il runner non riprova ogni minuto: crea un marker `SYNC_INCREMENTAL` fallito e
@@ -97,7 +97,7 @@ Note:
   `write_orders` e il trigger reale è stato verificato con `orderCreate` usando
   una transazione `SALE/SUCCESS`.
 - Prima di una prova reale `orders/paid`, usa
-  `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`: il
+  `npm run orders:paid-readiness -- --shop <shop.myshopify.com>`: il
   comando controlla in sola lettura sessione offline Shopify, scope
   `read_orders`/`write_orders`, connessione eBay `EBAY_IT`, token eBay
   utilizzabili, coda stock/sync e candidati con snapshot `EUR`.
@@ -128,7 +128,7 @@ Note:
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
-syncbay-dev.myshopify.com`, che interroga Supabase remoto via `supabase db
+<shop.myshopify.com>`, che interroga Supabase remoto via `supabase db
 query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
 quando disponibile e stampa solo stato job sanitizzato.
 - Per ripristinare lo stock eBay dopo un test reale mirato usa
@@ -183,7 +183,7 @@ Non salvarla in Git e non stamparla nei log.
 - advisor Supabase security/performance senza issue dopo abilitazione RLS su `_prisma_migrations`
 - migration runtime primitives e mapping/snapshot/conflitti applicate su Supabase con `supabase db query --linked` e registrate in `_prisma_migrations`, perché `npx prisma migrate deploy` si fermava sul pooler con errore opaco dello schema engine
 - verifica SQL remota: tabelle `ProductMapping`, `ProductSnapshot` e `SyncConflict` presenti con RLS attivo
-- `shopify app dev --store syncbay-dev.myshopify.com` con preview Admin caricata e sessione installazione registrata
+- `shopify app dev --store <shop.myshopify.com>` con preview Admin caricata e sessione installazione registrata
 - test eBay -> Shopify su ItemID controllato `156986744184`: stock eBay 3 -> 2
   via Trading API, sync incrementale production, stock Shopify verificato a 2,
   rollback eBay/Shopify a 3
@@ -243,7 +243,7 @@ Per riallineare una tantum prodotti già mappati verso un canale Shopify
 specifico usare:
 
 ```bash
-npm run products:publish-channel -- --shop syncbay-dev.myshopify.com --publication-title "Online Store" --configure-settings
+npm run products:publish-channel -- --shop <shop.myshopify.com> --publication-title "Online Store" --configure-settings
 ```
 
 Eseguire prima con `--dry-run`; il comando usa `publishablePublish` sui

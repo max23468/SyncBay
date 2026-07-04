@@ -262,7 +262,7 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   candidata, `productType`, confidenza e motivo nello snapshot diagnostico;
   sui nuovi prodotti creati dall'import passa subito `category` e `productType`
   a Shopify quando la proposta è valida, senza creare tag categoria;
-- `npm run categories:backfill -- --shop syncbay-dev.myshopify.com` confronta
+- `npm run categories:backfill -- --shop <shop.myshopify.com>` confronta
   in sola lettura i prodotti collegati con la proposta categoria SyncBay e
   classifica applicabili, già corretti, conflitti manuali e incerti prima di
   qualsiasi apply; la scrittura reale richiede
@@ -290,10 +290,10 @@ Copertura attuale della preview live:
   listing per lo store collegato;
 - la dashboard mostra l'avanzamento dell'ultima run import con conteggi per
   batch catalogo/import Shopify, job attivi, job falliti e problemi recenti;
-- `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`
+- `npm run import:verify -- --shop <shop.myshopify.com> --sample 10`
   confronta un campione dell'ultima run tra snapshot eBay/SyncBay, mapping e
   prodotti Shopify live.
-- `npm run descriptions:cleanup-report -- --shop syncbay-dev.myshopify.com
+- `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com>
   --sample 20` misura su listing eBay reali la pulizia descrizioni prima
   dell'import, riportando caratteri rimossi, segnali template e brevi estratti
   testuali.

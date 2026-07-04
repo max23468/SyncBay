@@ -5,9 +5,9 @@ import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_OAUTH_BASE_URL = "https://api.ebay.com";
 const DEFAULT_ANALYTICS_BASE_URL = "https://api.ebay.com";
@@ -46,7 +46,7 @@ function parseArgs(argv) {
     all: false,
     json: false,
     marketplaceId: DEFAULT_MARKETPLACE_ID,
-    shop: DEFAULT_SHOP_DOMAIN,
+    shop: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -538,6 +538,10 @@ function printTextSummary(summary) {
 async function main() {
   loadDotEnv(".env");
   const args = parseArgs(process.argv.slice(2));
+  args.shop = resolveRequiredShopDomainOption({
+    args,
+    env: process.env,
+  });
   const tokenCipher = createTokenCipher(ensureTokenEncryptionKey());
   const state = await getShopState(args.shop, args.marketplaceId);
 

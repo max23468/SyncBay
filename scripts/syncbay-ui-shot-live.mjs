@@ -9,9 +9,9 @@
  * direttamente, anche headless (HEADLESS=1).
  *
  * Uso:
- *   node scripts/syncbay-ui-shot-live.mjs                 # Panoramica
- *   node scripts/syncbay-ui-shot-live.mjs Catalogo        # clic sulla voce nav
- *   HEADLESS=1 node scripts/syncbay-ui-shot-live.mjs Conflitti conflitti
+ *   SHOPIFY_DEV_STORE_HANDLE=<shop-handle> node scripts/syncbay-ui-shot-live.mjs
+ *   SHOPIFY_DEV_STORE_HANDLE=<shop-handle> node scripts/syncbay-ui-shot-live.mjs Catalogo
+ *   SHOPIFY_DEV_STORE_HANDLE=<shop-handle> HEADLESS=1 node scripts/syncbay-ui-shot-live.mjs Conflitti conflitti
  */
 
 import { dirname, join, resolve } from "node:path";
@@ -21,8 +21,12 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const STORE = process.env.SHOPIFY_DEV_STORE_HANDLE || "syncbay-dev";
+const STORE = process.env.SHOPIFY_DEV_STORE_HANDLE?.trim();
 const APP_HANDLE = process.env.SHOPIFY_APP_HANDLE || "syncbay";
+
+if (!STORE) {
+  throw new Error("Configura SHOPIFY_DEV_STORE_HANDLE prima di aprire Shopify Admin.");
+}
 
 const navLabel = process.argv[2] || ""; // es. "Catalogo"; vuoto = Panoramica
 const name = (process.argv[3] || navLabel || "panoramica").replace(

@@ -10,9 +10,9 @@ import {
   summarizeDescriptionCleanupReport,
 } from "../app/lib/syncbay-description-cleanup.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_SAMPLE_LIMIT = 20;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
@@ -37,6 +37,10 @@ loadDotEnv(".env");
 if (process.env.SYNCBAY_SUPABASE_CWD) {
   loadDotEnv(`${process.env.SYNCBAY_SUPABASE_CWD}/.env`);
 }
+args.shop = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 ensureTokenEncryptionKey();
 
 await main().catch((error) => {
@@ -287,7 +291,7 @@ function parseArgs(rawArgs) {
     json: false,
     marketplaceId: DEFAULT_MARKETPLACE_ID,
     sample: DEFAULT_SAMPLE_LIMIT,
-    shop: DEFAULT_SHOP_DOMAIN,
+    shop: null,
   };
 
   for (let index = 0; index < rawArgs.length; index += 1) {

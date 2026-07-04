@@ -101,7 +101,7 @@ Provisioning minimo:
   pagato tramite `orderCreate` + transazione `SALE/SUCCESS`; il parser payload
   `orders/paid` -> job stock è coperto da test locali. La readiness
   operativa si controlla con `npm run orders:paid-readiness -- --shop
-  syncbay-dev.myshopify.com` e include sessione Shopify, scope ordini,
+  <shop.myshopify.com>` e include sessione Shopify, scope ordini,
   connessione eBay `EBAY_IT`, token eBay utilizzabili, coda stock/sync e
   candidati. La sessione offline del dev store include `write_orders`; per
   nuovi test crea un solo ordine Admin con transazione `SALE/SUCCESS`, aspetta

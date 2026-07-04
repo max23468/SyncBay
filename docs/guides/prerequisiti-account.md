@@ -24,7 +24,7 @@ Finché OAuth e account deletion non sono verificati su un nuovo runtime o ambie
 | Campo                      | Stato                | Note                                                                                   |
 | -------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
 | Account Shopify Partner    | Confermato           | Login CLI: `matteofilisina@icloud.com`.                                                |
-| Development store          | Confermato           | `syncbay-dev.myshopify.com`                                                            |
+| Development store          | Storico              | Lo store pilota `syncbay-dev.myshopify.com` è scollegato dal runtime SyncBay.           |
 | Nome app custom            | Confermato           | `SyncBay`                                                                              |
 | Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                        |
 | App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                      |
@@ -38,7 +38,7 @@ Default operativo per lo scaffold:
 
 - usare Shopify CLI;
 - collegare una app `SyncBay` nel Dev Dashboard;
-- usare il development store `syncbay-dev.myshopify.com`;
+- usare uno shop esplicito passato con `--shop <shop.myshopify.com>` o configurato nel runtime previsto;
 - usare Vercel come URL HTTPS stabile per sviluppo condiviso e callback provider quando serve un host pubblico;
 - usare Shopify CLI tunnel per sviluppo locale Shopify quando supportato;
 - tenere separati URL locali/provvisori e URL production futura.

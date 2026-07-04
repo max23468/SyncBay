@@ -4,16 +4,18 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildReadinessReport } from "./syncbay-orders-paid-readiness-report.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_CANDIDATE_LIMIT = 5;
 const ACTIVE_JOB_STATUSES = ["PENDING", "RUNNING", "RETRYING"];
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const candidateLimit = args.limit ?? DEFAULT_CANDIDATE_LIMIT;
 
 await main().catch((error) => {
