@@ -378,7 +378,13 @@ function toVariantMatchCandidate(
       tags: product.tags ?? [],
       title: normalizeNullableString(product.title),
       variantGid: variant.id ?? null,
-      variantsTruncated: false,
+      // Targeted lookups hydrate only the SKU-matched variant, not the
+      // product's full variant set. Treat the candidate as truncated so
+      // product-level signals (handle, tag, metafield, titolo) non possono
+      // auto-collegare arbitrariamente questa singola variante: restano
+      // auto-linkabili solo i match variant-exact (SKU/barcode), che sono
+      // lo scopo del lookup mirato.
+      variantsTruncated: true,
     },
   ];
 }
