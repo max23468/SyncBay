@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.21] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: i match Shopify trovati da lookup mirata SKU/ItemID
+  vengono trattati come variante mirata, evitando auto-link product-level quando
+  il set completo varianti non è stato caricato.
+
 ## [1.0.20] — 2026-07-04
 
 ### Correzioni
@@ -3070,6 +3078,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.21]: #1021--2026-07-04
 [1.0.20]: #1020--2026-07-04
 [1.0.19]: #1019--2026-07-04
 [1.0.18]: #1018--2026-07-04

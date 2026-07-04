@@ -355,6 +355,9 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
   assert.equal(products[1]?.variantGid, "gid://shopify/ProductVariant/990");
   assert.equal(products[1]?.shopifyImageCount, 0);
   assert.deepEqual(products[1]?.tags, ["Area_Italia"]);
+  // Il candidato mirato carica solo la variante SKU: va marcato truncated
+  // per evitare auto-link product-level sulla singola variante.
+  assert.equal(products[1]?.variantsTruncated, true);
 });
 
 test("can prefer targeted SKU hints before a bounded fallback product scan", async () => {
