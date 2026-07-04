@@ -5,7 +5,7 @@ import test from "node:test";
 import * as variantSelection from "./syncbay-shopify-variant-selection.ts";
 
 const {
-  getShopifyVariantLookupLimitForSync,
+  mergePreferredShopifyVariantForSync,
   preserveSelectedShopifyVariantForSync,
   selectShopifyVariantForSync,
 } = variantSelection;
@@ -44,19 +44,76 @@ test("falls back to the first variant only when no preferred variant is stored",
   });
 });
 
-test("expands the Shopify lookup when a preferred variant is stored", () => {
-  assert.equal(
-    getShopifyVariantLookupLimitForSync({
-      preferredVariantGid: "gid://shopify/ProductVariant/target",
-    }),
-    50,
-  );
+test("prepends the directly fetched mapped variant to the product variants", () => {
+  const variants = mergePreferredShopifyVariantForSync({
+    preferredVariant: {
+      id: "gid://shopify/ProductVariant/target",
+      price: "12.00",
+    },
+    variants: [
+      {
+        id: "gid://shopify/ProductVariant/first",
+        price: "99.00",
+      },
+    ],
+  });
+
+  assert.deepEqual(variants, [
+    {
+      id: "gid://shopify/ProductVariant/target",
+      price: "12.00",
+    },
+    {
+      id: "gid://shopify/ProductVariant/first",
+      price: "99.00",
+    },
+  ]);
 });
 
-test("keeps the Shopify lookup narrow when no preferred variant is stored", () => {
+test("deduplicates the mapped variant when it is already in product variants", () => {
+  const variants = mergePreferredShopifyVariantForSync({
+    preferredVariant: {
+      id: "gid://shopify/ProductVariant/target",
+      price: "13.00",
+    },
+    variants: [
+      {
+        id: "gid://shopify/ProductVariant/target",
+        price: "12.00",
+      },
+      {
+        id: "gid://shopify/ProductVariant/first",
+        price: "99.00",
+      },
+    ],
+  });
+
+  assert.deepEqual(variants, [
+    {
+      id: "gid://shopify/ProductVariant/target",
+      price: "13.00",
+    },
+    {
+      id: "gid://shopify/ProductVariant/first",
+      price: "99.00",
+    },
+  ]);
+});
+
+test("keeps product variants unchanged when no preferred variant is fetched", () => {
+  const variants = [
+    {
+      id: "gid://shopify/ProductVariant/first",
+      price: "99.00",
+    },
+  ];
+
   assert.equal(
-    getShopifyVariantLookupLimitForSync({ preferredVariantGid: null }),
-    1,
+    mergePreferredShopifyVariantForSync({
+      preferredVariant: null,
+      variants,
+    }),
+    variants,
   );
 });
 

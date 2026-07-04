@@ -69,7 +69,7 @@ import {
   type SyncBayPricingWriteBaseline,
 } from "../lib/syncbay-pricing-rules";
 import {
-  getShopifyVariantLookupLimitForSync,
+  mergePreferredShopifyVariantForSync,
   selectShopifyVariantForSync,
 } from "../lib/syncbay-shopify-variant-selection";
 import { selectLatestStockBaselineSnapshot } from "../lib/syncbay-stock-baseline";
@@ -181,9 +181,19 @@ type ShopifyProductForConflict = {
     }>;
   } | null;
 };
+type ShopifyProductForConflictVariant = NonNullable<
+  NonNullable<ShopifyProductForConflict["variants"]>["nodes"]
+>[number];
+type ShopifyProductForConflictMappedVariant =
+  ShopifyProductForConflictVariant & {
+    product?: {
+      id?: string | null;
+    } | null;
+  };
 type ShopifyProductForConflictResponse = {
   data?: {
-    node?: ShopifyProductForConflict | null;
+    productNode?: ShopifyProductForConflict | null;
+    variantNode?: ShopifyProductForConflictMappedVariant | null;
   };
   errors?: Array<{ message: string }>;
 };
@@ -2682,7 +2692,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     admin,
     mapping.shopifyProductGid,
     job.shop.defaultLocationGid,
-    getShopifyVariantLookupLimitForSync({ preferredVariantGid }),
+    { preferredVariantGid },
   );
 
   if (!product) {
@@ -3388,48 +3398,42 @@ async function getShopifyProductForConflict(
   },
   productGid: string,
   defaultLocationGid: string | null,
-  variantLimit = 1,
+  options: { preferredVariantGid?: string | null } = {},
 ) {
-  const query = defaultLocationGid
-    ? `#graphql
-    query SyncBayProductForConflict($id: ID!, $locationId: ID!, $variantLimit: Int!) {
-      node(id: $id) {
-        ... on Product {
-          id
-          descriptionHtml
-          media(first: 50) {
-            nodes {
-              mediaContentType
-              preview {
-                status
-              }
-            }
-          }
-          status
-          title
-          variants(first: $variantLimit) {
-            nodes {
-              id
-              inventoryQuantity
-              price
-              compareAtPrice
-              inventoryItem {
-                tracked
-                inventoryLevel(locationId: $locationId) {
+  const preferredVariantGid = options.preferredVariantGid?.trim() ?? "";
+  const locationVariable = defaultLocationGid ? ", $locationId: ID!" : "";
+  const variantVariable = preferredVariantGid ? ", $variantId: ID!" : "";
+  const inventoryLevelSelection = defaultLocationGid
+    ? `inventoryLevel(locationId: $locationId) {
                   quantities(names: ["available"]) {
                     name
                     quantity
                   }
-                }
-              }
-            }
+                }`
+    : "";
+  const variantSelection = `
+              id
+              inventoryQuantity
+              price
+              compareAtPrice
+              inventoryItem {
+                tracked
+                ${inventoryLevelSelection}
+              }`;
+  const mappedVariantSelection = preferredVariantGid
+    ? `
+      variantNode: node(id: $variantId) {
+        ... on ProductVariant {
+          ${variantSelection}
+          product {
+            id
           }
         }
-      }
-    }`
-    : `#graphql
-    query SyncBayProductForConflict($id: ID!, $variantLimit: Int!) {
-      node(id: $id) {
+      }`
+    : "";
+  const query = `#graphql
+    query SyncBayProductForConflict($id: ID!${locationVariable}${variantVariable}) {
+      productNode: node(id: $id) {
         ... on Product {
           id
           descriptionHtml
@@ -3443,23 +3447,20 @@ async function getShopifyProductForConflict(
           }
           status
           title
-          variants(first: $variantLimit) {
+          variants(first: 1) {
             nodes {
-              id
-              inventoryQuantity
-              price
-              compareAtPrice
-              inventoryItem {
-                tracked
-              }
+          ${variantSelection}
             }
           }
         }
       }
+      ${mappedVariantSelection}
     }`;
-  const variables = defaultLocationGid
-    ? { id: productGid, locationId: defaultLocationGid, variantLimit }
-    : { id: productGid, variantLimit };
+  const variables: Record<string, unknown> = { id: productGid };
+
+  if (defaultLocationGid) variables.locationId = defaultLocationGid;
+  if (preferredVariantGid) variables.variantId = preferredVariantGid;
+
   const response = await admin.graphql(query, { variables });
 
   if (!response.ok) return null;
@@ -3468,7 +3469,25 @@ async function getShopifyProductForConflict(
 
   if (json.errors?.length) return null;
 
-  return json.data?.node ?? null;
+  const product = json.data?.productNode ?? null;
+
+  if (!product) return null;
+
+  const preferredVariant =
+    json.data?.variantNode?.product?.id === product.id
+      ? json.data.variantNode
+      : null;
+
+  return {
+    ...product,
+    variants: {
+      ...(product.variants ?? {}),
+      nodes: mergePreferredShopifyVariantForSync({
+        preferredVariant,
+        variants: product.variants?.nodes,
+      }),
+    },
+  };
 }
 
 function getDetectedShopifyConflicts(
@@ -3920,10 +3939,10 @@ async function resolveLiveAlignedPriceConflicts(input: {
       admin,
       mapping.shopifyProductGid,
       input.defaultLocationGid,
-      getShopifyVariantLookupLimitForSync({
+      {
         preferredVariantGid:
           mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
-      }),
+      },
     );
     const variant = selectShopifyVariantForSync({
       preferredVariantGid:
