@@ -293,15 +293,18 @@ function getUniquePublicationIds(publications: ShopifyProductPublication[]) {
 }
 
 function getPublicationTitle(publication: ShopifyPublicationNode) {
-  const publicationName = publication.name?.trim();
-
-  if (publicationName) return publicationName;
-
+  // Preferisci il titolo catalogo leggibile (custom, market, B2B), che
+  // distingue meglio la pubblicazione, e ripiega sul nome solo quando il
+  // titolo catalogo manca o è l'etichetta tecnica `Channel Catalog ...`.
   const catalogTitle = publication.catalog?.title?.trim();
 
   if (catalogTitle && !isTechnicalChannelCatalogTitle(catalogTitle)) {
     return catalogTitle;
   }
+
+  const publicationName = publication.name?.trim();
+
+  if (publicationName) return publicationName;
 
   return getFallbackPublicationTitle(publication.id);
 }

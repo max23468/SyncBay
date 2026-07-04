@@ -378,7 +378,13 @@ function toVariantMatchCandidate(
       tags: product.tags ?? [],
       title: normalizeNullableString(product.title),
       variantGid: variant.id ?? null,
-      variantsTruncated: false,
+      // La lookup mirata idrata solo la variante che matcha lo SKU, non
+      // l'intero set di varianti del prodotto. Trattiamo il candidato come
+      // troncato così i segnali solo di prodotto (handle, tag, metafield,
+      // titolo) non possono auto-collegare arbitrariamente questa singola
+      // variante: restano auto-linkabili solo i match variant-exact
+      // (SKU/barcode), che sono lo scopo del lookup mirato.
+      variantsTruncated: true,
     },
   ];
 }
