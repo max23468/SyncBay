@@ -1987,6 +1987,10 @@ export async function getImportWizardState(
             ? CATALOG_IMPORT_MAX_PRODUCTS
             : 250,
         previewResult: preview.previewResult,
+        skuHints:
+          catalogMode === "existing_catalog"
+            ? getExistingCatalogSkuHints(preview.previewResult)
+            : [],
       }),
   );
   const previewResult =
@@ -2054,6 +2058,7 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
   admin?: ShopifyAdminGraphqlClient;
   limit?: number;
   previewResult: ImportPreviewResult;
+  skuHints?: string[];
 }) {
   if (!input.admin || input.previewResult.items.length === 0) {
     return input.previewResult;
@@ -2061,13 +2066,20 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
 
   const shopifyProducts = await loadExistingShopifyProductsForMatching(
     input.admin,
-    { limit: input.limit },
+    { limit: input.limit, skuHints: input.skuHints },
   );
 
   return addExistingProductMatchSuggestions(
     input.previewResult,
     shopifyProducts,
   );
+}
+
+function getExistingCatalogSkuHints(previewResult: ImportPreviewResult) {
+  return previewResult.items.flatMap((item) => [
+    item.itemId,
+    item.normalized.skuGenerated ? "" : item.normalized.sku ?? "",
+  ]);
 }
 
 async function getExistingCatalogTakeoverPreview(input: {

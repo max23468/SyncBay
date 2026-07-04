@@ -243,6 +243,67 @@ test("counts only Shopify image media for takeover matching", async () => {
   );
 });
 
+test("loads targeted Shopify variants by SKU hints outside the product scan window", async () => {
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
+  const admin = {
+    async graphql(
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
+      calls.push({ query, variables: options?.variables });
+
+      if (query.includes("productVariants")) {
+        return jsonResponse({
+          data: {
+            productVariants: {
+              nodes: [
+                makeProductVariantNode("99", {
+                  handle: "moneta-fuori-finestra",
+                  productId: "99",
+                  sku: "168172909275",
+                  title: "Moneta fuori finestra",
+                  variantId: "990",
+                }),
+              ],
+              pageInfo: { endCursor: null, hasNextPage: false },
+            },
+          },
+        });
+      }
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "prodotto-recente",
+                sku: "RECENT-1",
+                title: "Prodotto recente",
+                variantId: "10",
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 1,
+    skuHints: ["168172909275"],
+  });
+
+  assert.equal(calls.length, 2);
+  assert.match(String(calls[1]?.variables?.query ?? ""), /sku:168172909275/);
+  assert.deepEqual(
+    products.map((product) => product.sku),
+    ["RECENT-1", "168172909275"],
+  );
+  assert.equal(products[1]?.productGid, "gid://shopify/Product/99");
+  assert.equal(products[1]?.variantGid, "gid://shopify/ProductVariant/990");
+});
+
 function makeProductNode(
   id: string,
   input: {
@@ -282,6 +343,40 @@ function makeProductNode(
       pageInfo: {
         hasNextPage: input.variantPageInfoHasNextPage ?? false,
       },
+    },
+  };
+}
+
+function makeProductVariantNode(
+  id: string,
+  input: {
+    handle: string;
+    mediaContentTypes?: string[];
+    productId: string;
+    sku: string;
+    tags?: string[];
+    title: string;
+    variantId: string;
+  },
+) {
+  return {
+    barcode: null,
+    id: `gid://shopify/ProductVariant/${input.variantId}`,
+    sku: input.sku,
+    product: {
+      handle: input.handle,
+      id: `gid://shopify/Product/${input.productId}`,
+      media: {
+        nodes: (input.mediaContentTypes ?? []).map((mediaContentType, index) => ({
+          id: `gid://shopify/Media/${id}-${index}`,
+          mediaContentType,
+        })),
+      },
+      metafields: {
+        nodes: [],
+      },
+      tags: input.tags ?? [],
+      title: input.title,
     },
   };
 }

@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.12] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: la preview cerca su Shopify anche varianti con SKU mirati
+  dagli ItemID/SKU eBay letti, recuperando i prodotti fuori dalla finestra
+  iniziale di matching senza aumentare il consumo della Trading API.
+
 ## [1.0.11] — 2026-07-04
 
 ### Correzioni
@@ -2996,6 +3004,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.12]: #1012--2026-07-04
 [1.0.11]: #1011--2026-07-04
 [1.0.10]: #1010--2026-07-04
 [1.0.9]: #109--2026-07-04
