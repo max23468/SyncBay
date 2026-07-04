@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.7] — 2026-07-04
+
+### Sotto il cofano
+
+- Toolchain: applicata una patch locale a `@react-router/dev@7.18.1` per usare
+  `envDir: false` con Vite 8 nei gate React Router, eliminando il warning
+  deprecato `envFile` senza tornare indietro sulla major di Vite.
+
 ## [1.0.6] — 2026-07-04
 
 ### Correzioni
@@ -2956,6 +2964,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.7]: #107--2026-07-04
 [1.0.6]: #106--2026-07-04
 [1.0.5]: #105--2026-07-04
 [1.0.4]: #104--2026-07-04

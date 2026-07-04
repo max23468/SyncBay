@@ -52,6 +52,15 @@ React Router 7. La migrazione a React Router 8 va quindi fatta in una branch
 dedicata aggiornando insieme `react-router`, i pacchetti `@react-router/*` e il
 preset Vercel solo quando esiste una versione compatibile.
 
+Finché SyncBay resta su React Router 7 con Vite 8, `@react-router/dev@7.18.1`
+è patchato con `patch-package` perché la sua configurazione vite-node interna
+usa ancora l'opzione deprecata `envFile: false`. La patch versionata in
+`patches/@react-router+dev+7.18.1.patch` sostituisce quell'opzione con
+`envDir: false` e viene riapplicata da `postinstall`. `patch-package` resta in
+`dependencies` perché `npm ci --omit=dev` esegue comunque `postinstall` nel
+Dockerfile. Rimuovere la patch solo insieme a una migrazione verificata a una
+release React Router/preset Vercel che non emetta più quel warning.
+
 Prisma è aggiornato a 7.8.0 con `prisma.config.ts`, generator di compatibilità
 `prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
 post-generate verso il path atteso da `@prisma/client`. Questa scelta mantiene
