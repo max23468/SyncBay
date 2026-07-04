@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.2] — 2026-07-04
+
+### Correzioni
+
+- Copy prodotto: rimossi i riferimenti correnti a MVP/pilota da pagine
+  pubbliche, import preview, termini, messaggi runtime e documenti operativi,
+  riallineando la 1.0 alla distribuzione privata per clienti selezionati.
+
 ## [1.0.1] — 2026-07-04
 
 ### Correzioni
@@ -2916,6 +2924,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.2]: #102--2026-07-04
 [1.0.1]: #101--2026-07-04
 [1.0.0]: #100--2026-07-04
 [0.50.13]: #05013--2026-07-03

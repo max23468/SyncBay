@@ -35,7 +35,7 @@ import {
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// --- 1. Carica env di runtime (produzione pilota) ------------------------- //
+// --- 1. Carica env di runtime (distribuzione privata) --------------------- //
 function loadEnvFile(path) {
   let raw;
   try {

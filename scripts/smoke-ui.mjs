@@ -16,7 +16,7 @@ const checks = [
       "SYNCBAY_BRAND_ASSETS.logoHorizontal",
       "SYNCBAY_TAGLINE",
       "<s-image",
-      "Pilota controllato",
+      "1.0 privata",
     ],
   },
   {

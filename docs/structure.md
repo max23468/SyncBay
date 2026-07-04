@@ -122,7 +122,7 @@ SyncBay/
 ## Regole
 
 Non creare nuovi worker dedicati, nuovi runtime, nuove code esterne,
-integrazioni provider fuori dal perimetro MVP già deciso o cartelle applicative
+integrazioni provider fuori dal perimetro 1.0 già deciso o cartelle applicative
 ulteriori fuori dallo scaffold senza decisione esplicita.
 
 Non committare output generati, cache, sessioni browser, staging locali o

@@ -39,7 +39,7 @@ Il target 1.0 resta stretto:
 - cataloghi simili al primo target reale: numismatica e collezionismo con
   prodotti singoli;
 - una sola location Shopify predefinita;
-- cataloghi entro il limite MVP di 2.000 listing attivi per shop;
+- cataloghi entro il limite operativo 1.0 di 2.000 listing attivi per shop;
 - pochi clienti selezionati, con runbook e verifica manuale finale.
 
 App Store pubblico, billing, support policy pubblica, multi-marketplace,

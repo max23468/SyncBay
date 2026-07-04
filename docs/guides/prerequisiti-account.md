@@ -8,9 +8,9 @@ Non contiene segreti reali. I valori sensibili vanno inseriti solo nei provider/
 
 Prerequisiti Shopify confermati e Shopify CLI collegata all'app `SyncBay`.
 
-Prerequisiti eBay parzialmente confermati: account eBay Developer disponibile e keyset/app dedicato SyncBay ricevuto. Restano da completare deploy runtime aggiornato, flag runtime e verifica OAuth/account deletion end-to-end prima di collegare letture listing reali.
+Prerequisiti eBay confermati per la 1.0 privata: account eBay Developer disponibile, keyset/app dedicato SyncBay ricevuto, OAuth e account deletion verificati end-to-end sul runtime aggiornato.
 
-Finché OAuth e account deletion non sono verificati sul runtime aggiornato:
+Finché OAuth e account deletion non sono verificati su un nuovo runtime o ambiente:
 
 - non attivare sync runtime;
 - non riusare keyset di altri progetti;
@@ -28,8 +28,8 @@ Finché OAuth e account deletion non sono verificati sul runtime aggiornato:
 | Nome app custom            | Confermato           | `SyncBay`                                                                              |
 | Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                        |
 | App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                      |
-| Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest pilota.                        |
-| Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità da ordini pagati nel pilota custom. |
+| Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest 1.0 privata.                   |
+| Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità da ordini pagati nella custom app privata. |
 | Webhook minimi             | Configurati          | Include `orders/paid`, `products/update` e `inventory_levels/update`.                  |
 
 ### App e URL
@@ -53,7 +53,7 @@ URL previsti per il primo deploy Vercel:
 
 I path Shopify restano allineati allo scaffold generato.
 
-### Scopes Shopify MVP
+### Scopes Shopify 1.0
 
 Bozza iniziale:
 
@@ -80,15 +80,15 @@ Da verificare durante l'evoluzione runtime:
 - mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
   prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
-- `read_orders` serve per il webhook `orders/paid` nel pilota custom;
+- `read_orders` serve per il webhook `orders/paid` nella custom app privata;
 - `write_orders` serve solo per generare una prova automatica `orderCreate`
   via Admin API sul dev store e richiede reautorizzazione dello store dopo il
   deploy della nuova configurazione scope;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
-Regola: chiedere solo scope necessari al flusso MVP.
+Regola: chiedere solo scope necessari al flusso 1.0.
 
-### Webhook Shopify MVP
+### Webhook Shopify 1.0
 
 Bozza minima:
 
@@ -96,11 +96,11 @@ Bozza minima:
 | ---------------------- | -------------------------------------------------------------------------------- |
 | App uninstall          | Fermare sync, revocare accessi, gestire cleanup.                                 |
 | Inventory level update | Trigger iniziale per rilevare variazioni quantità senza protected customer data. |
-| Order paid             | Ridurre disponibilità eBay dopo vendita Shopify nel pilota custom.               |
+| Order paid             | Ridurre disponibilità eBay dopo vendita Shopify nella custom app privata.        |
 | Product update         | Rilevare modifiche manuali Shopify e aprire conflitti.                           |
 | GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati.                             |
 
-Default MVP:
+Default 1.0:
 
 - trigger stock principale: ordine pagato;
 - trigger variazione inventario: rilevare conflitti Shopify;
@@ -121,7 +121,7 @@ Default MVP:
 | OAuth RuName Production   | Da verificare end-to-end | Il valore resta negli env, non nel repo.                                     |
 | Accept URL                | Confermata               | `https://syncbay.vercel.app/auth/ebay/callback`                              |
 | Reject URL                | Confermata               | `https://syncbay.vercel.app/auth/ebay/callback`                              |
-| Scopes eBay               | Minimo MVP definito      | Identity readonly + Inventory readonly/write.                                |
+| Scopes eBay               | Minimo 1.0 definito      | Identity readonly + Inventory readonly/write.                                |
 | Account deletion endpoint | Configurato              | `https://syncbay.vercel.app/ebay/account-deletion`                           |
 | Verification token        | Configurato fuori repo   | 32-80 caratteri, non salvare in Git.                                         |
 
@@ -151,7 +151,7 @@ Endpoint token:
 - Sandbox: `https://api.sandbox.ebay.com/identity/v1/oauth2/token`
 - Production: `https://api.ebay.com/identity/v1/oauth2/token`
 
-### Scopes eBay MVP
+### Scopes eBay 1.0
 
 Bozza iniziale:
 
@@ -204,7 +204,7 @@ Stato implementazione:
 - Development store: `syncbay-dev.myshopify.com`.
 - Nome app custom: `SyncBay`.
 - Shopify CLI: collegata all'app `SyncBay`.
-- App URL provvisorio: `https://syncbay.vercel.app` nel manifest pilota; dev preview verificata via Shopify CLI.
+- App URL provvisorio: `https://syncbay.vercel.app` nel manifest 1.0 privata; dev preview verificata via Shopify CLI.
 - Preferenza tunnel/hosting dev: Vercel per URL stabile, Shopify CLI tunnel per sviluppo locale Shopify.
 
 ### eBay

@@ -19,7 +19,7 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 Il modello resta iniziale: include mapping, snapshot, conflitti, una regola
 prezzo globale per shop e una regola descrizione globale per shop, ma non
 include ancora regole prezzo per categoria o asset media dedicati. La preview
-import normalizza candidati listing e classifica errori MVP; l'import controllato
+import normalizza candidati listing e classifica errori 1.0; l'import controllato
 registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per
 prodotti Shopify creati o riusati, includendo product GID, variant GID, stato
 dell'allineamento scorte, prezzo Shopify calcolato e diagnostica del
@@ -195,7 +195,7 @@ Requisiti:
 
 Rappresenta import, sync, retry, archiviazione, update stock.
 
-Nel runtime MVP i job applicativi sono rappresentati a livello di dominio in `SyncJob`, per diagnostica/dashboard. Supabase Queues resta il meccanismo previsto per consegna e retry persistente quando verrà attivato il runtime queue.
+Nel runtime 1.0 i job applicativi sono rappresentati a livello di dominio in `SyncJob`, per diagnostica/dashboard. Supabase Queues resta il meccanismo previsto per consegna e retry persistente quando verrà attivato il runtime queue.
 
 Stati minimi:
 
@@ -266,8 +266,8 @@ Requisiti:
 - Ogni dato deve essere isolato per shop.
 - Token cifrati a riposo.
 - Nessun dato reale in test, fixture o documenti.
-- Archiviazione Shopify, non cancellazione automatica, quando un listing eBay sparisce.
+- Messa in esaurito su Shopify, non cancellazione automatica, quando un listing eBay sparisce.
 - Snapshot e mapping sono necessari per rollback e diagnostica.
-- Retention pilota secondo ADR 0017: audit log 180 giorni, job 90 giorni,
+- Retention operativa secondo ADR 0017: audit log 180 giorni, job 90 giorni,
   snapshot 180 giorni, state OAuth 7 giorni e richieste eBay account deletion
   365 giorni.

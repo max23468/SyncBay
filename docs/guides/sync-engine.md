@@ -46,7 +46,7 @@ Default:
 - stock buffer configurabile;
 - modalità prudente se lo stock non è affidabile.
 
-Nel pilota custom il webhook `orders/paid` salva solo riferimenti
+Nella custom app privata il webhook `orders/paid` salva solo riferimenti
 prodotto/variante e quantità, poi il runner usa Trading API
 `ReviseInventoryStatus` con ItemID e SKU del mapping SyncBay per ridurre la
 disponibilità eBay.
@@ -87,12 +87,12 @@ configurabile con `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT` (default 20, massimo 100,
 strumento in sola lettura per misurare la copertura e capire se eBay live ora
 restituisce immagini per righe ancora senza thumbnail in SyncBay.
 
-Quando la scansione attiva eBay è completa entro il limite MVP di 2.000
+Quando la scansione attiva eBay è completa entro il limite operativo 1.0 di 2.000
 prodotti, il runner pianifica anche job `ARCHIVE_INACTIVE_LISTING` per i mapping
 SyncBay ancora attivi ma non più presenti tra i listing eBay attivi: questi
 prodotti vengono messi in esaurito (non archiviati), il mapping passa a
 `OUT_OF_STOCK` ed esce dalla riconciliazione successiva. Se la scansione è vuota,
-incompleta o troncata dal limite MVP, SyncBay sincronizza i listing letti ma non
+incompleta o troncata dal limite operativo 1.0, SyncBay sincronizza i listing letti ma non
 mette in esaurito alcun prodotto Shopify per evitare falsi positivi. Se un
 listing torna attivo, il sync incrementale riusa il prodotto esistente,
 ripristina la scorta, riporta il mapping ad `ACTIVE` e rimuove il tag
@@ -135,7 +135,7 @@ Ogni job fallito deve conservare:
 
 ## Vincoli runtime
 
-Il runtime MVP è definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.
+Il runtime 1.0 è definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
 Regole per il motore sync:
 

@@ -13,7 +13,7 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Workflow `Codex PR comments` configurato per mantenere la issue `Codex feedback inbox`.
 - Dependabot configurato per GitHub Actions e npm.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
-- Deployment pilota Vercel production attivo per verifiche controllate.
+- Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Gate PR parziali attivi: titolo Conventional Commit, test/coverage `app/lib`,
   React Doctor, verifica Doppler e workflow `Codex PR comments`. Una CI runtime
   completa con deploy/smoke stabili resta da decidere.
@@ -85,10 +85,10 @@ Nella fase attuale:
   sezioni versionate nel blocco `[Non rilasciato]` del changelog, eseguire anche
   `npm run release` prima di commit/push, così versione e pubblicazione restano nello stesso flusso.
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;
-- "deploya" = aggiornare e verificare il deployment pilota Vercel production, senza implicare App Store, billing, tag o GitHub Release;
+- "deploya" = aggiornare e verificare il deployment Vercel production della distribuzione privata, senza implicare App Store, billing, tag o GitHub Release;
 - "rilascia" significa preparare una release locale con `npm run release` e pubblicarla su GitHub/main con lo stesso flusso; tag e GitHub Release valgono solo per release prodotto reali secondo ADR `0008`.
 
-Con il deployment pilota Vercel attivo, "pubblicato" significa almeno:
+Con il deployment Vercel production privato attivo, "pubblicato" significa almeno:
 
 1. branch di lavoro mergeato su `main`;
 2. controlli locali/remoti rilevanti superati;
@@ -175,7 +175,7 @@ Prima di dichiarare completata una modifica:
 
 ## Deploy e release
 
-Finché SyncBay resta in deployment pilota:
+Finché SyncBay resta in deployment Vercel production per distribuzione privata:
 
 - usare Vercel production solo per verifiche controllate del dev store;
 - non creare GitHub Release o tag SemVer fuori da una release prodotto reale;

@@ -56,9 +56,9 @@ Provider esterni
 - L'eccezione al one-way sync è l'aggiornamento disponibilità da ordini Shopify.
 - Ogni job deve essere idempotente.
 - Ogni errore deve diventare diagnostica utile.
-- Nessuna cancellazione distruttiva automatica: archiviare e mantenere rollback dove possibile.
+- Nessuna cancellazione distruttiva automatica: mettere in esaurito e mantenere recovery dove possibile.
 
-## Decisioni infrastrutturali MVP
+## Decisioni infrastrutturali runtime
 
 Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 
@@ -77,4 +77,4 @@ I job devono restare piccoli, idempotenti e riprendibili. Se il consumer queue r
 ## Decisioni ancora aperte
 
 - Billing e distribuzione App Store.
-- Policy production/staging oltre il pilota e smoke test post-deploy stabili.
+- Policy production/staging oltre la distribuzione privata e smoke test post-deploy stabili.

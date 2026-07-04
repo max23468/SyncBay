@@ -52,7 +52,7 @@ export default function Terms() {
         <s-section heading="Limiti 1.0 privata">
           <s-unordered-list>
             <s-list-item>Marketplace iniziale: eBay.it.</s-list-item>
-            <s-list-item>Scala MVP: fino a 2.000 listing attivi per shop.</s-list-item>
+            <s-list-item>Limite operativo 1.0: fino a 2.000 listing attivi per shop.</s-list-item>
             <s-list-item>Target: cataloghi con prodotti singoli e senza varianti complesse.</s-list-item>
             <s-list-item>Una location Shopify predefinita.</s-list-item>
             <s-list-item>Nessun App Store pubblico, billing pubblico o support policy pubblica nella 1.0.</s-list-item>

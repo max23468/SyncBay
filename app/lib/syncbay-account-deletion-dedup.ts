@@ -11,9 +11,9 @@ export interface AccountDeletionDedupAnchor {
 export type AccountDeletionPersistenceMode = "noop" | "persist";
 
 /**
- * eBay retries should reuse `notificationId`, but the pilot observed bursts that
- * looked like repeated pings. When the ID changes, dedupe only on the strongest
- * stable timestamp available for the same hashed user, keeping compliance
+ * eBay retries should reuse `notificationId`, but runtime checks observed bursts
+ * that looked like repeated pings. When the ID changes, dedupe only on the
+ * strongest stable timestamp available for the same hashed user, keeping compliance
  * records for genuinely different events.
  */
 export function getAccountDeletionDedupAnchor(

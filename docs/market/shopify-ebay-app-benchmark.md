@@ -58,7 +58,7 @@ Le app migliori non vendono solo "sync", vendono setup facile. SyncBay deve aver
 
 ### 2. Dashboard come centro operativo
 
-La dashboard MVP non deve essere decorativa. Deve mostrare:
+La dashboard 1.0 non deve essere decorativa. Deve mostrare:
 
 - stato connessioni;
 - ultimo sync;
@@ -72,15 +72,15 @@ La dashboard MVP non deve essere decorativa. Deve mostrare:
 
 ### 3. Matching prodotti esistenti
 
-Molte app permettono di collegare prodotti Shopify esistenti ai listing eBay. SyncBay deve prevederlo almeno come requisito post-MVP vicino, per negozianti che hanno già uno Shopify parziale.
+Molte app permettono di collegare prodotti Shopify esistenti ai listing eBay. SyncBay lo include nella 1.0 privata come modalità `Collega catalogo esistente`, con matching conservativo e conferma prima delle scritture.
 
-MVP: import crea nuovi prodotti con mapping stabile.
+Base 1.0: import crea nuovi prodotti con mapping stabile.
 
-Post-MVP prioritario: wizard "collega prodotti esistenti".
+1.0 privata: wizard `Collega catalogo esistente`.
 
 ### 4. Multi-location
 
-Anche se SyncBay parte semplice, Shopify multi-location è un tema ricorrente nel mercato. Per il MVP:
+Anche se SyncBay parte semplice, Shopify multi-location è un tema ricorrente nel mercato. Per la 1.0:
 
 - scegliere una location predefinita;
 - scrivere tutte le quantità lì;
@@ -106,7 +106,7 @@ Il mercato si aspetta prezzi diversi tra eBay e Shopify. SyncBay deve trattarlo 
 
 Le app pubbliche menzionano varianti come aspettativa quasi standard. SyncBay può rimandare le varianti complesse, ma deve evitare di sembrare incapace sulle varianti semplici.
 
-MVP:
+1.0:
 
 - varianti semplici quando i dati eBay sono chiari;
 - fallback prodotto singolo o errore esplicito quando non mappabile;
@@ -143,13 +143,13 @@ SyncBay deve puntare su caratteristiche meno presidiate dalle app generaliste:
 
 I competitor usano soglie catalogo e ordini. SyncBay può mantenere il target custom, ma deve già ragionare in livelli:
 
-- Pilot: fino a 2.000 prodotti, eBay.it, 1 account eBay, 1 location Shopify.
-- Growth: fino a 10.000 prodotti, multi-location, mapping esistenti, varianti migliori.
+- Private 1.0: fino a 2.000 prodotti, eBay.it, 1 account eBay, 1 location Shopify.
+- Growth: fino a 10.000 prodotti, multi-location, matching avanzato e varianti migliori.
 - Public: billing, self-service onboarding, diagnostica avanzata, multi-marketplace opzionale.
 
 Feature futura da valutare:
 
-- quality score import/listing, non MVP; utile solo se aiuta il negoziante a capire rischi concreti senza introdurre una metrica opaca.
+- quality score import/listing, fuori 1.0; utile solo se aiuta il negoziante a capire rischi concreti senza introdurre una metrica opaca.
 
 ## Differenziazione SyncBay
 
@@ -157,7 +157,7 @@ Feature futura da valutare:
 
 - Non presentarsi come "l'ennesima app marketplace bidirezionale".
 - Non partire con multi-marketplace.
-- Non mettere ordini/spedizioni avanzate nel cuore del messaggio MVP.
+- Non mettere ordini/spedizioni avanzate nel cuore del messaggio 1.0.
 - Non promettere real-time assoluto indiscriminato; raggiungerlo dove possibile e sostenibile, mantenendo la finestra target configurabile.
 
 ### Cosa enfatizzare
@@ -182,19 +182,19 @@ SyncBay porta il tuo negozio eBay in un catalogo Shopify ordinato, con schede pr
 
 SyncBay è pensato per negozianti che vendono già su eBay e vogliono aprire o alimentare un catalogo Shopify senza ricreare manualmente schede prodotto, immagini, prezzi e disponibilità. Il negozio eBay resta la sorgente principale; Shopify riceve un catalogo ottimizzato, con prezzi canale-specifici, descrizioni pulite, import controllato e conflitti gestiti in dashboard.
 
-## Impatto sul piano MVP
+## Impatto sul piano 1.0
 
 Aggiornamenti da riflettere nel piano principale:
 
 - aggiungere benchmark competitivo come fonte di requisiti;
-- rendere onboarding guidato un requisito MVP;
-- rendere dashboard/log/errori parte del MVP, non fase accessoria;
-- aggiungere "matching prodotti esistenti" come roadmap prioritaria;
-- chiarire multi-location: 1 location default nel MVP;
+- rendere onboarding guidato un requisito 1.0;
+- rendere dashboard/log/errori parte della 1.0, non fase accessoria;
+- includere "matching prodotti esistenti" nella 1.0 privata come flusso guidato;
+- chiarire multi-location: 1 location default nella 1.0;
 - aggiungere moltiplicatore prezzo;
 - aggiungere profit guard, stock buffer, modalità prudente e diagnostica self-service;
-- esplicitare varianti semplici MVP e varianti complesse post-MVP;
-- prevedere livelli futuri Pilot/Growth/Public.
+- esplicitare varianti semplici 1.0 e varianti complesse post-1.0;
+- prevedere livelli futuri Private 1.0/Growth/Public.
 
 ## Fonti
 

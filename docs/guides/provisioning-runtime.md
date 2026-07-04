@@ -12,7 +12,7 @@ Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. La pianificazione import può creare batch fino a 2.000
 listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
 dev store l'import reale ha completato 958 listing. Il runner copre import,
-sync incrementale, update stock eBay da `orders/paid` nel pilota custom e
+sync incrementale, update stock eBay da `orders/paid` nella custom app privata e
 rilevazione conflitti Shopify. Il primo cambio quantità reale eBay -> Shopify
 è stato verificato con rollback. Il runner stock Shopify -> eBay è stato
 verificato con payload ordine sintetico e con trigger reale `orders/paid` da
@@ -47,16 +47,16 @@ Note:
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
 - Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
-- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime pilota è riattivabile solo per import controllati da preview.
+- `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime 1.0 è riattivabile solo per import controllati da preview.
 - `SYNCBAY_DRAFT_IMPORT_LIMIT` limita la dimensione dei batch `IMPORT_CATALOG`.
-  Il runtime pilota è stato verificato a 50 prodotti con 26 nuove bozze e 24
+  Il runtime 1.0 è stato verificato a 50 prodotti con 26 nuove bozze e 24
   riusi senza duplicati sull'ultimo batch reale. La pianificazione import può
-  creare più batch fino al minore tra listing attivi eBay e limite MVP di 2.000
+  creare più batch fino al minore tra listing attivi eBay e limite operativo 1.0 di 2.000
   prodotti.
 - `SYNCBAY_EBAY_STOCK_DRY_RUN=true` blocca le chiamate reali a eBay per i job
   `UPDATE_EBAY_STOCK`: il runner registra le riduzioni pianificate nel risultato
   del job, senza modificare la disponibilità eBay e senza scrivere snapshot di
-  stock fittizi. In produzione pilota resta utile per ordini di prova; va
+  stock fittizi. In produzione privata resta utile per ordini di prova; va
   riportato a `false` solo quando store, valuta e dati di test sono coerenti.
 - `SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST` permette test reali mirati lasciando
   `SYNCBAY_EBAY_STOCK_DRY_RUN=true` per tutto il resto. Accetta token separati
@@ -220,7 +220,7 @@ Primitive Supabase tracciate:
 - bucket privato `syncbay-import-staging` per staging temporaneo immagini, usato
   per generare URL firmate quando Shopify rifiuta le URL immagine eBay dirette.
 
-Scope Shopify richiesti dal pilota runtime:
+Scope Shopify richiesti dal runtime 1.0:
 
 - `read_products`, `write_products`;
 - `read_inventory`, `write_inventory`;
@@ -229,7 +229,7 @@ Scope Shopify richiesti dal pilota runtime:
   pubblicare i prodotti attivi secondo la policy canali dello shop;
 - `read_files`, `write_files` per riallineare media prodotto e rimuovere media
   precedenti gestiti da SyncBay.
-- `read_orders` per ricevere `orders/paid` nel pilota custom e creare job
+- `read_orders` per ricevere `orders/paid` nella custom app privata e creare job
   prioritari `UPDATE_EBAY_STOCK`.
 - `write_orders` per creare una prova automatica controllata via Admin
   `orderCreate` sul dev store; se manca dalla sessione offline, riaprire e
@@ -250,9 +250,9 @@ Eseguire prima con `--dry-run`; il comando usa `publishablePublish` sui
 `ProductMapping` attivi e, con `--configure-settings`, salva la policy canali
 dello shop su `SELECTED`.
 
-## Residui operativi pilota
+## Residui operativi 1.0 privata
 
-Durante il pilota runtime:
+Durante il runtime 1.0 privato:
 
 - mantenere allineate le migration Prisma su Supabase Postgres;
 - tenere `DATABASE_URL` e `DATABASE_DIRECT_URL` nei provider runtime, non nel repo;

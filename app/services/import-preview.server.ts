@@ -242,7 +242,7 @@ export function getImportPreviewValidationRules() {
     },
     {
       code: "complex_variants",
-      label: "Varianti troppo complesse per MVP",
+      label: "Varianti fuori perimetro 1.0",
       severity: "error" satisfies ImportPreviewSeverity,
     },
     {
@@ -380,7 +380,7 @@ function getPreviewIssues(
   if (candidate.skuGenerated && normalizeText(candidate.sku)) {
     issues.push({
       code: "generated_sku",
-      message: `SKU eBay assente: SyncBay userà ${normalizeText(candidate.sku)} per il prodotto pilota.`,
+      message: `SKU eBay assente: SyncBay userà ${normalizeText(candidate.sku)} per il prodotto importato.`,
       severity: "info",
     });
   }
@@ -412,7 +412,7 @@ function getPreviewIssues(
   if ((candidate.variantCount ?? 1) > MAX_SIMPLE_VARIANTS) {
     issues.push({
       code: "complex_variants",
-      message: "Varianti multiple non ancora supportate nel MVP base.",
+      message: "Varianti multiple non ancora supportate nel perimetro 1.0.",
       severity: "error",
     });
   }

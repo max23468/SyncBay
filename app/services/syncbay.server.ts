@@ -2089,8 +2089,8 @@ async function getExistingCatalogTakeoverPreview(input: {
 
     return {
       coverageNote: preview.truncatedAtMaxProducts
-        ? `Simulazione catalogo esistente da Trading API eBay: lette ${preview.totalPlanned} inserzioni da GetMyeBaySelling entro limite MVP ${input.maxProducts}. Il catalogo eBay dichiara ${totalAvailableLabel} inserzioni; i dettagli GetItem sono limitati per proteggere rate limit e timeout.`
-        : "Simulazione catalogo esistente da Trading API eBay: tutte le inserzioni attive lette da GetMyeBaySelling in sola lettura entro il limite MVP; i dettagli GetItem sono limitati per proteggere rate limit e timeout.",
+        ? `Simulazione catalogo esistente da Trading API eBay: lette ${preview.totalPlanned} inserzioni da GetMyeBaySelling entro limite 1.0 ${input.maxProducts}. Il catalogo eBay dichiara ${totalAvailableLabel} inserzioni; i dettagli GetItem sono limitati per proteggere rate limit e timeout.`
+        : "Simulazione catalogo esistente da Trading API eBay: tutte le inserzioni attive lette da GetMyeBaySelling in sola lettura entro il limite 1.0; i dettagli GetItem sono limitati per proteggere rate limit e timeout.",
       errorMessage: null,
       previewResult: preview.previewResult,
       readCount: preview.readCount,
@@ -3713,7 +3713,7 @@ function getShopifyReadinessDetail(input: {
     return `Scope mancanti nella configurazione app: ${input.missingConfiguredScopes.join(", ")}.`;
   }
 
-  return "Installazione, scope minimi concessi e webhook pilota predisposti.";
+  return "Installazione, scope minimi concessi e webhook 1.0 privata predisposti.";
 }
 
 function getProductPublicationModeLabel(mode: ProductPublicationMode) {

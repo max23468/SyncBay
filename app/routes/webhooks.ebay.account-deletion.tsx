@@ -78,7 +78,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return Response.json(
       {
         message:
-          "Notifiche account deletion eBay non abilitate per il pilota SyncBay.",
+          "Notifiche account deletion eBay non abilitate per SyncBay 1.0 privata.",
         status: "disabled",
       },
       { status: 503 },

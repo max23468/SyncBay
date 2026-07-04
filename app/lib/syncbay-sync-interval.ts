@@ -3,7 +3,7 @@
  *
  * Il target guida la cadenza del sync incrementale (vedi
  * `getNextIncrementalEnqueueAt`) e la soglia "in ritardo". La finestra è
- * conservativa per il pilota: valori ammessi 300-1800 secondi.
+ * conservativa per la 1.0 privata: valori ammessi 300-1800 secondi.
  */
 
 export const SYNC_TARGET_OPTIONS = [

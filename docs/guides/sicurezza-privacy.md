@@ -30,7 +30,7 @@ Runtime deciso:
 - Supabase Postgres come database, ma la cifratura at-rest del provider non sostituisce la cifratura applicativa dei token OAuth.
 - `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
 
-Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nel MVP.
+Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.
 
 ## Compliance minima
 

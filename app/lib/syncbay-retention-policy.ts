@@ -42,7 +42,7 @@ export const SYNCBAY_RETENTION_POLICIES: SyncBayRetentionPolicy[] = [
     label: "Richieste account deletion senza match",
     retentionDays: 7,
     scope:
-      "Notifiche eBay senza shop collegato al pilota, conservate brevemente per deduplica e diagnostica.",
+      "Notifiche eBay senza shop collegato alla distribuzione privata, conservate brevemente per deduplica e diagnostica.",
   },
   {
     area: "account_deletion_requests",

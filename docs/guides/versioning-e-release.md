@@ -124,7 +124,7 @@ Il versioning locale non crea deploy.
 Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR
 0008.
 
-Con il deployment pilota Vercel attivo, una pubblicazione completa deve includere:
+Con il deployment Vercel production privato attivo, una pubblicazione completa deve includere:
 
 - merge su `main`;
 - release SemVer quando il blocco `[Non rilasciato]` del changelog contiene sezioni versionate;
@@ -133,7 +133,7 @@ Con il deployment pilota Vercel attivo, una pubblicazione completa deve includer
 - tag Git `vX.Y.Z` e GitHub Release se la release è prodotto reale;
 - cleanup branch.
 
-Anche con deploy pilota attivo, una release SyncBay aggiorna repo e changelog,
+Anche con deploy Vercel privato attivo, una release SyncBay aggiorna repo e changelog,
 ma non implica pubblicazione Shopify App Store, billing o integrazioni
 produttive.
 

@@ -9,7 +9,7 @@ const {
   getRetentionPolicySummaryRows,
 } = retentionPolicy;
 
-test("defines conservative pilot retention windows", () => {
+test("defines conservative private retention windows", () => {
   assert.deepEqual(
     SYNCBAY_RETENTION_POLICIES.map((policy) => [
       policy.area,
