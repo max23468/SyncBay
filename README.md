@@ -4,7 +4,8 @@ SyncBay è una Shopify app per sincronizzare verso Shopify il catalogo di un neg
 
 ## Stato
 
-Fase corrente: pilota runtime controllato verso la 1.0 custom privata.
+Fase corrente: custom app privata `1.0.0` pronta per onboarding post-release su
+un primo store cliente selezionato.
 
 Lo scaffold Shopify CLI React Router è presente. La base runtime include autenticazione Shopify, session storage Shopify locale su Prisma, app embedded SyncBay con le sei superfici `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività` e `Impostazioni`, area Impostazioni embedded per il default stato prodotti, la policy canali Shopify, la regola prezzo globale Shopify-only e la regola descrizione persistente, wizard import preview con validazioni dry-run, checklist qualità esplicita e suggerimenti conservativi di matching prodotti Shopify esistenti, lettura live eBay Inventory API per offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>` per listing storici senza SKU, fallback mock quando eBay non è collegato, modello dati iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/regole prezzo/regole descrizione/account deletion applicato su Supabase e flusso OAuth eBay verificato end-to-end. L'import controllato registra mapping, product/variant GID, snapshot, job e audit per prodotti creati o riusati; dopo creazione o riuso aggiorna titolo, descrizione, prezzo, compare-at price, SKU, stato, media, inventario Shopify dai dati eBay e dalle regole prezzo Shopify-only, e cinque faccette storefront `syncbay_facets.*` da dati strutturati e titolo eBay, poi pubblica i prodotti attivi secondo la policy canali scelta dal negoziante. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner HTTP protetto `/api/jobs/run-due`, collegato a Supabase Cron ogni 5 minuti in modalità risparmio egress, riprende import, pianifica sync incrementali eBay -> Shopify per shop con sync attivo o regole prezzo aggiornate, aggiorna disponibilità eBay da ordini Shopify pagati e rileva conflitti Shopify da webhook product/inventory. L'app embedded espone storico import, avanzamento ultima run, catalogo paginato, conflitti Shopify con azioni guidate, timeline attività, centro salute catalogo, stato riconciliazione completa, diagnostica rate-limit eBay, conteggi mapping/snapshot e rimessa in coda manuale dei job riprogrammabili.
 
@@ -96,7 +97,8 @@ Provisioning minimo creato:
 
 ## Prossimi passi
 
-1. Verificare in produzione pilota le classificazioni conflitti su coda reale.
-2. Raccogliere screenshot prodotto puliti delle sei superfici embedded.
-3. Estendere la diagnostica self-service verso rollback per prodotto.
-4. Continuare hardening sicurezza/privacy/token/GDPR/rate limit prima di App Store e billing.
+1. Avviare Task 10 solo dopo la release: installazione privata sul primo store
+   cliente, configurazione iniziale e dry-run read-only.
+2. Gestire eventuali problemi emersi nell'onboarding come patch `1.0.1+`.
+3. Continuare hardening sicurezza/privacy/token/GDPR/rate limit prima di App
+   Store, billing e 2.0 pubblica.

@@ -46,6 +46,33 @@ App Store pubblico, billing, support policy pubblica, multi-marketplace,
 multi-location avanzato, varianti complesse e onboarding universale restano
 fuori dalla 1.0 e appartengono a fasi successive.
 
+## Release privata 1.0 prima dell'onboarding
+
+SyncBay deve arrivare a `1.0.0` prima di essere installata su qualunque store
+cliente. La 1.0 è una custom app privata completa e installabile, non una
+release Shopify App Store pubblica.
+
+Nessun onboarding cliente parte se i gate di release non sono verdi: Vercel
+production, Supabase, privacy, termini, runbook, test locali, release locale,
+tag Git e GitHub Release devono essere verificati prima dell'installazione. Il
+primo onboarding reale usa la 1.0 già rilasciata; eventuali bug scoperti sul
+primo cliente vengono gestiti come patch `1.0.1+`, senza ridefinire
+retroattivamente il perimetro della 1.0.
+
+Le azioni operative esposte all'operatore restano quelle generiche di SyncBay:
+
+- `Importazione -> Collega catalogo esistente`;
+- `Genera preview live`;
+- `Applica takeover righe sicure`;
+- `Attività -> job IMPORT_CATALOG`;
+- `Catalogo -> Da controllare`;
+- `Conflitti -> Batch sicuri / Da rivedere / Manuali`;
+- `Impostazioni -> Sync automatico`;
+- `Impostazioni -> Stato prodotti`;
+- `Impostazioni -> Pubblicazioni Shopify`;
+- `Impostazioni -> Regola prezzo`;
+- `Impostazioni -> Regola descrizione`.
+
 ## Regole 1.0 per catalogo esistente
 
 La nuova capacità vive nel flusso Importazione come modalità generica

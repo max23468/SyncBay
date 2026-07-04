@@ -61,6 +61,40 @@ Regole chiave:
 - vecchia app disattivabile prima dell'apply finale solo dopo audit, dry-run,
   export segnali utili e freeze operativo.
 
+## Release privata 1.0 prima dell'onboarding
+
+La release `1.0.0` si chiude prima di qualunque installazione cliente. SyncBay
+deve essere una custom app privata completa, verificata e installabile; non è
+ancora una release Shopify App Store pubblica e non introduce billing pubblico.
+
+Prima di avviare onboarding o dry-run su uno store reale devono essere verdi:
+
+- Vercel production sul commit candidato;
+- Supabase senza blocchi provider, inclusi `402 exceed_egress_quota`;
+- informativa privacy e termini pubblici;
+- runbook onboarding/import aggiornato;
+- test, build, release locale, tag Git e GitHub Release;
+- handoff operativo con URL production, versione installabile e blocchi
+  residui pari a zero.
+
+Il primo store cliente usa la `1.0.0` già rilasciata. Se durante quell'onboarding
+emergono bug, la correzione esce come patch `1.0.1+`: non si sposta
+retroattivamente il confine della 1.0.
+
+Le azioni UI da seguire durante l'onboarding post-release sono:
+
+- `Importazione -> Collega catalogo esistente`;
+- `Genera preview live`;
+- `Applica takeover righe sicure`;
+- `Attività -> job IMPORT_CATALOG`;
+- `Catalogo -> Da controllare`;
+- `Conflitti -> Batch sicuri / Da rivedere / Manuali`;
+- `Impostazioni -> Sync automatico`;
+- `Impostazioni -> Stato prodotti`;
+- `Impostazioni -> Pubblicazioni Shopify`;
+- `Impostazioni -> Regola prezzo`;
+- `Impostazioni -> Regola descrizione`.
+
 ## Mini kit clienti selezionati 1.0
 
 Questo mini kit accompagna la 1.0 custom privata. Non è materiale App Store
