@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.10] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: il matching considera lo SKU Shopify uguale all'ItemID
+  eBay come segnale forte, evitando revisioni manuali inutili sui cataloghi
+  importati da app legacy che salvano l'ItemID nello SKU Shopify.
+
 ## [1.0.9] — 2026-07-04
 
 ### Correzioni
@@ -2980,6 +2988,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.10]: #1010--2026-07-04
 [1.0.9]: #109--2026-07-04
 [1.0.8]: #108--2026-07-04
 [1.0.7]: #107--2026-07-04

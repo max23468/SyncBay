@@ -10,6 +10,7 @@ export type ExistingProductMatchReasonCode =
   | "barcode_item_id"
   | "handle_item_id"
   | "sku_exact"
+  | "shopify_sku_item_id"
   | "syncbay_metafield_item_id"
   | "tag_item_id"
   | "title_similar"
@@ -51,12 +52,14 @@ const STRONG_AUTO_LINK_CODES = new Set<ExistingProductMatchReasonCode>([
   "barcode_item_id",
   "handle_item_id",
   "sku_exact",
+  "shopify_sku_item_id",
   "syncbay_metafield_item_id",
   "tag_item_id",
 ]);
 const VARIANT_EXACT_AUTO_LINK_CODES = new Set<ExistingProductMatchReasonCode>([
   "barcode_item_id",
   "sku_exact",
+  "shopify_sku_item_id",
 ]);
 
 export function buildExistingProductMatchSuggestions(input: {
@@ -80,10 +83,16 @@ export function buildExistingProductMatchSuggestions(input: {
       reasonCodes.push("syncbay_metafield_item_id");
       reasons.push("ItemID eBay trovato nei metafield SyncBay");
     }
-    if (sameToken(input.ebay.sku, product.sku)) {
+    const hasExactSkuMatch = sameToken(input.ebay.sku, product.sku);
+    if (hasExactSkuMatch) {
       score += 100;
       reasonCodes.push("sku_exact");
       reasons.push("SKU identico");
+    }
+    if (!hasExactSkuMatch && sameToken(input.ebay.itemId, product.sku)) {
+      score += 96;
+      reasonCodes.push("shopify_sku_item_id");
+      reasons.push("SKU Shopify uguale all'ItemID eBay");
     }
     if (sameToken(input.ebay.itemId, product.barcode)) {
       score += 95;

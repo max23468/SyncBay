@@ -88,6 +88,28 @@ test("uses syncbay metafield item id as a strong match signal", () => {
   ]);
 });
 
+test("uses Shopify SKU equal to eBay item id as a strong match signal", () => {
+  const suggestions = buildExistingProductMatchSuggestions({
+    ebay: {
+      itemId: "168172909275",
+      sku: "EBAY-168172909275",
+      title: "Divisionale 1993 Goldoni",
+    },
+    shopifyProducts: [
+      {
+        productGid: "gid://shopify/Product/13",
+        sku: "168172909275",
+        title: "Scheda storica importata",
+        variantGid: "gid://shopify/ProductVariant/13",
+      },
+    ],
+  });
+
+  assert.equal(suggestions[0]?.confidence, "high");
+  assert.equal(suggestions[0]?.autoLinkable, true);
+  assert.deepEqual(suggestions[0]?.reasonCodes, ["shopify_sku_item_id"]);
+});
+
 test("does not mark title-only matches as auto linkable", () => {
   const suggestions = buildExistingProductMatchSuggestions({
     ebay: { itemId: "1", sku: null, title: "Moneta argento Regno Italia" },
