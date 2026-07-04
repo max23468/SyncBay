@@ -285,7 +285,7 @@ test("counts only Shopify image media for takeover matching", async () => {
   );
 });
 
-test("loads targeted Shopify products by SKU hints outside the product scan window", async () => {
+test("loads targeted Shopify variants by SKU hints outside the product scan window", async () => {
   const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
     async graphql(
@@ -294,17 +294,33 @@ test("loads targeted Shopify products by SKU hints outside the product scan wind
     ) {
       calls.push({ query, variables: options?.variables });
 
-      if (String(options?.variables?.query ?? "").includes("168172909275")) {
+      if (query.includes("productVariants")) {
         return jsonResponse({
           data: {
-            products: {
+            productVariants: {
               nodes: [
-                makeProductNode("99", {
-                  handle: "moneta-fuori-finestra",
+                {
+                  barcode: null,
+                  id: "gid://shopify/ProductVariant/990",
                   sku: "168172909275",
-                  title: "Moneta fuori finestra",
-                  variantId: "990",
-                }),
+                  product: {
+                    handle: "moneta-fuori-finestra",
+                    id: "gid://shopify/Product/99",
+                    media: {
+                      nodes: [
+                        {
+                          id: "gid://shopify/Media/99-1",
+                          mediaContentType: "IMAGE",
+                        },
+                      ],
+                    },
+                    metafields: {
+                      nodes: [],
+                    },
+                    tags: ["Area_Italia"],
+                    title: "Moneta fuori finestra",
+                  },
+                },
               ],
               pageInfo: { endCursor: null, hasNextPage: false },
             },
@@ -336,8 +352,7 @@ test("loads targeted Shopify products by SKU hints outside the product scan wind
   });
 
   assert.equal(calls.length, 2);
-  assert.match(calls[1]?.query ?? "", /products\(first: \$first/);
-  assert.doesNotMatch(calls[1]?.query ?? "", /productVariants/);
+  assert.match(calls[1]?.query ?? "", /productVariants\(first: \$first/);
   assert.match(String(calls[1]?.variables?.query ?? ""), /sku:168172909275/);
   assert.deepEqual(
     products.map((product) => product.sku),
@@ -345,6 +360,8 @@ test("loads targeted Shopify products by SKU hints outside the product scan wind
   );
   assert.equal(products[1]?.productGid, "gid://shopify/Product/99");
   assert.equal(products[1]?.variantGid, "gid://shopify/ProductVariant/990");
+  assert.equal(products[1]?.shopifyImageCount, 1);
+  assert.deepEqual(products[1]?.tags, ["Area_Italia"]);
 });
 
 function makeProductNode(

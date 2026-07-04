@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.15] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: la lookup mirata dei prodotti Shopify usa direttamente
+  `productVariants(query: "sku:...")`, così gli ItemID eBay salvati come SKU
+  variante vengono agganciati anche quando la scansione prodotti non li porta
+  tra i match applicabili.
+
 ## [1.0.14] — 2026-07-04
 
 ### Correzioni
@@ -3021,6 +3030,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.15]: #1015--2026-07-04
 [1.0.14]: #1014--2026-07-04
 [1.0.13]: #1013--2026-07-04
 [1.0.12]: #1012--2026-07-04
