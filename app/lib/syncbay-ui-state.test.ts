@@ -54,6 +54,7 @@ test("prioritizes missing eBay connection before other dashboard issues", () => 
     kind: "ebay_connection",
     primaryActionHref: "/auth/ebay/start?shop=numisleo.myshopify.com",
     primaryActionLabel: "Ricollega eBay",
+    primaryActionTarget: "_top",
     title: "Collegamento eBay mancante o scaduto",
     tone: "critical",
   });
@@ -84,6 +85,7 @@ test("builds eBay connection actions only when OAuth is startable", () => {
       blockerText: null,
       href: "/auth/ebay/start?shop=numisleo.myshopify.com",
       label: "Collega eBay",
+      target: "_top",
       variant: "primary",
     },
   );

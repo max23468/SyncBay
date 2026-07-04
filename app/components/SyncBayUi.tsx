@@ -43,6 +43,12 @@ type MetricTrend = {
   tone: "up" | "watch" | "neutral";
 };
 
+export type SyncBayNavigationTarget =
+  | "_blank"
+  | "_parent"
+  | "_self"
+  | "_top";
+
 type MetricTileProps = {
   detail?: string;
   icon: SyncBayIcon;
@@ -380,6 +386,7 @@ type ActionRowProps = {
   href: string;
   icon: SyncBayIcon;
   label: string;
+  target?: SyncBayNavigationTarget;
   tone?: SyncBayTone;
 };
 
@@ -388,10 +395,11 @@ export function ActionRow({
   href,
   icon,
   label,
+  target,
   tone = "neutral",
 }: ActionRowProps) {
   return (
-    <s-clickable href={href}>
+    <s-clickable href={href} target={target}>
       <span className="syncbay-action">
         <span className="syncbay-action__icon">
           <s-icon type={icon} tone={tone} size="base" />
@@ -454,6 +462,7 @@ export function EmptyState({
 type StatusHeroProps = {
   actionHref?: string;
   actionLabel?: string;
+  actionTarget?: SyncBayNavigationTarget;
   body: string;
   eyebrow?: string;
   icon: SyncBayIcon;
@@ -464,6 +473,7 @@ type StatusHeroProps = {
 export function StatusHero({
   actionHref,
   actionLabel,
+  actionTarget,
   body,
   eyebrow,
   icon,
@@ -482,7 +492,7 @@ export function StatusHero({
       </span>
       {actionHref && actionLabel ? (
         <span className="syncbay-hero__actions">
-          <s-button href={actionHref} variant="primary">
+          <s-button href={actionHref} target={actionTarget} variant="primary">
             {actionLabel}
           </s-button>
         </span>

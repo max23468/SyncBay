@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.8] — 2026-07-04
+
+### Correzioni
+
+- OAuth eBay: i link `Collega eBay` e `Ricollega eBay` aprono il flusso come
+  navigazione top-level, evitando che React Router/App Bridge li trasformi in
+  richieste `.data` con risposta `401`.
+
 ## [1.0.7] — 2026-07-04
 
 ### Sotto il cofano
@@ -2964,6 +2972,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.8]: #108--2026-07-04
 [1.0.7]: #107--2026-07-04
 [1.0.6]: #106--2026-07-04
 [1.0.5]: #105--2026-07-04
