@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.24] — 2026-07-04
+
+### Correzioni
+
+- Webhook Shopify `products/update`: gli errori transitori di pressione sul
+  database (checkout del pool `ECHECKOUTTIMEOUT`, `DbHandler exited`, deadlock)
+  vengono ora riconosciuti anche quando il dettaglio è annidato in `cause`, così
+  l'handler risponde `202` degradato invece di `500`. Questo interrompe il ciclo
+  di retry di Shopify che, durante i picchi di riprezzatura, saturava il pool di
+  connessioni e bloccava il runner dei job.
+
 ## [1.0.23] — 2026-07-04
 
 ### Correzioni
@@ -3103,6 +3114,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.24]: #1024--2026-07-04
 [1.0.23]: #1023--2026-07-04
 [1.0.22]: #1022--2026-07-04
 [1.0.21]: #1021--2026-07-04

@@ -43,6 +43,41 @@ test("recognizes transient session storage readiness failures", () => {
   );
 });
 
+test("recognizes connection pool checkout timeouts nested in cause as transient", () => {
+  const error = new Error(
+    "(ECHECKOUTTIMEOUT) unable to check out connection from the pool after 60000ms in Transaction mode",
+  ) as Error & { cause: unknown };
+  error.cause = {
+    code: "XX000",
+    kind: "postgres",
+    message:
+      "(ECHECKOUTTIMEOUT) unable to check out connection from the pool after 60000ms in Transaction mode",
+    originalCode: "XX000",
+  };
+
+  assert.equal(isTransientWebhookPersistenceError(error), true);
+});
+
+test("recognizes driver handler exits as transient webhook persistence errors", () => {
+  assert.equal(
+    isTransientWebhookPersistenceError(
+      new Error("(EDBHANDLEREXITED) DbHandler exited. Check logs for more information"),
+    ),
+    true,
+  );
+});
+
+test("recognizes deadlocks reported via error cause as transient", () => {
+  const error = new Error("DriverAdapterError") as Error & { cause: unknown };
+  error.cause = {
+    code: "40P01",
+    message: "deadlock detected",
+    originalCode: "40P01",
+  };
+
+  assert.equal(isTransientWebhookPersistenceError(error), true);
+});
+
 test("does not classify unrelated errors as transient webhook persistence errors", () => {
   assert.equal(
     isTransientWebhookPersistenceError(new Error("invalid webhook payload")),
