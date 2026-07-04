@@ -20,6 +20,7 @@ import {
   SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL,
   getAlignedOpenConflictFields,
   isLiveDescriptionConflictAligned,
+  normalizeProductStatusConflictValue,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
   shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
@@ -3625,8 +3626,14 @@ function buildConflict(
   lastSyncBayValue: Prisma.JsonValue | undefined,
   shopifyValue: Prisma.JsonValue | undefined,
 ) {
-  const normalizedLastValue = normalizeConflictValue(lastSyncBayValue);
-  const normalizedShopifyValue = normalizeConflictValue(shopifyValue);
+  const normalizedLastValue =
+    field === "status"
+      ? normalizeProductStatusConflictValue(lastSyncBayValue)
+      : normalizeConflictValue(lastSyncBayValue);
+  const normalizedShopifyValue =
+    field === "status"
+      ? normalizeProductStatusConflictValue(shopifyValue)
+      : normalizeConflictValue(shopifyValue);
 
   if (normalizedLastValue === normalizedShopifyValue) return null;
 
