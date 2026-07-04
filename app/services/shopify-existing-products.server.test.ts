@@ -243,7 +243,7 @@ test("counts only Shopify image media for takeover matching", async () => {
   );
 });
 
-test("loads targeted Shopify variants by SKU hints outside the product scan window", async () => {
+test("loads targeted Shopify products by SKU hints outside the product scan window", async () => {
   const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
     async graphql(
@@ -252,14 +252,13 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
     ) {
       calls.push({ query, variables: options?.variables });
 
-      if (query.includes("productVariants")) {
+      if (String(options?.variables?.query ?? "").includes("168172909275")) {
         return jsonResponse({
           data: {
-            productVariants: {
+            products: {
               nodes: [
-                makeProductVariantNode("99", {
+                makeProductNode("99", {
                   handle: "moneta-fuori-finestra",
-                  productId: "99",
                   sku: "168172909275",
                   title: "Moneta fuori finestra",
                   variantId: "990",
@@ -295,6 +294,8 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
   });
 
   assert.equal(calls.length, 2);
+  assert.match(calls[1]?.query ?? "", /products\(first: \$first/);
+  assert.doesNotMatch(calls[1]?.query ?? "", /productVariants/);
   assert.match(String(calls[1]?.variables?.query ?? ""), /sku:168172909275/);
   assert.deepEqual(
     products.map((product) => product.sku),
@@ -343,40 +344,6 @@ function makeProductNode(
       pageInfo: {
         hasNextPage: input.variantPageInfoHasNextPage ?? false,
       },
-    },
-  };
-}
-
-function makeProductVariantNode(
-  id: string,
-  input: {
-    handle: string;
-    mediaContentTypes?: string[];
-    productId: string;
-    sku: string;
-    tags?: string[];
-    title: string;
-    variantId: string;
-  },
-) {
-  return {
-    barcode: null,
-    id: `gid://shopify/ProductVariant/${input.variantId}`,
-    sku: input.sku,
-    product: {
-      handle: input.handle,
-      id: `gid://shopify/Product/${input.productId}`,
-      media: {
-        nodes: (input.mediaContentTypes ?? []).map((mediaContentType, index) => ({
-          id: `gid://shopify/Media/${id}-${index}`,
-          mediaContentType,
-        })),
-      },
-      metafields: {
-        nodes: [],
-      },
-      tags: input.tags ?? [],
-      title: input.title,
     },
   };
 }

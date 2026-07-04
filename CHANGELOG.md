@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.13] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: la lookup mirata degli SKU Shopify fuori dalla finestra
+  iniziale usa la query prodotti già collaudata dalla scansione principale,
+  evitando che i match forti restino bloccati tra i casi da rivedere.
+
 ## [1.0.12] — 2026-07-04
 
 ### Correzioni
@@ -3004,6 +3012,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.13]: #1013--2026-07-04
 [1.0.12]: #1012--2026-07-04
 [1.0.11]: #1011--2026-07-04
 [1.0.10]: #1010--2026-07-04
