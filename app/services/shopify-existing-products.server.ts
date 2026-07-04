@@ -182,9 +182,14 @@ export async function loadExistingShopifyProductsForMatching(
         ? await loadExistingShopifyProductScan(admin, fallbackLimit)
         : [];
 
+    // I candidati mirati non idratano i media (`shopifyImageCount: 0`). Quando
+    // lo stesso prodotto è anche nello scan di fallback, preserviamo il conteggio
+    // immagini reale così le righe di takeover non vengono declassate a review
+    // per `immagini_mancanti`. Lo scan viene prima nel dedup per mantenere la
+    // copia con il conteggio corretto sulle chiavi duplicate.
     return dedupeProductsByCandidateKey([
-      ...targetedProducts,
       ...fallbackProducts,
+      ...applyScannedImageCountsToTargeted(targetedProducts, fallbackProducts),
     ]);
   }
 
@@ -194,7 +199,30 @@ export async function loadExistingShopifyProductsForMatching(
     skuHints,
   });
 
-  return [...products, ...targetedProducts];
+  return [
+    ...products,
+    ...applyScannedImageCountsToTargeted(targetedProducts, products),
+  ];
+}
+
+function applyScannedImageCountsToTargeted(
+  targetedProducts: ShopifyMatchCandidate[],
+  scannedProducts: ShopifyMatchCandidate[],
+): ShopifyMatchCandidate[] {
+  const imageCountByProduct = new Map<string, number>();
+  for (const product of scannedProducts) {
+    const current = imageCountByProduct.get(product.productGid) ?? 0;
+    if ((product.shopifyImageCount ?? 0) > current) {
+      imageCountByProduct.set(product.productGid, product.shopifyImageCount ?? 0);
+    }
+  }
+
+  return targetedProducts.map((candidate) => {
+    const scannedCount = imageCountByProduct.get(candidate.productGid);
+    return scannedCount && scannedCount > (candidate.shopifyImageCount ?? 0)
+      ? { ...candidate, shopifyImageCount: scannedCount }
+      : candidate;
+  });
 }
 
 async function loadExistingShopifyProductScan(

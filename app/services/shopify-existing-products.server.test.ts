@@ -425,8 +425,69 @@ test("can prefer targeted SKU hints before a bounded fallback product scan", asy
   assert.equal(calls[1]?.variables?.first, 1);
   assert.deepEqual(
     products.map((product) => product.sku),
-    ["168172909275", "RECENT-1"],
+    ["RECENT-1", "168172909275"],
   );
+});
+
+test("preserves scanned image counts on targeted matches for the same product", async () => {
+  const admin = {
+    async graphql(query: string) {
+      if (query.includes("productVariants")) {
+        return jsonResponse({
+          data: {
+            productVariants: {
+              nodes: [
+                {
+                  barcode: null,
+                  id: "gid://shopify/ProductVariant/991",
+                  sku: "COIN-TARGETED",
+                  product: {
+                    handle: "moneta-con-immagini",
+                    id: "gid://shopify/Product/77",
+                    metafields: { nodes: [] },
+                    tags: [],
+                    title: "Moneta con immagini",
+                  },
+                },
+              ],
+              pageInfo: { endCursor: null, hasNextPage: false },
+            },
+          },
+        });
+      }
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("77", {
+                handle: "moneta-con-immagini",
+                mediaContentTypes: ["IMAGE", "IMAGE"],
+                sku: "COIN-SCAN",
+                title: "Moneta con immagini",
+                variantId: "770",
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    fallbackScanLimit: 1,
+    limit: 10000,
+    preferTargetedSkuHints: true,
+    skuHints: ["COIN-TARGETED"],
+  });
+
+  const targeted = products.find(
+    (product) => product.sku === "COIN-TARGETED",
+  );
+  // Il prodotto è anche nello scan con 2 immagini: il candidato mirato eredita
+  // il conteggio reale invece di restare a 0 e declassare la riga a review.
+  assert.equal(targeted?.shopifyImageCount, 2);
 });
 
 function makeProductNode(
