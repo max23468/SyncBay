@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.3] — 2026-07-04
+
+### Correzioni
+
+- OAuth eBay: il collegamento dall'app embedded usa il redirect Shopify
+  compatibile con App Bridge, evitando la schermata vuota quando il click viene
+  gestito come navigazione dati React Router.
+
 ## [1.0.2] — 2026-07-04
 
 ### Correzioni
@@ -2924,6 +2932,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.3]: #103--2026-07-04
 [1.0.2]: #102--2026-07-04
 [1.0.1]: #101--2026-07-04
 [1.0.0]: #100--2026-07-04

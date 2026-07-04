@@ -1,5 +1,4 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import {
@@ -7,7 +6,7 @@ import {
 } from "../services/ebay.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { redirect, session } = await authenticate.admin(request);
   const authorization = await createEbayAuthorizationRedirect(session);
 
   if (!authorization.ready) {
@@ -20,5 +19,5 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
-  throw redirect(authorization.url);
+  return redirect(authorization.url, { target: "_top" });
 };
