@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.0] — 2026-07-04
+
+### Novità
+
+- Release privata 1.0: SyncBay viene promosso a custom app privata installabile
+  prima dell'onboarding cliente, con import catalogo esistente, sync eBay.it ->
+  Shopify, conflitti visibili, privacy/termini minimi e runbook operativo
+  verificati come gate di rilascio.
+
 ## [0.50.13] — 2026-07-03
 
 ### Correzioni
@@ -2899,6 +2908,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.0]: #100--2026-07-04
 [0.50.13]: #05013--2026-07-03
 [0.50.12]: #05012--2026-07-03
 [0.50.11]: #05011--2026-07-02
