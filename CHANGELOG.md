@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.16] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: la lookup mirata delle varianti Shopify resta minimale
+  su `productVariants(query: "sku:...")` senza campi media, così usa solo scope
+  prodotto e non può essere scartata da Shopify per permessi non necessari.
+
 ## [1.0.15] — 2026-07-04
 
 ### Correzioni
@@ -3030,6 +3038,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.16]: #1016--2026-07-04
 [1.0.15]: #1015--2026-07-04
 [1.0.14]: #1014--2026-07-04
 [1.0.13]: #1013--2026-07-04

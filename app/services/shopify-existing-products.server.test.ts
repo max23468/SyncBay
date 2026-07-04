@@ -306,14 +306,6 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
                   product: {
                     handle: "moneta-fuori-finestra",
                     id: "gid://shopify/Product/99",
-                    media: {
-                      nodes: [
-                        {
-                          id: "gid://shopify/Media/99-1",
-                          mediaContentType: "IMAGE",
-                        },
-                      ],
-                    },
                     metafields: {
                       nodes: [],
                     },
@@ -353,6 +345,7 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
 
   assert.equal(calls.length, 2);
   assert.match(calls[1]?.query ?? "", /productVariants\(first: \$first/);
+  assert.doesNotMatch(calls[1]?.query ?? "", /media\(/);
   assert.match(String(calls[1]?.variables?.query ?? ""), /sku:168172909275/);
   assert.deepEqual(
     products.map((product) => product.sku),
@@ -360,7 +353,7 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
   );
   assert.equal(products[1]?.productGid, "gid://shopify/Product/99");
   assert.equal(products[1]?.variantGid, "gid://shopify/ProductVariant/990");
-  assert.equal(products[1]?.shopifyImageCount, 1);
+  assert.equal(products[1]?.shopifyImageCount, 0);
   assert.deepEqual(products[1]?.tags, ["Area_Italia"]);
 });
 
