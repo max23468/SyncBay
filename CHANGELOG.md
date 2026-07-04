@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.19] — 2026-07-04
+
+### Correzioni
+
+- Webhook Shopify: i timeout transitori di persistenza su `products/update`
+  vengono accettati con risposta degradata invece di generare 500 e retry,
+  riducendo il rischio di consumare CPU durante picchi o saturazione DB.
+
 ## [1.0.18] — 2026-07-04
 
 ### Correzioni
@@ -3054,6 +3062,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.19]: #1019--2026-07-04
 [1.0.18]: #1018--2026-07-04
 [1.0.17]: #1017--2026-07-04
 [1.0.16]: #1016--2026-07-04
