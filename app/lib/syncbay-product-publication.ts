@@ -293,12 +293,27 @@ function getUniquePublicationIds(publications: ShopifyProductPublication[]) {
 }
 
 function getPublicationTitle(publication: ShopifyPublicationNode) {
-  return (
-    publication.catalog?.title?.trim() ||
-    publication.name?.trim() ||
-    publication.id ||
-    "Canale Shopify"
-  );
+  const publicationName = publication.name?.trim();
+
+  if (publicationName) return publicationName;
+
+  const catalogTitle = publication.catalog?.title?.trim();
+
+  if (catalogTitle && !isTechnicalChannelCatalogTitle(catalogTitle)) {
+    return catalogTitle;
+  }
+
+  return getFallbackPublicationTitle(publication.id);
+}
+
+function isTechnicalChannelCatalogTitle(title: string) {
+  return /^Channel Catalog\b/i.test(title);
+}
+
+function getFallbackPublicationTitle(publicationId: string | null | undefined) {
+  const shortId = publicationId?.match(/\/Publication\/([^/?]+)/)?.[1];
+
+  return shortId ? `Canale Shopify ${shortId}` : "Canale Shopify";
 }
 
 function formatShopifyErrors(errors: ShopifyGraphqlError[]) {
