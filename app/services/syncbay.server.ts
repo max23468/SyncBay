@@ -225,6 +225,7 @@ const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
 const EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS = 10000;
+const EXISTING_CATALOG_SHOPIFY_MATCH_FALLBACK_PRODUCTS = 250;
 const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
 const TAKEOVER_METAFIELDS_SET_BATCH_SIZE = 20;
 const PRICING_RULE_SYNC_BATCH_SIZE = 10;
@@ -1983,10 +1984,15 @@ export async function getImportWizardState(
     () =>
       getImportPreviewWithExistingShopifyMatches({
         admin,
+        fallbackScanLimit:
+          catalogMode === "existing_catalog"
+            ? EXISTING_CATALOG_SHOPIFY_MATCH_FALLBACK_PRODUCTS
+            : undefined,
         limit:
           catalogMode === "existing_catalog"
             ? EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS
             : 250,
+        preferTargetedSkuHints: catalogMode === "existing_catalog",
         previewResult: preview.previewResult,
         skuHints:
           catalogMode === "existing_catalog"
@@ -2057,7 +2063,9 @@ export async function getImportWizardState(
 
 async function getImportPreviewWithExistingShopifyMatches(input: {
   admin?: ShopifyAdminGraphqlClient;
+  fallbackScanLimit?: number;
   limit?: number;
+  preferTargetedSkuHints?: boolean;
   previewResult: ImportPreviewResult;
   skuHints?: string[];
 }) {
@@ -2067,7 +2075,12 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
 
   const shopifyProducts = await loadExistingShopifyProductsForMatching(
     input.admin,
-    { limit: input.limit, skuHints: input.skuHints },
+    {
+      fallbackScanLimit: input.fallbackScanLimit,
+      limit: input.limit,
+      preferTargetedSkuHints: input.preferTargetedSkuHints,
+      skuHints: input.skuHints,
+    },
   );
 
   return addExistingProductMatchSuggestions(

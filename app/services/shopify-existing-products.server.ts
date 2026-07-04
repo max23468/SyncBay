@@ -158,9 +158,49 @@ const TARGETED_VARIANTS_QUERY = `#graphql
 
 export async function loadExistingShopifyProductsForMatching(
   admin: ShopifyAdminGraphqlClient,
-  options: { limit?: number; skuHints?: string[] } = {},
+  options: {
+    fallbackScanLimit?: number;
+    limit?: number;
+    preferTargetedSkuHints?: boolean;
+    skuHints?: string[];
+  } = {},
 ): Promise<ShopifyMatchCandidate[]> {
   const limit = normalizeLimit(options.limit);
+  const skuHints = options.skuHints ?? [];
+
+  if (options.preferTargetedSkuHints) {
+    const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
+      existingProducts: [],
+      skuHints,
+    });
+    const fallbackLimit = normalizeFallbackScanLimit(
+      options.fallbackScanLimit,
+      limit,
+    );
+    const fallbackProducts =
+      fallbackLimit > 0
+        ? await loadExistingShopifyProductScan(admin, fallbackLimit)
+        : [];
+
+    return dedupeProductsByCandidateKey([
+      ...targetedProducts,
+      ...fallbackProducts,
+    ]);
+  }
+
+  const products = await loadExistingShopifyProductScan(admin, limit);
+  const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
+    existingProducts: products,
+    skuHints,
+  });
+
+  return [...products, ...targetedProducts];
+}
+
+async function loadExistingShopifyProductScan(
+  admin: ShopifyAdminGraphqlClient,
+  limit: number,
+): Promise<ShopifyMatchCandidate[]> {
   const products: ShopifyMatchCandidate[] = [];
   let productReadCount = 0;
   let cursor: string | null = null;
@@ -176,12 +216,6 @@ export async function loadExistingShopifyProductsForMatching(
     if (!page.hasNextPage || !page.endCursor) break;
     cursor = page.endCursor;
   }
-
-  const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
-    existingProducts: products,
-    skuHints: options.skuHints ?? [],
-  });
-  products.push(...targetedProducts);
 
   return products;
 }
@@ -373,6 +407,29 @@ function normalizeLimit(value: number | undefined) {
     Math.max(value ?? DEFAULT_EXISTING_PRODUCT_LIMIT, 1),
     DEFAULT_EXISTING_PRODUCT_LIMIT,
   );
+}
+
+function normalizeFallbackScanLimit(value: number | undefined, limit: number) {
+  if (!Number.isInteger(value)) return limit;
+
+  return Math.min(
+    Math.max(value ?? limit, 0),
+    DEFAULT_EXISTING_PRODUCT_LIMIT,
+  );
+}
+
+function dedupeProductsByCandidateKey(products: ShopifyMatchCandidate[]) {
+  const seen = new Set<string>();
+  const deduped: ShopifyMatchCandidate[] = [];
+
+  for (const product of products) {
+    const key = getCandidateKey(product);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(product);
+  }
+
+  return deduped;
 }
 
 function normalizeNullableString(value: string | null | undefined) {

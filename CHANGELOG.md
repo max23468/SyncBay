@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.18] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: la preview riduce il carico Vercel cercando prima match
+  Shopify mirati da SKU/ItemID e inviando alla UI solo la pagina visibile,
+  mantenendo completi riepilogo e protezioni dell'applicazione.
+
 ## [1.0.17] — 2026-07-04
 
 ### Correzioni
@@ -3046,6 +3054,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.18]: #1018--2026-07-04
 [1.0.17]: #1017--2026-07-04
 [1.0.16]: #1016--2026-07-04
 [1.0.15]: #1015--2026-07-04
