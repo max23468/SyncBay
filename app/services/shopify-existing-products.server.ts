@@ -68,12 +68,6 @@ interface ExistingVariantNode {
   product?: {
     handle?: string | null;
     id?: string | null;
-    media?: {
-      nodes?: Array<{
-        id?: string | null;
-        mediaContentType?: string | null;
-      }> | null;
-    } | null;
     metafields?: {
       nodes?: ShopifyMatchMetafieldCandidate[] | null;
     } | null;
@@ -146,12 +140,6 @@ const TARGETED_VARIANTS_QUERY = `#graphql
           handle
           tags
           title
-          media(first: 1, query: "media_type:IMAGE") {
-            nodes {
-              id
-              mediaContentType
-            }
-          }
           metafields(first: 20, namespace: "syncbay") {
             nodes {
               key
@@ -282,10 +270,20 @@ async function fetchTargetedProductsPage(
     },
   });
 
-  if (!response.ok) return getEmptyTargetedProductsPage();
+  if (!response.ok) {
+    console.warn("[syncbay-shopify-existing-products] targeted variant lookup failed", {
+      status: response.status,
+    });
+    return getEmptyTargetedProductsPage();
+  }
 
   const json = (await response.json()) as ShopifyExistingVariantMatchResponse;
-  if (json.errors?.length) return getEmptyTargetedProductsPage();
+  if (json.errors?.length) {
+    console.warn("[syncbay-shopify-existing-products] targeted variant lookup returned errors", {
+      errorCount: json.errors.length,
+    });
+    return getEmptyTargetedProductsPage();
+  }
 
   const variants = json.data?.productVariants;
   const variantNodes = variants?.nodes ?? [];
@@ -341,7 +339,7 @@ function toVariantMatchCandidate(
       handle: normalizeNullableString(product.handle),
       metafields: product.metafields?.nodes ?? [],
       productGid: product.id,
-      shopifyImageCount: countShopifyImageMedia(product),
+      shopifyImageCount: 0,
       sku: normalizeNullableString(variant.sku),
       tags: product.tags ?? [],
       title: normalizeNullableString(product.title),
