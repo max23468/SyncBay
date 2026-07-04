@@ -27,16 +27,16 @@ La direzione confermata:
 - eBay resta la sorgente di verità del catalogo;
 - eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili;
 - marketplace iniziale: eBay.it;
-- prima custom app per pilota controllato, poi app pubblica Shopify App Store;
-- sync target configurabile 5-30 minuti in modalità pilota risparmio egress;
-- scala MVP fino a 2.000 prodotti per shop;
+- distribuzione corrente: custom app privata 1.0 per clienti selezionati, poi app pubblica Shopify App Store;
+- sync target configurabile 5-30 minuti in modalità 1.0 privata a risparmio egress;
+- limite operativo 1.0 fino a 2.000 prodotti per shop;
 - prodotti non più attivi su eBay mantenuti su Shopify come esauriti (scorta 0, non archiviati né cancellati) per preservarne la SEO (ADR 0011);
 - modifiche manuali Shopify gestite come conflitti visibili, non sovrascritte silenziosamente;
 - prodotto self-service: diagnostica, retry e azioni guidate devono ridurre la dipendenza da supporto umano.
 
 ### Perimetro e non-obiettivi
 
-SyncBay deve restare, nel MVP, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilità sincronizzate.
+SyncBay deve restare, nella 1.0 privata, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilità sincronizzate.
 
 Una nuova funzionalità ha senso quando rafforza almeno uno di questi assi:
 
@@ -48,7 +48,7 @@ Una nuova funzionalità ha senso quando rafforza almeno uno di questi assi:
 - diagnostica self-service, audit log, retry e rollback;
 - affidabilità, sicurezza, privacy e manutenzione dell'app.
 
-Per il MVP, SyncBay non è:
+Per la 1.0 privata, SyncBay non è:
 
 - una suite marketplace bidirezionale completa;
 - un exporter Shopify -> eBay;
@@ -82,14 +82,14 @@ Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione
 
 ## Stato attuale del repository
 
-Il repository è nella fase di pilota runtime controllato su scaffold Shopify CLI
-React Router: import catalogo, runner, sync incrementale, conflitti Shopify e
-aggiornamento disponibilità eBay da ordini Shopify sono già superfici
-implementate nel perimetro MVP. Esiste una produzione tecnica Vercel pilota,
+Il repository è nella fase di custom app privata 1.0 su scaffold Shopify CLI
+React Router: import catalogo, runner, sync incrementale, conflitti Shopify,
+catalogo esistente e aggiornamento disponibilità eBay da ordini Shopify sono
+superfici implementate nel perimetro 1.0. Esiste una produzione Vercel privata,
 distinta da release pubblica Shopify App Store e da billing.
 
 Regola importante: non creare nuovi worker dedicati, nuovi runtime, nuove code
-esterne, integrazioni provider fuori dal perimetro MVP già deciso o cartelle
+esterne, integrazioni provider fuori dal perimetro 1.0 già deciso o cartelle
 applicative ulteriori fuori dallo scaffold senza richiesta esplicita del
 maintainer e, se stabile, ADR.
 
@@ -187,14 +187,14 @@ Regole operative:
 - Evita refactor, rinominazioni massive o riformattazioni non collegate.
 - Preferisci patch piccole e coerenti.
 - Non aggiungere nuove dipendenze, servizi o strumenti senza motivazione esplicita e impatto chiaro.
-- Non inventare funzionalità non decise: se qualcosa è interessante ma non MVP, mettilo in roadmap/piano come futuro da valutare.
+- Non inventare funzionalità non decise: se qualcosa è interessante ma fuori dal perimetro 1.0, mettilo in roadmap/piano come futuro da valutare.
 
 ## Errori comuni da evitare
 
 - Non promettere "real-time assoluto" indiscriminato: il target confermato è una finestra configurabile 5-30 minuti.
 - Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, preferiscilo e documenta il fallback.
 - Non trasformare SyncBay in una app marketplace bidirezionale generica.
-- Non assumere che Shopify sia la sorgente di verità: per il catalogo MVP la sorgente è eBay.
+- Non assumere che Shopify sia la sorgente di verità: per il catalogo 1.0 la sorgente è eBay.
 - Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilità derivati da ordini Shopify.
 - Non cancellare né archiviare prodotti Shopify quando un listing eBay sparisce: mantienili in vetrina come esauriti (scorta 0, politica DENY, tag `esaurito`, mapping `OUT_OF_STOCK`) per preservarne la SEO (ADR 0011).
 - Non sovrascrivere modifiche manuali Shopify senza aprire conflitto.
@@ -204,7 +204,7 @@ Regole operative:
 - Quando scrivi UI, microcopy o materiali prodotto, considera che target e lingua sono italiani: evita inglesismi non necessari come "merchant", "seller" o "overselling" se puoi usare "negoziante", "venditore" o "vendere prodotti non disponibili".
 - I file `.DS_Store` non fanno parte del repository: ignorali sempre e rimuovili se vengono tracciati per errore.
 - Non committare build output, cache o stato locale di Shopify/Vercel/React
-  Router, staging locali, export/import di lavoro o output generati dal pilota.
+  Router, staging locali, export/import di lavoro o output generati dalla distribuzione privata.
   In Git restano codice, schema, migration, fixture sintetiche e documentazione;
   mapping, snapshot, job, audit e staging immagini vivono nei provider runtime
   o in file locali fuori repo.
@@ -280,7 +280,7 @@ piani tecnici vivono in `docs/`; l'indice canonico è `docs/INDEX.md`.
 
 ### Cosa aggiornare e quando
 
-- `docs/syncbay-product-technical-plan.md`: perimetro prodotto, MVP, fasi, requisiti funzionali e rischi.
+- `docs/syncbay-product-technical-plan.md`: perimetro prodotto, 1.0 privata, fasi, requisiti funzionali e rischi.
 - `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
 - `docs/INDEX.md`: indice documentale canonico.
 - `docs/ROADMAP.md`: direzione, priorità e prossimi passi correnti; non usarla come storico di completati.
@@ -296,10 +296,10 @@ piani tecnici vivono in `docs/`; l'indice canonico è `docs/INDEX.md`.
 - `docs/guides/`: guide operative tematiche.
 - `docs/guides/pre-scaffold-checklist.md`: prerequisiti e stato scaffold.
 - `docs/guides/provisioning-runtime.md`: provisioning Vercel/Supabase e riferimenti non segreti.
-- `docs/guides/service-governance.md`: limiti MVP, retention, error handling e governance servizio.
+- `docs/guides/service-governance.md`: limiti 1.0, retention, error handling e governance servizio.
 - `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
 - `docs/decisions/`: ADR architetturali o operative stabili.
-- `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime MVP Vercel + Supabase.
+- `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime Vercel + Supabase.
 - `docs/decisions/0006-versioning-runtime-locale.md`: versioning SemVer locale.
 - `docs/structure.md`: struttura repo prevista nella fase corrente.
 - `README.md`: stato progetto, documenti principali e prossimo passo operativo.
@@ -398,7 +398,7 @@ Comandi runtime attuali:
 - Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
 - "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
 - Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
-- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment pilota Vercel production, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store o billing; tag Git `vX.Y.Z` e GitHub Release entrano solo se la release è prodotto reale.
+- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment Vercel production della distribuzione privata, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store o billing; tag Git `vX.Y.Z` e GitHub Release entrano solo se la release è prodotto reale.
 - Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md` e porta la release su GitHub/main con lo stesso flusso di pubblicazione. Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
 - Release e deploy vanno valutati insieme quando entrambi sono applicabili: non chiudere una release senza dichiarare lo stato del deploy, e non chiudere un deploy senza dichiarare se la release è necessaria o `N/A`.
 - In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
@@ -407,8 +407,9 @@ Dettagli: `docs/guides/git-e-pubblicazione.md`.
 
 ## Release, deploy e App Store
 
-SyncBay ha un flusso di versioning locale e un deployment pilota Vercel
-production. Non ha ancora un flusso di release pubblica Shopify App Store.
+SyncBay ha un flusso di versioning locale e un deployment Vercel production
+per distribuzione privata. Non ha ancora un flusso di release pubblica Shopify
+App Store.
 
 Fino a decisione esplicita:
 

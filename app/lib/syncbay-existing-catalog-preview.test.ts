@@ -23,7 +23,7 @@ test("reports complete existing catalog previews without truncation", () => {
   );
 });
 
-test("marks existing catalog previews truncated when eBay exceeds the MVP cap", () => {
+test("marks existing catalog previews truncated when eBay exceeds the 1.0 cap", () => {
   assert.deepEqual(
     buildExistingCatalogPreviewMetadata({
       maxProducts: 2000,

@@ -1,12 +1,12 @@
 # Guida onboarding e import
 
-Questa guida definisce il flusso negoziante previsto per il MVP.
+Questa guida definisce il flusso negoziante previsto per la 1.0 privata.
 
 ## Obiettivo
 
 Il negoziante deve collegare Shopify ed eBay.it, vedere cosa verrà importato e avviare la creazione dei prodotti Shopify senza paura di sporcare il negozio.
 
-## Flusso MVP
+## Flusso 1.0
 
 1. Installa SyncBay su Shopify.
 2. Collega account eBay.it.
@@ -113,7 +113,7 @@ quando Shopify non è più allineato all'ultimo valore scritto da SyncBay.
 - accesso Shopify con permessi necessari a prodotti, inventario, media,
   pubblicazioni, webhook e ordini pagati;
 - una location Shopify predefinita da usare per lo stock;
-- catalogo entro il limite MVP di 2.000 listing eBay attivi;
+- catalogo entro il limite operativo 1.0 di 2.000 listing eBay attivi;
 - assenza di varianti complesse nel perimetro operativo iniziale;
 - decisione su stato prodotti, canali di pubblicazione, regola prezzo e regola
   descrizione;
@@ -181,7 +181,7 @@ compromettono vendita, disponibilità e tracciabilità del prodotto.
 
 La dashboard embedded mostra già una readiness operativa per:
 
-- connessione Shopify, scope e webhook pilota;
+- connessione Shopify, scope e webhook 1.0 privata;
 - runtime Vercel/Supabase;
 - eBay OAuth verificato end-to-end sul keyset dedicato SyncBay, con recupero `userId` e token cifrati;
 - endpoint account deletion con challenge, verifica firma e cleanup dati, controllato da flag runtime;
@@ -209,24 +209,24 @@ wizard:
 - crea o riusa prodotti Shopify in modo idempotente per eBay ItemID;
 - registra mapping prodotto, snapshot e job audit per ogni prodotto gestito;
 - mostra default import e sequenza di preview prevista;
-- mostra conteggi dry-run, regole di validazione MVP e readiness delle fasi
+- mostra conteggi dry-run, regole di validazione 1.0 e readiness delle fasi
   successive;
 - mantiene il dry-run bloccato finché mancano account eBay collegato, location
   Shopify predefinita o lettura eBay valida.
 
-Validazioni MVP già codificate per la preview:
+Validazioni 1.0 già codificate per la preview:
 
 - SKU mancante;
 - prezzo assente o non valido;
 - disponibilità assente o non leggibile;
 - listing senza immagini;
-- varianti troppo complesse per MVP;
+- varianti troppo complesse per il perimetro 1.0;
 - descrizione eBay ripulita da template, colori o markup non essenziale.
 
 La base di import Shopify in `draft` è preparata dietro feature flag:
 
 - env: `SYNCBAY_DRAFT_IMPORT_ENABLED=false` per default;
-- env: `SYNCBAY_DRAFT_IMPORT_LIMIT` per limitare il batch pilota;
+- env: `SYNCBAY_DRAFT_IMPORT_LIMIT` per limitare il batch operativo;
 - quando è `false`, la pagina mostra i blocchi ma non scrive su Shopify;
 - quando è attivato, il codice usa solo item importabili della preview, fino al
   limite runtime, e crea o riusa prodotti Shopify con lo stato configurato
@@ -249,7 +249,7 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   avvio/esito;
 - la conferma import pianifica job `IMPORT_CATALOG` in batch basati su
   `SYNCBAY_DRAFT_IMPORT_LIMIT`, leggendo gli ItemID attivi da Trading API fino
-  al minore tra listing disponibili nello store e limite MVP di 2.000 prodotti;
+  al minore tra listing disponibili nello store e limite operativo 1.0 di 2.000 prodotti;
 - le Impostazioni embedded permettono di attivare o disattivare il sync
   catalogo automatico eBay -> Shopify dopo l'import; l'attivazione resta
   bloccata finché mancano account eBay collegato, location Shopify predefinita

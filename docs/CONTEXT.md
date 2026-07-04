@@ -4,8 +4,8 @@ Questo file è un handoff rapido. Per i dettagli completi vedi `syncbay-product-
 
 ## Stato progetto
 
-- Fase: pilota runtime controllato su scaffold Shopify CLI React Router, in
-  preparazione alla 1.0 custom privata.
+- Fase: custom app privata 1.0 su scaffold Shopify CLI React Router,
+  pronta per onboarding post-release su store cliente selezionati.
 - Produzione tecnica: Vercel production `https://syncbay.vercel.app`, distinta
   da release pubblica Shopify App Store.
 - Source of truth operative: `AGENTS.md`, `docs/INDEX.md`, `docs/TOOLCHAIN.md`,
@@ -25,7 +25,7 @@ La sorgente principale resta eBay. Shopify diventa una copia pulita, vendibile e
 - Prima custom app, poi app pubblica Shopify App Store.
 - Target sync: finestra configurabile 5-30 minuti.
 - Real-time dove possibile e sostenibile, senza compromettere prestazioni, rate limit, costi o stabilità.
-- Scala MVP: 2.000 prodotti per shop.
+- Limite operativo 1.0: 2.000 prodotti per shop.
 - Prodotto self-service: diagnostica, retry e azioni guidate invece di supporto umano.
 
 ## Differenziazione
@@ -42,7 +42,7 @@ Tagline principale:
 
 Il repo contiene documentazione, fondazioni e scaffold Shopify CLI React Router adattato a SyncBay.
 
-Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Shopify locale su Prisma, app embedded SyncBay con sei superfici operative (`Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`, `Impostazioni`), area Impostazioni embedded per il default stato prodotti, policy canali, regola prezzo e regola descrizione persistente, wizard import preview con validazioni dry-run MVP, checklist qualità esplicita e suggerimenti conservativi di matching Shopify, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, cinque faccette storefront importate come metafield `syncbay_facets.*` da dati strutturati e titolo eBay, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite MVP di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nel pilota custom e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. L'app embedded mostra avanzamento import, catalogo paginato, immagini prodotto, timeline attività, centro salute catalogo, stato riconciliazione completa, diagnostica rate-limit eBay e conflitti con azioni guidate; Conflitti distingue `Batch sicuri`, `Da rivedere` e `Manuali`, mentre Attività mostra impatto, prossima azione e retry sicuro dei job. Il primo ciclo incrementale reale eBay -> Shopify è stato verificato su ItemID `156986744184` con cambio quantità 3 -> 2 e rollback a 3. Il runner stock Shopify -> eBay è stato verificato sullo stesso item prima con job `UPDATE_EBAY_STOCK` sintetico e poi con trigger reale `orders/paid` da Shopify Admin `orderCreate`: la scrittura Trading API allowlistata ha ridotto eBay 3 -> 2, un secondo job duplicato è stato saltato con `already_processed`, poi eBay e Shopify sono stati ripristinati a 3 e l'allowlist Vercel è stata rimossa.
+Lo scaffold include `package.json`, `app/`, `prisma/`, `extensions/`, session storage Shopify locale su Prisma, app embedded SyncBay con sei superfici operative (`Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`, `Impostazioni`), area Impostazioni embedded per il default stato prodotti, policy canali, regola prezzo e regola descrizione persistente, wizard import preview con validazioni dry-run 1.0, checklist qualità esplicita e suggerimenti conservativi di matching Shopify, lettura live eBay Inventory API per inventory item con offer pubblicate, fallback Trading API per listing attivi storici/Seller Hub con arricchimento `GetItem` sui primi 10 listing del batch preview, SKU fallback `EBAY-<ItemID>`, fallback mock quando eBay non è collegato, gestione della location Shopify predefinita con rename dietro `write_locations`, cinque faccette storefront importate come metafield `syncbay_facets.*` da dati strutturati e titolo eBay, schema iniziale per shop/account eBay/job/audit/mapping/snapshot/conflitti/account deletion applicato su Supabase, webhook Shopify operativi e flusso OAuth eBay verificato end-to-end. L'import catalogo reale sul dev store ha completato 958 listing, sotto il limite operativo 1.0 di 2.000 prodotti, con mapping e job riusciti. Il runner recupera import `IMPORT_CATALOG`, pianifica sync incrementali `SYNC_INCREMENTAL` per shop con sync attivo, crea job `UPDATE_EBAY_STOCK` da `orders/paid` nella custom app privata e apre conflitti `SyncConflict` da webhook product/inventory quando Shopify diverge dall'ultimo snapshot SyncBay. L'app embedded mostra avanzamento import, catalogo paginato, immagini prodotto, timeline attività, centro salute catalogo, stato riconciliazione completa, diagnostica rate-limit eBay e conflitti con azioni guidate; Conflitti distingue `Batch sicuri`, `Da rivedere` e `Manuali`, mentre Attività mostra impatto, prossima azione e retry sicuro dei job. Il primo ciclo incrementale reale eBay -> Shopify è stato verificato su ItemID `156986744184` con cambio quantità 3 -> 2 e rollback a 3. Il runner stock Shopify -> eBay è stato verificato sullo stesso item prima con job `UPDATE_EBAY_STOCK` sintetico e poi con trigger reale `orders/paid` da Shopify Admin `orderCreate`: la scrittura Trading API allowlistata ha ridotto eBay 3 -> 2, un secondo job duplicato è stato saltato con `already_processed`, poi eBay e Shopify sono stati ripristinati a 3 e l'allowlist Vercel è stata rimossa.
 
 Backfill faccette storefront eseguito sul dev store il 2026-06-15 con sorgente
 snapshot/titolo: 844 prodotti aggiornati con metafield `syncbay_facets.*`, 25
@@ -51,7 +51,7 @@ Search & Discovery non sono stati attivati.
 
 ## Runtime deciso
 
-Infrastruttura MVP: Vercel + Supabase.
+Infrastruttura runtime 1.0: Vercel + Supabase.
 
 - Vercel: app embedded, backend HTTP, OAuth e webhook.
 - Supabase Postgres: database applicativo.
@@ -80,9 +80,9 @@ Provisioning minimo:
 - Supabase project ref: `mgjcbuokppfnglsftsmi`.
 - Vercel production attuale: `https://syncbay.vercel.app`; non equivale ancora a release pubblica Shopify App Store.
 - eBay keyset: usare solo il keyset dedicato SyncBay; non riusare keyset di altri progetti.
-- eBay OAuth: scope MVP ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
+- eBay OAuth: scope 1.0 ridotti a Identity readonly + Inventory readonly/write; verifica end-to-end completata sul runtime aggiornato.
 - eBay account deletion: endpoint `/ebay/account-deletion`; challenge GET e POST con verifica `X-EBAY-SIGNATURE` implementati e test notification eBay superata. Le notifiche reali restano controllate da `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED`.
-- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import draft pilota è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, applica la regola prezzo globale Shopify-only con eventuale compare-at price, riallinea lo stato dei prodotti Shopify riusati al default dello shop, pubblica i prodotti attivi secondo la policy canali Shopify dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nell'app embedded, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
+- Preview import: live via Inventory API per offer pubblicate, poi fallback Trading API `GetMyeBaySelling` + `GetItem` in sola lettura sui primi 10 listing del batch preview per listing attivi storici/Seller Hub; i listing senza SKU eBay ricevono SKU fallback `EBAY-<ItemID>`. L'import controllato è idempotente, registra `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog`, salva anche `shopifyVariantGid` e valuta catalogo, applica la regola prezzo globale Shopify-only con eventuale compare-at price, riallinea lo stato dei prodotti Shopify riusati al default dello shop, pubblica i prodotti attivi secondo la policy canali Shopify dello shop, attiva e verifica tracking e quantità Shopify sulla location predefinita, pianifica retry con backoff sui fallimenti, mostra storico/conteggi nell'app embedded, recupera i retry per `ItemID` via Trading API `GetItem` ed è verificato fino a 50 prodotti. L'import completo viene pianificato in batch asincroni da Trading API fino a 2.000 listing attivi o meno se lo store collegato ne espone meno.
 - Sync catalogo eBay -> Shopify: dopo l'import, il polling incrementale resta
   controllato da `syncEnabled` e target configurabile 300-1800 secondi. Le Impostazioni embedded
   permettono di attivare/disattivare il sync automatico solo quando eBay è
@@ -90,9 +90,9 @@ Provisioning minimo:
   ogni finestra il runner legge i listing eBay attivi via Trading API, pianifica
   batch `SYNC_INCREMENTAL` anche per nuovi prodotti e crea job
   `ARCHIVE_INACTIVE_LISTING` per mapping non più attivi solo quando la scansione
-  eBay è completa entro il limite MVP di 2.000 prodotti. La dashboard mostra
+  eBay è completa entro il limite operativo 1.0 di 2.000 prodotti. La dashboard mostra
   stato freschezza del sync, ultimo completamento e prossima finestra target.
-- Stock eBay da ordini Shopify: il pilota custom riceve `orders/paid` e crea
+- Stock eBay da ordini Shopify: la custom app privata riceve `orders/paid` e crea
   job prioritari `UPDATE_EBAY_STOCK`. `SYNCBAY_EBAY_STOCK_DRY_RUN=true` pianifica
   le riduzioni senza chiamare eBay e senza scrivere snapshot di stock; per
   marketplace `EBAY_IT` il runner applica solo ordini Shopify e snapshot

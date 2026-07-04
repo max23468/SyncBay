@@ -22,11 +22,11 @@ export default function App() {
   return (
     <AppProvider embedded={false}>
       <s-page heading="SyncBay">
-        <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
+        <s-badge slot="accessory" tone="info">1.0 privata</s-badge>
         <s-section heading="Accesso">
           <s-stack gap="base">
             <SyncBayBrandPanel
-              detail="Collega il negozio Shopify al pilota SyncBay e porta il catalogo eBay.it in un flusso controllato."
+              detail="Collega il negozio Shopify a SyncBay 1.0 privata e porta il catalogo eBay.it in un flusso controllato."
             />
         {showForm && (
           <Form method="post" action="/auth/login">
@@ -47,7 +47,7 @@ export default function App() {
           </s-stack>
         </s-section>
 
-        <s-section heading="Pilota controllato">
+        <s-section heading="Distribuzione privata">
           <s-grid
             gap="base"
             gridTemplateColumns="repeat(3, minmax(0, 1fr))"

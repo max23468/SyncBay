@@ -13,10 +13,10 @@ La sorgente di verità del catalogo resta eBay. SyncBay importa e mantiene aggio
 - Sync principale: eBay -> Shopify.
 - Eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili.
 - Marketplace iniziale: eBay.it.
-- Prima distribuzione: custom app per pilota controllato.
+- Distribuzione corrente: custom app privata 1.0 per clienti selezionati.
 - Obiettivo successivo: app pubblica Shopify App Store.
 - Latenza target: finestra configurabile 5-30 minuti.
-- Scala MVP: fino a 2.000 prodotti per shop.
+- Limite operativo 1.0: fino a 2.000 prodotti per shop.
 - Listing da coprire: tutti i listing eBay attivi del negoziante, inclusi quelli storici/non creati da SyncBay.
 - Prodotto chiuso o rimosso da eBay: prodotto Shopify mantenuto attivo come
   esaurito, non archiviato né cancellato, per preservarne la SEO (ADR 0011).
@@ -48,7 +48,7 @@ Tagline principale:
 
 Branding: vedi `BRAND.md`.
 
-## Non obiettivo MVP
+## Non obiettivo 1.0 privata
 
 - Sync bidirezionale completo Shopify -> eBay.
 - Export o creazione listing eBay da Shopify.
@@ -108,12 +108,12 @@ Direzione corrente:
 - Supabase Cron;
 - Supabase Storage come staging privato temporaneo per immagini quando serve.
 
-La decisione infrastrutturale MVP è tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
+La decisione infrastrutturale runtime è tracciata in `docs/decisions/0005-runtime-infrastructure.md`.
 
 Nota: lo scaffold Shopify CLI React Router è stato creato dopo la chiusura delle
 decisioni tecniche bloccanti. Import, OAuth eBay, runner HTTP, Supabase
 Cron/Queues, sync incrementale e aggiornamento stock eBay da ordini Shopify
-sono ora superfici implementate nel pilota MVP; nuovi runtime o consumer
+sono ora superfici implementate nel perimetro 1.0 privata; nuovi runtime o consumer
 dedicati restano decisioni separate.
 
 ## API e integrazioni
@@ -136,13 +136,13 @@ Scope iniziali previsti:
   approvazione Shopify protected customer data per la protezione disponibilità.
 - `write_orders` per la prova automatica controllata del trigger ordine pagato
   via Admin `orderCreate` sul dev store, da mantenere solo se resta necessario
-  al gate pre-pilota.
+  ai gate operativi della distribuzione privata.
 - `read_files` e `write_files` per media prodotto.
 - token offline Shopify a scadenza con refresh automatico per i job automatici,
   in linea con ADR `0009-shopify-token-offline-a-scadenza.md` e con il
   requisito Shopify public app dal 1 gennaio 2027.
 
-Webhook Shopify MVP:
+Webhook Shopify 1.0:
 
 - app uninstall, per cleanup e revoca token.
 - inventory level update come trigger iniziale non-customer-data per aggiornare disponibilità eBay.
@@ -213,7 +213,7 @@ Default consigliato:
 
 ## Sync a finestra configurabile
 
-La promessa MVP è una finestra target configurabile, non "real-time assoluto" indiscriminato.
+La promessa 1.0 è una finestra target configurabile, non "real-time assoluto" indiscriminato.
 
 Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, SyncBay deve preferirlo. Il polling configurato resta la rete di sicurezza per eventi non coperti o notifiche perse.
 
@@ -257,17 +257,17 @@ Le regole non modificano eBay. Si applicano solo al prezzo scritto su Shopify.
 
 Tipi:
 
-- sconto percentuale globale MVP, già persistito per shop come intero `0-90`;
+- sconto percentuale globale 1.0, già persistito per shop come intero `0-90`;
 - sconto fisso;
 - markup percentuale;
 - markup fisso;
 - moltiplicatore;
-- arrotondamento a due decimali o all'euro per il caso globale MVP;
+- arrotondamento a due decimali o all'euro per il caso globale 1.0;
 - prezzo minimo;
 - margine minimo se il negoziante fornisce un costo;
 - compare-at price Shopify valorizzato con il prezzo eBay originale quando lo
   sconto globale è attivo;
-- regole globali MVP, regole per categoria in fase successiva.
+- regole globali 1.0, regole per categoria in fase successiva.
 
 Ogni sync deve conservare:
 
@@ -296,7 +296,7 @@ La rimozione template deve essere configurabile con anteprima prima dell'applica
 
 ## Immagini e media
 
-Default MVP: importare tutte le immagini dei listing eBay e copiarle su Shopify.
+Default 1.0: importare tutte le immagini dei listing eBay e copiarle su Shopify.
 
 Requisiti:
 
@@ -315,7 +315,7 @@ Opzioni future:
 
 ## Varianti e attributi
 
-MVP:
+1.0 privata:
 
 - prodotti singoli;
 - varianti semplici quando i dati eBay sono chiari e mappabili;
@@ -331,7 +331,7 @@ di segnali numismatici. I valori vengono scritti nel namespace
 `syncbay_facets` e salvati nel payload diagnostico. SyncBay non crea tag filtro e
 non deduce valori mancanti da descrizione HTML o assenza del campo.
 
-Post-MVP:
+Post-1.0:
 
 - varianti complesse;
 - immagini per variante;
@@ -341,7 +341,7 @@ Post-MVP:
 
 ## Mapping categorie
 
-Scelta MVP: automatico e prudente.
+Scelta 1.0: automatico e prudente.
 
 Strategia:
 
@@ -359,7 +359,7 @@ Decisione attuale: ADR 0015. L'import di nuovi prodotti passa `category` e
 confidenza non bassa; i casi incerti restano importabili senza categoria
 Shopify. L'apply sui prodotti già collegati deve partire da report/preview e
 non sovrascrivere categorie Shopify manuali senza conferma esplicita. La mappa
-iniziale copre le categorie osservate nel catalogo pilota: numismatica,
+iniziale copre le categorie osservate nel catalogo di riferimento: numismatica,
 filatelia, modellini auto, dischi musicali, macchine da scrivere e
 cataloghi/libri cartacei. Il comando operativo
 `npm run categories:backfill -- --apply --confirm-apply` applica solo righe
@@ -380,23 +380,25 @@ Discovery.
 
 ## Matching prodotti esistenti
 
-MVP:
+1.0 privata:
 
 - import crea nuovi prodotti Shopify con mapping stabile;
-- non tentare matching automatico aggressivo se il negoziante ha già prodotti Shopify.
-- l'anteprima può mostrare suggerimenti conservativi basati su SKU, barcode o
-  titolo, senza collegamento automatico.
+- modalità `Collega catalogo esistente` per riusare prodotti Shopify già
+  presenti con matching conservativo e conferma prima delle scritture;
+- non tentare matching automatico aggressivo se il negoziante ha già prodotti Shopify;
+- l'anteprima mostra suggerimenti conservativi basati su SKU, item id, metafield,
+  handle o titolo, senza collegamento automatico sui match deboli.
 
-Roadmap prioritaria:
+Evoluzione post-1.0:
 
-- wizard per collegare prodotti Shopify esistenti ai listing eBay;
-- conferma manuale prima di attivare sync su prodotti già esistenti.
+- matching più ricco su varianti complesse;
+- strumenti di revisione bulk per cataloghi sopra il limite operativo 1.0.
 
 ## Conflitti Shopify
 
 Un conflitto nasce quando Shopify viene modificato manualmente dopo che SyncBay aveva scritto un valore controllato.
 
-Campi monitorati MVP:
+Campi monitorati 1.0:
 
 - titolo;
 - descrizione;
@@ -424,7 +426,7 @@ Questo permette al negoziante di mantenere Shopify come copia pulita di eBay sen
 
 ## Dashboard operativa
 
-La dashboard MVP deve essere il centro operativo del sync, non solo una pagina informativa.
+La dashboard 1.0 deve essere il centro operativo del sync, non solo una pagina informativa.
 
 Deve mostrare:
 
@@ -483,7 +485,7 @@ esaurito per preservare la SEO.
 
 ## Privacy, compliance e sicurezza
 
-Obbligatorio dal primo MVP:
+Obbligatorio dalla 1.0 privata:
 
 - cifratura token Shopify ed eBay a riposo;
 - rotazione/refresh token eBay;
@@ -514,7 +516,7 @@ Requisiti:
 
 Prima import: preview/dry-run obbligatorio.
 
-Azioni rollback MVP:
+Azioni rollback 1.0:
 
 - archiviare tutti i prodotti creati da SyncBay in una sessione import;
 - ripristinare ultimo snapshot scritto da SyncBay per prodotti aggiornati;
@@ -573,9 +575,9 @@ Azioni rollback MVP:
 - Conflitti Shopify dashboard.
 - Azioni risoluzione conflitti.
 
-### Fase 6 - Beta custom
+### Fase 6 - Custom app privata 1.0
 
-- Merchant pilota.
+- Clienti selezionati.
 - Test 2.000 prodotti.
 - Monitoraggio errori.
 - Hardening rate limit.
@@ -592,8 +594,8 @@ Azioni rollback MVP:
 
 ## Livelli prodotto futuri
 
-- Pilot: fino a 2.000 prodotti, eBay.it, 1 account eBay, 1 location Shopify.
-- Growth: fino a 10.000 prodotti, multi-location, matching prodotti esistenti, varianti migliorate.
+- Private 1.0: fino a 2.000 prodotti, eBay.it, 1 account eBay, 1 location Shopify.
+- Growth: fino a 10.000 prodotti, multi-location, matching avanzato e varianti migliorate.
 - Public: billing, onboarding self-service, diagnostica avanzata, multi-marketplace opzionale.
 
 Feature future da valutare:
@@ -624,7 +626,7 @@ Feature future da valutare:
 - Le notifiche eBay potrebbero non coprire tutti gli eventi necessari: il polling configurato resta obbligatorio.
 - Aggiornare la disponibilità eBay da ordini Shopify è il punto più critico per ridurre vendite di prodotti non disponibili e rispettare i rate limit.
 - Le descrizioni eBay possono contenere HTML pesante o template difficili da pulire senza falsi positivi.
-- Le varianti complesse possono aumentare molto la complessità: vanno isolate dal MVP base.
+- Le varianti complesse possono aumentare molto la complessità: vanno isolate dal perimetro 1.0 base.
 
 ## Fonti tecniche iniziali
 

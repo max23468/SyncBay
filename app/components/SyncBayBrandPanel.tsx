@@ -10,7 +10,7 @@ type SyncBayBrandPanelProps = {
 
 export function SyncBayBrandPanel({
   detail,
-  label = "Pilota controllato",
+  label = "1.0 privata",
 }: SyncBayBrandPanelProps) {
   return (
     <s-box

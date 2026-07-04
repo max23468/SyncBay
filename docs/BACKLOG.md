@@ -14,10 +14,10 @@ Questo documento raccoglie idee, debiti e attività non ancora promosse nella ro
 | Voce | Stato | Nota |
 | --- | --- | --- |
 | Quality score import/listing | Idea | Da valutare solo se spiega rischi concreti al negoziante senza introdurre metriche opache. |
-| Comunicazione sconti/prezzi storefront | Idea | Modulo futuro per comunicare sconti o prezzi promozionali prima del carrello, preferibilmente con theme app extension, app block o app embed. Non è core MVP e non autorizza patch dirette a Liquid/CSS/JS dei temi. |
+| Comunicazione sconti/prezzi storefront | Idea | Modulo futuro per comunicare sconti o prezzi promozionali prima del carrello, preferibilmente con theme app extension, app block o app embed. Non è core 1.0 e non autorizza patch dirette a Liquid/CSS/JS dei temi. |
 | Multi-marketplace | Idea | Fuori scope finché eBay.it-first non è consolidato. |
 | Support policy pubblica | Da definire | Serve prima dell'app pubblica Shopify App Store; default attuale: self-service first. |
-| Billing | Da definire | Fuori dalla custom app pilota; necessario prima di una distribuzione pubblica. |
+| Billing | Da definire | Fuori dalla custom app privata; necessario prima di una distribuzione pubblica. |
 
 ### Comunicazione sconti/prezzi storefront
 
@@ -53,7 +53,7 @@ Vincoli da rispettare prima di promuoverla:
 | Voce | Stato | Nota |
 | --- | --- | --- |
 | Rimozione override `ajv` | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata. |
-| Policy production e App Store | Aperta | Esiste un deployment Vercel production per il pilota, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
+| Policy production e App Store | Aperta | Esiste un deployment Vercel production per la distribuzione privata, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi. |
 
 ## Decisioni collegate

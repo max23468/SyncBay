@@ -2,9 +2,9 @@
 
 Questa cartella raccoglie la documentazione approfondita del progetto.
 
-SyncBay ha lo scaffold Shopify CLI React Router e un pilota runtime con import,
-runner, sync, conflitti e integrazioni Shopify/eBay nel perimetro MVP già
-implementati. La documentazione resta la fonte principale per decidere cosa
+SyncBay ha lo scaffold Shopify CLI React Router e una custom app privata 1.0
+con import, runner, sync, conflitti, catalogo esistente e integrazioni
+Shopify/eBay nel perimetro 1.0 già implementati. La documentazione resta la fonte principale per decidere cosa
 estendere prima di aggiungere nuovi runtime, nuove integrazioni provider o
 superfici fuori dal perimetro approvato.
 
@@ -76,7 +76,7 @@ docs/
 | Vuoi... | Vai a... |
 | --- | --- |
 | Capire in 2 minuti il progetto | `CONTEXT.md` |
-| Capire perimetro, MVP e fasi | `syncbay-product-technical-plan.md` |
+| Capire perimetro, 1.0 privata e fasi | `syncbay-product-technical-plan.md` |
 | Vedere cosa fare ora e dopo | `ROADMAP.md` |
 | Consultare lo storico esteso della vecchia roadmap | `ROADMAP_HISTORY.md` |
 | Vedere idee e debiti non ancora promossi | `BACKLOG.md` |
@@ -87,11 +87,11 @@ docs/
 | Consultare decisioni stabili | `DECISIONS.md` |
 | Consultare decisioni ancora aperte | `DECISIONS_PENDING.md` |
 | Capire lo stack scelto | `decisions/0001-stack.md` |
-| Capire infrastruttura runtime MVP | `decisions/0005-runtime-infrastructure.md` |
+| Capire infrastruttura runtime | `decisions/0005-runtime-infrastructure.md` |
 | Capire versioning runtime locale | `decisions/0006-versioning-runtime-locale.md` |
 | Capire tag e GitHub Release | `decisions/0008-tag-e-github-release.md` |
 | Capire token offline Shopify a scadenza | `decisions/0009-shopify-token-offline-a-scadenza.md` |
-| Capire retention dati operativi pilota | `decisions/0017-retention-dati-operativi.md` |
+| Capire retention dati operativi | `decisions/0017-retention-dati-operativi.md` |
 | Capire cleanup retention automatico | `decisions/0018-cleanup-retention-automatico.md` |
 | Capire cadenza Supabase Cron del runner | `decisions/0019-cadenza-cron-runner.md` |
 | Capire perimetro e go-live 1.0 custom privata | `decisions/0020-1-0-custom-privata-catalogo-esistente.md` |

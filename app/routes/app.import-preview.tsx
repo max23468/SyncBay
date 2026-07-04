@@ -653,7 +653,7 @@ function LocationShopifySection({
           detail={`${wizard.importPreview.defaults.imageImport}; ${wizard.importPreview.defaults.descriptionMode}.`}
           label={`${wizard.previewPlan.limits.maxProducts} prodotti max`}
           tone="info"
-          title="Regole MVP"
+          title="Limiti 1.0"
         />
       </s-stack>
       <s-stack direction="inline" gap="small-200">
@@ -1412,7 +1412,7 @@ function DraftImportSection({
               Prodotti importabili: {wizard.draftImport.importableCount}
             </s-list-item>
             <s-list-item>
-              Limite batch pilota: {wizard.draftImport.draftLimit}
+              Limite batch operativo: {wizard.draftImport.draftLimit}
             </s-list-item>
             <s-list-item>
               Stato prodotti creati: {wizard.importPreview.defaults.productStatus}
@@ -1422,7 +1422,7 @@ function DraftImportSection({
             </s-list-item>
             <s-list-item>
               Import completo: pianifica batch fino al minore tra listing attivi
-              eBay e limite MVP {wizard.previewPlan.limits.maxProducts}
+              eBay e limite 1.0 {wizard.previewPlan.limits.maxProducts}
             </s-list-item>
           </>
         )}
@@ -1599,8 +1599,8 @@ function formatCatalogImportQueuedMessage(result: {
       ? "totale eBay non dichiarato"
       : `totale eBay ${result.totalAvailable}`;
   const capLabel = result.truncatedAtMaxProducts
-    ? "limite MVP raggiunto"
-    : "store sotto il limite MVP o lettura completata";
+    ? "limite 1.0 raggiunto"
+    : "store sotto il limite 1.0 o lettura completata";
 
   return `${result.batchCount} batch; ${result.createdJobCount} nuovi, ${result.requeuedJobCount} ripianificati, ${result.resumedJobCount} ripresi, ${result.existingJobCount} già presenti; ${totalLabel}; ${capLabel}.`;
 }

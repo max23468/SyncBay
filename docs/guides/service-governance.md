@@ -2,9 +2,9 @@
 
 Questa guida definisce limiti, comportamento operativo e responsabilità minime di SyncBay.
 
-## Perimetro MVP
+## Perimetro 1.0 privata
 
-SyncBay MVP e:
+SyncBay 1.0 privata è:
 
 - eBay.it-first;
 - 1 account eBay per shop;
@@ -14,7 +14,7 @@ SyncBay MVP e:
 - protezione disponibilità da ordini Shopify verso eBay;
 - dashboard self-service con diagnostica e retry.
 
-## Fuori perimetro MVP
+## Fuori perimetro 1.0
 
 - Supporto umano come pilastro operativo.
 - Marketplace multipli.
@@ -26,18 +26,18 @@ SyncBay MVP e:
 
 ## Limiti operativi
 
-| Area | Limite MVP | Azione se il limite viene superato |
+| Area | Limite 1.0 | Azione se il limite viene superato |
 | --- | --- | --- |
 | Catalogo | 2.000 prodotti per shop | Bloccare import o richiedere piano Growth. |
-| Account eBay | 1 per shop | Rimandare multi-account a decisione post-MVP. |
+| Account eBay | 1 per shop | Rimandare multi-account a decisione post-1.0. |
 | Location Shopify | 1 predefinita | Mostrare limite in onboarding. |
 | Sync | Finestra configurabile 5-30 minuti; real-time dove sostenibile | Usare polling come fallback obbligatorio. |
 | Errori ordinari | Self-service | Mostrare causa, impatto, retry e azione consigliata. |
-| Supporto umano | Non previsto come requisito MVP | Progettare diagnostica e runbook interno. |
+| Supporto umano | Non previsto come requisito 1.0 | Progettare diagnostica e runbook interno. |
 
-## Retention provvisoria
+## Retention operativa
 
-Da validare prima della beta:
+Da rivalutare prima di App Store, billing o distribuzione pubblica:
 
 - conservare mapping e snapshot finché lo shop usa SyncBay;
 - conservare job e audit log per il tempo necessario a diagnostica, rollback e compliance;
@@ -65,7 +65,7 @@ Da validare prima della beta:
 
 ### Listing eBay non più attivo
 
-- Archiviare prodotto Shopify.
+- Mantenere il prodotto Shopify in vetrina come esaurito.
 - Non cancellare automaticamente.
 - Conservare mapping/snapshot per audit e rollback.
 
@@ -80,9 +80,9 @@ Possibili azioni configurabili:
 - mettere prodotto in draft/archiviato in casi critici;
 - bloccare ulteriori sync su un campo finché il conflitto non viene risolto.
 
-## Requisiti prima della beta
+## Requisiti 1.0 privata
 
-- Privacy policy provvisoria.
+- Informativa privacy 1.0.
 - Security note aggiornata.
 - Disinstallazione Shopify gestita.
 - eBay account deletion notification o opt-out corretto.

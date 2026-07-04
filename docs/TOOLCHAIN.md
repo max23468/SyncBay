@@ -305,7 +305,7 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 
 ## Deploy e release
 
-SyncBay ha versioning locale, un deployment pilota Vercel production e una
+SyncBay ha versioning locale, un deployment Vercel production per distribuzione privata e una
 policy tag/GitHub Release per release prodotto reali. Non ha ancora una policy
 di release pubblica Shopify App Store.
 
@@ -317,7 +317,7 @@ di release pubblica Shopify App Store.
 - `rilascia` significa usare il flusso locale `npm run release`, pubblicare la
   release su GitHub/main nello stesso flusso operativo e, per release prodotto
   reale, creare tag Git `vX.Y.Z` e GitHub Release.
-- `deploya` significa aggiornare il deployment pilota Vercel production e
+- `deploya` significa aggiornare il deployment Vercel production della distribuzione privata e
   verificarlo; non implica App Store, billing, tag o GitHub Release.
 - tag Git `vX.Y.Z` e GitHub Release si creano per ogni release prodotto reale secondo ADR
   `docs/decisions/0008-tag-e-github-release.md`.

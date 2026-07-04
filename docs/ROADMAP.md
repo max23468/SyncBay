@@ -12,7 +12,7 @@ esteso della vecchia roadmap di fondazione sta in
   eccezioni, report e apply controllato, senza funzioni Numisleo-specifiche.
 - Preparare privacy policy generale SyncBay, termini d'uso minimi e mini kit
   per clienti selezionati prima del primo go-live privato.
-- Verificare in produzione pilota le nuove classificazioni dei conflitti su
+- Verificare in produzione privata le nuove classificazioni dei conflitti su
   coda reale: `Sicuri`, `Da rivedere`, `Da decidere`.
 - Raccogliere screenshot prodotto puliti delle sei superfici embedded
   ridisegnate, usando dati reali o fixture sintetiche realistiche senza dati
@@ -56,7 +56,7 @@ esteso della vecchia roadmap di fondazione sta in
 - Vercel, Supabase, Prisma, scaffold Shopify CLI React Router e primitive
   Supabase di osservabilità/coda/storage sono predisposti.
 - Connessione Shopify custom app, OAuth eBay.it, onboarding guidato, import
-  pilota idempotente e account deletion eBay sono verificati.
+  controllato idempotente e account deletion eBay sono verificati.
 - Il primo ciclo incrementale reale eBay -> Shopify e il flusso ordine Shopify
   pagato -> aggiornamento disponibilità eBay sono stati verificati sul dev store
   e ripristinati dopo il test.
@@ -66,7 +66,7 @@ esteso della vecchia roadmap di fondazione sta in
   intervallo sync configurabile e conferme esplicite.
 - La UI embedded classifica i conflitti per sicurezza operativa e la timeline
   Attività spiega impatto, prossima azione e retry sicuro dei job.
-- Coda conflitti pilota verificata e ripulita: 933 falsi positivi `description`
+- Coda conflitti del dev store verificata e ripulita: 933 falsi positivi `description`
   riallineati con repair script e 41 falsi positivi `images` chiusi dalla nuova
   regola che ignora il conflitto quando eBay non ha media e Shopify sì.
 

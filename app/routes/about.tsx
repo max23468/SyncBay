@@ -10,16 +10,16 @@ export default function About() {
   return (
     <AppProvider embedded={false}>
       <s-page heading="Informazioni su SyncBay">
-        <s-badge slot="accessory" tone="info">Pilota controllato</s-badge>
+        <s-badge slot="accessory" tone="info">1.0 privata</s-badge>
         <s-section heading="SyncBay">
           <s-stack gap="base">
             <SyncBayBrandPanel
               detail="SyncBay nasce per negozianti italiani che vogliono trasformare un negozio eBay.it in un catalogo Shopify ordinato."
             />
             <s-text>
-              SyncBay è una Shopify app in fase pilota pensata per collegare un
-              account eBay.it a Shopify e mantenere il catalogo Shopify
-              allineato ai listing eBay.
+              SyncBay è una Shopify app in distribuzione privata pensata per
+              collegare un account eBay.it a Shopify e mantenere il catalogo
+              Shopify allineato ai listing eBay.
             </s-text>
           </s-stack>
         </s-section>
@@ -43,11 +43,12 @@ export default function About() {
         <s-section heading="Stato del servizio">
           <s-stack gap="base">
             <s-text>
-              Il servizio è in pilota controllato. Non è ancora pubblicato nello
-              Shopify App Store e non è una soluzione ufficiale eBay o Shopify.
+              Il servizio è disponibile come 1.0 privata per clienti
+              selezionati. Non è ancora pubblicato nello Shopify App Store e non
+              è una soluzione ufficiale eBay o Shopify.
             </s-text>
             <s-text color="subdued">
-              Ultimo aggiornamento: 25 maggio 2026.
+              Ultimo aggiornamento: 4 luglio 2026.
             </s-text>
           </s-stack>
         </s-section>
