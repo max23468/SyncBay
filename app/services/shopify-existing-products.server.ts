@@ -23,19 +23,6 @@ interface ShopifyExistingProductMatchResponse {
   errors?: unknown[];
 }
 
-interface ShopifyTargetedVariantMatchResponse {
-  data?: {
-    productVariants?: {
-      nodes?: ExistingProductVariantNode[];
-      pageInfo?: {
-        endCursor?: string | null;
-        hasNextPage?: boolean | null;
-      } | null;
-    } | null;
-  };
-  errors?: unknown[];
-}
-
 interface ExistingProductNode {
   handle?: string | null;
   id?: string | null;
@@ -62,23 +49,9 @@ interface ExistingProductNode {
   } | null;
 }
 
-interface ExistingProductVariantNode {
-  barcode?: string | null;
-  id?: string | null;
-  product?: {
-    handle?: string | null;
-    id?: string | null;
-    media?: ExistingProductNode["media"];
-    metafields?: ExistingProductNode["metafields"];
-    tags?: string[] | null;
-    title?: string | null;
-  } | null;
-  sku?: string | null;
-}
-
 const DEFAULT_EXISTING_PRODUCT_LIMIT = 2000;
 const SHOPIFY_PRODUCTS_PAGE_SIZE = 250;
-const SHOPIFY_TARGETED_VARIANTS_PAGE_SIZE = 250;
+const SHOPIFY_TARGETED_PRODUCTS_PAGE_SIZE = 250;
 const SHOPIFY_TARGETED_SKU_BATCH_SIZE = 25;
 const SHOPIFY_VARIANT_MATCH_CANDIDATE_LIMIT = 10;
 
@@ -127,30 +100,41 @@ const EXISTING_PRODUCTS_QUERY = `#graphql
     }
   }`;
 
-const TARGETED_VARIANTS_QUERY = `#graphql
-  query SyncBayExistingProductVariantsBySku($first: Int!, $after: String, $query: String!) {
-    productVariants(first: $first, after: $after, query: $query) {
+const TARGETED_PRODUCTS_QUERY = `#graphql
+  query SyncBayExistingProductsBySku($first: Int!, $after: String, $query: String!, $variantFirst: Int!) {
+    products(first: $first, after: $after, query: $query) {
       nodes {
-        barcode
         id
-        sku
-        product {
-          id
-          handle
-          tags
-          title
-          metafields(first: 20, namespace: "syncbay") {
-            nodes {
-              key
-              namespace
-              value
-            }
+        handle
+        productType
+        status
+        tags
+        title
+        metafields(first: 20, namespace: "syncbay") {
+          nodes {
+            key
+            namespace
+            value
           }
-          media(first: 1, query: "media_type:IMAGE") {
-            nodes {
-              id
-              mediaContentType
-            }
+        }
+        media(first: 1, query: "media_type:IMAGE") {
+          nodes {
+            id
+            mediaContentType
+          }
+        }
+        seo {
+          description
+          title
+        }
+        variants(first: $variantFirst) {
+          nodes {
+            barcode
+            id
+            sku
+          }
+          pageInfo {
+            hasNextPage
           }
         }
       }
@@ -182,7 +166,7 @@ export async function loadExistingShopifyProductsForMatching(
     cursor = page.endCursor;
   }
 
-  const targetedProducts = await loadTargetedShopifyVariantsForMatching(admin, {
+  const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
     existingProducts: products,
     skuHints: options.skuHints ?? [],
   });
@@ -191,7 +175,7 @@ export async function loadExistingShopifyProductsForMatching(
   return products;
 }
 
-async function loadTargetedShopifyVariantsForMatching(
+async function loadTargetedShopifyProductsForMatching(
   admin: ShopifyAdminGraphqlClient,
   input: {
     existingProducts: ShopifyMatchCandidate[];
@@ -215,7 +199,7 @@ async function loadTargetedShopifyVariantsForMatching(
     const query = buildSkuSearchQuery(batch);
 
     while (query) {
-      const page = await fetchTargetedVariantsPage(admin, {
+      const page = await fetchTargetedProductsPage(admin, {
         cursor,
         query,
       });
@@ -263,30 +247,31 @@ async function fetchExistingProductsPage(
   };
 }
 
-async function fetchTargetedVariantsPage(
+async function fetchTargetedProductsPage(
   admin: ShopifyAdminGraphqlClient,
   input: { cursor: string | null; query: string },
 ) {
-  const response = await admin.graphql(TARGETED_VARIANTS_QUERY, {
+  const response = await admin.graphql(TARGETED_PRODUCTS_QUERY, {
     variables: {
       after: input.cursor,
-      first: SHOPIFY_TARGETED_VARIANTS_PAGE_SIZE,
+      first: SHOPIFY_TARGETED_PRODUCTS_PAGE_SIZE,
       query: input.query,
+      variantFirst: SHOPIFY_VARIANT_MATCH_CANDIDATE_LIMIT,
     },
   });
 
-  if (!response.ok) return getEmptyTargetedVariantsPage();
+  if (!response.ok) return getEmptyTargetedProductsPage();
 
-  const json = (await response.json()) as ShopifyTargetedVariantMatchResponse;
-  if (json.errors?.length) return getEmptyTargetedVariantsPage();
+  const json = (await response.json()) as ShopifyExistingProductMatchResponse;
+  if (json.errors?.length) return getEmptyTargetedProductsPage();
 
-  const variants = json.data?.productVariants;
-  const variantNodes = variants?.nodes ?? [];
+  const products = json.data?.products;
+  const productNodes = products?.nodes ?? [];
 
   return {
-    endCursor: variants?.pageInfo?.endCursor ?? null,
-    hasNextPage: Boolean(variants?.pageInfo?.hasNextPage),
-    products: variantNodes.flatMap(toMatchCandidateFromVariant),
+    endCursor: products?.pageInfo?.endCursor ?? null,
+    hasNextPage: Boolean(products?.pageInfo?.hasNextPage),
+    products: productNodes.flatMap(toMatchCandidates),
   };
 }
 
@@ -314,28 +299,6 @@ function toMatchCandidates(
   }));
 }
 
-function toMatchCandidateFromVariant(
-  variant: ExistingProductVariantNode,
-): ShopifyMatchCandidate[] {
-  const product = variant.product;
-  if (!product?.id) return [];
-
-  return [
-    {
-      barcode: normalizeNullableString(variant.barcode),
-      handle: normalizeNullableString(product.handle),
-      metafields: product.metafields?.nodes ?? [],
-      productGid: product.id,
-      shopifyImageCount: countShopifyImageMedia(product),
-      sku: normalizeNullableString(variant.sku),
-      tags: product.tags ?? [],
-      title: normalizeNullableString(product.title),
-      variantGid: variant.id ?? null,
-      variantsTruncated: false,
-    },
-  ];
-}
-
 function countShopifyImageMedia(product: ExistingProductNode) {
   return (
     product.media?.nodes?.filter(
@@ -353,7 +316,7 @@ function getEmptyExistingProductsPage() {
   };
 }
 
-function getEmptyTargetedVariantsPage() {
+function getEmptyTargetedProductsPage() {
   return {
     endCursor: null,
     hasNextPage: false,
