@@ -209,6 +209,34 @@ test("prefers publication names over technical catalog titles", async () => {
   ]);
 });
 
+test("keeps readable custom catalog titles ahead of publication names", async () => {
+  const admin = {
+    async graphql() {
+      return jsonResponse({
+        data: {
+          publications: {
+            nodes: [
+              {
+                catalog: { title: "Mercato Italia B2B" },
+                id: "gid://shopify/Publication/42",
+                name: "Negozio online",
+              },
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  assert.deepEqual(await loadShopifyProductPublications(admin), [
+    {
+      id: "gid://shopify/Publication/42",
+      title: "Mercato Italia B2B",
+    },
+  ]);
+});
+
 test("falls back to publication names when catalog titles are missing", async () => {
   const admin = {
     async graphql() {
