@@ -224,6 +224,7 @@ const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
+const EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS = 10000;
 const CATALOG_IMPORT_BATCH_MAX_ATTEMPTS = 4;
 const TAKEOVER_METAFIELDS_SET_BATCH_SIZE = 20;
 const PRICING_RULE_SYNC_BATCH_SIZE = 10;
@@ -1984,7 +1985,7 @@ export async function getImportWizardState(
         admin,
         limit:
           catalogMode === "existing_catalog"
-            ? CATALOG_IMPORT_MAX_PRODUCTS
+            ? EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS
             : 250,
         previewResult: preview.previewResult,
         skuHints:
