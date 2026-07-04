@@ -38,7 +38,7 @@ const AREA_DEFINITIONS = [
       "Le modifiche manuali Shopify restano conflitti visibili e non vengono sovrascritte silenziosamente?",
       "Gli errori inattesi emergono come blocchi reali invece di essere trattati come stale o successo parziale?",
     ],
-    checks: ["npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com"],
+    checks: ["npm run conflicts:doctor -- --shop <shop.myshopify.com>"],
     risk: "alto",
   },
   {

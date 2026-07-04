@@ -7,8 +7,6 @@ import {
 } from "../lib/syncbay-shopify-admin-diagnostics";
 import { getShopifyAdminGraphqlClient } from "../services/shopify-admin-session.server";
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
-
 export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   requireInternalAppSecret(request);
 
@@ -17,7 +15,7 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
       productGids: [],
       shopDomain: url.searchParams.get("shop"),
     },
-    { fallbackShopDomain: getFallbackShopDomain() },
+    { fallbackShopDomain: getOptionalFallbackShopDomain() },
   );
   const admin = await getShopifyAdminGraphqlClient(shopDomain);
   const response = await admin.graphql(
@@ -59,7 +57,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     throw new Response("JSON diagnostica Shopify non valido.", { status: 400 });
   });
   const input = normalizeDiagnosticsProductInput(payload, {
-    fallbackShopDomain: getFallbackShopDomain(),
+    fallbackShopDomain: getOptionalFallbackShopDomain(),
   });
 
   if (input.productGids.length === 0) {
@@ -109,8 +107,8 @@ function requireInternalAppSecret(request: Request) {
   }
 }
 
-function getFallbackShopDomain() {
-  return process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+function getOptionalFallbackShopDomain() {
+  return process.env.SHOPIFY_DEV_STORE?.trim() ?? "";
 }
 
 function normalizeDiagnosticsProductInput(

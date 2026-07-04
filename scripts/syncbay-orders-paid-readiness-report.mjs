@@ -4,7 +4,7 @@ const TOKEN_REFRESH_SAFETY_MS = 5 * 60 * 1000;
 
 export function buildReadinessReport(
   payload,
-  { shopDomain = "syncbay-dev.myshopify.com" } = {},
+  { shopDomain = "shop non specificato" } = {},
 ) {
   const scopes = splitScopes(payload.session?.scope);
   const hasShop = Boolean(payload.shop?.id);

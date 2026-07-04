@@ -24,9 +24,9 @@ import {
 } from "../app/lib/syncbay-ebay-trading-bulk.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const GET_ITEM_CONCURRENCY = 4;
 const GET_SELLER_LIST_ENTRIES_PER_PAGE = 200;
@@ -61,8 +61,10 @@ if (process.env.SYNCBAY_SUPABASE_CWD) {
   loadDotEnv(`${process.env.SYNCBAY_SUPABASE_CWD}/.env`);
 }
 
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const marketplaceId = args.marketplace ?? DEFAULT_MARKETPLACE_ID;
 
 ensureTokenEncryptionKey();

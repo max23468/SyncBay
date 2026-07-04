@@ -133,22 +133,22 @@ Regole d'uso:
 | Doctor locale                 | `npm run doctor:local`                                                                      |
 | Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
-| Diagnostica job import        | `npm run jobs:status -- --shop syncbay-dev.myshopify.com`                                   |
+| Diagnostica job import        | `npm run jobs:status -- --shop <shop.myshopify.com>`                                   |
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
-| Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop syncbay-dev.myshopify.com --apply`           |
-| Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop syncbay-dev.myshopify.com [--apply]`       |
-| Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop syncbay-dev.myshopify.com`                              |
-| Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop syncbay-dev.myshopify.com`                              |
-| Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com`                         |
-| Verifica campione import      | `npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 10`                     |
-| Report pulizia descrizioni    | `npm run descriptions:cleanup-report -- --shop syncbay-dev.myshopify.com --sample 20`       |
-| Riparazione prezzo/SKU        | `npm run import:repair-commercial-fields -- --shop syncbay-dev.myshopify.com --dry-run`     |
+| Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |
+| Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop <shop.myshopify.com> [--apply]`       |
+| Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                              |
+| Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`                              |
+| Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop <shop.myshopify.com>`                         |
+| Verifica campione import      | `npm run import:verify -- --shop <shop.myshopify.com> --sample 10`                     |
+| Report pulizia descrizioni    | `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com> --sample 20`       |
+| Riparazione prezzo/SKU        | `npm run import:repair-commercial-fields -- --shop <shop.myshopify.com> --dry-run`     |
 | Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
-| Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop syncbay-dev.myshopify.com [--limit N]`       |
-| Dry-run categorie             | `npm run categories:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`               |
-| Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop syncbay-dev.myshopify.com [--limit N]`     |
-| Dry-run faccette storefront   | `npm run facets:backfill -- --shop syncbay-dev.myshopify.com [--limit N]`                   |
-| Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop syncbay-dev.myshopify.com [--limit N]`             |
+| Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop <shop.myshopify.com> [--limit N]`       |
+| Dry-run categorie             | `npm run categories:backfill -- --shop <shop.myshopify.com> [--limit N]`               |
+| Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop <shop.myshopify.com> [--limit N]`     |
+| Dry-run faccette storefront   | `npm run facets:backfill -- --shop <shop.myshopify.com> [--limit N]`                   |
+| Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | React Doctor                  | `npm run quality:react-doctor`                                                              |
 | Release dry-run               | `npm run release:dry-run`                                                                   |

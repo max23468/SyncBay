@@ -16,11 +16,11 @@ import {
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getProductFacetsFromSnapshotPayload } from "../app/lib/syncbay-product-snapshot-payload.ts";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
 const GET_ITEM_CONCURRENCY = 4;
@@ -50,8 +50,10 @@ if (args.help) {
 
 loadDotEnv(".env");
 
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 
 ensureTokenEncryptionKey();
 

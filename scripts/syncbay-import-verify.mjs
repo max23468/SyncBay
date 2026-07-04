@@ -4,10 +4,10 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_SAMPLE_LIMIT = 10;
 const DEFAULT_RUNTIME_URL = "https://syncbay.vercel.app";
 const INTERNAL_APP_SECRET_KEYCHAIN_SERVICE = "syncbay-app-secret";
@@ -19,8 +19,10 @@ const SHOPIFY_AGENT_ENV = {
 };
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const sampleLimit = args.sample ?? DEFAULT_SAMPLE_LIMIT;
 const shopifySource =
   args.shopifySource ?? process.env.SYNCBAY_SHOPIFY_VERIFY_SOURCE ?? "runtime";

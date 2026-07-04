@@ -11,11 +11,11 @@ import {
   getSupabaseCliCwd,
   getSupabaseCliEnv,
 } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
 const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const EBAY_LIVE_CONCURRENCY = 3;
@@ -32,8 +32,10 @@ const xmlParser = new XMLParser({
 loadDotEnv(".env");
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 
 await main().catch((error) => {
   console.error(`Repair conflitti prezzo non riuscito: ${formatCliError(error)}`);

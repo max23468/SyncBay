@@ -6,16 +6,18 @@ import {
   getSupabaseCliCwd,
   getSupabaseCliEnv,
 } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_STALE_HOURS = 24;
 const ACTIVE_JOB_STATUSES = ["PENDING", "RUNNING", "RETRYING"];
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const staleHours = args.staleHours ?? DEFAULT_STALE_HOURS;
 
 await main().catch((error) => {

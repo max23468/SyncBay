@@ -3,10 +3,10 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
 
-const DEFAULT_SHOP_DOMAIN = "syncbay-dev.myshopify.com";
 const DEFAULT_LIMIT = 2000;
 const DEFAULT_CHUNK_SIZE = 20;
 const SHOPIFY_API_VERSION = "2026-07";
@@ -16,8 +16,10 @@ const SHOPIFY_AGENT_ENV = {
 };
 
 const args = parseArgs(process.argv.slice(2));
-const shopDomain =
-  args.shop ?? process.env.SHOPIFY_DEV_STORE ?? DEFAULT_SHOP_DOMAIN;
+const shopDomain = resolveRequiredShopDomainOption({
+  args,
+  env: process.env,
+});
 const limit = args.limit ?? DEFAULT_LIMIT;
 const chunkSize = args.chunkSize ?? DEFAULT_CHUNK_SIZE;
 
