@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.14] — 2026-07-04
+
+### Correzioni
+
+- Catalogo esistente: separato il limite privato dei listing eBay gestiti dalla
+  scansione Shopify usata per trovare prodotti già presenti, così store con più
+  di 2.000 prodotti Shopify possono comunque collegare i listing eBay sotto
+  soglia 1.0.
+
 ## [1.0.13] — 2026-07-04
 
 ### Correzioni
@@ -3012,6 +3021,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.14]: #1014--2026-07-04
 [1.0.13]: #1013--2026-07-04
 [1.0.12]: #1012--2026-07-04
 [1.0.11]: #1011--2026-07-04

@@ -128,6 +128,48 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
   );
 });
 
+test("allows existing catalog matching scans above the private eBay import cap", async () => {
+  const calls: Array<Record<string, unknown> | undefined> = [];
+  const admin = {
+    async graphql(
+      _query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
+      calls.push(options?.variables);
+      const first = Number(options?.variables?.first ?? 0);
+      const start = (calls.length - 1) * first;
+      const nodes = Array.from({ length: first }, (_, index) =>
+        makeProductNode(String(start + index + 1), {
+          handle: `prodotto-${start + index + 1}`,
+          sku: `SKU-${start + index + 1}`,
+          title: `Prodotto ${start + index + 1}`,
+          variantId: String(start + index + 1),
+        }),
+      );
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes,
+            pageInfo: {
+              endCursor: `cursor-${calls.length}`,
+              hasNextPage: calls.length < 12,
+            },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 3000,
+  });
+
+  assert.equal(calls.length, 12);
+  assert.equal(products.length, 3000);
+  assert.equal(products.at(-1)?.sku, "SKU-3000");
+});
+
 test("caps variant candidates per product before matching", async () => {
   const admin = {
     async graphql(
