@@ -6,6 +6,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.22] — 2026-07-04
+
+### Correzioni
+
+- Sync incrementale: il percorso di solo prezzo rilegge lo stato del job prima
+  di ogni scrittura Shopify, così una disinstallazione dell'app durante il ciclo
+  interrompe il runner senza continuare ad aggiornare i prezzi dei prodotti
+  rimanenti.
+- Pubblicazioni Shopify: la checklist mostra di nuovo i titoli catalogo
+  leggibili (custom, market, B2B) preferendoli al nome del canale e ripiegando
+  sul nome solo quando il titolo catalogo manca o è l'etichetta tecnica
+  `Channel Catalog ...`.
+- Script categorie: `syncbay-category-backfill` e `syncbay-store-category-orphans`
+  caricano `.env` prima di risolvere lo shop, così il fallback su
+  `SHOPIFY_DEV_STORE` configurato in locale funziona anche senza `--shop`.
+
 ## [1.0.21] — 2026-07-04
 
 ### Correzioni
@@ -3078,6 +3094,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.22]: #1022--2026-07-04
 [1.0.21]: #1021--2026-07-04
 [1.0.20]: #1020--2026-07-04
 [1.0.19]: #1019--2026-07-04

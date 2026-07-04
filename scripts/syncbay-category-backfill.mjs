@@ -47,12 +47,13 @@ if (args.help) {
   process.exit(0);
 }
 
+loadDotEnv(".env");
+
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
 });
 
-loadDotEnv(".env");
 ensureTokenEncryptionKey();
 
 const supabaseEnv = {

@@ -1781,6 +1781,10 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       continue;
     }
 
+    const interruptedJobBeforePricingWrite =
+      await getInterruptedRunningSyncJobResult(input.job);
+    if (interruptedJobBeforePricingWrite) return interruptedJobBeforePricingWrite;
+
     const updateResult = await updateShopifyVariantPricingOnly(admin, {
       compareAtPrice,
       price,
