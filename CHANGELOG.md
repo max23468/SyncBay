@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.20] — 2026-07-04
+
+### Correzioni
+
+- Webhook Shopify: il guardrail degradato per `products/update` copre anche
+  timeout DB durante l'autenticazione webhook e gli errori Prisma reali che
+  espongono `code` sull'istanza `Error`.
+
 ## [1.0.19] — 2026-07-04
 
 ### Correzioni
@@ -3062,6 +3070,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.20]: #1020--2026-07-04
 [1.0.19]: #1019--2026-07-04
 [1.0.18]: #1018--2026-07-04
 [1.0.17]: #1017--2026-07-04

@@ -6,7 +6,10 @@ type ErrorLike = {
 
 function asErrorLike(error: unknown): ErrorLike {
   if (error instanceof Error) {
+    const errorWithCode = error as Error & { code?: unknown };
+
     return {
+      code: errorWithCode.code,
       message: error.message,
       name: error.name,
     };
@@ -30,5 +33,8 @@ export function isTransientWebhookPersistenceError(error: unknown): boolean {
     return true;
   }
 
-  return normalizedMessage.includes("timeout exceeded when trying to connect");
+  return (
+    normalizedMessage.includes("timeout exceeded when trying to connect") ||
+    normalizedMessage.includes("prisma session storage is not ready")
+  );
 }
