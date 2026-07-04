@@ -89,6 +89,7 @@ import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
 import {
   getShopifyChangeJobResourceKeys,
+  UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES,
 } from "../lib/syncbay-job-scheduling";
 import {
   measureSyncBayPerformanceStage,
@@ -3139,28 +3140,48 @@ export async function updateShopSyncEnabled(
 }
 
 export async function markShopUninstalled(shopDomain: string) {
-  const shop = await prisma.shop.upsert({
-    where: { shopDomain },
-    create: {
-      installationStatus: ShopInstallationStatus.UNINSTALLED,
-      shopDomain,
-      syncTargetSeconds: getSyncTargetSeconds(),
-      uninstalledAt: new Date(),
-    },
-    update: {
-      installationStatus: ShopInstallationStatus.UNINSTALLED,
-      syncEnabled: false,
-      uninstalledAt: new Date(),
-    },
-  });
+  const uninstalledAt = new Date();
 
-  await prisma.auditLog.create({
-    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-    data: {
-      message: "Shopify app disinstallata.",
-      shopId: shop.id,
-      type: AuditEventType.SHOP_UNINSTALLED,
-    },
+  await prisma.$transaction(async (tx) => {
+    const shop = await tx.shop.upsert({
+      where: { shopDomain },
+      create: {
+        installationStatus: ShopInstallationStatus.UNINSTALLED,
+        shopDomain,
+        syncTargetSeconds: getSyncTargetSeconds(),
+        uninstalledAt,
+      },
+      update: {
+        installationStatus: ShopInstallationStatus.UNINSTALLED,
+        syncEnabled: false,
+        uninstalledAt,
+      },
+    });
+    const cancelledJobs = await tx.syncJob.updateMany({
+      data: {
+        errorCode: "SHOP_UNINSTALLED",
+        errorMessage:
+          "Shopify app disinstallata. Job SyncBay residuo annullato.",
+        finishedAt: uninstalledAt,
+        status: SyncJobStatus.CANCELLED,
+      },
+      where: {
+        shopId: shop.id,
+        status: {
+          in: [...UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES],
+        },
+      },
+    });
+
+    await tx.auditLog.create({
+      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+      data: {
+        details: { cancelledSyncJobCount: cancelledJobs.count },
+        message: "Shopify app disinstallata.",
+        shopId: shop.id,
+        type: AuditEventType.SHOP_UNINSTALLED,
+      },
+    });
   });
 }
 

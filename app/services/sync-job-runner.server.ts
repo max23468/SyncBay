@@ -2176,11 +2176,19 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
+    const interruptedJobBeforeTokenLookup =
+      await getInterruptedRunningSyncJobResult(job);
+    if (interruptedJobBeforeTokenLookup) return interruptedJobBeforeTokenLookup;
+
     accessToken ??= (await getUsableEbayAccessToken(connection)).accessToken;
 
     if (!accessToken) {
       throw new Error("Token eBay non disponibile per aggiornare lo stock.");
     }
+
+    const interruptedJobBeforeEbayWrite =
+      await getInterruptedRunningSyncJobResult(job);
+    if (interruptedJobBeforeEbayWrite) return interruptedJobBeforeEbayWrite;
 
     await reviseEbayTradingInventoryQuantity({
       accessToken,

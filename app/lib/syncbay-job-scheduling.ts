@@ -4,6 +4,11 @@ const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
 const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 20;
+export const UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES = [
+  "PENDING",
+  "RETRYING",
+  "RUNNING",
+] as const;
 export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
 };
@@ -17,6 +22,12 @@ export function isSchedulableSyncJob(input: {
   }
 
   return getStringField(input.payload, "source") !== SHOPIFY_IMPORT_JOB_SOURCE;
+}
+
+export function shouldCancelSyncJobAfterShopUninstall(status: string | null) {
+  return UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES.includes(
+    status as (typeof UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES)[number],
+  );
 }
 
 export function isStaleInternalShopifyImportJob(input: {

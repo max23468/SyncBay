@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -33,6 +33,17 @@ test("keeps internal Shopify import jobs out of the runnable queue", () => {
     }),
     true,
   );
+});
+
+test("cancels only active sync jobs after a shop uninstall", () => {
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("PENDING"), true);
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("RETRYING"), true);
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("RUNNING"), true);
+
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("SUCCEEDED"), false);
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("FAILED"), false);
+  assert.equal(shouldCancelSyncJobAfterShopUninstall("CANCELLED"), false);
+  assert.equal(shouldCancelSyncJobAfterShopUninstall(null), false);
 });
 
 test("splits oversized eBay item jobs without dropping payload metadata", () => {
