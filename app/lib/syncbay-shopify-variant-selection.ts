@@ -10,8 +10,6 @@ export interface ShopifyVariantSelectionProduct<
   } | null;
 }
 
-const SHOPIFY_MAPPED_VARIANT_LOOKUP_LIMIT = 50;
-
 export function selectShopifyVariantForSync<
   Variant extends ShopifyVariantSelectionCandidate,
 >(input: {
@@ -30,12 +28,21 @@ export function selectShopifyVariantForSync<
   return variants[0] ?? null;
 }
 
-export function getShopifyVariantLookupLimitForSync(input: {
-  preferredVariantGid?: string | null;
+export function mergePreferredShopifyVariantForSync<
+  Variant extends ShopifyVariantSelectionCandidate,
+>(input: {
+  preferredVariant?: Variant | null;
+  variants?: Variant[] | null;
 }) {
-  return input.preferredVariantGid?.trim()
-    ? SHOPIFY_MAPPED_VARIANT_LOOKUP_LIMIT
-    : 1;
+  const variants = input.variants ?? [];
+  const preferredVariant = input.preferredVariant ?? null;
+
+  if (!preferredVariant?.id) return variants;
+
+  return [
+    preferredVariant,
+    ...variants.filter((variant) => variant.id !== preferredVariant.id),
+  ];
 }
 
 export function preserveSelectedShopifyVariantForSync<

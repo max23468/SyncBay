@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.1] — 2026-07-04
+
+### Correzioni
+
+- Runtime: la detection dei conflitti Shopify recupera direttamente la variante
+  mappata quando il mapping la conosce, evitando falsi conflitti sui prodotti
+  con più di 50 varianti.
+
 ## [1.0.0] — 2026-07-04
 
 ### Novità
@@ -2908,6 +2916,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.1]: #101--2026-07-04
 [1.0.0]: #100--2026-07-04
 [0.50.13]: #05013--2026-07-03
 [0.50.12]: #05012--2026-07-03
