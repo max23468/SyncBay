@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -169,6 +169,36 @@ test("includes run identity in split job idempotency keys", () => {
       },
       splitIndex: 1,
     }),
+  );
+});
+
+test("builds seller-events watermark marker even when image repair jobs are queued", () => {
+  assert.deepEqual(
+    buildSellerEventsNoopMarker({
+      eventReadCount: 0,
+      imageRepairJobCount: 12,
+      marketplaceId: "EBAY_IT",
+      modTimeFrom: "2026-07-04T13:13:00.000Z",
+      modTimeTo: "2026-07-04T13:23:00.000Z",
+    }),
+    {
+      payload: {
+        eventReadCount: 0,
+        imageRepairJobCount: 12,
+        marketplaceId: "EBAY_IT",
+        modTimeFrom: "2026-07-04T13:13:00.000Z",
+        modTimeTo: "2026-07-04T13:23:00.000Z",
+        source: "seller_events_delta",
+        watermarkAdvanced: true,
+      },
+      result: {
+        eventReadCount: 0,
+        imageRepairJobCount: 12,
+        noWork: true,
+        source: "seller_events_delta",
+        watermarkAdvanced: true,
+      },
+    },
   );
 });
 

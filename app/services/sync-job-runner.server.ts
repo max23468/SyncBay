@@ -80,6 +80,7 @@ import {
 import {
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
+  buildSellerEventsNoopMarker,
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
@@ -971,25 +972,18 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
       now: input.now,
       shopId: input.shopId,
     });
-
-    if (imageRepairJobCount > 0) return;
+    const marker = buildSellerEventsNoopMarker({
+      eventReadCount: delta.readCount,
+      imageRepairJobCount,
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      modTimeFrom: delta.timeFrom,
+      modTimeTo: delta.timeTo,
+    });
 
     await createIncrementalNoopMarker({
       now: input.now,
-      payload: {
-        eventReadCount: delta.readCount,
-        marketplaceId: DEFAULT_MARKETPLACE_ID,
-        modTimeFrom: delta.timeFrom,
-        modTimeTo: delta.timeTo,
-        source: "seller_events_delta",
-        watermarkAdvanced: true,
-      },
-      result: {
-        eventReadCount: delta.readCount,
-        noWork: true,
-        source: "seller_events_delta",
-        watermarkAdvanced: true,
-      },
+      payload: marker.payload,
+      result: marker.result,
       shopId: input.shopId,
     });
     return;

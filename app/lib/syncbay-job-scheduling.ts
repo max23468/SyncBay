@@ -114,6 +114,41 @@ export function buildEbayItemJobSplitIdempotencyKey(input: {
   return `split:${input.parentJobId}:${hash}:${input.splitIndex}`;
 }
 
+export function buildSellerEventsNoopMarker(input: {
+  eventReadCount: number;
+  imageRepairJobCount?: number;
+  marketplaceId: string;
+  modTimeFrom: string;
+  modTimeTo: string;
+}) {
+  const imageRepairJobCount = Math.max(
+    Number.isInteger(input.imageRepairJobCount)
+      ? Number(input.imageRepairJobCount)
+      : 0,
+    0,
+  );
+  const payload = {
+    eventReadCount: input.eventReadCount,
+    ...(imageRepairJobCount > 0 ? { imageRepairJobCount } : {}),
+    marketplaceId: input.marketplaceId,
+    modTimeFrom: input.modTimeFrom,
+    modTimeTo: input.modTimeTo,
+    source: "seller_events_delta",
+    watermarkAdvanced: true,
+  };
+
+  return {
+    payload,
+    result: {
+      eventReadCount: input.eventReadCount,
+      ...(imageRepairJobCount > 0 ? { imageRepairJobCount } : {}),
+      noWork: true,
+      source: "seller_events_delta",
+      watermarkAdvanced: true,
+    },
+  };
+}
+
 function normalizeMaxItems(maxItems: number) {
   if (!Number.isInteger(maxItems) || maxItems < 1) return 1;
 
