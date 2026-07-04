@@ -178,6 +178,37 @@ test("loads publication labels from catalog titles", async () => {
   ]);
 });
 
+test("prefers publication names over technical catalog titles", async () => {
+  const admin = {
+    async graphql() {
+      return jsonResponse({
+        data: {
+          publications: {
+            nodes: [
+              {
+                catalog: {
+                  title:
+                    "Channel Catalog 56084758573 1b6391b6-26de-4e9d-8e05-470aee25b648",
+                },
+                id: "gid://shopify/Publication/56084758573",
+                name: "Negozio online",
+              },
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  assert.deepEqual(await loadShopifyProductPublications(admin), [
+    {
+      id: "gid://shopify/Publication/56084758573",
+      title: "Negozio online",
+    },
+  ]);
+});
+
 test("falls back to publication names when catalog titles are missing", async () => {
   const admin = {
     async graphql() {
