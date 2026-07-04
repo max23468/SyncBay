@@ -357,6 +357,75 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
   assert.deepEqual(products[1]?.tags, ["Area_Italia"]);
 });
 
+test("can prefer targeted SKU hints before a bounded fallback product scan", async () => {
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
+  const admin = {
+    async graphql(
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
+      calls.push({ query, variables: options?.variables });
+
+      if (query.includes("productVariants")) {
+        return jsonResponse({
+          data: {
+            productVariants: {
+              nodes: [
+                {
+                  barcode: null,
+                  id: "gid://shopify/ProductVariant/990",
+                  sku: "168172909275",
+                  product: {
+                    handle: "moneta-targeted",
+                    id: "gid://shopify/Product/99",
+                    metafields: {
+                      nodes: [],
+                    },
+                    tags: ["SyncBay"],
+                    title: "Moneta targeted",
+                  },
+                },
+              ],
+              pageInfo: { endCursor: null, hasNextPage: false },
+            },
+          },
+        });
+      }
+
+      return jsonResponse({
+        data: {
+          products: {
+            nodes: [
+              makeProductNode("1", {
+                handle: "fallback-recente",
+                sku: "RECENT-1",
+                title: "Fallback recente",
+                variantId: "10",
+              }),
+            ],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      });
+    },
+  };
+
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    fallbackScanLimit: 1,
+    limit: 10000,
+    preferTargetedSkuHints: true,
+    skuHints: ["168172909275"],
+  });
+
+  assert.match(calls[0]?.query ?? "", /productVariants\(first: \$first/);
+  assert.match(calls[1]?.query ?? "", /products\(first: \$first/);
+  assert.equal(calls[1]?.variables?.first, 1);
+  assert.deepEqual(
+    products.map((product) => product.sku),
+    ["168172909275", "RECENT-1"],
+  );
+});
+
 function makeProductNode(
   id: string,
   input: {

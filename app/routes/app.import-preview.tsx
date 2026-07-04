@@ -34,6 +34,10 @@ import {
 } from "../lib/syncbay-loader-performance";
 import { normalizeImportPreviewLoadMode } from "../lib/syncbay-import-preview-mode";
 import {
+  windowImportPreviewResult,
+  type ImportPreviewWindowFilter,
+} from "../lib/syncbay-import-preview-window";
+import {
   getPageWindow,
   normalizePage,
 } from "../lib/syncbay-pagination";
@@ -114,6 +118,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const catalogMode = normalizeImportCatalogMode(
     url.searchParams.get("catalogMode"),
   );
+  const activePreviewFilter = getImportPreviewFilter(
+    url.searchParams.get("previewFilter"),
+  );
+  const activePreviewPage = normalizePage(url.searchParams.get("previewPage"));
   const { admin, session } = await trace.measure("auth.admin", () =>
     authenticate.admin(request),
   );
@@ -134,24 +142,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     hasDefaultLocation: Boolean(wizard.shop.defaultLocationGid),
     selectedLocationName: selectedLocation?.name ?? null,
   });
+  const windowedWizard = {
+    ...wizard,
+    previewResult: windowImportPreviewResult(wizard.previewResult, {
+      filter: activePreviewFilter,
+      page: activePreviewPage,
+      pageSize: IMPORT_PREVIEW_PAGE_SIZE,
+    }),
+  };
 
   const state = {
     canWriteLocations: hasSessionScope(session.scope, "write_locations"),
     locationRename,
     locationError: locationResult.errorMessage,
     locations: locationResult.locations,
-    wizard,
+    wizard: windowedWizard,
   };
 
   logSyncBayLoaderPerformance({
     details: {
       draftImportEnabled: wizard.draftImport.enabled,
-      importableCount: wizard.draftImport.importableCount,
+      importableCount: windowedWizard.draftImport.importableCount,
       catalogMode,
       locations: locationResult.locations.length,
-      plannedCreateCount: wizard.draftImport.plannedCreateCount,
+      plannedCreateCount: windowedWizard.draftImport.plannedCreateCount,
       previewLoadMode,
-      previewSource: wizard.previewSource.source,
+      previewSource: windowedWizard.previewSource.source,
     },
     payload: state,
     route: "import",
@@ -497,13 +513,7 @@ type WizardState = LoaderData["wizard"];
 type PreviewSourceState = WizardState["previewSource"];
 type LocationRenameState = LoaderData["locationRename"];
 type RuntimePhaseState = WizardState["runtimePhases"][number];
-type ImportPreviewFilter =
-  | "all"
-  | "error"
-  | "imported"
-  | "importing"
-  | "ready"
-  | "reimport";
+type ImportPreviewFilter = ImportPreviewWindowFilter;
 
 const IMPORT_PREVIEW_FILTERS: Array<{
   label: string;
@@ -871,19 +881,21 @@ function PreviewExamplesSection({
   activePage: number;
   wizard: WizardState;
 }) {
-  const filteredItems = filterPreviewItems(
-    wizard.previewResult.items,
-    activeFilter,
-  );
+  const previewWindow = wizard.previewResult.window;
+  const filteredItems = previewWindow
+    ? wizard.previewResult.items
+    : filterPreviewItems(wizard.previewResult.items, activeFilter);
   const pagination = getPageWindow({
     page: activePage,
     pageSize: IMPORT_PREVIEW_PAGE_SIZE,
-    totalRows: filteredItems.length,
+    totalRows: previewWindow?.totalRows ?? filteredItems.length,
   });
-  const visibleItems = filteredItems.slice(
-    pagination.offset,
-    pagination.offset + pagination.pageSize,
-  );
+  const visibleItems = previewWindow
+    ? filteredItems
+    : filteredItems.slice(
+        pagination.offset,
+        pagination.offset + pagination.pageSize,
+      );
 
   return (
     <s-stack gap="base">
