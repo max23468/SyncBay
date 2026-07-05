@@ -6,6 +6,7 @@ import { buildCollectionCoverageReport } from "../app/lib/syncbay-collection-cov
 import { loadCollectionIntents } from "../app/lib/syncbay-collection-intents.ts";
 import { buildCollectionRuleReview } from "../app/lib/syncbay-collection-rule-proposals.ts";
 import { buildSourcesUpdate } from "../app/lib/syncbay-collection-sources-apply.ts";
+import { conditionsSourceToRuleSet } from "../app/lib/syncbay-collection-sources-read.ts";
 
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const DEFAULT_GENERIC_COLLECTION_HANDLES = ["negozio-online", "non-disponibili"];
@@ -82,9 +83,22 @@ async function loadCollections(shop) {
         handle
         sortOrder
         productsCount { count }
-        ruleSet {
-          appliedDisjunctively
-          rules { column relation condition }
+        sources {
+          __typename
+          ... on CollectionConditionsSource {
+            id
+            inclusion {
+              matchType
+              conditions {
+                __typename
+                ... on CollectionSourceInclusionConditionProductType { relation values }
+                ... on CollectionSourceInclusionConditionProductTitle { relation values }
+                ... on CollectionSourceInclusionConditionProductTag { relation values }
+                ... on CollectionSourceInclusionConditionProductVendor { relation values }
+                ... on CollectionSourceInclusionConditionVariantInventory { relation value }
+              }
+            }
+          }
         }
       }
       pageInfo { hasNextPage endCursor }
@@ -95,12 +109,17 @@ async function loadCollections(shop) {
   if (data.collections?.pageInfo?.hasNextPage) {
     throw new Error("Doctor collezioni bloccato: più di 100 collezioni; aggiungere paginazione prima di procedere.");
   }
-  return nodes.map((collection) => ({
-    handle: collection.handle,
-    id: collection.id,
-    ruleSet: collection.ruleSet ?? null,
-    title: collection.title,
-  }));
+  return nodes.map((collection) => {
+    const conditionsSource = (collection.sources ?? []).find(
+      (source) => source.__typename === "CollectionConditionsSource",
+    );
+    return {
+      handle: collection.handle,
+      id: collection.id,
+      ruleSet: conditionsSourceToRuleSet(conditionsSource ?? null),
+      title: collection.title,
+    };
+  });
 }
 
 async function loadProducts(shop, limitProducts) {
