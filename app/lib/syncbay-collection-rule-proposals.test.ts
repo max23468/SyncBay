@@ -71,6 +71,47 @@ test("adds inventory guard only to conjunctive specific automatic collections", 
   });
 });
 
+test("proposes title-based rules with inventory guard for a title intent", () => {
+  const review = buildCollectionRuleReview({
+    collectionIntents: [
+      {
+        handle: "accessori-numismatici",
+        titleContains: ["capsul", "masterphil", "raccoglitore"],
+        requirePositiveInventory: true,
+        title: "Accessori numismatici",
+      },
+    ],
+    collections: [
+      {
+        handle: "accessori-numismatici",
+        id: "gid://shopify/Collection/1",
+        ruleSet: {
+          appliedDisjunctively: true,
+          rules: [
+            { column: "TITLE", relation: "CONTAINS", condition: "capsul" },
+            { column: "TITLE", relation: "CONTAINS", condition: "masterphil" },
+            { column: "TITLE", relation: "CONTAINS", condition: "raccoglitore" },
+          ],
+        },
+        title: "Accessori numismatici",
+      },
+    ],
+  });
+
+  assert.equal(review.warnings.length, 0);
+  assert.equal(review.proposals.length, 1);
+  assert.equal(review.proposals[0]?.reason, "configured_title_alignment");
+  assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
+    appliedDisjunctively: false,
+    rules: [
+      { column: "TITLE", relation: "CONTAINS", condition: "capsul" },
+      { column: "TITLE", relation: "CONTAINS", condition: "masterphil" },
+      { column: "TITLE", relation: "CONTAINS", condition: "raccoglitore" },
+      { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+    ],
+  });
+});
+
 test("does not propose changes for generic collections", () => {
   const review = buildCollectionRuleReview({
     collectionIntents: [

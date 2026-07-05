@@ -40,10 +40,11 @@ export interface SourcesUpdateEntry {
 }
 
 const PRODUCT_TYPE_TYPENAME = "CollectionSourceInclusionConditionProductType";
+const PRODUCT_TITLE_TYPENAME = "CollectionSourceInclusionConditionProductTitle";
 const VARIANT_INVENTORY_TYPENAME =
   "CollectionSourceInclusionConditionVariantInventory";
 
-const PRODUCT_TYPE_RELATIONS = new Set([
+const TEXT_RELATIONS = new Set([
   "EQUALS",
   "NOT_EQUALS",
   "STARTS_WITH",
@@ -64,11 +65,15 @@ export function buildSourcesUpdate(input: {
   const matchType = proposedRuleSet.appliedDisjunctively ? "ANY" : "ALL";
 
   const typeRules = proposedRuleSet.rules.filter((rule) => rule.column === "TYPE");
+  const titleRules = proposedRuleSet.rules.filter((rule) => rule.column === "TITLE");
   const inventoryRules = proposedRuleSet.rules.filter(
     (rule) => rule.column === "VARIANT_INVENTORY",
   );
   const unsupported = proposedRuleSet.rules.filter(
-    (rule) => rule.column !== "TYPE" && rule.column !== "VARIANT_INVENTORY",
+    (rule) =>
+      rule.column !== "TYPE" &&
+      rule.column !== "TITLE" &&
+      rule.column !== "VARIANT_INVENTORY",
   );
   if (unsupported.length > 0) {
     throw new Error(
@@ -82,17 +87,28 @@ export function buildSourcesUpdate(input: {
   const conditionsToUpdate: { condition: unknown; id: string }[] = [];
 
   if (typeRules.length > 0) {
-    const relation = typeRules[0].relation;
-    if (!PRODUCT_TYPE_RELATIONS.has(relation)) {
-      throw new Error(`Relazione productType non supportata: ${relation}`);
-    }
-    if (typeRules.some((rule) => rule.relation !== relation)) {
-      throw new Error("Relazioni productType miste non supportate nel modello sources.");
-    }
+    const relation = requireSharedTextRelation(typeRules, "productType");
     const values = typeRules.map((rule) => rule.condition);
     const condition = { productType: { matchType, relation, values } };
     const existing = currentSource.inclusion.conditions.find(
       (item) => item.__typename === PRODUCT_TYPE_TYPENAME,
+    );
+    if (existing) {
+      conditionsToUpdate.push({ condition, id: existing.id });
+    } else {
+      conditionsToCreate.push(condition);
+    }
+  }
+
+  if (titleRules.length > 0) {
+    const relation = requireSharedTextRelation(titleRules, "productTitle");
+    const values = titleRules.map((rule) => rule.condition);
+    // I valori titolo sono alternative (OR): la condizione ProductTitle usa
+    // sempre matchType ANY, mentre l'AND con l'inventario resta a livello di
+    // inclusione. Così si preserva la logica titolo senza flatten OR -> AND.
+    const condition = { productTitle: { matchType: "ANY", relation, values } };
+    const existing = currentSource.inclusion.conditions.find(
+      (item) => item.__typename === PRODUCT_TITLE_TYPENAME,
     );
     if (existing) {
       conditionsToUpdate.push({ condition, id: existing.id });
@@ -129,4 +145,18 @@ export function buildSourcesUpdate(input: {
   if (conditionsToUpdate.length > 0) inclusion.conditionsToUpdate = conditionsToUpdate;
 
   return { condition: { id: currentSource.id, inclusion } };
+}
+
+function requireSharedTextRelation(
+  rules: { relation: string }[],
+  label: string,
+): string {
+  const relation = rules[0].relation;
+  if (!TEXT_RELATIONS.has(relation)) {
+    throw new Error(`Relazione ${label} non supportata: ${relation}`);
+  }
+  if (rules.some((rule) => rule.relation !== relation)) {
+    throw new Error(`Relazioni ${label} miste non supportate nel modello sources.`);
+  }
+  return relation;
 }

@@ -6,6 +6,7 @@ export interface CollectionRuleIntent {
   productTypeContains?: string[];
   requirePositiveInventory: boolean;
   title: string;
+  titleContains?: string[];
 }
 
 export function loadCollectionIntents(filePath: string): CollectionRuleIntent[] {
@@ -34,8 +35,15 @@ export function parseCollectionIntents(value: unknown): CollectionRuleIntent[] {
     if (!intent.handle || !intent.title || typeof intent.requirePositiveInventory !== "boolean") {
       throw new Error("Intento collezione non valido: handle, title e requirePositiveInventory sono obbligatori.");
     }
-    if (!intent.generic && (!Array.isArray(intent.productTypeContains) || intent.productTypeContains.length === 0)) {
-      throw new Error(`Intento ${intent.handle} senza productTypeContains: non proporre regole specifiche senza selettore affidabile.`);
+    const hasProductType =
+      Array.isArray(intent.productTypeContains) && intent.productTypeContains.length > 0;
+    const hasTitle =
+      Array.isArray(intent.titleContains) && intent.titleContains.length > 0;
+    if (!intent.generic && !hasProductType && !hasTitle) {
+      throw new Error(`Intento ${intent.handle} senza productTypeContains o titleContains: non proporre regole specifiche senza selettore affidabile.`);
+    }
+    if (hasProductType && hasTitle) {
+      throw new Error(`Intento ${intent.handle} con productTypeContains e titleContains insieme: usare un solo selettore per collezione.`);
     }
     return {
       generic: Boolean(intent.generic),
@@ -43,6 +51,7 @@ export function parseCollectionIntents(value: unknown): CollectionRuleIntent[] {
       productTypeContains: intent.productTypeContains,
       requirePositiveInventory: intent.requirePositiveInventory,
       title: intent.title,
+      titleContains: intent.titleContains,
     };
   });
 }

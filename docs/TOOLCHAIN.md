@@ -286,11 +286,15 @@ migrazione. Il runner può comunque scrivere i metafield prodotto già usati da
 SyncBay; questa nota riguarda governance e Search & Discovery, non il backfill
 automatico dei valori.
 `npm run collections:doctor` è un doctor operativo dry-run di default: legge
-prodotti e collezioni Shopify via Admin GraphQL/Shopify CLI, segnala prodotti
-disponibili solo in collezioni generiche, prodotti esauriti dentro collezioni
-specifiche e proposte conservative di regole automatiche. Non crea collezioni,
-non cambia handle/SEO/immagini/descrizioni e non scrive su Shopify senza
-`--intent-file`, `--apply` e `--confirm-apply`.
+prodotti e collezioni Shopify via Admin GraphQL/Shopify CLI (modello 2026-07
+`collection sources / conditions`), segnala prodotti disponibili solo in
+collezioni generiche, prodotti esauriti dentro collezioni specifiche e proposte
+conservative di regole automatiche. Non crea collezioni, non cambia
+handle/SEO/immagini/descrizioni e non scrive su Shopify senza `--intent-file`,
+`--apply` e `--confirm-apply`. Gli intenti supportano un solo selettore per
+collezione: `productTypeContains` (regola `TYPE`) oppure `titleContains` (regola
+titolo OR con guardia inventario, condizione `ProductTitle` `matchType: ANY`
+sotto inclusione `ALL`).
 `npm run catalog:images:doctor` è in sola lettura sui listing eBay: misura la
 copertura immagini degli snapshot Catalogo e chiama Trading API `GetItem` solo
 per le prime righe senza immagine, così distingue listing davvero senza immagini

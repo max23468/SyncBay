@@ -22,6 +22,7 @@ export interface CollectionRuleIntent {
   productTypeContains?: string[];
   requirePositiveInventory: boolean;
   title: string;
+  titleContains?: string[];
 }
 
 export interface CollectionRuleProposal {
@@ -31,6 +32,7 @@ export interface CollectionRuleProposal {
   proposedRuleSet: ShopifyCollectionRuleSet;
   reason:
     | "configured_product_type_alignment"
+    | "configured_title_alignment"
     | "missing_inventory_guard";
   title: string;
 }
@@ -112,6 +114,25 @@ function buildProposedRuleSet(
       ruleSet: {
         appliedDisjunctively: false,
         rules: [...productTypeRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
+      },
+    };
+  }
+
+  const titleRules = (intent.titleContains ?? []).map((condition) => ({
+    column: "TITLE",
+    condition,
+    relation: "CONTAINS",
+  }));
+
+  if (titleRules.length > 0) {
+    // Le condizioni titolo restano in OR fra loro (matchType ANY della condizione
+    // ProductTitle nel modello sources) mentre l'inventario è in AND a livello di
+    // inclusione: `appliedDisjunctively: false` rappresenta l'inclusione ALL.
+    return {
+      reason: "configured_title_alignment",
+      ruleSet: {
+        appliedDisjunctively: false,
+        rules: [...titleRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
       },
     };
   }

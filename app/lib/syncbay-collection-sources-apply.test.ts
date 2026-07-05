@@ -122,6 +122,51 @@ test("creates an inventory condition when the collection lacks one", () => {
   ]);
 });
 
+test("builds a title-OR condition with ANY matchType and inventory guard under ALL inclusion", () => {
+  const entry = buildSourcesUpdate({
+    currentSource: {
+      id: "gid://shopify/CollectionConditionsSource/7",
+      inclusion: {
+        matchType: "ANY",
+        conditions: [
+          {
+            __typename: "CollectionSourceInclusionConditionProductTitle",
+            id: "gid://shopify/CollectionSourceInclusionConditionProductTitle/7",
+            relation: "CONTAINS",
+            values: ["capsul", "masterphil", "raccoglitore"],
+          },
+        ],
+      },
+    },
+    proposedRuleSet: {
+      appliedDisjunctively: false,
+      rules: [
+        { column: "TITLE", relation: "CONTAINS", condition: "capsul" },
+        { column: "TITLE", relation: "CONTAINS", condition: "masterphil" },
+        { column: "TITLE", relation: "CONTAINS", condition: "raccoglitore" },
+        { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+      ],
+    },
+  });
+
+  assert.equal(entry.condition.inclusion.matchType, "ALL");
+  assert.deepEqual(entry.condition.inclusion.conditionsToUpdate, [
+    {
+      id: "gid://shopify/CollectionSourceInclusionConditionProductTitle/7",
+      condition: {
+        productTitle: {
+          matchType: "ANY",
+          relation: "CONTAINS",
+          values: ["capsul", "masterphil", "raccoglitore"],
+        },
+      },
+    },
+  ]);
+  assert.deepEqual(entry.condition.inclusion.conditionsToCreate, [
+    { variantInventory: { relation: "GREATER_THAN", value: 0 } },
+  ]);
+});
+
 test("rejects unsupported rule columns instead of writing ambiguous conditions", () => {
   assert.throws(
     () =>
@@ -129,9 +174,9 @@ test("rejects unsupported rule columns instead of writing ambiguous conditions",
         currentSource: bancoteSource,
         proposedRuleSet: {
           appliedDisjunctively: false,
-          rules: [{ column: "TITLE", relation: "CONTAINS", condition: "capsul" }],
+          rules: [{ column: "TAG", relation: "CONTAINS", condition: "promo" }],
         },
       }),
-    /TITLE/,
+    /TAG/,
   );
 });
