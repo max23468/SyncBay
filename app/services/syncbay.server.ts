@@ -4713,6 +4713,7 @@ function formatCatalogSyncHealth(
 ) {
   return {
     nextDueAt: health.nextDueAt?.toISOString() ?? null,
+    overdueAt: health.overdueAt?.toISOString() ?? null,
     secondsUntilDue: health.secondsUntilDue,
     status: health.status,
   };

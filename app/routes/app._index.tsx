@@ -134,6 +134,7 @@ export default function Index() {
     activeIncrementalJobCount:
       dashboard.sync.catalogHealth.activeIncrementalJobCount,
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
+    catalogOverdueAt: dashboard.sync.catalogHealth.overdueAt,
     lastJobs: dashboard.sync.lastJobs,
     nextRetryRunAfter: dashboard.sync.nextRetryRunAfter,
     pendingJobs: dashboard.sync.pendingJobs,

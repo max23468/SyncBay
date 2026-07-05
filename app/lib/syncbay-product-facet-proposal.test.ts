@@ -44,3 +44,13 @@ test("falls back to deterministic inference when the snapshot has no facets", ()
     ["categoria", "materiale", "conservazione", "perizia"],
   );
 });
+
+test("respects explicit empty snapshot productFacets", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacetProposalFromSnapshot({
+      payload: { productFacets: [] },
+      title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
+    }),
+    [],
+  );
+});

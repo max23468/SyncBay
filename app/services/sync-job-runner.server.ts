@@ -89,7 +89,6 @@ import {
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
-  prioritizeIncrementalJobsByFacetMode,
 } from "../lib/syncbay-job-scheduling";
 import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
@@ -230,8 +229,6 @@ const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
 const FACET_BACKFILL_MAX_ACTIVE_BATCHES = 2;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
-const INCREMENTAL_SYNC_CANDIDATE_MULTIPLIER = 4;
-const INCREMENTAL_SYNC_CANDIDATE_LIMIT = 100;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
 const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
@@ -304,17 +301,24 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
     if (remainingLimit <= 0) break;
 
     if (type === SyncJobType.SYNC_INCREMENTAL) {
-      const incrementalJobs = await findDueSyncJobsForType({
-        limit: getIncrementalCandidateLimit(remainingLimit),
+      const regularJobs = await findDueSyncJobsForType({
+        limit: remainingLimit,
         now: input.now,
         type,
+        where: getRegularIncrementalSyncJobWhere(),
       });
-      jobs.push(
-        ...prioritizeIncrementalJobsByFacetMode(incrementalJobs).slice(
-          0,
-          remainingLimit,
-        ),
-      );
+      jobs.push(...regularJobs);
+
+      const facetOnlyRemainingLimit = input.limit - jobs.length;
+      if (facetOnlyRemainingLimit > 0) {
+        const facetOnlyJobs = await findDueSyncJobsForType({
+          limit: facetOnlyRemainingLimit,
+          now: input.now,
+          type,
+          where: getFacetOnlyIncrementalSyncJobWhere(),
+        });
+        jobs.push(...facetOnlyJobs);
+      }
       continue;
     }
 
@@ -327,13 +331,6 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
   }
 
   return jobs;
-}
-
-function getIncrementalCandidateLimit(remainingLimit: number) {
-  return Math.min(
-    Math.max(remainingLimit * INCREMENTAL_SYNC_CANDIDATE_MULTIPLIER, 1),
-    INCREMENTAL_SYNC_CANDIDATE_LIMIT,
-  );
 }
 
 async function findDueSyncJobsForType(input: {

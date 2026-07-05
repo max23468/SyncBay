@@ -6,6 +6,27 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.36] — 2026-07-05
+
+### Correzioni
+
+- Runner incrementale: i job `seller_events_delta` e `catalog_reconcile` sono
+  letti separatamente dai batch `facetOnly`, così un backlog di faccette non può
+  saturare il `take` SQL e rimandare i sync catalogo ordinari.
+- Faccette storefront: uno snapshot eBay con `productFacets: []` esplicito resta
+  una proposta vuota e non ricade sui fallback da titolo/categoria.
+- Faccette storefront: la categoria ricavata dal titolo ad alta confidenza resta
+  disponibile quando la categoria marketplace è solo un hint generico a media
+  confidenza; la store category strutturata resta comunque prioritaria.
+
+## [1.0.35] — 2026-07-05
+
+### Correzioni
+
+- Panoramica: quando il controllo catalogo è già dovuto ma ancora nel margine
+  ordinario del cron, la pagina pianifica una revalidazione alla scadenza del
+  margine così l'eventuale stato di ritardo diventa visibile senza reload manuale.
+
 ## [1.0.34] — 2026-07-05
 
 ### Correzioni
@@ -3233,6 +3254,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.36]: #1036--2026-07-05
+[1.0.35]: #1035--2026-07-05
 [1.0.34]: #1034--2026-07-05
 [1.0.33]: #1033--2026-07-05
 [1.0.32]: #1032--2026-07-05

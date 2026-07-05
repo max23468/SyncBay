@@ -266,6 +266,34 @@ test("schedules overview revalidation for the next future retry backoff", () => 
   );
 });
 
+test("schedules overview revalidation when due sync can become overdue", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "due",
+      catalogOverdueAt: "2026-06-14T10:05:01.000Z",
+      nextRetryRunAfter: null,
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    "2026-06-14T10:05:01.000Z",
+  );
+});
+
+test("prefers the earliest wake between retry and catalog overdue transition", () => {
+  assert.equal(
+    getOverviewSyncWakeAt({
+      activeIncrementalJobCount: 0,
+      catalogHealthStatus: "due",
+      catalogOverdueAt: "2026-06-14T10:05:01.000Z",
+      nextRetryRunAfter: "2026-06-14T10:02:00.000Z",
+      now: "2026-06-14T10:00:00.000Z",
+      pendingJobs: 0,
+    }),
+    "2026-06-14T10:02:00.000Z",
+  );
+});
+
 test("prefers queued future retry wake time over recent jobs", () => {
   assert.equal(
     getOverviewSyncWakeAt({

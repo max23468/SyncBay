@@ -51,6 +51,7 @@ export interface NextAction {
 export interface OverviewSyncWorkingInput {
   activeIncrementalJobCount?: number | null;
   catalogHealthStatus?: string | null;
+  catalogOverdueAt?: Date | string | null;
   lastJobs?: Array<{
     runAfter?: Date | string | null;
     status?: string | null;
@@ -176,28 +177,36 @@ export function isOverviewSyncWorking(input: OverviewSyncWorkingInput) {
 export function getOverviewSyncWakeAt(input: OverviewSyncWorkingInput) {
   const nowTime = getOverviewTime(input.now ?? new Date()) ?? Date.now();
   const queuedRetryRunAfter = getOverviewTime(input.nextRetryRunAfter);
+  const futureWakeTimes: number[] = [];
 
   if (input.nextRetryRunAfter !== undefined) {
-    return queuedRetryRunAfter !== null && queuedRetryRunAfter > nowTime
-      ? new Date(queuedRetryRunAfter).toISOString()
-      : null;
-  }
-
-  const nextRunAfter = (input.lastJobs ?? []).reduce<number | null>(
-    (earliest, job) => {
-      if (job.status !== "RETRYING") return earliest;
+    if (queuedRetryRunAfter !== null && queuedRetryRunAfter > nowTime) {
+      futureWakeTimes.push(queuedRetryRunAfter);
+    }
+  } else {
+    for (const job of input.lastJobs ?? []) {
+      if (job.status !== "RETRYING") continue;
 
       const runAfterTime = getOverviewTime(job.runAfter);
 
-      if (runAfterTime === null || runAfterTime <= nowTime) return earliest;
-      if (earliest === null || runAfterTime < earliest) return runAfterTime;
+      if (runAfterTime !== null && runAfterTime > nowTime) {
+        futureWakeTimes.push(runAfterTime);
+      }
+    }
+  }
 
-      return earliest;
-    },
-    null,
-  );
+  const catalogOverdueAt = getOverviewTime(input.catalogOverdueAt);
+  if (
+    input.catalogHealthStatus !== "overdue" &&
+    catalogOverdueAt !== null &&
+    catalogOverdueAt > nowTime
+  ) {
+    futureWakeTimes.push(catalogOverdueAt);
+  }
 
-  return nextRunAfter === null ? null : new Date(nextRunAfter).toISOString();
+  if (futureWakeTimes.length === 0) return null;
+
+  return new Date(Math.min(...futureWakeTimes)).toISOString();
 }
 
 function isOverviewJobWorking(
