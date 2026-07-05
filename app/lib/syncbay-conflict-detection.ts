@@ -113,15 +113,15 @@ export function shouldResolveLiveAlignedPriceConflictForMappingStatus(
 
 export function shouldResolveOrderStockQuantityConflict(input: {
   field: string;
+  liveShopifyQuantity: number | null;
   mappingStatus: string | null;
   nextQuantity: number;
-  shopifyValue: PrismaTypes.JsonValue | undefined;
 }) {
   return (
     input.field === "quantity" &&
     shouldDetectShopifyConflictsForMappingStatus(input.mappingStatus) &&
     Number.isInteger(input.nextQuantity) &&
-    getJsonIntegerValue(input.shopifyValue) === input.nextQuantity
+    input.liveShopifyQuantity === input.nextQuantity
   );
 }
 
@@ -178,8 +178,4 @@ function getJsonObject(value: PrismaTypes.JsonValue | null | undefined) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
   return value as PrismaTypes.JsonObject;
-}
-
-function getJsonIntegerValue(value: PrismaTypes.JsonValue | undefined) {
-  return typeof value === "number" && Number.isInteger(value) ? value : null;
 }

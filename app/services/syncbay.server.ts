@@ -4010,15 +4010,18 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
     SELECT
       latest_display."mappingId",
       latest_display."capturedAt",
-      latest_display."currency",
+      COALESCE(latest_display."currency", latest_stock."currency") AS "currency",
       latest_display."priceAmount",
       latest_display."productStatus",
-      COALESCE(latest_display."quantity", latest_stock."quantity") AS "quantity",
+      CASE
+        WHEN latest_display."currency" IS NOT NULL THEN latest_display."quantity"
+        ELSE latest_stock."quantity"
+      END AS "quantity",
       latest_display."sku",
       latest_display."title"
     FROM latest_display
     LEFT JOIN LATERAL (
-      SELECT "quantity"
+      SELECT "currency", "quantity"
       FROM "ProductSnapshot"
       WHERE
         "mappingId" = latest_display."mappingId"

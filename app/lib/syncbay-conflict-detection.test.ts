@@ -123,48 +123,48 @@ test("resolves quantity conflicts after a real Shopify order stock write", () =>
   assert.equal(
     shouldResolveOrderStockQuantityConflict({
       field: "quantity",
+      liveShopifyQuantity: 0,
       mappingStatus: "ACTIVE",
       nextQuantity: 0,
-      shopifyValue: 0,
     }),
     true,
   );
 });
 
-test("keeps order stock quantity conflicts open when they are not aligned", () => {
+test("keeps order stock quantity conflicts open when live Shopify is not aligned", () => {
   assert.equal(
     shouldResolveOrderStockQuantityConflict({
       field: "quantity",
+      liveShopifyQuantity: 1,
       mappingStatus: "ACTIVE",
       nextQuantity: 0,
-      shopifyValue: 1,
     }),
     false,
   );
   assert.equal(
     shouldResolveOrderStockQuantityConflict({
       field: "price",
+      liveShopifyQuantity: 0,
       mappingStatus: "ACTIVE",
       nextQuantity: 0,
-      shopifyValue: 0,
     }),
     false,
   );
   assert.equal(
     shouldResolveOrderStockQuantityConflict({
       field: "quantity",
+      liveShopifyQuantity: 0,
       mappingStatus: "OUT_OF_STOCK",
       nextQuantity: 0,
-      shopifyValue: 0,
     }),
     false,
   );
   assert.equal(
     shouldResolveOrderStockQuantityConflict({
       field: "quantity",
+      liveShopifyQuantity: null,
       mappingStatus: "ACTIVE",
       nextQuantity: 0,
-      shopifyValue: "0",
     }),
     false,
   );

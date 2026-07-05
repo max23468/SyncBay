@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.40] — 2026-07-05
+
+### Correzioni
+
+- Ordini Shopify: la chiusura automatica dei conflitti quantità dopo una write
+  stock eBay rilegge la quantità Shopify live della variante mappata prima di
+  risolvere il conflitto.
+- Catalogo: le righe prodotto usano quantità da snapshot generici solo quando
+  hanno anche una currency valida, evitando di nascondere disponibilità non
+  verificabili.
+
 ## [1.0.39] — 2026-07-05
 
 ### Correzioni
@@ -3279,6 +3290,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.40]: #1040--2026-07-05
 [1.0.39]: #1039--2026-07-05
 [1.0.38]: #1038--2026-07-05
 [1.0.37]: #1037--2026-07-05
