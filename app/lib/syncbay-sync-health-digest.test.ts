@@ -74,6 +74,21 @@ test("exposes lag when the sync target is breached", () => {
   assert.equal(digest.headline, "degraded");
 });
 
+test("keeps due sync inside the cron grace window out of lag alerts", () => {
+  const digest = buildSyncHealthDigest({
+    conflictsOpen: 0,
+    healthStatus: "due",
+    jobs: [],
+    now,
+    quarantinedCount: 0,
+    secondsUntilDue: -180,
+  });
+
+  assert.equal(digest.lagBreached, false);
+  assert.equal(digest.lagSeconds, 0);
+  assert.equal(digest.headline, "ok");
+});
+
 test("ignores jobs outside the window", () => {
   const digest = buildSyncHealthDigest({
     conflictsOpen: 0,

@@ -73,7 +73,7 @@ export function buildSyncHealthDigest(
 
   const lagBreached = input.healthStatus === "overdue";
   const lagSeconds =
-    input.secondsUntilDue !== null && input.secondsUntilDue < 0
+    lagBreached && input.secondsUntilDue !== null && input.secondsUntilDue < 0
       ? Math.abs(input.secondsUntilDue)
       : 0;
 

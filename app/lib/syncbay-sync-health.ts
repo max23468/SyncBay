@@ -5,10 +5,13 @@ export type CatalogSyncHealthStatus =
   | "overdue"
   | "running";
 
+const DEFAULT_OVERDUE_GRACE_SECONDS = 300;
+
 export function getCatalogSyncHealth(input: {
   activeIncrementalJobCount: number;
   latestIncrementalFinishedAt: Date | null;
   now: Date;
+  overdueGraceSeconds?: number;
   syncEnabled: boolean;
   syncTargetSeconds: number;
 }): {
@@ -33,6 +36,9 @@ export function getCatalogSyncHealth(input: {
   const secondsUntilDue = Math.round(
     (nextDueAt.getTime() - input.now.getTime()) / 1000,
   );
+  const overdueGraceSeconds = normalizeOverdueGraceSeconds(
+    input.overdueGraceSeconds,
+  );
 
   if (input.activeIncrementalJobCount > 0) {
     return {
@@ -46,6 +52,17 @@ export function getCatalogSyncHealth(input: {
     nextDueAt,
     secondsUntilDue,
     status:
-      secondsUntilDue > 0 ? "fresh" : secondsUntilDue === 0 ? "due" : "overdue",
+      secondsUntilDue > 0
+        ? "fresh"
+        : secondsUntilDue < -overdueGraceSeconds
+          ? "overdue"
+          : "due",
   };
+}
+
+function normalizeOverdueGraceSeconds(value: number | undefined) {
+  if (value === undefined) return DEFAULT_OVERDUE_GRACE_SECONDS;
+  if (!Number.isFinite(value) || value < 0) return DEFAULT_OVERDUE_GRACE_SECONDS;
+
+  return Math.trunc(value);
 }

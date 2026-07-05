@@ -61,15 +61,32 @@ test("reports overdue sync after the target window", () => {
   assert.deepEqual(
     getCatalogSyncHealth({
       activeIncrementalJobCount: 0,
-      latestIncrementalFinishedAt: new Date("2026-06-02T17:50:00.000Z"),
+      latestIncrementalFinishedAt: new Date("2026-06-02T17:44:59.000Z"),
       now,
       syncEnabled: true,
       syncTargetSeconds: 300,
     }),
     {
-      nextDueAt: new Date("2026-06-02T17:55:00.000Z"),
-      secondsUntilDue: -300,
+      nextDueAt: new Date("2026-06-02T17:49:59.000Z"),
+      secondsUntilDue: -601,
       status: "overdue",
+    },
+  );
+});
+
+test("keeps sync due during the ordinary cron grace window", () => {
+  assert.deepEqual(
+    getCatalogSyncHealth({
+      activeIncrementalJobCount: 0,
+      latestIncrementalFinishedAt: new Date("2026-06-02T17:52:00.000Z"),
+      now,
+      syncEnabled: true,
+      syncTargetSeconds: 300,
+    }),
+    {
+      nextDueAt: new Date("2026-06-02T17:57:00.000Z"),
+      secondsUntilDue: -180,
+      status: "due",
     },
   );
 });
