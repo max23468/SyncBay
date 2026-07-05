@@ -197,17 +197,6 @@ function getFacetInference(
       values: string[];
     }
   | null {
-  const titleValues = getTitleFacetValues(key, input.title);
-  if (titleValues.length > 0) {
-    return {
-      confidence: "high",
-      evidence: [input.title ?? ""].filter(Boolean),
-      ruleId: `title:${key}`,
-      source: "title_rule",
-      values: titleValues,
-    };
-  }
-
   if (key === "categoria") {
     const storefrontCategory = getStorefrontCategoryValue(
       input.storeCategoryName,
@@ -234,6 +223,17 @@ function getFacetInference(
         values: [marketplaceCategory],
       };
     }
+  }
+
+  const titleValues = getTitleFacetValues(key, input.title);
+  if (titleValues.length > 0) {
+    return {
+      confidence: "high",
+      evidence: [input.title ?? ""].filter(Boolean),
+      ruleId: `title:${key}`,
+      source: "title_rule",
+      values: titleValues,
+    };
   }
 
   const specificValues = getSpecificValues(input.itemSpecifics ?? [], aliases);

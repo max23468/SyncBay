@@ -227,6 +227,7 @@ const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
 const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;
 const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
+const FACET_BACKFILL_MAX_ACTIVE_BATCHES = 2;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -300,22 +301,57 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
 
     if (remainingLimit <= 0) break;
 
-    const typedJobs = await prisma.syncJob.findMany({
-      orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
-      select: dueSyncJobSelect,
-      take: remainingLimit,
-      where: {
-        ...getSchedulableSyncJobWhere(),
-        runAfter: { lte: input.now },
-        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+    if (type === SyncJobType.SYNC_INCREMENTAL) {
+      const regularJobs = await findDueSyncJobsForType({
+        limit: remainingLimit,
+        now: input.now,
         type,
-      },
-    });
+        where: getRegularIncrementalSyncJobWhere(),
+      });
+      jobs.push(...regularJobs);
 
+      const facetRemainingLimit = input.limit - jobs.length;
+      if (facetRemainingLimit <= 0) break;
+
+      const facetJobs = await findDueSyncJobsForType({
+        limit: facetRemainingLimit,
+        now: input.now,
+        type,
+        where: getFacetOnlyIncrementalSyncJobWhere(),
+      });
+      jobs.push(...facetJobs);
+      continue;
+    }
+
+    const typedJobs = await findDueSyncJobsForType({
+      limit: remainingLimit,
+      now: input.now,
+      type,
+    });
     jobs.push(...typedJobs);
   }
 
   return jobs;
+}
+
+async function findDueSyncJobsForType(input: {
+  limit: number;
+  now: Date;
+  type: SyncJobType;
+  where?: Prisma.SyncJobWhereInput;
+}) {
+  return prisma.syncJob.findMany({
+    orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
+    select: dueSyncJobSelect,
+    take: input.limit,
+    where: {
+      ...getSchedulableSyncJobWhere(),
+      ...(input.where ?? {}),
+      runAfter: { lte: input.now },
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+      type: input.type,
+    },
+  });
 }
 
 async function runDueSyncJobGroup(
@@ -599,6 +635,14 @@ async function enqueueIncrementalSyncJobs(now: Date) {
     const activeJob = await prisma.syncJob.findFirst({
       select: { id: true },
       where: {
+        NOT: [
+          {
+            AND: [
+              { type: SyncJobType.SYNC_INCREMENTAL },
+              getFacetOnlyIncrementalSyncJobWhere(),
+            ],
+          },
+        ],
         ...getSchedulableSyncJobWhere(),
         shopId: shop.id,
         status: {
@@ -620,17 +664,16 @@ async function enqueueIncrementalSyncJobs(now: Date) {
 
     if (activeJob) continue;
 
-    const facetBackfillJobCount = await enqueueFacetBackfillJobsIfNeeded({
+    await enqueueFacetBackfillJobsIfNeeded({
       now,
       shopId: shop.id,
     });
-
-    if (facetBackfillJobCount > 0) continue;
 
     const lastJob = await prisma.syncJob.findFirst({
       orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
       select: { createdAt: true, finishedAt: true, runAfter: true },
       where: {
+        ...getRegularIncrementalSyncJobWhere(),
         shopId: shop.id,
         type: SyncJobType.SYNC_INCREMENTAL,
       },
@@ -992,13 +1035,59 @@ async function enqueueFacetBackfillJobsIfNeeded(input: {
   if (ebayItemIds.length === 0) return 0;
 
   const batches = chunkArray(ebayItemIds, INCREMENTAL_SYNC_BATCH_SIZE);
+  const activeBatchCount = await prisma.syncJob.count({
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "facet_backfill" } },
+        { payload: { path: ["facetBackfillRunId"], equals: runId } },
+      ],
+      shopId: input.shopId,
+      status: {
+        in: [
+          SyncJobStatus.PENDING,
+          SyncJobStatus.RETRYING,
+          SyncJobStatus.RUNNING,
+        ],
+      },
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+  const availableSlots = FACET_BACKFILL_MAX_ACTIVE_BATCHES - activeBatchCount;
+
+  if (availableSlots <= 0) return 0;
+
+  const existingJobs = await prisma.syncJob.findMany({
+    select: { payload: true },
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "facet_backfill" } },
+        { payload: { path: ["facetBackfillRunId"], equals: runId } },
+      ],
+      shopId: input.shopId,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+  const existingBatchIndexes = new Set(
+    existingJobs.flatMap((job) => {
+      const batchIndex = getJsonNumber(getJsonObject(job.payload)?.batchIndex);
+
+      return batchIndex === null ? [] : [batchIndex];
+    }),
+  );
+  const jobsToCreate = batches
+    .map((batch, index) => ({ batch, batchIndex: index + 1 }))
+    .filter((batch) => !existingBatchIndexes.has(batch.batchIndex))
+    .slice(0, availableSlots);
+
+  if (jobsToCreate.length === 0) return 0;
+
   const result = await prisma.syncJob.createMany({
-    data: batches.map((batch, index) => ({
-        idempotencyKey: `facet-backfill:${runId}:${index + 1}`,
+    data: jobsToCreate.map(({ batch, batchIndex }) => ({
+        idempotencyKey: `facet-backfill:${runId}:${batchIndex}`,
         maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
         payload: {
           batchCount: batches.length,
-          batchIndex: index + 1,
+          batchIndex,
           ebayItemIds: batch,
           facetBackfillRunId: runId,
           facetBackfillVersion: version,
@@ -3026,8 +3115,16 @@ async function maybeMarkFacetBackfillRunSucceeded(job: DueSyncJob) {
   const marketplaceId = getEbayMarketplaceId(job.payload);
   const payloadObject = getJsonObject(job.payload);
   const version = getJsonNumber(payloadObject?.facetBackfillVersion);
+  const expectedBatchCount = getJsonNumber(payloadObject?.batchCount);
 
-  if (source !== "facet_backfill" || !runId || version === null) return;
+  if (
+    source !== "facet_backfill" ||
+    !runId ||
+    version === null ||
+    expectedBatchCount === null
+  ) {
+    return;
+  }
 
   const runJobs = await prisma.syncJob.findMany({
     select: { status: true },
@@ -3042,7 +3139,7 @@ async function maybeMarkFacetBackfillRunSucceeded(job: DueSyncJob) {
   });
 
   if (
-    runJobs.length === 0 ||
+    runJobs.length < expectedBatchCount ||
     runJobs.some((runJob) => runJob.status !== SyncJobStatus.SUCCEEDED)
   ) {
     return;
@@ -4599,6 +4696,18 @@ function resolveOpenConflictsForInactiveMappingMutation(input: {
       status: SyncConflictStatus.OPEN,
     },
   });
+}
+
+function getRegularIncrementalSyncJobWhere(): Prisma.SyncJobWhereInput {
+  return {
+    NOT: [getFacetOnlyIncrementalSyncJobWhere()],
+  };
+}
+
+function getFacetOnlyIncrementalSyncJobWhere(): Prisma.SyncJobWhereInput {
+  return {
+    payload: { path: ["facetOnly"], equals: true },
+  };
 }
 
 function getJsonObject(value: Prisma.JsonValue | null | undefined) {

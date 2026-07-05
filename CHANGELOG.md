@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.28] — 2026-07-05
+
+### Correzioni
+
+- Faccette storefront: la categoria strutturata eBay/store torna prioritaria
+  rispetto ai fallback da titolo e il backfill `facetOnly` non blocca più il
+  normale sync incrementale eBay -> Shopify.
+
 ### Non versionato
 
 - Raffinati i piani operativi per esplicitare la creazione degli snapshot
@@ -3165,6 +3173,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.28]: #1028--2026-07-05
 [1.0.27]: #1027--2026-07-05
 [1.0.26]: #1026--2026-07-05
 [1.0.25]: #1025--2026-07-05
