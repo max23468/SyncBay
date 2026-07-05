@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Raffinato il piano operativo Numisleo per aggiornare anche l'asserzione
+  commemorativa esistente quando il caso Euro Italia viene promosso a
+  `Monete in euro:Italia`.
 - Raffinato il piano operativo per le faccette automatiche preservando i
   baseline writer-owned vuoti (`productFacets: []`) dopo cancellazioni riuscite,
   senza ricadere su baseline eBay più vecchi.
