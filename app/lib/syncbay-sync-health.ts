@@ -16,12 +16,14 @@ export function getCatalogSyncHealth(input: {
   syncTargetSeconds: number;
 }): {
   nextDueAt: Date | null;
+  overdueAt: Date | null;
   secondsUntilDue: number | null;
   status: CatalogSyncHealthStatus;
 } {
   if (!input.syncEnabled) {
     return {
       nextDueAt: null,
+      overdueAt: null,
       secondsUntilDue: null,
       status: "disabled",
     };
@@ -39,10 +41,14 @@ export function getCatalogSyncHealth(input: {
   const overdueGraceSeconds = normalizeOverdueGraceSeconds(
     input.overdueGraceSeconds,
   );
+  const overdueAt = new Date(
+    nextDueAt.getTime() + (overdueGraceSeconds + 1) * 1000,
+  );
 
   if (input.activeIncrementalJobCount > 0) {
     return {
       nextDueAt,
+      overdueAt,
       secondsUntilDue,
       status: "running",
     };
@@ -50,6 +56,7 @@ export function getCatalogSyncHealth(input: {
 
   return {
     nextDueAt,
+    overdueAt,
     secondsUntilDue,
     status:
       secondsUntilDue > 0

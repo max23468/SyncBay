@@ -4,7 +4,7 @@ import * as snapshotPayload from "./syncbay-product-snapshot-payload.ts";
 import * as productFacets from "./syncbay-product-facets.ts";
 import type { SyncBayProductFacet } from "./syncbay-product-facets";
 
-const { getProductFacetsFromSnapshotPayload } = snapshotPayload;
+const { getProductFacetBaselineFromSnapshotPayload } = snapshotPayload;
 const { buildSyncBayProductFacets } = productFacets;
 
 export interface SyncBayProductFacetProposalInput {
@@ -17,8 +17,8 @@ export interface SyncBayProductFacetProposalInput {
 export function buildSyncBayProductFacetProposalFromSnapshot(
   input: SyncBayProductFacetProposalInput,
 ): SyncBayProductFacet[] {
-  const snapshotFacets = getProductFacetsFromSnapshotPayload(input.payload);
-  if (snapshotFacets.length > 0) return snapshotFacets;
+  const snapshotFacets = getProductFacetBaselineFromSnapshotPayload(input.payload);
+  if (snapshotFacets !== null) return snapshotFacets;
 
   return buildSyncBayProductFacets({
     ebayPrimaryCategoryName: input.ebayPrimaryCategoryName,

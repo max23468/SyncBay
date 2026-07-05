@@ -260,6 +260,16 @@ test("prefers store category over conflicting title category fallback", () => {
   );
 });
 
+test("uses high-confidence title category before medium marketplace category hints", () => {
+  assert.equal(
+    buildSyncBayProductFacets({
+      ebayPrimaryCategoryName: "Monete e banconote",
+      title: "NL* ITALIA 500 LIRE ARGENTO CARAVELLE 1961 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Monete italiane in lire",
+  );
+});
+
 test("uses Numisleo-like category values from coin title fallback", () => {
   assert.deepEqual(
     buildSyncBayProductFacets({
