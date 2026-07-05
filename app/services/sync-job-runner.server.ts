@@ -2608,6 +2608,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const updated: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
   let resolvedQuantityConflictCount = 0;
+  const quantityConflictCleanupFailures: Prisma.JsonObject[] = [];
   const orderCurrencyValidation = validateEbayStockOrderCurrency({
     marketplaceId: connection.marketplaceId,
     orderCurrency: getOrderCurrency(job.payload),
@@ -2783,8 +2784,10 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     } satisfies Prisma.ProductSnapshotCreateManyInput;
     // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
     await prisma.productSnapshot.create({ data: stockSnapshot });
-    const resolvedQuantityConflicts =
-      await resolveOrderStockQuantityConflicts({
+    let resolvedQuantityConflicts = 0;
+    let resolvedQuantityConflictCleanupError: string | undefined;
+    try {
+      resolvedQuantityConflicts = await resolveOrderStockQuantityConflicts({
         defaultLocationGid: job.shop.defaultLocationGid,
         mappingId: mapping.id,
         mappingStatus: mapping.status,
@@ -2794,6 +2797,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         shopifyProductGid: mapping.shopifyProductGid,
         shopifyVariantGid: mapping.shopifyVariantGid,
       });
+    } catch (error) {
+      resolvedQuantityConflictCleanupError = getErrorMessage(error);
+      quantityConflictCleanupFailures.push({
+        ebayItemId: mapping.ebayItemId,
+        errorMessage: resolvedQuantityConflictCleanupError,
+        lineItemKey: lineItem.lineItemKey,
+      });
+    }
     resolvedQuantityConflictCount += resolvedQuantityConflicts;
     updated.push({
       currency: currencyValidation.snapshotCurrency,
@@ -2805,6 +2816,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       reason: stockDryRun
         ? "stock_real_write_allowlisted"
         : "stock_dry_run_disabled",
+      resolvedQuantityConflictCleanupError,
       resolvedQuantityConflicts,
     });
   }
@@ -2819,16 +2831,24 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       realWriteAllowlistEnabled: Boolean(
         process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST?.trim(),
       ),
+      quantityConflictCleanupFailures,
+      quantityConflictCleanupFailureCount: quantityConflictCleanupFailures.length,
       resolvedQuantityConflictCount,
       skipped,
       skippedCount: skipped.length,
       updated,
       updatedCount: updated.length,
     },
-    warnings:
-      skipped.length > 0
+    warnings: [
+      ...(skipped.length > 0
         ? ["Alcune righe ordine non sono state applicate a eBay."]
-        : [],
+        : []),
+      ...(quantityConflictCleanupFailures.length > 0
+        ? [
+            "Alcune pulizie dei conflitti quantità non sono state completate dopo la write eBay.",
+          ]
+        : []),
+    ],
   });
 
   return {

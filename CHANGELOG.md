@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.41] — 2026-07-05
+
+### Correzioni
+
+- Ordini Shopify: la pulizia automatica dei conflitti quantità dopo una write
+  stock eBay è best-effort e non fa fallire un aggiornamento eBay già
+  completato se Shopify Admin non risponde.
+
 ## [1.0.40] — 2026-07-05
 
 ### Correzioni
@@ -3290,6 +3298,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.41]: #1041--2026-07-05
 [1.0.40]: #1040--2026-07-05
 [1.0.39]: #1039--2026-07-05
 [1.0.38]: #1038--2026-07-05
