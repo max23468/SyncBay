@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Raffinato il piano operativo per le faccette automatiche preservando i
+  baseline writer-owned vuoti (`productFacets: []`) dopo cancellazioni riuscite,
+  senza ricadere su baseline eBay più vecchi.
 - Raffinato il piano operativo Numisleo per le regole collezione: snapshot live
   sotto `audits/`, refinement dei `productType` monete prima del fallback
   commemorativo e attesa dei job Shopify `collectionUpdate` prima della verifica
