@@ -6,6 +6,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.29] — 2026-07-05
+
+### Sotto il cofano
+
+- Aggiunto doctor operativo `npm run collections:doctor` per verificare la
+  copertura delle collezioni Shopify esistenti rispetto ai nuovi prodotti
+  sincronizzati da SyncBay, con proposte conservative di regole automatiche in
+  dry-run e apply solo esplicito.
+- Raffinati i `productType` derivati da categorie eBay affidabili
+  (`Monete italiane in lire:Regno`, `Monete italiane in lire:Repubblica`,
+  `Monete in euro:Italia`, `Monete europee pre euro:Francia`) per ridurre i
+  prodotti disponibili fuori dalle collezioni specifiche.
+
 ## [1.0.28] — 2026-07-05
 
 ### Correzioni
@@ -3173,6 +3186,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.29]: #1029--2026-07-05
 [1.0.28]: #1028--2026-07-05
 [1.0.27]: #1027--2026-07-05
 [1.0.26]: #1026--2026-07-05

@@ -141,6 +141,19 @@ neutra e il `productType` sono coerenti.
   template e rumore; potrà essere rivalutata dopo osservazioni reali.
 - Le collection automatiche restano fuori scope di questa decisione.
 
+## Aggiornamento 2026-07-05
+
+Per mantenere le collezioni automatiche Shopify più stabili nella 1.0 privata,
+SyncBay può usare `productType` più specifici quando la categoria eBay fornisce
+un sotto-percorso affidabile, per esempio `Monete italiane in lire:Regno`,
+`Monete italiane in lire:Repubblica`, `Monete in euro:Italia` o
+`Monete europee pre euro:Francia`. La categoria Shopify standard resta neutra; la
+specializzazione serve alla navigazione e alle regole collezione. Il doctor
+operativo `npm run collections:doctor` verifica, in dry-run di default, la
+copertura delle collezioni esistenti rispetto ai nuovi `productType` e propone
+patch conservative alle regole automatiche senza creare né rinominare
+collezioni.
+
 ## Riferimenti
 
 - `app/lib/syncbay-shopify-category-mapping.ts`

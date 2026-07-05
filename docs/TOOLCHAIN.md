@@ -148,6 +148,7 @@ Regole d'uso:
 | Dry-run categorie             | `npm run categories:backfill -- --shop <shop.myshopify.com> [--limit N]`               |
 | Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop <shop.myshopify.com> [--limit N]`     |
 | Dry-run faccette storefront   | `npm run facets:backfill -- --shop <shop.myshopify.com> [--limit N]`                   |
+| Doctor collezioni             | `npm run collections:doctor -- --shop <shop.myshopify.com> [--intent-file f.json] [--json] [--limit-products N]` |
 | Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | React Doctor                  | `npm run quality:react-doctor`                                                              |
@@ -284,6 +285,12 @@ toolchain consente di dichiarare il namespace esistente `syncbay_facets` senza
 migrazione. Il runner può comunque scrivere i metafield prodotto già usati da
 SyncBay; questa nota riguarda governance e Search & Discovery, non il backfill
 automatico dei valori.
+`npm run collections:doctor` è un doctor operativo dry-run di default: legge
+prodotti e collezioni Shopify via Admin GraphQL/Shopify CLI, segnala prodotti
+disponibili solo in collezioni generiche, prodotti esauriti dentro collezioni
+specifiche e proposte conservative di regole automatiche. Non crea collezioni,
+non cambia handle/SEO/immagini/descrizioni e non scrive su Shopify senza
+`--intent-file`, `--apply` e `--confirm-apply`.
 `npm run catalog:images:doctor` è in sola lettura sui listing eBay: misura la
 copertura immagini degli snapshot Catalogo e chiama Trading API `GetItem` solo
 per le prime righe senza immagine, così distingue listing davvero senza immagini
