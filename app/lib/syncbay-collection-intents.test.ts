@@ -29,6 +29,39 @@ test("rejects duplicated handles", () => {
   );
 });
 
+test("parses a title-based intent", () => {
+  const intents = parseCollectionIntents({
+    collectionIntents: [
+      {
+        handle: "accessori-numismatici",
+        titleContains: ["capsul", "masterphil", "raccoglitore"],
+        requirePositiveInventory: true,
+        title: "Accessori numismatici",
+      },
+    ],
+  });
+
+  assert.deepEqual(intents[0]?.titleContains, ["capsul", "masterphil", "raccoglitore"]);
+});
+
+test("rejects intents that mix product type and title selectors", () => {
+  assert.throws(
+    () =>
+      parseCollectionIntents({
+        collectionIntents: [
+          {
+            handle: "misto",
+            productTypeContains: ["Banconote"],
+            titleContains: ["capsul"],
+            requirePositiveInventory: true,
+            title: "Misto",
+          },
+        ],
+      }),
+    /un solo selettore/i,
+  );
+});
+
 test("rejects intents without a safe selector", () => {
   assert.throws(
     () =>

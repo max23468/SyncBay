@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.32] — 2026-07-05
+
+### Sotto il cofano
+
+- Doctor collezioni: gli intenti supportano anche un selettore per titolo
+  (`titleContains`) oltre a `productTypeContains`, così una collezione con regola
+  titolo OR può ricevere la guardia inventario in modo riproducibile dal tool.
+  L'apply usa una condizione `ProductTitle` con `matchType: ANY` sotto inclusione
+  `ALL`, preservando l'OR fra i titoli senza trasformarlo in AND.
+
 ## [1.0.31] — 2026-07-05
 
 ### Sotto il cofano
@@ -3205,6 +3215,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.32]: #1032--2026-07-05
 [1.0.31]: #1031--2026-07-05
 [1.0.30]: #1030--2026-07-05
 [1.0.29]: #1029--2026-07-05
