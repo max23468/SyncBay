@@ -778,9 +778,14 @@ export async function syncShopifyProductFacets(input: {
     previousSyncBayFacets: input.previousSyncBayFacets,
     proposedFacets: input.proposedFacets,
   });
+  const baselineFacets = buildWriterOwnedFacetBaseline({
+    conflicts: plan.conflicts,
+    proposedFacets: input.proposedFacets,
+  });
 
   if (plan.writes.length === 0 && plan.deletes.length === 0) {
     return {
+      baselineFacets,
       conflicts: plan.conflicts,
       deleted: [],
       skipped: plan.skipped,
@@ -807,12 +812,25 @@ export async function syncShopifyProductFacets(input: {
   }
 
   return {
+    baselineFacets,
     conflicts: plan.conflicts,
     deleted: plan.deletes,
     skipped: plan.skipped,
     status: "synced" as const,
     written: plan.writes,
   };
+}
+
+function buildWriterOwnedFacetBaseline(input: {
+  conflicts: Array<{ key: string; namespace: string }>;
+  proposedFacets: SyncBayProductFacet[];
+}) {
+  const conflictKeys = new Set(
+    input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`),
+  );
+  return input.proposedFacets.filter(
+    (facet) => !conflictKeys.has(`${facet.namespace}:${facet.key}`),
+  );
 }
 
 async function loadCurrentFacetMetafields(
@@ -1034,6 +1052,25 @@ If `facetSyncResult.conflicts.length > 0`, add warning:
 `SyncBay non ha sovrascritto ${facetSyncResult.conflicts.length} faccette modificate su Shopify.`
 ```
 
+If `facetSyncResult.written.length > 0 || facetSyncResult.deleted.length > 0`,
+persist a writer-owned `ProductSnapshotSource.SYNCBAY` row through the existing
+snapshot write path in `shopify-draft-import.server.ts`. The row payload must
+include `productFacets: facetSyncResult.baselineFacets`, including an explicit
+empty array after successful deletes:
+
+```ts
+if (facetSyncResult.written.length > 0 || facetSyncResult.deleted.length > 0) {
+  syncBaySnapshots.push(
+    buildSyncBayFacetBaselineSnapshot({
+      item: draftProduct,
+      productFacets: facetSyncResult.baselineFacets,
+      shopId,
+      shopifyProductGid: product.id,
+    }),
+  );
+}
+```
+
 Implementation note: `updateShopifyProductFromEbay` currently receives only `draftProduct`, not `item`; Step 2 stores the already-normalized `productFacets` directly on the draft object so this path does not depend on a variable outside scope.
 
 - [ ] **Step 4: passa baseline dal runner**
@@ -1140,6 +1177,11 @@ The existing `EBAY` `productFacets` field remains a source/proposal fallback and
 an import-era baseline until the first writer-owned `SYNCBAY` baseline exists.
 Do not store medium/low suggestions yet; they are diagnostic material for a
 later UI decision, not storefront data.
+
+`syncShopifyProductFacets` must therefore return `baselineFacets` and every
+caller that observes `written.length > 0 || deleted.length > 0` must create the
+new `SYNCBAY` snapshot row before it returns success. Do not rely on warnings,
+counters or the existing `EBAY` snapshot to carry the post-delete empty baseline.
 
 Update `buildEbayProductSnapshotPayload` so an explicitly supplied empty array is
 preserved:
@@ -1397,6 +1439,24 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     facetConflictCount += facetResult.conflicts.length;
     facetSkippedCount += facetResult.skipped.length;
     facetWrittenCount += facetResult.written.length;
+    if (facetResult.written.length > 0 || facetResult.deleted.length > 0) {
+      await prisma.productSnapshot.create({
+        data: {
+          ebayItemId: mapping.ebayItemId,
+          payload: buildEbayProductSnapshotPayload({
+            descriptionMode: "facet_only",
+            issueCodes: [],
+            productFacets: facetResult.baselineFacets,
+            skuGenerated: false,
+            status: "synced",
+          }),
+          shopId: input.job.shopId,
+          shopifyProductGid: mapping.shopifyProductGid,
+          source: ProductSnapshotSource.SYNCBAY,
+          title: ebaySnapshot.title,
+        },
+      });
+    }
     syncedCount += 1;
   }
 

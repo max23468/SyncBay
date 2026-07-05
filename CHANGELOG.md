@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Raffinati i piani operativi per esplicitare la creazione degli snapshot
+  `SYNCBAY` dopo cancellazioni faccette e mantenere title-derived il fixture
+  commemorativo Numisleo.
 - Raffinato il piano operativo Numisleo per aggiornare anche l'asserzione
   commemorativa esistente quando il caso Euro Italia viene promosso a
   `Monete in euro:Italia`.

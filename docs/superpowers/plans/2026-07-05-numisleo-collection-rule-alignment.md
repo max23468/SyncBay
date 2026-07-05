@@ -811,14 +811,17 @@ Use a fallback-only input such as:
 
 ```ts
 resolveShopifyCategoryProposal({
-  ebayPrimaryCategoryName: "Monete e banconote:Monete commemorative",
+  ebayPrimaryCategoryName: "Monete e banconote:Monete",
   title: "Moneta commemorativa Expo 2015 FDC",
 })
 ```
 
 Expected: the existing test still asserts `productType: "Monete commemorative"`
-and `shopifyCategoryName: "Collectible Coins"`, but no longer conflicts with
-the Euro Italia refinement.
+and `shopifyCategoryName: "Collectible Coins"` with the same full `deepEqual`
+shape as today: `confidence: "medium"` and `source: "title"`. Do not use
+`Monete e banconote:Monete commemorative` as the primary category for this
+replacement fixture, because that should resolve from the eBay primary category
+with `confidence: "high"` and would require a different assertion.
 
 Append these tests to `app/lib/syncbay-shopify-category-mapping.test.ts`:
 
