@@ -49,6 +49,15 @@ snapshot/titolo: 844 prodotti aggiornati con metafield `syncbay_facets.*`, 25
 prodotti rimasti incerti, 0 conflitti manuali e 0 fallimenti Shopify. I filtri
 Search & Discovery non sono stati attivati.
 
+Riallineamento regole collezioni eseguito su `numisleo.myshopify.com` il
+2026-07-05 con `npm run collections:doctor` (apply modello Shopify 2026-07
+`collection sources / conditions`) e `npm run categories:backfill`: 6 collezioni
+specifiche allineate ai `productType` SyncBay corti con guardia inventario,
+`Accessori numismatici` con guardia inventario e logica titolo OR preservata,
+609 prodotti ricategorizzati (0 falliti). Verifica: disponibili scoperti
+734 → 70 (gap residui senza collezione dedicata), esauriti in specifiche 5 → 0,
+smoke storefront 8/8 `200`. Nessuna collezione creata o rinominata.
+
 ## Runtime deciso
 
 Infrastruttura runtime 1.0: Vercel + Supabase.
