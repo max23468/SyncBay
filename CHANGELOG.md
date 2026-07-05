@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.39] — 2026-07-05
+
+### Correzioni
+
+- Ordini Shopify: dopo una scrittura stock eBay riuscita da `orders/paid`, il
+  runner risolve automaticamente il conflitto quantità coerente invece di
+  lasciare un falso positivo aperto in dashboard.
+
 ## [1.0.38] — 2026-07-05
 
 ### Correzioni
@@ -3271,6 +3279,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.39]: #1039--2026-07-05
 [1.0.38]: #1038--2026-07-05
 [1.0.37]: #1037--2026-07-05
 [1.0.36]: #1036--2026-07-05
