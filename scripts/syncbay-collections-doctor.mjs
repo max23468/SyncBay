@@ -5,6 +5,7 @@ import fs from "node:fs";
 import { buildCollectionCoverageReport } from "../app/lib/syncbay-collection-coverage-report.ts";
 import { loadCollectionIntents } from "../app/lib/syncbay-collection-intents.ts";
 import { buildCollectionRuleReview } from "../app/lib/syncbay-collection-rule-proposals.ts";
+import { buildSourcesUpdate } from "../app/lib/syncbay-collection-sources-apply.ts";
 
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const DEFAULT_GENERIC_COLLECTION_HANDLES = ["negozio-online", "non-disponibili"];
@@ -155,12 +156,16 @@ function executeShopifyQuery(shop, query, variables) {
 }
 
 async function applyProposals(shop, proposals) {
-  assertCollectionUpdateSupportsLegacyRuleSet(shop);
+  assertCollectionUpdateSupportsSourcesModel(shop);
   for (const proposal of proposals) {
-    const mutation = `mutation SyncBayCollectionRuleUpdate($input: CollectionInput!) {
-      collectionUpdate(input: $input) {
+    const currentSource = loadConditionsSource(shop, proposal.collectionId, proposal.title);
+    const sourcesUpdate = buildSourcesUpdate({
+      currentSource,
+      proposedRuleSet: proposal.proposedRuleSet,
+    });
+    const mutation = `mutation SyncBayCollectionSourcesUpdate($collection: CollectionUpdateInput!) {
+      collectionUpdate(collection: $collection) {
         collection { id title handle }
-        job { id done }
         userErrors { field message }
       }
     }`;
@@ -172,9 +177,9 @@ async function applyProposals(shop, proposals) {
       "--allow-mutations",
       "--query", mutation,
       "--variables", JSON.stringify({
-        input: {
+        collection: {
           id: proposal.collectionId,
-          ruleSet: proposal.proposedRuleSet,
+          sourcesToUpdate: [sourcesUpdate],
         },
       }),
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -186,30 +191,45 @@ async function applyProposals(shop, proposals) {
         `collectionUpdate fallita per ${proposal.title}: ${JSON.stringify(userErrors)}`,
       );
     }
-    await waitForShopifyCollectionUpdateJob(shop, payload?.job, proposal.title);
   }
 }
 
-async function waitForShopifyCollectionUpdateJob(shop, job, title) {
-  if (!job?.id || job.done) return;
-
-  const query = `query SyncBayCollectionUpdateJob($id: ID!) {
-    job(id: $id) { id done }
+function loadConditionsSource(shop, collectionId, title) {
+  const query = `query SyncBayCollectionConditionsSource($id: ID!) {
+    collection(id: $id) {
+      id
+      sources {
+        __typename
+        ... on CollectionConditionsSource {
+          id
+          inclusion {
+            matchType
+            conditions {
+              __typename
+              id
+              ... on CollectionSourceInclusionConditionProductType { relation values }
+              ... on CollectionSourceInclusionConditionVariantInventory { relation value }
+            }
+          }
+        }
+      }
+    }
   }`;
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const data = executeShopifyQuery(shop, query, { id: job.id });
-    if (data.job?.done) return;
-  }
-
-  throw new Error(
-    `collectionUpdate non completata per ${title}: job ${job.id}`,
+  const data = executeShopifyQuery(shop, query, { id: collectionId });
+  const source = (data.collection?.sources ?? []).find(
+    (item) => item.__typename === "CollectionConditionsSource",
   );
+  if (!source?.id || !source.inclusion) {
+    throw new Error(
+      `Nessuna CollectionConditionsSource trovata per ${title}: apply sources bloccato.`,
+    );
+  }
+  return source;
 }
 
-function assertCollectionUpdateSupportsLegacyRuleSet(shop) {
+function assertCollectionUpdateSupportsSourcesModel(shop) {
   const query = `query SyncBayCollectionMutationContract {
-    collectionInput: __type(name: "CollectionInput") {
+    collectionUpdateInput: __type(name: "CollectionUpdateInput") {
       inputFields { name }
     }
     mutationType: __schema {
@@ -222,13 +242,15 @@ function assertCollectionUpdateSupportsLegacyRuleSet(shop) {
     }
   }`;
   const data = executeShopifyQuery(shop, query, {});
-  const hasCollectionUpdateInputArg = data.mutationType?.mutationType?.fields
+  const hasCollectionUpdateCollectionArg = data.mutationType?.mutationType?.fields
     ?.find((field) => field.name === "collectionUpdate")
-    ?.args?.some((arg) => arg.name === "input");
-  const hasRuleSetField = data.collectionInput?.inputFields?.some((field) => field.name === "ruleSet");
-  if (!hasCollectionUpdateInputArg || !hasRuleSetField) {
+    ?.args?.some((arg) => arg.name === "collection");
+  const hasSourcesToUpdate = data.collectionUpdateInput?.inputFields?.some(
+    (field) => field.name === "sourcesToUpdate",
+  );
+  if (!hasCollectionUpdateCollectionArg || !hasSourcesToUpdate) {
     throw new Error(
-      "collectionUpdate legacy input/ruleSet non disponibile: aggiornare l'apply al modello Shopify collection/sources prima di scrivere su Shopify.",
+      "collectionUpdate sources model non disponibile: lo schema Shopify non espone collectionUpdate(collection:)/sourcesToUpdate. Rivedere l'apply prima di scrivere su Shopify.",
     );
   }
 }
