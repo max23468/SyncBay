@@ -105,6 +105,22 @@ test("blocks manual retry when incremental enqueue failed because of eBay cooldo
   assert.match(diagnostic.nextAction, /attendi/i);
 });
 
+test("explains facet-only incremental jobs as storefront facet alignment", () => {
+  const diagnostic = getSyncJobDiagnostic({
+    attempts: 1,
+    errorCode: "SYNCBAY_FACET_BACKFILL_FAILED",
+    errorMessage: "Shopify temporaneamente non disponibile.",
+    maxAttempts: 3,
+    payload: { facetOnly: true, source: "facet_backfill" },
+    runAfter: "2026-06-05T10:05:00.000Z",
+    status: "FAILED",
+    type: "SYNC_INCREMENTAL",
+  });
+
+  assert.match(diagnostic.impact, /faccette Shopify/i);
+  assert.match(diagnostic.nextAction, /runner automatico/i);
+});
+
 test("keeps manual retry available for non-provider enqueue failures", () => {
   const retry = getManualRetryState(
     {

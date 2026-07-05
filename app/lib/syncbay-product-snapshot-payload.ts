@@ -36,8 +36,8 @@ export function buildEbayProductSnapshotPayload(input: {
     issueCodes: input.issueCodes,
     skuGenerated: input.skuGenerated,
     status: input.status,
-    ...(input.productFacets?.length
-      ? { productFacets: input.productFacets.map(serializeProductFacet) }
+    ...(Object.hasOwn(input, "productFacets")
+      ? { productFacets: (input.productFacets ?? []).map(serializeProductFacet) }
       : {}),
     ...(input.ebayPrimaryCategoryId
       ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId }
@@ -169,6 +169,15 @@ export function getProductFacetsFromSnapshotPayload(
       },
     ];
   });
+}
+
+export function getProductFacetBaselineFromSnapshotPayload(
+  value: unknown,
+): SyncBayProductFacet[] | null {
+  const payload = getObject(value);
+  if (!payload || !Array.isArray(payload.productFacets)) return null;
+
+  return getProductFacetsFromSnapshotPayload(value);
 }
 
 function normalizeImageUrls(imageUrls: string[]) {

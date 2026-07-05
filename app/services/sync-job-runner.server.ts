@@ -57,6 +57,7 @@ import {
 } from "../lib/syncbay-ebay-rate-limit";
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
+import { getProductFacetBaselineFromSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import {
   buildPriceConflictValue,
@@ -69,6 +70,10 @@ import {
   shouldWriteShopifyPricing,
   type SyncBayPricingWriteBaseline,
 } from "../lib/syncbay-pricing-rules";
+import {
+  buildSyncBayProductFacets,
+  type SyncBayProductFacet,
+} from "../lib/syncbay-product-facets";
 import {
   mergePreferredShopifyVariantForSync,
   selectShopifyVariantForSync,
@@ -109,6 +114,7 @@ import {
 } from "./ebay-trading-preview.server";
 import { reviseEbayTradingInventoryQuantity } from "./ebay-trading-stock.server";
 import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
+import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 import type {
   ImportPreviewListingCandidate,
   ImportPreviewItem,
@@ -614,6 +620,13 @@ async function enqueueIncrementalSyncJobs(now: Date) {
 
     if (activeJob) continue;
 
+    const facetBackfillJobCount = await enqueueFacetBackfillJobsIfNeeded({
+      now,
+      shopId: shop.id,
+    });
+
+    if (facetBackfillJobCount > 0) continue;
+
     const lastJob = await prisma.syncJob.findFirst({
       orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
       select: { createdAt: true, finishedAt: true, runAfter: true },
@@ -937,6 +950,67 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
       status: SyncJobStatus.PENDING,
       type: SyncJobType.SYNC_INCREMENTAL,
     })),
+    skipDuplicates: true,
+  });
+
+  return result.count;
+}
+
+async function enqueueFacetBackfillJobsIfNeeded(input: {
+  now: Date;
+  shopId: string;
+}) {
+  const version = 1;
+  const runId = `${input.shopId}:${DEFAULT_MARKETPLACE_ID}:v${version}`;
+  const completedMarker = await prisma.syncJob.findFirst({
+    select: { id: true },
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "facet_backfill_marker" } },
+        { payload: { path: ["facetBackfillRunId"], equals: runId } },
+      ],
+      shopId: input.shopId,
+      status: SyncJobStatus.SUCCEEDED,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+  if (completedMarker) return 0;
+
+  const mappings = await prisma.productMapping.findMany({
+    orderBy: { updatedAt: "asc" },
+    select: { ebayItemId: true },
+    take: CATALOG_RECONCILE_MAX_PRODUCTS,
+    where: {
+      marketplaceId: DEFAULT_MARKETPLACE_ID,
+      shopId: input.shopId,
+      shopifyProductGid: { not: null },
+      status: ProductMappingStatus.ACTIVE,
+    },
+  });
+  const ebayItemIds = mappings.map((mapping) => mapping.ebayItemId);
+
+  if (ebayItemIds.length === 0) return 0;
+
+  const batches = chunkArray(ebayItemIds, INCREMENTAL_SYNC_BATCH_SIZE);
+  const result = await prisma.syncJob.createMany({
+    data: batches.map((batch, index) => ({
+        idempotencyKey: `facet-backfill:${runId}:${index + 1}`,
+        maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+        payload: {
+          batchCount: batches.length,
+          batchIndex: index + 1,
+          ebayItemIds: batch,
+          facetBackfillRunId: runId,
+          facetBackfillVersion: version,
+          facetOnly: true,
+          marketplaceId: DEFAULT_MARKETPLACE_ID,
+          source: "facet_backfill",
+        } satisfies Prisma.JsonObject,
+        runAfter: input.now,
+        shopId: input.shopId,
+        status: SyncJobStatus.PENDING,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      })),
     skipDuplicates: true,
   });
 
@@ -1309,9 +1383,13 @@ async function runImportCatalogJob(job: DueSyncJob) {
     await getInterruptedRunningSyncJobResult(job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
-  const [admin, previewResult] = await Promise.all([
+  const [admin, previewResult, facetBaselinesByItemId] = await Promise.all([
     getShopifyAdminGraphqlClient(job.shop.shopDomain),
     getImportPreviewResultByItemIds(connection, ebayItemIds),
+    getLatestFacetBaselinesByItemId({
+      ebayItemIds,
+      shopId: job.shopId,
+    }),
   ]);
   const filteredPreviewResult = filterPreviewResultByItemIds(
     previewResult,
@@ -1336,6 +1414,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     defaultLocationGid: job.shop.defaultLocationGid,
     existingCatalogFieldPoliciesByItemId:
       getExistingCatalogFieldPoliciesByItemId(job.payload),
+    facetBaselinesByItemId,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
@@ -1541,6 +1620,19 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     };
   }
 
+  if (isFacetOnlySyncJobPayload(job.payload)) {
+    return runFacetOnlyIncrementalSyncJob({
+      alignedDescriptionConflictResolvedCount:
+        alignedDescriptionConflicts.count,
+      alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
+      job,
+      openConflictSkippedCount: openConflictItemIds.size,
+      reactivationConflictResolvedCount,
+      requestedItemIds: ebayItemIds,
+      syncableItemIds,
+    });
+  }
+
   if (isPricingOnlySyncJobPayload(job.payload)) {
     return runPricingOnlyIncrementalSyncJob({
       alignedDescriptionConflictResolvedCount:
@@ -1558,9 +1650,13 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     await getInterruptedRunningSyncJobResult(job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
-  const [admin, previewResult] = await Promise.all([
+  const [admin, previewResult, facetBaselinesByItemId] = await Promise.all([
     getShopifyAdminGraphqlClient(job.shop.shopDomain),
     getIncrementalPreviewResult(job, syncableItemIds),
+    getLatestFacetBaselinesByItemId({
+      ebayItemIds: syncableItemIds,
+      shopId: job.shopId,
+    }),
   ]);
   const filteredPreviewResult = filterPreviewResultByItemIds(
     previewResult,
@@ -1569,6 +1665,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   const result = await createShopifyDraftProductsIfEnabled({
     admin,
     defaultLocationGid: job.shop.defaultLocationGid,
+    facetBaselinesByItemId,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
     previewResult: filteredPreviewResult,
@@ -1889,6 +1986,229 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   };
 }
 
+async function runFacetOnlyIncrementalSyncJob(input: {
+  alignedDescriptionConflictResolvedCount: number;
+  alignedPriceConflictResolvedCount: number;
+  job: DueSyncJob;
+  openConflictSkippedCount: number;
+  reactivationConflictResolvedCount: number;
+  requestedItemIds: string[];
+  syncableItemIds: string[];
+}) {
+  const interruptedJobBeforeProvider =
+    await getInterruptedRunningSyncJobResult(input.job);
+  if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
+
+  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] =
+    await Promise.all([
+      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+      prisma.productMapping.findMany({
+        select: {
+          ebayItemId: true,
+          id: true,
+          shopifyProductGid: true,
+        },
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          marketplaceId: getEbayMarketplaceId(input.job.payload),
+          shopId: input.job.shopId,
+          status: ProductMappingStatus.ACTIVE,
+        },
+      }),
+      prisma.productSnapshot.findMany({
+        orderBy: { capturedAt: "desc" },
+        select: {
+          ebayItemId: true,
+          payload: true,
+          title: true,
+        },
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          shopId: input.job.shopId,
+          source: ProductSnapshotSource.EBAY,
+        },
+      }),
+      getLatestFacetBaselinesByItemId({
+        ebayItemIds: input.syncableItemIds,
+        shopId: input.job.shopId,
+      }),
+    ]);
+  const mappingsByItemId = new Map(
+    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
+  );
+  const latestEbaySnapshotByItemId = new Map<
+    string,
+    { payload: Prisma.JsonValue | null; title: string | null }
+  >();
+
+  for (const snapshot of ebaySnapshots) {
+    if (
+      !snapshot.ebayItemId ||
+      latestEbaySnapshotByItemId.has(snapshot.ebayItemId)
+    ) {
+      continue;
+    }
+
+    latestEbaySnapshotByItemId.set(snapshot.ebayItemId, {
+      payload: snapshot.payload,
+      title: snapshot.title,
+    });
+  }
+
+  let facetConflictCount = 0;
+  let facetDeletedCount = 0;
+  let facetSkippedCount = 0;
+  let facetWrittenCount = 0;
+  const synced: Prisma.JsonObject[] = [];
+  const skipped: Prisma.JsonObject[] = [];
+  const syncBaySnapshots: Prisma.ProductSnapshotCreateManyInput[] = [];
+  const now = new Date();
+
+  for (const itemId of input.syncableItemIds) {
+    const interruptedJobBeforeFacetWrite =
+      await getInterruptedRunningSyncJobResult(input.job);
+    if (interruptedJobBeforeFacetWrite) return interruptedJobBeforeFacetWrite;
+
+    const mapping = mappingsByItemId.get(itemId);
+
+    if (!mapping?.shopifyProductGid) {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: "shopify_mapping_missing",
+      });
+      continue;
+    }
+
+    const ebaySnapshot = latestEbaySnapshotByItemId.get(itemId);
+    if (!ebaySnapshot) {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: "ebay_snapshot_missing",
+      });
+      continue;
+    }
+
+    const payload = getJsonObject(ebaySnapshot.payload);
+    const proposedFacets = buildSyncBayProductFacets({
+      ebayPrimaryCategoryName: getNullableStringFromRecord(
+        payload,
+        "ebayPrimaryCategoryName",
+      ),
+      itemSpecifics: [],
+      storeCategoryName: getNullableStringFromRecord(
+        payload,
+        "storeCategoryName",
+      ),
+      title: ebaySnapshot.title,
+    });
+    const previousSyncBayFacets = facetBaselinesByItemId[itemId] ?? [];
+
+    if (proposedFacets.length === 0 && previousSyncBayFacets.length === 0) {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: "no_high_confidence_facets",
+      });
+      continue;
+    }
+
+    const facetSync = await syncShopifyProductFacets({
+      admin,
+      ownerId: mapping.shopifyProductGid,
+      previousSyncBayFacets,
+      proposedFacets,
+    });
+
+    if (facetSync.status === "missing_owner") {
+      skipped.push({
+        ebayItemId: itemId,
+        reason: "shopify_product_missing",
+        shopifyProductGid: mapping.shopifyProductGid,
+      });
+      continue;
+    }
+
+    facetConflictCount += facetSync.conflicts.length;
+    facetDeletedCount += facetSync.deleted.length;
+    facetSkippedCount += facetSync.skipped.length;
+    facetWrittenCount += facetSync.written.length;
+    synced.push({
+      conflictCount: facetSync.conflicts.length,
+      deletedCount: facetSync.deleted.length,
+      ebayItemId: itemId,
+      proposedCount: proposedFacets.length,
+      shopifyProductGid: mapping.shopifyProductGid,
+      skippedCount: facetSync.skipped.length,
+      writtenCount: facetSync.written.length,
+    });
+
+    if (facetSync.written.length > 0 || facetSync.deleted.length > 0) {
+      syncBaySnapshots.push({
+        capturedAt: now,
+        ebayItemId: itemId,
+        mappingId: mapping.id,
+        payload: buildProductFacetBaselineSnapshotPayload({
+          facetSync,
+          jobId: input.job.id,
+        }),
+        shopId: input.job.shopId,
+        shopifyProductGid: mapping.shopifyProductGid,
+        source: ProductSnapshotSource.SYNCBAY,
+        title: ebaySnapshot.title,
+      });
+    }
+  }
+
+  if (syncBaySnapshots.length > 0) {
+    const syncedMappingIds = syncBaySnapshots
+      .map((snapshot) => snapshot.mappingId)
+      .filter((mappingId): mappingId is string => Boolean(mappingId));
+    const changedSyncBaySnapshots =
+      await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
+
+    await prisma.$transaction(async (tx) => {
+      if (changedSyncBaySnapshots.length > 0) {
+        await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+      }
+
+      await tx.productMapping.updateMany({
+        data: { lastSyncedAt: now },
+        where: { id: { in: syncedMappingIds } },
+      });
+    });
+  }
+
+  await markJobSucceeded({
+    delegatedJobId: null,
+    job: input.job,
+    result: {
+      alignedDescriptionConflictResolvedCount:
+        input.alignedDescriptionConflictResolvedCount,
+      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
+      conflictSkippedCount: input.openConflictSkippedCount,
+      facetConflictCount,
+      facetDeletedCount,
+      facetOnly: true,
+      facetSkippedCount,
+      facetWrittenCount,
+      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
+      requestedCount: input.requestedItemIds.length,
+      skipped,
+      skippedCount: skipped.length,
+      source: getStringFromPayload(input.job.payload, "source") ?? "facet_only",
+      synced,
+      syncedCount: synced.length,
+    },
+    warnings: buildFacetOnlyWarnings({ skipped, synced }),
+  });
+  await maybeMarkFacetBackfillRunSucceeded(input.job);
+
+  return {
+    jobId: input.job.id,
+    status: "succeeded" as const,
+    type: input.job.type,
+  };
+}
+
 type SyncBayPricingBaselineSnapshot = {
   capturedAt: Date;
   ebayItemId: string | null;
@@ -1896,6 +2216,101 @@ type SyncBayPricingBaselineSnapshot = {
   priceAmount: Prisma.Decimal | null;
   source: ProductSnapshotSource;
 };
+
+type SyncBayFacetSyncResult = Awaited<
+  ReturnType<typeof syncShopifyProductFacets>
+>;
+
+async function getLatestFacetBaselinesByItemId(input: {
+  ebayItemIds: string[];
+  shopId: string;
+}): Promise<Record<string, SyncBayProductFacet[]>> {
+  if (input.ebayItemIds.length === 0) return {};
+
+  const snapshots = await prisma.productSnapshot.findMany({
+    orderBy: { capturedAt: "desc" },
+    select: {
+      ebayItemId: true,
+      payload: true,
+    },
+    where: {
+      ebayItemId: { in: input.ebayItemIds },
+      shopId: input.shopId,
+      source: {
+        in: [ProductSnapshotSource.SYNCBAY, ProductSnapshotSource.EBAY],
+      },
+    },
+  });
+  const baselines: Record<string, SyncBayProductFacet[]> = {};
+
+  for (const snapshot of snapshots) {
+    if (!snapshot.ebayItemId || Object.hasOwn(baselines, snapshot.ebayItemId)) {
+      continue;
+    }
+
+    const baseline = getProductFacetBaselineFromSnapshotPayload(
+      snapshot.payload,
+    );
+    if (baseline === null) continue;
+
+    baselines[snapshot.ebayItemId] = baseline;
+  }
+
+  return baselines;
+}
+
+function buildProductFacetBaselineSnapshotPayload(input: {
+  facetSync: SyncBayFacetSyncResult;
+  jobId: string;
+}) {
+  return {
+    facetOnly: true,
+    facetSync: {
+      conflictKeys: input.facetSync.conflicts.map((facet) => facet.key),
+      deletedKeys: input.facetSync.deleted.map((facet) => facet.key),
+      skippedKeys: input.facetSync.skipped.map((facet) => facet.key),
+      status: input.facetSync.status,
+      writtenKeys: input.facetSync.written.map((facet) => facet.key),
+    },
+    productFacets: input.facetSync.baselineFacets.map(serializeProductFacet),
+    syncJobId: input.jobId,
+  } satisfies Prisma.JsonObject;
+}
+
+function serializeProductFacet(facet: SyncBayProductFacet) {
+  return {
+    key: facet.key,
+    label: facet.label,
+    namespace: facet.namespace,
+    type: facet.type,
+    value: facet.value,
+  };
+}
+
+function buildFacetOnlyWarnings(input: {
+  skipped: Prisma.JsonObject[];
+  synced: Prisma.JsonObject[];
+}) {
+  const warnings: string[] = [];
+  const conflictCount = input.synced.reduce(
+    (total, row) => total + (getJsonNumber(row.conflictCount) ?? 0),
+    0,
+  );
+
+  if (input.skipped.length > 0) {
+    warnings.push(
+      `Backfill faccette completato con ${input.skipped.length} prodotti saltati.`,
+    );
+  }
+
+  if (conflictCount > 0) {
+    warnings.push(
+      `Faccette Shopify non sovrascritte su ${conflictCount} campi modificati manualmente.`,
+    );
+  }
+
+  return warnings;
+}
 
 function buildLatestSyncBayPricingBaselinesByItemId(
   snapshots: SyncBayPricingBaselineSnapshot[],
@@ -2605,6 +3020,62 @@ async function maybeMarkCatalogReconcileRunWatermarkSucceeded(job: DueSyncJob) {
   });
 }
 
+async function maybeMarkFacetBackfillRunSucceeded(job: DueSyncJob) {
+  const source = getStringFromPayload(job.payload, "source");
+  const runId = getStringFromPayload(job.payload, "facetBackfillRunId");
+  const marketplaceId = getEbayMarketplaceId(job.payload);
+  const payloadObject = getJsonObject(job.payload);
+  const version = getJsonNumber(payloadObject?.facetBackfillVersion);
+
+  if (source !== "facet_backfill" || !runId || version === null) return;
+
+  const runJobs = await prisma.syncJob.findMany({
+    select: { status: true },
+    where: {
+      AND: [
+        { payload: { path: ["source"], equals: "facet_backfill" } },
+        { payload: { path: ["facetBackfillRunId"], equals: runId } },
+      ],
+      shopId: job.shopId,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    },
+  });
+
+  if (
+    runJobs.length === 0 ||
+    runJobs.some((runJob) => runJob.status !== SyncJobStatus.SUCCEEDED)
+  ) {
+    return;
+  }
+
+  const finishedAt = new Date();
+  const markerPayload = {
+    facetBackfillRunId: runId,
+    facetBackfillVersion: version,
+    marketplaceId,
+    processedJobCount: runJobs.length,
+    source: "facet_backfill_marker",
+  } satisfies Prisma.JsonObject;
+
+  await prisma.syncJob.createMany({
+    data: [
+      {
+        attempts: 1,
+        finishedAt,
+        idempotencyKey: `facet-backfill-marker:${job.shopId}:${marketplaceId}:v${version}:${runId}`,
+        maxAttempts: 1,
+        payload: markerPayload,
+        result: markerPayload,
+        runAfter: finishedAt,
+        shopId: job.shopId,
+        status: SyncJobStatus.SUCCEEDED,
+        type: SyncJobType.SYNC_INCREMENTAL,
+      },
+    ],
+    skipDuplicates: true,
+  });
+}
+
 function getSnapshotSkuGenerated(payload: Prisma.JsonValue | null | undefined) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return null;
@@ -3223,6 +3694,15 @@ function getExistingCatalogFieldPoliciesByItemId(
 ) {
   return parseExistingCatalogFieldPoliciesByItemId(
     getJsonObject(payload)?.existingCatalogFieldPoliciesByItemId,
+  );
+}
+
+function isFacetOnlySyncJobPayload(payload: Prisma.JsonValue | null) {
+  const source = getStringFromPayload(payload, "source");
+
+  return (
+    getBooleanFromPayload(payload, "facetOnly") ||
+    source === "facet_backfill"
   );
 }
 
@@ -4137,6 +4617,15 @@ function getJsonNumber(value: Prisma.JsonValue | undefined) {
 
 function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
+}
+
+function getNullableStringFromRecord(
+  value: Record<string, Prisma.JsonValue> | null,
+  key: string,
+) {
+  const entry = value?.[key];
+
+  return typeof entry === "string" && entry.trim() ? entry.trim() : null;
 }
 
 function formatShopifyPrice(value: number | null) {

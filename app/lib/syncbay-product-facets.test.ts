@@ -6,11 +6,12 @@ import * as productFacets from "./syncbay-product-facets.ts";
 
 const {
   buildShopifyProductFacetMetafields,
+  buildSyncBayProductFacetInferences,
   buildSyncBayProductFacets,
   parseEbayTradingItemSpecifics,
 } = productFacets;
 
-test("builds only the five approved storefront facets from eBay metadata", () => {
+test("builds only high-confidence storefront facets for Shopify writes", () => {
   assert.deepEqual(
     buildSyncBayProductFacets({
       ebayPrimaryCategoryName: "Monete e banconote",
@@ -31,34 +32,6 @@ test("builds only the five approved storefront facets from eBay metadata", () =>
         type: "single_line_text_field",
         value: "Monete italiane in lire",
       },
-      {
-        key: "area_stato",
-        label: "Area / Stato",
-        namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Italia - Regno",
-      },
-      {
-        key: "materiale",
-        label: "Materiale",
-        namespace: "syncbay_facets",
-        type: "list.single_line_text_field",
-        value: JSON.stringify(["Argento"]),
-      },
-      {
-        key: "conservazione",
-        label: "Conservazione",
-        namespace: "syncbay_facets",
-        type: "list.single_line_text_field",
-        value: JSON.stringify(["qFDC", "FDC"]),
-      },
-      {
-        key: "perizia",
-        label: "Perizia",
-        namespace: "syncbay_facets",
-        type: "single_line_text_field",
-        value: "Con perizia",
-      },
     ],
   );
 });
@@ -72,7 +45,76 @@ test("does not infer the perizia facet when eBay does not provide it", () => {
       ],
       storeCategoryName: "Medaglie",
     }).map((facet) => facet.key),
-    ["categoria", "materiale", "conservazione"],
+    ["categoria"],
+  );
+});
+
+test("marks title-derived facet values as high confidence inferences", () => {
+  assert.deepEqual(
+    buildSyncBayProductFacetInferences({
+      title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
+    }).map((inference) => ({
+      confidence: inference.confidence,
+      key: inference.key,
+      source: inference.source,
+      value: inference.value,
+    })),
+    [
+      {
+        confidence: "high",
+        key: "categoria",
+        source: "title_rule",
+        value: "Monete italiane in lire",
+      },
+      {
+        confidence: "high",
+        key: "materiale",
+        source: "title_rule",
+        value: JSON.stringify(["Argento"]),
+      },
+      {
+        confidence: "high",
+        key: "conservazione",
+        source: "title_rule",
+        value: JSON.stringify(["BB", "SPL"]),
+      },
+      {
+        confidence: "high",
+        key: "perizia",
+        source: "title_rule",
+        value: "Con perizia",
+      },
+    ],
+  );
+});
+
+test("keeps eBay item specifics as medium confidence suggestions", () => {
+  const inferences = buildSyncBayProductFacetInferences({
+    itemSpecifics: [
+      { name: "Materiale", values: ["Argento"] },
+      { name: "Conservazione", values: ["FDC"] },
+    ],
+  });
+
+  assert.deepEqual(
+    inferences.map((inference) => ({
+      confidence: inference.confidence,
+      key: inference.key,
+      source: inference.source,
+    })),
+    [
+      { confidence: "medium", key: "materiale", source: "ebay_specific" },
+      { confidence: "medium", key: "conservazione", source: "ebay_specific" },
+    ],
+  );
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      itemSpecifics: [
+        { name: "Materiale", values: ["Argento"] },
+        { name: "Conservazione", values: ["FDC"] },
+      ],
+    }),
+    [],
   );
 });
 

@@ -454,7 +454,7 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       job,
       meta: `${getTimelineCategoryLabel(category)} · ${formatJobStatus(job.status)}`,
       timestamp: job.createdAt,
-      title: getJobTitle(job.type),
+      title: getActivityJobTitle(job),
       tone: getJobQueueTone(job),
       type: "job" as const,
     };
@@ -533,6 +533,22 @@ function getTimelineCategoryFromJobType(type: string): TimelineCategoryKind {
   }
 
   return "FAILED_JOB";
+}
+
+function getActivityJobTitle(job: ActivityJob) {
+  const payload =
+    job.payload && typeof job.payload === "object" && !Array.isArray(job.payload)
+      ? (job.payload as Record<string, unknown>)
+      : null;
+
+  if (
+    job.type === "SYNC_INCREMENTAL" &&
+    (payload?.facetOnly === true || payload?.source === "facet_backfill")
+  ) {
+    return "Backfill faccette storefront";
+  }
+
+  return getJobTitle(job.type);
 }
 
 function getJobDetail(

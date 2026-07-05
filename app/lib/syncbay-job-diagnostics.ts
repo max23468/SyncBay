@@ -3,6 +3,7 @@ export interface SyncJobDiagnosticInput {
   errorCode?: string | null;
   errorMessage?: string | null;
   maxAttempts: number;
+  payload?: unknown;
   runAfter: string | Date;
   status: string;
   type: string;
@@ -51,7 +52,7 @@ export function getSyncJobDiagnostic(
   const rateLimit = getRateLimitDetail(job, now);
 
   return {
-    impact: getJobImpact(job.type),
+    impact: getJobImpact(job),
     nextAction: getJobNextAction(job, now),
     ...(rateLimit ? { rateLimit } : {}),
     retry: getManualRetryState(job, now),
@@ -107,20 +108,23 @@ function isEbayCooldownActive(
   );
 }
 
-function getJobImpact(type: string) {
-  if (type === "UPDATE_EBAY_STOCK") {
+function getJobImpact(job: SyncJobDiagnosticInput) {
+  if (job.type === "UPDATE_EBAY_STOCK") {
     return "Disponibilità eBay non aggiornata: controlla il prodotto prima di considerare protetto lo stock.";
   }
-  if (type === "IMPORT_CATALOG") {
+  if (job.type === "IMPORT_CATALOG") {
     return "Importazione catalogo incompleta: alcuni prodotti potrebbero non essere ancora pronti su Shopify.";
   }
-  if (type === "SYNC_INCREMENTAL") {
+  if (isFacetOnlyJob(job)) {
+    return "Faccette Shopify non ancora riallineate: alcuni filtri storefront potrebbero restare incompleti.";
+  }
+  if (job.type === "SYNC_INCREMENTAL") {
     return "Catalogo Shopify non ancora allineato all'ultimo stato eBay noto.";
   }
-  if (type === "DETECT_SHOPIFY_CHANGES") {
+  if (job.type === "DETECT_SHOPIFY_CHANGES") {
     return "Controllo modifiche Shopify non completato: i conflitti potrebbero non essere ancora aggiornati.";
   }
-  if (type === "ARCHIVE_INACTIVE_LISTING") {
+  if (job.type === "ARCHIVE_INACTIVE_LISTING") {
     return "Messa in esaurito non completata: un prodotto chiuso su eBay potrebbe restare disponibile su Shopify.";
   }
 
@@ -133,6 +137,9 @@ function getJobNextAction(job: SyncJobDiagnosticInput, now: Date) {
   }
   if (job.type === "DETECT_SHOPIFY_CHANGES") {
     return "Riprova il controllo e poi rivedi la pagina Conflitti.";
+  }
+  if (isFacetOnlyJob(job)) {
+    return "Lascia completare il runner automatico; se fallisce ancora, riprova il job faccette dalla dashboard.";
   }
   if (job.status === "FAILED" || job.status === "RETRYING") {
     return "Riprova dalla dashboard se il problema non è un cooldown provider.";
@@ -155,6 +162,21 @@ function isEbayTradingUsageLimitMessage(message: string) {
   return EBAY_TRADING_USAGE_LIMIT_PATTERNS.some((pattern) =>
     pattern.test(message),
   );
+}
+
+function isFacetOnlyJob(job: SyncJobDiagnosticInput) {
+  const payload = getObject(job.payload);
+
+  return (
+    job.type === "SYNC_INCREMENTAL" &&
+    (payload?.facetOnly === true || payload?.source === "facet_backfill")
+  );
+}
+
+function getObject(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  return value as Record<string, unknown>;
 }
 
 function getRateLimitDetail(job: SyncJobDiagnosticInput, now: Date) {

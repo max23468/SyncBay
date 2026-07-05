@@ -135,12 +135,15 @@ Schema iniziale:
   sorgente e motivo; il dato resta diagnostico nei payload, viene usato sui
   nuovi `productCreate` quando valido e abilita l'apply categorie esplicito sui
   prodotti già collegati.
-- faccette storefront controllate da dati strutturati e titolo eBay:
-  `Categoria`, `Area / Stato`, `Materiale`, `Conservazione`, `Perizia`.
-  Le faccette vengono scritte su Shopify come metafield prodotto
-  `syncbay_facets.*` e salvate nello snapshot diagnostico per audit. Il parser
-  titolo usa una lista chiusa di segnali numismatici e non legge la descrizione
-  HTML.
+- faccette storefront dedotte da SyncBay: `Categoria`, `Area / Stato`,
+  `Materiale`, `Conservazione`, `Perizia`. Ogni inferenza mantiene valore,
+  confidenza, fonte, evidenza e `ruleId`. Solo le inferenze ad alta confidenza
+  vengono trasformate in `productFacets` e scritte su Shopify come metafield
+  prodotto `syncbay_facets.*`. I baseline per proteggere modifiche manuali
+  devono essere letti solo da snapshot che contengono davvero `productFacets`:
+  snapshot `EBAY` come baseline storica dell'import e snapshot `SYNCBAY` creati
+  dopo scritture automatiche riuscite, inclusi baseline writer-owned vuoti
+  (`productFacets: []`) dopo cancellazioni riuscite.
 
 ### Regole prezzo
 

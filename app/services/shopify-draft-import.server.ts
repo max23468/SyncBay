@@ -47,7 +47,10 @@ import {
   getProductSnapshotThumbnailUrl,
 } from "../lib/syncbay-product-snapshot-payload";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
-import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facets";
+import {
+  buildShopifyProductFacetMetafields,
+  type SyncBayProductFacet,
+} from "../lib/syncbay-product-facets";
 import { buildShopifyDraftCategoryFields } from "../lib/syncbay-shopify-draft-category-fields";
 import { buildShopifyProductUpdateFieldsFromDraft } from "../lib/syncbay-shopify-product-update-fields";
 import { buildSyncBayProductMetafields as buildSyncBayBaseProductMetafields } from "../lib/syncbay-shopify-product-metafields";
@@ -65,6 +68,7 @@ import type {
   ImportPreviewResult,
 } from "./import-preview.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
+import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 
 // Tag Shopify applicato ai prodotti il cui listing eBay è diventato inattivo:
 // restano in vetrina come esauriti invece di essere archiviati (ADR 0011).
@@ -336,6 +340,9 @@ type ShopifyDraftProductInput = ReturnType<
 type ShopifyCreatedProduct = NonNullable<
   NonNullable<ShopifyProductCreateResponse["data"]>["productCreate"]
 >["product"];
+type ShopifyProductFacetSyncResult = Awaited<
+  ReturnType<typeof syncShopifyProductFacets>
+>;
 type DraftImportPersistenceResult = {
   createdCount: number;
   inventoryFailedCount: number;
@@ -410,6 +417,7 @@ type ShopifyMediaSyncResult = {
 
 type ShopifyDraftProductCreateResult =
   | {
+      facetSync?: ShopifyProductFacetSyncResult;
       product: NonNullable<ShopifyCreatedProduct>;
       resultType: "created" | "reused";
       status: "created";
@@ -586,6 +594,7 @@ function buildShopifyDraftProductInputs(
     string,
     ExistingCatalogFieldPolicy
   > = {},
+  facetBaselinesByItemId: Record<string, SyncBayProductFacet[]> = {},
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
@@ -597,6 +606,7 @@ function buildShopifyDraftProductInputs(
       return {
         existingCatalogFieldPolicy:
           existingCatalogFieldPoliciesByItemId[item.itemId] ?? null,
+        facetBaseline: facetBaselinesByItemId[item.itemId] ?? [],
         media: dedupeImageUrls(item.normalized.imageUrls)
           .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
           .map((imageUrl) => ({
@@ -621,6 +631,7 @@ function buildShopifyDraftProductInputs(
           ebayPriceAmount: item.normalized.priceAmount,
           roundingMode: pricingRule.roundingMode,
         }),
+        productFacets: item.normalized.productFacets,
         previewItem: item,
       };
     });
@@ -634,6 +645,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     string,
     ExistingCatalogFieldPolicy
   >;
+  facetBaselinesByItemId?: Record<string, SyncBayProductFacet[]>;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
   previewResult: ImportPreviewResult;
@@ -685,6 +697,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     importProductStatus,
     pricingRule,
     input.existingCatalogFieldPoliciesByItemId ?? {},
+    input.facetBaselinesByItemId ?? {},
   );
   const job = await startDraftImportJob({
     catalogImportRunId: input.catalogImportRunId ?? null,
@@ -896,6 +909,7 @@ async function createShopifyDraftProduct(
     }
 
     return {
+      facetSync: statusResult.facetSync,
       product: statusResult.product,
       resultType: "reused",
       status: "created",
@@ -1562,6 +1576,7 @@ async function updateShopifyProductFromEbay(
 ): Promise<
   | {
       product: NonNullable<ShopifyCreatedProduct>;
+      facetSync: ShopifyProductFacetSyncResult;
       status: "synced";
       warnings: string[];
     }
@@ -1694,7 +1709,17 @@ async function updateShopifyProductFromEbay(
     }
   }
 
+  const facetSync = await syncShopifyProductFacets({
+    admin,
+    ownerId: syncedProduct.id,
+    previousSyncBayFacets: draftProduct.facetBaseline,
+    proposedFacets: draftProduct.productFacets,
+  });
+
+  warnings.push(...formatProductFacetSyncWarnings(facetSync));
+
   return {
+    facetSync,
     product: preserveSelectedShopifyVariantForSync({
       previousProduct: product,
       updatedProduct: syncedProduct,
@@ -3262,6 +3287,11 @@ async function recordDraftImportPersistence(input: {
           mappingId: "",
           shopId: input.shopId,
         });
+        const facetBaseline =
+          shouldPersistProductFacetBaseline(pair.result.facetSync) &&
+          pair.result.facetSync
+            ? pair.result.facetSync.baselineFacets
+            : undefined;
         const thumbnailUrl = getProductSnapshotThumbnailUrl(ebaySnapshot.payload);
         const mapping = await tx.productMapping.upsert({
           where: {
@@ -3304,6 +3334,7 @@ async function recordDraftImportPersistence(input: {
               ),
               jobId: input.jobId,
               mappingId: mapping.id,
+              productFacets: facetBaseline,
               result: pair.result,
               shopId: input.shopId,
             }),
@@ -3499,11 +3530,31 @@ function buildEbayProductSnapshot(input: {
   };
 }
 
+function shouldPersistProductFacetBaseline(
+  facetSync: ShopifyProductFacetSyncResult | undefined,
+) {
+  return Boolean(
+    facetSync &&
+      (facetSync.written.length > 0 || facetSync.deleted.length > 0),
+  );
+}
+
+function serializeProductFacet(facet: SyncBayProductFacet) {
+  return {
+    key: facet.key,
+    label: facet.label,
+    namespace: facet.namespace,
+    type: facet.type,
+    value: facet.value,
+  };
+}
+
 function buildSyncBayProductSnapshot(input: {
   draftProduct: ShopifyDraftProductInput;
   importProductStatus: ImportProductStatus;
   jobId: string;
   mappingId: string;
+  productFacets?: SyncBayProductFacet[];
   result: Extract<ShopifyDraftProductResult, { status: "created" }>;
   shopId: string;
 }) {
@@ -3537,6 +3588,9 @@ function buildSyncBayProductSnapshot(input: {
       publicationSync: input.result.publicationSync,
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
+      ...(Object.hasOwn(input, "productFacets")
+        ? { productFacets: (input.productFacets ?? []).map(serializeProductFacet) }
+        : {}),
     } satisfies Prisma.JsonObject,
     priceAmount: input.draftProduct.pricing.priceAmount,
     productStatus: input.importProductStatus,
@@ -3548,6 +3602,40 @@ function buildSyncBayProductSnapshot(input: {
     source: ProductSnapshotSource.SYNCBAY,
     title: input.result.product.title,
   };
+}
+
+function formatProductFacetSyncWarnings(
+  facetSync: ShopifyProductFacetSyncResult,
+) {
+  const warnings: string[] = [];
+
+  if (facetSync.status === "missing_owner") {
+    warnings.push(
+      "Faccette prodotto non aggiornate: prodotto Shopify non trovato.",
+    );
+  }
+
+  if (facetSync.written.length > 0) {
+    warnings.push(
+      `SyncBay ha aggiornato ${facetSync.written.length} metafield faccette dedotte dal catalogo.`,
+    );
+  }
+
+  if (facetSync.deleted.length > 0) {
+    warnings.push(
+      `SyncBay ha rimosso ${facetSync.deleted.length} metafield faccette senza evidenza aggiornata.`,
+    );
+  }
+
+  if (facetSync.conflicts.length > 0) {
+    warnings.push(
+      `Faccette Shopify non sovrascritte perché modificate manualmente: ${facetSync.conflicts
+        .map((facet) => facet.key)
+        .join(", ")}.`,
+    );
+  }
+
+  return warnings;
 }
 
 function buildEbaySnapshotPayload(item: ImportPreviewItem) {
