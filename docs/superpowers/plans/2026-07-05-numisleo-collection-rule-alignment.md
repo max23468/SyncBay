@@ -115,7 +115,7 @@ Do not touch:
 - Read: `docs/TOOLCHAIN.md`
 - Read: `docs/decisions/0015-mapping-categorie-ebay-shopify.md`
 - Read: `docs/decisions/0016-faccette-storefront-import.md`
-- Output local only: `audit-data/collections-rule-alignment-YYYY-MM-DD/`
+- Output local only: `audits/collections-rule-alignment-YYYY-MM-DD/`
 
 - [ ] **Step 1: Check status and protect existing changes**
 
@@ -150,16 +150,16 @@ Expected: branch name starts with `codex/`, and unrelated local changes remain o
 Run:
 
 ```bash
-mkdir -p audit-data/collections-rule-alignment-$(date +%F)
+mkdir -p audits/collections-rule-alignment-$(date +%F)
 shopify store execute \
   --store numisleo.myshopify.com \
   --version 2026-07 \
   --json \
   --query 'query SyncBayCollectionRulesSnapshot { shop { name myshopifyDomain primaryDomain { url } } collections(first: 100, sortKey: TITLE) { nodes { id title handle updatedAt sortOrder productsCount { count } ruleSet { appliedDisjunctively rules { column relation condition } } } pageInfo { hasNextPage endCursor } } }' \
-  --output-file audit-data/collections-rule-alignment-$(date +%F)/collections.json
+  --output-file audits/collections-rule-alignment-$(date +%F)/collections.json
 ```
 
-Expected: JSON file is written under `audit-data/`; no mutation flags are used.
+Expected: JSON file is written under `audits/`; no mutation flags are used.
 
 - [ ] **Step 4: Capture live products read-only**
 
@@ -169,7 +169,7 @@ Run this temporary local script from the repo root:
 node <<'NODE'
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
-const outDir = `audit-data/collections-rule-alignment-${new Date().toISOString().slice(0, 10)}`;
+const outDir = `audits/collections-rule-alignment-${new Date().toISOString().slice(0, 10)}`;
 fs.mkdirSync(outDir, { recursive: true });
 const query = `query SyncBayProductsForCollectionRules($after: String) {
   products(first: 250, after: $after, query: "status:active", sortKey: ID) {
@@ -207,7 +207,8 @@ console.log(`Wrote ${products.length} products to ${outDir}/products.json`);
 NODE
 ```
 
-Expected: local JSON snapshot exists and remains untracked because `audit-data/` is ignored.
+Expected: local JSON snapshot exists and remains untracked because `audits/` is
+ignored by `.gitignore`.
 
 ---
 
@@ -901,7 +902,9 @@ function getCollectionGradeCoinProductType(input: {
 }
 ```
 
-Then use it in coin-related proposals:
+Then replace the current commemorative/rare/generic coin branch order with a
+single ordered block that applies the collection-grade refinement before the
+generic commemorative fallback:
 
 ```ts
 const collectionGradeCoinType = getCollectionGradeCoinProductType({
@@ -909,12 +912,51 @@ const collectionGradeCoinType = getCollectionGradeCoinProductType({
   storeText,
   titleText,
 });
-```
 
-For `rareCoinsSignal` and `coinsSignal`, return:
+const commemorativeCoinsSignal = findMatchingSignal(
+  signals,
+  matchesCommemorativeCoins,
+);
+const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
+const coinsSignal = findMatchingSignal(signals, matchesCoins);
+const collectionGradeCoinSignal =
+  rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
 
-```ts
-productType: collectionGradeCoinType ?? "Monete italiane"
+if (collectionGradeCoinType && collectionGradeCoinSignal) {
+  return buildProposal({
+    category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
+    confidence: collectionGradeCoinSignal.confidence,
+    productType: collectionGradeCoinType,
+    source: collectionGradeCoinSignal.source,
+  });
+}
+
+if (commemorativeCoinsSignal) {
+  return buildProposal({
+    category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
+    confidence: commemorativeCoinsSignal.confidence,
+    productType: "Monete commemorative",
+    source: commemorativeCoinsSignal.source,
+  });
+}
+
+if (rareCoinsSignal) {
+  return buildProposal({
+    category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
+    confidence: rareCoinsSignal.confidence,
+    productType: "Monete italiane",
+    source: rareCoinsSignal.source,
+  });
+}
+
+if (coinsSignal) {
+  return buildProposal({
+    category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
+    confidence: coinsSignal.confidence,
+    productType: "Monete italiane",
+    source: coinsSignal.source,
+  });
+}
 ```
 
 Do not change Shopify taxonomy category unless an existing test requires it.
@@ -1064,7 +1106,11 @@ export function parseCollectionIntents(value: unknown): CollectionRuleIntent[] {
 }
 ```
 
-Intenti Numisleo reali: crearli solo come file operativo locale sotto `audit-data/collections-rule-alignment-YYYY-MM-DD/numisleo-collection-intents.json`, partendo dalle collezioni live e dalla revisione manuale. Non committare il file operativo se contiene decisioni specifiche del negozio non ancora stabilizzate come comportamento SyncBay generale.
+Intenti Numisleo reali: crearli solo come file operativo locale sotto
+`audits/collections-rule-alignment-YYYY-MM-DD/numisleo-collection-intents.json`,
+partendo dalle collezioni live e dalla revisione manuale. Non committare il
+file operativo se contiene decisioni specifiche del negozio non ancora
+stabilizzate come comportamento SyncBay generale.
 
 - [ ] **Step 4: Run tests**
 
@@ -1269,6 +1315,7 @@ async function applyProposals(shop, proposals) {
     const mutation = `mutation SyncBayCollectionRuleUpdate($input: CollectionInput!) {
       collectionUpdate(input: $input) {
         collection { id title handle }
+        job { id done }
         userErrors { field message }
       }
     }`;
@@ -1287,11 +1334,32 @@ async function applyProposals(shop, proposals) {
       }),
     ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     const parsed = JSON.parse(output.slice(output.indexOf("{")));
-    const userErrors = parsed.collectionUpdate?.userErrors ?? parsed.data?.collectionUpdate?.userErrors ?? [];
+    const payload = parsed.collectionUpdate ?? parsed.data?.collectionUpdate;
+    const userErrors = payload?.userErrors ?? [];
     if (userErrors.length > 0) {
-      throw new Error(`collectionUpdate fallita per ${proposal.title}: ${JSON.stringify(userErrors)}`);
+      throw new Error(
+        `collectionUpdate fallita per ${proposal.title}: ${JSON.stringify(userErrors)}`,
+      );
     }
+    await waitForShopifyCollectionUpdateJob(shop, payload?.job, proposal.title);
   }
+}
+
+async function waitForShopifyCollectionUpdateJob(shop, job, title) {
+  if (!job?.id || job.done) return;
+
+  const query = `query SyncBayCollectionUpdateJob($id: ID!) {
+    job(id: $id) { id done }
+  }`;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const data = executeShopifyQuery(shop, query, { id: job.id });
+    if (data.job?.done) return;
+  }
+
+  throw new Error(
+    `collectionUpdate non completata per ${title}: job ${job.id}`,
+  );
 }
 
 function assertCollectionUpdateSupportsLegacyRuleSet(shop) {
@@ -1383,8 +1451,8 @@ Expected: JSON output with `productsAnalyzed: 50`, `apply.requested: false`, `pr
 Run:
 
 ```bash
-mkdir -p audit-data/collections-rule-alignment-$(date +%F)
-cat > audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json <<'JSON'
+mkdir -p audits/collections-rule-alignment-$(date +%F)
+cat > audits/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json <<'JSON'
 {
   "collectionIntents": [
     { "generic": true, "handle": "negozio-online", "requirePositiveInventory": true, "title": "Negozio Online" },
@@ -1401,19 +1469,21 @@ cat > audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-inte
 JSON
 ```
 
-Expected: local intent file exists under ignored `audit-data/`. It intentionally omits `Accessori numismatici` until the maintainer chooses between title-driven logic and productType-driven logic.
+Expected: local intent file exists under ignored `audits/`. It intentionally
+omits `Accessori numismatici` until the maintainer chooses between title-driven
+logic and productType-driven logic.
 
 - [ ] **Step 5: Run doctor full dry-run and save plan**
 
 Run:
 
 ```bash
-mkdir -p audit-data/collections-rule-alignment-$(date +%F)
+mkdir -p audits/collections-rule-alignment-$(date +%F)
 npm run collections:doctor -- \
   --shop numisleo.myshopify.com \
-  --intent-file audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
+  --intent-file audits/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
   --json \
-  --write-plan audit-data/collections-rule-alignment-$(date +%F)/doctor-plan.json
+  --write-plan audits/collections-rule-alignment-$(date +%F)/doctor-plan.json
 ```
 
 Expected: full report saved locally; no mutation flags are used.
@@ -1431,7 +1501,7 @@ git commit -m "feat: add collections doctor"
 
 **Files:**
 
-- Local only: `audit-data/collections-rule-alignment-YYYY-MM-DD/doctor-plan.json`
+- Local only: `audits/collections-rule-alignment-YYYY-MM-DD/doctor-plan.json`
 - Optional docs handoff: `docs/superpowers/plans/2026-07-05-numisleo-collection-rule-alignment.md`
 
 - [ ] **Step 1: Inspect proposed changes**
@@ -1441,7 +1511,7 @@ Run:
 ```bash
 node <<'NODE'
 const fs = require("node:fs");
-const path = `audit-data/collections-rule-alignment-${new Date().toISOString().slice(0, 10)}/doctor-plan.json`;
+const path = `audits/collections-rule-alignment-${new Date().toISOString().slice(0, 10)}/doctor-plan.json`;
 const report = JSON.parse(fs.readFileSync(path, "utf8"));
 for (const proposal of report.proposals) {
   console.log(`\\n${proposal.title} (${proposal.handle})`);
@@ -1476,9 +1546,9 @@ Run:
 ```bash
 npm run collections:doctor -- \
   --shop numisleo.myshopify.com \
-  --intent-file audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
+  --intent-file audits/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
   --json \
-  --write-plan audit-data/collections-rule-alignment-$(date +%F)/doctor-plan-reviewed.json
+  --write-plan audits/collections-rule-alignment-$(date +%F)/doctor-plan-reviewed.json
 ```
 
 Expected: only approved, conservative proposals remain.
@@ -1509,13 +1579,18 @@ Run:
 ```bash
 npm run collections:doctor -- \
   --shop numisleo.myshopify.com \
-  --intent-file audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
+  --intent-file audits/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
   --apply \
   --confirm-apply \
-  --write-plan audit-data/collections-rule-alignment-$(date +%F)/doctor-apply-result.json
+  --write-plan audits/collections-rule-alignment-$(date +%F)/doctor-apply-result.json
 ```
 
-Expected: Shopify collection mutations run only for approved `collectionId` values. No new collection is created. If the current Shopify Admin API no longer supports legacy `input.ruleSet`, the command fails before mutation and the apply path must be updated to `collection.sources`.
+Expected: Shopify collection mutations run only for approved `collectionId`
+values. No new collection is created. If Shopify returns an asynchronous
+`collectionUpdate.job`, the command waits until the job reports `done` before
+continuing. If the current Shopify Admin API no longer supports legacy
+`input.ruleSet`, the command fails before mutation and the apply path must be
+updated to `collection.sources`.
 
 - [ ] **Step 3: Verify Admin API after apply**
 
@@ -1524,9 +1599,9 @@ Run:
 ```bash
 npm run collections:doctor -- \
   --shop numisleo.myshopify.com \
-  --intent-file audit-data/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
+  --intent-file audits/collections-rule-alignment-$(date +%F)/numisleo-collection-intents.json \
   --json \
-  --write-plan audit-data/collections-rule-alignment-$(date +%F)/doctor-post-apply.json
+  --write-plan audits/collections-rule-alignment-$(date +%F)/doctor-post-apply.json
 ```
 
 Expected target:
