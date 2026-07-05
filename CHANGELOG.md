@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Aggiunto doctor operativo `npm run collections:doctor` per verificare la
+  copertura delle collezioni Shopify esistenti rispetto ai nuovi prodotti
+  sincronizzati da SyncBay, con proposte conservative di regole automatiche in
+  dry-run e apply solo esplicito.
+- Raffinati i `productType` derivati da categorie eBay affidabili
+  (`Monete italiane in lire:Regno`, `Monete italiane in lire:Repubblica`,
+  `Monete in euro:Italia`, `Monete europee pre euro:Francia`) per ridurre i
+  prodotti disponibili fuori dalle collezioni specifiche.
+
 ## [1.0.28] — 2026-07-05
 
 ### Correzioni
