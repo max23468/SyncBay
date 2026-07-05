@@ -167,10 +167,30 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
+  const collectionGradeCoinType = getCollectionGradeCoinProductType({
+    primaryText,
+    storeText,
+    titleText,
+  });
+
   const commemorativeCoinsSignal = findMatchingSignal(
     signals,
     matchesCommemorativeCoins,
   );
+  const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
+  const coinsSignal = findMatchingSignal(signals, matchesCoins);
+  const collectionGradeCoinSignal =
+    rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
+
+  if (collectionGradeCoinType && collectionGradeCoinSignal) {
+    return buildProposal({
+      category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
+      confidence: collectionGradeCoinSignal.confidence,
+      productType: collectionGradeCoinType,
+      source: collectionGradeCoinSignal.source,
+    });
+  }
+
   if (commemorativeCoinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
@@ -180,7 +200,6 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
-  const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
   if (rareCoinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
@@ -190,7 +209,6 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
-  const coinsSignal = findMatchingSignal(signals, matchesCoins);
   if (coinsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.collectibleCoins,
@@ -394,6 +412,38 @@ function matchesBullionCoins(value: string) {
     "oncia",
     "1 oz",
   ]);
+}
+
+function getCollectionGradeCoinProductType(input: {
+  primaryText: string;
+  storeText: string;
+  titleText: string;
+}): string | null {
+  const text = [input.primaryText, input.storeText, input.titleText].join(" ");
+
+  if (text.includes("monete italiane in lire") && text.includes("regno")) {
+    return "Monete italiane in lire:Regno";
+  }
+  if (text.includes("monete italiane in lire") && text.includes("repubblica")) {
+    return "Monete italiane in lire:Repubblica";
+  }
+  if (text.includes("monete in euro") && text.includes("italia")) {
+    return "Monete in euro:Italia";
+  }
+  if (text.includes("monete in euro") && text.includes("vaticano")) {
+    return "Monete in euro:Vaticano";
+  }
+  if (text.includes("monete in euro") && text.includes("san marino")) {
+    return "Monete in euro:San Marino";
+  }
+  if (text.includes("monete europee pre euro") && text.includes("francia")) {
+    return "Monete europee pre euro:Francia";
+  }
+  if (text.includes("monete europee pre euro")) {
+    return "Monete europee pre euro";
+  }
+
+  return null;
 }
 
 function matchesCommemorativeCoins(value: string) {
