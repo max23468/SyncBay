@@ -98,6 +98,7 @@ test("deletes facets still aligned to SyncBay when evidence disappears", () => {
         value: JSON.stringify(["Bronzo"]),
       },
     ],
+    deleteMissingFacets: true,
     previousSyncBayFacets: [materialeBronzo],
     proposedFacets: [],
   });
@@ -110,6 +111,29 @@ test("deletes facets still aligned to SyncBay when evidence disappears", () => {
       namespace: "syncbay_facets",
     },
   ]);
+  assert.deepEqual(plan.skipped, [
+    { key: "materiale", reason: "evidence_missing" },
+  ]);
+});
+
+test("preserves facets by default when evidence is temporarily missing", () => {
+  const plan = buildProductFacetSyncPlan({
+    currentMetafields: [
+      {
+        key: "materiale",
+        namespace: "syncbay_facets",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Bronzo"]),
+      },
+    ],
+    previousSyncBayFacets: [materialeBronzo],
+    proposedFacets: [],
+  });
+
+  assert.deepEqual(plan.writes, []);
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.deletes, []);
+  assert.deepEqual(plan.preserved, [materialeBronzo]);
   assert.deepEqual(plan.skipped, [
     { key: "materiale", reason: "evidence_missing" },
   ]);

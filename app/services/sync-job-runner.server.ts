@@ -70,10 +70,9 @@ import {
   shouldWriteShopifyPricing,
   type SyncBayPricingWriteBaseline,
 } from "../lib/syncbay-pricing-rules";
-import {
-  buildSyncBayProductFacets,
-  type SyncBayProductFacet,
-} from "../lib/syncbay-product-facets";
+import { type SyncBayProductFacet } from "../lib/syncbay-product-facets";
+import { hasSyncBayProductFacetBaselineChanged } from "../lib/syncbay-product-facet-baseline";
+import { buildSyncBayProductFacetProposalFromSnapshot } from "../lib/syncbay-product-facet-proposal";
 import {
   mergePreferredShopifyVariantForSync,
   selectShopifyVariantForSync,
@@ -2178,12 +2177,12 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     }
 
     const payload = getJsonObject(ebaySnapshot.payload);
-    const proposedFacets = buildSyncBayProductFacets({
+    const proposedFacets = buildSyncBayProductFacetProposalFromSnapshot({
       ebayPrimaryCategoryName: getNullableStringFromRecord(
         payload,
         "ebayPrimaryCategoryName",
       ),
-      itemSpecifics: [],
+      payload,
       storeCategoryName: getNullableStringFromRecord(
         payload,
         "storeCategoryName",
@@ -2230,7 +2229,15 @@ async function runFacetOnlyIncrementalSyncJob(input: {
       writtenCount: facetSync.written.length,
     });
 
-    if (facetSync.written.length > 0 || facetSync.deleted.length > 0) {
+    const shouldPersistFacetBaseline =
+      facetSync.written.length > 0 ||
+      facetSync.deleted.length > 0 ||
+      hasSyncBayProductFacetBaselineChanged(
+        previousSyncBayFacets,
+        facetSync.baselineFacets,
+      );
+
+    if (shouldPersistFacetBaseline) {
       syncBaySnapshots.push({
         capturedAt: now,
         ebayItemId: itemId,

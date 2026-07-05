@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.33] — 2026-07-05
+
+### Correzioni
+
+- Faccette storefront: il runner `facetOnly` usa le `productFacets` già
+  normalizzate negli snapshot eBay prima di ricostruire dai campi grezzi, e
+  preserva i baseline SyncBay quando l'evidenza manca temporaneamente invece di
+  cancellare i metafield Shopify.
+
 ## [1.0.32] — 2026-07-05
 
 ### Sotto il cofano
@@ -3215,6 +3224,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.33]: #1033--2026-07-05
 [1.0.32]: #1032--2026-07-05
 [1.0.31]: #1031--2026-07-05
 [1.0.30]: #1030--2026-07-05

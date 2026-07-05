@@ -58,6 +58,12 @@ ma in questa implementazione non vengono scritti né persistiti come storefront:
 potranno diventare diagnostica persistita solo con una decisione UI dedicata.
 I valori a bassa confidenza non vengono scritti.
 
+Quando il runner automatico trova un baseline SyncBay precedente ma nel batch
+corrente non riesce a ricostruire la stessa evidenza, conserva la faccetta
+writer-owned invece di cancellare il metafield Shopify. Le cancellazioni di
+faccette devono passare da un percorso esplicito e non dalla sola assenza di un
+campo grezzo in eBay o nello snapshot.
+
 Il parser titolo è limitato a segnali espliciti:
 
 - conservazione numismatica: `MB`, `BB`, `qBB`, `SPL`, `qSPL`, `FDC`, `qFDC`,
