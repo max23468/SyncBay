@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.37] — 2026-07-05
+
+### Correzioni
+
+- Runner incrementale: i job `SYNC_INCREMENTAL` non-facet vengono selezionati
+  tutti come lavoro ordinario, incluse sorgenti operative come
+  `conflict_resolution`, `pricing_rule_update` e `catalog_image_repair`, evitando
+  che restino pending dietro la priorità facet.
+
 ## [1.0.36] — 2026-07-05
 
 ### Correzioni
@@ -3254,6 +3263,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.37]: #1037--2026-07-05
 [1.0.36]: #1036--2026-07-05
 [1.0.35]: #1035--2026-07-05
 [1.0.34]: #1034--2026-07-05

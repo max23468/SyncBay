@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 
-const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
-const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
+export const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
+export const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
+export const FACET_BACKFILL_INCREMENTAL_JOB_SOURCE = "facet_backfill";
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 20;
 export const UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES = [
@@ -58,8 +59,12 @@ export function normalizeRunDueLimit(limit?: number) {
 export function isFacetOnlyIncrementalJobPayload(payload: unknown) {
   return (
     getBooleanField(payload, "facetOnly") === true ||
-    getStringField(payload, "source") === "facet_backfill"
+    getStringField(payload, "source") === FACET_BACKFILL_INCREMENTAL_JOB_SOURCE
   );
+}
+
+export function isRegularIncrementalJobPayload(payload: unknown) {
+  return !isFacetOnlyIncrementalJobPayload(payload);
 }
 
 export function prioritizeIncrementalJobsByFacetMode<

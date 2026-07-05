@@ -83,6 +83,9 @@ import {
   shouldEnqueueIncrementalSyncNow,
 } from "../lib/syncbay-incremental-schedule";
 import {
+  FACET_BACKFILL_INCREMENTAL_JOB_SOURCE,
+  SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX,
+  SHOPIFY_IMPORT_JOB_SOURCE,
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   buildSellerEventsNoopMarker,
@@ -301,11 +304,9 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
     if (remainingLimit <= 0) break;
 
     if (type === SyncJobType.SYNC_INCREMENTAL) {
-      const regularJobs = await findDueSyncJobsForType({
+      const regularJobs = await findDueRegularIncrementalSyncJobs({
         limit: remainingLimit,
         now: input.now,
-        type,
-        where: getRegularIncrementalSyncJobWhere(),
       });
       jobs.push(...regularJobs);
 
@@ -331,6 +332,48 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
   }
 
   return jobs;
+}
+
+async function findDueRegularIncrementalSyncJobs(input: {
+  limit: number;
+  now: Date;
+}) {
+  if (input.limit <= 0) return [];
+
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT "id"
+    FROM "SyncJob"
+    WHERE "type"::text = ${SyncJobType.SYNC_INCREMENTAL}
+      AND "status"::text IN (${Prisma.join([
+        SyncJobStatus.PENDING,
+        SyncJobStatus.RETRYING,
+      ])})
+      AND "runAfter" <= ${input.now}
+      AND NOT COALESCE("payload" @> '{"facetOnly": true}'::jsonb, false)
+      AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
+      AND COALESCE("payload"->>'source', '') <> ${SHOPIFY_IMPORT_JOB_SOURCE}
+      AND COALESCE("idempotencyKey", '') NOT LIKE ${`${SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX}%`}
+    ORDER BY "runAfter" ASC, "createdAt" ASC
+    LIMIT ${input.limit}
+  `);
+
+  return findDueSyncJobsByIds(rows.map((row) => row.id));
+}
+
+async function findDueSyncJobsByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+
+  const jobs = await prisma.syncJob.findMany({
+    select: dueSyncJobSelect,
+    where: { id: { in: ids } },
+  });
+  const jobById = new Map(jobs.map((job) => [job.id, job]));
+
+  return ids.flatMap((id) => {
+    const job = jobById.get(id);
+
+    return job ? [job] : [];
+  });
 }
 
 async function findDueSyncJobsForType(input: {
