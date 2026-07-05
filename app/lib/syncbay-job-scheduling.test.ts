@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isFacetOnlyIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -163,6 +163,25 @@ test("treats missing facetOnly as a regular incremental payload", () => {
     }),
     true,
   );
+});
+
+test("treats every non-facet incremental source as regular work", () => {
+  for (const source of [
+    "seller_events_delta",
+    "catalog_reconcile",
+    "conflict_resolution",
+    "pricing_rule_update",
+    "catalog_image_repair",
+    "future_regular_source",
+  ]) {
+    assert.equal(isRegularIncrementalJobPayload({ source }), true);
+  }
+
+  assert.equal(
+    isRegularIncrementalJobPayload({ facetOnly: true, source: "facet_backfill" }),
+    false,
+  );
+  assert.equal(isRegularIncrementalJobPayload({ source: "facet_backfill" }), false);
 });
 
 test("prioritizes regular incremental jobs before facet-only jobs", () => {
