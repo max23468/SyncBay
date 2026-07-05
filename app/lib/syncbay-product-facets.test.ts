@@ -250,6 +250,16 @@ test("normalizes nested eBay store categories to storefront category values", ()
   );
 });
 
+test("prefers store category over conflicting title category fallback", () => {
+  assert.equal(
+    buildSyncBayProductFacets({
+      storeCategoryName: "Medaglie",
+      title: "NL* ITALIA 500 LIRE ARGENTO CARAVELLE 1961 FDC",
+    }).find((facet) => facet.key === "categoria")?.value,
+    "Medaglie",
+  );
+});
+
 test("uses Numisleo-like category values from coin title fallback", () => {
   assert.deepEqual(
     buildSyncBayProductFacets({
