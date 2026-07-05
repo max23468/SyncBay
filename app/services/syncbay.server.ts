@@ -3993,18 +3993,40 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
   if (uniqueMappingIds.length === 0) return snapshotByMappingId;
 
   const snapshots = await prisma.$queryRaw<LatestProductSnapshotForDisplay[]>`
-    SELECT DISTINCT ON ("mappingId")
-      "mappingId",
-      "capturedAt",
-      "currency",
-      "priceAmount",
-      "productStatus",
-      "quantity",
-      "sku",
-      "title"
-    FROM "ProductSnapshot"
-    WHERE "mappingId" IN (${Prisma.join(uniqueMappingIds)})
-    ORDER BY "mappingId", "capturedAt" DESC
+    WITH latest_display AS (
+      SELECT DISTINCT ON ("mappingId")
+        "mappingId",
+        "capturedAt",
+        "currency",
+        "priceAmount",
+        "productStatus",
+        "quantity",
+        "sku",
+        "title"
+      FROM "ProductSnapshot"
+      WHERE "mappingId" IN (${Prisma.join(uniqueMappingIds)})
+      ORDER BY "mappingId", "capturedAt" DESC
+    )
+    SELECT
+      latest_display."mappingId",
+      latest_display."capturedAt",
+      latest_display."currency",
+      latest_display."priceAmount",
+      latest_display."productStatus",
+      COALESCE(latest_display."quantity", latest_stock."quantity") AS "quantity",
+      latest_display."sku",
+      latest_display."title"
+    FROM latest_display
+    LEFT JOIN LATERAL (
+      SELECT "quantity"
+      FROM "ProductSnapshot"
+      WHERE
+        "mappingId" = latest_display."mappingId"
+        AND "quantity" IS NOT NULL
+        AND "currency" IS NOT NULL
+      ORDER BY "capturedAt" DESC
+      LIMIT 1
+    ) latest_stock ON true
   `;
 
   for (const snapshot of snapshots) {
@@ -4267,6 +4289,8 @@ async function getCatalogSummaryCounts(input: {
         WHERE
           ps."mappingId" = m."id"
           AND ps."shopId" = ${input.shopId}
+          AND ps."quantity" IS NOT NULL
+          AND ps."currency" IS NOT NULL
         ORDER BY ps."capturedAt" DESC
         LIMIT 1
       ) ls ON true
