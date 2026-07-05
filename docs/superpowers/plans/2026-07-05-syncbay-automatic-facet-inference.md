@@ -176,7 +176,8 @@ In `docs/data-model.md`, replace the faccette paragraph with:
   prodotto `syncbay_facets.*`. I baseline per proteggere modifiche manuali
   devono essere letti solo da snapshot che contengono davvero `productFacets`:
   snapshot `EBAY` come baseline storica dell'import e snapshot `SYNCBAY` creati
-  dopo scritture automatiche riuscite.
+  dopo scritture automatiche riuscite, inclusi baseline writer-owned vuoti
+  (`productFacets: []`) dopo cancellazioni riuscite.
 ```
 
 - [ ] **Step 5: aggiorna README e toolchain**
@@ -1041,7 +1042,10 @@ In `app/services/sync-job-runner.server.ts`, import:
 
 ```ts
 import type { SyncBayProductFacet } from "../lib/syncbay-product-facets";
-import { getProductFacetsFromSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import {
+  getProductFacetBaselineFromSnapshotPayload,
+  getProductFacetsFromSnapshotPayload,
+} from "../lib/syncbay-product-snapshot-payload";
 ```
 
 Before calling `createShopifyDraftProductsIfEnabled` inside the full
@@ -1095,8 +1099,8 @@ async function getLatestFacetBaselinesByItemId(input: {
 
   for (const row of rows) {
     if (!row.ebayItemId) continue;
-    const facets = getProductFacetsFromSnapshotPayload(row.payload);
-    if (facets.length === 0) continue;
+    const facets = getProductFacetBaselineFromSnapshotPayload(row.payload);
+    if (!facets) continue;
     const candidate = candidates[row.ebayItemId] ?? {};
 
     if (row.source === ProductSnapshotSource.SYNCBAY && !candidate.syncbay) {
@@ -1118,23 +1122,50 @@ async function getLatestFacetBaselinesByItemId(input: {
 }
 ```
 
-The helper intentionally prefers the latest `SYNCBAY` snapshot with
-`productFacets`, because that is the last writer-owned baseline. It falls back
-to the latest `EBAY` snapshot with `productFacets` only for products that have
-not received a writer-owned facet snapshot yet.
+The helper intentionally prefers the latest `SYNCBAY` snapshot with an explicit
+`productFacets` field, because that is the last writer-owned baseline. An empty
+array is a valid writer-owned baseline after successful facet deletion and must
+not fall back to an older `EBAY` baseline. Fall back to the latest `EBAY`
+snapshot with an explicit `productFacets` field only for products that have not
+received a writer-owned facet snapshot yet.
 
 - [ ] **Step 5: salva le faccette scritte nello snapshot diagnostico**
 
 Keep `buildEbayProductSnapshotPayload` focused on high-confidence source facets
 in this PR, but do not rely on arbitrary `SYNCBAY` snapshots as writer guard
 baselines. When `syncShopifyProductFacets` writes or deletes facets, persist the
-resulting writer-facing facet state in the new `SYNCBAY` snapshot payload.
+resulting writer-facing facet state in the new `SYNCBAY` snapshot payload,
+including `productFacets: []` when the resulting writer-facing state is empty.
 The existing `EBAY` `productFacets` field remains a source/proposal fallback and
 an import-era baseline until the first writer-owned `SYNCBAY` baseline exists.
 Do not store medium/low suggestions yet; they are diagnostic material for a
 later UI decision, not storefront data.
 
-Add or update a test in `app/lib/syncbay-product-snapshot-payload.test.ts` so the payload round-trip proves that `productFacets` still contains only writer-facing facets:
+Update `buildEbayProductSnapshotPayload` so an explicitly supplied empty array is
+preserved:
+
+```ts
+    ...(Object.hasOwn(input, "productFacets")
+      ? { productFacets: (input.productFacets ?? []).map(serializeProductFacet) }
+      : {}),
+```
+
+Add this helper:
+
+```ts
+export function getProductFacetBaselineFromSnapshotPayload(
+  value: unknown,
+): SyncBayProductFacet[] | null {
+  const payload = getObject(value);
+  if (!payload || !Array.isArray(payload.productFacets)) return null;
+
+  return getProductFacetsFromSnapshotPayload(value);
+}
+```
+
+Add or update tests in `app/lib/syncbay-product-snapshot-payload.test.ts` so the
+payload round-trip proves that `productFacets` still contains only writer-facing
+facets and that an explicit empty writer-owned baseline is preserved:
 
 ```ts
 test("stores only writer-facing high-confidence product facets in snapshot payloads", () => {
@@ -1163,6 +1194,30 @@ test("stores only writer-facing high-confidence product facets in snapshot paylo
       value: JSON.stringify(["Argento"]),
     },
   ]);
+});
+
+test("preserves explicit empty product facet baselines", () => {
+  const payload = buildEbayProductSnapshotPayload({
+    descriptionMode: "clean_html",
+    issueCodes: [],
+    productFacets: [],
+    skuGenerated: false,
+    status: "importable",
+  });
+
+  assert.deepEqual(payload.productFacets, []);
+  assert.deepEqual(getProductFacetBaselineFromSnapshotPayload(payload), []);
+});
+
+test("does not treat snapshots without productFacets as facet baselines", () => {
+  const payload = buildEbayProductSnapshotPayload({
+    descriptionMode: "clean_html",
+    issueCodes: [],
+    skuGenerated: false,
+    status: "importable",
+  });
+
+  assert.equal(getProductFacetBaselineFromSnapshotPayload(payload), null);
 });
 ```
 
