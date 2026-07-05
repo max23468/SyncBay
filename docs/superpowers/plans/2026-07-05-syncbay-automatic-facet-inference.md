@@ -172,8 +172,11 @@ In `docs/data-model.md`, replace the faccette paragraph with:
 - faccette storefront dedotte da SyncBay: `Categoria`, `Area / Stato`,
   `Materiale`, `Conservazione`, `Perizia`. Ogni inferenza mantiene valore,
   confidenza, fonte, evidenza e `ruleId`. Solo le inferenze ad alta confidenza
-  vengono trasformate in `productFacets`, salvate nello snapshot SyncBay e
-  scritte su Shopify come metafield prodotto `syncbay_facets.*`.
+  vengono trasformate in `productFacets` e scritte su Shopify come metafield
+  prodotto `syncbay_facets.*`. I baseline per proteggere modifiche manuali
+  devono essere letti solo da snapshot che contengono davvero `productFacets`:
+  snapshot `EBAY` come baseline storica dell'import e snapshot `SYNCBAY` creati
+  dopo scritture automatiche riuscite.
 ```
 
 - [ ] **Step 5: aggiorna README e toolchain**
@@ -478,9 +481,13 @@ export interface CurrentProductFacetMetafield {
 
 export interface ProductFacetSyncPlan {
   conflicts: ShopifyProductFacetMetafield[];
+  deletes: Array<{
+    key: string;
+    namespace: string;
+  }>;
   skipped: Array<{
     key: string;
-    reason: "not_high_confidence" | "manual_conflict";
+    reason: "evidence_missing" | "manual_conflict" | "not_high_confidence";
   }>;
   writes: ShopifyProductFacetMetafield[];
 }
@@ -502,14 +509,39 @@ export function buildProductFacetSyncPlan(input: {
       facet,
     ]),
   );
+  const proposedByKey = new Map(
+    input.proposedFacets.map((facet) => [
+      `${facet.namespace}:${facet.key}`,
+      facet,
+    ]),
+  );
   const writes: ShopifyProductFacetMetafield[] = [];
+  const deletes: ProductFacetSyncPlan["deletes"] = [];
   const conflicts: ShopifyProductFacetMetafield[] = [];
   const skipped: ProductFacetSyncPlan["skipped"] = [];
 
-  for (const facet of input.proposedFacets) {
-    const key = `${facet.namespace}:${facet.key}`;
+  const candidateKeys = new Set([
+    ...proposedByKey.keys(),
+    ...previousByKey.keys(),
+  ]);
+
+  for (const key of candidateKeys) {
+    const facet = proposedByKey.get(key);
     const current = currentByKey.get(key);
     const previous = previousByKey.get(key);
+
+    if (!facet) {
+      if (
+        current &&
+        previous &&
+        current.type === previous.type &&
+        current.value === previous.value
+      ) {
+        deletes.push({ key: previous.key, namespace: previous.namespace });
+        skipped.push({ key: previous.key, reason: "evidence_missing" });
+      }
+      continue;
+    }
 
     if (!current) {
       writes.push(toMetafield(facet));
@@ -520,7 +552,11 @@ export function buildProductFacetSyncPlan(input: {
       continue;
     }
 
-    if (previous && current.type === previous.type && current.value === previous.value) {
+    if (
+      previous &&
+      current.type === previous.type &&
+      current.value === previous.value
+    ) {
       writes.push(toMetafield(facet));
       continue;
     }
@@ -529,7 +565,7 @@ export function buildProductFacetSyncPlan(input: {
     skipped.push({ key: facet.key, reason: "manual_conflict" });
   }
 
-  return { conflicts, skipped, writes };
+  return { conflicts, deletes, skipped, writes };
 }
 
 function toMetafield(facet: SyncBayProductFacet): ShopifyProductFacetMetafield {
@@ -636,6 +672,33 @@ test("does not overwrite Shopify values changed after the SyncBay baseline", () 
     { key: "materiale", reason: "manual_conflict" },
   ]);
 });
+
+test("deletes facets still aligned to SyncBay when evidence disappears", () => {
+  const plan = buildProductFacetSyncPlan({
+    currentMetafields: [
+      {
+        key: "materiale",
+        namespace: "syncbay_facets",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Bronzo"]),
+      },
+    ],
+    previousSyncBayFacets: [materialeBronzo],
+    proposedFacets: [],
+  });
+
+  assert.deepEqual(plan.writes, []);
+  assert.deepEqual(plan.conflicts, []);
+  assert.deepEqual(plan.deletes, [
+    {
+      key: "materiale",
+      namespace: "syncbay_facets",
+    },
+  ]);
+  assert.deepEqual(plan.skipped, [
+    { key: "materiale", reason: "evidence_missing" },
+  ]);
+});
 ```
 
 - [ ] **Step 3: run test**
@@ -690,16 +753,21 @@ interface ShopifyMetafieldsSetResponse {
   errors?: Array<{ message: string }>;
 }
 
+interface ShopifyMetafieldsDeleteResponse {
+  data?: {
+    metafieldsDelete?: {
+      userErrors?: Array<{ field?: string[]; message: string }>;
+    };
+  };
+  errors?: Array<{ message: string }>;
+}
+
 export async function syncShopifyProductFacets(input: {
   admin: ShopifyAdminGraphqlClient;
   ownerId: string;
   previousSyncBayFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }) {
-  if (input.proposedFacets.length === 0) {
-    return { conflicts: [], skipped: [], status: "synced" as const, written: [] };
-  }
-
   const currentMetafields = await loadCurrentFacetMetafields(
     input.admin,
     input.ownerId,
@@ -710,24 +778,36 @@ export async function syncShopifyProductFacets(input: {
     proposedFacets: input.proposedFacets,
   });
 
-  if (plan.writes.length === 0) {
+  if (plan.writes.length === 0 && plan.deletes.length === 0) {
     return {
       conflicts: plan.conflicts,
+      deleted: [],
       skipped: plan.skipped,
       status: "synced" as const,
       written: [],
     };
   }
 
-  await writeFacetMetafields(input.admin, {
-    metafields: plan.writes.map((metafield) => ({
-      ...metafield,
-      ownerId: input.ownerId,
-    })),
-  });
+  if (plan.writes.length > 0) {
+    await writeFacetMetafields(input.admin, {
+      metafields: plan.writes.map((metafield) => ({
+        ...metafield,
+        ownerId: input.ownerId,
+      })),
+    });
+  }
+  if (plan.deletes.length > 0) {
+    await deleteFacetMetafields(input.admin, {
+      metafields: plan.deletes.map((metafield) => ({
+        ...metafield,
+        ownerId: input.ownerId,
+      })),
+    });
+  }
 
   return {
     conflicts: plan.conflicts,
+    deleted: plan.deletes,
     skipped: plan.skipped,
     status: "synced" as const,
     written: plan.writes,
@@ -802,6 +882,52 @@ async function writeFacetMetafields(
   }
 
   const userErrors = json.data?.metafieldsSet?.userErrors ?? [];
+  if (userErrors.length > 0) {
+    throw new Error(
+      userErrors
+        .map((error) =>
+          error.field?.length
+            ? `${error.field.join(".")}: ${error.message}`
+            : error.message,
+        )
+        .join("; "),
+    );
+  }
+}
+
+async function deleteFacetMetafields(
+  admin: ShopifyAdminGraphqlClient,
+  input: {
+    metafields: Array<{
+      key: string;
+      namespace: string;
+      ownerId: string;
+    }>;
+  },
+) {
+  const response = await admin.graphql(
+    `#graphql
+    mutation SyncBayDeleteProductFacetMetafields($metafields: [MetafieldIdentifierInput!]!) {
+      metafieldsDelete(metafields: $metafields) {
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    { variables: { metafields: input.metafields } },
+  );
+  const json = (await response.json()) as ShopifyMetafieldsDeleteResponse;
+  if (!response.ok) {
+    throw new Error(
+      `Shopify cancellazione metafield faccette ha risposto con stato HTTP ${response.status}.`,
+    );
+  }
+  if (json.errors?.length) {
+    throw new Error(json.errors.map((error) => error.message).join("; "));
+  }
+
+  const userErrors = json.data?.metafieldsDelete?.userErrors ?? [];
   if (userErrors.length > 0) {
     throw new Error(
       userErrors
@@ -914,10 +1040,14 @@ Implementation note: `updateShopifyProductFromEbay` currently receives only `dra
 In `app/services/sync-job-runner.server.ts`, import:
 
 ```ts
+import type { SyncBayProductFacet } from "../lib/syncbay-product-facets";
 import { getProductFacetsFromSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 ```
 
-Before calling `createShopifyDraftProductsIfEnabled` inside the full `runIncrementalSyncJob` path, load latest SyncBay snapshots for `syncableItemIds`:
+Before calling `createShopifyDraftProductsIfEnabled` inside the full
+`runIncrementalSyncJob` path, load the latest facet baseline-bearing snapshots
+for `syncableItemIds`. Do not treat every `SYNCBAY` snapshot as a baseline:
+pricing/import metadata snapshots often do not contain `productFacets`.
 
 ```ts
 const facetBaselinesByItemId = await getLatestFacetBaselinesByItemId({
@@ -943,27 +1073,66 @@ async function getLatestFacetBaselinesByItemId(input: {
 
   const rows = await prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
-    select: { ebayItemId: true, payload: true },
+    select: { ebayItemId: true, payload: true, source: true },
     where: {
       ebayItemId: { in: input.ebayItemIds },
       shopId: input.shopId,
-      source: ProductSnapshotSource.SYNCBAY,
+      source: {
+        in: [
+          ProductSnapshotSource.SYNCBAY,
+          ProductSnapshotSource.EBAY,
+        ],
+      },
     },
   });
-  const baselines: Record<string, ReturnType<typeof getProductFacetsFromSnapshotPayload>> = {};
+  const candidates: Record<
+    string,
+    {
+      ebay?: SyncBayProductFacet[];
+      syncbay?: SyncBayProductFacet[];
+    }
+  > = {};
 
   for (const row of rows) {
-    if (!row.ebayItemId || baselines[row.ebayItemId]) continue;
-    baselines[row.ebayItemId] = getProductFacetsFromSnapshotPayload(row.payload);
+    if (!row.ebayItemId) continue;
+    const facets = getProductFacetsFromSnapshotPayload(row.payload);
+    if (facets.length === 0) continue;
+    const candidate = candidates[row.ebayItemId] ?? {};
+
+    if (row.source === ProductSnapshotSource.SYNCBAY && !candidate.syncbay) {
+      candidate.syncbay = facets;
+    }
+    if (row.source === ProductSnapshotSource.EBAY && !candidate.ebay) {
+      candidate.ebay = facets;
+    }
+
+    candidates[row.ebayItemId] = candidate;
   }
 
-  return baselines;
+  return Object.fromEntries(
+    Object.entries(candidates).flatMap(([ebayItemId, candidate]) => {
+      const facets = candidate.syncbay ?? candidate.ebay;
+      return facets ? [[ebayItemId, facets]] : [];
+    }),
+  );
 }
 ```
 
+The helper intentionally prefers the latest `SYNCBAY` snapshot with
+`productFacets`, because that is the last writer-owned baseline. It falls back
+to the latest `EBAY` snapshot with `productFacets` only for products that have
+not received a writer-owned facet snapshot yet.
+
 - [ ] **Step 5: salva le faccette scritte nello snapshot diagnostico**
 
-Keep `buildEbayProductSnapshotPayload` focused on high-confidence facets in this PR. The existing `productFacets` field remains the baseline used by the writer guard. Do not store medium/low suggestions yet; they are diagnostic material for a later UI decision, not storefront data.
+Keep `buildEbayProductSnapshotPayload` focused on high-confidence source facets
+in this PR, but do not rely on arbitrary `SYNCBAY` snapshots as writer guard
+baselines. When `syncShopifyProductFacets` writes or deletes facets, persist the
+resulting writer-facing facet state in the new `SYNCBAY` snapshot payload.
+The existing `EBAY` `productFacets` field remains a source/proposal fallback and
+an import-era baseline until the first writer-owned `SYNCBAY` baseline exists.
+Do not store medium/low suggestions yet; they are diagnostic material for a
+later UI decision, not storefront data.
 
 Add or update a test in `app/lib/syncbay-product-snapshot-payload.test.ts` so the payload round-trip proves that `productFacets` still contains only writer-facing facets:
 
@@ -1047,7 +1216,10 @@ if (isFacetOnlySyncJobPayload(job.payload)) {
 
 - [ ] **Step 3: implementa `runFacetOnlyIncrementalSyncJob` senza provider eBay**
 
-Use latest snapshots and mapping titles, not fresh eBay reads:
+Use latest `EBAY` snapshots for source signals and load facet writer baselines
+separately. Do not mix `EBAY` and `SYNCBAY` rows in one "latest snapshot" map,
+because newer `SYNCBAY` pricing/metadata snapshots can lack category fields and
+`productFacets`.
 
 ```ts
 async function runFacetOnlyIncrementalSyncJob(input: {
@@ -1059,7 +1231,12 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const [admin, mappings, snapshots] = await Promise.all([
+  const [
+    admin,
+    mappings,
+    ebaySnapshots,
+    facetBaselinesByItemId,
+  ] = await Promise.all([
     getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
     prisma.productMapping.findMany({
       select: {
@@ -1084,20 +1261,27 @@ async function runFacetOnlyIncrementalSyncJob(input: {
       where: {
         ebayItemId: { in: input.syncableItemIds },
         shopId: input.job.shopId,
-        source: { in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY] },
+        source: ProductSnapshotSource.EBAY,
       },
+    }),
+    getLatestFacetBaselinesByItemId({
+      ebayItemIds: input.syncableItemIds,
+      shopId: input.job.shopId,
     }),
   ]);
 
-  const latestSnapshotByItemId = new Map<
+  const latestEbaySnapshotByItemId = new Map<
     string,
     { payload: Prisma.JsonValue | null; title: string | null }
   >();
-  for (const snapshot of snapshots) {
-    if (!snapshot.ebayItemId || latestSnapshotByItemId.has(snapshot.ebayItemId)) {
+  for (const snapshot of ebaySnapshots) {
+    if (
+      !snapshot.ebayItemId ||
+      latestEbaySnapshotByItemId.has(snapshot.ebayItemId)
+    ) {
       continue;
     }
-    latestSnapshotByItemId.set(snapshot.ebayItemId, {
+    latestEbaySnapshotByItemId.set(snapshot.ebayItemId, {
       payload: snapshot.payload,
       title: snapshot.title,
     });
@@ -1118,16 +1302,16 @@ async function runFacetOnlyIncrementalSyncJob(input: {
       continue;
     }
 
-    const snapshot = latestSnapshotByItemId.get(mapping.ebayItemId);
-    if (!snapshot) {
+    const ebaySnapshot = latestEbaySnapshotByItemId.get(mapping.ebayItemId);
+    if (!ebaySnapshot) {
       skipped.push({
         ebayItemId: mapping.ebayItemId,
-        reason: "snapshot_missing",
+        reason: "ebay_snapshot_missing",
       });
       continue;
     }
 
-    const payload = getJsonObject(snapshot.payload);
+    const payload = getJsonObject(ebaySnapshot.payload);
     const proposedFacets = buildSyncBayProductFacets({
       ebayPrimaryCategoryName: getNullableStringFromRecord(
         payload,
@@ -1135,13 +1319,12 @@ async function runFacetOnlyIncrementalSyncJob(input: {
       ),
       itemSpecifics: [],
       storeCategoryName: getNullableStringFromRecord(payload, "storeCategoryName"),
-      title: snapshot.title,
+      title: ebaySnapshot.title,
     });
-    const previousSyncBayFacets = getProductFacetsFromSnapshotPayload(
-      snapshot.payload,
-    );
+    const previousSyncBayFacets =
+      facetBaselinesByItemId[mapping.ebayItemId] ?? [];
 
-    if (proposedFacets.length === 0) {
+    if (proposedFacets.length === 0 && previousSyncBayFacets.length === 0) {
       skipped.push({
         ebayItemId: mapping.ebayItemId,
         reason: "no_high_confidence_facets",
