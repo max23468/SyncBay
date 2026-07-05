@@ -59,7 +59,7 @@ const checks = [
       "Collegamento eBay mancante o scaduto",
       "Quantità da verificare",
       "Conflitti aperti",
-      "Aggiornamento catalogo in ritardo",
+      "Aggiornamento catalogo da controllare",
       "Importazione incompleta",
       "Impostazioni mancanti",
       "Tutto sotto controllo",

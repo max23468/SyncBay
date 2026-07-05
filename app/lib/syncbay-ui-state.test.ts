@@ -128,7 +128,7 @@ test("reports overdue catalog sync before import and settings issues", () => {
   });
 
   assert.equal(action.kind, "catalog_overdue");
-  assert.equal(action.title, "Aggiornamento catalogo in ritardo");
+  assert.equal(action.title, "Aggiornamento catalogo da controllare");
   assert.equal(action.primaryActionHref, "/app/activity");
 });
 
@@ -173,7 +173,7 @@ test("reports all clear when no action is needed", () => {
 
 test("shows overview status hero for setup and overdue blockers", () => {
   assert.equal(shouldShowOverviewStatusHero("ebay_connection"), true);
-  assert.equal(shouldShowOverviewStatusHero("catalog_overdue"), true);
+  assert.equal(shouldShowOverviewStatusHero("catalog_overdue"), false);
   assert.equal(shouldShowOverviewStatusHero("import_incomplete"), true);
   assert.equal(shouldShowOverviewStatusHero("settings_missing"), true);
   assert.equal(shouldShowOverviewStatusHero("quantity_check"), false);
@@ -581,9 +581,26 @@ test("falls back to a warning lag notice when nothing is quarantined", () => {
   assert.match(notice?.body ?? "", /7 minuti di ritardo/);
 });
 
+test("surfaces recent failed jobs as a provider notice", () => {
+  const notice = getProviderHealthNotice({
+    failedCount: 2,
+    lagBreached: false,
+    quarantinedCount: 0,
+  });
+
+  assert.equal(notice?.kind, "failed_jobs");
+  assert.equal(notice?.tone, "warning");
+  assert.match(notice?.title ?? "", /2 attività non riuscite/);
+  assert.match(notice?.body ?? "", /ultime attività/);
+});
+
 test("returns no provider notice when the sync is healthy", () => {
   assert.equal(
-    getProviderHealthNotice({ quarantinedCount: 0, lagBreached: false }),
+    getProviderHealthNotice({
+      failedCount: 0,
+      quarantinedCount: 0,
+      lagBreached: false,
+    }),
     null,
   );
 });

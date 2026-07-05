@@ -155,6 +155,7 @@ export default function Index() {
   });
   const showBlocker = shouldShowOverviewStatusHero(nextAction.kind);
   const providerNotice = getProviderHealthNotice({
+    failedCount: dashboard.sync.healthDigest.failedCount,
     lagBreached: dashboard.sync.healthDigest.lagBreached,
     lagSeconds: dashboard.sync.healthDigest.lagSeconds,
     quarantinedCount: dashboard.sync.healthDigest.quarantinedCount,
@@ -188,7 +189,7 @@ export default function Index() {
             actionLabel={providerNotice.primaryActionLabel}
             body={providerNotice.body}
             eyebrow={providerNotice.eyebrow}
-            icon={providerNotice.kind === "quarantine" ? "alert-circle" : "clock"}
+            icon={providerNotice.kind === "lag" ? "clock" : "alert-circle"}
             title={providerNotice.title}
             tone={providerNotice.tone}
           />

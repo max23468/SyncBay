@@ -109,7 +109,6 @@ export type TimelineCategoryKind =
 
 const OVERVIEW_STATUS_HERO_KINDS = new Set<NextActionKind>([
   "ebay_connection",
-  "catalog_overdue",
   "import_incomplete",
   "settings_missing",
 ]);
@@ -270,11 +269,11 @@ export function getNextAction(input: NextActionInput): NextAction {
 
   if (input.catalogHealthStatus === "overdue") {
     return {
-      body: "L'ultimo aggiornamento catalogo è oltre la finestra prevista. Controlla lo stato delle attività.",
+      body: "L'ultimo aggiornamento catalogo è ancora oltre la finestra prevista dopo il margine normale del controllo automatico.",
       kind: "catalog_overdue",
       primaryActionHref: "/app/activity",
       primaryActionLabel: "Vedi attività",
-      title: "Aggiornamento catalogo in ritardo",
+      title: "Aggiornamento catalogo da controllare",
       tone: "warning",
     };
   }
@@ -312,6 +311,7 @@ export function getNextAction(input: NextActionInput): NextAction {
 }
 
 export interface ProviderHealthNoticeInput {
+  failedCount?: number;
   lagBreached?: boolean;
   lagSeconds?: number;
   quarantinedCount?: number;
@@ -320,7 +320,7 @@ export interface ProviderHealthNoticeInput {
 export interface ProviderHealthNotice {
   body: string;
   eyebrow: string;
-  kind: "quarantine" | "lag";
+  kind: "failed_jobs" | "quarantine" | "lag";
   primaryActionHref: string;
   primaryActionLabel: string;
   title: string;
@@ -339,6 +339,7 @@ export function getProviderHealthNotice(
   input: ProviderHealthNoticeInput,
 ): ProviderHealthNotice | null {
   const quarantinedCount = Math.max(0, Math.trunc(input.quarantinedCount ?? 0));
+  const failedCount = Math.max(0, Math.trunc(input.failedCount ?? 0));
 
   if (quarantinedCount > 0) {
     return {
@@ -363,15 +364,32 @@ export function getProviderHealthNotice(
 
     return {
       body:
-        `L'ultimo allineamento con eBay è oltre la finestra prevista${
+        `L'allineamento con eBay non si è aggiornato dopo il normale margine del controllo automatico${
           lagLabel ? ` (${lagLabel})` : ""
-        }. Di solito si recupera da solo; se il ritardo persiste, controlla le ` +
-        "attività.",
+        }. Controlla le attività se il ritardo continua o ci sono job bloccati.`,
       eyebrow: PROVIDER_HEALTH_EYEBROW,
       kind: "lag",
       primaryActionHref: "/app/activity",
       primaryActionLabel: PROVIDER_HEALTH_ACTION_LABEL,
-      title: "Allineamento con eBay in ritardo",
+      title: "Allineamento con eBay da controllare",
+      tone: "warning",
+    };
+  }
+
+  if (failedCount > 0) {
+    return {
+      body:
+        "Alcune ultime attività non sono riuscite. Se sono già state recuperate " +
+        "non serve intervenire; altrimenti apri Attività e usa Riprova quando " +
+        "disponibile.",
+      eyebrow: PROVIDER_HEALTH_EYEBROW,
+      kind: "failed_jobs",
+      primaryActionHref: "/app/activity",
+      primaryActionLabel: PROVIDER_HEALTH_ACTION_LABEL,
+      title:
+        failedCount === 1
+          ? "Un'attività non riuscita"
+          : `${formatInteger(failedCount)} attività non riuscite`,
       tone: "warning",
     };
   }
