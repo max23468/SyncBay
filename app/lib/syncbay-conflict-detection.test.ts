@@ -15,6 +15,7 @@ const {
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveLiveAlignedPriceConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
+  shouldResolveOrderStockQuantityConflict,
   shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -113,6 +114,57 @@ test("keeps quantity conflicts active for sellable or mismatched products", () =
       shopifyProductStatus: "ARCHIVED",
       syncBayProductStatus: "ARCHIVED",
       syncBayQuantity: 1,
+    }),
+    false,
+  );
+});
+
+test("resolves quantity conflicts after a real Shopify order stock write", () => {
+  assert.equal(
+    shouldResolveOrderStockQuantityConflict({
+      field: "quantity",
+      mappingStatus: "ACTIVE",
+      nextQuantity: 0,
+      shopifyValue: 0,
+    }),
+    true,
+  );
+});
+
+test("keeps order stock quantity conflicts open when they are not aligned", () => {
+  assert.equal(
+    shouldResolveOrderStockQuantityConflict({
+      field: "quantity",
+      mappingStatus: "ACTIVE",
+      nextQuantity: 0,
+      shopifyValue: 1,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldResolveOrderStockQuantityConflict({
+      field: "price",
+      mappingStatus: "ACTIVE",
+      nextQuantity: 0,
+      shopifyValue: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldResolveOrderStockQuantityConflict({
+      field: "quantity",
+      mappingStatus: "OUT_OF_STOCK",
+      nextQuantity: 0,
+      shopifyValue: 0,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldResolveOrderStockQuantityConflict({
+      field: "quantity",
+      mappingStatus: "ACTIVE",
+      nextQuantity: 0,
+      shopifyValue: "0",
     }),
     false,
   );

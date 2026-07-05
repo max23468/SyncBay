@@ -26,6 +26,7 @@ import {
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveLiveAlignedPriceConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
+  shouldResolveOrderStockQuantityConflict,
   shouldSkipDescriptionConflictWhenEbayHasNoDescription,
   shouldSkipImagesConflictWhenEbayHasNoImages,
   shouldSkipQuantityConflictForArchivedProduct,
@@ -2606,6 +2607,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const planned: Prisma.JsonObject[] = [];
   const updated: Prisma.JsonObject[] = [];
   const skipped: Prisma.JsonObject[] = [];
+  let resolvedQuantityConflictCount = 0;
   const orderCurrencyValidation = validateEbayStockOrderCurrency({
     marketplaceId: connection.marketplaceId,
     orderCurrency: getOrderCurrency(job.payload),
@@ -2781,6 +2783,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     } satisfies Prisma.ProductSnapshotCreateManyInput;
     // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
     await prisma.productSnapshot.create({ data: stockSnapshot });
+    const resolvedQuantityConflicts =
+      await resolveOrderStockQuantityConflicts({
+        mappingId: mapping.id,
+        mappingStatus: mapping.status,
+        nextQuantity,
+        shopId: job.shopId,
+      });
+    resolvedQuantityConflictCount += resolvedQuantityConflicts;
     updated.push({
       currency: currencyValidation.snapshotCurrency,
       ebayItemId: mapping.ebayItemId,
@@ -2791,6 +2801,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       reason: stockDryRun
         ? "stock_real_write_allowlisted"
         : "stock_dry_run_disabled",
+      resolvedQuantityConflicts,
     });
   }
 
@@ -2804,6 +2815,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       realWriteAllowlistEnabled: Boolean(
         process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST?.trim(),
       ),
+      resolvedQuantityConflictCount,
       skipped,
       skippedCount: skipped.length,
       updated,
@@ -4342,6 +4354,54 @@ async function resolveAlignedOpenConflicts(input: {
     where: {
       field: { in: alignedFields },
       mappingId: input.mappingId,
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+
+  return result.count;
+}
+
+async function resolveOrderStockQuantityConflicts(input: {
+  mappingId: string;
+  mappingStatus: ProductMappingStatus;
+  nextQuantity: number;
+  shopId: string;
+}) {
+  const conflicts = await prisma.syncConflict.findMany({
+    select: {
+      field: true,
+      id: true,
+      shopifyValue: true,
+    },
+    where: {
+      field: "quantity",
+      mappingId: input.mappingId,
+      shopId: input.shopId,
+      status: SyncConflictStatus.OPEN,
+    },
+  });
+  const conflictIds = conflicts.flatMap((conflict) =>
+    shouldResolveOrderStockQuantityConflict({
+      field: conflict.field,
+      mappingStatus: input.mappingStatus,
+      nextQuantity: input.nextQuantity,
+      shopifyValue: conflict.shopifyValue,
+    })
+      ? [conflict.id]
+      : [],
+  );
+
+  if (conflictIds.length === 0) return 0;
+
+  const result = await prisma.syncConflict.updateMany({
+    data: {
+      resolution: SyncConflictResolution.KEEP_SHOPIFY,
+      resolvedAt: new Date(),
+      status: SyncConflictStatus.RESOLVED,
+    },
+    where: {
+      id: { in: conflictIds },
       shopId: input.shopId,
       status: SyncConflictStatus.OPEN,
     },
