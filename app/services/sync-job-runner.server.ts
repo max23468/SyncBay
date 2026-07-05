@@ -2785,10 +2785,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     await prisma.productSnapshot.create({ data: stockSnapshot });
     const resolvedQuantityConflicts =
       await resolveOrderStockQuantityConflicts({
+        defaultLocationGid: job.shop.defaultLocationGid,
         mappingId: mapping.id,
         mappingStatus: mapping.status,
         nextQuantity,
+        shopDomain: job.shop.shopDomain,
         shopId: job.shopId,
+        shopifyProductGid: mapping.shopifyProductGid,
+        shopifyVariantGid: mapping.shopifyVariantGid,
       });
     resolvedQuantityConflictCount += resolvedQuantityConflicts;
     updated.push({
@@ -4155,10 +4159,11 @@ function getDetectedShopifyConflicts(
     preferredVariantGid,
     variants: product.variants?.nodes,
   });
-  const variantLocationQuantity = getVariantLocationQuantity(variant);
-  const shopifyQuantity = hasManagedLocation
-    ? variantLocationQuantity
-    : (variantLocationQuantity ?? variant?.inventoryQuantity);
+  const shopifyQuantity = getLiveShopifyQuantityForConflict(
+    product,
+    hasManagedLocation,
+    preferredVariantGid,
+  );
   const readyImageCount =
     product.media?.nodes?.filter(
       (media) =>
@@ -4216,6 +4221,22 @@ function getDetectedShopifyConflicts(
       shopifyValue: Prisma.JsonValue;
     } => Boolean(field),
   );
+}
+
+function getLiveShopifyQuantityForConflict(
+  product: ShopifyProductForConflict,
+  hasManagedLocation: boolean,
+  preferredVariantGid?: string | null,
+) {
+  const variant = selectShopifyVariantForSync({
+    preferredVariantGid,
+    variants: product.variants?.nodes,
+  });
+  const variantLocationQuantity = getVariantLocationQuantity(variant);
+
+  return hasManagedLocation
+    ? variantLocationQuantity
+    : (variantLocationQuantity ?? variant?.inventoryQuantity ?? null);
 }
 
 function getVariantLocationQuantity(
@@ -4363,16 +4384,19 @@ async function resolveAlignedOpenConflicts(input: {
 }
 
 async function resolveOrderStockQuantityConflicts(input: {
+  defaultLocationGid: string | null;
   mappingId: string;
   mappingStatus: ProductMappingStatus;
   nextQuantity: number;
+  shopDomain: string;
   shopId: string;
+  shopifyProductGid: string | null;
+  shopifyVariantGid: string | null;
 }) {
   const conflicts = await prisma.syncConflict.findMany({
     select: {
       field: true,
       id: true,
-      shopifyValue: true,
     },
     where: {
       field: "quantity",
@@ -4381,12 +4405,28 @@ async function resolveOrderStockQuantityConflicts(input: {
       status: SyncConflictStatus.OPEN,
     },
   });
+  if (conflicts.length === 0 || !input.shopifyProductGid) return 0;
+
+  const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
+  const product = await getShopifyProductForConflict(
+    admin,
+    input.shopifyProductGid,
+    input.defaultLocationGid,
+    { preferredVariantGid: input.shopifyVariantGid },
+  );
+  const liveShopifyQuantity = product
+    ? getLiveShopifyQuantityForConflict(
+        product,
+        Boolean(input.defaultLocationGid),
+        input.shopifyVariantGid,
+      )
+    : null;
   const conflictIds = conflicts.flatMap((conflict) =>
     shouldResolveOrderStockQuantityConflict({
       field: conflict.field,
+      liveShopifyQuantity,
       mappingStatus: input.mappingStatus,
       nextQuantity: input.nextQuantity,
-      shopifyValue: conflict.shopifyValue,
     })
       ? [conflict.id]
       : [],
