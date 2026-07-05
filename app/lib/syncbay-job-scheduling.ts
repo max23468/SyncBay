@@ -55,6 +55,30 @@ export function normalizeRunDueLimit(limit?: number) {
   return Math.min(Math.max(Number(limit), 1), MAX_RUN_DUE_LIMIT);
 }
 
+export function isFacetOnlyIncrementalJobPayload(payload: unknown) {
+  return (
+    getBooleanField(payload, "facetOnly") === true ||
+    getStringField(payload, "source") === "facet_backfill"
+  );
+}
+
+export function prioritizeIncrementalJobsByFacetMode<
+  T extends { payload: unknown },
+>(jobs: T[]) {
+  const regularJobs: T[] = [];
+  const facetOnlyJobs: T[] = [];
+
+  for (const job of jobs) {
+    if (isFacetOnlyIncrementalJobPayload(job.payload)) {
+      facetOnlyJobs.push(job);
+    } else {
+      regularJobs.push(job);
+    }
+  }
+
+  return [...regularJobs, ...facetOnlyJobs];
+}
+
 export function getDuplicateShopifyChangeJobIdsToCancel(
   jobs: Array<{
     createdAt: Date;
@@ -182,6 +206,14 @@ function getStringField(value: unknown, key: string) {
   const field = (value as Record<string, unknown>)[key];
 
   return typeof field === "string" ? field : null;
+}
+
+function getBooleanField(value: unknown, key: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const field = (value as Record<string, unknown>)[key];
+
+  return typeof field === "boolean" ? field : null;
 }
 
 function getShopifyChangeJobDedupeKey(input: {

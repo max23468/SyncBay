@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.34] — 2026-07-05
+
+### Correzioni
+
+- Runner incrementale: la selezione dei job `SYNC_INCREMENTAL` regolari non si
+  basa più su un filtro JSON `NOT facetOnly=true` che escludeva i payload senza
+  campo `facetOnly`, così i job `seller_events_delta` tornano a essere drenati
+  prima dei job Shopify change.
+
 ## [1.0.33] — 2026-07-05
 
 ### Correzioni
@@ -3224,6 +3233,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.34]: #1034--2026-07-05
 [1.0.33]: #1033--2026-07-05
 [1.0.32]: #1032--2026-07-05
 [1.0.31]: #1031--2026-07-05

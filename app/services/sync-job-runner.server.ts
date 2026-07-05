@@ -89,6 +89,7 @@ import {
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
+  prioritizeIncrementalJobsByFacetMode,
 } from "../lib/syncbay-job-scheduling";
 import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
@@ -229,6 +230,8 @@ const CATALOG_IMAGE_REPAIR_MAX_LIMIT = 100;
 const FACET_BACKFILL_MAX_ACTIVE_BATCHES = 2;
 const INCREMENTAL_SYNC_BATCH_SIZE = RUNNER_EBAY_ITEM_BATCH_SIZE;
 const INCREMENTAL_SYNC_MAX_ATTEMPTS = 3;
+const INCREMENTAL_SYNC_CANDIDATE_MULTIPLIER = 4;
+const INCREMENTAL_SYNC_CANDIDATE_LIMIT = 100;
 const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
 const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
@@ -301,24 +304,17 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
     if (remainingLimit <= 0) break;
 
     if (type === SyncJobType.SYNC_INCREMENTAL) {
-      const regularJobs = await findDueSyncJobsForType({
-        limit: remainingLimit,
+      const incrementalJobs = await findDueSyncJobsForType({
+        limit: getIncrementalCandidateLimit(remainingLimit),
         now: input.now,
         type,
-        where: getRegularIncrementalSyncJobWhere(),
       });
-      jobs.push(...regularJobs);
-
-      const facetRemainingLimit = input.limit - jobs.length;
-      if (facetRemainingLimit <= 0) break;
-
-      const facetJobs = await findDueSyncJobsForType({
-        limit: facetRemainingLimit,
-        now: input.now,
-        type,
-        where: getFacetOnlyIncrementalSyncJobWhere(),
-      });
-      jobs.push(...facetJobs);
+      jobs.push(
+        ...prioritizeIncrementalJobsByFacetMode(incrementalJobs).slice(
+          0,
+          remainingLimit,
+        ),
+      );
       continue;
     }
 
@@ -331,6 +327,13 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
   }
 
   return jobs;
+}
+
+function getIncrementalCandidateLimit(remainingLimit: number) {
+  return Math.min(
+    Math.max(remainingLimit * INCREMENTAL_SYNC_CANDIDATE_MULTIPLIER, 1),
+    INCREMENTAL_SYNC_CANDIDATE_LIMIT,
+  );
 }
 
 async function findDueSyncJobsForType(input: {
@@ -4707,7 +4710,10 @@ function resolveOpenConflictsForInactiveMappingMutation(input: {
 
 function getRegularIncrementalSyncJobWhere(): Prisma.SyncJobWhereInput {
   return {
-    NOT: [getFacetOnlyIncrementalSyncJobWhere()],
+    OR: [
+      { payload: { path: ["source"], equals: "seller_events_delta" } },
+      { payload: { path: ["source"], equals: "catalog_reconcile" } },
+    ],
   };
 }
 

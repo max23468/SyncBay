@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isFacetOnlyIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(
@@ -149,6 +149,30 @@ test("normalizes run-due job limits for cron drain batches", () => {
   assert.equal(normalizeRunDueLimit(0), 1);
   assert.equal(normalizeRunDueLimit(12), 12);
   assert.equal(normalizeRunDueLimit(999), 20);
+});
+
+test("treats missing facetOnly as a regular incremental payload", () => {
+  assert.equal(
+    isFacetOnlyIncrementalJobPayload({ source: "seller_events_delta" }),
+    false,
+  );
+  assert.equal(
+    isFacetOnlyIncrementalJobPayload({
+      facetOnly: true,
+      source: "facet_backfill",
+    }),
+    true,
+  );
+});
+
+test("prioritizes regular incremental jobs before facet-only jobs", () => {
+  assert.deepEqual(
+    prioritizeIncrementalJobsByFacetMode([
+      { id: "facet", payload: { facetOnly: true, source: "facet_backfill" } },
+      { id: "regular", payload: { source: "seller_events_delta" } },
+    ]).map((job) => job.id),
+    ["regular", "facet"],
+  );
 });
 
 test("includes run identity in split job idempotency keys", () => {
