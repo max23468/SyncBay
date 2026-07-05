@@ -798,6 +798,28 @@ git commit -m "feat: propose collection rule updates"
 
 - [ ] **Step 1: Add failing tests for collection-grade product types**
 
+First update the existing test
+`keeps commemorative details in productType without using a narrow Shopify
+category` so it still covers the generic commemorative fallback without using an
+input that now has a collection-grade product type. Do not keep
+`Monete e banconote:Monete in euro:Italia` plus
+`Italia 2 Euro commemorativo FDC 2024` expecting `Monete commemorative`; that
+case is now covered by the new Euro Italia assertion below and should expect
+`Monete in euro:Italia`.
+
+Use a fallback-only input such as:
+
+```ts
+resolveShopifyCategoryProposal({
+  ebayPrimaryCategoryName: "Monete e banconote:Monete commemorative",
+  title: "Moneta commemorativa Expo 2015 FDC",
+})
+```
+
+Expected: the existing test still asserts `productType: "Monete commemorative"`
+and `shopifyCategoryName: "Collectible Coins"`, but no longer conflicts with
+the Euro Italia refinement.
+
 Append these tests to `app/lib/syncbay-shopify-category-mapping.test.ts`:
 
 ```ts
