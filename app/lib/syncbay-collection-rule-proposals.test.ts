@@ -100,6 +100,37 @@ test("does not propose changes for generic collections", () => {
   assert.deepEqual(review.warnings, []);
 });
 
+test("does not propose a no-op when the live rule already matches the intent regardless of key order", () => {
+  const review = buildCollectionRuleReview({
+    collectionIntents: [
+      {
+        handle: "francobolli",
+        productTypeContains: ["Francobolli"],
+        requirePositiveInventory: true,
+        title: "Francobolli",
+      },
+    ],
+    collections: [
+      {
+        handle: "francobolli",
+        id: "gid://shopify/Collection/9",
+        ruleSet: {
+          appliedDisjunctively: false,
+          // Shopify returns rule fields as column/relation/condition.
+          rules: [
+            { column: "TYPE", relation: "CONTAINS", condition: "Francobolli" },
+            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+          ],
+        },
+        title: "Francobolli",
+      },
+    ],
+  });
+
+  assert.deepEqual(review.proposals, []);
+  assert.deepEqual(review.warnings, []);
+});
+
 test("uses product type rules from explicit collection intent", () => {
   const review = buildCollectionRuleReview({
     collectionIntents: [

@@ -176,10 +176,16 @@ function areRuleSetsEqual(
 function normalizeRuleSet(ruleSet: ShopifyCollectionRuleSet) {
   return {
     appliedDisjunctively: ruleSet.appliedDisjunctively,
-    rules: [...ruleSet.rules].sort((left, right) =>
-      `${left.column}:${left.relation}:${left.condition}`.localeCompare(
-        `${right.column}:${right.relation}:${right.condition}`,
+    rules: ruleSet.rules
+      .map((rule) => ({
+        column: rule.column,
+        condition: rule.condition,
+        relation: rule.relation,
+      }))
+      .sort((left, right) =>
+        `${left.column}:${left.relation}:${left.condition}`.localeCompare(
+          `${right.column}:${right.relation}:${right.condition}`,
+        ),
       ),
-    ),
   };
 }
