@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Aggiunto il piano operativo per riallineare le collezioni esistenti di
+  Numisleo ai `productType` SyncBay, con doctor dry-run, intenti revisionati e
+  apply Shopify esplicito.
+
 ## [1.0.25] — 2026-07-05
 
 ### Correzioni
