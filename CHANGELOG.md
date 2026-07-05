@@ -29,6 +29,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   Numisleo ai `productType` SyncBay, con doctor dry-run, intenti revisionati e
   apply Shopify esplicito.
 
+## [1.0.27] — 2026-07-05
+
+### Correzioni
+
+- Faccette storefront: il backfill ordinario passa ora dal runner incrementale
+  `facetOnly`, deduce i cinque metafield da regole deterministiche SyncBay,
+  salva baseline writer-owned anche vuote e non sovrascrive valori Shopify
+  modificati manualmente.
+
 ## [1.0.26] — 2026-07-05
 
 ### Correzioni
@@ -3156,6 +3165,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.27]: #1027--2026-07-05
 [1.0.26]: #1026--2026-07-05
 [1.0.25]: #1025--2026-07-05
 [1.0.24]: #1024--2026-07-04

@@ -5,6 +5,13 @@ export type SyncBayProductFacetKey =
   | "conservazione"
   | "perizia";
 
+export type SyncBayProductFacetConfidence = "high" | "medium" | "low";
+
+export type SyncBayProductFacetSource =
+  | "title_rule"
+  | "category_hint"
+  | "ebay_specific";
+
 export interface EbayItemSpecific {
   name: string;
   values: string[];
@@ -12,6 +19,13 @@ export interface EbayItemSpecific {
 
 export interface SyncBayProductFacet extends ShopifyProductFacetMetafield {
   label: string;
+}
+
+export interface SyncBayProductFacetInference extends SyncBayProductFacet {
+  confidence: SyncBayProductFacetConfidence;
+  evidence: string[];
+  ruleId: string;
+  source: SyncBayProductFacetSource;
 }
 
 export interface ShopifyProductFacetMetafield {
@@ -91,17 +105,48 @@ const FACETS = [
 export function buildSyncBayProductFacets(
   input: SyncBayProductFacetInput,
 ): SyncBayProductFacet[] {
+  return buildSyncBayProductFacetInferences(input).flatMap((inference) =>
+    inference.confidence === "high"
+      ? [
+          {
+            key: inference.key,
+            label: inference.label,
+            namespace: inference.namespace,
+            type: inference.type,
+            value: inference.value,
+          },
+        ]
+      : [],
+  );
+}
+
+export function buildSyncBayProductFacetInferences(
+  input: SyncBayProductFacetInput,
+): SyncBayProductFacetInference[] {
   return FACETS.flatMap((facet) => {
-    const values = getFacetValues(facet.key, input, facet.aliases);
+    const inference = getFacetInference(facet.key, input, facet.aliases);
+    if (!inference) return [];
+
     const normalizedValues =
-      facet.key === "perizia" ? normalizePeriziaValues(values) : values;
+      facet.key === "perizia"
+        ? normalizePeriziaValues(inference.values)
+        : inference.values;
     const productFacet = buildFacet({
       key: facet.key,
       label: facet.label,
       values: normalizedValues,
     });
+    if (!productFacet) return [];
 
-    return productFacet ? [productFacet] : [];
+    return [
+      {
+        ...productFacet,
+        confidence: inference.confidence,
+        evidence: inference.evidence,
+        ruleId: inference.ruleId,
+        source: inference.source,
+      },
+    ];
   });
 }
 
@@ -139,31 +184,70 @@ export function parseEbayTradingItemSpecifics(
   });
 }
 
-function getFacetValues(
+function getFacetInference(
   key: SyncBayProductFacetKey,
   input: SyncBayProductFacetInput,
   aliases: readonly string[],
-) {
-  const specificValues = getSpecificValues(input.itemSpecifics ?? [], aliases);
+):
+  | {
+      confidence: SyncBayProductFacetConfidence;
+      evidence: string[];
+      ruleId: string;
+      source: SyncBayProductFacetSource;
+      values: string[];
+    }
+  | null {
   const titleValues = getTitleFacetValues(key, input.title);
-  if (
-    key === "area_stato" &&
-    titleValues.length > 0 &&
-    shouldPreferTitleArea(specificValues, titleValues)
-  ) {
-    return titleValues;
+  if (titleValues.length > 0) {
+    return {
+      confidence: "high",
+      evidence: [input.title ?? ""].filter(Boolean),
+      ruleId: `title:${key}`,
+      source: "title_rule",
+      values: titleValues,
+    };
   }
-  if (specificValues.length > 0) return specificValues;
 
   if (key === "categoria") {
-    const fallbackValue =
-      getStorefrontCategoryValue(input.storeCategoryName) ??
-      getStorefrontCategoryValue(input.ebayPrimaryCategoryName) ??
-      titleValues[0];
-    return fallbackValue ? [fallbackValue] : [];
+    const storefrontCategory = getStorefrontCategoryValue(
+      input.storeCategoryName,
+    );
+    if (storefrontCategory) {
+      return {
+        confidence: "high",
+        evidence: [input.storeCategoryName ?? ""].filter(Boolean),
+        ruleId: "category_hint:store",
+        source: "category_hint",
+        values: [storefrontCategory],
+      };
+    }
+
+    const marketplaceCategory = getStorefrontCategoryValue(
+      input.ebayPrimaryCategoryName,
+    );
+    if (marketplaceCategory) {
+      return {
+        confidence: "medium",
+        evidence: [input.ebayPrimaryCategoryName ?? ""].filter(Boolean),
+        ruleId: "category_hint:marketplace",
+        source: "category_hint",
+        values: [marketplaceCategory],
+      };
+    }
   }
 
-  return titleValues;
+  const specificValues = getSpecificValues(input.itemSpecifics ?? [], aliases);
+  if (specificValues.length > 0) {
+    return {
+      confidence: "medium",
+      evidence: specificValues,
+      ruleId: `ebay_specific:${key}`,
+      source: "ebay_specific",
+      values: specificValues,
+    };
+  }
+
+  return null;
 }
 
 function getSpecificValues(
@@ -442,15 +526,6 @@ function getTitlePeriziaValues(title: string) {
   }
 
   return [];
-}
-
-function shouldPreferTitleArea(specificValues: string[], titleValues: string[]) {
-  return (
-    specificValues.length === 0 ||
-    (specificValues.length === 1 &&
-      normalizeLookupKey(specificValues[0]!) === "italia" &&
-      normalizeLookupKey(titleValues[0]!) !== "italia")
-  );
 }
 
 function normalizePeriziaValues(values: string[]) {

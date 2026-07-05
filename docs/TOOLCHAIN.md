@@ -276,16 +276,14 @@ legacy riconosciuti e non forza conflitti manuali generici. La sovrascrittura
 di tutti i conflitti categoria manuali richiede una decisione esplicita del
 maintainer e i flag `--force-category-conflicts` e, in apply, anche
 `--confirm-force-category-conflicts`.
-`npm run facets:backfill` è un dry-run di default: per i mapping ACTIVE calcola
-le cinque faccette storefront `syncbay_facets.*` da snapshot eBay e, salvo
-`--snapshot-only`, da Trading API `GetItem` con `ItemSpecifics`. Confronta i
-metafield Shopify attuali e classifica prodotti applicabili, già corretti,
-conflitti manuali e incerti; senza flag di apply non scrive prodotti Shopify e
-non modifica eBay, salvo refresh della sessione offline Shopify e del token
-eBay cifrato se scaduti. La scrittura reale richiede
-`--apply --confirm-apply`, usa Shopify Admin GraphQL `metafieldsSet`, aggiunge
-solo metafield mancanti e salta prodotti con valori `syncbay_facets.*` già
-presenti ma diversi.
+`npm run facets:backfill` resta uno strumento diagnostico o di emergenza. Il
+flusso ordinario di compilazione faccette passa dal runner `SYNC_INCREMENTAL`
+e dai job automatici `facetOnly`.
+Le definizioni Shopify dei metafield faccette restano da versionare appena la
+toolchain consente di dichiarare il namespace esistente `syncbay_facets` senza
+migrazione. Il runner può comunque scrivere i metafield prodotto già usati da
+SyncBay; questa nota riguarda governance e Search & Discovery, non il backfill
+automatico dei valori.
 `npm run catalog:images:doctor` è in sola lettura sui listing eBay: misura la
 copertura immagini degli snapshot Catalogo e chiama Trading API `GetItem` solo
 per le prime righe senza immagine, così distingue listing davvero senza immagini

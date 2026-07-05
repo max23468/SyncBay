@@ -41,14 +41,22 @@ Le faccette vengono scritte come metafield prodotto Shopify nel namespace
 - `conservazione`;
 - `perizia`.
 
-Le fonti sono:
+Le fonti vengono valutate in questo ordine:
 
-- categoria negozio eBay come fonte preferita per `Categoria`;
-- categoria marketplace eBay solo come fallback per `Categoria`;
-- `ItemSpecifics` Trading API per `Area / Stato`, `Materiale`,
-  `Conservazione` e `Perizia`;
-- titolo eBay come fallback conservativo, e come raffinamento di `Area / Stato`
-  quando eBay espone solo valori generici come `Italia`.
+- titolo eBay, tramite regole deterministiche SyncBay con lista chiusa di
+  pattern testati;
+- categoria negozio eBay e categoria marketplace eBay come indizi per
+  `Categoria`, non come fonte esaustiva;
+- metafield Shopify esistenti e ultimo snapshot SyncBay come baseline per
+  proteggere modifiche manuali;
+- `ItemSpecifics` Trading API solo come fonte opportunistica quando presenti e
+  coerenti con le regole SyncBay.
+
+SyncBay scrive automaticamente solo valori ad alta confidenza. I valori a
+confidenza media restano inferenze diagnostiche in memoria durante il calcolo,
+ma in questa implementazione non vengono scritti né persistiti come storefront:
+potranno diventare diagnostica persistita solo con una decisione UI dedicata.
+I valori a bassa confidenza non vengono scritti.
 
 Il parser titolo è limitato a segnali espliciti:
 
@@ -68,6 +76,11 @@ Il parser titolo è limitato a segnali espliciti:
 un valore esplicito: `Con perizia` o `Senza perizia`. Se il campo manca e il
 titolo contiene solo un cognome o un indizio non esplicito, SyncBay non deduce
 automaticamente `Con perizia` o `Senza perizia`.
+
+L'obiettivo non è compilare sempre tutte le faccette. L'obiettivo è compilare
+solo i valori che SyncBay può difendere con evidenza leggibile: token, frase,
+categoria sorgente o regola applicata. Se l'evidenza manca, il metafield resta
+assente.
 
 SyncBay non crea tag categoria o tag filtro per queste faccette. La
 configurazione e l'ordine dei filtri nello storefront restano competenza Shopify

@@ -324,12 +324,14 @@ Opzioni future:
 - cinque faccette storefront controllate come metafield prodotto Shopify:
   `Categoria`, `Area / Stato`, `Materiale`, `Conservazione`, `Perizia`.
 
-Decisione attuale: ADR 0016. Le faccette vengono lette da categoria negozio
-eBay, categoria marketplace, `ItemSpecifics` Trading API e, quando i campi
-strutturati sono insufficienti, da un parser titolo conservativo con lista chiusa
-di segnali numismatici. I valori vengono scritti nel namespace
-`syncbay_facets` e salvati nel payload diagnostico. SyncBay non crea tag filtro e
-non deduce valori mancanti da descrizione HTML o assenza del campo.
+Decisione attuale: ADR 0016. Le faccette vengono dedotte principalmente da
+titolo eBay con regole deterministiche SyncBay. Categoria negozio, categoria
+marketplace e `ItemSpecifics` Trading API restano indizi opportunistici, ma il
+runner non dipende da campi strutturati eBay per compilare i cinque metafield.
+I valori scritti nel namespace `syncbay_facets` devono avere confidenza alta e
+vengono salvati nel payload diagnostico con evidenza e regola applicata.
+SyncBay non crea tag filtro e non deduce valori mancanti da descrizione HTML o
+assenza del campo.
 
 Post-1.0:
 
@@ -370,13 +372,12 @@ espliciti e pattern riconosciuti, senza trasformare il backfill in una
 sovrascrittura massiva delle categorie manuali.
 
 Le cinque faccette storefront `syncbay_facets.*` seguono lo stesso principio:
-il comando operativo `npm run facets:backfill` è dry-run di default, confronta i
-metafield Shopify attuali con la proposta SyncBay derivata da snapshot eBay,
-titolo e Trading API `GetItem` con `ItemSpecifics`, e classifica righe
-applicabili, già corrette, conflitti manuali e incerte. La scrittura reale
-richiede `--apply --confirm-apply`, usa Shopify Admin GraphQL `metafieldsSet`,
-aggiunge solo metafield mancanti e non attiva filtri storefront Search &
-Discovery.
+il runner incrementale deduce valori ad alta confidenza da titolo, categoria e
+indizi disponibili, confronta i metafield Shopify attuali con l'ultimo baseline
+writer-owned SyncBay e aggiorna solo valori mancanti o ancora allineati a
+SyncBay. Il backfill ordinario passa da job automatici `SYNC_INCREMENTAL`
+`facetOnly`; `npm run facets:backfill` resta diagnostica/emergenza e non è più
+il flusso ordinario di compilazione.
 
 ## Matching prodotti esistenti
 

@@ -754,6 +754,10 @@ function loadDotEnv(path) {
 }
 
 function printReport(report) {
+  console.log(
+    "Modalità diagnostica/emergenza: il backfill ordinario faccette passa dal runner incrementale facetOnly.",
+  );
+  console.log("");
   console.log(`Shop: ${report.shopDomain}`);
   console.log(`Fonte: ${report.source}`);
   console.log(`Mapping ACTIVE totali: ${report.activeMappingsTotal}`);
@@ -887,10 +891,12 @@ function parseArgs(rawArgs) {
 function printUsage() {
   console.log(`Uso: npm run facets:backfill -- [--shop dominio.myshopify.com] [--limit N] [--json] [--snapshot-only] [--apply --confirm-apply]
 
-Dry-run faccette: analizza i mapping ACTIVE, calcola le cinque faccette
-storefront SyncBay da snapshot eBay e, salvo --snapshot-only, da Trading API
-GetItem. Di default non scrive prodotti Shopify e non modifica eBay, salvo
-refresh della sessione offline Shopify e del token eBay cifrato se scaduti.
+Diagnostica/emergenza faccette: il backfill ordinario non passa da questo
+script, ma dal runner incrementale SYNC_INCREMENTAL con payload facetOnly.
+Questo comando analizza i mapping ACTIVE e calcola le cinque faccette storefront
+SyncBay da snapshot eBay e, salvo --snapshot-only, da Trading API GetItem. Di
+default non scrive prodotti Shopify e non modifica eBay, salvo refresh della
+sessione offline Shopify e del token eBay cifrato se scaduti.
 
   --limit N         Analizza solo i primi N mapping.
   --snapshot-only   Non chiama eBay Trading API; usa solo snapshot e titolo.

@@ -6,6 +6,7 @@ import * as productSnapshotPayload from "./syncbay-product-snapshot-payload.ts";
 
 const {
   buildEbayProductSnapshotPayload,
+  getProductFacetBaselineFromSnapshotPayload,
   getProductFacetsFromSnapshotPayload,
   getProductSnapshotThumbnailUrlByMappingIdFromRows,
   getProductSnapshotThumbnailUrl,
@@ -163,6 +164,19 @@ test("persists approved storefront facets for import audit", () => {
   );
 });
 
+test("persists explicit empty storefront facet baseline", () => {
+  const payload = buildEbayProductSnapshotPayload({
+    descriptionMode: "facet_only",
+    imageUrls: [],
+    issueCodes: [],
+    productFacets: [],
+    skuGenerated: false,
+    status: "synced",
+  });
+
+  assert.deepEqual(payload.productFacets, []);
+});
+
 test("reads approved storefront facets from snapshot payloads", () => {
   assert.deepEqual(
     getProductFacetsFromSnapshotPayload({
@@ -206,6 +220,14 @@ test("reads approved storefront facets from snapshot payloads", () => {
         value: "Italia",
       },
     ],
+  );
+});
+
+test("distinguishes missing facet baseline from explicit empty baseline", () => {
+  assert.equal(getProductFacetBaselineFromSnapshotPayload({}), null);
+  assert.deepEqual(
+    getProductFacetBaselineFromSnapshotPayload({ productFacets: [] }),
+    [],
   );
 });
 
