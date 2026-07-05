@@ -71,6 +71,7 @@ export async function syncShopifyProductFacets(input: {
   });
   const baselineFacets = buildWriterOwnedFacetBaseline({
     conflicts: plan.conflicts,
+    preservedFacets: plan.preserved,
     proposedFacets: input.proposedFacets,
   });
 
@@ -114,14 +115,25 @@ export async function syncShopifyProductFacets(input: {
 
 function buildWriterOwnedFacetBaseline(input: {
   conflicts: Array<{ key: string; namespace: string }>;
+  preservedFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }) {
   const conflictKeys = new Set(
     input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`),
   );
-  return input.proposedFacets.filter(
-    (facet) => !conflictKeys.has(`${facet.namespace}:${facet.key}`),
-  );
+  const baselineByKey = new Map<string, SyncBayProductFacet>();
+
+  for (const facet of input.preservedFacets) {
+    const key = `${facet.namespace}:${facet.key}`;
+    if (!conflictKeys.has(key)) baselineByKey.set(key, facet);
+  }
+
+  for (const facet of input.proposedFacets) {
+    const key = `${facet.namespace}:${facet.key}`;
+    if (!conflictKeys.has(key)) baselineByKey.set(key, facet);
+  }
+
+  return [...baselineByKey.values()];
 }
 
 async function loadCurrentFacetMetafields(

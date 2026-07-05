@@ -142,8 +142,10 @@ Schema iniziale:
   prodotto `syncbay_facets.*`. I baseline per proteggere modifiche manuali
   devono essere letti solo da snapshot che contengono davvero `productFacets`:
   snapshot `EBAY` come baseline storica dell'import e snapshot `SYNCBAY` creati
-  dopo scritture automatiche riuscite, inclusi baseline writer-owned vuoti
-  (`productFacets: []`) dopo cancellazioni riuscite.
+  dopo scritture automatiche riuscite. Il runner automatico preserva il baseline
+  writer-owned quando l'evidenza manca temporaneamente; eventuali cancellazioni
+  di faccette richiedono un percorso esplicito e non derivano dalla sola assenza
+  di dati grezzi in un batch.
 
 ### Regole prezzo
 

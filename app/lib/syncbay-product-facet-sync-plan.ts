@@ -16,6 +16,7 @@ export interface ProductFacetSyncPlan {
     key: string;
     namespace: string;
   }>;
+  preserved: SyncBayProductFacet[];
   skipped: Array<{
     key: string;
     reason: "evidence_missing" | "manual_conflict" | "not_high_confidence";
@@ -25,6 +26,7 @@ export interface ProductFacetSyncPlan {
 
 export function buildProductFacetSyncPlan(input: {
   currentMetafields: CurrentProductFacetMetafield[];
+  deleteMissingFacets?: boolean;
   previousSyncBayFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }): ProductFacetSyncPlan {
@@ -49,6 +51,7 @@ export function buildProductFacetSyncPlan(input: {
   const writes: ShopifyProductFacetMetafield[] = [];
   const deletes: ProductFacetSyncPlan["deletes"] = [];
   const conflicts: ShopifyProductFacetMetafield[] = [];
+  const preserved: SyncBayProductFacet[] = [];
   const skipped: ProductFacetSyncPlan["skipped"] = [];
 
   const candidateKeys = new Set([
@@ -68,7 +71,11 @@ export function buildProductFacetSyncPlan(input: {
         current.type === previous.type &&
         current.value === previous.value
       ) {
-        deletes.push({ key: previous.key, namespace: previous.namespace });
+        if (input.deleteMissingFacets === true) {
+          deletes.push({ key: previous.key, namespace: previous.namespace });
+        } else {
+          preserved.push(previous);
+        }
         skipped.push({ key: previous.key, reason: "evidence_missing" });
       }
       continue;
@@ -96,7 +103,7 @@ export function buildProductFacetSyncPlan(input: {
     skipped.push({ key: facet.key, reason: "manual_conflict" });
   }
 
-  return { conflicts, deletes, skipped, writes };
+  return { conflicts, deletes, preserved, skipped, writes };
 }
 
 function toMetafield(facet: SyncBayProductFacet): ShopifyProductFacetMetafield {

@@ -377,7 +377,10 @@ indizi disponibili, confronta i metafield Shopify attuali con l'ultimo baseline
 writer-owned SyncBay e aggiorna solo valori mancanti o ancora allineati a
 SyncBay. Il backfill ordinario passa da job automatici `SYNC_INCREMENTAL`
 `facetOnly`; `npm run facets:backfill` resta diagnostica/emergenza e non è più
-il flusso ordinario di compilazione.
+il flusso ordinario di compilazione. Quando uno snapshot eBay contiene già
+`productFacets`, il runner le usa come proposta primaria; se in un batch
+automatico l'evidenza grezza manca, SyncBay preserva la faccetta precedente
+invece di cancellare il metafield Shopify.
 
 ## Matching prodotti esistenti
 
