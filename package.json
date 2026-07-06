@@ -101,7 +101,7 @@
     "react-router": "^7.18.1"
   },
   "devDependencies": {
-    "@eslint-react/eslint-plugin": "^5.10.0",
+    "@eslint-react/eslint-plugin": "^5.11.2",
     "@eslint/js": "^10.0.1",
     "@shopify/polaris-types": "^1.0.7",
     "@types/node": "^24.13.2",
@@ -118,7 +118,7 @@
     "globals": "^17.7.0",
     "playwright": "^1.61.1",
     "prettier": "^3.9.1",
-    "react-doctor": "^0.6.0",
+    "react-doctor": "^0.7.1",
     "typescript": "~6.0.3",
     "vite": "^8.1.0"
   },
