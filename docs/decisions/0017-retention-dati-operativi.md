@@ -28,7 +28,9 @@ La retention operativa del pilota viene fissata così:
 
 | Famiglia dati | Retention | Motivo |
 | --- | ---: | --- |
+| Audit webhook Shopify ricevuti | 30 giorni | Tracce ad alta frequenza già coperte da job e audit di esito; utili per diagnosi recente ma non come storico lungo. |
 | Audit log operativi | 180 giorni | Tracciabilità azioni, retry, connessioni e diagnosi negoziante. |
+| Job sync/import riusciti | 45 giorni | Esiti positivi recenti per diagnostica, con baseline conservate in snapshot e audit sintetici. |
 | Job sync/import | 90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito. |
 | Snapshot prodotto | 180 giorni | Conflitti, rollback e confronto con ultimo valore scritto da SyncBay. |
 | State OAuth temporanei | 7 giorni | Anti-CSRF e debugging breve del flusso OAuth senza conservare stato vecchio. |
@@ -43,6 +45,13 @@ La finestra a 365 giorni si applica alle notifiche account deletion collegate a
 shop del pilota o comunque non classificate `NO_MATCH`. Le notifiche `NO_MATCH`
 con `matchedShopCount = 0` non rappresentano un obbligo di prova verso un
 negoziante SyncBay collegato e usano quindi la finestra stretta di 7 giorni.
+
+Dal 2026-07-10, per contenere il limite database Supabase della distribuzione
+privata, due famiglie rumorose hanno una finestra più breve senza cambiare le
+baseline di sync: gli audit `SHOPIFY_WEBHOOK_RECEIVED` durano 30 giorni e i
+`SyncJob` riusciti durano 45 giorni. Gli audit critici non-webhook restano a 180
+giorni; i job falliti, cancellati o ancora attivi restano nella finestra
+ordinaria di 90 giorni.
 
 ## Conseguenze
 

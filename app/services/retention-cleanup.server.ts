@@ -15,6 +15,7 @@
  */
 
 import {
+  AuditEventType,
   EbayAccountDeletionRequestStatus,
   SyncJobStatus,
 } from "@prisma/client";
@@ -87,11 +88,29 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
       });
       return count;
     }
+    case "shopify_webhook_audit_logs": {
+      const { count } = await prisma.auditLog.deleteMany({
+        where: {
+          createdAt: { lte: target.cutoff },
+          type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
+        },
+      });
+      return count;
+    }
     case "sync_jobs": {
       const { count } = await prisma.syncJob.deleteMany({
         where: {
           createdAt: { lte: target.cutoff },
           status: { in: TERMINAL_SYNC_JOB_STATUSES },
+        },
+      });
+      return count;
+    }
+    case "succeeded_sync_jobs": {
+      const { count } = await prisma.syncJob.deleteMany({
+        where: {
+          createdAt: { lte: target.cutoff },
+          status: SyncJobStatus.SUCCEEDED,
         },
       });
       return count;

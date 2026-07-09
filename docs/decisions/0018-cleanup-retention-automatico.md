@@ -6,11 +6,12 @@
 
 ## Contesto
 
-ADR 0017 ha fissato le finestre di retention operativa del pilota (audit 180
-giorni, job 90, snapshot 180, OAuth state 7, richieste account deletion senza
-match 7, richieste account deletion collegate 365), ma lasciava esplicitamente
-aperto il cleanup: «resta da implementare o schedulare in modo esplicito prima
-della beta pubblica».
+ADR 0017 ha fissato le finestre di retention operativa del pilota (audit
+webhook Shopify 30 giorni, audit 180 giorni, job riusciti 45 giorni, job 90,
+snapshot 180, OAuth state 7, richieste account deletion senza match 7, richieste
+account deletion collegate 365), ma lasciava esplicitamente aperto il cleanup:
+«resta da implementare o schedulare in modo esplicito prima della beta
+pubblica».
 
 Finché il cleanup non è automatico, i dati scaduti restano nel runtime, in
 contraddizione con la policy dichiarata e con l'obiettivo di non accumulare dati
@@ -39,6 +40,12 @@ senza nuovi worker né workflow.
   solo i pochi record appena scaduti.
 - I job vengono cancellati solo se in stato terminale
   (`SUCCEEDED`/`FAILED`/`CANCELLED`), per non rimuovere lavoro ancora in coda.
+- I job `SUCCEEDED`, già coperti da audit sintetico e snapshot quando
+  necessario, usano la finestra più breve di 45 giorni; gli altri terminali
+  restano nella finestra ordinaria di 90 giorni.
+- Gli audit `SHOPIFY_WEBHOOK_RECEIVED`, molto frequenti e derivati dai webhook
+  Shopify, usano una finestra di 30 giorni; gli audit operativi critici restano
+  a 180 giorni.
 - Le richieste eBay account deletion `NO_MATCH` con `matchedShopCount = 0`
   seguono una finestra stretta di 7 giorni; la retention a 365 giorni esclude
   questi record e resta dedicata alle richieste non `NO_MATCH`.
