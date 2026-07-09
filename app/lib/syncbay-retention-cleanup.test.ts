@@ -76,6 +76,24 @@ test("plans a strict short cleanup window for no-match account deletion rows", (
   assert.equal(plan[0].cutoff.toISOString(), "2026-06-13T00:00:00.000Z");
 });
 
+test("preserves durable facet backfill markers from short succeeded-job retention", () => {
+  const cutoff = getRetentionCutoff(45, now);
+  const where = retention.getExpiredSucceededSyncJobsWhere(cutoff);
+
+  assert.deepEqual(where, {
+    OR: [
+      { idempotencyKey: null },
+      {
+        idempotencyKey: {
+          not: { startsWith: "facet-backfill-marker:" },
+        },
+      },
+    ],
+    createdAt: { lte: cutoff },
+    status: "SUCCEEDED",
+  });
+});
+
 test("classifies records as expired at or before the cutoff", () => {
   const cutoff = getRetentionCutoff(7, now);
 

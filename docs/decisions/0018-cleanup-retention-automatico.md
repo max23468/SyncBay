@@ -43,6 +43,9 @@ senza nuovi worker né workflow.
 - I job `SUCCEEDED`, già coperti da audit sintetico e snapshot quando
   necessario, usano la finestra più breve di 45 giorni; gli altri terminali
   restano nella finestra ordinaria di 90 giorni.
+- I marker durevoli `facet-backfill-marker:*` sono esclusi dal cleanup breve:
+  rappresentano lo stato di completamento del backfill e impediscono di
+  rischedularlo inutilmente.
 - Gli audit `SHOPIFY_WEBHOOK_RECEIVED`, molto frequenti e derivati dai webhook
   Shopify, usano una finestra di 30 giorni; gli audit operativi critici restano
   a 180 giorni.

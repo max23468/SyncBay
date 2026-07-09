@@ -81,6 +81,21 @@ export function selectExpiredRecords<T>(
   );
 }
 
+export function getExpiredSucceededSyncJobsWhere(cutoff: Date) {
+  return {
+    OR: [
+      { idempotencyKey: null },
+      {
+        idempotencyKey: {
+          not: { startsWith: "facet-backfill-marker:" },
+        },
+      },
+    ],
+    createdAt: { lte: cutoff },
+    status: "SUCCEEDED" as const,
+  };
+}
+
 function normalizeRetentionDays(value: number) {
   if (!Number.isFinite(value) || value <= 0) return 1;
 

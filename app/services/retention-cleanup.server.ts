@@ -21,7 +21,10 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
-import { buildRetentionCleanupPlan } from "../lib/syncbay-retention-cleanup";
+import {
+  buildRetentionCleanupPlan,
+  getExpiredSucceededSyncJobsWhere,
+} from "../lib/syncbay-retention-cleanup";
 import type { RetentionCleanupTarget } from "../lib/syncbay-retention-cleanup";
 import { SYNCBAY_RETENTION_POLICIES } from "../lib/syncbay-retention-policy";
 
@@ -108,10 +111,7 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
     }
     case "succeeded_sync_jobs": {
       const { count } = await prisma.syncJob.deleteMany({
-        where: {
-          createdAt: { lte: target.cutoff },
-          status: SyncJobStatus.SUCCEEDED,
-        },
+        where: getExpiredSucceededSyncJobsWhere(target.cutoff),
       });
       return count;
     }
