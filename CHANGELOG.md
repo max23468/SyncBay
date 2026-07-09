@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.42] — 2026-07-10
+
+### Sotto il cofano
+
+- Database Supabase: recuperato spazio dalla tabella vuota delle richieste
+  account deletion e ridotta la crescita futura con audit webhook Shopify
+  compatto, retention a 30 giorni per audit webhook e 45 giorni per job
+  riusciti.
+
 ## [1.0.41] — 2026-07-05
 
 ### Correzioni
@@ -3298,6 +3307,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.42]: #1042--2026-07-10
 [1.0.41]: #1041--2026-07-05
 [1.0.40]: #1040--2026-07-05
 [1.0.39]: #1039--2026-07-05

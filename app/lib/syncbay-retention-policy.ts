@@ -5,6 +5,8 @@ export interface SyncBayRetentionPolicy {
     | "audit_logs"
     | "oauth_states"
     | "product_snapshots"
+    | "shopify_webhook_audit_logs"
+    | "succeeded_sync_jobs"
     | "sync_jobs";
   label: string;
   retentionDays: number;
@@ -13,11 +15,25 @@ export interface SyncBayRetentionPolicy {
 
 export const SYNCBAY_RETENTION_POLICIES: SyncBayRetentionPolicy[] = [
   {
+    area: "shopify_webhook_audit_logs",
+    label: "Audit webhook Shopify",
+    retentionDays: 30,
+    scope:
+      "Tracce rumorose dei webhook Shopify ricevuti; il job e gli audit di esito restano la fonte diagnostica primaria.",
+  },
+  {
     area: "audit_logs",
     label: "Audit log",
     retentionDays: 180,
     scope:
       "Eventi operativi e modifiche critiche, senza token o payload provider completi.",
+  },
+  {
+    area: "succeeded_sync_jobs",
+    label: "Job SyncBay riusciti",
+    retentionDays: 45,
+    scope:
+      "Job riusciti già sintetizzati in audit e snapshot, conservati per diagnostica recente senza storico indefinito.",
   },
   {
     area: "sync_jobs",

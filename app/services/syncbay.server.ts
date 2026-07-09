@@ -84,6 +84,7 @@ import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-th
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
+import { shouldWriteShopifyWebhookAuditLog } from "../lib/syncbay-webhook-audit";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
 import { getManualRetryState } from "../lib/syncbay-job-diagnostics";
@@ -3277,6 +3278,7 @@ export async function recordShopifyWebhookPlaceholder(
     };
     await prisma.$transaction(async (tx) => {
       let coalesced = false;
+      let jobCreated = false;
       await lockShopForWebhookCoalescing(tx, shop.id);
 
       const coalescedJob = await findCoalescedWebhookJob(tx, {
@@ -3306,25 +3308,34 @@ export async function recordShopifyWebhookPlaceholder(
 
       if (!coalesced) {
         if (idempotencyKey) {
-          await tx.syncJob.upsert({
-            where: { idempotencyKey },
-            create: jobData,
-            update: {},
+          const created = await tx.syncJob.createMany({
+            data: [jobData],
+            skipDuplicates: true,
           });
+          jobCreated = created.count === 1;
         } else {
           await tx.syncJob.create({ data: jobData });
+          jobCreated = true;
         }
       }
 
-      await tx.auditLog.create({
-        select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-        data: {
-          details,
-          message: "Webhook Shopify ricevuto e tracciato.",
-          shopId: shop.id,
-          type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
-        },
-      });
+      if (
+        shouldWriteShopifyWebhookAuditLog({
+          jobCoalesced: coalesced,
+          jobCreated,
+          jobType,
+        })
+      ) {
+        await tx.auditLog.create({
+          select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+          data: {
+            details,
+            message: "Webhook Shopify ricevuto e tracciato.",
+            shopId: shop.id,
+            type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
+          },
+        });
+      }
     });
     return;
   }

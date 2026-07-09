@@ -16,7 +16,9 @@ test("defines conservative private retention windows", () => {
       policy.retentionDays,
     ]),
     [
+      ["shopify_webhook_audit_logs", 30],
       ["audit_logs", 180],
+      ["succeeded_sync_jobs", 45],
       ["sync_jobs", 90],
       ["product_snapshots", 180],
       ["oauth_states", 7],
@@ -24,6 +26,20 @@ test("defines conservative private retention windows", () => {
       ["account_deletion_requests", 365],
     ],
   );
+});
+
+test("uses shorter retention for noisy derived records", () => {
+  const webhookAuditPolicy = SYNCBAY_RETENTION_POLICIES.find(
+    (policy: { area: string }) => policy.area === "shopify_webhook_audit_logs",
+  );
+  const succeededJobsPolicy = SYNCBAY_RETENTION_POLICIES.find(
+    (policy: { area: string }) => policy.area === "succeeded_sync_jobs",
+  );
+
+  assert.equal(webhookAuditPolicy?.retentionDays, 30);
+  assert.match(webhookAuditPolicy?.scope ?? "", /webhook Shopify/i);
+  assert.equal(succeededJobsPolicy?.retentionDays, 45);
+  assert.match(succeededJobsPolicy?.scope ?? "", /riusciti/i);
 });
 
 test("keeps no-match account deletion retention separate from matched privacy records", () => {
@@ -41,7 +57,11 @@ test("keeps no-match account deletion retention separate from matched privacy re
 });
 
 test("formats retention rows without exposing sensitive data", () => {
-  assert.deepEqual(getRetentionPolicySummaryRows()[0], {
+  const auditLogRow = getRetentionPolicySummaryRows().find(
+    (row: { area: string }) => row.area === "Audit log",
+  );
+
+  assert.deepEqual(auditLogRow, {
     area: "Audit log",
     retention: "180 giorni",
     scope:
