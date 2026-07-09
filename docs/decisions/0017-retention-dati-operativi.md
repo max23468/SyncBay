@@ -51,7 +51,8 @@ privata, due famiglie rumorose hanno una finestra più breve senza cambiare le
 baseline di sync: gli audit `SHOPIFY_WEBHOOK_RECEIVED` durano 30 giorni e i
 `SyncJob` riusciti durano 45 giorni. Gli audit critici non-webhook restano a 180
 giorni; i job falliti, cancellati o ancora attivi restano nella finestra
-ordinaria di 90 giorni.
+ordinaria di 90 giorni. I marker durevoli che impediscono di ripetere un facet
+backfill già completato sono esclusi dal cleanup dei job riusciti.
 
 ## Conseguenze
 
