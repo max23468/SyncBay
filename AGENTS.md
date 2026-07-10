@@ -159,26 +159,27 @@ trasversali, integrazioni Shopify/eBay/Supabase/Vercel, sicurezza, App Store,
 roadmap o scope ambiguo. Non renderla obbligatoria per refusi, docs-only a
 basso rischio, cleanup o modifiche meccaniche già determinate.
 
-## Strumenti provider assistiti
+## Scelta degli strumenti provider
 
-Quando un task tocca un provider o una piattaforma con plugin, connector, MCP o
-app disponibili in Codex Desktop, usa prima quello strumento assistito e passa a
-CLI, API raw o browser solo come fallback dichiarato. Questo vale almeno per
-GitHub, Vercel, Supabase, Shopify e provider simili.
+Quando un task tocca un provider o una piattaforma, scegli caso per caso lo
+strumento più pratico tra plugin, connector, MCP, app, CLI, API e browser.
+Valuta copertura dell'operazione, affidabilità osservata, velocità, stato
+dell'autenticazione e qualità delle prove ottenibili. Non esiste una precedenza
+obbligatoria tra strumenti assistiti e CLI.
 
 Regole operative:
 
-- Se `tool_search` è disponibile, cerca prima lo strumento provider pertinente.
+- Se `tool_search` è disponibile, usalo quando aiuta a individuare uno
+  strumento più adatto; non è un passaggio obbligatorio quando il percorso
+  migliore è già chiaro.
 - Usa `git` locale per stato, branch, staging, commit e diff; per PR, review,
-  merge, issue, deploy, log, dashboard o risorse remote preferisci il plugin o
-  connector provider quando è disponibile e adatto.
-- Usa CLI come `gh`, `vercel`, `supabase` o `shopify` solo quando il plugin non
-  è disponibile, non copre l'operazione richiesta, fallisce, oppure la CLI è la
-  fonte primaria prevista dalla documentazione del repo.
-- Quando usi un fallback CLI/browser invece del plugin provider, dichiaralo nel
-  riepilogo o nell'update operativo con il motivo pratico.
-- Non usare mai plugin, CLI o browser per aggirare permessi, limiti provider,
-  policy di sicurezza, rate limit o blocchi economici come `402
+  merge, issue, deploy, log, dashboard o risorse remote usa lo strumento che
+  copre meglio il passaggio e consente di verificarne l'esito reale.
+- Puoi passare liberamente tra plugin, connector, MCP, app, CLI, API e browser
+  quando cambia il vantaggio operativo; dichiara il cambio solo se introduce
+  limiti, risultati parziali o differenze rilevanti nelle prove.
+- Non usare mai alcuno strumento per aggirare permessi, limiti provider, policy
+  di sicurezza, rate limit o blocchi economici come `402
   exceed_egress_quota`.
 
 ## Disciplina di scope

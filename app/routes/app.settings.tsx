@@ -586,6 +586,8 @@ function ProductPublicationSettingsCard({
   selectedPublicationIds: string[];
   settings: SettingsState;
 }) {
+  const selectedPublicationIdSet = new Set(selectedPublicationIds);
+
   return (
     <SettingCard
       description="Dove vengono pubblicati i prodotti su Shopify."
@@ -627,7 +629,7 @@ function ProductPublicationSettingsCard({
             {settings.productPublications.availablePublications.map(
               (publication) => (
                 <s-checkbox
-                  defaultChecked={selectedPublicationIds.includes(publication.id)}
+                  defaultChecked={selectedPublicationIdSet.has(publication.id)}
                   id={`publication-${publication.id}`}
                   key={publication.id}
                   label={publication.title}

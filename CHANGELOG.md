@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.45] — 2026-07-10
+
+### Correzioni
+
+- Impostazioni: resa costante la verifica dei canali Shopify selezionati nel
+  rendering della lista, eliminando l'unico warning React Doctor.
+
 ## [1.0.44] — 2026-07-10
 
 ### Sotto il cofano
@@ -3322,6 +3329,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.45]: #1045--2026-07-10
 [1.0.44]: #1044--2026-07-10
 [1.0.43]: #1043--2026-07-10
 [1.0.42]: #1042--2026-07-10
