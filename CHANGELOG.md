@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.44] — 2026-07-10
+
+### Sotto il cofano
+
+- Dipendenze: aggiornati in modo compatibile Shopify CLI 4.4, React Doctor
+  0.7, Vite 8.1 e gli strumenti ESLint/TypeScript, mantenendo React Router 7,
+  TypeScript 6 e i tipi Node 24 nelle linee già supportate dal runtime.
+
 ## [1.0.43] — 2026-07-10
 
 ### Correzioni
@@ -3314,6 +3322,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.44]: #1044--2026-07-10
 [1.0.43]: #1043--2026-07-10
 [1.0.42]: #1042--2026-07-10
 [1.0.41]: #1041--2026-07-05
