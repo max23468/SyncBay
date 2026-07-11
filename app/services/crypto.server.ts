@@ -67,9 +67,15 @@ export function createOAuthState() {
 
 function getTokenKey() {
   const rawKey = process.env.TOKEN_ENCRYPTION_KEY;
-  if (!rawKey) {
+  // Normalizza la chiave come gli script CLI (`selectTokenEncryptionKey`), che
+  // impostano `process.env.TOKEN_ENCRYPTION_KEY` al valore trimmato prima di
+  // cifrare: senza questo trim un newline/spazio finale nel segreto (es. env
+  // Vercel) produrrebbe envelope non decifrabili tra script e runtime.
+  const normalizedKey =
+    typeof rawKey === "string" && rawKey.trim() ? rawKey.trim() : null;
+  if (!normalizedKey) {
     throw new Error("TOKEN_ENCRYPTION_KEY non configurata.");
   }
 
-  return crypto.createHash("sha256").update(rawKey).digest();
+  return crypto.createHash("sha256").update(normalizedKey).digest();
 }

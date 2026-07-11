@@ -139,7 +139,10 @@ import {
   markShopifyProductSoldOut,
 } from "./shopify-draft-import.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
-import { detectShopifyChangesBatch } from "./shopify-conflict-detection.server";
+import {
+  detectShopifyChangesBatch,
+  type ShopifyChangeBatchExecution,
+} from "./shopify-conflict-detection.server";
 
 const dueSyncJobSelect = {
   attempts: true,
@@ -3417,33 +3420,57 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
   }
 
   const distinctJobs = batch.jobs.filter(({ id }) => absorbedById.has(id));
-  const execution = await detectShopifyChangesBatch(
-    { jobs: distinctJobs, shopDomain: job.shop.shopDomain },
-  );
+  let execution: ShopifyChangeBatchExecution;
+  try {
+    execution = await detectShopifyChangesBatch(
+      {
+        jobs: distinctJobs,
+        shopDomain: job.shop.shopDomain,
+        defaultLocationGid: job.shop.defaultLocationGid,
+      },
+    );
 
-  for (const result of execution.results) {
-    const absorbedJob = absorbedById.get(result.jobId);
-    if (!absorbedJob) continue;
-    if (result.outcome === "failed") {
+    for (const result of execution.results) {
+      const absorbedJob = absorbedById.get(result.jobId);
+      if (!absorbedJob) continue;
+      if (result.outcome === "failed") {
+        await markJobFailedOrRetrying({
+          errorCode: result.errorCode ?? "SHOPIFY_CONFLICT_BATCH_FAILED",
+          errorMessage: "Rilevamento conflitti Shopify non completato.",
+          job: absorbedJob,
+        });
+        continue;
+      }
+      await markJobSucceeded({
+        delegatedJobId: null,
+        job: absorbedJob,
+        result: {
+          fields: result.fields,
+          outcome: result.outcome,
+          providerReadCount: execution.providerReadCount,
+        },
+        warnings: result.outcome === "mapping_not_found"
+          ? ["Webhook Shopify senza mapping SyncBay collegato."]
+          : [],
+      });
+    }
+  } catch (error) {
+    // Se il batch lancia dopo aver messo i sibling in RUNNING (errore
+    // Shopify/API/JSON), il catch esterno fallisce solo il seed: i sibling
+    // assorbiti resterebbero RUNNING fino alla stale recovery (15 min) e
+    // `claimDueSyncJob` blocca l'intero shop finché esiste un job runnable in
+    // RUNNING. Rilasciali subito con retry/fail (guardia `status: RUNNING`,
+    // quindi non tocca quelli già processati), poi rilancia per il seed.
+    const errorMessage = getErrorMessage(error);
+    for (const absorbedJob of absorbedJobs) {
+      if (absorbedJob.id === job.id) continue;
       await markJobFailedOrRetrying({
-        errorCode: result.errorCode ?? "SHOPIFY_CONFLICT_BATCH_FAILED",
-        errorMessage: "Rilevamento conflitti Shopify non completato.",
+        errorCode: "SHOPIFY_CONFLICT_BATCH_FAILED",
+        errorMessage,
         job: absorbedJob,
       });
-      continue;
     }
-    await markJobSucceeded({
-      delegatedJobId: null,
-      job: absorbedJob,
-      result: {
-        fields: result.fields,
-        outcome: result.outcome,
-        providerReadCount: execution.providerReadCount,
-      },
-      warnings: result.outcome === "mapping_not_found"
-        ? ["Webhook Shopify senza mapping SyncBay collegato."]
-        : [],
-    });
+    throw error;
   }
 
   const conflictCount = execution.results.filter(
