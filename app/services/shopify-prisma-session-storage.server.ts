@@ -1,6 +1,11 @@
 import { Session as ShopifySession } from "@shopify/shopify-api";
 import type { SessionStorage } from "@shopify/shopify-app-session-storage";
 
+import {
+  decryptSecretWithLegacyFallback,
+  encryptSecretIfNeeded,
+} from "./crypto.server";
+
 const UNIQUE_KEY_CONSTRAINT_ERROR_CODE = "P2002";
 const RECORD_NOT_FOUND_ERROR_CODE = "P2025";
 
@@ -198,7 +203,7 @@ export class PrismaSessionStorage implements SessionStorage {
       isOnline: session.isOnline,
       scope: session.scope ?? null,
       expires: session.expires ?? null,
-      accessToken: session.accessToken ?? "",
+      accessToken: encryptSecretIfNeeded(session.accessToken ?? ""),
       userId: user?.id ?? null,
       firstName: user?.first_name ?? null,
       lastName: user?.last_name ?? null,
@@ -207,7 +212,9 @@ export class PrismaSessionStorage implements SessionStorage {
       locale: user?.locale ?? null,
       collaborator: user?.collaborator ?? false,
       emailVerified: user?.email_verified ?? false,
-      refreshToken: sessionParams.refreshToken ?? null,
+      refreshToken: sessionParams.refreshToken
+        ? encryptSecretIfNeeded(sessionParams.refreshToken)
+        : null,
       refreshTokenExpires: sessionParams.refreshTokenExpires ?? null,
     };
   }
@@ -230,8 +237,18 @@ export class PrismaSessionStorage implements SessionStorage {
     pushOptional(sessionParams, "emailVerified", row.emailVerified);
     pushOptional(sessionParams, "expires", row.expires?.getTime());
     pushOptional(sessionParams, "scope", row.scope);
-    pushOptional(sessionParams, "accessToken", row.accessToken);
-    pushOptional(sessionParams, "refreshToken", row.refreshToken);
+    pushOptional(
+      sessionParams,
+      "accessToken",
+      decryptSecretWithLegacyFallback(row.accessToken),
+    );
+    pushOptional(
+      sessionParams,
+      "refreshToken",
+      row.refreshToken
+        ? decryptSecretWithLegacyFallback(row.refreshToken)
+        : null,
+    );
     pushOptional(
       sessionParams,
       "refreshTokenExpires",

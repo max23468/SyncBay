@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { isEncryptedSecretEnvelope } from "../lib/syncbay-secret-envelope";
+
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 
@@ -38,6 +40,18 @@ export function decryptSecret(secret: string) {
     decipher.update(Buffer.from(encodedCiphertext, "base64url")),
     decipher.final(),
   ]).toString("utf8");
+}
+
+export function encryptSecretIfNeeded(value: string) {
+  if (!value || isEncryptedSecretEnvelope(value)) return value;
+
+  return encryptSecret(value);
+}
+
+export function decryptSecretWithLegacyFallback(value: string) {
+  if (!value) return value;
+
+  return isEncryptedSecretEnvelope(value) ? decryptSecret(value) : value;
 }
 
 export function hashState(state: string) {

@@ -6,6 +6,8 @@ import { Session as ShopifySession } from "@shopify/shopify-api";
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { PrismaSessionStorage } from "./shopify-prisma-session-storage.server.ts";
 
+process.env.TOKEN_ENCRYPTION_KEY = "syncbay-session-storage-test-key";
+
 type StoredSessionRow = {
   id: string;
   shop: string;
@@ -81,6 +83,10 @@ test("stores and loads Shopify sessions through the Prisma session table", async
   assert.equal(await storage.isReady(), true);
   assert.equal(await storage.storeSession(session), true);
 
+  const persisted = rows.get(session.id);
+  assert.notEqual(persisted?.accessToken, "token");
+  assert.equal(persisted?.accessToken.startsWith("v1."), true);
+
   const loaded = await storage.loadSession(session.id);
 
   assert.equal(loaded?.id, session.id);
@@ -88,6 +94,9 @@ test("stores and loads Shopify sessions through the Prisma session table", async
   assert.equal(loaded?.scope, session.scope);
   assert.equal(loaded?.accessToken, session.accessToken);
   assert.equal(loaded?.expires?.toISOString(), expires.toISOString());
+  assert.equal(await storage.storeSession(loaded!), true);
+  assert.equal(rows.get(session.id)?.accessToken.startsWith("v1."), true);
+  assert.equal((await storage.loadSession(session.id))?.accessToken, "token");
   assert.deepEqual(
     (await storage.findSessionsByShop(session.shop)).map((row) => row.id),
     [session.id],
@@ -95,6 +104,30 @@ test("stores and loads Shopify sessions through the Prisma session table", async
 
   assert.equal(await storage.deleteSession(session.id), true);
   assert.equal(await storage.loadSession(session.id), undefined);
+});
+
+test("reads plaintext legacy session tokens during the compatible rollout", async () => {
+  const row = makeStoredSessionRow(1, "legacy.myshopify.com");
+  row.accessToken = "legacy-access-token";
+  row.refreshToken = "legacy-refresh-token";
+  const storage = new PrismaSessionStorage(
+    {
+      session: {
+        count: async () => 1,
+        upsert: async () => {},
+        findUnique: async () => row,
+        delete: async () => {},
+        deleteMany: async () => {},
+        findMany: async () => [row],
+      },
+    },
+    { connectionRetries: 1, connectionRetryIntervalMs: 0 },
+  );
+
+  const loaded = await storage.loadSession(row.id);
+
+  assert.equal(loaded?.accessToken, "legacy-access-token");
+  assert.equal(loaded?.refreshToken, "legacy-refresh-token");
 });
 
 test("ignores missing rows but propagates failed session deletes", async () => {

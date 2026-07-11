@@ -28,8 +28,12 @@ Regole obbligatorie:
 - non stampare segreti in log, errori o chat;
 - verificare presenza dei segreti con controlli booleani, non con `echo`;
 - mantenere i token provider cifrati a riposo secondo lo storage deciso: i
-  token eBay persistiti da SyncBay sono cifrati applicativamente; lo storage
-  sessioni Shopify segue il template finché non viene sostituito o integrato.
+  token eBay e i token delle sessioni Shopify persistiti da SyncBay sono
+  cifrati applicativamente con envelope AES-256-GCM `v1` e la chiave non viene
+  salvata nel database;
+- durante una migrazione di cifratura, consentire il fallback plaintext solo
+  nella release compatibile necessaria al backfill e rimuoverlo dopo la verifica
+  booleana live che i token non vuoti legacy siano zero.
 
 ## Compliance minima prevista
 
