@@ -28,7 +28,10 @@
     "ui:preview:panoramica": "node scripts/syncbay-ui-render.mjs panoramica --fixture",
     "ui:shot-live": "node scripts/syncbay-ui-shot-live.mjs",
     "ui:seed-local": "PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -f scripts/syncbay-seed-local-preview.sql",
+    "pretest:services": "npm run prisma:generate",
     "test:lib": "node --test --experimental-strip-types app/lib/*.test.ts",
+    "test:services": "tsx --test app/services/*.server.test.ts",
+    "test:runtime": "npm run test:lib && npm run test:services",
     "coverage:lib": "node --test --experimental-strip-types --experimental-test-coverage --test-coverage-include='app/lib/*.ts' --test-coverage-exclude='app/lib/*.test.ts' --test-coverage-lines=75 --test-coverage-branches=65 app/lib/*.test.ts",
     "audit:prod": "node scripts/syncbay-audit-prod.mjs",
     "test:stock-guard": "node --test --experimental-strip-types app/lib/syncbay-stock-guard.test.ts",
@@ -119,6 +122,7 @@
     "playwright": "^1.61.1",
     "prettier": "^3.9.5",
     "react-doctor": "^0.7.3",
+    "tsx": "4.23.0",
     "typescript": "~6.0.3",
     "vite": "^8.1.4"
   },

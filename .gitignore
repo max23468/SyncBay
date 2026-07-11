@@ -23,6 +23,9 @@ build/
 # Local agent memory scaffold
 .mex/
 
+# Worktree locali isolati
+.worktrees/
+
 # Logs
 *.log
 npm-debug.log*

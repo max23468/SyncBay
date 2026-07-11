@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Qualità runtime: aggiunto `tsx` come runner dei test server, introdotti i
+  comandi `test:services`/`test:runtime` e portato il gate completo nella CI;
+  censita inoltre la copertura diretta o contrattuale dei moduli server.
+
 ## [1.0.45] — 2026-07-10
 
 ### Correzioni

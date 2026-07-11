@@ -124,6 +124,8 @@ Regole d'uso:
 | Misura performance loader     | `npm run perf:loaders -- --since 10m`                                                       |
 | Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
 | Test librerie pure            | `npm run test:lib`                                                                          |
+| Test servizi server           | `npm run test:services`                                                                     |
+| Test runtime completo         | `npm run test:runtime`                                                                      |
 | Coverage moduli puri          | `npm run coverage:lib`                                                                      |
 | Audit produzione              | `npm run audit:prod`                                                                        |
 | Generazione Prisma            | `npm run prisma:generate`                                                                   |
@@ -303,7 +305,43 @@ aggiorna solo il token eBay cifrato se scaduto. La riparazione stabile vive nel
 runner: quando il delta eBay è vuoto, SyncBay pianifica job `SYNC_INCREMENTAL`
 con source `catalog_image_repair` per mapping attivi senza thumbnail, limitati
 da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
-`npm run coverage:lib` usa solo il test runner nativo di Node e limita la coverage ai moduli puri `app/lib` già isolabili dal runtime live; la soglia Atlas corrente è `>=75%` linee e `>=65%` branch su quel perimetro.
+`npm run test:services` usa `tsx 4.23.0` esclusivamente come runner TypeScript
+dei test `app/services/*.server.test.ts`; `pretest:services` rigenera prima il
+client Prisma. `npm run test:runtime` esegue in sequenza test puri e test server
+ed è il gate usato dalla CI. `npm run coverage:lib` continua a usare il test
+runner nativo di Node e limita la coverage ai moduli puri `app/lib` già
+isolabili dal runtime live; la soglia SyncBay corrente è `>=75%` linee e
+`>=65%` branch su quel perimetro.
+
+### Copertura dei moduli server
+
+Il censimento distingue test diretto, contratto coperto da test puri/route e
+adapter banale. “Contratto coperto” non equivale a coverage diretta dell'I/O:
+quando uno di questi moduli ad alto rischio viene modificato, il relativo task
+deve aggiungere un test server o un test di contratto esplicito.
+
+| Modulo `app/services` | Classificazione attuale | Evidenza o requisito |
+| --- | --- | --- |
+| `crypto.server.ts` | Contratto coperto | Cifratura/token coperti dai test puri; test server obbligatorio nel Task 5 |
+| `ebay-account-deletion.server.ts` | Contratto coperto | Deduplica, verifica e retention account deletion nei test `app/lib` |
+| `ebay-environment.server.ts` | Adapter banale | Selezione configurazione ambiente senza regole di dominio |
+| `ebay-inventory-preview.server.ts` | Contratto coperto | Modalità e finestra preview nei test `app/lib`; adapter I/O da testare se modificato |
+| `ebay-notifications.server.ts` | Contratto coperto | Firma/deduplica account deletion nei test `app/lib` |
+| `ebay-token.server.ts` | Contratto coperto | Envelope/rate limit/cifratura nei test puri; test server obbligatorio se cambia refresh |
+| `ebay-trading-preview.server.ts` | Test diretto | `ebay-trading-preview.server.test.ts` |
+| `ebay-trading-stock.server.ts` | Contratto coperto | Guardie stock, valuta, allowlist e idempotenza nei test `app/lib` |
+| `ebay.server.ts` | Contratto coperto | Circuit breaker e rate limit nei test `app/lib`; adapter HTTP da testare se modificato |
+| `import-preview.server.ts` | Contratto coperto | Mode/window/stepper/takeover nei test `app/lib` |
+| `pricing-rules.server.ts` | Contratto coperto | Calcolo, normalizzazione e write decision nei test pricing puri |
+| `retention-cleanup.server.ts` | Contratto coperto | Piano e cutoff retention nei test `app/lib` |
+| `shopify-admin-session.server.ts` | Contratto coperto | Client Admin e diagnostica nei test `app/lib`; test server obbligatorio nel Task 6 |
+| `shopify-draft-import.server.ts` | Contratto coperto | Contratti import, pricing, snapshot, media e pubblicazione nei test `app/lib` |
+| `shopify-existing-products.server.ts` | Test diretto | `shopify-existing-products.server.test.ts` |
+| `shopify-location.server.ts` | Contratto coperto | Scope e diagnostica location nei test `app/lib` |
+| `shopify-prisma-session-storage.server.ts` | Test diretto | `shopify-prisma-session-storage.server.test.ts` |
+| `sync-job-runner.server.ts` | Contratto coperto | Scheduling, idempotenza, retry e guardie stock nei test `app/lib`; Task 2-4 aggiungono test server |
+| `syncbay-product-facets.server.ts` | Contratto coperto | Proposta, baseline, sync plan e backfill faccette nei test `app/lib` |
+| `syncbay.server.ts` | Contratto coperto | Contratti catalogo/conflitti/snapshot/audit nei test `app/lib`; nuovi verticali richiedono test server |
 `npm run build` esegue sempre `npm run prisma:generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
 
 ## Verifiche per tipo di modifica
@@ -313,7 +351,8 @@ da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
 | Docs-only                                                           | Review contenuto e `git diff --check`                                                                                                                  |
 | Pre-PR non banale                                                   | `npm run review:pre-pr -- --base origin/main`, poi chiusura dei punti emersi e verifiche proporzionate al diff                                        |
 | Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                                                                                                   |
-| Moduli puri `app/lib` o audit coverage Atlas                        | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti                                                  |
+| Moduli `app/services` o CI runtime                                  | `npm run test:runtime`, poi `npm run coverage:lib`, `npm run typecheck`, `npm run lint`                                                                |
+| Moduli puri `app/lib` o audit coverage SyncBay                      | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti                                                  |
 | Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`                                                                             |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
