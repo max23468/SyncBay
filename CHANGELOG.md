@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.50] — 2026-07-11
+
+### Correzioni
+
+- Cifratura token: normalizzate le chiavi lette dal Portachiavi macOS,
+  eliminando il carattere di fine riga aggiunto dal comando `security` e
+  mantenendo allineati script locali e runtime Vercel.
+
 ## [1.0.49] — 2026-07-11
 
 ### Correzioni
@@ -3370,6 +3378,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.50]: #1050--2026-07-11
 [1.0.49]: #1049--2026-07-11
 [1.0.48]: #1048--2026-07-11
 [1.0.47]: #1047--2026-07-11
