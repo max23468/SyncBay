@@ -96,7 +96,7 @@ import {
 import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
-  buildShopifyChangeBatch,
+  buildSeededShopifyChangeBatch,
   type ShopifyChangeBatchJob,
 } from "../lib/syncbay-shopify-change-batch";
 import {
@@ -3381,8 +3381,10 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
       type: SyncJobType.DETECT_SHOPIFY_CHANGES,
     },
   });
-  const candidates = [job, ...queued];
-  const batch = buildShopifyChangeBatch(candidates.map(toShopifyChangeBatchJob));
+  const batch = buildSeededShopifyChangeBatch(
+    toShopifyChangeBatchJob(job),
+    queued.map(toShopifyChangeBatchJob),
+  );
   const selectedIds = new Set([
     ...batch.jobs.map(({ id }) => id),
     ...batch.duplicateJobIds,

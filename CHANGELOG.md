@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.47] — 2026-07-11
+
+### Correzioni
+
+- Runner conflitti: il job seed già claimato resta sempre incluso nel batch da
+  25 elementi, evitando che un backlog di webhook più recenti lo lasci
+  bloccato in stato `RUNNING`.
+
 ## [1.0.46] — 2026-07-11
 
 ### Sotto il cofano
@@ -3344,6 +3352,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.47]: #1047--2026-07-11
 [1.0.46]: #1046--2026-07-11
 [1.0.45]: #1045--2026-07-10
 [1.0.44]: #1044--2026-07-10
