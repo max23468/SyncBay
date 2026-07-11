@@ -99,12 +99,35 @@ inactive_mapping_conflicts as (
   where sc.status = 'OPEN'
     and pm.status in ('OUT_OF_STOCK', 'ARCHIVED')
 ),
+repairable_images as (
+  -- Falsi conflitti immagini da baseline stale: baseline diversa dal valore
+  -- Shopify ma una precedente baseline SyncBay aveva già registrato quel
+  -- conteggio. Stesso predicato di conflicts:repair-images.
+  select sc.id
+  from "SyncConflict" sc
+  join shop_row s on s.id = sc."shopId"
+  join "ProductMapping" pm on pm.id = sc."mappingId"
+  where sc.status = 'OPEN'
+    and sc.field = 'images'
+    and pm.status = 'ACTIVE'
+    and sc."shopifyValue" #>> '{}' ~ '^[0-9]+$'
+    and (sc."lastSyncBayValue" #>> '{}') is distinct from (sc."shopifyValue" #>> '{}')
+    and exists (
+      select 1
+      from "ProductSnapshot" ps
+      where ps."mappingId" = sc."mappingId"
+        and ps.source = 'SYNCBAY'
+        and ps."imageCount" = (sc."shopifyValue" #>> '{}')::int
+    )
+),
 repairable_conflicts as (
   select id from baseline_repairable_description
   union
   select id from aligned_description
   union
   select id from inactive_mapping_conflicts
+  union
+  select id from repairable_images
 ),
 conflict_rows as (
   select jsonb_agg(to_jsonb(rows) order by rows.status, rows.field) as rows
@@ -208,6 +231,7 @@ select jsonb_build_object(
   'baselineRepairableDescriptionConflictCount', (select count(*)::int from baseline_repairable_description),
   'alignedDescriptionConflictCount', (select count(*)::int from aligned_description),
   'inactiveMappingConflictCount', (select count(*)::int from inactive_mapping_conflicts),
+  'imageRepairableConflictCount', (select count(*)::int from repairable_images),
   'repairableDescriptionConflictCount',
     (select count(*)::int from baseline_repairable_description) +
     (select count(*)::int from aligned_description),
@@ -263,6 +287,9 @@ function printReport(report) {
     `Description riparabili: ${report.repairableDescriptionConflictCount} (${report.alignedDescriptionConflictCount} già allineati, ${report.baselineRepairableDescriptionConflictCount} con baseline da creare)`,
   );
   console.log(
+    `Immagini riparabili: ${report.imageRepairableConflictCount ?? 0}`,
+  );
+  console.log(
     `Mapping inattivi da chiudere: ${report.inactiveMappingConflictCount}`,
   );
   console.log(`Cooldown eBay attivi: ${sumRows(report.cooldownRows)}`);
@@ -288,9 +315,22 @@ function printReport(report) {
     console.log("");
   }
 
-  if (report.repairableConflictCount > 0) {
+  const repairSteps = [];
+  if (report.repairableDescriptionConflictCount > 0) {
+    repairSteps.push("npm run conflicts:repair-description -- --apply");
+  }
+  if ((report.imageRepairableConflictCount ?? 0) > 0) {
+    repairSteps.push("npm run conflicts:repair-images -- --apply");
+  }
+
+  if (repairSteps.length > 0) {
+    console.log("Prossimo passo:");
+    for (const step of repairSteps) {
+      console.log(`- ${step}`);
+    }
+  } else if (report.repairableConflictCount > 0) {
     console.log(
-      "Prossimo passo: npm run conflicts:repair-description -- --apply",
+      "Prossimo passo: chiudi i conflitti dei mapping inattivi dalla pagina Conflitti.",
     );
   } else if (report.staleOpenConflictCount > 0 || report.cooldownRows.length > 0) {
     console.log(
