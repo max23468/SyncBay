@@ -6,6 +6,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.52] — 2026-07-11
+
+### Correzioni
+
+- Rilevamento conflitti Shopify: la baseline SyncBay registra il numero di
+  immagini realmente presenti sul prodotto, incluse quelle già caricate e non
+  ritoccate dalla sincronizzazione, non solo quelle create nella singola
+  esecuzione. Elimina i falsi conflitti `images` che comparivano quando una
+  lettura eBay non restituiva immagini in quella run.
+
+### Sotto il cofano
+
+- Nuovo comando di manutenzione `npm run conflicts:repair-images` che riallinea
+  la baseline immagini al conteggio Shopify reale e chiude i falsi conflitti
+  `images` già aperti, senza scrivere su Shopify o eBay.
+
 ## [1.0.51] — 2026-07-11
 
 ### Correzioni
@@ -3397,6 +3413,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.52]: #1052--2026-07-11
 [1.0.51]: #1051--2026-07-11
 [1.0.50]: #1050--2026-07-11
 [1.0.49]: #1049--2026-07-11

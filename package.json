@@ -62,6 +62,7 @@
     "conflicts:doctor": "node scripts/syncbay-conflicts-doctor.mjs",
     "conflicts:repair-description": "node scripts/syncbay-repair-description-conflicts.mjs",
     "conflicts:repair-price": "node --experimental-strip-types scripts/syncbay-repair-price-conflicts.mjs",
+    "conflicts:repair-images": "node scripts/syncbay-repair-image-conflicts.mjs",
     "egress:budget": "node --experimental-strip-types scripts/syncbay-egress-budget.mjs",
     "descriptions:cleanup-report": "node --experimental-strip-types scripts/syncbay-description-cleanup-report.mjs",
     "descriptions:backfill-cleanup": "node --experimental-strip-types scripts/syncbay-description-backfill.mjs",

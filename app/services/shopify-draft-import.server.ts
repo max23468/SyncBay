@@ -1939,6 +1939,8 @@ async function syncShopifyMediaFromEbayImages(
             sourceUrl: "",
           },
         ],
+        // La cancellazione è fallita: le immagini esistenti restano sul prodotto.
+        preservedCount: existingImageMediaIds.length,
         requestedCount: sourceMedia.length,
         sourceImageUrls: sourceMedia.map((media) => media.originalSource),
         stagedCreatedCount: 0,
@@ -2027,6 +2029,13 @@ async function syncShopifyMediaFromEbayImages(
     deletedCount,
     directCreatedCount,
     failedResults,
+    // Immagini già presenti su Shopify e non cancellate in questa run: senza
+    // conteggiarle, una sync con `sourceMedia` vuota (es. eBay che non
+    // restituisce immagini in quella lettura) registrerebbe `imageCount` 0 pur
+    // avendo il prodotto ancora le sue immagini, aprendo un falso conflitto
+    // `images`. `imageCount` deve riflettere le immagini reali sul prodotto,
+    // non quelle toccate dalla run.
+    preservedCount: existingImageMediaIds.length - deletedCount,
     requestedCount: sourceMedia.length,
     sourceImageUrls: sourceMedia.map((media) => media.originalSource),
     stagedCreatedCount,
