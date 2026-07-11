@@ -37,3 +37,16 @@ export function buildShopifyChangeBatch(
 
   return { duplicateJobIds, jobs: [...newestByResource.values()] };
 }
+
+export function buildSeededShopifyChangeBatch(
+  seed: ShopifyChangeBatchJob,
+  queuedJobs: ShopifyChangeBatchJob[],
+  maxItems = 25,
+) {
+  const boundedMaxItems = Math.max(1, maxItems);
+
+  return buildShopifyChangeBatch(
+    [seed, ...queuedJobs.slice(0, boundedMaxItems - 1)],
+    boundedMaxItems,
+  );
+}
