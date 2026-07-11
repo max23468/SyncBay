@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.49] — 2026-07-11
+
+### Correzioni
+
+- Sessioni Shopify: il runner decifra rigorosamente i token, aggiorna le
+  sessioni scadute senza mantenere una transazione database durante la chiamata
+  OAuth e risolve le corse concorrenti con compare-and-swap.
+- Shopify Admin: centralizzati retry, throttling e budget massimo di 45 secondi,
+  eliminando il precedente retry annidato dell'importazione.
+
 ## [1.0.48] — 2026-07-11
 
 ### Sicurezza
@@ -3360,6 +3370,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.49]: #1049--2026-07-11
 [1.0.48]: #1048--2026-07-11
 [1.0.47]: #1047--2026-07-11
 [1.0.46]: #1046--2026-07-11

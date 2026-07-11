@@ -5,6 +5,7 @@ import { Session as ShopifySession } from "@shopify/shopify-api";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { PrismaSessionStorage } from "./shopify-prisma-session-storage.server.ts";
+import { encryptSecret } from "./crypto.server";
 
 process.env.TOKEN_ENCRYPTION_KEY = "syncbay-session-storage-test-key";
 
@@ -106,7 +107,7 @@ test("stores and loads Shopify sessions through the Prisma session table", async
   assert.equal(await storage.loadSession(session.id), undefined);
 });
 
-test("reads plaintext legacy session tokens during the compatible rollout", async () => {
+test("rejects plaintext legacy session tokens after the compatible rollout", async () => {
   const row = makeStoredSessionRow(1, "legacy.myshopify.com");
   row.accessToken = "legacy-access-token";
   row.refreshToken = "legacy-refresh-token";
@@ -124,10 +125,10 @@ test("reads plaintext legacy session tokens during the compatible rollout", asyn
     { connectionRetries: 1, connectionRetryIntervalMs: 0 },
   );
 
-  const loaded = await storage.loadSession(row.id);
-
-  assert.equal(loaded?.accessToken, "legacy-access-token");
-  assert.equal(loaded?.refreshToken, "legacy-refresh-token");
+  await assert.rejects(
+    storage.loadSession(row.id),
+    /Sessione Shopify non cifrata o non valida/,
+  );
 });
 
 test("ignores missing rows but propagates failed session deletes", async () => {
@@ -178,7 +179,11 @@ test("returns every persisted session for a shop", async () => {
   const findManyInputs: unknown[] = [];
   const rows = Array.from({ length: 30 }, (_, index) =>
     makeStoredSessionRow(index + 1, "many-sessions.myshopify.com"),
-  );
+  ).map((row) => ({
+    ...row,
+    accessToken: encryptSecret(row.accessToken),
+    refreshToken: row.refreshToken ? encryptSecret(row.refreshToken) : null,
+  }));
   const storage = new PrismaSessionStorage(
     {
       session: {

@@ -4,6 +4,7 @@ import {
   getOfflineShopifySessionId,
 } from "../lib/syncbay-shopify-admin";
 import { shouldRefreshOfflineShopifySession } from "../lib/syncbay-shopify-session-refresh";
+import { decryptSecret, encryptSecret } from "./crypto.server";
 
 export async function getShopifyAdminGraphqlClient(shopDomain: string) {
   const session = await getUsableOfflineShopifySession(shopDomain);
@@ -16,83 +17,119 @@ export async function getShopifyAdminGraphqlClient(shopDomain: string) {
 
 async function getUsableOfflineShopifySession(shopDomain: string) {
   const sessionId = getOfflineShopifySessionId(shopDomain);
+  const select = {
+    accessToken: true,
+    expires: true,
+    refreshToken: true,
+    refreshTokenExpires: true,
+    scope: true,
+  } as const;
+  return getUsableOfflineShopifySessionWithPorts({
+    now: () => new Date(),
+    readSession: () => prisma.session.findUnique({ select, where: { id: sessionId } }),
+    refresh: (refreshToken) => refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
+    compareAndSwap: (oldAccessToken, refreshed, scope) => prisma.session.updateMany({
+      data: {
+        accessToken: encryptSecret(refreshed.accessToken),
+        expires: refreshed.expiresAt,
+        refreshToken: encryptSecret(refreshed.refreshToken),
+        refreshTokenExpires: refreshed.refreshTokenExpiresAt,
+        scope: refreshed.scope ?? scope,
+      },
+      where: { id: sessionId, accessToken: oldAccessToken },
+    }).then(({ count }) => count === 1),
+  });
+}
 
-  return prisma.$transaction(
-    async (tx) => {
-      await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT id
-        FROM "Session"
-        WHERE id = ${sessionId}
-        FOR UPDATE
-      `;
+type PersistedOfflineSession = {
+  accessToken: string;
+  expires: Date | null;
+  refreshToken: string | null;
+  refreshTokenExpires: Date | null;
+  scope: string | null;
+};
 
-      const session = await tx.session.findUnique({
-        select: {
-          accessToken: true,
-          expires: true,
-          refreshToken: true,
-          refreshTokenExpires: true,
-          scope: true,
-        },
-        where: { id: sessionId },
-      });
+type RefreshedOfflineSession = {
+  accessToken: string;
+  expiresAt: Date;
+  refreshToken: string;
+  refreshTokenExpiresAt: Date;
+  scope?: string;
+};
 
-      if (!session?.accessToken) {
-        throw new Error(
-          "Sessione offline Shopify non disponibile per il runner automatico.",
-        );
-      }
+export async function getUsableOfflineShopifySessionWithPorts(input: {
+  compareAndSwap: (oldAccessToken: string, refreshed: RefreshedOfflineSession, scope: string | null) => Promise<boolean>;
+  now: () => Date;
+  readSession: () => Promise<PersistedOfflineSession | null>;
+  refresh: (refreshToken: string) => Promise<RefreshedOfflineSession>;
+}) {
+  const persisted = await input.readSession();
 
-      if (!shouldRefreshOfflineShopifySession(session.expires, new Date())) {
-        return session;
-      }
+  if (!persisted?.accessToken) {
+    throw new Error(
+      "Sessione offline Shopify non disponibile per il runner automatico.",
+    );
+  }
 
-      if (!session.refreshToken) {
-        if (!session.expires) {
-          throw new Error(
-            "Sessione offline Shopify legacy senza scadenza e senza refresh token: riapri l'app Shopify per migrare ai token offline a scadenza richiesti dalle public app Shopify dal 2027.",
-          );
-        }
+  const session = decryptPersistedSession(persisted);
 
-        throw new Error(
-          "Sessione offline Shopify scaduta senza refresh token: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
-        );
-      }
+  if (!shouldRefreshOfflineShopifySession(session.expires, input.now())) {
+    return session;
+  }
 
-      if (
-        session.refreshTokenExpires &&
-        session.refreshTokenExpires.getTime() <= Date.now()
-      ) {
-        throw new Error(
-          "Refresh token Shopify offline scaduto: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
-        );
-      }
+  if (!session.refreshToken) {
+    if (!session.expires) {
+      throw new Error(
+        "Sessione offline Shopify legacy senza scadenza e senza refresh token: riapri l'app Shopify per migrare ai token offline a scadenza richiesti dalle public app Shopify dal 2027.",
+      );
+    }
+    throw new Error(
+      "Sessione offline Shopify scaduta senza refresh token: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
+    );
+  }
 
-      const refreshed = await refreshOfflineShopifyAccessToken({
-        refreshToken: session.refreshToken,
-        shopDomain,
-      });
+  if (session.refreshTokenExpires && session.refreshTokenExpires.getTime() <= input.now().getTime()) {
+    throw new Error(
+      "Refresh token Shopify offline scaduto: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
+    );
+  }
 
-      return tx.session.update({
-        data: {
-          accessToken: refreshed.accessToken,
-          expires: refreshed.expiresAt,
-          refreshToken: refreshed.refreshToken,
-          refreshTokenExpires: refreshed.refreshTokenExpiresAt,
-          scope: refreshed.scope ?? session.scope,
-        },
-        select: {
-          accessToken: true,
-          expires: true,
-          refreshToken: true,
-          refreshTokenExpires: true,
-          scope: true,
-        },
-        where: { id: sessionId },
-      });
-    },
-    { timeout: 20_000 },
+  const refreshed = await input.refresh(session.refreshToken);
+  const claimed = await input.compareAndSwap(
+    persisted.accessToken,
+    refreshed,
+    session.scope,
   );
+
+  if (claimed) {
+    return {
+      accessToken: refreshed.accessToken,
+      expires: refreshed.expiresAt,
+      refreshToken: refreshed.refreshToken,
+      refreshTokenExpires: refreshed.refreshTokenExpiresAt,
+      scope: refreshed.scope ?? session.scope,
+    };
+  }
+
+  const winner = await input.readSession();
+  if (!winner?.accessToken) {
+    throw new Error("Sessione offline Shopify rimossa durante l'aggiornamento.");
+  }
+  return decryptPersistedSession(winner);
+}
+
+function decryptPersistedSession<T extends { accessToken: string; refreshToken: string | null }>(session: T) {
+  try {
+    return {
+      ...session,
+      accessToken: decryptSecret(session.accessToken),
+      refreshToken: session.refreshToken ? decryptSecret(session.refreshToken) : null,
+    };
+  } catch {
+    throw new Error(
+      "Sessione Shopify non cifrata o non valida: riapri l'app per autorizzare di nuovo SyncBay.",
+    );
+  }
 }
 
 async function refreshOfflineShopifyAccessToken(input: {

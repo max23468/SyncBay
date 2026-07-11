@@ -2,7 +2,7 @@ import { Session as ShopifySession } from "@shopify/shopify-api";
 import type { SessionStorage } from "@shopify/shopify-app-session-storage";
 
 import {
-  decryptSecretWithLegacyFallback,
+  decryptSecret,
   encryptSecretIfNeeded,
 } from "./crypto.server";
 
@@ -240,13 +240,13 @@ export class PrismaSessionStorage implements SessionStorage {
     pushOptional(
       sessionParams,
       "accessToken",
-      decryptSecretWithLegacyFallback(row.accessToken),
+      decryptSessionSecret(row.accessToken),
     );
     pushOptional(
       sessionParams,
       "refreshToken",
       row.refreshToken
-        ? decryptSecretWithLegacyFallback(row.refreshToken)
+        ? decryptSessionSecret(row.refreshToken)
         : null,
     );
     pushOptional(
@@ -256,6 +256,16 @@ export class PrismaSessionStorage implements SessionStorage {
     );
 
     return ShopifySession.fromPropertyArray(sessionParams, true);
+  }
+}
+
+function decryptSessionSecret(value: string) {
+  try {
+    return decryptSecret(value);
+  } catch {
+    throw new Error(
+      "Sessione Shopify non cifrata o non valida: riapri l'app per autorizzare di nuovo SyncBay.",
+    );
   }
 }
 

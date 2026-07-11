@@ -1,7 +1,15 @@
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const DEFAULT_MAX_GRAPHQL_ATTEMPTS = 4;
+const DEFAULT_MAX_ELAPSED_MS = 45_000;
 const DEFAULT_RETRY_DELAY_MS = 2_000;
-const DEFAULT_THROTTLE_RETRY_DELAY_MS = 20_000;
+const DEFAULT_THROTTLE_RETRY_DELAY_MS = 15_000;
+
+export interface ShopifyAdminRetryPolicy {
+  maxAttempts: number;
+  maxElapsedMs: number;
+  retryDelayMs: number;
+  throttleRetryDelayMs: number;
+}
 
 export type SyncBayShopifyAdminGraphqlClient = {
   graphql: (
@@ -17,31 +25,30 @@ export function getOfflineShopifySessionId(shopDomain: string) {
 export function createShopifyAdminGraphqlClient(input: {
   accessToken: string;
   fetch?: typeof fetch;
-  maxAttempts?: number;
-  retryDelayMs?: number;
+  now?: () => number;
+  policy?: Partial<ShopifyAdminRetryPolicy>;
   shopDomain: string;
-  throttleRetryDelayMs?: number;
+  sleep?: (ms: number) => Promise<void>;
 }): SyncBayShopifyAdminGraphqlClient {
   const fetchImplementation = input.fetch ?? fetch;
+  const now = input.now ?? Date.now;
+  const sleepImplementation = input.sleep ?? sleep;
   const endpoint = `https://${input.shopDomain}/admin/api/${SHOPIFY_ADMIN_API_VERSION}/graphql.json`;
-  const maxAttempts = normalizePositiveInteger(
-    input.maxAttempts,
+  const policy: ShopifyAdminRetryPolicy = {
+    maxAttempts: normalizePositiveInteger(input.policy?.maxAttempts,
     DEFAULT_MAX_GRAPHQL_ATTEMPTS,
-  );
-  const retryDelayMs = normalizePositiveInteger(
-    input.retryDelayMs,
-    DEFAULT_RETRY_DELAY_MS,
-  );
-  const throttleRetryDelayMs = normalizePositiveInteger(
-    input.throttleRetryDelayMs,
-    DEFAULT_THROTTLE_RETRY_DELAY_MS,
-  );
+    ),
+    maxElapsedMs: normalizePositiveInteger(input.policy?.maxElapsedMs, DEFAULT_MAX_ELAPSED_MS),
+    retryDelayMs: normalizePositiveInteger(input.policy?.retryDelayMs, DEFAULT_RETRY_DELAY_MS),
+    throttleRetryDelayMs: normalizePositiveInteger(input.policy?.throttleRetryDelayMs, DEFAULT_THROTTLE_RETRY_DELAY_MS),
+  };
 
   return {
     async graphql(query, options) {
       let lastResponse: ShopifyGraphqlFetchResponse | null = null;
+      const startedAt = now();
 
-      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
         lastResponse = await fetchShopifyGraphql(fetchImplementation, endpoint, {
           accessToken: input.accessToken,
           query,
@@ -50,14 +57,20 @@ export function createShopifyAdminGraphqlClient(input: {
 
         const retryReason = getRetryReason(lastResponse);
 
-        if (!retryReason || attempt === maxAttempts) {
+        if (!retryReason || attempt === policy.maxAttempts) {
           return toJsonResponse(lastResponse);
         }
 
-        await sleep(getRetryDelayMs(retryReason, attempt, {
-          retryDelayMs,
-          throttleRetryDelayMs,
-        }));
+        const retryDelay = getRetryDelayMs(
+          retryReason,
+          attempt,
+          policy,
+          lastResponse.json,
+        );
+        if (now() - startedAt + retryDelay >= policy.maxElapsedMs) {
+          return toJsonResponse(lastResponse);
+        }
+        await sleepImplementation(retryDelay);
       }
 
       return toJsonResponse(lastResponse);
@@ -154,13 +167,28 @@ function getRetryDelayMs(
   retryReason: "throttled" | "transient",
   attempt: number,
   input: { retryDelayMs: number; throttleRetryDelayMs: number },
+  json: Record<string, unknown> | null,
 ) {
   const base =
     retryReason === "throttled"
       ? input.throttleRetryDelayMs
       : input.retryDelayMs;
 
-  return base * attempt;
+  return Math.max(base * attempt, getThrottleCostDelayMs(json));
+}
+
+function getThrottleCostDelayMs(json: Record<string, unknown> | null) {
+  const extensions = json?.extensions;
+  if (!extensions || typeof extensions !== "object") return 0;
+  const cost = "cost" in extensions && extensions.cost && typeof extensions.cost === "object"
+    ? extensions.cost : null;
+  const throttle = cost && "throttleStatus" in cost && cost.throttleStatus && typeof cost.throttleStatus === "object"
+    ? cost.throttleStatus : null;
+  const requested = cost && "requestedQueryCost" in cost ? Number(cost.requestedQueryCost) : 0;
+  const available = throttle && "currentlyAvailable" in throttle ? Number(throttle.currentlyAvailable) : 0;
+  const restoreRate = throttle && "restoreRate" in throttle ? Number(throttle.restoreRate) : 0;
+  if (restoreRate <= 0 || requested <= available) return 0;
+  return Math.ceil(((requested - available) / restoreRate) * 1000);
 }
 
 function hasGraphqlThrottleSignal(json: Record<string, unknown> | null) {

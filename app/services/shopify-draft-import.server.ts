@@ -28,7 +28,6 @@ import {
   resolveProductPublicationIds,
   resolveStoredSelectedProductPublicationIds,
 } from "../lib/syncbay-product-publication-settings";
-import { isShopifyGraphqlThrottleResponse } from "../lib/shopify-graphql-throttle";
 import {
   getSyncBayDescriptionHash,
   hashNullableText,
@@ -86,25 +85,6 @@ interface ShopifyUserError {
   code?: string | null;
   field?: string[] | null;
   message: string;
-}
-
-interface ShopifyGraphqlResponseEnvelope {
-  errors?: Array<{
-    extensions?: {
-      code?: string | null;
-    } | null;
-    message: string;
-  }>;
-  extensions?: {
-    cost?: {
-      actualQueryCost?: number | null;
-      requestedQueryCost?: number | null;
-      throttleStatus?: {
-        currentlyAvailable?: number | null;
-        restoreRate?: number | null;
-      } | null;
-    } | null;
-  } | null;
 }
 
 interface ShopifyInventoryItemNode {
@@ -367,9 +347,6 @@ const MAX_DRAFT_IMPORT_LIMIT = 50;
 const DRAFT_IMPORT_MAX_ATTEMPTS = 4;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
-const SHOPIFY_GRAPHQL_MAX_ATTEMPTS = 4;
-const SHOPIFY_GRAPHQL_MIN_AVAILABLE_POINTS = 120;
-const SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS = 15_000;
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
 
 type ShopifyInventorySyncResult =
@@ -441,107 +418,6 @@ type DraftImportPublicationOptions = {
   disabled?: boolean;
   publicationIds?: string[];
 };
-
-function createShopifyAdminGraphqlClientWithBackoff(
-  admin: ShopifyAdminGraphqlClient,
-): ShopifyAdminGraphqlClient {
-  return {
-    async graphql(query, options) {
-      let response: Response | null = null;
-
-      for (
-        let attempt = 1;
-        attempt <= SHOPIFY_GRAPHQL_MAX_ATTEMPTS;
-        attempt += 1
-      ) {
-        response = await admin.graphql(query, options);
-
-        const envelope = await readShopifyGraphqlEnvelope(response);
-        const throttled = isShopifyGraphqlThrottled(response, envelope);
-
-        if (!throttled) {
-          await waitForShopifyGraphqlBudget(envelope);
-          return response;
-        }
-
-        if (attempt === SHOPIFY_GRAPHQL_MAX_ATTEMPTS) {
-          return response;
-        }
-
-        await sleep(calculateShopifyThrottleWaitMs(envelope, attempt));
-      }
-
-      return response ?? admin.graphql(query, options);
-    },
-  };
-}
-
-async function readShopifyGraphqlEnvelope(response: Response) {
-  try {
-    return (await response.clone().json()) as ShopifyGraphqlResponseEnvelope;
-  } catch {
-    return null;
-  }
-}
-
-function isShopifyGraphqlThrottled(
-  response: Response,
-  envelope: ShopifyGraphqlResponseEnvelope | null,
-) {
-  return isShopifyGraphqlThrottleResponse({
-    envelope,
-    status: response.status,
-  });
-}
-
-async function waitForShopifyGraphqlBudget(
-  envelope: ShopifyGraphqlResponseEnvelope | null,
-) {
-  const waitMs = calculateShopifyThrottleWaitMs(envelope, 0);
-
-  if (waitMs > 0) {
-    await sleep(waitMs);
-  }
-}
-
-function calculateShopifyThrottleWaitMs(
-  envelope: ShopifyGraphqlResponseEnvelope | null,
-  attempt: number,
-) {
-  const cost = envelope?.extensions?.cost;
-  const throttleStatus = cost?.throttleStatus;
-  const currentlyAvailable = throttleStatus?.currentlyAvailable;
-  const restoreRate = throttleStatus?.restoreRate;
-  const requestedCost = cost?.requestedQueryCost ?? cost?.actualQueryCost ?? 0;
-  const targetAvailable = Math.max(
-    SHOPIFY_GRAPHQL_MIN_AVAILABLE_POINTS,
-    requestedCost,
-  );
-
-  if (
-    typeof currentlyAvailable === "number" &&
-    typeof restoreRate === "number" &&
-    restoreRate > 0 &&
-    currentlyAvailable < targetAvailable
-  ) {
-    return Math.min(
-      Math.ceil(((targetAvailable - currentlyAvailable) / restoreRate) * 1000) +
-        250,
-      SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS,
-    );
-  }
-
-  if (attempt <= 0) return 0;
-
-  return Math.min(
-    1000 * 2 ** (attempt - 1),
-    SHOPIFY_GRAPHQL_MAX_THROTTLE_WAIT_MS,
-  );
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function formatShopifyPrice(value: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
@@ -655,7 +531,7 @@ export async function createShopifyDraftProductsIfEnabled(input: {
 }) {
   const shop = await ensureDraftImportShop(input.shopDomain);
   const pricingRule = await getPricingRuleForShopId(shop.id);
-  const admin = createShopifyAdminGraphqlClientWithBackoff(input.admin);
+  const admin = input.admin;
   const reuseOnly = input.reuseOnly === true;
   const importProductStatus =
     input.importProductStatusOverride ??
