@@ -104,7 +104,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 - Consumes: i test Node esistenti e la toolchain Node 24.
 - Produces: `npm run test:services` e `npm run test:runtime`, usati da tutti i task successivi e dalla CI.
 
-- [ ] **Step 1: Registrare il rosso corrente del runner Node nativo**
+- [x] **Step 1: Registrare il rosso corrente del runner Node nativo**
 
 Run:
 
@@ -115,7 +115,7 @@ node --test --experimental-strip-types app/services/*.server.test.ts
 
 Expected: `13` test passano e `ebay-trading-preview.server.test.ts` fallisce con `ERR_MODULE_NOT_FOUND` su un import TypeScript extensionless. Questo prova che i test server non possono essere aggiunti alla CI con il comando attuale.
 
-- [ ] **Step 2: Installare il runner TypeScript minimo verificato su Node 24**
+- [x] **Step 2: Installare il runner TypeScript minimo verificato su Node 24**
 
 Run:
 
@@ -125,7 +125,7 @@ npm install --save-dev --save-exact tsx@4.23.0
 
 Expected: installazione senza `ERESOLVE`; `npm audit --omit=dev` resta con zero vulnerabilità production.
 
-- [ ] **Step 3: Aggiungere gli script ufficiali**
+- [x] **Step 3: Aggiungere gli script ufficiali**
 
 Inserire in `package.json`:
 
@@ -137,7 +137,7 @@ Inserire in `package.json`:
 
 Non sostituire `coverage:lib`: la soglia resta sui moduli puri, mentre `test:services` diventa un gate di contratto senza soglia artificiale iniziale.
 
-- [ ] **Step 4: Sostituire il gate parziale in CI**
+- [x] **Step 4: Sostituire il gate parziale in CI**
 
 In `.github/workflows/ci.yml`, sostituire lo step `Test librerie pure` con:
 
@@ -148,7 +148,7 @@ In `.github/workflows/ci.yml`, sostituire lo step `Test librerie pure` con:
 
 Mantenere lo step successivo `npm run coverage:lib`.
 
-- [ ] **Step 5: Verificare il nuovo gate**
+- [x] **Step 5: Verificare il nuovo gate**
 
 Run:
 
@@ -164,7 +164,7 @@ Expected: `585` test lib e `14` test server passano; coverage lib sopra `75%` li
 
 Censire inoltre tutti i file `app/services/*.server.ts` in `docs/TOOLCHAIN.md`, classificandoli come: test diretto, contratto coperto da test lib/route, oppure adapter banale. Non imporre un falso rapporto uno-a-uno file/test, ma nessun modulo ad alto rischio modificato dai Task 2-10 può restare senza test server o test di contratto esplicitamente indicato.
 
-- [ ] **Step 6: Documentare e committare**
+- [x] **Step 6: Documentare e committare**
 
 Aggiornare `docs/TOOLCHAIN.md` con `tsx 4.23.0` limitato ai test server e con i nuovi comandi.
 

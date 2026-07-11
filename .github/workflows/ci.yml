@@ -46,8 +46,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test librerie pure
-        run: npm run test:lib
+      - name: Test runtime
+        run: npm run test:runtime
 
       - name: Coverage librerie pure
         run: npm run coverage:lib
