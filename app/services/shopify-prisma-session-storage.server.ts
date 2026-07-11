@@ -260,6 +260,14 @@ export class PrismaSessionStorage implements SessionStorage {
 }
 
 function decryptSessionSecret(value: string) {
+  // Le sessioni OAuth/pre-auth tokenless salvano un accessToken vuoto
+  // (`encryptSecretIfNeeded("")` lo lascia invariato): va ricaricato com'è,
+  // altrimenti l'OAuth callback non riesce a rileggere la sessione di stato.
+  // Solo i token legacy in chiaro (non vuoti e non cifrati) devono fallire.
+  if (!value) {
+    return value;
+  }
+
   try {
     return decryptSecret(value);
   } catch {

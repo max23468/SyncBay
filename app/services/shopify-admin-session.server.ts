@@ -94,7 +94,22 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     );
   }
 
-  const refreshed = await input.refresh(session.refreshToken);
+  let refreshed: RefreshedOfflineSession;
+  try {
+    refreshed = await input.refresh(session.refreshToken);
+  } catch (error) {
+    // Race sullo stesso shop: un altro runner può aver già ruotato/consumato
+    // questo refresh token nella stessa finestra, facendo fallire il nostro
+    // refresh prima del percorso compare-and-swap perdente. Se la sessione
+    // persistita è cambiata sotto di noi, riusa quella vincente appena scritta
+    // invece di far fallire il job; altrimenti il refresh è davvero rotto.
+    const winner = await input.readSession();
+    if (winner?.accessToken && winner.accessToken !== persisted.accessToken) {
+      return decryptPersistedSession(winner);
+    }
+    throw error;
+  }
+
   const claimed = await input.compareAndSwap(
     persisted.accessToken,
     refreshed,

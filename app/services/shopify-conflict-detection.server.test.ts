@@ -98,7 +98,9 @@ test("opens conflicts from one batched Shopify read", async () => {
   const fakePorts = ports({
     async loadProducts(input) {
       productReads += 1;
-      assert.deepEqual(input.productGids, ["gid://shopify/Product/1"]);
+      assert.deepEqual(input.targets, [
+        { productGid: "gid://shopify/Product/1", variantGid: null },
+      ]);
       return ports().loadProducts(input);
     },
   });
@@ -112,6 +114,44 @@ test("opens conflicts from one batched Shopify read", async () => {
   assert.equal(execution.providerReadCount, 1);
   assert.deepEqual(execution.results[0]?.fields, ["title"]);
   assert.equal(execution.results[0]?.outcome, "conflict_opened");
+});
+
+test("passes the mapped variant and default location to the product read", async () => {
+  let seenInput: { targets: unknown; defaultLocationGid: unknown } | null = null;
+  const fakePorts = ports({
+    async loadMappings() {
+      const mappings = await ports().loadMappings(jobs);
+      mappings.get("product:gid://shopify/Product/1")!.shopifyVariantGid =
+        "gid://shopify/ProductVariant/99";
+      return mappings;
+    },
+    async loadProducts(input) {
+      seenInput = {
+        targets: input.targets,
+        defaultLocationGid: input.defaultLocationGid,
+      };
+      return ports().loadProducts(input);
+    },
+  });
+
+  await detectShopifyChangesBatch(
+    {
+      jobs,
+      shopDomain: "example.myshopify.com",
+      defaultLocationGid: "gid://shopify/Location/7",
+    },
+    fakePorts,
+  );
+
+  assert.deepEqual(seenInput, {
+    targets: [
+      {
+        productGid: "gid://shopify/Product/1",
+        variantGid: "gid://shopify/ProductVariant/99",
+      },
+    ],
+    defaultLocationGid: "gid://shopify/Location/7",
+  });
 });
 
 test("keeps one failed product isolated from successful siblings", async () => {

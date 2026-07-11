@@ -131,6 +131,50 @@ test("rejects plaintext legacy session tokens after the compatible rollout", asy
   );
 });
 
+test("loads tokenless OAuth state sessions without throwing", async () => {
+  const rows = new Map<string, StoredSessionRow>();
+  const storage = new PrismaSessionStorage(
+    {
+      session: {
+        count: async () => rows.size,
+        upsert: async ({
+          where,
+          create,
+          update,
+        }: {
+          where: { id: string };
+          create: StoredSessionRowWrite;
+          update: StoredSessionRowWrite;
+        }) => {
+          rows.set(where.id, rows.has(where.id) ? update : create);
+        },
+        findUnique: async ({ where }: { where: { id: string } }) =>
+          rows.get(where.id) ?? null,
+        delete: async () => {},
+        deleteMany: async () => {},
+        findMany: async () => [],
+      },
+    },
+    { connectionRetries: 1, connectionRetryIntervalMs: 0 },
+  );
+
+  const stateSession = new ShopifySession({
+    id: "offline_state-shop.myshopify.com",
+    shop: "state-shop.myshopify.com",
+    state: "nonce",
+    isOnline: false,
+  });
+
+  assert.equal(await storage.storeSession(stateSession), true);
+  assert.equal(rows.get(stateSession.id)?.accessToken, "");
+
+  const loaded = await storage.loadSession(stateSession.id);
+
+  assert.equal(loaded?.id, stateSession.id);
+  assert.equal(loaded?.state, "nonce");
+  assert.equal(loaded?.accessToken ?? "", "");
+});
+
 test("ignores missing rows but propagates failed session deletes", async () => {
   const missingRowError = Object.assign(new Error("record not found"), {
     code: "P2025",

@@ -6,6 +6,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.51] — 2026-07-11
+
+### Correzioni
+
+- Cifratura token: anche il runtime normalizza `TOKEN_ENCRYPTION_KEY`
+  eliminando spazi e fine riga come già fanno gli script, così gli envelope
+  restano decifrabili tra script locali e runtime Vercel.
+- Sessioni Shopify: le sessioni OAuth/pre-auth senza token si ricaricano senza
+  errori, sbloccando i flussi di installazione e ri-autorizzazione.
+- Sessioni Shopify offline: se l'aggiornamento del token fallisce perché un
+  altro runner ha già ruotato il refresh token nella stessa finestra, il job
+  riusa la sessione vincente invece di fallire.
+- Rilevamento conflitti Shopify in batch: prezzo e disponibilità vengono letti
+  dalla variante mappata e dalla località predefinita, evitando conflitti errati
+  sui prodotti con più varianti o più località.
+- Runner conflitti Shopify: se il rilevamento in batch fallisce, i job assorbiti
+  vengono rimessi subito in retry invece di restare bloccati fino al recupero
+  automatico, evitando di fermare l'intero negozio.
+
 ## [1.0.50] — 2026-07-11
 
 ### Correzioni
@@ -3378,6 +3397,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.51]: #1051--2026-07-11
 [1.0.50]: #1050--2026-07-11
 [1.0.49]: #1049--2026-07-11
 [1.0.48]: #1048--2026-07-11
