@@ -22,5 +22,5 @@ export function selectTokenEncryptionKey(input) {
 }
 
 function normalizeSecret(value) {
-  return typeof value === "string" && value.trim() ? value : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

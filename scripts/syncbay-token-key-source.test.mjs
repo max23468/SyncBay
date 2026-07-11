@@ -28,3 +28,13 @@ test("falls back to env token encryption key when Keychain is unavailable", () =
     },
   );
 });
+
+test("removes command-output line endings from token encryption keys", () => {
+  assert.deepEqual(
+    selectTokenEncryptionKey({
+      envValue: "env-key",
+      keychainValue: "keychain-key\n",
+    }),
+    { source: "keychain", value: "keychain-key" },
+  );
+});

@@ -752,7 +752,7 @@ npm run sessions:encrypt-shopify -- --dry-run
 
 Expected: tutti verdi; il dry-run stampa solo conteggi.
 
-- [ ] **Step 6: Rollout compatibile obbligatorio**
+- [x] **Step 6: Rollout compatibile obbligatorio**
 
 1. pubblicare e deployare la release compatibile;
 2. verificare `READY`, smoke pubblico `200` e assenza di nuovi `5xx` auth;
