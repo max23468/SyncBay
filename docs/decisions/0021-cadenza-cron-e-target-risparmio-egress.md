@@ -8,7 +8,7 @@
 
 Durante il pilota controllato, il consumo Supabase egress è rimasto il vincolo
 operativo principale. Dopo la riduzione del batch automatico del runner a
-`limit=5`, il tick Supabase Cron ogni 2 minuti resta una sorgente ricorrente di
+`limit=2`, il tick Supabase Cron ogni 2 minuti resta una sorgente ricorrente di
 query e connessioni anche quando non ci sono import o backfill attivi.
 
 Il maintainer ha accettato che il target non sia più una promessa rigida
@@ -38,13 +38,18 @@ cadono prima del tick successivo: altrimenti un negozio con intervallo 10, 15,
 spostando in avanti i marker no-op. I `runAfter` usati come backoff provider
 restano comunque rispettati.
 
-Il batch automatico resta `limit=5`, come deciso dalla patch egress precedente.
+Il batch automatico resta `limit=2`. La capacità non viene recuperata alzando il
+limite: il runner riserva una corsia allo stock e una alla rilevazione conflitti,
+poi usa gli slot residui per sync/import e assorbe fino a 25 webhook distinti
+dello stesso shop dentro un singolo slot conflitti. Ogni richiesta ha deadline
+interna di 70 secondi e smette di claimare nuovo lavoro negli ultimi 5 secondi
+prima del timeout HTTP `pg_net` di 90 secondi.
 
 ## Conseguenze
 
 - Le invocazioni automatiche del runner scendono da circa 30/ora a 12/ora.
-- La capacità teorica del drain automatico scende, con `limit=5`, da circa
-  150 job/ora a 60 job/ora.
+- La capacità nominale è 24 slot/ora con `limit=2`; uno slot conflitti può però
+  chiudere fino a 25 risorse distinte, senza aumentare connessioni e invocazioni.
 - La freschezza ordinaria diventa più prudente: il minimo selezionabile è 5
   minuti e il massimo 30 minuti.
 - L'app deve comunicare il target come finestra indicativa configurabile, non

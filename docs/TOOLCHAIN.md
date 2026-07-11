@@ -339,7 +339,8 @@ deve aggiungere un test server o un test di contratto esplicito.
 | `shopify-existing-products.server.ts` | Test diretto | `shopify-existing-products.server.test.ts` |
 | `shopify-location.server.ts` | Contratto coperto | Scope e diagnostica location nei test `app/lib` |
 | `shopify-prisma-session-storage.server.ts` | Test diretto | `shopify-prisma-session-storage.server.test.ts` |
-| `sync-job-runner.server.ts` | Contratto coperto | Scheduling, idempotenza, retry e guardie stock nei test `app/lib`; Task 2-4 aggiungono test server |
+| `sync-job-runner.server.ts` | Contratto coperto | Fairness/deadline, scheduling, batching, idempotenza, retry e guardie stock coperti dai test `app/lib` e dal test server del rilevamento conflitti |
+| `shopify-conflict-detection.server.ts` | Test diretto | Porte batch, isolamento errori, mapping mancanti, stati mapping e lettura Shopify unica in `shopify-conflict-detection.server.test.ts` |
 | `syncbay-product-facets.server.ts` | Contratto coperto | Proposta, baseline, sync plan e backfill faccette nei test `app/lib` |
 | `syncbay.server.ts` | Contratto coperto | Contratti catalogo/conflitti/snapshot/audit nei test `app/lib`; nuovi verticali richiedono test server |
 `npm run build` esegue sempre `npm run prisma:generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.

@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.46] — 2026-07-11
+
+### Sotto il cofano
+
+- Runner: riservata capacità ai conflitti senza scalzare gli aggiornamenti stock,
+  aggiunta una deadline interna e batch fino a 25 webhook Shopify per shop.
+- Inventory Shopify: aggiunto il GID inventory indicizzato sui mapping, con
+  dual-write, lookup diretto e backfill controllato senza dati sensibili.
+
 ### Non versionato
 
 - Qualità runtime: aggiunto `tsx` come runner dei test server, introdotti i
@@ -3335,6 +3344,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.46]: #1046--2026-07-11
 [1.0.45]: #1045--2026-07-10
 [1.0.44]: #1044--2026-07-10
 [1.0.43]: #1043--2026-07-10
