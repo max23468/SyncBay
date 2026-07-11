@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.53] — 2026-07-11
+
+### Correzioni
+
+- Cifratura token: la decifratura resta retrocompatibile provando prima la
+  chiave normalizzata e poi quella grezza, così i token cifrati dal runtime
+  precedente (segreto con spazi o fine riga) restano leggibili invece di far
+  fallire l'autenticazione.
+- Rilevamento conflitti Shopify in batch: prezzo e disponibilità sono
+  confrontati per singolo mapping, così due inserzioni collegate a varianti
+  diverse dello stesso prodotto Shopify non aprono più conflitti errati.
+
 ## [1.0.52] — 2026-07-11
 
 ### Correzioni
@@ -3413,6 +3425,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.53]: #1053--2026-07-11
 [1.0.52]: #1052--2026-07-11
 [1.0.51]: #1051--2026-07-11
 [1.0.50]: #1050--2026-07-11
