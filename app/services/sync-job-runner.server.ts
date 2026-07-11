@@ -22,7 +22,6 @@ import {
   isLiveDescriptionConflictAligned,
   normalizeProductStatusConflictValue,
   shouldBlockIncrementalSyncForOpenConflictMappingStatus,
-  shouldDetectShopifyConflictsForMappingStatus,
   shouldResolveLiveAlignedDescriptionConflictForMappingStatus,
   shouldResolveLiveAlignedPriceConflictForMappingStatus,
   shouldResolveOpenConflictsForInactiveMappingStatus,
@@ -97,6 +96,16 @@ import {
 import { runRetentionCleanup } from "./retention-cleanup.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
+  buildShopifyChangeBatch,
+  type ShopifyChangeBatchJob,
+} from "../lib/syncbay-shopify-change-batch";
+import {
+  RUNNER_LANES,
+  buildRunnerLanePlan,
+  shouldClaimRunnerJob,
+  type RunnerLane,
+} from "../lib/syncbay-runner-fairness";
+import {
   STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
   STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES,
 } from "../lib/syncbay-stale-failed-job-archive";
@@ -130,6 +139,7 @@ import {
   markShopifyProductSoldOut,
 } from "./shopify-draft-import.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
+import { detectShopifyChangesBatch } from "./shopify-conflict-detection.server";
 
 const dueSyncJobSelect = {
   attempts: true,
@@ -244,10 +254,12 @@ const STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE =
 
 export async function runDueSyncJobs(
   input: {
+    deadlineAt?: Date;
     limit?: number;
     now?: Date;
   } = {},
 ) {
+  const startedAt = Date.now();
   const now = input.now ?? new Date();
   const limit = normalizeRunDueLimit(input.limit);
 
@@ -256,9 +268,19 @@ export async function runDueSyncJobs(
   const cleanedInternalImportJobCount =
     await markStaleInternalShopifyImportJobsFailed({ limit, now });
 
-  const jobs = await findDueSyncJobsByPriority({ limit, now });
+  const dueByType = await countDueSyncJobsByType(now);
+  const schedulableDueByType = { ...dueByType };
+  const runnableTypes = new Set<SyncJobType>(getRunnableSyncJobTypes());
+  for (const lane of RUNNER_LANES) {
+    if (!runnableTypes.has(lane as SyncJobType)) {
+      schedulableDueByType[lane] = 0;
+    }
+  }
+  const lanePlan = buildRunnerLanePlan({ dueByType: schedulableDueByType, limit });
+  const jobs = await findDueSyncJobsByPriority({ lanePlan, now });
   const results = new Array<DueSyncJobRunResult>(jobs.length);
   const runnableJobsByShop = new Map<string, DueSyncJobRunQueueItem[]>();
+  const deadlineState = { continuationNeeded: false };
 
   for (const [index, job] of jobs.entries()) {
     const shopJobs = runnableJobsByShop.get(job.shopId) ?? [];
@@ -268,7 +290,13 @@ export async function runDueSyncJobs(
 
   await Promise.all(
     [...runnableJobsByShop.values()].map((shopJobs) =>
-      runDueSyncJobGroup(shopJobs, results, now),
+      runDueSyncJobGroup(
+        shopJobs,
+        results,
+        now,
+        input.deadlineAt,
+        deadlineState,
+      ),
     ),
   );
 
@@ -278,6 +306,13 @@ export async function runDueSyncJobs(
   const archivedStaleFailedJobCount =
     await archiveSupersededFailedIncrementalSyncJobs({ now });
   const retentionCleanup = await runRetentionCleanup({ now });
+  const selectedByType = buildRunnerLaneCounts(
+    completedResults.map((result) => result.type as RunnerLane),
+  );
+  const dueCount = Object.values(dueByType).reduce(
+    (total, count) => total + count,
+    0,
+  );
 
   return {
     archivedStaleFailedJobCount,
@@ -288,7 +323,12 @@ export async function runDueSyncJobs(
       (result) => result.status === "skipped",
     ).length,
     cleanedInternalImportJobCount,
+    continuationNeeded:
+      deadlineState.continuationNeeded || dueCount > completedResults.length,
+    dueByType,
+    elapsedMs: Date.now() - startedAt,
     retentionCleanup,
+    selectedByType,
     succeededCount: completedResults.filter(
       (result) => result.status === "succeeded",
     ).length,
@@ -296,25 +336,57 @@ export async function runDueSyncJobs(
   };
 }
 
-async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
+async function countDueSyncJobsByType(now: Date) {
+  const counts = buildRunnerLaneCounts([]);
+  const rows = await prisma.syncJob.groupBy({
+    _count: { _all: true },
+    by: ["type"],
+    where: {
+      ...getSchedulableSyncJobWhere(),
+      runAfter: { lte: now },
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+    },
+  });
+
+  for (const row of rows) {
+    if (RUNNER_LANES.includes(row.type as RunnerLane)) {
+      counts[row.type as RunnerLane] = row._count._all;
+    }
+  }
+
+  return counts;
+}
+
+function buildRunnerLaneCounts(lanes: RunnerLane[]) {
+  const counts = Object.fromEntries(
+    RUNNER_LANES.map((lane) => [lane, 0]),
+  ) as Record<RunnerLane, number>;
+
+  for (const lane of lanes) counts[lane] += 1;
+
+  return counts;
+}
+
+async function findDueSyncJobsByPriority(input: {
+  lanePlan: RunnerLane[];
+  now: Date;
+}) {
   const jobs: DueSyncJob[] = [];
 
-  for (const type of getRunnableSyncJobTypes()) {
-    const remainingLimit = input.limit - jobs.length;
-
-    if (remainingLimit <= 0) break;
-
+  for (const lane of input.lanePlan) {
+    const type = lane as SyncJobType;
     if (type === SyncJobType.SYNC_INCREMENTAL) {
       const regularJobs = await findDueRegularIncrementalSyncJobs({
-        limit: remainingLimit,
+        excludeIds: jobs.map((job) => job.id),
+        limit: 1,
         now: input.now,
       });
       jobs.push(...regularJobs);
 
-      const facetOnlyRemainingLimit = input.limit - jobs.length;
-      if (facetOnlyRemainingLimit > 0) {
+      if (regularJobs.length === 0) {
         const facetOnlyJobs = await findDueSyncJobsForType({
-          limit: facetOnlyRemainingLimit,
+          excludeIds: jobs.map((job) => job.id),
+          limit: 1,
           now: input.now,
           type,
           where: getFacetOnlyIncrementalSyncJobWhere(),
@@ -325,7 +397,8 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
     }
 
     const typedJobs = await findDueSyncJobsForType({
-      limit: remainingLimit,
+      excludeIds: jobs.map((job) => job.id),
+      limit: 1,
       now: input.now,
       type,
     });
@@ -336,6 +409,7 @@ async function findDueSyncJobsByPriority(input: { limit: number; now: Date }) {
 }
 
 async function findDueRegularIncrementalSyncJobs(input: {
+  excludeIds?: string[];
   limit: number;
   now: Date;
 }) {
@@ -354,6 +428,11 @@ async function findDueRegularIncrementalSyncJobs(input: {
       AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
       AND COALESCE("payload"->>'source', '') <> ${SHOPIFY_IMPORT_JOB_SOURCE}
       AND COALESCE("idempotencyKey", '') NOT LIKE ${`${SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX}%`}
+      ${
+        input.excludeIds?.length
+          ? Prisma.sql`AND "id" NOT IN (${Prisma.join(input.excludeIds)})`
+          : Prisma.empty
+      }
     ORDER BY "runAfter" ASC, "createdAt" ASC
     LIMIT ${input.limit}
   `);
@@ -378,6 +457,7 @@ async function findDueSyncJobsByIds(ids: string[]) {
 }
 
 async function findDueSyncJobsForType(input: {
+  excludeIds?: string[];
   limit: number;
   now: Date;
   type: SyncJobType;
@@ -389,6 +469,7 @@ async function findDueSyncJobsForType(input: {
     take: input.limit,
     where: {
       ...getSchedulableSyncJobWhere(),
+      id: { notIn: input.excludeIds ?? [] },
       ...(input.where ?? {}),
       runAfter: { lte: input.now },
       status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
@@ -401,10 +482,22 @@ async function runDueSyncJobGroup(
   shopJobs: DueSyncJobRunQueueItem[],
   results: DueSyncJobRunResult[],
   now: Date,
+  deadlineAt: Date | undefined,
+  deadlineState: { continuationNeeded: boolean },
 ) {
   const [nextJob, ...remainingJobs] = shopJobs;
 
   if (!nextJob) return;
+
+  if (!shouldClaimRunnerJob({ deadlineAt, now: new Date() })) {
+    deadlineState.continuationNeeded = true;
+    results[nextJob.index] = {
+      jobId: nextJob.job.id,
+      status: "skipped" as const,
+      type: nextJob.job.type,
+    };
+    return;
+  }
 
   const claimedJob = await claimDueSyncJob(nextJob.job, now);
 
@@ -420,7 +513,13 @@ async function runDueSyncJobGroup(
 
   results[nextJob.index] = await runDueSyncJob(claimedJob);
 
-  await runDueSyncJobGroup(remainingJobs, results, now);
+  await runDueSyncJobGroup(
+    remainingJobs,
+    results,
+    now,
+    deadlineAt,
+    deadlineState,
+  );
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
@@ -3270,148 +3369,118 @@ function getSnapshotSkuGenerated(payload: Prisma.JsonValue | null | undefined) {
 }
 
 async function runDetectShopifyChangesJob(job: DueSyncJob) {
-  const productGid = getStringFromPayload(job.payload, "resourceId");
-  const inventoryItemGid = getStringFromPayload(
-    job.payload,
-    "inventoryItemGid",
-  );
-  const mapping = productGid
-    ? await prisma.productMapping.findFirst({
-        where: { shopId: job.shopId, shopifyProductGid: productGid },
-      })
-    : inventoryItemGid
-      ? await findMappingByInventoryItemGid(job.shopId, inventoryItemGid)
-      : null;
-
-  if (!mapping?.shopifyProductGid) {
-    await markJobSucceeded({
-      delegatedJobId: null,
-      job,
-      result: { conflictCount: 0, skippedReason: "mapping_not_found" },
-      warnings: ["Webhook Shopify senza mapping SyncBay collegato."],
-    });
-
-    return {
-      jobId: job.id,
-      status: "succeeded" as const,
-      type: job.type,
-    };
-  }
-
-  if (!shouldDetectShopifyConflictsForMappingStatus(mapping.status)) {
-    const resolvedConflictCount =
-      shouldResolveOpenConflictsForInactiveMappingStatus(mapping.status)
-        ? await resolveOpenConflictsForInactiveMapping({
-            mappingId: mapping.id,
-            shopId: job.shopId,
-          })
-        : 0;
-
-    await markJobSucceeded({
-      delegatedJobId: null,
-      job,
-      result: {
-        conflictCount: 0,
-        mappingStatus: mapping.status,
-        resolvedConflictCount,
-        skippedReason: "mapping_not_active",
-      },
-      warnings: [],
-    });
-
-    return {
-      jobId: job.id,
-      status: "succeeded" as const,
-      type: job.type,
-    };
-  }
-
-  const snapshot = await getLatestSyncBayConflictBaseline(mapping.id);
-
-  if (!snapshot) {
-    await markJobSucceeded({
-      delegatedJobId: null,
-      job,
-      result: {
-        conflictCount: 0,
-        skippedReason: "missing_product_or_snapshot",
-      },
-      warnings: ["Confronto Shopify saltato: prodotto o snapshot assente."],
-    });
-
-    return {
-      jobId: job.id,
-      status: "succeeded" as const,
-      type: job.type,
-    };
-  }
-
-  const preferredVariantGid =
-    mapping.shopifyVariantGid ?? snapshot.shopifyVariantGid;
-  const admin = await getShopifyAdminGraphqlClient(job.shop.shopDomain);
-  const product = await getShopifyProductForConflict(
-    admin,
-    mapping.shopifyProductGid,
-    job.shop.defaultLocationGid,
-    { preferredVariantGid },
-  );
-
-  if (!product) {
-    await markJobSucceeded({
-      delegatedJobId: null,
-      job,
-      result: {
-        conflictCount: 0,
-        skippedReason: "missing_product_or_snapshot",
-      },
-      warnings: ["Confronto Shopify saltato: prodotto o snapshot assente."],
-    });
-
-    return {
-      jobId: job.id,
-      status: "succeeded" as const,
-      type: job.type,
-    };
-  }
-
-  const conflicts = getDetectedShopifyConflicts(
-    product,
-    snapshot,
-    Boolean(job.shop.defaultLocationGid),
-    preferredVariantGid,
-  );
-
-  for (const conflict of conflicts) {
-    await upsertOpenConflict({
-      ...conflict,
-      mappingId: mapping.id,
+  const queued = await prisma.syncJob.findMany({
+    orderBy: [{ createdAt: "asc" }],
+    select: dueSyncJobSelect,
+    take: 49,
+    where: {
+      id: { not: job.id },
+      runAfter: { lte: new Date() },
       shopId: job.shopId,
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+      type: SyncJobType.DETECT_SHOPIFY_CHANGES,
+    },
+  });
+  const candidates = [job, ...queued];
+  const batch = buildShopifyChangeBatch(candidates.map(toShopifyChangeBatchJob));
+  const selectedIds = new Set([
+    ...batch.jobs.map(({ id }) => id),
+    ...batch.duplicateJobIds,
+  ]);
+  const siblingIds = [...selectedIds].filter((id) => id !== job.id);
+  if (siblingIds.length > 0) {
+    await prisma.syncJob.updateMany({
+      data: { startedAt: new Date(), status: SyncJobStatus.RUNNING },
+      where: {
+        id: { in: siblingIds },
+        status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+      },
     });
   }
-  const resolvedConflictCount = await resolveAlignedOpenConflicts({
-    detectedConflictFields: conflicts.map((conflict) => conflict.field),
-    mappingId: mapping.id,
-    shopId: job.shopId,
+  const absorbedJobs = await prisma.syncJob.findMany({
+    select: dueSyncJobSelect,
+    where: { id: { in: [...selectedIds] }, status: SyncJobStatus.RUNNING },
   });
+  const absorbedById = new Map(absorbedJobs.map((entry) => [entry.id, entry]));
 
-  await markJobSucceeded({
-    delegatedJobId: null,
-    job,
-    result: {
-      conflictCount: conflicts.length,
-      fields: conflicts.map((conflict) => conflict.field),
-      resolvedConflictCount,
-    },
-    warnings: [],
-  });
+  if (batch.duplicateJobIds.length > 0) {
+    await prisma.syncJob.updateMany({
+      data: {
+        finishedAt: new Date(),
+        result: { reason: "superseded_by_newer_queued_webhook" },
+        status: SyncJobStatus.CANCELLED,
+      },
+      where: { id: { in: batch.duplicateJobIds }, status: SyncJobStatus.RUNNING },
+    });
+  }
 
+  const distinctJobs = batch.jobs.filter(({ id }) => absorbedById.has(id));
+  const execution = await detectShopifyChangesBatch(
+    { jobs: distinctJobs, shopDomain: job.shop.shopDomain },
+  );
+
+  for (const result of execution.results) {
+    const absorbedJob = absorbedById.get(result.jobId);
+    if (!absorbedJob) continue;
+    if (result.outcome === "failed") {
+      await markJobFailedOrRetrying({
+        errorCode: result.errorCode ?? "SHOPIFY_CONFLICT_BATCH_FAILED",
+        errorMessage: "Rilevamento conflitti Shopify non completato.",
+        job: absorbedJob,
+      });
+      continue;
+    }
+    await markJobSucceeded({
+      delegatedJobId: null,
+      job: absorbedJob,
+      result: {
+        fields: result.fields,
+        outcome: result.outcome,
+        providerReadCount: execution.providerReadCount,
+      },
+      warnings: result.outcome === "mapping_not_found"
+        ? ["Webhook Shopify senza mapping SyncBay collegato."]
+        : [],
+    });
+  }
+
+  const conflictCount = execution.results.filter(
+    ({ outcome }) => outcome === "conflict_opened",
+  ).length;
+  const mappingNotFoundCount = execution.results.filter(
+    ({ outcome }) => outcome === "mapping_not_found",
+  ).length;
+  const seedResult = execution.results.find(({ jobId }) => jobId === job.id);
   return {
+    ...(seedResult?.outcome === "failed"
+      ? { errorMessage: "Rilevamento conflitti Shopify non completato." }
+      : {}),
     jobId: job.id,
-    status: "succeeded" as const,
+    status: batch.duplicateJobIds.includes(job.id)
+      ? ("skipped" as const)
+      : seedResult?.outcome === "failed"
+        ? ("failed" as const)
+        : ("succeeded" as const),
     type: job.type,
+    absorbedJobCount: absorbedJobs.length,
+    conflictCount,
+    mappingNotFoundCount,
+    providerReadCount: execution.providerReadCount,
+  } as DueSyncJobRunResult;
+}
+
+function toShopifyChangeBatchJob(job: DueSyncJob): ShopifyChangeBatchJob {
+  return {
+    createdAt: job.createdAt,
+    id: job.id,
+    inventoryItemGid: getStringFromPayload(job.payload, "inventoryItemGid"),
+    productGid: getStringFromPayload(job.payload, "resourceId"),
+    shopId: job.shopId,
+    topic: getStringFromPayload(job.payload, "topic") ?? "unknown",
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getLatestSyncBayConflictBaseline(mappingId: string) {
   const [
     descriptionSnapshot,
@@ -4033,29 +4102,18 @@ async function hasCompletedStockUpdateForLine(input: {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function findMappingByInventoryItemGid(
   shopId: string,
   inventoryItemGid: string,
 ) {
-  const recentSnapshots = await prisma.productSnapshot.findMany({
-    orderBy: { capturedAt: "desc" },
-    take: 300,
-    where: {
-      shopId,
-      source: ProductSnapshotSource.SYNCBAY,
-    },
-  });
-  const snapshot = recentSnapshots.find((candidate) => {
-    const payload = getJsonObject(candidate.payload);
-    const inventorySync = getJsonObject(payload?.inventorySync ?? null);
-
-    return inventorySync?.inventoryItemGid === inventoryItemGid;
-  });
-
-  if (!snapshot?.mappingId) return null;
-
   return prisma.productMapping.findUnique({
-    where: { id: snapshot.mappingId },
+    where: {
+      shopId_shopifyInventoryItemGid: {
+        shopId,
+        shopifyInventoryItemGid: inventoryItemGid,
+      },
+    },
   });
 }
 
@@ -4160,6 +4218,7 @@ async function getShopifyProductForConflict(
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getDetectedShopifyConflicts(
   product: ShopifyProductForConflict,
   snapshot: {
@@ -4325,6 +4384,7 @@ function buildConflict(
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function upsertOpenConflict(input: {
   ebayValue: Prisma.JsonValue;
   field: string;
@@ -4367,6 +4427,7 @@ async function upsertOpenConflict(input: {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function resolveAlignedOpenConflicts(input: {
   detectedConflictFields: string[];
   mappingId: string;
@@ -4841,6 +4902,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
   return { conflictIds, count: result.count };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function resolveOpenConflictsForInactiveMapping(input: {
   mappingId: string;
   shopId: string;

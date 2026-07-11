@@ -6,7 +6,9 @@ export const action = async ({ request, url }: ActionFunctionArgs) => {
   requireCronSecret(request);
 
   const limit = Number.parseInt(url.searchParams.get("limit") ?? "", 10);
+  const deadlineAt = new Date(Date.now() + 70_000);
   const result = await runDueSyncJobs({
+    deadlineAt,
     limit: Number.isInteger(limit) ? limit : undefined,
   });
 

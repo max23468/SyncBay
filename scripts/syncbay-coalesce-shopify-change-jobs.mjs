@@ -8,6 +8,12 @@ import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mj
 const execFileAsync = promisify(execFile);
 
 const args = parseArgs(process.argv.slice(2));
+if (args.apply && !args.confirmApply) {
+  throw new Error("Apply bloccato: aggiungi --confirm-apply.");
+}
+if (args.confirmApply && !args.apply) {
+  throw new Error("--confirm-apply richiede anche --apply.");
+}
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
@@ -93,12 +99,11 @@ select jsonb_build_object(
     from (
       select
         topic,
-        resource_key as "resourceKey",
         count(*)::int as "jobCount",
         min("createdAt") as "firstCreatedAt",
         max("createdAt") as "lastCreatedAt"
       from candidates
-      group by topic, resource_key
+      group by topic
       limit 20
     ) grouped
   ), '[]'::jsonb)
@@ -146,12 +151,11 @@ select jsonb_build_object(
     from (
       select
         topic,
-        resource_key as "resourceKey",
         count(*)::int as "jobCount",
         min("updatedAt") as "firstUpdatedAt",
         max("updatedAt") as "lastUpdatedAt"
       from updated
-      group by topic, resource_key
+      group by topic
       limit 20
     ) grouped
   ), '[]'::jsonb)
@@ -191,9 +195,7 @@ function printSummary(result) {
   console.log(`Job webhook duplicati ${verb}: ${count}`);
 
   for (const row of result.groups ?? []) {
-    console.log(
-      `- ${row.topic} ${row.resourceKey}: ${row.jobCount} job`,
-    );
+    console.log(`- ${row.topic}: ${row.jobCount} job`);
   }
 }
 
@@ -205,6 +207,11 @@ function parseArgs(rawArgs) {
 
     if (arg === "--apply") {
       parsed.apply = true;
+      continue;
+    }
+
+    if (arg === "--confirm-apply") {
+      parsed.confirmApply = true;
       continue;
     }
 
@@ -263,11 +270,12 @@ function printHelp() {
 Coalescenza dei job DETECT_SHOPIFY_CHANGES duplicati.
 Mantiene il job PENDING piu recente per shop/topic/risorsa Shopify
 resourceId, inventoryItemGid o admin_graphql_api_id e marca come CANCELLED i
-duplicati piu vecchi solo con --apply.
+duplicati piu vecchi solo con --apply --confirm-apply.
 
 Opzioni:
   --shop <dominio>  Shop target. Obbligatorio se SHOPIFY_DEV_STORE non e configurato.
-  --apply           Applica la cancellazione logica dei duplicati.
+  --apply           Prepara la cancellazione logica dei duplicati.
+  --confirm-apply   Conferma esplicitamente la scrittura insieme a --apply.
   --json            Stampa il risultato JSON.
   --help            Mostra questa guida.
 `);

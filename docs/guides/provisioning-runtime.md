@@ -235,9 +235,10 @@ Scope Shopify richiesti dal runtime 1.0:
   `orderCreate` sul dev store; se manca dalla sessione offline, riaprire e
   autorizzare l'app Shopify dopo il deploy degli scope aggiornati.
 
-La schedule Cron attuale richiama il runner `/api/jobs/run-due?limit=5`, che drena
-import catalogo, sync incrementale, rilevazione conflitti Shopify e job stock
-eBay secondo priorità.
+La schedule Cron attuale richiama il runner `/api/jobs/run-due?limit=2`. Il
+runner applica fairness tra stock, conflitti e lavoro ordinario, usa una
+deadline interna di 70 secondi e può assorbire fino a 25 risorse Shopify
+distinte nello slot conflitti, restando entro il timeout `pg_net` di 90 secondi.
 
 Per riallineare una tantum prodotti già mappati verso un canale Shopify
 specifico usare:

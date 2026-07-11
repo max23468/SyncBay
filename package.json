@@ -56,6 +56,7 @@
     "jobs:status": "node scripts/syncbay-job-status.mjs",
     "jobs:archive-stale-failures": "node scripts/syncbay-archive-stale-sync-failures.mjs",
     "jobs:coalesce-shopify-changes": "node scripts/syncbay-coalesce-shopify-change-jobs.mjs",
+    "mappings:backfill-inventory-item": "tsx scripts/syncbay-backfill-inventory-mappings.mjs",
     "orders:paid-readiness": "node scripts/syncbay-orders-paid-readiness.mjs",
     "conflicts:doctor": "node scripts/syncbay-conflicts-doctor.mjs",
     "conflicts:repair-description": "node scripts/syncbay-repair-description-conflicts.mjs",

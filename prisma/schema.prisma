@@ -257,6 +257,7 @@ model ProductMapping {
   sku               String?
   shopifyProductGid String?
   shopifyVariantGid String?
+  shopifyInventoryItemGid String?
   status            ProductMappingStatus @default(ACTIVE)
   thumbnailUrl      String?
   lastSyncedAt      DateTime?
@@ -270,6 +271,7 @@ model ProductMapping {
   conflicts SyncConflict[]
 
   @@unique([shopId, marketplaceId, ebayItemId])
+  @@unique([shopId, shopifyInventoryItemGid])
   @@index([shopId, status])
   @@index([shopifyProductGid])
 }

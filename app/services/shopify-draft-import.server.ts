@@ -21,6 +21,7 @@ import {
   type ShopifyProductPublicationSyncResult,
 } from "../lib/syncbay-product-publication";
 import { canPublishProductAfterInventorySync } from "../lib/syncbay-product-publication-gate";
+import { getPersistableInventoryItemGid } from "../lib/syncbay-inventory-mapping";
 import {
   normalizeProductPublicationMode,
   parseProductPublicationGids,
@@ -3282,6 +3283,9 @@ async function recordDraftImportPersistence(input: {
         const now = new Date();
         const variantGid =
           getFirstProductVariant(pair.result.product)?.id ?? null;
+        const inventoryItemGid = getPersistableInventoryItemGid(
+          pair.result.inventorySync,
+        );
         const ebaySnapshot = buildEbayProductSnapshot({
           draftProduct: pair.draftProduct,
           mappingId: "",
@@ -3307,6 +3311,7 @@ async function recordDraftImportPersistence(input: {
             marketplaceId: getEbayMarketplaceId(),
             shopId: input.shopId,
             shopifyProductGid: pair.result.product.id,
+            shopifyInventoryItemGid: inventoryItemGid,
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,
@@ -3317,6 +3322,7 @@ async function recordDraftImportPersistence(input: {
             lastErrorMessage: null,
             lastSyncedAt: now,
             shopifyProductGid: pair.result.product.id,
+            ...(inventoryItemGid ? { shopifyInventoryItemGid: inventoryItemGid } : {}),
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,

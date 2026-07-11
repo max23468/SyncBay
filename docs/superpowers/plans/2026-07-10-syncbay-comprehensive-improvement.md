@@ -189,7 +189,7 @@ git commit -m "test: add server runtime gate"
 - Consumes: conteggi dei job dovuti per tipo e limite cron normalizzato.
 - Produces: `buildRunnerLanePlan(input): RunnerLane[]`, budget richiesta di `70 s` entro il timeout `pg_net` di `90 s` e diagnostica `dueByType`/`selectedByType`/`continuationNeeded` nella risposta protetta del runner.
 
-- [ ] **Step 1: Scrivere i test rossi della fairness**
+- [x] **Step 1: Scrivere i test rossi della fairness**
 
 Creare `app/lib/syncbay-runner-fairness.test.ts` con questi casi:
 
@@ -240,7 +240,7 @@ Run: `node --test --experimental-strip-types app/lib/syncbay-runner-fairness.tes
 
 Expected: FAIL perché il modulo non esiste.
 
-- [ ] **Step 2: Implementare la policy pura**
+- [x] **Step 2: Implementare la policy pura**
 
 Creare:
 
@@ -292,7 +292,7 @@ export function buildRunnerLanePlan(input: {
 }
 ```
 
-- [ ] **Step 3: Usare il piano nel runner senza alzare `limit=2` e con deadline interna**
+- [x] **Step 3: Usare il piano nel runner senza alzare `limit=2` e con deadline interna**
 
 In `sync-job-runner.server.ts`:
 
@@ -311,11 +311,11 @@ runDueSyncJobs(input?: { limit?: number; now?: Date; deadlineAt?: Date })
 
 La route `api.jobs.run-due.tsx` imposta la deadline, risponde prima del timeout `pg_net` di `90 s` e lascia i job non claimati al tick successivo. Non aumentare `maxDuration` per compensare lavoro non limitato: il timeout Vercel storico a `300 s` è una regressione da impedire.
 
-- [ ] **Step 4: Correggere la decisione e la guida operative**
+- [x] **Step 4: Correggere la decisione e la guida operative**
 
 In ADR 0021 registrare che il valore live corrente è `limit=2`, non `5`, e che la capacità viene recuperata tramite fairness e batch conflitti. In `provisioning-runtime.md` rimuovere il riferimento contraddittorio a `limit=5` e mantenere un solo valore canonico.
 
-- [ ] **Step 5: Verificare e committare**
+- [x] **Step 5: Verificare e committare**
 
 Run:
 
@@ -357,7 +357,7 @@ git commit -m "perf: reserve conflict detection runner capacity"
 - Consumes: `inventorySync.inventoryItemGid` già restituito dall'import Shopify.
 - Produces: `ProductMapping.shopifyInventoryItemGid` e lookup indicizzato `(shopId, shopifyInventoryItemGid)`.
 
-- [ ] **Step 1: Scrivere il test rosso del valore persistibile**
+- [x] **Step 1: Scrivere il test rosso del valore persistibile**
 
 ```ts
 test("keeps an inventory item gid from synced or failed inventory results", () => {
@@ -376,7 +376,7 @@ Run: `node --test --experimental-strip-types app/lib/syncbay-inventory-mapping.t
 
 Expected: FAIL perché il modulo non esiste.
 
-- [ ] **Step 2: Aggiungere campo e indice univoco nullable**
+- [x] **Step 2: Aggiungere campo e indice univoco nullable**
 
 In `ProductMapping` aggiungere:
 
@@ -394,7 +394,7 @@ CREATE UNIQUE INDEX "ProductMapping_shopId_shopifyInventoryItemGid_key"
   ON "ProductMapping"("shopId", "shopifyInventoryItemGid");
 ```
 
-- [ ] **Step 3: Dual-write del mapping durante import e sync**
+- [x] **Step 3: Dual-write del mapping durante import e sync**
 
 Creare:
 
@@ -410,7 +410,7 @@ export function getPersistableInventoryItemGid(input: {
 
 Usarlo nei rami `create` e `update` dell'upsert mapping. Non cancellare un GID già noto quando l'ultimo tentativo inventory è `skipped`: applicare il campo in `update` solo quando il nuovo valore è non-null.
 
-- [ ] **Step 4: Sostituire la scansione delle ultime 300 snapshot**
+- [x] **Step 4: Sostituire la scansione delle ultime 300 snapshot**
 
 Sostituire `findMappingByInventoryItemGid` con:
 
@@ -424,7 +424,7 @@ return prisma.productMapping.findUnique({
 
 Eliminare completamente la lettura `take: 300` di `ProductSnapshot`.
 
-- [ ] **Step 5: Creare backfill dry-run/apply**
+- [x] **Step 5: Creare backfill dry-run/apply**
 
 Lo script deve:
 
@@ -457,7 +457,7 @@ npm run mappings:backfill-inventory-item -- --dry-run
 
 Expected: schema/test/build verdi; dry-run senza valori sensibili. Prima dell'apply live, verificare con lo strumento Shopify che offre la prova più completa che `inventory_levels/update` sia registrato. Sul dev store eseguire una sola modifica inventario controllata e verificare la creazione del job senza usare dati cliente.
 
-- [ ] **Step 7: Committare**
+- [x] **Step 7: Committare**
 
 Aggiornare `docs/data-model.md` con il nuovo identificatore inventory indicizzato e la sua cardinalità per shop.
 
@@ -486,7 +486,7 @@ git commit -m "perf: index Shopify inventory mappings"
 - Consumes: una seed `DETECT_SHOPIFY_CHANGES`, mapping indicizzati del Task 3 e regole pure di conflitto esistenti.
 - Produces: `detectShopifyChangesBatch(input, ports): Promise<ShopifyChangeBatchExecution>`; un solo slot runner può chiudere fino a 25 risorse distinte dello stesso shop.
 
-- [ ] **Step 1: Definire contratto e test rossi del batch**
+- [x] **Step 1: Definire contratto e test rossi del batch**
 
 Creare il contratto puro:
 
@@ -518,7 +518,7 @@ Testare che:
 - il batch non superi 25 elementi;
 - job senza identificatore restino tracciati con esito `mapping_not_found`, non eliminati silenziosamente.
 
-- [ ] **Step 2: Definire i port del modulo server**
+- [x] **Step 2: Definire i port del modulo server**
 
 In `shopify-conflict-detection.server.ts` dichiarare:
 
@@ -587,7 +587,7 @@ Le implementazioni concrete devono:
 - usare `getDetectedShopifyConflicts` senza duplicarne le regole;
 - persistere soltanto upsert/risoluzioni dei conflitti in transazioni brevi per shop; le transizioni di `SyncJob` restano esclusivamente nel runner.
 
-- [ ] **Step 3: Scrivere test server con port finti**
+- [x] **Step 3: Scrivere test server con port finti**
 
 I test devono coprire almeno:
 
@@ -606,7 +606,7 @@ Run: `npm run test:services`
 
 Expected: FAIL prima dell'implementazione, poi PASS.
 
-- [ ] **Step 4: Integrare claim batch nel runner**
+- [x] **Step 4: Integrare claim batch nel runner**
 
 Quando la seed è `DETECT_SHOPIFY_CHANGES`:
 
@@ -621,7 +621,7 @@ Non reintrodurre una regola che ignora webhook successivi solo perché un job pr
 
 Verificare che entrambe le route webhook continuino a delegare deduplica/idempotenza a `syncbay-job-scheduling.ts`, senza incorporare regole di conflitto o chiamate Shopify nella route.
 
-- [ ] **Step 5: Verificare localmente**
+- [x] **Step 5: Verificare localmente**
 
 Run:
 
@@ -647,7 +647,7 @@ Dopo merge/release/deploy:
 5. controllare che conflitti reali e `mapping_not_found` restino distinguibili;
 6. non dichiarare recovery solo perché i conflitti aperti sono zero.
 
-- [ ] **Step 7: Committare**
+- [x] **Step 7: Committare**
 
 ```bash
 git add app/lib/syncbay-shopify-change-batch.ts app/lib/syncbay-shopify-change-batch.test.ts app/services/shopify-conflict-detection.server.ts app/services/shopify-conflict-detection.server.test.ts app/services/sync-job-runner.server.ts app/lib/syncbay-job-scheduling.ts app/lib/syncbay-job-scheduling.test.ts scripts/syncbay-coalesce-shopify-change-jobs.mjs
