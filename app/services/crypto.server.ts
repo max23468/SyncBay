@@ -29,17 +29,31 @@ export function decryptSecret(secret: string) {
     throw new Error("Formato segreto cifrato non valido.");
   }
 
-  const decipher = crypto.createDecipheriv(
-    ALGORITHM,
-    getTokenKey(),
-    Buffer.from(encodedIv, "base64url"),
-  );
-  decipher.setAuthTag(Buffer.from(encodedAuthTag, "base64url"));
+  const iv = Buffer.from(encodedIv, "base64url");
+  const authTag = Buffer.from(encodedAuthTag, "base64url");
+  const ciphertext = Buffer.from(encodedCiphertext, "base64url");
 
-  return Buffer.concat([
-    decipher.update(Buffer.from(encodedCiphertext, "base64url")),
-    decipher.final(),
-  ]).toString("utf8");
+  // Prova prima la chiave normalizzata (nuovi envelope e script CLI), poi la
+  // chiave grezza: gli envelope scritti dal runtime precedente, quando il
+  // segreto aveva spazi/fine riga, erano cifrati con la chiave non trimmata e
+  // vanno ancora decifrati invece di perdere l'accesso ai token già salvati.
+  let lastError: unknown;
+  for (const key of getTokenKeyCandidates()) {
+    try {
+      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+      decipher.setAuthTag(authTag);
+      return Buffer.concat([
+        decipher.update(ciphertext),
+        decipher.final(),
+      ]).toString("utf8");
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Segreto cifrato non decifrabile.");
 }
 
 export function encryptSecretIfNeeded(value: string) {
@@ -65,17 +79,34 @@ export function createOAuthState() {
   return crypto.randomBytes(32).toString("base64url");
 }
 
-function getTokenKey() {
+function getTokenKeyMaterial() {
   const rawKey = process.env.TOKEN_ENCRYPTION_KEY;
-  // Normalizza la chiave come gli script CLI (`selectTokenEncryptionKey`), che
-  // impostano `process.env.TOKEN_ENCRYPTION_KEY` al valore trimmato prima di
-  // cifrare: senza questo trim un newline/spazio finale nel segreto (es. env
-  // Vercel) produrrebbe envelope non decifrabili tra script e runtime.
-  const normalizedKey =
-    typeof rawKey === "string" && rawKey.trim() ? rawKey.trim() : null;
-  if (!normalizedKey) {
+  if (typeof rawKey !== "string" || !rawKey.trim()) {
     throw new Error("TOKEN_ENCRYPTION_KEY non configurata.");
   }
 
-  return crypto.createHash("sha256").update(normalizedKey).digest();
+  return rawKey;
+}
+
+function deriveTokenKey(material: string) {
+  return crypto.createHash("sha256").update(material).digest();
+}
+
+// Chiave canonica: normalizzata (trim) come gli script CLI
+// (`selectTokenEncryptionKey`), che impostano `process.env.TOKEN_ENCRYPTION_KEY`
+// al valore trimmato prima di cifrare. Usata per cifratura e HMAC così i nuovi
+// envelope restano allineati tra script locali e runtime Vercel.
+function getTokenKey() {
+  return deriveTokenKey(getTokenKeyMaterial().trim());
+}
+
+// Chiavi candidate per la decifratura, dalla canonica alla grezza, senza
+// duplicati quando il segreto non ha spazi da normalizzare.
+function getTokenKeyCandidates() {
+  const material = getTokenKeyMaterial();
+  const normalized = material.trim();
+  const candidates = [normalized];
+  if (material !== normalized) candidates.push(material);
+
+  return candidates.map(deriveTokenKey);
 }

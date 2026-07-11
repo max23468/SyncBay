@@ -55,11 +55,10 @@ interface ShopifyConflictBatchNode extends ShopifyConflictBatchVariant {
   status?: string | null;
   media?: { nodes?: Array<{ mediaContentType?: string | null }> } | null;
   variants?: { nodes?: ShopifyConflictBatchVariant[] } | null;
-  // Presente solo sui nodi ProductVariant della variante mappata.
-  product?: { id?: string | null } | null;
 }
 
 export interface ConflictProductTarget {
+  mappingId: string;
   productGid: string;
   variantGid: string | null;
 }
@@ -125,20 +124,19 @@ export async function detectShopifyChangesBatch(
     [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
   ).values()];
   const baselines = await ports.loadBaselines(activeMappings.map(({ id }) => id));
-  // Un solo target per prodotto, con la variante mappata quando presente, così
-  // il batch legge prezzo/quantità della variante/location corretta invece che
-  // della prima variante (prodotti multi-variante o multi-location).
-  const targetByProduct = new Map<string, ConflictProductTarget>();
-  for (const mapping of activeMappings) {
-    if (!mapping.shopifyProductGid || targetByProduct.has(mapping.shopifyProductGid)) {
-      continue;
-    }
-    targetByProduct.set(mapping.shopifyProductGid, {
-      productGid: mapping.shopifyProductGid,
-      variantGid: mapping.shopifyVariantGid,
-    });
-  }
-  const targets = [...targetByProduct.values()];
+  // Un target per mapping (non per prodotto): due mapping su varianti diverse
+  // dello stesso prodotto Shopify devono confrontare ciascuno la propria
+  // variante/location, non solo la prima vista. Il risultato è indicizzato per
+  // mappingId così le varianti sorelle non si sovrascrivono a vicenda.
+  const targets = activeMappings.flatMap((mapping) =>
+    mapping.shopifyProductGid
+      ? [{
+          mappingId: mapping.id,
+          productGid: mapping.shopifyProductGid,
+          variantGid: mapping.shopifyVariantGid,
+        }]
+      : [],
+  );
   const products = targets.length > 0
     ? await ports.loadProducts({
         targets,
@@ -150,7 +148,7 @@ export async function detectShopifyChangesBatch(
   for (const job of input.jobs) {
     const mapping = mappingByJob.get(job.id);
     if (!mapping?.shopifyProductGid) continue;
-    const product = products.get(mapping.shopifyProductGid);
+    const product = products.get(mapping.id);
     if (!product) {
       results.push({
         errorCode: "SHOPIFY_PRODUCT_NOT_FOUND",
@@ -219,7 +217,6 @@ function buildConflictBatchQuery(defaultLocationGid: string | null) {
         }
         ... on ProductVariant {
           ${variantSelection}
-          product { id }
         }
       }
     }`;
@@ -281,16 +278,21 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
     },
     async loadProducts({ targets, shopDomain, defaultLocationGid }) {
       const admin = await getShopifyAdminGraphqlClient(shopDomain);
-      const cappedTargets = targets.slice(0, 25);
-      // I nodi ProductVariant portano la variante mappata: la richiediamo nella
-      // stessa `nodes(ids:)` dei prodotti, così un solo read copre entrambi.
-      const variantGids = cappedTargets.flatMap((target) =>
-        target.variantGid ? [target.variantGid] : [],
+      // Budget di lettura provider sui prodotti distinti; i mapping oltre il cap
+      // restano fuori dalla mappa e vengono ritentati come SHOPIFY_PRODUCT_NOT_FOUND.
+      const cappedProductGids = [...new Set(targets.map((target) => target.productGid))]
+        .slice(0, 25);
+      const includedProducts = new Set(cappedProductGids);
+      const cappedTargets = targets.filter((target) =>
+        includedProducts.has(target.productGid),
       );
-      const ids = [
-        ...cappedTargets.map((target) => target.productGid),
-        ...variantGids,
-      ];
+      // I nodi ProductVariant portano la variante di ciascun mapping: li
+      // richiediamo nella stessa `nodes(ids:)` dei prodotti, un solo read copre
+      // entrambi.
+      const variantGids = [...new Set(
+        cappedTargets.flatMap((target) => target.variantGid ? [target.variantGid] : []),
+      )];
+      const ids = [...cappedProductGids, ...variantGids];
       const response = await admin.graphql(
         buildConflictBatchQuery(defaultLocationGid),
         {
@@ -303,39 +305,46 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         data?: { nodes?: ShopifyConflictBatchNode[] };
       };
       const nodes = body.data?.nodes ?? [];
-      // Variante mappata per prodotto: indicizzata per `product.id`.
-      const mappedVariantByProduct = new Map<string, ShopifyConflictBatchVariant>();
+      const productByGid = new Map<string, ShopifyConflictBatchNode>();
+      const variantByGid = new Map<string, ShopifyConflictBatchVariant>();
       for (const node of nodes) {
-        if (node?.__typename === "ProductVariant" && node.product?.id && node.id) {
-          mappedVariantByProduct.set(node.product.id, {
+        if (!node?.id) continue;
+        if (node.__typename === "ProductVariant") {
+          variantByGid.set(node.id, {
             id: node.id,
             inventoryItem: node.inventoryItem,
             inventoryQuantity: node.inventoryQuantity,
             price: node.price,
           });
+        } else {
+          productByGid.set(node.id, node);
         }
       }
       const hasManagedLocation = Boolean(defaultLocationGid);
-      return new Map(
-        nodes.flatMap((node) => {
-          if (node?.__typename === "ProductVariant" || !node?.id) return [];
-          const firstVariant = node.variants?.nodes?.[0] ?? null;
-          const variant = mappedVariantByProduct.get(node.id) ?? firstVariant;
-          const locationQuantity = getVariantAvailableAtLocation(variant);
-          const quantity = hasManagedLocation
-            ? locationQuantity
-            : locationQuantity ?? variant?.inventoryQuantity ?? null;
-          return [[node.id, {
-            productGid: node.id,
-            title: node.title ?? "",
-            descriptionHtml: node.descriptionHtml ?? "",
-            status: node.status ?? "",
-            priceAmount: variant?.price ?? null,
-            quantity,
-            imageCount: node.media?.nodes?.filter((media) => media.mediaContentType === "IMAGE").length ?? 0,
-          } satisfies ShopifyConflictProduct]];
-        }),
-      );
+      const result = new Map<string, ShopifyConflictProduct>();
+      for (const target of cappedTargets) {
+        const productNode = productByGid.get(target.productGid);
+        if (!productNode) continue;
+        const firstVariant = productNode.variants?.nodes?.[0] ?? null;
+        const variant =
+          (target.variantGid ? variantByGid.get(target.variantGid) : null) ?? firstVariant;
+        const locationQuantity = getVariantAvailableAtLocation(variant);
+        const quantity = hasManagedLocation
+          ? locationQuantity
+          : locationQuantity ?? variant?.inventoryQuantity ?? null;
+        result.set(target.mappingId, {
+          productGid: target.productGid,
+          title: productNode.title ?? "",
+          descriptionHtml: productNode.descriptionHtml ?? "",
+          status: productNode.status ?? "",
+          priceAmount: variant?.price ?? null,
+          quantity,
+          imageCount: productNode.media?.nodes?.filter(
+            (media) => media.mediaContentType === "IMAGE",
+          ).length ?? 0,
+        });
+      }
+      return result;
     },
     async persist(results) {
       for (const result of results) {

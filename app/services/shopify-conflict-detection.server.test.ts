@@ -52,7 +52,7 @@ function ports(
     async loadProducts() {
       return new Map([
         [
-          "gid://shopify/Product/1",
+          "mapping-1",
           {
             productGid: "gid://shopify/Product/1",
             title: "New",
@@ -99,7 +99,11 @@ test("opens conflicts from one batched Shopify read", async () => {
     async loadProducts(input) {
       productReads += 1;
       assert.deepEqual(input.targets, [
-        { productGid: "gid://shopify/Product/1", variantGid: null },
+        {
+          mappingId: "mapping-1",
+          productGid: "gid://shopify/Product/1",
+          variantGid: null,
+        },
       ]);
       return ports().loadProducts(input);
     },
@@ -146,12 +150,92 @@ test("passes the mapped variant and default location to the product read", async
   assert.deepEqual(seenInput, {
     targets: [
       {
+        mappingId: "mapping-1",
         productGid: "gid://shopify/Product/1",
         variantGid: "gid://shopify/ProductVariant/99",
       },
     ],
     defaultLocationGid: "gid://shopify/Location/7",
   });
+});
+
+test("keeps separate targets for sibling variants of the same product", async () => {
+  const secondJob = {
+    ...jobs[0],
+    id: "job-2",
+    inventoryItemGid: "gid://shopify/InventoryItem/2",
+    productGid: null,
+  };
+  const fakePorts = ports({
+    async loadMappings() {
+      const mappings = await ports().loadMappings(jobs);
+      // Stesso prodotto Shopify, variante diversa: secondo mapping via
+      // inventory item.
+      mappings.get("product:gid://shopify/Product/1")!.shopifyVariantGid =
+        "gid://shopify/ProductVariant/1";
+      mappings.set("inventory:gid://shopify/InventoryItem/2", {
+        id: "mapping-2",
+        shopId: "shop-1",
+        status: "ACTIVE",
+        shopifyProductGid: "gid://shopify/Product/1",
+        shopifyVariantGid: "gid://shopify/ProductVariant/2",
+        shopifyInventoryItemGid: "gid://shopify/InventoryItem/2",
+      });
+      return mappings;
+    },
+    async loadBaselines() {
+      return new Map([
+        ["mapping-1", [{ mappingId: "mapping-1", field: "title", serializedValue: "Old" }]],
+        ["mapping-2", [{ mappingId: "mapping-2", field: "title", serializedValue: "Old" }]],
+      ]);
+    },
+    async loadProducts(input) {
+      // Un target per mapping, ciascuno con la propria variante.
+      assert.deepEqual(input.targets, [
+        {
+          mappingId: "mapping-1",
+          productGid: "gid://shopify/Product/1",
+          variantGid: "gid://shopify/ProductVariant/1",
+        },
+        {
+          mappingId: "mapping-2",
+          productGid: "gid://shopify/Product/1",
+          variantGid: "gid://shopify/ProductVariant/2",
+        },
+      ]);
+      return new Map([
+        ["mapping-1", {
+          productGid: "gid://shopify/Product/1",
+          title: "New",
+          descriptionHtml: "",
+          status: "ACTIVE",
+          priceAmount: null,
+          quantity: null,
+          imageCount: 0,
+        }],
+        ["mapping-2", {
+          productGid: "gid://shopify/Product/1",
+          title: "Old",
+          descriptionHtml: "",
+          status: "ACTIVE",
+          priceAmount: null,
+          quantity: null,
+          imageCount: 0,
+        }],
+      ]);
+    },
+  });
+
+  const execution = await detectShopifyChangesBatch(
+    { jobs: [...jobs, secondJob], shopDomain: "example.myshopify.com" },
+    fakePorts,
+  );
+
+  // mapping-1 vede il titolo cambiato → conflitto; mapping-2 no → risolto.
+  assert.deepEqual(
+    execution.results.map(({ jobId, outcome }) => `${jobId}:${outcome}`),
+    ["job-1:conflict_opened", "job-2:conflict_resolved"],
+  );
 });
 
 test("keeps one failed product isolated from successful siblings", async () => {
