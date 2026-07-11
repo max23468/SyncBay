@@ -19,7 +19,9 @@ SyncBay potrà trattare:
 - Non committare segreti o `.env` reali.
 - Non loggare token o payload sensibili.
 - Token eBay persistiti da SyncBay cifrati a riposo.
-- Token Shopify ancora gestiti dallo storage sessioni del template Shopify; prima della beta reale va deciso se sostituire o cifrare quello storage.
+- Token Shopify gestiti dallo storage sessioni Prisma e cifrati
+  applicativamente con envelope AES-256-GCM `v1`; il rollout usa una release
+  compatibile per backfill e una seconda release che rifiuta plaintext residuo.
 - Chiavi di cifratura fuori repo.
 - Rotazione token da documentare prima della beta reale.
 
@@ -28,6 +30,8 @@ Runtime deciso:
 - Vercel env secrets per app e backend HTTP.
 - Supabase project secrets solo per funzioni/servizi Supabase che ne avranno bisogno.
 - Supabase Postgres come database, ma la cifratura at-rest del provider non sostituisce la cifratura applicativa dei token OAuth.
+- `sessions:encrypt-shopify` è dry-run per default, scrive soltanto con
+  `--apply --confirm-apply` e stampa esclusivamente conteggi, mai token o ID.
 - `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
 
 Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.

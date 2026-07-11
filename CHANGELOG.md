@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.48] — 2026-07-11
+
+### Sicurezza
+
+- Sessioni Shopify: i token access/refresh vengono scritti cifrati con envelope
+  AES-256-GCM `v1`; questa release mantiene temporaneamente la lettura plaintext
+  legacy per consentire il backfill controllato senza interrompere l’app.
+
 ## [1.0.47] — 2026-07-11
 
 ### Correzioni
@@ -3352,6 +3360,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.48]: #1048--2026-07-11
 [1.0.47]: #1047--2026-07-11
 [1.0.46]: #1046--2026-07-11
 [1.0.45]: #1045--2026-07-10

@@ -673,7 +673,7 @@ git commit -m "perf: batch Shopify conflict detection"
 - Consumes: `TOKEN_ENCRYPTION_KEY` e il formato AES-GCM `v1` già usato per eBay.
 - Produces: storage Shopify che scrive sempre ciphertext e, solo durante il rollout, legge sia `v1.*` sia plaintext legacy.
 
-- [ ] **Step 1: Scrivere test rossi dell'envelope**
+- [x] **Step 1: Scrivere test rossi dell'envelope**
 
 ```ts
 test("recognizes only complete v1 encrypted envelopes", () => {
@@ -685,7 +685,7 @@ test("recognizes only complete v1 encrypted envelopes", () => {
 
 Il modulo puro non cifra: valida soltanto forma/versione.
 
-- [ ] **Step 2: Aggiungere helper server idempotenti**
+- [x] **Step 2: Aggiungere helper server idempotenti**
 
 In `crypto.server.ts` aggiungere:
 
@@ -703,7 +703,7 @@ export function decryptSecretWithLegacyFallback(value: string) {
 
 Il fallback è temporaneo e viene rimosso nel Task 6 dopo la verifica live.
 
-- [ ] **Step 3: Cifrare in scrittura e decifrare in lettura**
+- [x] **Step 3: Cifrare in scrittura e decifrare in lettura**
 
 In `sessionToRow` applicare `encryptSecretIfNeeded` a `accessToken` e `refreshToken`. In `rowToSession` applicare `decryptSecretWithLegacyFallback`. Non modificare `state`, scope o metadati utente.
 
@@ -715,7 +715,7 @@ Aggiornare i test affinché verifichino:
 - una riga plaintext legacy sia ancora leggibile durante il rollout;
 - store ripetuto non produca doppia cifratura.
 
-- [ ] **Step 4: Creare la migrazione applicativa dry-run/apply**
+- [x] **Step 4: Creare la migrazione applicativa dry-run/apply**
 
 Lo script deve accettare:
 
@@ -736,7 +736,7 @@ Aggiungere:
 "sessions:encrypt-shopify": "tsx scripts/syncbay-encrypt-shopify-sessions.mjs"
 ```
 
-- [ ] **Step 5: Verificare localmente**
+- [x] **Step 5: Verificare localmente**
 
 Run:
 
@@ -762,7 +762,7 @@ Expected: tutti verdi; il dry-run stampa solo conteggi.
 6. riaprire l'app sul dev store e verificare un refresh/session load reale;
 7. non stampare mai i valori durante i controlli.
 
-- [ ] **Step 7: Committare**
+- [x] **Step 7: Committare**
 
 ```bash
 git add app/lib/syncbay-secret-envelope.ts app/lib/syncbay-secret-envelope.test.ts app/services/crypto.server.ts app/services/shopify-prisma-session-storage.server.ts app/services/shopify-prisma-session-storage.server.test.ts scripts/syncbay-encrypt-shopify-sessions.mjs package.json SECURITY.md docs/guides/sicurezza-privacy.md
