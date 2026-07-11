@@ -48,12 +48,6 @@ export function encryptSecretIfNeeded(value: string) {
   return encryptSecret(value);
 }
 
-export function decryptSecretWithLegacyFallback(value: string) {
-  if (!value) return value;
-
-  return isEncryptedSecretEnvelope(value) ? decryptSecret(value) : value;
-}
-
 export function hashState(state: string) {
   return crypto.createHash("sha256").update(state).digest("hex");
 }

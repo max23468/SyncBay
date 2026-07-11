@@ -70,9 +70,8 @@ test("retries throttled Admin GraphQL responses", async () => {
         status: 200,
       });
     },
-    maxAttempts: 2,
+    policy: { maxAttempts: 2, throttleRetryDelayMs: 1 },
     shopDomain: "syncbay-dev.myshopify.com",
-    throttleRetryDelayMs: 1,
   });
 
   const response = await client.graphql("query Test { shop { id } }");
@@ -110,9 +109,8 @@ test("retries Admin GraphQL responses with throttled extension codes", async () 
         status: 200,
       });
     },
-    maxAttempts: 2,
+    policy: { maxAttempts: 2, throttleRetryDelayMs: 1 },
     shopDomain: "syncbay-dev.myshopify.com",
-    throttleRetryDelayMs: 1,
   });
 
   const response = await client.graphql("query Test { shop { id } }");
@@ -129,8 +127,7 @@ test("normalizes repeated non-json Admin GraphQL responses", async () => {
         headers: { "Content-Type": "text/html" },
         status: 200,
       }),
-    maxAttempts: 2,
-    retryDelayMs: 1,
+    policy: { maxAttempts: 2, retryDelayMs: 1 },
     shopDomain: "syncbay-dev.myshopify.com",
   });
 
@@ -143,4 +140,62 @@ test("normalizes repeated non-json Admin GraphQL responses", async () => {
     json.errors[0].message,
     /risposta non JSON/,
   );
+});
+
+test("never exceeds four Admin GraphQL fetch attempts by default", async () => {
+  let calls = 0;
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () => {
+      calls += 1;
+      return new Response("unavailable", { status: 503 });
+    },
+    shopDomain: "syncbay-dev.myshopify.com",
+    sleep: async () => {},
+  });
+
+  await client.graphql("query Test { shop { id } }");
+  assert.equal(calls, 4);
+});
+
+test("stops before the retry delay would exceed the elapsed-time budget", async () => {
+  let calls = 0;
+  let elapsed = 0;
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () => {
+      calls += 1;
+      return new Response("unavailable", { status: 503 });
+    },
+    now: () => elapsed,
+    policy: { maxAttempts: 10, maxElapsedMs: 4_000, retryDelayMs: 2_000 },
+    shopDomain: "syncbay-dev.myshopify.com",
+    sleep: async (ms) => { elapsed += ms; },
+  });
+
+  await client.graphql("query Test { shop { id } }");
+  assert.equal(calls, 2);
+  assert.equal(elapsed, 2_000);
+});
+
+test("uses Shopify throttle status and GraphQL cost in one retry decision", async () => {
+  const delays: number[] = [];
+  let calls = 0;
+  const client = createShopifyAdminGraphqlClient({
+    accessToken: "shpat_test",
+    fetch: async () => {
+      calls += 1;
+      return new Response(JSON.stringify(calls === 1 ? {
+        errors: [{ extensions: { code: "THROTTLED" }, message: "Throttled" }],
+        extensions: { cost: { requestedQueryCost: 100, throttleStatus: { currentlyAvailable: 10, restoreRate: 10 } } },
+      } : { data: { ok: true } }), { headers: { "Content-Type": "application/json" } });
+    },
+    policy: { throttleRetryDelayMs: 1 },
+    shopDomain: "syncbay-dev.myshopify.com",
+    sleep: async (ms) => { delays.push(ms); },
+  });
+
+  await client.graphql("query Test { shop { id } }");
+  assert.deepEqual(delays, [9_000]);
+  assert.equal(calls, 2);
 });

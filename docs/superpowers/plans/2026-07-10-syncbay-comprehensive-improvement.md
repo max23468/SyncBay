@@ -786,7 +786,7 @@ git commit -m "fix: encrypt Shopify session tokens"
 - Consumes: sessioni tutte cifrate dal Task 5.
 - Produces: un unico adapter Shopify Admin proprietario di refresh, retry, throttling e budget temporale; nessuna fetch dentro una transazione Prisma.
 
-- [ ] **Step 1: Scrivere test rossi per retry e budget unici**
+- [x] **Step 1: Scrivere test rossi per retry e budget unici**
 
 Estendere `syncbay-shopify-admin.test.ts` con:
 
@@ -798,7 +798,7 @@ test("uses Shopify throttle status and GraphQL cost in one retry decision", asyn
 
 Iniettare `sleep` e `now` per rendere i test deterministici; non attendere realmente.
 
-- [ ] **Step 2: Rendere esplicita la policy dell'adapter**
+- [x] **Step 2: Rendere esplicita la policy dell'adapter**
 
 La factory accetta:
 
@@ -822,11 +822,11 @@ export function createShopifyAdminGraphqlClient(input: {
 
 Default obbligatori: `maxAttempts=4`, `maxElapsedMs=45_000`, `retryDelayMs=2_000`, `throttleRetryDelayMs=15_000`.
 
-- [ ] **Step 3: Eliminare il wrapper retry annidato**
+- [x] **Step 3: Eliminare il wrapper retry annidato**
 
 Rimuovere `createShopifyAdminGraphqlClientWithBackoff`, `SHOPIFY_GRAPHQL_MAX_ATTEMPTS` e il wrapping alla riga corrente 657 di `shopify-draft-import.server.ts`. Il modulo import deve usare direttamente l'admin ricevuto.
 
-- [ ] **Step 4: Scrivere il test rosso del refresh fuori transazione**
+- [x] **Step 4: Scrivere il test rosso del refresh fuori transazione**
 
 In `shopify-admin-session.server.test.ts`, usare port finti e una sequenza eventi:
 
@@ -840,7 +840,7 @@ assert.deepEqual(events, [
 
 Testare anche che, quando il compare-and-swap perde una corsa, venga riletta e restituita la sessione aggiornata da un altro invocatore.
 
-- [ ] **Step 5: Implementare refresh read/network/CAS**
+- [x] **Step 5: Implementare refresh read/network/CAS**
 
 Sostituire la transazione `FOR UPDATE` con:
 
@@ -858,11 +858,11 @@ La funzione resta:
 export async function getShopifyAdminGraphqlClient(shopDomain: string)
 ```
 
-- [ ] **Step 6: Rimuovere il fallback plaintext**
+- [x] **Step 6: Rimuovere il fallback plaintext**
 
 Solo dopo che il Task 5 ha verificato `0` token plaintext live, sostituire `decryptSecretWithLegacyFallback` con decifrazione stretta. Una sessione plaintext successiva deve produrre un errore operativo che richiede nuova autorizzazione, senza includere il valore.
 
-- [ ] **Step 7: Verificare e committare**
+- [x] **Step 7: Verificare e committare**
 
 Run:
 
