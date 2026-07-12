@@ -120,26 +120,39 @@ export function getDuplicateShopifyChangeJobIdsToCancel(
 
 export const CATALOG_RECONCILE_JOB_SOURCE = "catalog_reconcile";
 
-// Un nuovo giro di reconcile catalogo ripete la stessa scansione full-catalog:
-// i job PENDING/RETRYING di giri precedenti sono ridondanti. Restituisce gli id
-// dei job reconcile da annullare (runId diverso da quello del nuovo giro),
-// evitando che un blackout auth/API accumuli decine di giri incompleti mentre
-// il runner ne drena uno alla volta. I job senza runId non vengono toccati.
+// Ogni giro di reconcile catalogo ripete la stessa scansione full-catalog:
+// tenere aperti più giri contemporaneamente è ridondante. Dato l'insieme dei
+// job reconcile ancora aperti, mantiene solo il giro più recente (il job con
+// `createdAt` massimo, cioè la scansione catalogo più fresca) e restituisce gli
+// id degli altri da annullare. Girando a ogni tick prima della guardia di
+// enqueue, impedisce che un blackout auth/API accumuli decine di giri incompleti
+// mentre il runner ne drena uno alla volta. I job senza `runId` sono ignorati.
 export function getSupersededCatalogReconcileJobIds(input: {
-  jobs: Array<{ id: string; payload: unknown }>;
-  keepRunId: string;
+  jobs: Array<{ createdAt: Date; id: string; payload: unknown }>;
 }) {
-  return input.jobs.flatMap((job) => {
-    if (getStringField(job.payload, "source") !== CATALOG_RECONCILE_JOB_SOURCE) {
-      return [];
+  const reconcileJobs = input.jobs.filter(
+    (job) =>
+      getStringField(job.payload, "source") === CATALOG_RECONCILE_JOB_SOURCE &&
+      getStringField(job.payload, "runId"),
+  );
+
+  if (reconcileJobs.length === 0) return [];
+
+  let keepRunId: string | null = null;
+  let keepAt = Number.NEGATIVE_INFINITY;
+
+  for (const job of reconcileJobs) {
+    const createdAt = job.createdAt.getTime();
+
+    if (createdAt > keepAt) {
+      keepAt = createdAt;
+      keepRunId = getStringField(job.payload, "runId");
     }
+  }
 
-    const runId = getStringField(job.payload, "runId");
-
-    if (!runId || runId === input.keepRunId) return [];
-
-    return [job.id];
-  });
+  return reconcileJobs.flatMap((job) =>
+    getStringField(job.payload, "runId") === keepRunId ? [] : [job.id],
+  );
 }
 
 export function buildEbayItemJobSplitPayloads(input: {
