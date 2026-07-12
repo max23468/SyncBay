@@ -17,7 +17,6 @@ test("builds when deployable runtime surfaces change", () => {
     "tsconfig.json",
     ".node-version",
     "vercel.json",
-    "scripts/start-react-router.mjs",
     "scripts/link-prisma-client.mjs",
   ]) {
     assert.equal(shouldBuildVercel([path]), true, path);

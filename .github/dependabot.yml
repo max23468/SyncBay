@@ -39,9 +39,6 @@ updates:
       - dependency-name: "@react-router/node"
         update-types:
           - version-update:semver-major
-      - dependency-name: "@react-router/serve"
-        update-types:
-          - version-update:semver-major
       - dependency-name: "@vercel/react-router"
         update-types:
           - version-update:semver-major
