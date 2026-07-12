@@ -12,6 +12,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   proporzionate e ricevute locali, doctor dei worktree, CI docs-only, preflight
   Codex direct-first, creazione worktree con preflight e setup seriale
   riprendibile, stop condition e mappa operativa dei servizi runtime.
+- Ridotti i controlli duplicati: titolo PR isolato in un check leggero senza
+  checkout, React Doctor sempre `latest` e senza doppio run al passaggio da
+  draft, inbox Codex giornaliera e build Vercel saltati per modifiche solo
+  docs/governance/tooling.
 
 ## [1.0.57] — 2026-07-12
 

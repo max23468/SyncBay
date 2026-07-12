@@ -6,9 +6,7 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - main
-  push:
+    types: [opened, synchronize, reopened]
     branches:
       - main
   workflow_dispatch:
@@ -35,14 +33,11 @@ jobs:
         id: lane
         env:
           BASE_REF: ${{ github.base_ref }}
-          BEFORE_SHA: ${{ github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
             base="origin/$BASE_REF"
-          elif [ "$EVENT_NAME" = "push" ] && [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "$BEFORE_SHA" | grep -Eq '^0+$' && git cat-file -e "$BEFORE_SHA^{commit}"; then
-            base="$BEFORE_SHA"
           else
             echo "lane=runtime" >> "$GITHUB_OUTPUT"
             exit 0

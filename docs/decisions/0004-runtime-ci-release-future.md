@@ -1,7 +1,8 @@
 # ADR 0004 - Runtime, CI e release dopo lo scaffold
 
-- **Stato**: Accettato come policy futura
+- **Stato**: Accettato
 - **Data**: 2026-05-09
+- **Aggiornato**: 2026-07-12
 - **Decisori**: maintainer, Codex
 
 ## Contesto
@@ -10,11 +11,11 @@ SyncBay ora ha scaffold applicativo, `package.json`, build e runtime di base. Qu
 
 ## Decisione
 
-Manteniamo la policy prudente per deploy e automazioni remote di release. Il
-versioning locale è attivo. La **CI runtime completa è stata attivata il
-2026-06-27** con il workflow `.github/workflows/ci.yml` (vedi sezione
-«CI futura»). Restano non attivati deploy automatico collegato a `main` e
-automazioni remote di release.
+Manteniamo la policy prudente per automazioni remote di release. Il versioning
+locale è attivo. La CI runtime completa è stata attivata il 2026-06-27 e
+consolidata il 2026-07-12 in un gate PR proporzionato. Vercel resta collegato
+al repository, ma salta build privi di impatto sul runtime; le automazioni
+remote di release restano non attive.
 
 ## Runtime
 
@@ -35,22 +36,32 @@ Le decisioni tecniche bloccanti sono chiuse da ADR 0005. Per il pilota runtime
 sono già stati configurati URL reali, secret nei provider e keyset eBay
 dedicato; resta da definire una policy production stabile oltre il pilota.
 
-## CI futura
+## CI corrente
 
 La CI runtime completa è stata attivata il 2026-06-27 con il workflow
 `.github/workflows/ci.yml`, un job unico `verify` su `pull_request` verso
-`main`, `push` su `main` e `workflow_dispatch`. I comandi nascono dallo scaffold
-effettivo e sono stati verificati verdi e deterministici senza secret prima
-dell'attivazione.
+`main` e `workflow_dispatch`. Il ruleset di `main` richiede PR, risoluzione
+delle conversazioni, `Verifica proporzionata` e `Conventional PR title`, senza
+approval o policy strict/up-to-date. Il secondo check è minimale e separato per
+rivalidare title edit e nuovi SHA senza poter sostituire il gate runtime. Il run
+duplicato dopo il merge è stato rimosso perché il ruleset impedisce il normale
+push diretto a `main`.
 
-Gate attivi:
+Il job runtime sceglie una sola corsia:
+
+- diff docs/governance: `git diff --check`;
+- diff runtime/tooling: `npm ci` e `verify:full -- --no-receipt`.
+
+La corsia completa esegue in serie:
 
 - installazione deterministica dipendenze (`npm ci`);
+- generazione Prisma una sola volta;
 - lint (`npm run lint`);
-- typecheck (`npm run typecheck`, include `prisma generate`);
-- test librerie pure (`npm run test:lib`);
+- test tooling (`npm run test:tooling`);
+- typecheck raw dopo la generazione Prisma;
 - coverage librerie pure (`npm run coverage:lib`);
-- build (`npm run build`);
+- test servizi raw;
+- build raw;
 - validazione schema Prisma (`npm run prisma:validate`);
 - smoke UI (`npm run smoke:ui`);
 - audit dipendenze di produzione (`npm run audit:prod`, wrapper di
@@ -73,7 +84,13 @@ Esclusioni consapevoli:
   Un gate corretto richiederebbe l'intero stack `supabase start` in CI: resta
   un follow-up possibile, da introdurre solo dopo verifica verde dedicata. In
   CI lo schema è comunque coperto da `prisma:validate`;
-- qualità React: resta nel workflow dedicato `react-doctor.yml`.
+- qualità React: resta nel workflow dedicato `react-doctor.yml`, usa sempre
+  `react-doctor@latest` sui file PR pertinenti e mantiene il full scan manuale;
+- Supabase Preview: l'integrazione GitHub Supabase è disattivata perché le
+  migration canoniche vivono in `prisma/migrations`, non in
+  `supabase/migrations`, quindi il check non validava il flusso reale;
+- Vercel, React Doctor, Doppler e CodeQL restano advisory o path-scoped e non
+  sono status richiesti dal ruleset.
 
 Il workflow precedente `pr-quality.yml` (solo `test:lib` + `coverage:lib`) è
 stato rimosso perché interamente sussunto da `ci.yml`.
@@ -128,11 +145,16 @@ Potrà essere valutato dopo lo scaffold se:
 
 Se adottato, andrà documentato con ADR o aggiornamento di questa decisione, e dovranno essere definiti i file release-owned da non toccare nelle PR normali.
 
-## Deploy futuro
+## Deploy Vercel
 
-Esiste un deployment pilota Vercel production, ma non equivale a production
-stabile Shopify App Store, billing o release pubblica. Il provider runtime MVP
-resta quello deciso in ADR 0005.
+Esiste un deployment Vercel production per la distribuzione privata, ma non
+equivale a Shopify App Store, billing o release pubblica. Il provider runtime
+MVP resta quello deciso in ADR 0005.
+
+L'integrazione Git crea Preview e Production deployment soltanto quando il diff
+tocca superfici distribuibili. `scripts/syncbay-vercel-ignore-build.mjs` salta
+docs, governance, CI, test e tooling non runtime; file sconosciuti mantengono
+il fallback conservativo al build.
 
 Quando verrà promossa una production stabile oltre il pilota, servirà aggiornare
 le guide operative con:
@@ -146,8 +168,11 @@ le guide operative con:
 
 ## Conseguenze
 
-- SyncBay è pronto a introdurre CI/deploy senza improvvisare.
-- Le automazioni GitHub già attive restano limitate a gestione PR/commenti e aggiornamenti Actions.
+- Ogni merge ordinario passa dalla CI canonica senza duplicare il gate dopo il
+  merge.
+- Check specialistici e provider non bloccano PR fuori dal proprio perimetro.
+- Vercel non ricostruisce il runtime per modifiche solo documentali o di
+  governance.
 - Non esistono workflow runtime falsi o comandi placeholder che potrebbero dare sicurezza artificiale.
 
 ## Alternative considerate

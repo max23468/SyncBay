@@ -14,8 +14,9 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Lockfile                  | `package-lock.json`                           |
 | Immagine Docker base      | `node:24.18.0-alpine`                         |
 
-Il floor Node `>=24.15` è richiesto dalla catena React Doctor tramite `ini@7`;
-non abbassarlo senza cambiare strategia sul quality gate. La base Docker è
+Il floor Node `>=24.15` resta il minimo verificato per la catena React Doctor
+risolta dinamicamente su `latest`; non abbassarlo senza rivalidare il quality
+gate corrente. La base Docker è
 pinnata a Node 24.18.0 per evitare drift sotto il floor richiesto da `.npmrc`
 con `engine-strict=true`. Il package manager canonico è dichiarato in
 `package.json` come `npm@11.17.0`.
@@ -125,7 +126,7 @@ il runtime repo resta `>=24.15 <25`.
 | Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | Test script e workflow        | `npm run test:tooling`                                                                      |
-| React Doctor                  | `npm run quality:react-doctor`                                                              |
+| React Doctor latest           | `npm run quality:react-doctor`                                                              |
 | Release dry-run               | `npm run release:dry-run`                                                                   |
 | Release locale                | `npm run release`                                                                           |
 
@@ -183,17 +184,25 @@ lasciata ispezionabile e il setup si riprende al suo interno con
 | Moduli `app/services`, runtime condiviso o CI                        | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                                                       |
 | Moduli puri `app/lib`                                               | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                                                  |
 | Pubblicazione/merge PR                                              | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry                            |
-| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`                                                                             |
+| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor`, che risolve esplicitamente `react-doctor@latest`                                                                         |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
 | Prisma/database                                                     | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                                                 |
 | Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |
 | Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
 
-La CI mantiene un unico job conclusivo: per diff docs-only esegue soltanto
+La CI PR mantiene un unico job conclusivo: per diff docs-only esegue soltanto
 `git diff --check`; per diff runtime installa le dipendenze ed esegue
-`verify:full -- --no-receipt`. React Doctor e Doppler usano filtri path dedicati.
-CodeQL resta gestito dalla configurazione GitHub e può continuare a partire
-anche per cambi documentali.
+`verify:full -- --no-receipt`. Il titolo Conventional Commit resta un secondo
+check minimale senza checkout, necessario per rivalidare title edit e nuovi
+SHA senza confonderli col gate runtime. Il ruleset di `main` richiede solo
+questi due check senza imporre branch aggiornata, approval o deployment. React
+Doctor usa sempre `latest` sulle PR pertinenti e mantiene il full scan manuale;
+Doppler conserva i filtri path dedicati. CodeQL resta advisory.
+
+Vercel usa `scripts/syncbay-vercel-ignore-build.mjs`: docs, governance, CI,
+test e tooling non runtime non generano build, mentre runtime, Prisma, asset,
+dipendenze, configurazione o file non classificati mantengono il fallback
+conservativo al build.
 
 ## Deploy e release
 

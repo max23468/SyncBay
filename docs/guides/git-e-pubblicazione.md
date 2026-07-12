@@ -14,9 +14,10 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Dependabot configurato per GitHub Actions e npm.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
-- Gate PR parziali attivi: titolo Conventional Commit, test/coverage `app/lib`,
-  React Doctor, verifica Doppler e workflow `Codex PR comments`. Una CI runtime
-  completa con deploy/smoke stabili resta da decidere.
+- Repository pubblico protetto da PR, `Verifica proporzionata` e dal check
+  minimale separato del titolo Conventional Commit.
+- React Doctor `latest`, Doppler, CodeQL, Vercel e inbox Codex restano check
+  mirati o advisory e non bloccano indiscriminatamente ogni PR.
 
 ## Regola base
 
@@ -102,19 +103,18 @@ Con il deployment Vercel production privato attivo, "pubblicato" significa almen
 
 "Pubblicare" applica il flusso completo di questa fase (`npm run release` per diff versionati, `main`/PR/merge, verifica e cleanup); non implica automaticamente creare tag, GitHub Release, billing o pubblicazione Shopify App Store, che entrano invece solo quando sono previsti dal flusso corrente o esplicitamente richiesti.
 
-## Impostazioni GitHub iniziali
+## Impostazioni GitHub correnti
 
-La configurazione iniziale segue Pratix come riferimento principale:
-
-- repo privata;
-- issue e projects abilitati;
-- wiki e discussions disabilitati;
-- merge commit, squash merge e rebase merge abilitati;
-- auto-merge disabilitato;
-- cancellazione automatica branch dopo merge disabilitata;
-- label `codex`, `autorelease: pending` e `autorelease: tagged` presenti per coerenza con le altre repo operative.
-
-Branch protection e rulesets non sono attivi sulle repo private dell'account corrente senza GitHub Pro o repo pubblica.
+- repository pubblico con solo squash merge e cancellazione automatica dei
+  branch assorbiti;
+- PR obbligatoria verso `main`, senza approval obbligatorie per il maintainer
+  unico e con conversazioni da risolvere;
+- check richiesti `Verifica proporzionata` e `Conventional PR title`, senza
+  policy strict/up-to-date per evitare rebase e run duplicati;
+- nessun deployment, React Doctor, Doppler, CodeQL aggregato o Supabase Preview
+  richiesto come status separato;
+- push forzati e cancellazione di `main` vietati;
+- secret scanning e push protection GitHub attivi.
 
 ## Self-review pre-PR
 
@@ -143,8 +143,9 @@ Il workflow `.github/workflows/codex-pr-comments.yml` mantiene una issue operati
 Il workflow:
 
 - sugli eventi PR analizza la PR corrente e le PR già presenti nella inbox;
-- su schedule, dispatch manuale o refresh della inbox analizza PR aperte,
+- sullo schedule giornaliero, dispatch manuale o refresh della inbox analizza PR aperte,
   PR recenti degli ultimi 7 giorni e PR già presenti nella inbox;
+- ignora i commenti su issue ordinarie che non sono PR o la inbox Codex;
 - mantiene un opt-in `CODEX_FULL_SCAN=true` per scansioni storiche complete;
 - cerca review thread scritti da account che matchano `codex`;
 - distingue thread actionable da thread risolti o outdated;
@@ -168,7 +169,9 @@ Per modifiche puramente documentali:
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
 
 Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
-React Doctor e Doppler non partono quando nessun path di loro competenza cambia.
+React Doctor `latest` e Doppler non partono quando nessun path di loro
+competenza cambia. Vercel salta inoltre i build limitati a docs, governance,
+CI, test e tooling non runtime.
 
 ## Check prima della chiusura
 
