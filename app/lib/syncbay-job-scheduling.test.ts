@@ -2,7 +2,37 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+
+test("supersedes catalog reconcile jobs from earlier runs, keeping the new run", () => {
+  const keepRunId = "incremental:shop-1:2026-07-11T19:15:00.000Z";
+  const ids = getSupersededCatalogReconcileJobIds({
+    jobs: [
+      { id: "old-1", payload: { runId: "incremental:shop-1:2026-07-11T15:25:00.000Z", source: "catalog_reconcile" } },
+      { id: "old-2", payload: { runId: "incremental:shop-1:2026-07-11T15:35:00.000Z", source: "catalog_reconcile" } },
+      { id: "keep", payload: { runId: keepRunId, source: "catalog_reconcile" } },
+    ],
+    keepRunId,
+  });
+
+  assert.deepEqual(ids, ["old-1", "old-2"]);
+});
+
+test("never supersedes non-reconcile jobs or reconcile jobs without a runId", () => {
+  const keepRunId = "incremental:shop-1:2026-07-11T19:15:00.000Z";
+
+  assert.deepEqual(
+    getSupersededCatalogReconcileJobIds({
+      jobs: [
+        { id: "seller-events", payload: { runId: "seller-events:shop-1:x", source: "seller_events_delta" } },
+        { id: "no-run-id", payload: { source: "catalog_reconcile" } },
+        { id: "no-payload", payload: null },
+      ],
+      keepRunId,
+    }),
+    [],
+  );
+});
 
 test("keeps internal Shopify import jobs out of the runnable queue", () => {
   assert.equal(

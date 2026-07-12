@@ -89,6 +89,7 @@ import {
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   buildSellerEventsNoopMarker,
+  getSupersededCatalogReconcileJobIds,
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
@@ -1075,9 +1076,48 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
   }));
 
-  await prisma.syncJob.createMany({
-    data: [...syncJobs, ...archiveJobs],
-    skipDuplicates: true,
+  // Annulla i giri reconcile precedenti ancora aperti prima di crearne uno nuovo:
+  // ogni giro ripete la stessa scansione full-catalog, quindi tenerne più di uno
+  // è ridondante. Senza questo, un blackout auth/API accumula decine di giri
+  // incompleti (il runner ne drena uno alla volta) fino a un backlog ingestibile.
+  const priorReconcileJobs = await prisma.syncJob.findMany({
+    select: { id: true, payload: true },
+    where: {
+      payload: { path: ["source"], equals: "catalog_reconcile" },
+      shopId: input.shopId,
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+      type: {
+        in: [
+          SyncJobType.SYNC_INCREMENTAL,
+          SyncJobType.ARCHIVE_INACTIVE_LISTING,
+        ],
+      },
+    },
+  });
+  const supersededJobIds = getSupersededCatalogReconcileJobIds({
+    jobs: priorReconcileJobs,
+    keepRunId: runId,
+  });
+
+  await prisma.$transaction(async (tx) => {
+    if (supersededJobIds.length > 0) {
+      await tx.syncJob.updateMany({
+        data: {
+          finishedAt: input.now,
+          result: { reason: "superseded_by_newer_catalog_reconcile_run" },
+          status: SyncJobStatus.CANCELLED,
+        },
+        where: {
+          id: { in: supersededJobIds },
+          status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+        },
+      });
+    }
+
+    await tx.syncJob.createMany({
+      data: [...syncJobs, ...archiveJobs],
+      skipDuplicates: true,
+    });
   });
 }
 
