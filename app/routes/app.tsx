@@ -6,7 +6,6 @@ import {
   useNavigation,
   useRouteError,
 } from "react-router";
-import { NavMenu, TitleBar } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
@@ -32,8 +31,8 @@ export default function App() {
 
   return (
     <AppProvider embedded apiKey={apiKey}>
-      <TitleBar title={SYNCBAY_APP_NAME} />
-      <NavMenu>
+      <ui-title-bar title={SYNCBAY_APP_NAME} />
+      <ui-nav-menu>
         <Link to="/app" rel="home">
           {SYNCBAY_APP_NAME}
         </Link>
@@ -43,7 +42,7 @@ export default function App() {
         <Link to="/app/import-preview">Importazione</Link>
         <Link to="/app/activity">Attività</Link>
         <Link to="/app/settings">Impostazioni</Link>
-      </NavMenu>
+      </ui-nav-menu>
       <RoutePendingIndicator copy={pendingCopy} isVisible={isRoutePending} />
       <div aria-busy={isRoutePending}>
         {isRoutePending ? <RouteSkeleton /> : <Outlet />}

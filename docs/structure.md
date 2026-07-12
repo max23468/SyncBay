@@ -19,7 +19,6 @@ SyncBay/
   .env.example
   .gitignore
   .npmrc
-  Dockerfile
   package-lock.json
   package.json
   shopify.web.toml

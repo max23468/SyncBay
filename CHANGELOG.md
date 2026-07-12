@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Semplificate le dipendenze: rimossi `dotenv` (sostituito dal nativo
+  `process.loadEnvFile` in `prisma.config.ts`), `prettier` (mai configurato) e
+  `@shopify/app-bridge-react` (menu e title bar usano i web components App
+  Bridge `ui-nav-menu`/`ui-title-bar` dello script CDN già iniettato da
+  AppProvider); spostati in `devDependencies` Shopify CLI, Prisma CLI, i
+  pacchetti build/serve React Router, `patch-package` e il session storage
+  Shopify usato solo come tipo.
+- Rimosso il percorso di deploy Docker (`Dockerfile`, `.dockerignore`, script
+  `docker-start`): Vercel resta l'unico target di deploy.
+
 ### Non versionato
 
 - Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie

@@ -1,6 +1,10 @@
-import "dotenv/config";
-
 import { defineConfig } from "prisma/config";
+
+try {
+  process.loadEnvFile();
+} catch {
+  // .env assente: valgono le variabili già presenti nel processo.
+}
 
 const FALLBACK_DATABASE_URL = "postgresql://user:pass@localhost:5432/syncbay";
 const databaseUrl =

@@ -26,8 +26,8 @@ Con Prisma 7, `prisma/schema.prisma` non contiene più `url` o `directUrl`:
 presente e ricade su `DATABASE_URL`. Il client generato vive in
 `prisma/generated/client`, non va committato e viene rigenerato da
 `npm run prisma:generate`, `pretypecheck` e `prebuild`.
-Il pacchetto `prisma` resta in `dependencies`, non in `devDependencies`, perché
-il Dockerfile installa con `npm ci --omit=dev` prima di eseguire il build. Lo
+Il pacchetto `prisma` (CLI) vive in `devDependencies`: serve solo a generate e
+migration lanciate da build e tooling locali, mai dal runtime Vercel. Lo
 script `npm run prisma:generate` esegue `prisma generate` e poi
 `scripts/link-prisma-client.mjs` per collegare il client generato al wrapper
 `@prisma/client`.

@@ -22,8 +22,8 @@ const checks = [
   {
     file: "app/routes/app.tsx",
     needles: [
-      "NavMenu",
-      "TitleBar",
+      "ui-nav-menu",
+      "ui-title-bar",
       "SYNCBAY_APP_NAME",
       "useNavigation",
       "RoutePendingIndicator",

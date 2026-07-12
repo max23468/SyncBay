@@ -12,14 +12,14 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Enforcement engine        | `.npmrc` con `engine-strict=true`             |
 | Package manager           | `npm@11.17.0`                                 |
 | Lockfile                  | `package-lock.json`                           |
-| Immagine Docker base      | `node:24.18.0-alpine`                         |
 
 Il floor Node `>=24.15` resta il minimo verificato per la catena React Doctor
 risolta dinamicamente su `latest`; non abbassarlo senza rivalidare il quality
-gate corrente. La base Docker è
-pinnata a Node 24.18.0 per evitare drift sotto il floor richiesto da `.npmrc`
-con `engine-strict=true`. Il package manager canonico è dichiarato in
-`package.json` come `npm@11.17.0`.
+gate corrente. Il package manager canonico è dichiarato in
+`package.json` come `npm@11.17.0`. Il deploy avviene solo su Vercel: il
+percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
+rimosso e le dipendenze necessarie solo a build, tooling e migration locali
+vivono in `devDependencies`.
 
 Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
 toolchain coerente con `.node-version`, non dal Node Homebrew globale. Sulla
@@ -57,10 +57,11 @@ Finché SyncBay resta su React Router 7 con Vite 8, `@react-router/dev@7.18.1`
 è patchato con `patch-package` perché la sua configurazione vite-node interna
 usa ancora l'opzione deprecata `envFile: false`. La patch versionata in
 `patches/@react-router+dev+7.18.1.patch` sostituisce quell'opzione con
-`envDir: false` e viene riapplicata da `postinstall`. `patch-package` resta in
-`dependencies` perché `npm ci --omit=dev` esegue comunque `postinstall` nel
-Dockerfile. Rimuovere la patch solo insieme a una migrazione verificata a una
-release React Router/preset Vercel che non emetta più quel warning.
+`envDir: false` e viene riapplicata da `postinstall`. `patch-package` vive in
+`devDependencies`: senza il percorso Docker non esiste più un install
+`--omit=dev` che debba eseguire `postinstall`. Rimuovere la patch solo insieme
+a una migrazione verificata a una release React Router/preset Vercel che non
+emetta più quel warning.
 
 Prisma è aggiornato a 7.8.0 con `prisma.config.ts`, generator di compatibilità
 `prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
