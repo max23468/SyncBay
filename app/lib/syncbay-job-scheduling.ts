@@ -118,6 +118,30 @@ export function getDuplicateShopifyChangeJobIdsToCancel(
   return duplicateIds;
 }
 
+export const CATALOG_RECONCILE_JOB_SOURCE = "catalog_reconcile";
+
+// Un nuovo giro di reconcile catalogo ripete la stessa scansione full-catalog:
+// i job PENDING/RETRYING di giri precedenti sono ridondanti. Restituisce gli id
+// dei job reconcile da annullare (runId diverso da quello del nuovo giro),
+// evitando che un blackout auth/API accumuli decine di giri incompleti mentre
+// il runner ne drena uno alla volta. I job senza runId non vengono toccati.
+export function getSupersededCatalogReconcileJobIds(input: {
+  jobs: Array<{ id: string; payload: unknown }>;
+  keepRunId: string;
+}) {
+  return input.jobs.flatMap((job) => {
+    if (getStringField(job.payload, "source") !== CATALOG_RECONCILE_JOB_SOURCE) {
+      return [];
+    }
+
+    const runId = getStringField(job.payload, "runId");
+
+    if (!runId || runId === input.keepRunId) return [];
+
+    return [job.id];
+  });
+}
+
 export function buildEbayItemJobSplitPayloads(input: {
   ebayItemIds: string[];
   maxItems: number;

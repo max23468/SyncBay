@@ -6,6 +6,16 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.54] — 2026-07-12
+
+### Correzioni
+
+- Reconcile catalogo: un nuovo giro di riconciliazione annulla i giri precedenti
+  ancora in coda invece di accodarsi ad essi. Durante un'interruzione di
+  autenticazione o delle API, i giri incompleti non si accumulano più fino a un
+  arretrato che il runner non riesce a smaltire, ritardando la sincronizzazione
+  della disponibilità.
+
 ## [1.0.53] — 2026-07-11
 
 ### Correzioni
@@ -3425,6 +3435,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.54]: #1054--2026-07-12
 [1.0.53]: #1053--2026-07-11
 [1.0.52]: #1052--2026-07-11
 [1.0.51]: #1051--2026-07-11
