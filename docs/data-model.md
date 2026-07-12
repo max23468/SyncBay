@@ -12,6 +12,9 @@ Lo scaffold applicativo contiene già `prisma/schema.prisma` e migration per:
 - audit log operativo (`AuditLog`);
 - mapping prodotto eBay -> Shopify (`ProductMapping`);
 - snapshot prodotto (`ProductSnapshot`);
+- baseline prodotto durevole (`ProductSyncBaseline`);
+- checkpoint settimanali compatti (`ProductSnapshotCheckpoint`);
+- registro maintenance idempotente (`MaintenanceRun`);
 - conflitti Shopify (`SyncConflict`);
 - richieste eBay marketplace account deletion (`EbayAccountDeletionRequest`);
 - regola descrizione persistente per shop (`DescriptionRule`).
@@ -24,6 +27,27 @@ registra già `ProductMapping`, `ProductSnapshot`, `SyncJob` e `AuditLog` per
 prodotti Shopify creati o riusati, includendo product GID, variant GID, stato
 dell'allineamento scorte, prezzo Shopify calcolato e diagnostica del
 riallineamento immagini scritto da SyncBay.
+
+### Storia prodotto e baseline durevole
+
+`ProductSyncBaseline` è lo stato corrente per mapping usato da rilevamento
+conflitti e viste operative. Le patch seguono la semantica `undefined =
+preserva`, `null = cancella`, valore = aggiorna. Durante il rollout additivo ogni
+writer salva baseline e snapshot nella stessa transazione; i reader mantengono
+temporaneamente il fallback alle snapshot finché il backfill non copre tutti i
+mapping attivi.
+
+`ProductSnapshot` conserva gli eventi densi per 30 giorni.
+`ProductSnapshotCheckpoint` conserva per 180 giorni al massimo un checkpoint
+per mapping, sorgente e settimana UTC, soltanto quando lo stato cambia. Il campo
+`isComplete` impedisce di cancellare la snapshot sorgente quando i dati
+reversibili non entrano nel limite di 64 KiB. La timeline diagnostica unisce
+eventi recenti e checkpoint senza confonderli con la baseline corrente.
+
+`MaintenanceRun` rende la maintenance una volta al giorno anche se il runner la
+richiama a ogni tick. Il kill switch
+`SYNCBAY_RETENTION_CLEANUP_ENABLED=false` blocca tutte le cancellazioni ma non
+le letture delle baseline.
 
 Decisione runtime: Supabase Postgres con Prisma come ORM iniziale. Vedi ADR `docs/decisions/0005-runtime-infrastructure.md`.
 

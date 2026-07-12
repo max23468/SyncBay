@@ -16,6 +16,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { recordProductSnapshotsInTransaction } from "./product-history.server";
 import {
   getImportProductStatusLabelCapitalized,
   type ImportProductStatus,
@@ -1385,8 +1386,17 @@ export async function resolveSyncConflict(
   }
 
   const now = new Date();
-  const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.syncConflict.update({
+  const keepShopifySnapshot = baselineSnapshot
+    ? buildKeepShopifyBaselineSnapshot({
+        conflict,
+        latestDescriptionBaselineHash:
+          descriptionBaselineSnapshot?.descriptionHash ?? null,
+        snapshot: baselineSnapshot,
+      })
+    : null;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.syncConflict.update({
       data: {
         resolution,
         resolvedAt: now,
@@ -1396,8 +1406,8 @@ export async function resolveSyncConflict(
             : SyncConflictStatus.RESOLVED,
       },
       where: { id: conflict.id },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
@@ -1409,28 +1419,16 @@ export async function resolveSyncConflict(
         shopId: shop.id,
         type: AuditEventType.CONNECTION_CHECK,
       },
-    }),
-  ];
+    });
+    if (keepShopifySnapshot) {
+      await recordProductSnapshotsInTransaction(tx, [keepShopifySnapshot]);
+    }
 
-  if (baselineSnapshot) {
-    operations.push(
-      prisma.productSnapshot.create({
-        data: buildKeepShopifyBaselineSnapshot({
-          conflict,
-          latestDescriptionBaselineHash:
-            descriptionBaselineSnapshot?.descriptionHash ?? null,
-          snapshot: baselineSnapshot,
-        }),
-      }),
-    );
-  }
-
-  if (
-    resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
-    conflict.mapping?.ebayItemId
-  ) {
-    operations.push(
-      prisma.syncJob.create({
+    if (
+      resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
+      conflict.mapping?.ebayItemId
+    ) {
+      await tx.syncJob.create({
         data: {
           payload: {
             ebayItemIds: [conflict.mapping.ebayItemId],
@@ -1442,11 +1440,9 @@ export async function resolveSyncConflict(
           status: SyncJobStatus.PENDING,
           type: SyncJobType.SYNC_INCREMENTAL,
         },
-      }),
-    );
-  }
-
-  await prisma.$transaction(operations);
+      });
+    }
+  });
 
   return {
     message: "Conflitto aggiornato.",
@@ -2183,7 +2179,9 @@ async function applyExistingCatalogTakeoverClaims(input: {
   );
 
   if (snapshots.length > 0) {
-    await prisma.productSnapshot.createMany({ data: snapshots });
+    await prisma.$transaction((tx) =>
+      recordProductSnapshotsInTransaction(tx, snapshots),
+    );
     await prisma.auditLog.create({
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
@@ -4003,6 +4001,28 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
 
   if (uniqueMappingIds.length === 0) return snapshotByMappingId;
 
+  const baselines = await prisma.productSyncBaseline.findMany({
+    include: { mapping: { select: { sku: true } } },
+    where: { mappingId: { in: uniqueMappingIds } },
+  });
+  for (const baseline of baselines) {
+    snapshotByMappingId.set(baseline.mappingId, {
+      capturedAt: baseline.updatedAt,
+      currency: baseline.currency,
+      mappingId: baseline.mappingId,
+      priceAmount: baseline.priceAmount,
+      productStatus: baseline.productStatus,
+      quantity: baseline.quantity,
+      sku: baseline.mapping.sku,
+      title: baseline.title,
+    });
+  }
+
+  const missingMappingIds = uniqueMappingIds.filter(
+    (mappingId) => !snapshotByMappingId.has(mappingId),
+  );
+  if (missingMappingIds.length === 0) return snapshotByMappingId;
+
   const snapshots = await prisma.$queryRaw<LatestProductSnapshotForDisplay[]>`
     WITH latest_display AS (
       SELECT DISTINCT ON ("mappingId")
@@ -4015,7 +4035,7 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
         "sku",
         "title"
       FROM "ProductSnapshot"
-      WHERE "mappingId" IN (${Prisma.join(uniqueMappingIds)})
+      WHERE "mappingId" IN (${Prisma.join(missingMappingIds)})
       ORDER BY "mappingId", "capturedAt" DESC
     )
     SELECT

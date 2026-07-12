@@ -22,7 +22,9 @@ with statement_rows as (
     queryid::text as "queryId",
     calls::bigint as calls,
     rows::bigint as rows,
-    query
+    left(regexp_replace(query, '\\s+', ' ', 'g'), 240) as "queryPreview",
+    query ~* '^\\s*(select|with)(\\s|$)' as is_read,
+    query ilike '%ProductSnapshot%' and query ilike '%payload%' as is_payload
   from pg_stat_statements
   where query not ilike '%pg_stat_statements%'
     and query not ilike '%pg_stat_statements_info%'
@@ -33,14 +35,28 @@ reset_info as (
   limit 1
 )
 select jsonb_build_object(
+  'aggregated', true,
   'observedAt', reset_info.observed_at,
   'statsReset', reset_info.stats_reset,
   'windowMinutes', round((extract(epoch from (reset_info.observed_at - reset_info.stats_reset)) / 60)::numeric, 2),
-  'statements',
-  coalesce(
-    (select jsonb_agg(to_jsonb(statement_rows) order by rows desc, calls desc) from statement_rows),
-    '[]'::jsonb
-  )
+  'statementCount', (select count(*)::int from statement_rows),
+  'totalCalls', (select coalesce(sum(calls),0)::bigint from statement_rows),
+  'totalRows', (select coalesce(sum(rows),0)::bigint from statement_rows),
+  'selectStatementCount', (select count(*)::int from statement_rows where is_read),
+  'selectCalls', (select coalesce(sum(calls),0)::bigint from statement_rows where is_read),
+  'selectRows', (select coalesce(sum(rows),0)::bigint from statement_rows where is_read),
+  'payloadStatementCount', (select count(*)::int from statement_rows where is_payload),
+  'payloadCalls', (select coalesce(sum(calls),0)::bigint from statement_rows where is_payload),
+  'payloadRows', (select coalesce(sum(rows),0)::bigint from statement_rows where is_payload),
+  'payloadReadStatementCount', (select count(*)::int from statement_rows where is_payload and is_read),
+  'payloadReadCalls', (select coalesce(sum(calls),0)::bigint from statement_rows where is_payload and is_read),
+  'payloadReadRows', (select coalesce(sum(rows),0)::bigint from statement_rows where is_payload and is_read),
+  'topByCalls', coalesce((select jsonb_agg(to_jsonb(t)) from (
+    select "queryId", calls, rows, "queryPreview" from statement_rows order by calls desc, rows desc limit 50
+  ) t), '[]'::jsonb),
+  'topBySelectRows', coalesce((select jsonb_agg(to_jsonb(t)) from (
+    select "queryId", calls, rows, "queryPreview" from statement_rows where is_read order by rows desc, calls desc limit 50
+  ) t), '[]'::jsonb)
 ) as diagnostics
 from reset_info;
 `;
@@ -80,6 +96,44 @@ async function main() {
 function buildDiagnostics(rawDiagnostics) {
   if (!rawDiagnostics) return null;
 
+  if (rawDiagnostics.aggregated === true) {
+    const totalCalls = normalizeCount(rawDiagnostics.totalCalls);
+    const totalRows = normalizeCount(rawDiagnostics.totalRows);
+    const selectCalls = normalizeCount(rawDiagnostics.selectCalls);
+    const selectRows = normalizeCount(rawDiagnostics.selectRows);
+    const payloadCalls = normalizeCount(rawDiagnostics.payloadCalls);
+    const payloadRows = normalizeCount(rawDiagnostics.payloadRows);
+    const payloadReadCalls = normalizeCount(rawDiagnostics.payloadReadCalls);
+    const payloadReadRows = normalizeCount(rawDiagnostics.payloadReadRows);
+    return {
+      avgRowsPerCall: totalCalls > 0 ? round3(totalRows / totalCalls) : 0,
+      observedAt: rawDiagnostics.observedAt,
+      productSnapshotPayloadReads: {
+        avgRowsPerCall: payloadReadCalls > 0 ? round3(payloadReadRows / payloadReadCalls) : 0,
+        calls: payloadReadCalls,
+        rows: payloadReadRows,
+        statementCount: normalizeCount(rawDiagnostics.payloadReadStatementCount),
+      },
+      productSnapshotPayloadStatements: {
+        avgRowsPerCall: payloadCalls > 0 ? round3(payloadRows / payloadCalls) : 0,
+        calls: payloadCalls,
+        rows: payloadRows,
+        statementCount: normalizeCount(rawDiagnostics.payloadStatementCount),
+      },
+      selectAvgRowsPerCall: selectCalls > 0 ? round3(selectRows / selectCalls) : 0,
+      selectCalls,
+      selectRows,
+      selectStatementCount: normalizeCount(rawDiagnostics.selectStatementCount),
+      statementCount: normalizeCount(rawDiagnostics.statementCount),
+      statsReset: rawDiagnostics.statsReset,
+      topByCalls: normalizeTopQueries(rawDiagnostics.topByCalls),
+      topBySelectRows: normalizeTopQueries(rawDiagnostics.topBySelectRows),
+      totalCalls,
+      totalRows,
+      windowMinutes: Number(rawDiagnostics.windowMinutes ?? 0),
+    };
+  }
+
   const statementRows = normalizeStatementRows(rawDiagnostics.statements ?? []);
   const selectRows = statementRows.filter((row) =>
     isEgressReadStatementQuery(row.query),
@@ -106,6 +160,20 @@ function buildDiagnostics(rawDiagnostics) {
     totalRows: statementSummary.rows,
     windowMinutes: Number(rawDiagnostics.windowMinutes ?? 0),
   };
+}
+
+function normalizeTopQueries(rows) {
+  return (Array.isArray(rows) ? rows : []).slice(0, topLimit).map((row) => {
+    const calls = normalizeCount(row.calls);
+    const resultRows = normalizeCount(row.rows);
+    return {
+      avgRowsPerCall: calls > 0 ? round3(resultRows / calls) : 0,
+      calls,
+      queryId: String(row.queryId ?? ""),
+      queryPreview: normalizeSqlWhitespace(row.queryPreview ?? "").slice(0, 240),
+      rows: resultRows,
+    };
+  });
 }
 
 function normalizeStatementRows(rows) {

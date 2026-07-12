@@ -94,7 +94,10 @@ import {
   isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
 } from "../lib/syncbay-job-scheduling";
-import { runRetentionCleanup } from "./retention-cleanup.server";
+import {
+  recordProductSnapshotsInTransaction,
+  runDailyOperationalMaintenance,
+} from "./product-history.server";
 import { shouldContinueRunningSyncJob } from "../lib/syncbay-runner-cancellation";
 import {
   buildSeededShopifyChangeBatch,
@@ -309,7 +312,7 @@ export async function runDueSyncJobs(
   );
   const archivedStaleFailedJobCount =
     await archiveSupersededFailedIncrementalSyncJobs({ now });
-  const retentionCleanup = await runRetentionCleanup({ now });
+  const retentionCleanup = await runDailyOperationalMaintenance({ now });
   const selectedByType = buildRunnerLaneCounts(
     completedResults.map((result) => result.type as RunnerLane),
   );
@@ -2221,7 +2224,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
 
     await prisma.$transaction(async (tx) => {
       if (changedSyncBaySnapshots.length > 0) {
-        await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+        await recordProductSnapshotsInTransaction(tx, changedSyncBaySnapshots);
       }
 
       await tx.productMapping.updateMany({
@@ -2456,7 +2459,7 @@ async function runFacetOnlyIncrementalSyncJob(input: {
 
     await prisma.$transaction(async (tx) => {
       if (changedSyncBaySnapshots.length > 0) {
-        await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+        await recordProductSnapshotsInTransaction(tx, changedSyncBaySnapshots);
       }
 
       await tx.productMapping.updateMany({
@@ -2932,7 +2935,9 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       title: latestSnapshot?.title ?? null,
     } satisfies Prisma.ProductSnapshotCreateManyInput;
     // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
-    await prisma.productSnapshot.create({ data: stockSnapshot });
+    await prisma.$transaction((tx) =>
+      recordProductSnapshotsInTransaction(tx, [stockSnapshot]),
+    );
     let resolvedQuantityConflicts = 0;
     let resolvedQuantityConflictCleanupError: string | undefined;
     try {
@@ -3153,8 +3158,8 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   } satisfies Prisma.ProductSnapshotCreateManyInput;
   const changedSoldOutSnapshots =
     await filterChangedSyncBayProductSnapshots([soldOutSnapshot]);
-  const [, , resolvedConflicts] = await prisma.$transaction([
-    prisma.productMapping.update({
+  const resolvedConflicts = await prisma.$transaction(async (tx) => {
+    await tx.productMapping.update({
       data: {
         lastErrorCode: null,
         lastErrorMessage: null,
@@ -3162,16 +3167,22 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
         status: ProductMappingStatus.OUT_OF_STOCK,
       },
       where: { id: mapping.id },
-    }),
-    changedSoldOutSnapshots.length > 0
-      ? prisma.productSnapshot.create({ data: soldOutSnapshot })
-      : prisma.syncJob.count({ where: { id: job.id } }),
-    resolveOpenConflictsForInactiveMappingMutation({
-      mappingId: mapping.id,
-      resolvedAt: now,
-      shopId: job.shopId,
-    }),
-  ]);
+    });
+    if (changedSoldOutSnapshots.length > 0) {
+      await recordProductSnapshotsInTransaction(tx, [soldOutSnapshot]);
+    }
+    return tx.syncConflict.updateMany({
+      data: {
+        resolvedAt: now,
+        status: SyncConflictStatus.RESOLVED,
+      },
+      where: {
+        mappingId: mapping.id,
+        shopId: job.shopId,
+        status: SyncConflictStatus.OPEN,
+      },
+    });
+  });
 
   await markJobSucceeded({
     delegatedJobId: null,
@@ -4951,7 +4962,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
     }
 
     if (changedSyncBaySnapshots.length > 0) {
-      await tx.productSnapshot.createMany({ data: changedSyncBaySnapshots });
+      await recordProductSnapshotsInTransaction(tx, changedSyncBaySnapshots);
     }
 
     await tx.productMapping.updateMany({

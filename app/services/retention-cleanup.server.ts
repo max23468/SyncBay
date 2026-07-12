@@ -115,12 +115,10 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
       });
       return count;
     }
-    case "product_snapshots": {
-      const { count } = await prisma.productSnapshot.deleteMany({
-        where: { capturedAt: { lte: target.cutoff } },
-      });
-      return count;
-    }
+    // ProductSnapshot è governata dalla maintenance giornaliera: prima crea
+    // checkpoint completi, poi cancella in batch. Non bypassare quel gate.
+    case "product_snapshots":
+      return 0;
     case "oauth_states": {
       const { count } = await prisma.ebayOAuthState.deleteMany({
         where: { createdAt: { lte: target.cutoff } },

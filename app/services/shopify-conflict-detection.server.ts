@@ -254,11 +254,29 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       return map;
     },
     async loadBaselines(mappingIds) {
+      const baselines = await prisma.productSyncBaseline.findMany({
+        where: { mappingId: { in: mappingIds } },
+      });
+      const result = new Map<string, ConflictBaseline[]>();
+      for (const baseline of baselines) {
+        const current: ConflictBaseline[] = [];
+        const add = (field: ConflictBaseline["field"], value: unknown) => {
+          if (value == null) return;
+          current.push({ mappingId: baseline.mappingId, field, serializedValue: String(value) });
+        };
+        add("title", baseline.title);
+        add("description", baseline.descriptionHash);
+        add("price", baseline.priceAmount?.toFixed(2));
+        add("quantity", baseline.quantity);
+        add("status", baseline.productStatus?.toUpperCase());
+        add("images", baseline.imageCount);
+        result.set(baseline.mappingId, current);
+      }
+
       const snapshots = await prisma.productSnapshot.findMany({
         orderBy: { capturedAt: "desc" },
         where: { mappingId: { in: mappingIds }, source: ProductSnapshotSource.SYNCBAY },
       });
-      const result = new Map<string, ConflictBaseline[]>();
       for (const snapshot of snapshots) {
         if (!snapshot.mappingId) continue;
         const current = result.get(snapshot.mappingId) ?? [];

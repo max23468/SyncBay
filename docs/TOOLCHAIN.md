@@ -137,6 +137,10 @@ Regole d'uso:
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Diagnostica job import        | `npm run jobs:status -- --shop <shop.myshopify.com>`                                   |
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
+| Budget storage database       | `npm run db:storage-budget`                                                                 |
+| Budget provider aggregato     | `npm run provider:budget`                                                                   |
+| Backfill baseline prodotto    | `npm run product-baselines:backfill -- --dry-run`                                           |
+| Maintenance storia prodotto  | `npm run history:maintain -- --dry-run`                                                     |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |
 | Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop <shop.myshopify.com> [--apply]`       |
 | Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                              |

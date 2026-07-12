@@ -157,6 +157,8 @@ model Shop {
   auditLogs        AuditLog[]
   productMappings  ProductMapping[]
   productSnapshots ProductSnapshot[]
+  productSyncBaselines ProductSyncBaseline[]
+  productSnapshotCheckpoints ProductSnapshotCheckpoint[]
   pricingRule      PricingRule?
   descriptionRule  DescriptionRule?
   syncConflicts    SyncConflict[]
@@ -268,6 +270,8 @@ model ProductMapping {
 
   shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
   snapshots ProductSnapshot[]
+  syncBaseline ProductSyncBaseline?
+  snapshotCheckpoints ProductSnapshotCheckpoint[]
   conflicts SyncConflict[]
 
   @@unique([shopId, marketplaceId, ebayItemId])
@@ -301,6 +305,73 @@ model ProductSnapshot {
   @@index([shopId, capturedAt])
   @@index([mappingId, capturedAt])
   @@index([source])
+}
+
+model ProductSyncBaseline {
+  mappingId               String   @id
+  shopId                  String
+  shopifyProductGid       String?
+  shopifyVariantGid       String?
+  shopifyInventoryItemGid String?
+  title                   String?
+  descriptionHash         String?
+  priceAmount             Decimal? @db.Decimal(12, 2)
+  compareAtPriceAmount    Decimal? @db.Decimal(12, 2)
+  currency                String?
+  quantity                Int?
+  productStatus           String?
+  imageCount              Int?
+  productFacets           Json?
+  lastWriterJobId         String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  mapping ProductMapping @relation(fields: [mappingId], references: [id], onDelete: Cascade)
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId, updatedAt])
+}
+
+model ProductSnapshotCheckpoint {
+  id               String                @id @default(cuid())
+  mappingId        String
+  shopId           String
+  source           ProductSnapshotSource
+  checkpointWeek   DateTime              @db.Date
+  sourceSnapshotId String
+  isComplete       Boolean               @default(true)
+  payloadBytes     Int                   @default(0)
+  title            String?
+  descriptionHash  String?
+  priceAmount      Decimal?              @db.Decimal(12, 2)
+  quantity         Int?
+  productStatus    String?
+  imageCount       Int?
+  payload          Json?
+  createdAt        DateTime              @default(now())
+
+  mapping ProductMapping @relation(fields: [mappingId], references: [id], onDelete: Cascade)
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([mappingId, source, checkpointWeek])
+  @@index([shopId, checkpointWeek])
+}
+
+enum MaintenanceRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model MaintenanceRun {
+  key         String               @id
+  startedAt   DateTime             @default(now())
+  completedAt DateTime?
+  status      MaintenanceRunStatus
+  attempt     Int                  @default(1)
+  result      Json?
+  errorCode   String?
+  updatedAt   DateTime             @updatedAt
 }
 
 model SyncConflict {
