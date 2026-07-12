@@ -33,6 +33,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Ricevute locali delle verifiche agentiche
+.cache/
+
 # Coverage
 coverage/
 
