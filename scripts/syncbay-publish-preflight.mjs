@@ -79,19 +79,11 @@ function buildReport(args) {
 
   const pr =
     args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
-  const inbox =
-    args.remote && (pr || publishedMainPreflight)
-      ? readCodexInbox(pr?.number ?? null)
-      : null;
-  const reviewThreads = args.remote && pr ? readCodexReviewThreads(pr.number) : null;
-  const codexFeedback =
-    args.remote && (pr || publishedMainPreflight)
-      ? buildCodexFeedbackPreflight({
-          inbox,
-          prNumber: pr?.number ?? null,
-          reviewThreads,
-        })
-      : null;
+  const codexFeedback = loadCodexFeedback({
+    pr,
+    publishedMainPreflight,
+    remote: Boolean(args.remote),
+  });
 
   if (args.remote && !pr && !publishedMainPreflight) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
@@ -311,6 +303,36 @@ function readCodexInbox(prNumber) {
     updatedAt: parsed.updatedAt,
     url: parsed.url,
   };
+}
+
+export function loadCodexFeedback(input, readers = {}) {
+  if (!input.remote || (!input.pr && !input.publishedMainPreflight)) return null;
+
+  const readInbox = readers.readInbox ?? readCodexInbox;
+  const readThreads = readers.readThreads ?? readCodexReviewThreads;
+
+  if (input.pr) {
+    const reviewThreads = readThreads(input.pr.number);
+    if (reviewThreads.readable) {
+      return buildCodexFeedbackPreflight({
+        inbox: null,
+        prNumber: input.pr.number,
+        reviewThreads,
+      });
+    }
+
+    return buildCodexFeedbackPreflight({
+      inbox: readInbox(input.pr.number),
+      prNumber: input.pr.number,
+      reviewThreads,
+    });
+  }
+
+  return buildCodexFeedbackPreflight({
+    inbox: readInbox(null),
+    prNumber: null,
+    reviewThreads: null,
+  });
 }
 
 export function readCodexReviewThreads(prNumber, options = {}) {
