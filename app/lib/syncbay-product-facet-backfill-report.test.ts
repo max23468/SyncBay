@@ -62,7 +62,7 @@ test("classifies facet backfill rows without applying changes", () => {
         shopifyProductGid: "gid://shopify/Product/4",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(report.summary, {
@@ -107,7 +107,7 @@ test("keeps missing Shopify products and failed lookups out of applicable change
         shopifyProductGid: "gid://shopify/Product/2",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(
@@ -148,7 +148,7 @@ test("builds an apply plan only for missing approved facet metafields", () => {
         shopifyProductGid: "gid://shopify/Product/2",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(buildProductFacetApplyPlan(report), {
@@ -194,7 +194,7 @@ test("repairs legacy single-line facet metafields when values match the stable l
         shopifyProductGid: "gid://shopify/Product/1",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.equal(report.rows[0]?.status, "applicable");

@@ -57,7 +57,7 @@ Motivo per non sceglierlo ora: per una Shopify app embedded conviene seguire il 
 - I documenti restano framework-aware e devono riflettere i file generati reali
   quando descrivono superfici implementate.
 - Prima di upgrade o cambi strutturali bisogna verificare versione Shopify CLI,
-  template disponibile, requisiti account Shopify Partner/dev store e stato
+  template disponibile, requisiti account Shopify Partner/store pilota Numisleo e stato
   Vercel/Supabase effettivo.
 - Il piano tecnico deve evitare riferimenti rigidi a Remix se la scelta corrente e React Router.
 - I job devono essere progettati a batch piccoli, idempotenti e riprendibili; se i limiti serverless diventano stretti, il consumer queue potrà essere spostato su worker dedicato senza cambiare database o ORM.

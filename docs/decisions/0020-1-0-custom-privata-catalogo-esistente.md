@@ -8,7 +8,7 @@
 
 SyncBay ha superato la fase pilota tecnica: import reale, sync incrementale,
 dashboard embedded, conflitti, retention, runner cron e aggiornamento stock
-eBay da ordini Shopify pagati sono già presenti o verificati sul dev store.
+eBay da ordini Shopify pagati sono già presenti o verificati sul precedente ambiente pilota.
 
 Il prossimo passo non è ancora una pubblicazione Shopify App Store. L'obiettivo
 è una versione 1.0 abbastanza rifinita per essere usata su uno store Shopify

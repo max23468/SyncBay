@@ -135,7 +135,7 @@ Scope iniziali previsti:
 - `read_orders` per il webhook `orders/paid`, da attivare solo dopo
   approvazione Shopify protected customer data per la protezione disponibilità.
 - `write_orders` per la prova automatica controllata del trigger ordine pagato
-  via Admin `orderCreate` sul dev store, da mantenere solo se resta necessario
+  via Admin `orderCreate` sullo store pilota Numisleo, da mantenere solo se resta necessario
   ai gate operativi della distribuzione privata.
 - `read_files` e `write_files` per media prodotto.
 - token offline Shopify a scadenza con refresh automatico per i job automatici,

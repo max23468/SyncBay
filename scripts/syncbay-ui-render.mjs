@@ -16,7 +16,7 @@
  *   node scripts/syncbay-ui-render.mjs catalogo --fixture
  *   node scripts/syncbay-ui-render.mjs panoramica            # dati reali locali
  *
- * Privacy: lo shop collegato in pilota è il dev store di test. Gli HTML/PNG
+ * Privacy: i render versionabili usano esclusivamente fixture sintetiche. Gli HTML/PNG
  * prodotti restano in preview/shots/ (gitignorato), non vanno in repo.
  */
 

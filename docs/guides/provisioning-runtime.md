@@ -11,7 +11,7 @@ Provisioning minimo completato il 2026-05-09.
 Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. La pianificazione import può creare batch fino a 2.000
 listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
-dev store l'import reale ha completato 958 listing. Il runner copre import,
+precedente ambiente pilota l'import reale ha completato 958 listing. Il runner copre import,
 sync incrementale, update stock eBay da `orders/paid` nella custom app privata e
 rilevazione conflitti Shopify. Il primo cambio quantità reale eBay -> Shopify
 è stato verificato con rollback. Il runner stock Shopify -> eBay è stato
@@ -93,7 +93,7 @@ Note:
   `catalog_image_repair`.
 - La creazione automatica di un ordine test via Shopify Admin GraphQL richiede
   `write_orders` e un token offline; `shopify store execute` con il token CLI
-  disponibile non è sufficiente. Sul dev store la sessione offline include
+  disponibile non è sufficiente. Sul precedente ambiente pilota la sessione offline includeva
   `write_orders` e il trigger reale è stato verificato con `orderCreate` usando
   una transazione `SALE/SUCCESS`.
 - Prima di una prova reale `orders/paid`, usa
@@ -103,7 +103,7 @@ Note:
   utilizzabili, coda stock/sync e candidati con snapshot `EUR`.
   Se segnala solo `write_orders` mancante, il runtime webhook può ricevere
   `orders/paid`, ma il test automatico via Admin `orderCreate` richiede
-  reautorizzazione con quello scope o un ordine manuale nel dev store.
+  reautorizzazione con quello scope o un ordine manuale nel store pilota Numisleo.
 - Il runner automatico richiede sessioni Shopify offline a scadenza con
   `refreshToken`: le sessioni legacy senza `expires` non sono considerate sane
   perché le public app Shopify dovranno usare token offline a scadenza dal 1
@@ -173,8 +173,8 @@ Non salvarla in Git e non stamparla nei log.
 - schedule Supabase Cron `syncbay-maintain-supabase-internal-tables` applicata
   via migration; pulisce ogni giorno `cron.job_run_details` oltre 7 giorni e
   `net._http_response` oltre 1 giorno per limitare bloat interno Supabase.
-- retry reale verificato sul dev store con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
-- batch reale storico da 50 prodotti verificato sul dev store: job
+- retry reale verificato sul precedente ambiente pilota con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
+- batch reale storico da 50 prodotti verificato sul precedente ambiente pilota: job
   `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24
   riusi senza duplicati e mapping presenti per tutti i 50 `ItemID`; il runner
   automatico corrente spezza comunque i job eBay -> Shopify sopra 10 ItemID per
@@ -232,7 +232,7 @@ Scope Shopify richiesti dal runtime 1.0:
 - `read_orders` per ricevere `orders/paid` nella custom app privata e creare job
   prioritari `UPDATE_EBAY_STOCK`.
 - `write_orders` per creare una prova automatica controllata via Admin
-  `orderCreate` sul dev store; se manca dalla sessione offline, riaprire e
+  `orderCreate` sullo store pilota Numisleo; se manca dalla sessione offline, riaprire e
   autorizzare l'app Shopify dopo il deploy degli scope aggiornati.
 
 La schedule Cron attuale richiama il runner `/api/jobs/run-due?limit=2`. Il

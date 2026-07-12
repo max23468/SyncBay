@@ -19,14 +19,14 @@ test("normalizes a bounded product diagnostics payload", () => {
           "gid://shopify/Product/1",
           " gid://shopify/Product/2 ",
         ],
-        shopDomain: "syncbay-dev.myshopify.com",
+        shopDomain: "fixture-shop.myshopify.com",
       },
       { fallbackShopDomain: "fallback.myshopify.com" },
     ),
     {
       defaultLocationGid: "gid://shopify/Location/1",
       productGids: ["gid://shopify/Product/1", "gid://shopify/Product/2"],
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
     },
   );
 });

@@ -63,7 +63,7 @@ test("preserves real seller SKU even when it matches SyncBay fallback shape", ()
 test("keeps stock writes in dry-run unless a line is explicitly allowlisted", () => {
   const line = {
     ebayItemId: "168148953253",
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
     shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
     stockDryRunEnabled: true,
   };
@@ -72,7 +72,7 @@ test("keeps stock writes in dry-run unless a line is explicitly allowlisted", ()
   assert.equal(
     shouldDryRunEbayStockLine({
       ...line,
-      allowlist: "syncbay-dev.myshopify.com:168148953253",
+      allowlist: "fixture-shop.myshopify.com:168148953253",
     }),
     false,
   );
@@ -95,18 +95,18 @@ test("keeps stock writes in dry-run unless a line is explicitly allowlisted", ()
 test("matches stock real-write allowlist tokens narrowly", () => {
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist: "ebay:168148953253 syncbay-dev.myshopify.com:variant:48298582016222",
+      allowlist: "ebay:168148953253 fixture-shop.myshopify.com:variant:48298582016222",
       ebayItemId: "168148953253",
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
     }),
     true,
   );
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist: "168148953254 syncbay-dev.myshopify.com:variant:48298582016223",
+      allowlist: "168148953254 fixture-shop.myshopify.com:variant:48298582016223",
       ebayItemId: "168148953253",
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
     }),
     false,

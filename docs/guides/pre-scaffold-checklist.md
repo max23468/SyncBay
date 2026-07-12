@@ -15,7 +15,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 ## 2. Account Shopify
 
 - [x] Account Shopify Partner disponibile.
-- [x] Development store disponibile: `syncbay-dev.myshopify.com`.
+- [x] Ambiente pilota Shopify disponibile durante lo scaffold.
 - [x] Nome app custom confermato: `SyncBay`.
 - [x] Shopify CLI collegata all'app `SyncBay`.
 - [x] App URL provvisorio deciso: `https://syncbay.vercel.app`.
@@ -72,7 +72,7 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] `npm run build`
 - [x] `npm audit --omit=dev`
 - [x] `npx prisma validate`
-- [x] Installazione Shopify end-to-end sul dev store.
+- [x] Installazione Shopify end-to-end sul precedente ambiente pilota.
 - [ ] Primo deploy/preview Vercel.
 
 ## 8. Adattamento scaffold a SyncBay
@@ -81,4 +81,4 @@ Questa checklist traccia i prerequisiti chiusi prima dello scaffold e lo stato m
 - [x] Modello Prisma iniziale per shop, connessione eBay, job e audit log.
 - [x] Flusso OAuth eBay lato app: `/auth/ebay/start` e `/auth/ebay/callback`.
 - [x] Placeholder webhook Shopify: prodotti aggiornati e inventory levels aggiornati configurati; ordini pagati implementato lato route ma non ancora sottoscritto nel manifest.
-- [x] `.env.example` allineato a dev store, eBay sandbox e callback da completare.
+- [x] `.env.example` allineato all'ambiente pilota, eBay sandbox e callback da completare.

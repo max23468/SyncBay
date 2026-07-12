@@ -52,7 +52,7 @@ test("classifies category backfill rows without applying changes", () => {
         shopifyProductType: null,
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(report.summary, {
@@ -97,7 +97,7 @@ test("keeps rows without Shopify products or eBay data out of applicable changes
         shopifyProductType: null,
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(
@@ -128,7 +128,7 @@ test("uses a valid local proposal even when eBay lookup failed", () => {
         shopifyProductType: "Monete italiane",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(
@@ -163,7 +163,7 @@ test("builds an apply plan only from applicable category rows", () => {
         shopifyProductType: "Collezionismo numismatico",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(buildCategoryApplyPlan(report), {
@@ -258,7 +258,7 @@ test("can include known legacy mapper conflicts only when explicitly requested",
         shopifyProductType: "Medaglie",
       },
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.deepEqual(buildCategoryApplyPlan(report).rows, []);

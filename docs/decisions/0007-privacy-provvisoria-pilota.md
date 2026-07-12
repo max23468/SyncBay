@@ -8,7 +8,7 @@
 
 SyncBay deve configurare un RuName eBay production e, più avanti, completare il flusso OAuth eBay. eBay richiede una URL HTTPS di privacy policy per il RuName.
 
-Il prodotto è ancora in fase pilota: esiste un import draft controllato sul dev store, ma non esistono import catalogo completo, sync automatico, billing, pubblicazione Shopify App Store o onboarding pubblico. Serve quindi una pagina privacy pubblica minima e veritiera, sufficiente per configurazioni tecniche e pilota controllato, senza presentarla come policy legale definitiva per app pubblica.
+Il prodotto era ancora nella prima fase pilota: esisteva un import draft controllato sul precedente ambiente pilota, ma non esistevano import catalogo completo, sync automatico, billing, pubblicazione Shopify App Store o onboarding pubblico. Serviva quindi una pagina privacy pubblica minima e veritiera, sufficiente per configurazioni tecniche e pilota controllato, senza presentarla come policy legale definitiva per app pubblica.
 
 Vincoli:
 

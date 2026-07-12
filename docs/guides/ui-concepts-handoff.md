@@ -58,7 +58,7 @@ in calce la trascrizione testuale dei due thread recuperati.
   pianificazione import catalogo; `Impostazioni` mantiene i salvataggi sync,
   default prodotto e canali.
 - La QA visuale post-publish è stata eseguita nel contesto Shopify Admin
-  production del dev store con Safari/Computer Use sulle sei route embedded.
+  production del precedente ambiente pilota con Safari/Computer Use sulle sei route embedded.
   L'avvio standalone resta utile solo per debug locale: le superfici embedded
   vanno giudicate dentro Shopify Admin.
 
@@ -136,7 +136,7 @@ Confronto concept/implementazione:
 Deviazioni intenzionali dai PNG:
 
 - i mockup non sono pixel-perfect spec e mostrano dati fittizi; l'app usa dati
-  reali del dev store;
+  reali dell'ambiente collegato durante quella verifica;
 - il logo dei concept non è fonte di verità quando Image Gen lo reinterpreta;
 - Panoramica può mostrare conflitti reali invece di uno stato `Tutto sotto
   controllo`;

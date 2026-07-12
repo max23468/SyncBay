@@ -56,7 +56,7 @@ La baseline non deve contenere token, dati personali o segreti.
 
 ## Procedura raccomandata
 
-1. Selezionare un mapping attivo e sicuro dal dev store, preferendo un prodotto
+1. Selezionare un mapping attivo e sicuro dallo store pilota Numisleo, preferendo un prodotto
    non critico e con valuta `EUR`.
 2. Verificare che non ci siano job `UPDATE_EBAY_STOCK` o `SYNC_INCREMENTAL`
    attivi sullo stesso shop prima di iniziare.
@@ -106,7 +106,7 @@ Prima del test provider, eseguire almeno:
 - `git status --short`;
 - `npm run test:stock-guard`;
 - `npm run prisma:validate`;
-- review dei job con `npm run jobs:status -- --shop syncbay-dev.myshopify.com`.
+- review dei job con `npm run jobs:status -- --shop numisleo.myshopify.com`.
 
 Se cambiano codice o configurazione versionata, aggiungere anche `npm run
 typecheck`, `npm run lint` e `npm run build` secondo rischio.
