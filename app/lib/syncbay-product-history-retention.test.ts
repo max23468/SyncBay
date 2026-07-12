@@ -1,0 +1,34 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+// @ts-expect-error Node --experimental-strip-types resolves this test import.
+import * as retention from "./syncbay-product-history-retention.ts";
+
+const {
+  buildProductHistoryRetentionPlan,
+  getOperationalMaintenanceKey,
+  shouldCreateWeeklyCheckpoint,
+} = retention;
+
+test("keeps dense events for 30 days and checkpoints for 180", () => {
+  assert.deepEqual(
+    buildProductHistoryRetentionPlan(new Date("2026-07-10T00:00:00Z")),
+    {
+      eventCutoff: new Date("2026-06-10T00:00:00.000Z"),
+      checkpointCutoff: new Date("2026-01-11T00:00:00.000Z"),
+    },
+  );
+});
+
+test("uses one UTC maintenance key per day", () => {
+  assert.equal(
+    getOperationalMaintenanceKey(new Date("2026-07-10T23:59:59Z")),
+    "operational-maintenance:2026-07-10",
+  );
+});
+
+test("creates at most one changed checkpoint per mapping source and week", () => {
+  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: null, nextDigest: "a" }), true);
+  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "a" }), false);
+  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "b" }), true);
+});

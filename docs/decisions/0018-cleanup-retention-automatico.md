@@ -28,16 +28,19 @@ Vincoli:
 
 ## Decisione
 
-Il cleanup retention diventa automatico ed è eseguito nel tick del cron job
+Il cleanup retention diventa automatico ed è richiamato nel tick del cron job
 esistente (`runDueSyncJobs`, invocato da `api.jobs.run-due` via Supabase Cron),
 senza nuovi worker né workflow.
 
 - La pianificazione dei cutoff è deterministica e testata
   (`app/lib/syncbay-retention-cleanup.ts`), separata dall'esecuzione.
-- L'esecuzione distruttiva vive in `app/services/retention-cleanup.server.ts`:
-  per ogni area cancella i record con timestamp anteriore o uguale al cutoff. È
-  idempotente, quindi può girare a ogni tick; dopo il primo allineamento tocca
-  solo i pochi record appena scaduti.
+- `runDailyOperationalMaintenance` usa una chiave UTC giornaliera in
+  `MaintenanceRun`: il runner può invocarlo a ogni tick, ma checkpoint e
+  cancellazioni vengono eseguiti una sola volta al giorno. Run fallite o stale
+  oltre 30 minuti sono reclamabili con tentativo incrementato.
+- La storia prodotto crea prima checkpoint settimanali completi e poi cancella
+  snapshot evento oltre 30 giorni in batch massimi da 1.000. Snapshot mappate
+  senza checkpoint completo restano fino a 180 giorni.
 - I job vengono cancellati solo se in stato terminale
   (`SUCCEEDED`/`FAILED`/`CANCELLED`), per non rimuovere lavoro ancora in coda.
 - I job `SUCCEEDED`, già coperti da audit sintetico e snapshot quando
@@ -57,11 +60,9 @@ senza nuovi worker né workflow.
   pianificazione (dry-run) senza cancellare.
 - I conteggi rimossi sono loggati e inclusi nella risposta del cron, così la
   cancellazione resta osservabile.
-- La manutenzione delle tabelle interne Supabase non contenenti dati
-  applicativi (`cron.job_run_details` e `net._http_response`) è separata dalla
-  retention SyncBay: una migration crea un cron giornaliero
-  `syncbay-maintain-supabase-internal-tables` che conserva 7 giorni di dettagli
-  `pg_cron` e 1 giorno di risposte `pg_net`.
+- La maintenance conserva 14 giorni di `cron.job_run_details`; non forza
+  `VACUUM FULL` e non interviene su `net._http_response` senza crescita live
+  dimostrata.
 
 ## Conseguenze
 
@@ -82,8 +83,8 @@ senza nuovi worker né workflow.
   vantaggi rispetto all'esecuzione idempotente nel tick esistente.
 - **Solo dry-run/report senza cancellazione**: scartato perché non chiude il
   punto aperto di ADR 0017 e non rispetta la richiesta di attivazione.
-- **Guardia giornaliera esplicita**: non necessaria, perché la cancellazione per
-  cutoff è già idempotente e a basso costo dopo il primo allineamento.
+- **Cancellazione completa a ogni tick**: superata perché produceva query
+  distruttive ogni cinque minuti senza valore operativo.
 
 ## Riferimenti
 

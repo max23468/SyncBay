@@ -68,6 +68,7 @@ import type {
   ImportPreviewResult,
 } from "./import-preview.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
+import { recordProductSnapshotsInTransaction } from "./product-history.server";
 import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 
 // Tag Shopify applicato ai prodotti il cui listing eBay è diventato inattivo:
@@ -3215,8 +3216,7 @@ async function recordDraftImportPersistence(input: {
           },
         });
 
-        await tx.productSnapshot.createMany({
-          data: [
+        await recordProductSnapshotsInTransaction(tx, [
             { ...ebaySnapshot, mappingId: mapping.id },
             buildSyncBayProductSnapshot({
               draftProduct: pair.draftProduct,
@@ -3229,8 +3229,7 @@ async function recordDraftImportPersistence(input: {
               result: pair.result,
               shopId: input.shopId,
             }),
-          ],
-        });
+        ]);
       }),
     );
   });

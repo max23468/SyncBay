@@ -6,11 +6,20 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- La storia prodotto usa una baseline durevole a doppia scrittura, checkpoint
+  settimanali compatti e maintenance giornaliera idempotente: i conflitti non
+  dipendono più dalla conservazione indefinita degli snapshot evento.
+- Aggiunti backfill resumibile, budget storage database e controllo provider
+  aggregato per governare i limiti gratuiti di Supabase e Vercel.
+
 ### Non versionato
 
 - Rimossi dal repository i riferimenti operativi al vecchio store Shopify e
   riallineati documentazione, esempi e fixture allo store pilota Numisleo o a
   domini sintetici nei test.
+- Chiusa l'Ondata B dopo il checkpoint aggregato di 24 ore sul backlog conflitti.
 
 ## [1.0.55] — 2026-07-12
 

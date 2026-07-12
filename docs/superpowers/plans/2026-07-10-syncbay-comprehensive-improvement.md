@@ -638,7 +638,7 @@ npm run quality:react-doctor
 
 Expected: tutti verdi; i test server dimostrano un'unica lettura Shopify batch e transizioni complete per ogni job.
 
-- [ ] **Step 6: Verificare il rollout live dell'Ondata B** — aperto solo sul punto 4 (finestra 24h)
+- [x] **Step 6: Verificare il rollout live dell'Ondata B**
 
 Dopo merge/release/deploy:
 
@@ -649,7 +649,17 @@ Dopo merge/release/deploy:
 5. controllare che conflitti reali e `mapping_not_found` restino distinguibili;
 6. non dichiarare recovery solo perché i conflitti aperti sono zero.
 
-Esito parziale 2026-07-12: (1) dry-run coalesce su Numisleo → 0 job duplicati cancellabili, backlog già drenato, apply non necessario; (2) tick cron osservati dal vivo alle ~07:59/08:00/08:05 con job processati regolarmente; (3) job dovuti pending = 0, quindi job più vecchio ben sotto i 15 min; (5) il test controllato ha prodotto un conflitto `quantity` reale legato a un mapping (non `mapping_not_found`), poi auto-risolto; (6) recovery non dichiarata solo da conflitti a zero. **Resta aperto solo il punto 4:** osservazione backlog per 24h avviata il 2026-07-12 ~08:00 UTC, da confermare dopo il 2026-07-13 ~08:00 UTC. Fino ad allora l'Ondata B non è dichiarata chiusa.
+Esito parziale 2026-07-12: (1) dry-run coalesce su Numisleo → 0 job duplicati cancellabili, backlog già drenato, apply non necessario; (2) tick cron osservati dal vivo alle ~07:59/08:00/08:05 con job processati regolarmente; (3) job dovuti pending = 0, quindi job più vecchio ben sotto i 15 min; (5) il test controllato ha prodotto un conflitto `quantity` reale legato a un mapping (non `mapping_not_found`), poi auto-risolto; (6) recovery non dichiarata solo da conflitti a zero. Restava aperto il punto 4, verificato nel checkpoint finale seguente su una finestra mobile completa di 24 ore.
+
+Esito finale 2026-07-12: la finestra aggregata delle 24 ore precedenti ha
+registrato `1.157` job `DETECT_SHOPIFY_CHANGES` creati e `1.156` già terminali;
+al checkpoint restava un solo job dovuto da `236 s`, quindi sotto il target di
+15 minuti. Le ore con intake sostenuto (`80-120` job/ora) mostravano lo stesso
+numero di job terminali creati, mentre gli esiti restavano distinguibili:
+`1.142 conflict_resolved`, `10 noop`, `4 conflict_opened` e
+`1 mapping_not_found`. Il backlog non è quindi cresciuto monotonamente e
+l'Ondata B è chiusa. La consegna controllata `inventory_levels/update` resta
+coperta dalla prova Shopify già registrata nel Task 3; non è stata ripetuta.
 
 - [x] **Step 7: Committare**
 

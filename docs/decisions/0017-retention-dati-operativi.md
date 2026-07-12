@@ -32,7 +32,9 @@ La retention operativa del pilota viene fissata così:
 | Audit log operativi | 180 giorni | Tracciabilità azioni, retry, connessioni e diagnosi negoziante. |
 | Job sync/import riusciti | 45 giorni | Esiti positivi recenti per diagnostica, con baseline conservate in snapshot e audit sintetici. |
 | Job sync/import | 90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito. |
-| Snapshot prodotto | 180 giorni | Conflitti, rollback e confronto con ultimo valore scritto da SyncBay. |
+| Baseline prodotto corrente | Durata del mapping | Stato durevole usato da conflitti e viste correnti; non dipende dalla storia evento. |
+| Snapshot prodotto evento | 30 giorni | Diagnostica e timeline recente ad alta densità. |
+| Checkpoint prodotto settimanale | 180 giorni | Rollback storico compatto, solo quando completo e diverso dal checkpoint precedente. |
 | State OAuth temporanei | 7 giorni | Anti-CSRF e debugging breve del flusso OAuth senza conservare stato vecchio. |
 | Richieste eBay account deletion senza match | 7 giorni | Notifiche eBay non collegate ad alcuno shop del pilota, utili solo per deduplica e diagnostica breve. |
 | Richieste eBay account deletion | 365 giorni | Idempotenza, compliance e prova di gestione richiesta senza payload raw. |
@@ -53,6 +55,14 @@ baseline di sync: gli audit `SHOPIFY_WEBHOOK_RECEIVED` durano 30 giorni e i
 giorni; i job falliti, cancellati o ancora attivi restano nella finestra
 ordinaria di 90 giorni. I marker durevoli che impediscono di ripetere un facet
 backfill già completato sono esclusi dal cleanup dei job riusciti.
+
+Dal rollout dell'Ondata D, `ProductSyncBaseline` riceve la stessa scrittura
+degli snapshot e resta finché esiste il mapping. `ProductSnapshotCheckpoint`
+conserva al massimo un record per mapping, sorgente e settimana UTC. Un payload
+oltre 64 KiB produce un checkpoint incompleto: in quel caso la snapshot sorgente
+non viene cancellata prima dei 180 giorni. La compattazione resta disabilitabile
+con il kill switch della retention e viene autorizzata solo dopo backfill e
+verifica dei reader sulla baseline.
 
 ## Conseguenze
 
