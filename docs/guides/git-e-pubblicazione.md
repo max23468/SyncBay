@@ -54,11 +54,14 @@ Percorso standard per lavori non banali:
 3. mantieni il diff focalizzato;
 4. esegui le verifiche locali rilevanti;
 5. esegui `npm run review:pre-pr -- --base origin/main`, fai self-review del
-   diff e correggi i problemi chiari prima di aprire o sincronizzare la PR;
-6. apri PR verso `main` usando il template;
-7. controlla eventuali review thread Codex della PR corrente e il preflight remoto;
-8. mergea quando la PR è pronta;
-9. elimina branch remoto e branch locale quando il lavoro è assorbito.
+   diff e correggi i problemi chiari;
+6. esegui `npm run verify:changed -- --base origin/main`, che seleziona e
+   deduplica la corsia applicabile;
+7. apri PR verso `main` usando il template;
+8. controlla eventuali review thread Codex della PR corrente con
+   `npm run verify:publish -- --remote`;
+9. mergea quando la PR è pronta;
+10. elimina branch remoto e branch locale quando il lavoro è assorbito.
 
 Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `BRAND.md`, `docs/**` o altri documenti canonici e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
 
@@ -149,18 +152,23 @@ Il workflow:
 - evita aggiornamenti della issue quando il contenuto non cambia.
 
 Prima di mergiare una PR non banale, controllare i review thread Codex della PR
-corrente. Il preflight remoto usa i thread GitHub della PR come fonte primaria
-e la `Codex feedback inbox` come fallback/dashboard globale. Thread actionable
-su altre PR non bloccano la pubblicazione corrente: restano avvisi e vanno
-gestiti nel loro filone.
+corrente. Il preflight remoto usa i thread GitHub come fonte primaria e legge
+la `Codex feedback inbox` solo se i thread non sono disponibili o durante il
+controllo post-merge su `main`. La inbox resta la dashboard globale del
+workflow, ma thread di altre PR non vengono riletti nel preflight della PR
+corrente.
 
 ## Docs-only
 
 Per modifiche puramente documentali:
 
-- `git diff --check` e review del contenuto sono sufficienti;
+- `npm run verify:changed -- --base origin/main` seleziona la corsia
+  `git diff --check`; review del contenuto e questo check sono sufficienti;
 - non inventare test applicativi;
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
+
+Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
+React Doctor e Doppler non partono quando nessun path di loro competenza cambia.
 
 ## Check prima della chiusura
 

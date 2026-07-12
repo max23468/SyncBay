@@ -97,6 +97,9 @@ il runtime repo resta `>=24.15 <25`.
 | Doctor locale                 | `npm run doctor:local`                                                                      |
 | Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
+| Verifica automatica del diff  | `npm run verify:changed -- --base origin/main`                                              |
+| Verifica runtime completa     | `npm run verify:full [-- --force]`                                                          |
+| Verifica pubblicazione        | `npm run verify:publish -- --remote`                                                        |
 | Diagnostica job import        | `npm run jobs:status -- --shop <shop.myshopify.com>`                                   |
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
 | Budget storage database       | `npm run db:storage-budget`                                                                 |
@@ -119,6 +122,7 @@ il runtime repo resta `>=24.15 <25`.
 | Doctor collezioni             | `npm run collections:doctor -- --shop <shop.myshopify.com> [--intent-file f.json] [--json] [--limit-products N]` |
 | Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`             |
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
+| Test script e workflow        | `npm run test:tooling`                                                                      |
 | React Doctor                  | `npm run quality:react-doctor`                                                              |
 | Release dry-run               | `npm run release:dry-run`                                                                   |
 | Release locale                | `npm run release`                                                                           |
@@ -136,21 +140,38 @@ contratto proporzionato al rischio ed esegui `npm run test:runtime`.
 `npm run build` esegue `npm run prisma:generate` tramite `prebuild`, mantenendo
 il Prisma Client allineato allo schema anche nei deploy con cache installazione.
 
+I comandi standalone `build`, `typecheck` e `test:services` mantengono la
+generazione Prisma preventiva. `npm run verify:full` genera invece Prisma una
+sola volta e usa le varianti interne `*:raw`; usa `coverage:lib` come unica
+esecuzione dei test puri, poi esegue i test servizi, evitando duplicazioni.
+
+`verify:changed` e `verify:full` salvano ricevute ignorate da Git in
+`.cache/syncbay-verification/`. Una ricevuta viene riusata solo se fingerprint
+di diff, file untracked, lockfile, Node e lista comandi è invariato. `--force`
+impone una prova fresca; `--no-receipt` è la modalità CI. Check con placeholder
+o provider live restano esplicitamente manuali e non vengono memorizzati.
+
 ## Verifiche per tipo di modifica
 
 | Tipo modifica                                                       | Verifiche proporzionate                                                                                                                                |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Docs-only                                                           | Review contenuto e `git diff --check`                                                                                                                  |
-| Pre-PR non banale                                                   | `npm run review:pre-pr -- --base origin/main`, poi chiusura dei punti emersi e verifiche proporzionate al diff                                        |
-| Runtime TypeScript/UI                                               | `npm run typecheck`, `npm run lint`, `npm run build`                                                                                                   |
-| Moduli `app/services` o CI runtime                                  | `npm run test:runtime`, poi `npm run coverage:lib`, `npm run typecheck`, `npm run lint`                                                                |
-| Moduli puri `app/lib` o audit coverage SyncBay                      | `npm run test:lib`, `npm run coverage:lib`, poi `npm run typecheck`, `npm run lint` quando pertinenti                                                  |
-| Pubblicazione/merge PR                                              | `npm run doctor:local`, `npm run publish:preflight -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry |
+| Docs-only                                                           | Review contenuto e `npm run verify:changed -- --base origin/main`                                                                                      |
+| Pre-PR non banale                                                   | `npm run review:pre-pr -- --base origin/main`, chiusura dei punti emersi, poi `npm run verify:changed -- --base origin/main`                           |
+| Runtime TypeScript/UI ordinario                                     | `npm run verify:changed -- --base origin/main`; aggiungere verifica browser quando cambia il comportamento visibile                                    |
+| Moduli `app/services`, runtime condiviso o CI                        | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                                                       |
+| Moduli puri `app/lib`                                               | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                                                  |
+| Pubblicazione/merge PR                                              | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry                            |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor` con la dev dependency locale `react-doctor`                                                                             |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
 | Prisma/database                                                     | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                                                 |
 | Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |
 | Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
+
+La CI mantiene un unico job conclusivo: per diff docs-only esegue soltanto
+`git diff --check`; per diff runtime installa le dipendenze ed esegue
+`verify:full -- --no-receipt`. React Doctor e Doppler usano filtri path dedicati.
+CodeQL resta gestito dalla configurazione GitHub e può continuare a partire
+anche per cambi documentali.
 
 ## Deploy e release
 

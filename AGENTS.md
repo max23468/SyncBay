@@ -162,6 +162,24 @@ Usa la matrice e i comandi correnti in `docs/TOOLCHAIN.md`:
 Non dichiarare test o verifiche non eseguiti. Prima di commit o PR fai
 self-review dell'intero diff pertinente.
 
+### Stop condition e riuso delle verifiche
+
+- Non eseguire in parallelo nello stesso worktree comandi che scrivono
+  `node_modules`, cache, build, typegen o Prisma Client. I gate repo vanno
+  eseguiti in serie.
+- Se lo stesso comando fallisce due volte con lo stesso errore, fermati e cambia
+  ipotesi diagnostica. Un terzo tentativo identico richiede nuova evidenza o una
+  modifica concreta allo stato.
+- Dopo merge, rebase o cambio di `package-lock.json`, riallinea checkout,
+  dipendenze e Prisma Client prima di classificare un errore come regressione.
+- `npm run verify:changed` sceglie ed esegue la corsia minima sicura;
+  `npm run verify:full` esegue i gate runtime completi una sola volta. Le
+  ricevute locali sono riusabili solo finché diff, lockfile, Node e lista dei
+  comandi mantengono lo stesso fingerprint; usa `--force` quando serve una
+  prova fresca.
+- Non riusare ricevute per provider, database, browser, deploy o altri controlli
+  live: questi restano verifiche fresche e dichiarate.
+
 ## Git, pubblicazione e release
 
 Segui `docs/guides/git-e-pubblicazione.md` e
@@ -184,7 +202,8 @@ Segui `docs/guides/git-e-pubblicazione.md` e
   ADR 0008; docs e governance non versionati non richiedono tag;
 - prima di PR ready, merge, publish, deploy o release esegui il preflight remoto
   e controlla i review thread Codex della PR corrente. La `Codex feedback
-  inbox` è dashboard/fallback e i thread di altre PR non bloccano il filone;
+  inbox` è fallback e controllo post-merge; i thread di altre PR non entrano
+  nel preflight del filone corrente;
 - non avviare billing o pubblicazione Shopify App Store senza decisione
   esplicita. Non attivare nuovi negozi, account o integrazioni provider
   produttive senza conferma.
