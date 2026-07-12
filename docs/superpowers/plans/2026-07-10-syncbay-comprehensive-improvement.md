@@ -920,7 +920,7 @@ git commit -m "fix: centralize Shopify Admin retries"
 - Consumes: snapshot parziali prodotte da import, sync, stock e takeover.
 - Produces: `ProductSyncBaseline` durevole per conflitti/current state, `ProductSnapshotCheckpoint` per rollback storico compatto e `MaintenanceRun` per cadenza giornaliera idempotente.
 
-- [ ] **Step 1: Scrivere test rossi della semantica patch**
+- [x] **Step 1: Scrivere test rossi della semantica patch**
 
 Definire `undefined = preserva`, `null = cancella`, valore = aggiorna:
 
@@ -936,7 +936,7 @@ test("merges partial baseline patches without clearing absent fields", () => {
 });
 ```
 
-- [ ] **Step 2: Aggiungere i modelli additivi**
+- [x] **Step 2: Aggiungere i modelli additivi**
 
 `ProductSyncBaseline` usa questo schema:
 
@@ -1017,7 +1017,7 @@ Aggiungere anche le relazioni inverse a `ProductMapping` e `Shop`: baseline sing
 
 `checkpointWeek` è il lunedì UTC della settimana. Si crea al massimo un checkpoint per mapping/sorgente/settimana e solo quando lo stato differisce dal checkpoint precedente. `payload` viene costruito con un'allowlist dei soli valori necessari al rollback, con limite serializzato di 64 KiB e divieto assoluto di token o payload provider grezzi. Se i valori reversibili — per esempio una descrizione HTML o un manifesto media — superano il limite, il checkpoint viene marcato incompleto e la snapshot sorgente non può essere cancellata prima dei 180 giorni. La maintenance espone `uncompactedOversizeCount`, così la compattazione non riduce silenziosamente la capacità di rollback.
 
-- [ ] **Step 3: Implementare un solo modulo di storia**
+- [x] **Step 3: Implementare un solo modulo di storia**
 
 Esportare:
 
@@ -1055,7 +1055,7 @@ export async function recordProductHistory(input: {
 
 `recordProductHistory` deve scrivere baseline e snapshot nella stessa transazione. Il modulo server riceve un Prisma port in test per non dipendere dal database reale.
 
-- [ ] **Step 4: Portare tutti i writer in dual-write**
+- [x] **Step 4: Portare tutti i writer in dual-write**
 
 Sostituire le scritture dirette nei tre servizi con `recordProductHistory`, preservando:
 
@@ -1067,7 +1067,7 @@ Sostituire le scritture dirette nei tre servizi con `recordProductHistory`, pres
 
 Durante questa fase i reader restano sulle snapshot con fallback invariato: il rollout deve essere reversibile.
 
-- [ ] **Step 5: Creare backfill baseline resumibile**
+- [x] **Step 5: Creare backfill baseline resumibile**
 
 Lo script deve leggere in batch da 500 mapping, ricostruire l'ultimo valore per campo con la stessa semantica attuale e accettare:
 
@@ -1085,7 +1085,7 @@ Aggiungere:
 "product-baselines:backfill": "tsx scripts/syncbay-backfill-product-baselines.mjs"
 ```
 
-- [ ] **Step 6: Verificare e committare**
+- [x] **Step 6: Verificare e committare**
 
 Run:
 
@@ -1110,9 +1110,18 @@ git add prisma/schema.prisma prisma/migrations app/lib/syncbay-product-baseline.
 git commit -m "feat: add durable product sync baselines"
 ```
 
-- [ ] **Step 7: Rollout dual-write**
+- [x] **Step 7: Rollout dual-write**
 
 Dopo deploy: applicare migration, eseguire backfill dry-run/apply, verificare che ogni mapping attivo con snapshot `SYNCBAY` abbia baseline, osservare un tick cron e un sync reale controllato. Non iniziare Task 8 finché baseline e snapshot non risultano coerenti.
+
+Esito 2026-07-12: migration additiva applicata con prova preliminare in
+transazione e rollback; backfill eseguito in batch `500 + 484`; `984/984`
+mapping hanno una baseline e i mapping attivi senza baseline sono `0`. Reader,
+writer e fallback compatibile sono stati pubblicati con cleanup distruttivo
+inizialmente disabilitato. Il tick cron successivo al rollout ha continuato a
+processare il runner; la consegna inventory controllata su Numisleo era già
+stata verificata con successo nel checkpoint dell'Ondata B e non è stata
+ripetuta.
 
 ---
 
@@ -1140,7 +1149,7 @@ Dopo deploy: applicare migration, eseguire backfill dry-run/apply, verificare ch
 - Consumes: baseline/checkpoint dual-write verificati nel Task 7.
 - Produces: storia evento densa 30 giorni, checkpoint settimanali sparsi per 180 giorni, reader basati su baseline/checkpoint, retention globale una volta al giorno, pruning `cron.job_run_details` e gate storage/provider.
 
-- [ ] **Step 1: Scrivere test rossi del piano di retention**
+- [x] **Step 1: Scrivere test rossi del piano di retention**
 
 ```ts
 test("keeps dense events for 30 days and checkpoints for 180", () => {
@@ -1156,7 +1165,7 @@ test("keeps dense events for 30 days and checkpoints for 180", () => {
 
 Testare anche che la stessa chiave giornaliera non venga eseguita due volte e che due snapshot identiche nella stessa settimana producano un solo checkpoint.
 
-- [ ] **Step 2: Spostare i reader prima di autorizzare cancellazioni**
+- [x] **Step 2: Spostare i reader prima di autorizzare cancellazioni**
 
 Prima della compattazione:
 
@@ -1168,7 +1177,7 @@ Prima della compattazione:
 
 La cancellazione del Task 8 non può essere abilitata finché questi test e il controllo live non sono verdi.
 
-- [ ] **Step 3: Implementare maintenance giornaliera idempotente**
+- [x] **Step 3: Implementare maintenance giornaliera idempotente**
 
 Esportare:
 
@@ -1193,7 +1202,7 @@ Algoritmo obbligatorio:
 
 Il runner continua a chiamare la funzione a ogni tick, ma otto `deleteMany` vengono eseguiti solo una volta al giorno.
 
-- [ ] **Step 4: Creare comando dry-run/apply per la prima compattazione**
+- [x] **Step 4: Creare comando dry-run/apply per la prima compattazione**
 
 ```json
 "history:maintain": "node scripts/syncbay-product-history-maintenance.mjs",
@@ -1220,7 +1229,7 @@ Se una metrica non è esposta via API/CLI sul piano corrente, lo script restitui
 
 Lo script non decide l'idoneità contrattuale. Registrare separatamente piano/account Vercel effettivo e uso commerciale sì/no: se il progetto production è Hobby e l'uso è commerciale, `provider:budget` deve riportare `plan_eligibility: blocked` anche con consumi bassi.
 
-- [ ] **Step 5: Aggiornare policy e rollback**
+- [x] **Step 5: Aggiornare policy e rollback**
 
 ADR 0017 deve distinguere:
 
@@ -1232,7 +1241,7 @@ ADR 0018 deve sostituire “delete a ogni tick” con maintenance giornaliera. `
 
 Aggiornare `docs/data-model.md` con la timeline unificata, il significato di `isComplete` e la regola che impedisce di cancellare snapshot non sostituite da checkpoint reversibili.
 
-- [ ] **Step 6: Verificare localmente**
+- [x] **Step 6: Verificare localmente**
 
 Run:
 
@@ -1264,7 +1273,23 @@ Expected: tutti verdi; dry-run non modifica dati.
 9. verificare che `cron.job_run_details` mantenga al massimo 14 giorni e che la maintenance non accumuli dead tuple senza controllo; affidarsi ad autovacuum e monitorare il rapporto dead/live, senza automatizzare `VACUUM FULL`;
 10. controllare egress Supabase e consumo Vercel alle soglie 70/85/95%; considerare chiuso il rilievo quando la crescita DB non supera il 5% settimanale, il database resta sotto 400 MB e nessuna quota provider è in fascia urgente.
 
-- [ ] **Step 8: Committare**
+Esito immediato 2026-07-12: size iniziale `383.872.147` byte (`366,1 MiB`,
+warning ma sotto la soglia urgente di `400 MiB`); dry-run e SQL reale validati
+in transazione con rollback; snapshot oltre 30 giorni `0`, quindi il primo
+apply non aveva dati da cancellare né checkpoint da creare. Il flag production
+è stato attivato e il tick naturale delle `20:40 UTC` ha registrato
+`operational-maintenance:2026-07-12` come `SUCCEEDED`, tentativo `1`, con
+conteggi a zero. La prova sintetica snapshot/checkpoint ha confrontato tutti i
+campi reversibili con esito uguale e ha lasciato `0` record persistiti. Baseline
+`984`, mapping attivi senza baseline `0`, checkpoint incompleti `0`, dead tuple
+`ProductSnapshot=0`, finestra cron osservata inferiore a 14 giorni e nessun
+`5xx` Vercel nel post-rollout. `provider:budget` conferma database in warning;
+egress, file storage, consumi Vercel e idoneità contrattuale restano
+`unknown` dove le API del piano non espongono misure affidabili. Restano da
+registrare i checkpoint temporali a 24 ore e 7 giorni prima di spuntare questo
+step e chiudere il rilievo di crescita/quota.
+
+- [x] **Step 8: Committare**
 
 ```bash
 git add app/lib/syncbay-product-history-retention.ts app/lib/syncbay-product-history-retention.test.ts app/services/product-history.server.ts app/services/shopify-conflict-detection.server.ts app/services/retention-cleanup.server.ts app/services/sync-job-runner.server.ts app/services/syncbay.server.ts scripts/syncbay-product-history-maintenance.mjs scripts/syncbay-db-storage-budget.mjs scripts/syncbay-provider-budget.mjs scripts/syncbay-egress-budget.mjs package.json .env.example docs/data-model.md docs/decisions/0017-retention-dati-operativi.md docs/decisions/0018-cleanup-retention-automatico.md
