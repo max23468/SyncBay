@@ -95,6 +95,8 @@ il runtime repo resta `>=24.15 <25`.
 | Advisor Supabase              | `npm run db:verify`                                                                         |
 | Servizi HTTP Supabase         | `npm run supabase:services`                                                                 |
 | Doctor locale                 | `npm run doctor:local`                                                                      |
+| Creazione worktree            | `npm run worktree:create -- --branch codex/<tema> [--base origin/main] [--dry-run]`         |
+| Ripresa setup worktree        | `npm run worktree:prepare`                                                                  |
 | Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
 | Verifica automatica del diff  | `npm run verify:changed -- --base origin/main`                                              |
@@ -151,6 +153,25 @@ evitando duplicazioni.
 di diff, file untracked, lockfile, Node e lista comandi è invariato. `--force`
 impone una prova fresca; `--no-receipt` è la modalità CI. Check con placeholder
 o provider live restano esplicitamente manuali e non vengono memorizzati.
+
+### Creazione worktree
+
+Dal checkout principale usa:
+
+```bash
+npm run worktree:create -- --branch codex/<tema>
+```
+
+Il comando usa `origin/main` come base esplicita, deriva il percorso
+`.worktrees/<tema>` e fallisce prima di modificare Git se è già dentro una
+worktree, la directory non è ignorata, il ref base manca oppure branch o
+percorso collidono. `--dry-run` mostra il piano senza creare nulla.
+
+Dopo `git worktree add`, il setup esegue in serie `npm install`, una sola
+generazione Prisma, doctor locale, test delle librerie e test dei servizi raw;
+alla fine richiede un checkout pulito. Se uno step fallisce, la worktree viene
+lasciata ispezionabile e il setup si riprende al suo interno con
+`npm run worktree:prepare`, senza una seconda creazione o retry ciechi.
 
 ## Verifiche per tipo di modifica
 

@@ -50,13 +50,18 @@ perimetro richiede conferma esplicita e ADR.
 3. Se il checkout sporco si sovrappone al task, usa un branch/worktree dedicato
    da una base pulita oppure chiedi conferma; per file non sovrapposti puoi
    lavorare nello stesso checkout dichiarandolo nel riepilogo.
-4. Per lavori non banali leggi `docs/CONTEXT.md`. Usa `docs/INDEX.md` solo per
+4. Per creare una worktree SyncBay usa dal checkout principale
+   `npm run worktree:create -- --branch codex/<tema>`: il comando verifica
+   isolamento, base, ignore e collisioni, poi installa dipendenze, genera
+   Prisma e lancia la baseline in serie. Se il setup viene interrotto, entra
+   nella worktree e usa `npm run worktree:prepare`; non ricrearla alla cieca.
+5. Per lavori non banali leggi `docs/CONTEXT.md`. Usa `docs/INDEX.md` solo per
    trovare una fonte e, se serve memoria routata, `.mex/ROUTER.md`; apri poi
    soltanto documenti, contesti e pattern pertinenti al task.
-5. Per architettura, refactor o integrazioni verifica anche ADR, configurazione
+6. Per architettura, refactor o integrazioni verifica anche ADR, configurazione
    e codice interessati. Per informazioni variabili su provider, API, policy,
    piani, billing o compliance usa fonti ufficiali aggiornate.
-6. Se scope, comportamento atteso, rischio, deploy o release sono ambigui in
+7. Se scope, comportamento atteso, rischio, deploy o release sono ambigui in
    modo sostanziale, fai una domanda mirata prima di procedere.
 
 La memoria `.mex/` è un indice locale, non una fonte superiore. Se contraddice
@@ -172,6 +177,9 @@ self-review dell'intero diff pertinente.
   modifica concreta allo stato.
 - Dopo merge, rebase o cambio di `package-lock.json`, riallinea checkout,
   dipendenze e Prisma Client prima di classificare un errore come regressione.
+- Non creare una worktree da un'altra worktree e non ripetere `git worktree
+  add` dopo un setup incompleto: usa il preflight del comando canonico e
+  riprendi con `npm run worktree:prepare`.
 - `npm run verify:changed` sceglie ed esegue la corsia minima sicura;
   `npm run verify:full` esegue i gate runtime completi una sola volta. Le
   ricevute locali sono riusabili solo finché diff, lockfile, Node e lista dei

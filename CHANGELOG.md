@@ -27,7 +27,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie
   proporzionate e ricevute locali, doctor dei worktree, CI docs-only, preflight
-  Codex direct-first, stop condition e mappa operativa dei servizi runtime.
+  Codex direct-first, creazione worktree con preflight e setup seriale
+  riprendibile, stop condition e mappa operativa dei servizi runtime.
 - Ridotto il contesto operativo per agenti: semplificati `AGENTS.md`, README,
   handoff, roadmap, decisioni aperte, indice e toolchain; piani storici, memoria
   mex e dettagli di manutenzione sono ora instradati solo quando pertinenti,

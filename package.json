@@ -51,6 +51,8 @@
     "db:verify": "npm run db:advisors:security && npm run db:advisors:performance",
     "supabase:services": "node --experimental-strip-types scripts/syncbay-supabase-services-health.mjs",
     "doctor:local": "node scripts/syncbay-local-doctor.mjs",
+    "worktree:create": "node scripts/syncbay-worktree.mjs create",
+    "worktree:prepare": "node scripts/syncbay-worktree.mjs prepare",
     "review:pre-pr": "node scripts/syncbay-pre-pr-self-review.mjs",
     "publish:preflight": "node scripts/syncbay-publish-preflight.mjs",
     "verify:changed": "node scripts/syncbay-verify.mjs changed",
