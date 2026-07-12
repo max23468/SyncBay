@@ -88,6 +88,7 @@ SyncBay/
       ...
     guides/
       architettura.md
+      comandi-manutenzione.md
       git-e-pubblicazione.md
       onboarding-e-import.md
       pre-scaffold-checklist.md

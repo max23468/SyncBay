@@ -1,41 +1,26 @@
 # Decisioni aperte
 
-Questo documento traccia decisioni non ancora chiuse. Quando una decisione diventa stabile, creare o aggiornare un ADR in `docs/decisions/` e rimuovere o archiviare la voce da qui.
+Qui vivono solo decisioni non ancora chiuse. Le decisioni accettate stanno in
+[`DECISIONS.md`](DECISIONS.md) e negli ADR; idee e debiti non promossi stanno in
+[`BACKLOG.md`](BACKLOG.md).
 
-## Regola
+Non trasformare una voce in codice senza conferma del maintainer. Quando viene
+chiusa, crea o aggiorna l'ADR pertinente e rimuovila da questo file.
 
-- Non trasformare una decisione aperta in codice applicativo senza conferma del maintainer.
-- Se una decisione blocca una fase runtime, deve essere chiusa prima di implementarla.
-- Se una decisione può restare differita, indicare chiaramente quale fallback vale nel perimetro 1.0.
+## Evoluzioni private
 
-## Bloccanti prima delle prossime fasi runtime
+| Decisione | Default 1.0 | Perché conta |
+| --- | --- | --- |
+| Multi-location avanzato | Una location Shopify predefinita | Impatta disponibilità e rischio di vendere prodotti non disponibili. |
+| Varianti complesse | Supporto semplice con esclusione guidata | Impatta la copertura dell'import. |
+| Policy production stabile | Produzione Vercel privata controllata | Serve prima di promozioni o nuovi clienti su scala maggiore. |
 
-| Decisione                           | Stato                     | Default provvisorio                                                                                                                                                                                               | Perché conta                                                                                                                                                                                                                |
-| ----------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Env runtime e URL reali             | Chiusa per 1.0 privata    | Vercel/Supabase provisionati, URL `https://syncbay.vercel.app` attivo, env runtime e callback eBay/Shopify configurati                                                                                            | Resta da decidere una policy production stabile prima di deploy pubblici o App Store.                                                                                                                                       |
-| Setup Shopify pilota                   | Chiuso per store pilota Numisleo      | Account Partner, store pilota Numisleo, app `SyncBay`, CLI, scaffold e preview Admin verificati                                                                                                                               | Resta da definire il deploy production quando servirà.                                                                                                                                                                      |
-| eBay dev setup                      | Chiusa per 1.0 privata    | Account Developer, keyset dedicato SyncBay, `EBAY_IT`, endpoint account deletion e OAuth end-to-end verificati                                                                                                    | Resta da mantenere separato il keyset SyncBay da altri progetti e da decidere il percorso App Store futuro.                                                                                                                 |
-| Lettura listing eBay live           | Chiusa per preview 1.0    | Preview live collegata a Inventory API per inventory item con offer pubblicate e fallback Trading API `GetMyeBaySelling` + `GetItem` sui primi 10 listing del batch preview per listing attivi storici/Seller Hub | La pianificazione import completa legge gli ItemID attivi da Trading API fino a 2.000 o meno se lo store collegato ne espone meno; il primo import reale sul precedente ambiente pilota ha completato 958 listing.                           |
-| Applicazione migration import reale | Chiusa                    | Schema e migration mapping/snapshot/conflitti applicati su Supabase; import draft controllato da `SYNCBAY_DRAFT_IMPORT_ENABLED` e limite `SYNCBAY_DRAFT_IMPORT_LIMIT`                                             | Le tabelle remote esistono con RLS attivo. Import reale, sync incrementale e ordine pagato sono stati verificati sul precedente ambiente pilota, i cui dati sono stati rimossi; Numisleo è ora l'unico store collegato. Restano da consolidare classificazioni e azioni conflitti su coda reale. |
+## App pubblica
 
-## Decisioni da chiudere prima delle evoluzioni private successive
-
-| Decisione                            | Stato             | Default provvisorio                                                                                                                                                          | Perché conta                                                                   |
-| ------------------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Billing                              | Aperta            | Fuori dalla custom app privata                                                                                                                                               | Necessario per app pubblica Shopify App Store.                                 |
-| Piano dati/retention                 | Chiusa per 1.0    | Retention operativa in ADR 0017: audit 180 giorni, job 90 giorni, snapshot 180 giorni, OAuth state 7 giorni, richieste account deletion 365 giorni                            | Prima dell'app pubblica servirà revisione privacy/legal e cleanup automatico.   |
-| Verifica firma eBay account deletion | Chiusa per 1.0    | Challenge GET e POST con `X-EBAY-SIGNATURE`, public key eBay, idempotenza, cleanup dati, migration/deploy e test notification completati; flag runtime ancora disabilitabile | Prima dell'app pubblica serviranno privacy policy e retention dati definitive. |
-| Multi-location avanzato              | Aperta            | 1 location Shopify predefinita nel perimetro 1.0                                                                                                                             | Impatta disponibilità e rischio di vendere prodotti non disponibili.           |
-| Varianti complesse                   | Aperta            | Supporto semplice + log/esclusione guidata                                                                                                                                   | Impatta import completo dei listing.                                           |
-| Matching prodotti esistenti          | Chiusa per preview | Suggerimenti conservativi in anteprima, con conferma manuale e nessun merge automatico                                                                                       | Import aggressivo potrebbe sporcare shop già avviati.                          |
-| Quality score                        | Chiusa per preview | Checklist esplicita per SKU, prezzo, disponibilità, immagini, varianti, categoria e descrizione; nessun punteggio opaco                                                       | Utile solo se spiega rischi concreti senza metrica opaca.                      |
-
-## Decisioni da chiudere prima dell'app pubblica
-
-| Decisione                 | Stato                           | Default provvisorio                                                                                                                                | Perché conta                                                                               |
-| ------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Shopify App Store listing | Aperta                          | Dopo stabilità 1.0 privata                                                                                                                         | Richiede contenuti, support policy, billing e review.                                      |
-| Support policy            | Aperta                          | Self-service first                                                                                                                                 | Il prodotto non deve dipendere da supporto umano nella prima fase.                         |
-| Multi-marketplace         | Idea                            | Fuori scope                                                                                                                                        | Rischia di diluire il vantaggio eBay.it-first.                                             |
-| Release production        | Aperta per App Store/production | Versioning locale attivo in ADR 0006; tag `vX.Y.Z` e GitHub Release obbligatori per release prodotto reali secondo ADR 0008; niente Release Please | Resta da decidere policy completa di App Store, billing, supporto e promozione production. |
-| CI runtime                | Chiusa per la CI; deploy aperto | CI runtime completa attivata il 2026-06-27 con `.github/workflows/ci.yml` (install, lint, typecheck, test/coverage `app/lib`, build, `prisma:validate`, smoke UI, audit); React Doctor, Doppler, titolo e commenti Codex restano workflow dedicati. Deploy automatico collegato a `main` e smoke post-deploy stabili restano da decidere | La CI sblocca lo sviluppo runtime continuativo; la promozione production stabile resta una decisione separata. |
+| Decisione | Default attuale | Perché conta |
+| --- | --- | --- |
+| Billing | Fuori dalla custom app privata | Necessario per una distribuzione pubblica. |
+| Shopify App Store listing | Dopo stabilità della 1.0 privata | Richiede contenuti, review, billing e compliance. |
+| Support policy | Self-service first | Il prodotto non deve dipendere da supporto umano ordinario. |
+| Multi-marketplace | Fuori scope | Rischia di diluire il posizionamento eBay.it-first. |
+| Promozione production/App Store | Nessuna equivalenza con Vercel production privata | Richiede policy, gate e decisione esplicita. |
