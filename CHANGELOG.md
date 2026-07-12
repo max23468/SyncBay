@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Ridotto il contesto operativo per agenti: semplificati `AGENTS.md`, README,
+  handoff, roadmap, decisioni aperte e indice; piani storici e memoria mex sono
+  ora instradati solo quando pertinenti, riducendo duplicazioni e rischio di
+  informazioni obsolete.
+
 ## [1.0.56] — 2026-07-12
 
 ### Sotto il cofano

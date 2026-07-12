@@ -53,6 +53,7 @@ docs/
     0020-1-0-custom-privata-catalogo-esistente.md
   guides/
     architettura.md
+    comandi-manutenzione.md
     git-e-pubblicazione.md
     onboarding-e-import.md
     pre-scaffold-checklist.md
@@ -66,9 +67,9 @@ docs/
   market/
     shopify-ebay-app-benchmark.md
   superpowers/
+    README.md
     plans/
-      2026-06-03-syncbay-ui-redesign.md
-      2026-06-21-syncbay-1-0-existing-catalog-takeover.md
+    specs/
 ```
 
 ## Quando consultare cosa
@@ -81,6 +82,7 @@ docs/
 | Consultare lo storico esteso della vecchia roadmap | `ROADMAP_HISTORY.md` |
 | Vedere idee e debiti non ancora promossi | `BACKLOG.md` |
 | Capire runtime, tool e verifiche | `TOOLCHAIN.md` |
+| Usare comandi di diagnostica o manutenzione live | `guides/comandi-manutenzione.md` |
 | Verificare integrazione Doppler e segreti CI | `doppler-setup.md` |
 | Capire identità, tono e visual direction | `../BRAND.md` |
 | Capire la struttura docs/repo | `structure.md` |
@@ -95,7 +97,6 @@ docs/
 | Capire cleanup retention automatico | `decisions/0018-cleanup-retention-automatico.md` |
 | Capire cadenza Supabase Cron del runner | `decisions/0019-cadenza-cron-runner.md` |
 | Capire perimetro e go-live 1.0 custom privata | `decisions/0020-1-0-custom-privata-catalogo-esistente.md` |
-| Implementare takeover catalogo esistente 1.0 | `superpowers/plans/2026-06-21-syncbay-1-0-existing-catalog-takeover.md` |
 | Capire architettura proposta | `guides/architettura.md` |
 | Preparare lo scaffold senza saltare passaggi | `guides/pre-scaffold-checklist.md` |
 | Capire provisioning Vercel/Supabase | `guides/provisioning-runtime.md` |
@@ -104,7 +105,7 @@ docs/
 | Preparare il mini kit clienti selezionati 1.0 | `guides/onboarding-e-import.md` |
 | Capire sync, stock e conflitti | `guides/sync-engine.md` |
 | Recuperare decisioni, concept UI e fonti archiviate del redesign embedded | `guides/ui-concepts-handoff.md` |
-| Implementare il redesign UI embedded deciso nei thread | `superpowers/plans/2026-06-03-syncbay-ui-redesign.md` |
+| Consultare piani e specifiche storiche | `superpowers/README.md` |
 | Capire limiti e governance del servizio | `guides/service-governance.md` |
 | Capire dati e entità | `data-model.md` |
 | Capire sicurezza e privacy | `guides/sicurezza-privacy.md` |

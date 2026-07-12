@@ -1,490 +1,210 @@
 # AGENTS.md
 
-## Scopo
+## Scopo e priorità
 
-Questo file definisce le linee guida operative per agenti, Codex e collaboratori che lavorano su SyncBay.
+Queste sono le regole operative per agenti, Codex e collaboratori che lavorano
+su SyncBay. L'obiettivo è produrre modifiche focalizzate, sicure, verificabili e
+facili da revisionare.
 
-Obiettivo: mantenere modifiche coerenti, sicure, documentate e facilmente revisionabili, senza introdurre lavoro collaterale non richiesto.
+Ordine di priorità:
 
-## Priorità delle istruzioni
+1. istruzioni di sistema o developer della sessione;
+2. `AGENTS.md` più profondi, limitatamente alla cartella interessata;
+3. questo file;
+4. ADR e documentazione canonica in `docs/`;
+5. codice, test e configurazioni vicine;
+6. assunzioni, solo per dettagli marginali.
 
-1. Istruzioni di sistema/developer ricevute nella sessione corrente.
-2. Eventuali `AGENTS.md` più profondi nella cartella toccata, che prevalgono sulle regole root per il loro scope.
-3. Questo file `AGENTS.md`.
-4. Documentazione di progetto in `docs/` e `README.md`.
-5. Convenzioni dedotte da codice, test e configurazioni vicine.
-6. Assunzioni dell'agente, solo per dettagli marginali.
+Se una decisione del maintainer cambia stabilmente prodotto, architettura,
+provider, dati, deploy o release, aggiorna la fonte canonica o crea un ADR.
 
-In caso di conflitto, seguire sempre il livello più alto. Se una decisione nuova arriva dalla chat del maintainer e cambia il perimetro in modo stabile, aggiorna i documenti rilevanti.
+## Invarianti di SyncBay
 
-## Cos'è SyncBay
+SyncBay è una Shopify app eBay.it-first. Nella custom app privata 1.0:
 
-SyncBay è una Shopify app per collegare un account eBay.it a Shopify e mantenere Shopify allineato al catalogo eBay.
+- eBay è la sorgente di verità del catalogo e Shopify ne è la copia ordinata;
+- il flusso principale è eBay -> Shopify;
+- l'unica scrittura Shopify -> eBay ammessa è l'aggiornamento della
+  disponibilità derivato dagli ordini Shopify;
+- il target di sync è configurabile tra 5 e 30 minuti, senza promesse di
+  real-time assoluto;
+- il limite operativo è 2.000 prodotti per shop;
+- un listing eBay non più attivo resta su Shopify come esaurito: scorta `0`,
+  policy `DENY`, tag `esaurito`, mapping `OUT_OF_STOCK`; non va cancellato o
+  archiviato, per preservarne la SEO (ADR 0011);
+- le modifiche manuali Shopify generano conflitti visibili e non vengono
+  sovrascritte silenziosamente;
+- errori ordinari, retry e diagnostica devono essere comprensibili e azionabili
+  senza dipendere dal supporto umano.
 
-La direzione confermata:
+Non trasformare la 1.0 in una suite marketplace bidirezionale, un exporter
+Shopify -> eBay, un gestionale ordini/fulfillment, una piattaforma
+multi-marketplace o un motore AI generalista. Un ampliamento stabile di questo
+perimetro richiede conferma esplicita e ADR.
 
-- sync principale eBay -> Shopify;
-- eBay resta la sorgente di verità del catalogo;
-- eccezione obbligatoria: gli ordini Shopify devono aggiornare la disponibilità su eBay per ridurre il rischio di vendere prodotti non disponibili;
-- marketplace iniziale: eBay.it;
-- distribuzione corrente: custom app privata 1.0 per clienti selezionati, poi app pubblica Shopify App Store;
-- sync target configurabile 5-30 minuti in modalità 1.0 privata a risparmio egress;
-- limite operativo 1.0 fino a 2.000 prodotti per shop;
-- prodotti non più attivi su eBay mantenuti su Shopify come esauriti (scorta 0, non archiviati né cancellati) per preservarne la SEO (ADR 0011);
-- modifiche manuali Shopify gestite come conflitti visibili, non sovrascritte silenziosamente;
-- prodotto self-service: diagnostica, retry e azioni guidate devono ridurre la dipendenza da supporto umano.
+## Prima di lavorare
 
-### Perimetro e non-obiettivi
+1. Esegui `git status --short --branch -uall`.
+2. Tratta modifiche staged, unstaged e untracked come lavoro dell'utente: non
+   spostarle, normalizzarle, sovrascriverle, nasconderle o cancellarle.
+3. Se il checkout sporco si sovrappone al task, usa un branch/worktree dedicato
+   da una base pulita oppure chiedi conferma; per file non sovrapposti puoi
+   lavorare nello stesso checkout dichiarandolo nel riepilogo.
+4. Per lavori non banali leggi `docs/CONTEXT.md`. Usa `docs/INDEX.md` solo per
+   trovare una fonte e, se serve memoria routata, `.mex/ROUTER.md`; apri poi
+   soltanto documenti, contesti e pattern pertinenti al task.
+5. Per architettura, refactor o integrazioni verifica anche ADR, configurazione
+   e codice interessati. Per informazioni variabili su provider, API, policy,
+   piani, billing o compliance usa fonti ufficiali aggiornate.
+6. Se scope, comportamento atteso, rischio, deploy o release sono ambigui in
+   modo sostanziale, fai una domanda mirata prima di procedere.
 
-SyncBay deve restare, nella 1.0 privata, una soluzione con richiamo sottile a eBay.it come punto di partenza: catalogo esistente, vetrina Shopify ordinata, disponibilità sincronizzate.
+La memoria `.mex/` è un indice locale, non una fonte superiore. Se contraddice
+questo file, un ADR o `docs/`, considerala stale e aggiornala chirurgicamente.
+Non committare `.mex/telemetry-id`, segreti, output locali o dati reali.
 
-Una nuova funzionalità ha senso quando rafforza almeno uno di questi assi:
+## Regole di modifica
 
-- import guidato e sicuro dei listing eBay in Shopify;
-- sincronizzazione catalogo, prezzi, immagini, descrizioni e stock;
-- protezione delle disponibilità e riduzione del rischio di vendere prodotti non disponibili;
-- pulizia delle descrizioni/template eBay per renderle adatte a Shopify;
-- gestione esplicita dei conflitti Shopify;
-- diagnostica self-service, audit log, retry e rollback;
-- affidabilità, sicurezza, privacy e manutenzione dell'app.
+- Mantieni il diff proporzionato alla richiesta: niente refactor, rinominazioni,
+  riformattazioni, dipendenze o strumenti collaterali senza necessità chiara.
+- Non introdurre nuovi runtime, worker dedicati, code esterne, framework,
+  provider o cartelle applicative fuori dallo scaffold senza conferma del
+  maintainer e, se la scelta è stabile, ADR.
+- Non dedurre dati che Shopify o eBay non restituiscono: dichiarali assenti o
+  non supportati.
+- Non usare dati reali di negozianti, listing, ordini o clienti in fixture,
+  screenshot, log, test o documentazione.
+- Non committare `.DS_Store`, build, cache, sessioni browser, stato locale dei
+  provider, staging, export di lavoro o output della distribuzione privata.
+  Nel repository restano codice, schema, migration, fixture sintetiche e docs.
+- Usa le skill o gli strumenti disponibili quando aiutano davvero il task;
+  scegli tra plugin, connector, MCP, app, CLI, API e browser in base a copertura,
+  affidabilità, autenticazione e qualità delle prove. Non aggirare permessi,
+  policy, rate limit, quote o blocchi economici.
 
-Per la 1.0 privata, SyncBay non è:
-
-- una suite marketplace bidirezionale completa;
-- un exporter Shopify -> eBay;
-- un sistema avanzato di ordini, spedizioni, tracking o fulfillment;
-- una soluzione multi-marketplace globale;
-- un support desk gestito da operatori umani;
-- un motore AI generalista di descrizioni o catalog enrichment;
-- un gestionale ecommerce completo.
-
-Spostamenti strutturali verso questi perimetri richiedono una decisione esplicita e, se permanenti, un ADR.
-
-## Fonti primarie del progetto
-
-Prima di modifiche non banali leggi:
-
-1. `docs/syncbay-product-technical-plan.md`
-2. `docs/CONTEXT.md`
-3. `docs/INDEX.md`
-4. `BRAND.md`
-5. `docs/ROADMAP.md`
-6. `docs/BACKLOG.md`
-7. `docs/TOOLCHAIN.md`
-8. `docs/DECISIONS_PENDING.md`
-9. `docs/market/shopify-ebay-app-benchmark.md`
-10. `docs/decisions/0001-stack.md`
-11. `docs/decisions/0005-runtime-infrastructure.md`
-12. `docs/decisions/0006-versioning-runtime-locale.md`
-13. `README.md`
-
-Per modifiche a stack, deploy, API Shopify/eBay, privacy, billing, pubblicazione App Store o modello dati, aggiorna o crea un ADR in `docs/decisions/`.
-
-## Stato attuale del repository
-
-Il repository è nella fase di custom app privata 1.0 su scaffold Shopify CLI
-React Router: import catalogo, runner, sync incrementale, conflitti Shopify,
-catalogo esistente e aggiornamento disponibilità eBay da ordini Shopify sono
-superfici implementate nel perimetro 1.0. Esiste una produzione Vercel privata,
-distinta da release pubblica Shopify App Store e da billing.
-
-Regola importante: non creare nuovi worker dedicati, nuovi runtime, nuove code
-esterne, integrazioni provider fuori dal perimetro 1.0 già deciso o cartelle
-applicative ulteriori fuori dallo scaffold senza richiesta esplicita del
-maintainer e, se stabile, ADR.
-
-La struttura documentale attuale è descritta in `docs/structure.md`.
-
-## Memoria mex per Codex e Claude
-
-Questa postazione può usare `mex-agent` come scaffold di memoria locale in
-`.mex/`.
-
-Per Codex e Claude Code: dopo aver letto questo `AGENTS.md`, e prima di un
-lavoro non banale, se `.mex/ROUTER.md` esiste leggilo come indice di contesto
-routato. Apri solo i file `context/` e `patterns/` pertinenti al task corrente.
-
-La memoria mex non prevale su istruzioni di sistema/developer, `AGENTS.md`
-più profondi, questo `AGENTS.md`, ADR o documentazione canonica in `docs/`. Se
-una nota mex è in conflitto con quelle fonti, considera mex stale e aggiorna lo
-scaffold chirurgicamente.
-
-Comandi utili:
-
-- `npx mex-agent check --quiet`
-- `npx mex-agent check`
-- `npx mex-agent sync --dry-run`
-
-Non committare `.mex/telemetry-id`, segreti, output locali o dati reali dentro
-lo scaffold mex.
-
-## Stack deciso
-
-La decisione stack corrente è documentata in `docs/decisions/0001-stack.md`.
-
-Direzione attuale:
-
-- Shopify CLI;
-- template ufficiale React Router al momento dello scaffold;
-- TypeScript/Node;
-- Shopify Admin GraphQL;
-- Supabase Postgres;
-- Prisma;
-- Supabase Queues;
-- Supabase Cron;
-- Vercel;
-- Supabase Storage per staging immagini temporaneo quando serve.
-
-Non introdurre un secondo runtime o framework senza aggiornare l'ADR e avere conferma del maintainer.
-
-## Prima di intervenire
-
-- Controlla sempre `git status --short`.
-- Se il worktree contiene modifiche non tue o non collegate alla richiesta, non sovrascriverle e non normalizzarle. Ignorale se sono estranee, oppure lavora attorno a esse.
-- Se quelle modifiche rendono necessario un lavoro non minuscolo, non limitarti a creare una branch nello stesso checkout: separa il nuovo filone con un branch/worktree dedicato da una base pulita, oppure lavora nello stesso checkout solo su file non sovrapposti e dichiaralo nel riepilogo.
-- Prima di proporre architetture, refactor o integrazioni, leggi documenti, configurazione e stato repo pertinenti.
-- Per informazioni variabili su Shopify, eBay, App Store, API, piani, policy, billing o compliance, verifica fonti ufficiali aggiornate o pagine Shopify App Store correnti.
-- Se la richiesta è ambigua su scope, comportamento atteso, rischio, deploy o pubblicazione, fai domande mirate prima di procedere.
-- Procedi con un'assunzione dichiarata solo per dettagli marginali che non cambiano il risultato sostanziale.
-
-## Skill operative
-
-Usa le skill Superpowers pertinenti per lavori non banali: pianificazione,
-debugging sistematico, worktree, esecuzione di piani, review e verifica finale.
-Le skill non sostituiscono le policy Shopify/eBay, sicurezza, App Store,
-release/deploy o le fonti primarie di SyncBay.
-
-Usa o proponi `grill-me` quando serve stressare architetture, refactor
-trasversali, integrazioni Shopify/eBay/Supabase/Vercel, sicurezza, App Store,
-roadmap o scope ambiguo. Non renderla obbligatoria per refusi, docs-only a
-basso rischio, cleanup o modifiche meccaniche già determinate.
-
-## Scelta degli strumenti provider
-
-Quando un task tocca un provider o una piattaforma, scegli caso per caso lo
-strumento più pratico tra plugin, connector, MCP, app, CLI, API e browser.
-Valuta copertura dell'operazione, affidabilità osservata, velocità, stato
-dell'autenticazione e qualità delle prove ottenibili. Non esiste una precedenza
-obbligatoria tra strumenti assistiti e CLI.
-
-Regole operative:
-
-- Se `tool_search` è disponibile, usalo quando aiuta a individuare uno
-  strumento più adatto; non è un passaggio obbligatorio quando il percorso
-  migliore è già chiaro.
-- Usa `git` locale per stato, branch, staging, commit e diff; per PR, review,
-  merge, issue, deploy, log, dashboard o risorse remote usa lo strumento che
-  copre meglio il passaggio e consente di verificarne l'esito reale.
-- Puoi passare liberamente tra plugin, connector, MCP, app, CLI, API e browser
-  quando cambia il vantaggio operativo; dichiara il cambio solo se introduce
-  limiti, risultati parziali o differenze rilevanti nelle prove.
-- Non usare mai alcuno strumento per aggirare permessi, limiti provider, policy
-  di sicurezza, rate limit o blocchi economici come `402
-  exceed_egress_quota`.
-
-## Disciplina di scope
-
-- Mantieni le modifiche focalizzate sulla richiesta.
-- Evita refactor, rinominazioni massive o riformattazioni non collegate.
-- Preferisci patch piccole e coerenti.
-- Non aggiungere nuove dipendenze, servizi o strumenti senza motivazione esplicita e impatto chiaro.
-- Non inventare funzionalità non decise: se qualcosa è interessante ma fuori dal perimetro 1.0, mettilo in roadmap/piano come futuro da valutare.
-
-## Errori comuni da evitare
-
-- Non promettere "real-time assoluto" indiscriminato: il target confermato è una finestra configurabile 5-30 minuti.
-- Dove il real-time o quasi real-time è tecnicamente possibile senza impatto eccessivo su prestazioni, rate limit, costi o stabilità, preferiscilo e documenta il fallback.
-- Non trasformare SyncBay in una app marketplace bidirezionale generica.
-- Non assumere che Shopify sia la sorgente di verità: per il catalogo 1.0 la sorgente è eBay.
-- Non aggiornare eBay con modifiche Shopify, salvo aggiornamenti di disponibilità derivati da ordini Shopify.
-- Non cancellare né archiviare prodotti Shopify quando un listing eBay sparisce: mantienili in vetrina come esauriti (scorta 0, politica DENY, tag `esaurito`, mapping `OUT_OF_STOCK`) per preservarne la SEO (ADR 0011).
-- Non sovrascrivere modifiche manuali Shopify senza aprire conflitto.
-- Non dipendere dal supporto umano per errori ordinari: gli errori devono essere comprensibili e azionabili in dashboard.
-- Non dedurre dati eBay non restituiti dalle API. Se un campo non arriva, dichiaralo come assente o non supportato.
-- Non usare dati reali di negoziante, ordini, clienti o listing in fixture, screenshot, log o documentazione.
-- Quando scrivi UI, microcopy o materiali prodotto, considera che target e lingua sono italiani: evita inglesismi non necessari come "merchant", "seller" o "overselling" se puoi usare "negoziante", "venditore" o "vendere prodotti non disponibili".
-- I file `.DS_Store` non fanno parte del repository: ignorali sempre e rimuovili se vengono tracciati per errore.
-- Non committare build output, cache o stato locale di Shopify/Vercel/React
-  Router, staging locali, export/import di lavoro o output generati dalla distribuzione privata.
-  In Git restano codice, schema, migration, fixture sintetiche e documentazione;
-  mapping, snapshot, job, audit e staging immagini vivono nei provider runtime
-  o in file locali fuori repo.
-
-## Shopify ed eBay
+## Shopify, eBay e UI
 
 ### Shopify
 
-- Usa Shopify Admin GraphQL come interfaccia primaria per prodotti, inventario, media e webhook.
-- Mantieni compatibilità con Shopify CLI e app embedded.
-- Per attività Shopify assistite da AI, usa le skill Shopify AI Toolkit
-  disponibili, il plugin Shopify di Codex Desktop quando presente in questo
-  tool e, quando serve contesto live, il Dev MCP Shopify configurato
-  localmente. Skill, plugin e MCP sono supporto operativo e di validazione, non
-  fonti che prevalgono su AGENTS, ADR o documentazione SyncBay.
-- Prima di fissare scope o webhook, verifica la documentazione Shopify aggiornata.
-- Tratta location, inventory item, product status, media e webhook come superfici critiche: impattano direttamente disponibilità e vetrina Shopify.
-- Per modifiche alla UI embedded, usa App Bridge e Polaris Web Components
-  Shopify come base effettiva (`s-page`, `s-section`, `s-box`, `s-stack`,
-  `s-grid`, `s-table`, `s-badge`, `s-button`, `s-select`, `s-switch`,
-  `s-checkbox`, `s-clickable-chip`, `s-thumbnail`, `s-image`, ecc.).
-- Non introdurre o migrare a `@shopify/polaris` React legacy senza decisione
-  esplicita del maintainer e ADR: per App Home la direzione corrente sono i
-  Web Components Shopify.
-- Prima di aggiungere markup o CSS custom per bottoni, form, sezioni, nav,
-  badge, tabelle, card/pannelli, stati vuoti, stack/grid o miniature, verifica
-  se esiste una primitiva `s-*` adatta e usala.
-- CSS custom nella UI embedded è ammesso solo per identità minima SyncBay,
-  shell/logo, disclosure tecnici nativi `details/summary`, microcopy/layout
-  compositi non coperti dai componenti Shopify o vincoli dimostrabili di
-  impaginazione. Se lo usi, dichiaralo nel riepilogo; se è strutturale, aggiorna
-  la documentazione.
-- Il 25% di identità SyncBay nella UI embedded va mantenuto con asset reali,
-  tagline, badge nativi e microcopy operativo ricorrente, senza ricreare una
-  shell custom o colorare sistematicamente i componenti Shopify.
+- Usa Shopify Admin GraphQL per prodotti, inventario, media e webhook.
+- Mantieni compatibilità con Shopify CLI, App Bridge e app embedded.
+- Per la UI embedded usa Polaris Web Components Shopify (`s-*`) come base.
+  Prima di markup o CSS custom verifica se esiste una primitiva nativa adatta.
+- Non introdurre `@shopify/polaris` React legacy senza conferma e ADR.
+- Limita il CSS custom a identità SyncBay, shell/logo, disclosure tecniche o
+  composizioni non coperte dai componenti Shopify. Dichiaralo nel riepilogo;
+  se diventa strutturale, aggiorna la documentazione.
+- Tratta location, inventory item, stato prodotto, media e webhook come
+  superfici critiche.
 
 ### eBay
 
-- Per leggere tutti i listing attivi, prevedi Trading API dove serve, per coprire listing storici creati da Seller Hub/UI eBay.
-- Usa Inventory API dove disponibile, soprattutto per casi compatibili con inventory/offer e aggiornamenti stock.
-- Verifica sempre la documentazione eBay corrente per notifiche, OAuth, rate limit, marketplace account deletion e requisiti compliance.
-- Non assumere che Inventory API copra tutte le inserzioni di un negoziante.
+- Usa Inventory API dove copre il caso; usa Trading API quando serve leggere
+  listing storici o creati da Seller Hub/UI.
+- Non assumere che Inventory API copra tutti i listing del negoziante.
+- Verifica la documentazione eBay corrente per OAuth, notifiche, rate limit,
+  marketplace account deletion e compliance.
 
-## Lingua, tono e prodotto
+### Lingua e identità
 
-- Usa italiano come lingua predefinita con il maintainer.
-- La UI negoziante di SyncBay deve essere in italiano nella fase eBay.it-first, salvo integrazioni o termini tecnici Shopify/eBay che richiedano label originali.
-- Tono UI: professionale, concreto, calmo. Frasi brevi, stato del sistema, azione successiva chiara. Vedi `BRAND.md`.
-- Evita emoji nella UI, esclamativi multipli, "oops" o messaggi vaghi.
-- Mantieni identificatori nel codice in inglese quando coerente con librerie e framework.
-- Non usare loghi o claim che facciano sembrare SyncBay un'app ufficiale eBay o Shopify.
-- Sui colori c'è una decisione esplicita del maintainer (ADR 0013): la palette semantica dell'app **usa i colori del logo eBay/Shopify** (verde Shopify = success, blu eBay = info/primario, giallo eBay = warning, rosso eBay = error). È ammessa perché la distribuzione è privata; va rivalutata solo se si punta all'App Store pubblico. Tienili su accenti, icone, badge e bordi, mai come campiture diffuse o banner che ricreino il logo eBay.
-- Il richiamo a eBay e Shopify nel branding resta funzionale e non urlato in tagline o logo; la palette ora è invece intenzionalmente quella dei due provider (ADR 0013).
+- Rispondi al maintainer e scrivi la UI negoziante in italiano, salvo termini
+  tecnici che richiedono la label originale.
+- Tono UI: professionale, concreto e calmo; frasi brevi, stato del sistema e
+  prossima azione chiara. Evita emoji, vaghezza e inglesismi non necessari.
+- Non presentare SyncBay come app ufficiale eBay o Shopify.
+- Segui `BRAND.md` e ADR 0013: verde Shopify per successo, blu eBay per
+  informazione/primario, giallo eBay per avviso, rosso eBay per errore. Usa i
+  colori come accenti, icone, badge e bordi, non come campiture diffuse.
 
-## Sicurezza, privacy e dati
+## Sicurezza e dati
 
-- Non committare segreti, token, credenziali, file `.env` reali o dati personali.
-- Token Shopify/eBay devono essere cifrati a riposo.
-- Non stampare segreti in log, errori o risposte chat. Per verificarne la presenza usa controlli booleani, mai `echo $VAR`.
-- Tratta dati shop, inserzioni, ordini, clienti e immagini come dati del negoziante.
-- Evita leak in log, fixture, screenshot, test o report.
-- Per webhook pubblici e callback OAuth, valida sempre firma/HMAC/stato/nonce secondo il provider.
-- Shopify GDPR webhook, disinstallazione app, revoca token e eBay marketplace account deletion devono restare requisiti di primo piano.
+- Non committare o stampare segreti, token, credenziali, `.env` reali o dati
+  personali. Verifica la presenza delle env con controlli booleani, mai
+  mostrando i valori.
+- I token Shopify ed eBay persistiti devono essere cifrati a riposo.
+- Valida firma, HMAC, stato o nonce di webhook pubblici e callback OAuth secondo
+  il provider.
+- Mantieni prioritari webhook GDPR Shopify, disinstallazione, revoca token ed
+  eBay marketplace account deletion.
 
 ## Documentazione
 
-SyncBay è attualmente guidata dalla documentazione. Aggiornala quando cambia una decisione stabile.
+Aggiorna la documentazione solo quando cambia una decisione, un comportamento o
+una procedura stabile. Non creare documenti duplicati.
 
-La root resta per ingresso e file convenzionali (`README.md`, `AGENTS.md`,
-`BRAND.md`, `CHANGELOG.md`, `SECURITY.md`, `.env.example`). Governance,
-roadmap, backlog, contesto, toolchain, decisioni, guide, benchmark, struttura e
-piani tecnici vivono in `docs/`; l'indice canonico è `docs/INDEX.md`.
+| Cambiamento | Fonte canonica |
+| --- | --- |
+| Perimetro prodotto o requisiti 1.0 | `docs/syncbay-product-technical-plan.md` |
+| Stato e handoff rapido | `docs/CONTEXT.md` |
+| Priorità future o debiti | `docs/ROADMAP.md` / `docs/BACKLOG.md` |
+| Decisione architetturale, dati, provider o release | `docs/decisions/` |
+| Comandi e toolchain | `docs/TOOLCHAIN.md` |
+| Procedura operativa | guida pertinente in `docs/guides/` |
+| Identità, tono o palette | `BRAND.md` |
+| Nuova env o scope | `.env.example` e documentazione pertinente |
 
-### Cosa aggiornare e quando
+Durante migrazioni o rinomini preserva contenuti validi, aggiorna link e indici
+e dichiara cosa rimuovi perché superato.
 
-- `docs/syncbay-product-technical-plan.md`: perimetro prodotto, 1.0 privata, fasi, requisiti funzionali e rischi.
-- `docs/market/shopify-ebay-app-benchmark.md`: benchmark competitivo e differenziazione.
-- `docs/INDEX.md`: indice documentale canonico.
-- `docs/ROADMAP.md`: direzione, priorità e prossimi passi correnti; non usarla come storico di completati.
-- `docs/BACKLOG.md`: idee, debiti e attività non ancora promosse.
-- `docs/TOOLCHAIN.md`: runtime, tool, versioni e verifiche.
-- `docs/DECISIONS.md`: indice decisioni stabili.
-- `CHANGELOG.md`: storico modifiche significative.
-- `BRAND.md`: identità, tagline, tono, palette direzionale, logo direction e claim vietati.
-- `docs/CONTEXT.md`: handoff rapido per nuove chat o nuovi agenti.
-- `docs/DECISIONS_PENDING.md`: decisioni aperte e blocchi prima delle prossime fasi.
-- `docs/data-model.md`: entità e regole dati concettuali.
-- `docs/glossario.md`: terminologia prodotto e microcopy.
-- `docs/guides/`: guide operative tematiche.
-- `docs/guides/pre-scaffold-checklist.md`: prerequisiti e stato scaffold.
-- `docs/guides/provisioning-runtime.md`: provisioning Vercel/Supabase e riferimenti non segreti.
-- `docs/guides/service-governance.md`: limiti 1.0, retention, error handling e governance servizio.
-- `docs/guides/git-e-pubblicazione.md`: policy Git/branch/PR/pubblicazione.
-- `docs/decisions/`: ADR architetturali o operative stabili.
-- `docs/decisions/0005-runtime-infrastructure.md`: infrastruttura runtime Vercel + Supabase.
-- `docs/decisions/0006-versioning-runtime-locale.md`: versioning SemVer locale.
-- `docs/structure.md`: struttura repo prevista nella fase corrente.
-- `README.md`: stato progetto, documenti principali e prossimo passo operativo.
-- `SECURITY.md`: policy sicurezza root.
-- `.env.example`: solo quando vengono decise nuove env var o scope necessari.
-- `AGENTS.md`: regole operative per agenti e Codex.
+## Verifica proporzionata al rischio
 
-Non creare documenti duplicati. Se serve dettaglio nuovo, preferisci integrare il piano principale o creare un ADR mirato.
+Usa la matrice e i comandi correnti in `docs/TOOLCHAIN.md`:
 
-Durante migrazioni, rinomini o merge documentali non perdere contenuti utili:
-aggiorna link e indici, preserva ciò che resta valido e dichiara nel riepilogo
-ciò che viene rimosso perché superato.
+- **Analisi senza modifiche:** cita fonti e limiti; nessun test applicativo.
+- **Veloce:** docs/governance a basso rischio; rilettura, coerenza, link
+  pertinenti e `git diff --check`.
+- **Standard:** codice o configurazione ordinari; test mirati, typecheck, lint e
+  build quando pertinenti.
+- **Completa:** runtime condiviso, UI sostanziale, Prisma/database, provider,
+  auth, sicurezza, dati, deploy o release; gate completi, smoke e verifiche live
+  applicabili.
 
-Per modifiche solo documentali, non inventare test applicativi: rileggi i documenti toccati, verifica link interni e coerenza con il piano.
+Non dichiarare test o verifiche non eseguiti. Prima di commit o PR fai
+self-review dell'intero diff pertinente.
 
-## Testing e verifica
+## Git, pubblicazione e release
 
-Per modifiche docs-only:
+Segui `docs/guides/git-e-pubblicazione.md` e
+`docs/guides/versioning-e-release.md`. In sintesi:
 
-- per docs-only, usa almeno review del documento e, quando utile, `git diff --check`;
-- non dichiarare test applicativi non eseguiti;
-- se un controllo non è pertinente, dichiararlo come limite normale della fase corrente.
+- usa Conventional Commit; il tipo riflette l'impatto osservabile;
+- per lavori non banali usa `codex/<tema>`, PR verso `main`, verifiche,
+  self-review e cleanup; piccoli docs-only possono andare direttamente su
+  `main` se non toccano runtime, workflow, deploy, release o segreti;
+- il titolo PR deve essere Conventional Commit, non il nome del branch;
+- `pubblica`, `manda su GitHub` o `carica` significa portare il diff fino a
+  GitHub/`main`, completando i gate e il cleanup previsti;
+- `deploya` o `pubblica e deploy` include il deployment Vercel production
+  privato e la sua verifica; non implica App Store o billing;
+- `rilascia` include il flusso SemVer locale e la pubblicazione su GitHub;
+- prima di pubblicare controlla `[Non rilasciato]` in `CHANGELOG.md`: sezioni
+  versionate richiedono `npm run release`; solo `Non versionato` non richiede
+  bump;
+- per una release prodotto reale servono tag `vX.Y.Z` e GitHub Release secondo
+  ADR 0008; docs e governance non versionati non richiedono tag;
+- prima di PR ready, merge, publish, deploy o release esegui il preflight remoto
+  e controlla i review thread Codex della PR corrente. La `Codex feedback
+  inbox` è dashboard/fallback e i thread di altre PR non bloccano il filone;
+- non avviare billing o pubblicazione Shopify App Store senza decisione
+  esplicita. Non attivare nuovi negozi, account o integrazioni provider
+  produttive senza conferma.
 
-Per modifiche runtime:
-
-- mantieni questo file aggiornato con i comandi reali del repo;
-- aggiungi gate per lint, test, build, typecheck, audit e verifiche browser quando pertinenti;
-- mantieni i comandi allineati allo stack effettivamente generato.
-
-Usa tre corsie di verifica: `veloce` per docs/governance a basso rischio,
-`standard` per codice/config ordinari, `completa` per release, deploy,
-sicurezza, dati, provider, auth o integrazioni esterne.
-
-Mappa il rischio prima dei comandi:
-
-- sola analisi o nessuna modifica: nessun test applicativo, dichiarare fonti e
-  limiti;
-- docs-only: review, coerenza e `git diff --check`;
-- documenti operativi critici, workflow o config: review mirata e check del
-  file eseguibile modificato;
-- test-only, runtime piccolo, UI localizzata o microcopy: test/check mirati
-  (`npm run test:lib`, `npm run coverage:lib`, `npm run typecheck`,
-  `npm run lint`, `npm run build` quando pertinenti);
-- runtime condiviso, Prisma/database, provider/API, auth, deploy/config,
-  release/versioning o UI sostanziale: gate completi proporzionati, smoke UI,
-  `npm run db:verify` o React Doctor quando applicabili.
-
-Comandi runtime attuali:
-
-- `npm install`
-- `npm run dev`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run build`
-- `npm run smoke:ui`
-- `npm run test:lib`
-- `npm run coverage:lib`
-- `npm run prisma:validate`
-- `npm run db:verify`
-- `npm run quality:react-doctor`
-- `npm run audit:prod`
-- `npm run release:dry-run`
-
-## Git, commit e PR
-
-- Usa commit atomici e messaggi Conventional Commit coerenti con l'impatto reale:
-  - `docs:` per sola documentazione;
-  - `feat:` per nuove funzionalità osservabili;
-  - `fix:` per correzioni osservabili;
-  - `perf:` per miglioramenti prestazionali osservabili;
-  - `chore:` per manutenzione interna;
-  - `refactor:` solo per ristrutturazioni senza cambio funzionale;
-  - `test:` per soli test;
-  - `ci:` per workflow/CI.
-- Quando Codex crea una PR, non usare il nome branch `codex/<tema>` come titolo:
-  passa sempre un titolo PR Conventional Commit esplicito, per esempio
-  `gh pr create --title "docs: update SyncBay governance"`, oppure correggi
-  subito una PR già aperta con `gh pr edit --title "docs: ..."` prima di
-  dichiararla pronta o pubblicata.
-- Prima di commit o PR, fai self-review del diff.
-- GitHub è la fonte primaria del codice e della documentazione pubblicata: remote canonico `https://github.com/max23468/SyncBay`.
-- Non aggiungere nuovi workflow GitHub Actions, policy deploy o release flow fuori
-  dalle ADR già approvate senza richiesta esplicita; tag Git e GitHub Release
-  per release prodotto reali seguono ADR `docs/decisions/0008-tag-e-github-release.md`.
-- Per lavori non banali usa branch dedicati `codex/<tema>`, PR verso `main`, self-review, verifiche rilevanti e merge quando la PR è pronta.
-- Per modifiche minuscole e chiaramente docs-only puoi lavorare su `main` aggiornato, committare e pushare direttamente, purché il diff resti limitato e non tocchi runtime, workflow, deploy, release, segreti o decisioni ambigue.
-- Per lavori paralleli o ripresi da una nuova chat, mantieni ownership chiara su file/moduli, evita sovrapposizioni e lascia un handoff sintetico nella PR o nella risposta finale quando serve a coordinare il seguito.
-- Per docs-only sono sufficienti review contenuto e `git diff --check`, salvo documenti operativi critici.
-- Quando una PR viene mergeata, fai cleanup del branch remoto e locale se non serve più. Prima prova `git branch -d <branch>`; usa `git branch -D` solo dopo aver verificato che `git log --cherry-pick --right-only --oneline main...<branch>` non mostri commit unici.
-- I commenti del bot Codex sulle PR sono raccolti nella issue GitHub `Codex feedback inbox`, marcata dalla label `codex-feedback-inbox` e aggiornata dal workflow `.github/workflows/codex-pr-comments.yml`.
-- Prima di PR ready, merge, pubblicazione, deploy o release controlla i review
-  thread Codex della PR corrente; il preflight remoto li legge direttamente da
-  GitHub e usa la `Codex feedback inbox` come dashboard/fallback. Thread
-  actionable su altre PR non bloccano la pubblicazione corrente: trattali come
-  avvisi e lasciali al relativo filone.
-- Se il maintainer chiede "pubblica", "manda su GitHub", "carica" o formule simili, interpreta la richiesta come pubblicazione su GitHub e release locale quando il diff contiene modifiche versionate: verifiche rilevanti, `npm run release` se il blocco `[Non rilasciato]` di `CHANGELOG.md` contiene sezioni versionate, commit coerente, push e, per lavori non banali, PR/merge su `main`.
-- "Pubblica" significa chiudere il flusso operativo: per lavoro non banale, PR/merge su `main`, release locale inclusa per cambi versionati e (quando previsto dal flusso o per impatto runtime) anche deploy/attivazione; in ogni caso chiusura include cleanup branch/worktree locali e remoti non più necessari.
-- Per lavori chiaramente docs-only, non runtime e a impatto operativo limitato, la pubblicazione può seguire la procedura semplificata del punto precedente (`commit su main`) dopo verifica contenutistica.
-- Se il maintainer chiede "deploya" o "pubblica e deploy", usa la policy SyncBay attuale: aggiornare e verificare il deployment Vercel production della distribuzione privata, includendo la release locale se il diff è versionato. Non interpretarlo come pubblicazione Shopify App Store o billing; tag Git `vX.Y.Z` e GitHub Release entrano solo se la release è prodotto reale.
-- Se il maintainer chiede "rilascia", usa il versioning locale documentato in `docs/guides/versioning-e-release.md` e porta la release su GitHub/main con lo stesso flusso di pubblicazione. Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR `docs/decisions/0008-tag-e-github-release.md`.
-- Release e deploy vanno valutati insieme quando entrambi sono applicabili: non chiudere una release senza dichiarare lo stato del deploy, e non chiudere un deploy senza dichiarare se la release è necessaria o `N/A`.
-- In caso di dubbio tra commit, PR, deploy, release o pubblicazione App Store, fermati e chiedi conferma prima di azioni esterne o irreversibili.
-
-Dettagli: `docs/guides/git-e-pubblicazione.md`.
-
-## Release, deploy e App Store
-
-SyncBay ha un flusso di versioning locale e un deployment Vercel production
-per distribuzione privata. Non ha ancora un flusso di release pubblica Shopify
-App Store.
-
-Fino a decisione esplicita:
-
-- non creare tag GitHub o GitHub Release fuori dalla policy ADR 0008;
-- non introdurre billing;
-- non avviare pubblicazione Shopify App Store;
-- non creare integrazioni produttive Shopify/eBay.
-
-Versioning locale:
-
-- `app/lib/version.ts` è la single source of truth per `APP_VERSION` e `BUILD_DATE`;
-- `npm run release` prepara una release aggiornando `CHANGELOG.md` e `app/lib/version.ts`;
-- `npm run release:dry-run` verifica la categoria senza modificare file;
-- il comando non crea deploy; tag Git `vX.Y.Z` e GitHub Release restano un
-  passaggio separato ma obbligatorio per release prodotto reali.
-- Release Please non è adottato: non delegare changelog, versioni, tag o GitHub
-  Release a bot automatici senza nuova ADR.
-
-Ogni modifica deve essere classificata prima della chiusura:
-
-- `MAJOR`: breaking change visibile a negoziante, operatori o contratti API/config;
-- `MINOR`: nuova funzionalità retrocompatibile;
-- `PATCH`: bugfix, hardening o miglioramento operativo compatibile;
-- `Non versionato`: piani, ADR, guide interne, regole agenti e documentazione non esposta al prodotto.
-
-Prima di dichiarare conclusa una fase o una pubblicazione, controlla sempre il blocco `[Non rilasciato]` di `CHANGELOG.md`: se contiene solo `Non versionato`, non serve release SemVer; se contiene cambi runtime o comunque sezioni versionate (`Novità`, `Correzioni`, `Sotto il cofano`, `Rimosso`), non chiudere la pubblicazione senza avere eseguito `npm run release` e incluso nel commit anche `app/lib/version.ts` e il changelog rilasciato.
-
-Quando pubblicazione App Store, billing o promozione production stabile verranno
-decisi, aggiungi ADR e aggiorna `AGENTS.md`, `README.md`, `.env.example`,
-`docs/guides/git-e-pubblicazione.md`, `docs/guides/versioning-e-release.md` e
-il piano tecnico.
-
-Dettagli: `docs/guides/versioning-e-release.md`, ADR
-`docs/decisions/0006-versioning-runtime-locale.md`, ADR
-`docs/decisions/0008-tag-e-github-release.md` e policy futura CI/deploy in
-`docs/decisions/0004-runtime-ci-release-future.md`.
-
-## Risposte finali e handoff
-
-## Risposta finale
-
-Nelle risposte finali:
-
-- riassumi cosa è cambiato o scoperto;
-- indica i file principali toccati;
-- riporta verifiche solo quando utili o quando ci sono limiti/rischi;
-- dichiara stato publish, release e deploy e branch/worktree quando applicabile;
-- dichiara rischi residui concreti;
-- includi sempre i prossimi passi consigliati quando esiste un seguito operativo reale;
-- i prossimi passi devono essere concreti, ordinati e proporzionati al lavoro appena concluso;
-- se non c'è un prossimo passo utile, dichiaralo esplicitamente invece di forzare una lista generica.
-
-Evita footer rituali sui test. Non inventare risultati.
+Se resta un dubbio sostanziale tra commit, PR, deploy, release o App Store,
+chiedi conferma prima dell'azione esterna o irreversibile.
 
 ## Definizione di completamento
 
-Una modifica è pronta se:
+Il lavoro è pronto quando:
 
-- risolve la richiesta senza allargare inutilmente lo scope;
-- resta coerente con perimetro e documenti di SyncBay;
-- non introduce nuovi worker, nuovi runtime o integrazioni provider fuori dal
-  perimetro approvato senza conferma esplicita;
-- non sovrascrive modifiche non tue;
-- aggiorna documenti/ADR quando una decisione cambia davvero;
-- non lascia segreti, dati personali, file temporanei o modifiche non correlate;
-- include verifiche eseguite o limiti noti quando rilevanti;
-- la `Codex feedback inbox` è stata controllata quando il flusso prevede PR,
-  merge, publish, deploy o release;
-- publish, release e deploy sono stati completati oppure dichiarati non applicabili con motivo.
-- branch/worktree creati per il lavoro sono stati puliti oppure il residuo è
-  dichiarato esplicitamente.
+- risolve la richiesta senza scope collaterale;
+- rispetta invarianti, ADR e documentazione canonica;
+- preserva modifiche altrui e non lascia segreti, dati reali o output locali;
+- aggiorna docs o ADR solo dove necessario;
+- include verifiche proporzionate e risultati reali;
+- publish, release, deploy, branch e worktree sono completati o dichiarati non
+  applicabili con motivo.
 
-## Sotto-moduli
-
-Per regole specifiche di sotto-moduli, aggiungere `AGENTS.md` nelle relative sottocartelle.
-
-Le istruzioni più profonde prevalgono sui livelli superiori.
+Nella risposta finale riassumi: cosa è cambiato o emerso, file principali,
+verifiche utili, stato Git/publish/release/deploy, rischi residui e prossimo
+passo concreto. Se non esiste un seguito utile, dichiaralo senza aggiungere una
+lista rituale.
