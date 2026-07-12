@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 const REQUIRED_ENV_GROUPS = [
   { key: "DATABASE_URL" },
@@ -14,41 +16,55 @@ const REQUIRED_ENV_GROUPS = [
   { key: "TOKEN_ENCRYPTION_KEY" },
 ];
 
-const args = parseArgs(process.argv.slice(2));
-const report = buildReport();
+if (isCliEntrypoint()) {
+  try {
+    const args = parseArgs(process.argv.slice(2));
+    const report = buildReport({ args });
 
-if (args.json) {
-  console.log(JSON.stringify(report, null, 2));
-} else {
-  printReport(report);
+    if (args.json) console.log(JSON.stringify(report, null, 2));
+    else printReport(report);
+
+    process.exit(report.failures.length > 0 ? 1 : 0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
-if (report.failures.length > 0) {
-  process.exit(1);
-}
-
-function buildReport() {
+export function buildReport({
+  args = {},
+  env = process.env,
+  root = process.cwd(),
+} = {}) {
   const nodeVersion = process.versions.node;
   const npmVersion = runOptional("npm", ["--version"]);
   const nodePath = process.execPath;
   const npmPath = runOptional("which", ["npm"]);
-  const expectedNodeVersion = readText(".node-version")?.trim() ?? null;
-  const packageJson = readJson("package.json");
-  const npmrc = readText(".npmrc") ?? "";
-  const dotenvKeys = readDotEnvKeys(".env");
+  const expectedNodeVersion = readText(root, ".node-version")?.trim() ?? null;
+  const packageJson = readJson(root, "package.json");
+  const packageLock = readJson(root, "package-lock.json");
+  const installedLock = readJson(root, "node_modules/.package-lock.json");
+  const npmrc = readText(root, ".npmrc") ?? "";
+  const dotenvKeys = readDotEnvKeys(root, ".env");
   const requiredEnv = REQUIRED_ENV_GROUPS.map((group) => {
     const names = getEnvGroupNames(group);
 
     return {
       aliases: group.aliases ?? [],
-      configured: names.some(
-        (key) => Boolean(process.env[key]) || dotenvKeys.has(key),
-      ),
+      configured: names.some((key) => Boolean(env[key]) || dotenvKeys.has(key)),
       key: group.key,
     };
   });
   const failures = [];
   const warnings = [];
+  const dependenciesInstalled = fs.existsSync(path.join(root, "node_modules"));
+  const lockfileMismatches =
+    packageLock && installedLock
+      ? findTopLevelLockMismatches(packageLock, installedLock)
+      : [];
+  const lockfileAligned =
+    dependenciesInstalled && Boolean(installedLock) && lockfileMismatches.length === 0;
+  const prismaClient = inspectPrismaClient(root);
 
   if (!expectedNodeVersion) {
     failures.push(".node-version mancante.");
@@ -86,12 +102,34 @@ function buildReport() {
     failures.push(".npmrc deve mantenere engine-strict=true.");
   }
 
-  if (!fs.existsSync("package-lock.json")) {
+  if (!packageLock) {
     failures.push("package-lock.json mancante.");
   }
 
-  if (!fs.existsSync("prisma/schema.prisma")) {
+  if (!fs.existsSync(path.join(root, "prisma/schema.prisma"))) {
     failures.push("prisma/schema.prisma mancante.");
+  }
+
+  if (!dependenciesInstalled) {
+    failures.push("Dipendenze locali mancanti: eseguire npm install.");
+  } else if (!installedLock) {
+    failures.push(
+      "Installazione locale non verificabile rispetto al lockfile: eseguire npm install.",
+    );
+  } else if (lockfileMismatches.length > 0) {
+    failures.push(
+      `Dipendenze top-level non allineate a package-lock.json: ${lockfileMismatches.join(", ")}. Eseguire npm install.`,
+    );
+  }
+
+  if (!prismaClient.generated) {
+    failures.push(
+      "Prisma Client non generato: eseguire npm run prisma:generate.",
+    );
+  } else if (!prismaClient.linked) {
+    failures.push(
+      "Link Prisma Client non allineato: eseguire npm run prisma:generate.",
+    );
   }
 
   const missingEnv = requiredEnv
@@ -100,22 +138,24 @@ function buildReport() {
 
   if (missingEnv.length > 0) {
     const message = `Variabili locali non configurate in env/.env: ${missingEnv.join(", ")}.`;
-    if (args.strictEnv) {
-      failures.push(message);
-    } else {
-      warnings.push(message);
-    }
+    if (args.strictEnv) failures.push(message);
+    else warnings.push(message);
   }
 
   return {
     checks: {
-      dotenvPresent: fs.existsSync(".env"),
+      dependenciesInstalled,
+      dotenvPresent: fs.existsSync(path.join(root, ".env")),
       engineStrict: /^\s*engine-strict\s*=\s*true\s*$/m.test(npmrc),
+      lockfileAligned,
+      lockfileMismatches,
       nodePath,
       nodeVersion,
       npmPath,
       npmVersion,
       packageManager: packageJson?.packageManager ?? null,
+      prismaClientGenerated: prismaClient.generated,
+      prismaClientLinked: prismaClient.linked,
       requiredEnv,
       strictEnv: Boolean(args.strictEnv),
       targetNodeVersion: expectedNodeVersion,
@@ -126,32 +166,82 @@ function buildReport() {
   };
 }
 
-function printReport(currentReport) {
-  console.log("Doctor locale SyncBay");
-  console.log(
-    `Node: ${currentReport.checks.nodeVersion} (${currentReport.checks.nodePath})`,
-  );
-  console.log(
-    `npm: ${currentReport.checks.npmVersion ?? "non trovato"} (${currentReport.checks.npmPath ?? "PATH non trovato"})`,
-  );
-  console.log(`Target Node: ${currentReport.checks.targetNodeVersion ?? "n/d"}`);
-  console.log(`.env presente: ${currentReport.checks.dotenvPresent ? "sì" : "no"}`);
+export function findTopLevelLockMismatches(rootLock, installedLock) {
+  const rootPackages = rootLock?.packages ?? {};
+  const installedPackages = installedLock?.packages ?? {};
+  const rootManifest = rootPackages[""] ?? {};
+  const dependencyNames = new Set([
+    ...Object.keys(rootManifest.dependencies ?? {}),
+    ...Object.keys(rootManifest.devDependencies ?? {}),
+    ...Object.keys(rootManifest.optionalDependencies ?? {}),
+  ]);
+  const mismatches = [];
 
-  if (currentReport.failures.length > 0) {
-    console.log("");
-    console.log("Errori:");
-    for (const failure of currentReport.failures) console.log(`- ${failure}`);
+  for (const name of [...dependencyNames].sort()) {
+    const packagePath = `node_modules/${name}`;
+    const expectedVersion = rootPackages[packagePath]?.version ?? null;
+    if (!expectedVersion) continue;
+    const installedVersion = installedPackages[packagePath]?.version ?? null;
+    if (installedVersion !== expectedVersion) {
+      mismatches.push(
+        `${name} (${installedVersion ? `installato ${installedVersion}` : "non installato"}, atteso ${expectedVersion})`,
+      );
+    }
   }
 
-  if (currentReport.warnings.length > 0) {
-    console.log("");
-    console.log("Avvisi:");
-    for (const warning of currentReport.warnings) console.log(`- ${warning}`);
+  return mismatches;
+}
+
+export function inspectPrismaClient(root) {
+  const generatedDirectory = path.join(root, "prisma/generated/client");
+  const generated = fs.existsSync(path.join(generatedDirectory, "index.js"));
+  const linkPath = path.join(root, "node_modules/.prisma/client/default");
+  let linked = false;
+
+  try {
+    const stat = fs.lstatSync(linkPath);
+    if (stat.isSymbolicLink()) {
+      const resolvedTarget = path.resolve(
+        path.dirname(linkPath),
+        fs.readlinkSync(linkPath),
+      );
+      linked = resolvedTarget === generatedDirectory;
+    }
+  } catch {
+    linked = false;
+  }
+
+  return { generated, linked };
+}
+
+function printReport(report) {
+  console.log("Doctor locale SyncBay");
+  console.log(`Node: ${report.checks.nodeVersion} (${report.checks.nodePath})`);
+  console.log(
+    `npm: ${report.checks.npmVersion ?? "non trovato"} (${report.checks.npmPath ?? "PATH non trovato"})`,
+  );
+  console.log(`Target Node: ${report.checks.targetNodeVersion ?? "n/d"}`);
+  console.log(`.env presente: ${report.checks.dotenvPresent ? "sì" : "no"}`);
+  console.log(
+    `Dipendenze/lockfile: ${report.checks.lockfileAligned ? "allineati" : "da riallineare"}`,
+  );
+  console.log(
+    `Prisma Client: ${report.checks.prismaClientGenerated && report.checks.prismaClientLinked ? "pronto" : "da generare"}`,
+  );
+
+  if (report.failures.length > 0) {
+    console.log("\nErrori:");
+    for (const failure of report.failures) console.log(`- ${failure}`);
+  }
+
+  if (report.warnings.length > 0) {
+    console.log("\nAvvisi:");
+    for (const warning of report.warnings) console.log(`- ${warning}`);
   }
 
   console.log("");
   console.log(
-    currentReport.ok
+    report.ok
       ? "Esito: ok. Gli avvisi non bloccano i check locali."
       : "Esito: non pronto. Correggi gli errori prima di usare il runtime locale.",
   );
@@ -160,52 +250,44 @@ function printReport(currentReport) {
 function parseArgs(rawArgs) {
   const parsed = {};
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--strict-env") {
-      parsed.strictEnv = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
+  for (const arg of rawArgs) {
+    if (arg === "--json") parsed.json = true;
+    else if (arg === "--strict-env") parsed.strictEnv = true;
+    else if (arg === "--help" || arg === "-h") {
       console.log(`Uso: npm run doctor:local -- [--strict-env] [--json]
 
-Verifica toolchain locale, engine-strict, file base e presenza delle env SyncBay
-senza stampare valori sensibili. Senza --strict-env le env mancanti sono avvisi,
-perché alcuni check docs/runtime non richiedono database o provider live.`);
+Verifica toolchain locale, dipendenze/lockfile, Prisma Client, file base e
+presenza delle env SyncBay senza stampare valori sensibili. Senza --strict-env
+le env mancanti sono avvisi, perché alcuni check non richiedono provider live.`);
       process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
+    } else throw new Error(`Argomento non supportato: ${arg}`);
   }
 
   return parsed;
 }
 
-function readText(filePath) {
+function readText(root, filePath) {
   try {
-    return fs.readFileSync(filePath, "utf8");
+    return fs.readFileSync(path.join(root, filePath), "utf8");
   } catch {
     return null;
   }
 }
 
-function readJson(filePath) {
-  const source = readText(filePath);
+function readJson(root, filePath) {
+  const source = readText(root, filePath);
   if (!source) return null;
 
-  return JSON.parse(source);
+  try {
+    return JSON.parse(source);
+  } catch {
+    return null;
+  }
 }
 
-function readDotEnvKeys(filePath) {
+function readDotEnvKeys(root, filePath) {
   const keys = new Set();
-  const source = readText(filePath);
+  const source = readText(root, filePath);
   if (!source) return keys;
 
   for (const rawLine of source.split(/\r?\n/)) {
@@ -225,19 +307,15 @@ function getEnvGroupNames(group) {
 
 function formatEnvRequirement(entry) {
   if (entry.aliases.length === 0) return entry.key;
-
   return `${entry.key} (fallback: ${entry.aliases.join(", ")})`;
 }
 
-function runOptional(command, commandArgs) {
-  const result = spawnSync(command, commandArgs, {
+function runOptional(command, args) {
+  const result = spawnSync(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   });
-
-  if (result.status !== 0) return null;
-
-  return result.stdout.trim();
+  return result.status === 0 ? result.stdout.trim() : null;
 }
 
 function majorVersion(version) {
@@ -246,23 +324,15 @@ function majorVersion(version) {
 
 function satisfiesNodeRange(version, range) {
   if (!range) return true;
-
   const [major, minor] = parseVersionParts(version);
-  if (range === ">=24.15 <25") {
-    return major === 24 && minor >= 15;
-  }
-
+  if (range === ">=24.15 <25") return major === 24 && minor >= 15;
   return true;
 }
 
 function satisfiesNpmRange(version, range) {
   if (!range) return true;
-
   const [major] = parseVersionParts(version);
-  if (range === ">=11 <12") {
-    return major === 11;
-  }
-
+  if (range === ">=11 <12") return major === 11;
   return true;
 }
 
@@ -270,4 +340,8 @@ function parseVersionParts(version) {
   return String(version)
     .split(".")
     .map((part) => Number.parseInt(part, 10));
+}
+
+function isCliEntrypoint() {
+  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }

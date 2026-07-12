@@ -4,8 +4,91 @@ import test from "node:test";
 import {
   buildCodexFeedbackPreflight,
   isPublishedMainPreflight,
+  loadCodexFeedback,
   readCodexReviewThreads,
 } from "./syncbay-publish-preflight.mjs";
+
+test("uses readable review threads without querying the Codex inbox", () => {
+  const calls = [];
+  const feedback = loadCodexFeedback(
+    {
+      pr: { number: 285 },
+      publishedMainPreflight: false,
+      remote: true,
+    },
+    {
+      readInbox() {
+        calls.push("inbox");
+        throw new Error("inbox should not be queried");
+      },
+      readThreads() {
+        calls.push("threads");
+        return {
+          actionable: false,
+          readable: true,
+          source: "reviewThreads",
+        };
+      },
+    },
+  );
+
+  assert.deepEqual(calls, ["threads"]);
+  assert.equal(feedback.readable, true);
+  assert.equal(feedback.source, "reviewThreads");
+});
+
+test("falls back to the Codex inbox only when review threads are unreadable", () => {
+  const calls = [];
+  const feedback = loadCodexFeedback(
+    {
+      pr: { number: 286 },
+      publishedMainPreflight: false,
+      remote: true,
+    },
+    {
+      readInbox(prNumber) {
+        calls.push(`inbox:${prNumber}`);
+        return {
+          globalActionable: false,
+          prActionable: true,
+          readable: true,
+        };
+      },
+      readThreads(prNumber) {
+        calls.push(`threads:${prNumber}`);
+        return { actionable: null, readable: false, source: "reviewThreads" };
+      },
+    },
+  );
+
+  assert.deepEqual(calls, ["threads:286", "inbox:286"]);
+  assert.equal(feedback.actionable, true);
+  assert.equal(feedback.source, "inbox");
+});
+
+test("reads the Codex inbox for a post-merge main preflight", () => {
+  const calls = [];
+  const feedback = loadCodexFeedback(
+    { pr: null, publishedMainPreflight: true, remote: true },
+    {
+      readInbox(prNumber) {
+        calls.push(prNumber);
+        return {
+          globalActionable: false,
+          prActionable: false,
+          readable: true,
+        };
+      },
+      readThreads() {
+        throw new Error("review threads require a PR");
+      },
+    },
+  );
+
+  assert.deepEqual(calls, [null]);
+  assert.equal(feedback.readable, true);
+  assert.equal(feedback.source, "inbox");
+});
 
 test("recognizes a clean main branch aligned with its upstream as post-merge verification", () => {
   assert.equal(

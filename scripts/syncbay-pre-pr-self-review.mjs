@@ -121,7 +121,7 @@ const AREA_DEFINITIONS = [
       "Il comando nuovo è documentato in TOOLCHAIN.md e ha un test mirato se contiene logica?",
       "Workflow o script nuovi non introducono permessi, runtime o release flow fuori dalle ADR approvate?",
     ],
-    checks: ["npm run lint", "node --test scripts/*.test.mjs .github/scripts/*.test.mjs"],
+    checks: ["npm run lint", "npm run test:tooling"],
     risk: "medio",
   },
   {
@@ -262,6 +262,7 @@ export function buildPrePrSelfReview({
     reviewQuestions,
     riskLevel,
     suggestedChecks,
+    unmatchedFiles,
     warnings,
   };
 }
