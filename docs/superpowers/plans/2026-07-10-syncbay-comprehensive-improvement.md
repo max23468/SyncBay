@@ -440,7 +440,7 @@ Aggiungere:
 "mappings:backfill-inventory-item": "tsx scripts/syncbay-backfill-inventory-mappings.mjs"
 ```
 
-- [ ] **Step 6: Verificare schema, test e webhook**
+- [x] **Step 6: Verificare schema, test e webhook**
 
 Run:
 
@@ -456,6 +456,8 @@ npm run mappings:backfill-inventory-item -- --dry-run
 ```
 
 Expected: schema/test/build verdi; dry-run senza valori sensibili. Prima dell'apply live, verificare con lo strumento Shopify che offre la prova più completa che `inventory_levels/update` sia registrato. Sul store pilota Numisleo eseguire una sola modifica inventario controllata e verificare la creazione del job senza usare dati cliente.
+
+Esito 2026-07-12: gate locali tutti verdi (`prisma:validate` ok, `test:runtime` pass 0 fail, `coverage:lib` 95,4% righe/84% branch, `typecheck`/`lint`/`build` ok). Dry-run backfill: 984/984 mapping già con `shopifyInventoryItemGid` (0 candidati, 0 conflitti) → dual-write già applicato in produzione. Verifica webhook live su Numisleo: modifica inventario controllata 28→29 su un mapping sintetico ha generato un job `DETECT_SHOPIFY_CHANGES` fuori cadenza cron (consegna `inventory_levels/update` confermata), con conflitto `quantity` reale creato e poi auto-risolto (RESOLVED) al ripristino 29→28. Nessun dato cliente usato; store lasciato pulito (0 conflitti aperti).
 
 - [x] **Step 7: Committare**
 
@@ -636,7 +638,7 @@ npm run quality:react-doctor
 
 Expected: tutti verdi; i test server dimostrano un'unica lettura Shopify batch e transizioni complete per ogni job.
 
-- [ ] **Step 6: Verificare il rollout live dell'Ondata B**
+- [ ] **Step 6: Verificare il rollout live dell'Ondata B** — aperto solo sul punto 4 (finestra 24h)
 
 Dopo merge/release/deploy:
 
@@ -646,6 +648,8 @@ Dopo merge/release/deploy:
 4. verificare per 24 ore che `DETECT_SHOPIFY_CHANGES` non cresca monotonicamente;
 5. controllare che conflitti reali e `mapping_not_found` restino distinguibili;
 6. non dichiarare recovery solo perché i conflitti aperti sono zero.
+
+Esito parziale 2026-07-12: (1) dry-run coalesce su Numisleo → 0 job duplicati cancellabili, backlog già drenato, apply non necessario; (2) tick cron osservati dal vivo alle ~07:59/08:00/08:05 con job processati regolarmente; (3) job dovuti pending = 0, quindi job più vecchio ben sotto i 15 min; (5) il test controllato ha prodotto un conflitto `quantity` reale legato a un mapping (non `mapping_not_found`), poi auto-risolto; (6) recovery non dichiarata solo da conflitti a zero. **Resta aperto solo il punto 4:** osservazione backlog per 24h avviata il 2026-07-12 ~08:00 UTC, da confermare dopo il 2026-07-13 ~08:00 UTC. Fino ad allora l'Ondata B non è dichiarata chiusa.
 
 - [x] **Step 7: Committare**
 
