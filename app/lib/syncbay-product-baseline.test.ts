@@ -7,6 +7,7 @@ import * as productBaseline from "./syncbay-product-baseline.ts";
 const {
   mergeProductBaseline,
   mergeProductDisplayBaselineWithSnapshot,
+  selectProductDisplaySnapshotQuantity,
 } = productBaseline;
 
 test("merges partial baseline patches without clearing absent fields", () => {
@@ -64,5 +65,24 @@ test("fills every missing display field from snapshot history", () => {
       sku: "SKU-1",
       title: "Titolo storico",
     },
+  );
+});
+
+test("uses older currency-backed stock when the newest snapshot has no quantity", () => {
+  assert.equal(
+    selectProductDisplaySnapshotQuantity({
+      latestCurrency: "EUR",
+      latestQuantity: null,
+      stockQuantity: 6,
+    }),
+    6,
+  );
+  assert.equal(
+    selectProductDisplaySnapshotQuantity({
+      latestCurrency: "EUR",
+      latestQuantity: 4,
+      stockQuantity: 6,
+    }),
+    4,
   );
 });

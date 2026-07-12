@@ -15,7 +15,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   non è cambiato, evitando di conservare fino a 180 giorni snapshot già
   compattabili.
 - Catalogo e conflitti completano campo per campo le baseline parziali usando
-  la storia snapshot, senza mostrare prezzo, quantità, stato o titolo vuoti.
+  la storia snapshot, inclusa l'ultima quantità associata a una valuta quando
+  lo snapshot più recente è solo prezzo, senza mostrare prezzo, quantità, stato
+  o titolo vuoti.
 - Il reconcile catalogo ripete l'annullamento dei giri obsoleti, sotto lock
   dello shop, immediatamente prima di creare il nuovo giro.
 
