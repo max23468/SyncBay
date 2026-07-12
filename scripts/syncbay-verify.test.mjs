@@ -127,6 +127,7 @@ test("full verification generates Prisma once and does not repeat lib tests", ()
   assert.equal(labels.includes("npm run test:lib"), false);
   assert.equal(labels.includes("npm run coverage:lib"), true);
   assert.equal(labels.includes("npm run test:services:raw"), true);
+  assert.equal(labels.includes("npm run test:tooling"), true);
   assert.equal(labels.includes("npm run typecheck:raw"), true);
   assert.equal(labels.includes("npm run build:raw"), true);
 });

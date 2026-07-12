@@ -18,6 +18,7 @@ const RECEIPT_DIRECTORY = ".cache/syncbay-verification";
 const FULL_COMMANDS = [
   npmCommand("prisma:generate"),
   npmCommand("lint"),
+  npmCommand("test:tooling"),
   npmCommand("typecheck:raw"),
   npmCommand("coverage:lib"),
   npmCommand("test:services:raw"),

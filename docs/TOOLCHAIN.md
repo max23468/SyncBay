@@ -142,8 +142,9 @@ il Prisma Client allineato allo schema anche nei deploy con cache installazione.
 
 I comandi standalone `build`, `typecheck` e `test:services` mantengono la
 generazione Prisma preventiva. `npm run verify:full` genera invece Prisma una
-sola volta e usa le varianti interne `*:raw`; usa `coverage:lib` come unica
-esecuzione dei test puri, poi esegue i test servizi, evitando duplicazioni.
+sola volta e usa le varianti interne `*:raw`; esegue i test tooling, usa
+`coverage:lib` come unica esecuzione dei test puri e poi esegue i test servizi,
+evitando duplicazioni.
 
 `verify:changed` e `verify:full` salvano ricevute ignorate da Git in
 `.cache/syncbay-verification/`. Una ricevuta viene riusata solo se fingerprint
