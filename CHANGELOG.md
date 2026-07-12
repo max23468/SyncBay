@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.55] — 2026-07-12
+
+### Correzioni
+
+- Reconcile catalogo: l'annullamento dei giri obsoleti ora avviene prima della
+  guardia che salta l'accodamento quando trova job in coda, e mantiene sempre
+  solo il giro più recente. Il precedente annullamento (1.0.54) veniva eseguito
+  solo alla creazione di un nuovo giro, quindi non scattava proprio quando un
+  arretrato era già presente; ora un blackout di autenticazione o delle API non
+  può più accumulare giri di riconciliazione.
+
 ## [1.0.54] — 2026-07-12
 
 ### Correzioni
@@ -3435,6 +3446,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.55]: #1055--2026-07-12
 [1.0.54]: #1054--2026-07-12
 [1.0.53]: #1053--2026-07-11
 [1.0.52]: #1052--2026-07-11

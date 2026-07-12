@@ -778,6 +778,8 @@ async function enqueueIncrementalSyncJobs(now: Date) {
   for (const shop of shops) {
     if (shop.ebayConnections.length === 0) continue;
 
+    await cancelSupersededCatalogReconcileRuns({ now, shopId: shop.id });
+
     const activeJob = await prisma.syncJob.findFirst({
       select: { id: true },
       where: {
@@ -1076,12 +1078,25 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
   }));
 
-  // Annulla i giri reconcile precedenti ancora aperti prima di crearne uno nuovo:
-  // ogni giro ripete la stessa scansione full-catalog, quindi tenerne più di uno
-  // è ridondante. Senza questo, un blackout auth/API accumula decine di giri
-  // incompleti (il runner ne drena uno alla volta) fino a un backlog ingestibile.
-  const priorReconcileJobs = await prisma.syncJob.findMany({
-    select: { id: true, payload: true },
+  await prisma.syncJob.createMany({
+    data: [...syncJobs, ...archiveJobs],
+    skipDuplicates: true,
+  });
+}
+
+// I giri reconcile obsoleti vanno annullati PRIMA della guardia `activeJob` di
+// enqueueIncrementalSyncJobs: quella guardia salta l'intero enqueue quando trova
+// job SYNC_INCREMENTAL/ARCHIVE in coda, quindi un supersede fatto solo alla
+// creazione di un nuovo giro non verrebbe mai raggiunto se il backlog esiste già.
+// Girando a ogni tick, mantiene un solo giro reconcile (il più recente) anche se
+// la guardia viene aggirata durante un blackout auth/API. No-op quando c'è un
+// solo giro aperto.
+async function cancelSupersededCatalogReconcileRuns(input: {
+  now: Date;
+  shopId: string;
+}) {
+  const openReconcileJobs = await prisma.syncJob.findMany({
+    select: { createdAt: true, id: true, payload: true },
     where: {
       payload: { path: ["source"], equals: "catalog_reconcile" },
       shopId: input.shopId,
@@ -1095,29 +1110,21 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     },
   });
   const supersededJobIds = getSupersededCatalogReconcileJobIds({
-    jobs: priorReconcileJobs,
-    keepRunId: runId,
+    jobs: openReconcileJobs,
   });
 
-  await prisma.$transaction(async (tx) => {
-    if (supersededJobIds.length > 0) {
-      await tx.syncJob.updateMany({
-        data: {
-          finishedAt: input.now,
-          result: { reason: "superseded_by_newer_catalog_reconcile_run" },
-          status: SyncJobStatus.CANCELLED,
-        },
-        where: {
-          id: { in: supersededJobIds },
-          status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
-        },
-      });
-    }
+  if (supersededJobIds.length === 0) return;
 
-    await tx.syncJob.createMany({
-      data: [...syncJobs, ...archiveJobs],
-      skipDuplicates: true,
-    });
+  await prisma.syncJob.updateMany({
+    data: {
+      finishedAt: input.now,
+      result: { reason: "superseded_by_newer_catalog_reconcile_run" },
+      status: SyncJobStatus.CANCELLED,
+    },
+    where: {
+      id: { in: supersededJobIds },
+      status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
+    },
   });
 }
 
