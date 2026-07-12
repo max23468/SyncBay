@@ -28,6 +28,10 @@ test("React Doctor runs only for runtime and frontend paths", () => {
   assert.match(source, /paths:/);
   assert.match(source, /app\/\*\*\/\*\.tsx/);
   assert.match(source, /package-lock\.json/);
+  assert.match(source, /eslint\.config\.mjs/);
+  assert.match(source, /version:\s*latest/);
+  assert.doesNotMatch(source, /ready_for_review/);
+  assert.doesNotMatch(source, /^\s*push:\s*$/m);
 });
 
 test("Doppler check runs only for environment and deployment surfaces", () => {
@@ -39,8 +43,27 @@ test("Doppler check runs only for environment and deployment surfaces", () => {
   assert.match(source, /docs\/doppler-setup\.md/);
 });
 
-test("PR title validation does not rerun when only commits change", () => {
+test("PR title validation reruns cheaply for every title-related PR event", () => {
   const source = readWorkflow("pr-title.yml");
 
-  assert.doesNotMatch(source, /^\s*- synchronize\s*$/m);
+  assert.match(source, /pull_request_target:/);
+  assert.match(source, /types:\s*\[opened, edited, reopened, synchronize\]/);
+  assert.match(source, /\.strip\(\)/);
+  assert.match(source, /\.\*\\S\$/);
+  assert.doesNotMatch(source, /actions\/checkout/);
+  assert.doesNotMatch(source, /github\.event\.changes\.title/);
+});
+
+test("Codex inbox uses one daily refresh and ignores ordinary issues", () => {
+  const source = readWorkflow("codex-pr-comments.yml");
+
+  assert.match(source, /cron:\s*"17 3 \* \* \*"/);
+  assert.match(source, /github\.event\.issue\.pull_request/);
+  assert.match(source, /Codex feedback inbox/);
+});
+
+test("Vercel delegates ignored builds to the tested classifier", () => {
+  const source = fs.readFileSync(`${ROOT}vercel.json`, "utf8");
+
+  assert.match(source, /syncbay-vercel-ignore-build\.mjs/);
 });

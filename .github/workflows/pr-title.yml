@@ -2,16 +2,12 @@ name: PR Title
 
 on:
   pull_request_target:
-    types:
-      - opened
-      - edited
-      - reopened
+    types: [opened, edited, reopened, synchronize]
     branches:
       - main
-  workflow_dispatch:
 
 concurrency:
-  group: pr-title-${{ github.event.pull_request.number || github.ref }}
+  group: pr-title-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -26,7 +22,7 @@ jobs:
     steps:
       - name: Check title
         env:
-          PR_TITLE: "${{ github.event.pull_request.title || 'chore: manual title check' }}"
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           python3 - <<'PY'
           import os
@@ -36,13 +32,13 @@ jobs:
           title = os.environ["PR_TITLE"].strip()
           pattern = re.compile(
               r"^(feat|fix|perf|docs|test|chore|ci|refactor|build|style)"
-              r"(\([a-z0-9._-]+\))?!?: .+"
+              r"(\([a-z0-9._-]+\))?!?: .*\S$"
           )
           if not pattern.fullmatch(title):
-              print(f"Invalid PR title: {title!r}", file=sys.stderr)
+              print(f"Titolo PR non valido: {title!r}", file=sys.stderr)
               print(
-                  "Use Conventional Commit format, for example "
-                  "'feat: add import checkpoint' or 'docs: clarify app store policy' or 'style: clean up webhook formatter'.",
+                  "Usa Conventional Commit, per esempio "
+                  "'ci: streamline checks' o 'fix: restore stock fallback'.",
                   file=sys.stderr,
               )
               sys.exit(1)
