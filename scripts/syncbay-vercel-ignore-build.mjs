@@ -27,7 +27,6 @@ const NON_DEPLOY_ROOT_FILES = new Set([
 
 const DEPLOY_SCRIPTS = new Set([
   "scripts/link-prisma-client.mjs",
-  "scripts/start-react-router.mjs",
 ]);
 
 export function shouldBuildVercel(paths) {

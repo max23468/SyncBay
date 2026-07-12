@@ -6,20 +6,21 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Sotto il cofano
-
-- Semplificate le dipendenze: rimossi `dotenv` (sostituito dal nativo
-  `process.loadEnvFile` in `prisma.config.ts`), `prettier` (mai configurato) e
-  `@shopify/app-bridge-react` (menu e title bar usano i web components App
-  Bridge `ui-nav-menu`/`ui-title-bar` dello script CDN già iniettato da
-  AppProvider); spostati in `devDependencies` Shopify CLI, Prisma CLI, i
-  pacchetti build/serve React Router, `patch-package` e il session storage
-  Shopify usato solo come tipo.
-- Rimosso il percorso di deploy Docker (`Dockerfile`, `.dockerignore`, script
-  `docker-start`): Vercel resta l'unico target di deploy.
-
 ### Non versionato
 
+- Semplificate le dipendenze senza impatto sul comportamento del prodotto:
+  rimossi `dotenv` (sostituito dal nativo `process.loadEnvFile` in
+  `prisma.config.ts`), `prettier` (mai configurato) e `@shopify/app-bridge-react`
+  (menu e title bar usano i web components App Bridge `ui-nav-menu`/`ui-title-bar`
+  dello script CDN già iniettato da AppProvider); spostati in `devDependencies`
+  Shopify CLI, Prisma CLI, i pacchetti build React Router, `patch-package` e il
+  session storage Shopify usato solo come tipo.
+- Rimosso il percorso di deploy Docker (`Dockerfile`, `.dockerignore`, script
+  `docker-start`): Vercel resta l'unico target di deploy.
+- Rimosso il percorso di serving self-hosted ormai inutilizzato: script `start`,
+  `scripts/start-react-router.mjs` e la dipendenza diretta `@react-router/serve`
+  (su Vercel il serving passa dal preset `vercelPreset()`, non da
+  `react-router-serve`).
 - Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie
   proporzionate e ricevute locali, doctor dei worktree, CI docs-only, preflight
   Codex direct-first, creazione worktree con preflight e setup seriale
