@@ -88,7 +88,7 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
   assert.deepEqual(plan.manualChecks, ["npm run db:verify"]);
 });
 
-test("never reuses receipts for publish or plans with live manual checks", () => {
+test("never reuses receipts for publish, live manual checks, or live commands", () => {
   assert.equal(
     shouldUseReceipt({ lane: "publish", manualChecks: [], mode: "publish" }),
     false,
@@ -101,15 +101,25 @@ test("never reuses receipts for publish or plans with live manual checks", () =>
     }),
     false,
   );
+  // The full lane runs a live production audit whose advisories can change
+  // even when diff, lockfile and Node stay identical, so it stays fresh.
+  assert.equal(shouldUseReceipt(buildVerificationPlan({ mode: "full" })), false);
+  // A lane without live commands can reuse a valid receipt.
   assert.equal(
-    shouldUseReceipt({ lane: "full", manualChecks: [], mode: "full" }),
+    shouldUseReceipt({
+      commands: [
+        { args: ["run", "lint"], command: "npm", label: "npm run lint" },
+      ],
+      lane: "standard",
+      manualChecks: [],
+      mode: "changed",
+    }),
     true,
   );
   assert.equal(
-    shouldUseReceipt(
-      { lane: "full", manualChecks: [], mode: "full" },
-      { noReceipt: true },
-    ),
+    shouldUseReceipt(buildVerificationPlan({ mode: "full" }), {
+      noReceipt: true,
+    }),
     false,
   );
 });
@@ -157,6 +167,12 @@ test("full verification generates Prisma once and does not repeat lib tests", ()
   assert.equal(labels.includes("npm run test:tooling"), true);
   assert.equal(labels.includes("npm run typecheck:raw"), true);
   assert.equal(labels.includes("npm run build:raw"), true);
+  assert.equal(labels.includes("npm run audit:prod"), true);
+
+  const audit = plan.commands.find(
+    (entry) => entry.label === "npm run audit:prod",
+  );
+  assert.equal(audit.live, true);
 });
 
 test("verification fingerprints change with diff lockfile runtime or commands", () => {
