@@ -89,6 +89,7 @@ import {
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   buildSellerEventsNoopMarker,
+  getCatalogReconcileJobIdsToCancelBeforeNewRun,
   getSupersededCatalogReconcileJobIds,
   isSchedulableSyncJob,
   isStaleInternalShopifyImportJob,
@@ -781,7 +782,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
   for (const shop of shops) {
     if (shop.ebayConnections.length === 0) continue;
 
-    await cancelSupersededCatalogReconcileRuns({ now, shopId: shop.id });
+    await cancelCatalogReconcileRuns({ now, shopId: shop.id });
 
     const activeJob = await prisma.syncJob.findFirst({
       select: { id: true },
@@ -1081,9 +1082,18 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     type: SyncJobType.ARCHIVE_INACTIVE_LISTING,
   }));
 
-  await prisma.syncJob.createMany({
-    data: [...syncJobs, ...archiveJobs],
-    skipDuplicates: true,
+  await prisma.$transaction(async (tx) => {
+    await lockShopForUpdate(tx, input.shopId);
+    await cancelCatalogReconcileRuns({
+      client: tx,
+      mode: "before_new_run",
+      now: input.now,
+      shopId: input.shopId,
+    });
+    await tx.syncJob.createMany({
+      data: [...syncJobs, ...archiveJobs],
+      skipDuplicates: true,
+    });
   });
 }
 
@@ -1094,11 +1104,14 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
 // Girando a ogni tick, mantiene un solo giro reconcile (il più recente) anche se
 // la guardia viene aggirata durante un blackout auth/API. No-op quando c'è un
 // solo giro aperto.
-async function cancelSupersededCatalogReconcileRuns(input: {
+async function cancelCatalogReconcileRuns(input: {
+  client?: Pick<Prisma.TransactionClient, "syncJob">;
+  mode?: "before_new_run" | "superseded";
   now: Date;
   shopId: string;
 }) {
-  const openReconcileJobs = await prisma.syncJob.findMany({
+  const client = input.client ?? prisma;
+  const openReconcileJobs = await client.syncJob.findMany({
     select: { createdAt: true, id: true, payload: true },
     where: {
       payload: { path: ["source"], equals: "catalog_reconcile" },
@@ -1112,13 +1125,13 @@ async function cancelSupersededCatalogReconcileRuns(input: {
       },
     },
   });
-  const supersededJobIds = getSupersededCatalogReconcileJobIds({
-    jobs: openReconcileJobs,
-  });
+  const supersededJobIds = input.mode === "before_new_run"
+    ? getCatalogReconcileJobIdsToCancelBeforeNewRun({ jobs: openReconcileJobs })
+    : getSupersededCatalogReconcileJobIds({ jobs: openReconcileJobs });
 
   if (supersededJobIds.length === 0) return;
 
-  await prisma.syncJob.updateMany({
+  await client.syncJob.updateMany({
     data: {
       finishedAt: input.now,
       result: { reason: "superseded_by_newer_catalog_reconcile_run" },

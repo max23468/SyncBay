@@ -379,10 +379,15 @@ export async function runDailyOperationalMaintenance(input: {
           WHERE s."capturedAt" < ${plan.eventCutoff}
             AND (
               s."mappingId" IS NULL OR EXISTS (
-                SELECT 1 FROM "ProductSnapshotCheckpoint" c
-                WHERE c."mappingId"=s."mappingId" AND c.source=s.source
-                  AND c."checkpointWeek"=date_trunc('week', s."capturedAt")::date
-                  AND c."isComplete"=true
+                SELECT 1 FROM LATERAL (
+                  SELECT c."isComplete"
+                  FROM "ProductSnapshotCheckpoint" c
+                  WHERE c."mappingId"=s."mappingId" AND c.source=s.source
+                    AND c."checkpointWeek" <= date_trunc('week', s."capturedAt")::date
+                  ORDER BY c."checkpointWeek" DESC
+                  LIMIT 1
+                ) covering_checkpoint
+                WHERE covering_checkpoint."isComplete"=true
               ) OR s."capturedAt" < ${plan.checkpointCutoff}
             )
           ORDER BY s."capturedAt" LIMIT 1000

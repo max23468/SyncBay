@@ -6,14 +6,27 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.57] — 2026-07-12
+
+### Correzioni
+
+- La compattazione della storia prodotto riconosce come copertura anche il
+  checkpoint completo più recente di una settimana precedente quando lo stato
+  non è cambiato, evitando di conservare fino a 180 giorni snapshot già
+  compattabili.
+- Catalogo e conflitti completano campo per campo le baseline parziali usando
+  la storia snapshot, senza mostrare prezzo, quantità, stato o titolo vuoti.
+- Il reconcile catalogo ripete l'annullamento dei giri obsoleti, sotto lock
+  dello shop, immediatamente prima di creare il nuovo giro.
+
+## [1.0.56] — 2026-07-12
+
 ### Non versionato
 
 - Ridotto il contesto operativo per agenti: semplificati `AGENTS.md`, README,
   handoff, roadmap, decisioni aperte, indice e toolchain; piani storici, memoria
   mex e dettagli di manutenzione sono ora instradati solo quando pertinenti,
   riducendo duplicazioni, inventari manuali e rischio di informazioni obsolete.
-
-## [1.0.56] — 2026-07-12
 
 ### Sotto il cofano
 
@@ -3471,6 +3484,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.57]: #1057--2026-07-12
 [1.0.56]: #1056--2026-07-12
 [1.0.55]: #1055--2026-07-12
 [1.0.54]: #1054--2026-07-12

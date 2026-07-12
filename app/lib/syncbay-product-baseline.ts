@@ -26,3 +26,37 @@ export function getUtcWeekStart(input: Date) {
   date.setUTCDate(date.getUTCDate() - mondayOffset);
   return date;
 }
+
+const PRODUCT_DISPLAY_FALLBACK_FIELDS = [
+  "currency",
+  "priceAmount",
+  "productStatus",
+  "quantity",
+  "sku",
+  "title",
+] as const;
+
+type ProductDisplayFallbackState = {
+  capturedAt: Date;
+  mappingId: string | null;
+  currency: unknown | null;
+  priceAmount: unknown | null;
+  productStatus: unknown | null;
+  quantity: unknown | null;
+  sku: unknown | null;
+  title: unknown | null;
+};
+
+export function mergeProductDisplayBaselineWithSnapshot<
+  T extends ProductDisplayFallbackState,
+>(baseline: T, snapshot: T | null | undefined): T {
+  if (!snapshot) return baseline;
+
+  const merged = { ...baseline };
+  for (const field of PRODUCT_DISPLAY_FALLBACK_FIELDS) {
+    if (merged[field] === null && snapshot[field] !== null) {
+      merged[field] = snapshot[field];
+    }
+  }
+  return merged;
+}

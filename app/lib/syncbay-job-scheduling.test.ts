@@ -2,7 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getCatalogReconcileJobIdsToCancelBeforeNewRun, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+
+test("cancels every prior reconcile job before creating a fresh run", () => {
+  assert.deepEqual(
+    getCatalogReconcileJobIdsToCancelBeforeNewRun({
+      jobs: [
+        { id: "old-a", payload: { runId: "run-old", source: "catalog_reconcile" } },
+        { id: "newest-a", payload: { runId: "run-newest", source: "catalog_reconcile" } },
+        { id: "seller-events", payload: { runId: "delta", source: "seller_events_delta" } },
+      ],
+    }),
+    ["old-a", "newest-a"],
+  );
+});
 
 test("supersedes catalog reconcile jobs from earlier runs, keeping the newest", () => {
   const ids = getSupersededCatalogReconcileJobIds({

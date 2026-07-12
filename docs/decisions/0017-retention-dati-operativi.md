@@ -60,9 +60,12 @@ Dal rollout dell'Ondata D, `ProductSyncBaseline` riceve la stessa scrittura
 degli snapshot e resta finché esiste il mapping. `ProductSnapshotCheckpoint`
 conserva al massimo un record per mapping, sorgente e settimana UTC. Un payload
 oltre 64 KiB produce un checkpoint incompleto: in quel caso la snapshot sorgente
-non viene cancellata prima dei 180 giorni. La compattazione resta disabilitabile
-con il kill switch della retention e viene autorizzata solo dopo backfill e
-verifica dei reader sulla baseline.
+non viene cancellata prima dei 180 giorni. Quando una settimana non produce un
+checkpoint perché lo stato è identico, il checkpoint completo più recente della
+stessa sorgente copre le snapshot stabili successive; la presenza di un
+checkpoint successivo incompleto impedisce comunque la cancellazione. La
+compattazione resta disabilitabile con il kill switch della retention e viene
+autorizzata solo dopo backfill e verifica dei reader sulla baseline.
 
 ## Conseguenze
 

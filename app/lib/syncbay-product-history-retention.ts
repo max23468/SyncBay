@@ -17,3 +17,19 @@ export function shouldCreateWeeklyCheckpoint(input: {
 }) {
   return input.currentDigest !== input.nextDigest;
 }
+
+interface ProductCheckpointCoverage {
+  checkpointWeek: Date;
+  isComplete: boolean;
+}
+
+export function getCoveringProductCheckpoint(input: {
+  checkpoints: ProductCheckpointCoverage[];
+  snapshotWeek: Date;
+}) {
+  const latest = input.checkpoints
+    .filter((checkpoint) => checkpoint.checkpointWeek <= input.snapshotWeek)
+    .sort((left, right) => right.checkpointWeek.getTime() - left.checkpointWeek.getTime())[0];
+
+  return latest?.isComplete ? latest : null;
+}

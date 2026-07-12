@@ -17,6 +17,7 @@ import {
 
 import prisma from "../db.server";
 import { recordProductSnapshotsInTransaction } from "./product-history.server";
+import { mergeProductDisplayBaselineWithSnapshot } from "../lib/syncbay-product-baseline";
 import {
   getImportProductStatusLabelCapitalized,
   type ImportProductStatus,
@@ -4018,10 +4019,15 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
     });
   }
 
-  const missingMappingIds = uniqueMappingIds.filter(
-    (mappingId) => !snapshotByMappingId.has(mappingId),
+  const fallbackMappingIds = uniqueMappingIds.filter(
+    (mappingId) => {
+      const baseline = snapshotByMappingId.get(mappingId);
+      return !baseline || baseline.currency === null || baseline.priceAmount === null ||
+        baseline.productStatus === null || baseline.quantity === null ||
+        baseline.sku === null || baseline.title === null;
+    },
   );
-  if (missingMappingIds.length === 0) return snapshotByMappingId;
+  if (fallbackMappingIds.length === 0) return snapshotByMappingId;
 
   const snapshots = await prisma.$queryRaw<LatestProductSnapshotForDisplay[]>`
     WITH latest_display AS (
@@ -4035,21 +4041,21 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
         "sku",
         "title"
       FROM "ProductSnapshot"
-      WHERE "mappingId" IN (${Prisma.join(missingMappingIds)})
+      WHERE "mappingId" IN (${Prisma.join(fallbackMappingIds)})
       ORDER BY "mappingId", "capturedAt" DESC
     )
     SELECT
       latest_display."mappingId",
       latest_display."capturedAt",
       COALESCE(latest_display."currency", latest_stock."currency") AS "currency",
-      latest_display."priceAmount",
-      latest_display."productStatus",
+      COALESCE(latest_display."priceAmount", latest_price."priceAmount") AS "priceAmount",
+      COALESCE(latest_display."productStatus", latest_status."productStatus") AS "productStatus",
       CASE
         WHEN latest_display."currency" IS NOT NULL THEN latest_display."quantity"
         ELSE latest_stock."quantity"
       END AS "quantity",
-      latest_display."sku",
-      latest_display."title"
+      COALESCE(latest_display."sku", latest_sku."sku") AS "sku",
+      COALESCE(latest_display."title", latest_title."title") AS "title"
     FROM latest_display
     LEFT JOIN LATERAL (
       SELECT "currency", "quantity"
@@ -4061,12 +4067,42 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
       ORDER BY "capturedAt" DESC
       LIMIT 1
     ) latest_stock ON true
+    LEFT JOIN LATERAL (
+      SELECT "priceAmount"
+      FROM "ProductSnapshot"
+      WHERE "mappingId" = latest_display."mappingId" AND "priceAmount" IS NOT NULL
+      ORDER BY "capturedAt" DESC LIMIT 1
+    ) latest_price ON true
+    LEFT JOIN LATERAL (
+      SELECT "productStatus"
+      FROM "ProductSnapshot"
+      WHERE "mappingId" = latest_display."mappingId" AND "productStatus" IS NOT NULL
+      ORDER BY "capturedAt" DESC LIMIT 1
+    ) latest_status ON true
+    LEFT JOIN LATERAL (
+      SELECT "sku"
+      FROM "ProductSnapshot"
+      WHERE "mappingId" = latest_display."mappingId" AND "sku" IS NOT NULL
+      ORDER BY "capturedAt" DESC LIMIT 1
+    ) latest_sku ON true
+    LEFT JOIN LATERAL (
+      SELECT "title"
+      FROM "ProductSnapshot"
+      WHERE "mappingId" = latest_display."mappingId" AND "title" IS NOT NULL
+      ORDER BY "capturedAt" DESC LIMIT 1
+    ) latest_title ON true
   `;
 
   for (const snapshot of snapshots) {
     if (!snapshot.mappingId) continue;
 
-    snapshotByMappingId.set(snapshot.mappingId, snapshot);
+    const baseline = snapshotByMappingId.get(snapshot.mappingId);
+    snapshotByMappingId.set(
+      snapshot.mappingId,
+      baseline
+        ? mergeProductDisplayBaselineWithSnapshot(baseline, snapshot)
+        : snapshot,
+    );
   }
 
   return snapshotByMappingId;
