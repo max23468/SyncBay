@@ -60,3 +60,13 @@ export function mergeProductDisplayBaselineWithSnapshot<
   }
   return merged;
 }
+
+export function selectProductDisplaySnapshotQuantity(input: {
+  latestCurrency: string | null;
+  latestQuantity: number | null;
+  stockQuantity: number | null;
+}) {
+  return input.latestCurrency !== null && input.latestQuantity !== null
+    ? input.latestQuantity
+    : input.stockQuantity;
+}

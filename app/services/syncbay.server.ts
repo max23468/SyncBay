@@ -4051,7 +4051,9 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
       COALESCE(latest_display."priceAmount", latest_price."priceAmount") AS "priceAmount",
       COALESCE(latest_display."productStatus", latest_status."productStatus") AS "productStatus",
       CASE
-        WHEN latest_display."currency" IS NOT NULL THEN latest_display."quantity"
+        WHEN latest_display."currency" IS NOT NULL
+          AND latest_display."quantity" IS NOT NULL
+          THEN latest_display."quantity"
         ELSE latest_stock."quantity"
       END AS "quantity",
       COALESCE(latest_display."sku", latest_sku."sku") AS "sku",
