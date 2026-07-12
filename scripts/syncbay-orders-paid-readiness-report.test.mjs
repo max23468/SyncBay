@@ -30,7 +30,7 @@ const basePayload = {
   session: {
     accessTokenLength: 10,
     expires: "2026-06-03T13:00:00.000Z",
-    id: "offline_syncbay-dev.myshopify.com",
+    id: "offline_fixture-shop.myshopify.com",
     isOnline: false,
     refreshTokenExpires: "2026-07-03T12:00:00.000Z",
     refreshTokenLength: 10,
@@ -38,7 +38,7 @@ const basePayload = {
   },
   shop: {
     id: "shop-1",
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   },
 };
 
@@ -51,7 +51,7 @@ test("blocks orders/paid readiness when the eBay connection is not connected", (
         status: "RECONNECT_REQUIRED",
       },
     },
-    { shopDomain: "syncbay-dev.myshopify.com" },
+    { shopDomain: "fixture-shop.myshopify.com" },
   );
 
   assert.equal(report.webhookRuntimeReady, false);
@@ -70,7 +70,7 @@ test("blocks orders/paid readiness when eBay access token refresh is required bu
         tokenExpiresAt: "2026-06-03T11:59:00.000Z",
       },
     },
-    { shopDomain: "syncbay-dev.myshopify.com" },
+    { shopDomain: "fixture-shop.myshopify.com" },
   );
 
   assert.equal(report.webhookRuntimeReady, false);
@@ -88,7 +88,7 @@ test("blocks orders/paid readiness when eBay access token refresh is required bu
         tokenExpiresAt: "2026-06-03T11:59:00.000Z",
       },
     },
-    { shopDomain: "syncbay-dev.myshopify.com" },
+    { shopDomain: "fixture-shop.myshopify.com" },
   );
 
   assert.equal(report.webhookRuntimeReady, false);
@@ -106,7 +106,7 @@ test("treats Supabase timestamp strings without timezone as UTC", () => {
         tokenExpiresAt: "2026-06-03T12:06:00.000",
       },
     },
-    { shopDomain: "syncbay-dev.myshopify.com" },
+    { shopDomain: "fixture-shop.myshopify.com" },
   );
 
   assert.equal(report.webhookRuntimeReady, true);
@@ -115,7 +115,7 @@ test("treats Supabase timestamp strings without timezone as UTC", () => {
 
 test("keeps orders/paid readiness green when Shopify, eBay, queue and mappings are ready", () => {
   const report = buildReadinessReport(basePayload, {
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   assert.equal(report.webhookRuntimeReady, true);
@@ -135,7 +135,7 @@ test("blocks the Admin orderCreate test while an eBay Trading cooldown is active
         type: "SYNC_INCREMENTAL",
       },
     },
-    { shopDomain: "syncbay-dev.myshopify.com" },
+    { shopDomain: "fixture-shop.myshopify.com" },
   );
 
   assert.equal(report.webhookRuntimeReady, true);

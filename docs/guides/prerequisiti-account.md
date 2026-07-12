@@ -24,7 +24,7 @@ Finché OAuth e account deletion non sono verificati su un nuovo runtime o ambie
 | Campo                      | Stato                | Note                                                                                   |
 | -------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
 | Account Shopify Partner    | Confermato           | Login CLI: `matteofilisina@icloud.com`.                                                |
-| Development store          | Storico              | Lo store pilota `syncbay-dev.myshopify.com` è scollegato dal runtime SyncBay.           |
+| Store pilota Numisleo       | Operativo            | `numisleo.myshopify.com` è l'unico store collegato al runtime SyncBay.                 |
 | Nome app custom            | Confermato           | `SyncBay`                                                                              |
 | Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                        |
 | App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                      |
@@ -82,7 +82,7 @@ Da verificare durante l'evoluzione runtime:
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
 - `read_orders` serve per il webhook `orders/paid` nella custom app privata;
 - `write_orders` serve solo per generare una prova automatica `orderCreate`
-  via Admin API sul dev store e richiede reautorizzazione dello store dopo il
+  via Admin API sullo store pilota Numisleo e richiede reautorizzazione dello store dopo il
   deploy della nuova configurazione scope;
 - requisiti esatti dei webhook e della versione Admin API usata.
 
@@ -201,7 +201,7 @@ Stato implementazione:
 ### Shopify
 
 - Account Shopify Partner: confermato.
-- Development store: `syncbay-dev.myshopify.com`.
+- store pilota Numisleo: `numisleo.myshopify.com`.
 - Nome app custom: `SyncBay`.
 - Shopify CLI: collegata all'app `SyncBay`.
 - App URL provvisorio: `https://syncbay.vercel.app` nel manifest 1.0 privata; dev preview verificata via Shopify CLI.
@@ -229,7 +229,6 @@ Anche con questa guida chiusa, prima delle prossime fasi runtime restano da comp
 
 ## Fonti
 
-- Shopify dev store: https://shopify.dev/docs/apps/build/dev-dashboard/development-stores
 - Shopify CLI apps: https://shopify.dev/docs/apps/build/cli-for-apps
 - Shopify app config: https://shopify.dev/docs/apps/build/cli-for-apps/manage-app-config-files
 - Shopify webhooks: https://shopify.dev/docs/apps/build/webhooks/subscribe

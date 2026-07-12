@@ -1701,12 +1701,12 @@ npm run build
 
 Expected: pass.
 
-- [ ] **Step 4: verifica Shopify metafield behavior in dev store**
+- [ ] **Step 4: verifica Shopify metafield behavior in store pilota Numisleo**
 
 Only after local tests pass and with a safe dev shop:
 
 ```bash
-npm run facets:backfill -- --shop syncbay-dev.myshopify.com --limit 5 --json
+npm run facets:backfill -- --shop numisleo.myshopify.com --limit 5 --json
 ```
 
 Expected: diagnostic output only. Do not apply with the script as ordinary flow.

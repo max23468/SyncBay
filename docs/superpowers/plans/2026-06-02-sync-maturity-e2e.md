@@ -45,7 +45,7 @@ for webhook delivery before attempting a second order.
 **Selected test target:**
 
 ```text
-shopDomain = syncbay-dev.myshopify.com
+shopDomain = numisleo.myshopify.com
 ebayItemId = 156986744184
 shopifyProductGid = gid://shopify/Product/9231310520542
 shopifyVariantGid = gid://shopify/ProductVariant/48298613407966
@@ -154,13 +154,13 @@ Expected: Prisma schema validates. If it fails because local database URLs are a
 Run:
 
 ```bash
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
+npm run jobs:status -- --shop numisleo.myshopify.com
 ```
 
 Expected: sanitized output only. There must be no active `UPDATE_EBAY_STOCK` or `SYNC_INCREMENTAL` job for the selected shop before baseline capture.
 
 ```bash
-npm run orders:paid-readiness -- --shop syncbay-dev.myshopify.com
+npm run orders:paid-readiness -- --shop numisleo.myshopify.com
 ```
 
 Expected: sanitized output only. `Runtime webhook orders/paid` must be `pronto`;
@@ -182,7 +182,7 @@ order creation path.
 Run:
 
 ```bash
-npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 5
+npm run import:verify -- --shop numisleo.myshopify.com --sample 5
 ```
 
 Expected: a sanitized sample verifies mapping, snapshot and Shopify product alignment. If the script exposes no safe candidate, use the next step to select from the database without printing secrets.
@@ -192,7 +192,7 @@ Expected: a sanitized sample verifies mapping, snapshot and Shopify product alig
 Use these selection rules:
 
 ```text
-shopDomain = syncbay-dev.myshopify.com
+shopDomain = numisleo.myshopify.com
 marketplaceId = EBAY_IT
 currency = EUR
 mapping.status = ACTIVE
@@ -232,8 +232,8 @@ Expected: no provider writes happen when a stop condition is true.
 Run:
 
 ```bash
-npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 1
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
+npm run import:verify -- --shop numisleo.myshopify.com --sample 1
+npm run jobs:status -- --shop numisleo.myshopify.com
 ```
 
 Expected: sanitized output includes enough evidence to confirm current mapping, product status, price and inventory on the SyncBay default location. Save the relevant values in the test notes, not in source files.
@@ -290,7 +290,7 @@ Expected: the eBay listing quantity is temporarily reduced by one. If the only a
 Run:
 
 ```bash
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
+npm run jobs:status -- --shop numisleo.myshopify.com
 ```
 
 If no incremental job runs within the configured cron window, trigger the protected runner from the deployed environment only with the configured secret source, without printing the secret.
@@ -302,7 +302,7 @@ Expected: a `SYNC_INCREMENTAL` job is created and completed for the shop.
 Run:
 
 ```bash
-npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 5
+npm run import:verify -- --shop numisleo.myshopify.com --sample 5
 ```
 
 Expected: selected product/variant shows the temporary quantity on the SyncBay default location, or the job result contains a clear retry/error reason.
@@ -334,14 +334,14 @@ Set the allowlist to one of these exact token shapes for the selected target:
 ```text
 ebay:$SELECTED_ITEM_ID
 variant:$SELECTED_SHOPIFY_VARIANT_ID
-syncbay-dev.myshopify.com:$SELECTED_ITEM_ID
+numisleo.myshopify.com:$SELECTED_ITEM_ID
 ```
 
 Expected: only the selected item or variant can bypass dry-run.
 
 - [ ] **Step 3: Create one paid Shopify test order for quantity 1**
 
-Use the Shopify dev store flow for the selected product only. Do not include customer personal data in notes. Keep the order currency as `EUR`.
+Use the Shopify store pilota Numisleo flow for the selected product only. Do not include customer personal data in notes. Keep the order currency as `EUR`.
 
 Expected: Shopify sends `orders/paid`, and SyncBay creates one `UPDATE_EBAY_STOCK` job.
 
@@ -350,7 +350,7 @@ Expected: Shopify sends `orders/paid`, and SyncBay creates one `UPDATE_EBAY_STOC
 Run:
 
 ```bash
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
+npm run jobs:status -- --shop numisleo.myshopify.com
 ```
 
 Expected: `UPDATE_EBAY_STOCK` has priority over sync/conflict jobs and finishes with `updatedCount: 1`, or fails/retries with a clear diagnostic. If `plannedCount: 1` and `updatedCount: 0`, the allowlist did not match and eBay was not changed.
@@ -399,8 +399,8 @@ Expected: if the allowlist was empty before the test, it is empty again.
 Run:
 
 ```bash
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
-npm run import:verify -- --shop syncbay-dev.myshopify.com --sample 5
+npm run jobs:status -- --shop numisleo.myshopify.com
+npm run import:verify -- --shop numisleo.myshopify.com --sample 5
 ```
 
 Expected: Shopify product/variant is aligned with restored eBay stock on the SyncBay default location.
@@ -410,7 +410,7 @@ Expected: Shopify product/variant is aligned with restored eBay stock on the Syn
 Run:
 
 ```bash
-npm run jobs:status -- --shop syncbay-dev.myshopify.com
+npm run jobs:status -- --shop numisleo.myshopify.com
 ```
 
 Expected: no `UPDATE_EBAY_STOCK` or `SYNC_INCREMENTAL` job remains `RUNNING`, and any `FAILED` job is explained with a concrete diagnostic.

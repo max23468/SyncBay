@@ -19,10 +19,10 @@ DECLARE
   mkt text := 'EBAY_IT';
 BEGIN
   SELECT id INTO sid FROM "Shop"
-   WHERE "shopDomain" = 'syncbay-dev.myshopify.com'
+   WHERE "shopDomain" = 'fixture-shop.myshopify.com'
    ORDER BY "createdAt" DESC LIMIT 1;
   IF sid IS NULL THEN
-    RAISE EXCEPTION 'Nessuno Shop locale per syncbay-dev.myshopify.com';
+    RAISE EXCEPTION 'Nessuno Shop locale sintetico per fixture-shop.myshopify.com';
   END IF;
 
   UPDATE "Shop" SET

@@ -270,7 +270,7 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   conflitti e incertezze; un lookup Trading fallito non blocca una proposta
   locale già valida, ma resta segnalato quando impedisce di proporre una
   categoria affidabile;
-- l'import reale ha completato 958 listing sul dev store con mapping, snapshot,
+- l'import reale ha completato 958 listing sul precedente ambiente pilota con mapping, snapshot,
   job e audit coerenti. La schedule Supabase Cron `syncbay-run-due-jobs`
   riprende ogni 5 minuti i job `IMPORT_CATALOG` dovuti.
 

@@ -50,7 +50,8 @@ testi principali e assenza di rendering rotto.
 `scripts/syncbay-ui-render.mjs` esegue il **componente di route reale** via Vite
 SSR, alimentato dai **loader veri** letti dalla sessione offline nel database
 locale (Supabase). Nessun browser autenticato, nessun Safari, nessun Shopify
-Admin: i dati sono quelli reali dello shop collegato in locale (dev store).
+Admin: senza `--fixture` i dati sono quelli dello shop collegato in locale;
+con `--fixture` sono esclusivamente sintetici.
 
 ```bash
 npm run ui:render panoramica   # render dati reali + screenshot desktop/narrow

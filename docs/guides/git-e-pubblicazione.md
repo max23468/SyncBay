@@ -177,7 +177,7 @@ Prima di dichiarare completata una modifica:
 
 Finché SyncBay resta in deployment Vercel production per distribuzione privata:
 
-- usare Vercel production solo per verifiche controllate del dev store;
+- usare Vercel production solo per verifiche controllate dello store pilota Numisleo;
 - non creare GitHub Release o tag SemVer fuori da una release prodotto reale;
 - non introdurre Release Please senza ADR;
 - non aggiungere nuovi workflow CI/runtime o deploy senza comandi reali e policy

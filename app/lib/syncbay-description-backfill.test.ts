@@ -158,7 +158,7 @@ test("summarizes rows and builds an apply plan only from applicable rows", () =>
         title: "Moneta Regno",
       }),
     ],
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
   const plan = buildDescriptionBackfillApplyPlan(report);
 
@@ -195,12 +195,12 @@ test("serializes an apply file with only applicable rows and full cleaned html",
     generatedAt: "2026-06-20T12:00:00.000Z",
     report: buildDescriptionBackfillReport({
       rows: [applicableRow, alreadyCorrectRow],
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
     }),
   });
 
   assert.equal(applyFile.version, 1);
-  assert.equal(applyFile.shopDomain, "syncbay-dev.myshopify.com");
+  assert.equal(applyFile.shopDomain, "fixture-shop.myshopify.com");
   assert.equal(applyFile.rows.length, 1);
   assert.equal(applyFile.rows[0]?.ebayItemId, "1010");
   assert.equal(applyFile.rows[0]?.cleanedDescriptionHtml, "<p>Bella moneta.</p>");
@@ -231,7 +231,7 @@ test("filters apply file rows against current Shopify descriptions without eBay 
     generatedAt: "2026-06-20T12:00:00.000Z",
     report: buildDescriptionBackfillReport({
       rows: [matchingRow, staleRow],
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
     }),
   });
 
@@ -272,7 +272,7 @@ test("filters apply file rows against current mapping eligibility", () => {
     generatedAt: "2026-06-20T12:00:00.000Z",
     report: buildDescriptionBackfillReport({
       rows: [conflictRow, remappedRow],
-      shopDomain: "syncbay-dev.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
     }),
   });
 

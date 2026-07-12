@@ -6,8 +6,8 @@ import { createShopifyAdminGraphqlClient, getOfflineShopifySessionId } from "./s
 
 test("builds the offline Shopify session id used by Shopify apps", () => {
   assert.equal(
-    getOfflineShopifySessionId("syncbay-dev.myshopify.com"),
-    "offline_syncbay-dev.myshopify.com",
+    getOfflineShopifySessionId("fixture-shop.myshopify.com"),
+    "offline_fixture-shop.myshopify.com",
   );
 });
 
@@ -23,7 +23,7 @@ test("creates an Admin GraphQL client backed by the offline access token", async
         status: 200,
       });
     },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   const response = await client.graphql("query Test($id: ID!) { node(id: $id) { id } }", {
@@ -33,7 +33,7 @@ test("creates an Admin GraphQL client backed by the offline access token", async
   assert.equal(response.ok, true);
   assert.equal(
     String(calls[0]?.input),
-    "https://syncbay-dev.myshopify.com/admin/api/2026-07/graphql.json",
+    "https://fixture-shop.myshopify.com/admin/api/2026-07/graphql.json",
   );
   assert.equal(calls[0]?.init?.method, "POST");
   assert.equal(
@@ -71,7 +71,7 @@ test("retries throttled Admin GraphQL responses", async () => {
       });
     },
     policy: { maxAttempts: 2, throttleRetryDelayMs: 1 },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   const response = await client.graphql("query Test { shop { id } }");
@@ -110,7 +110,7 @@ test("retries Admin GraphQL responses with throttled extension codes", async () 
       });
     },
     policy: { maxAttempts: 2, throttleRetryDelayMs: 1 },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   const response = await client.graphql("query Test { shop { id } }");
@@ -128,7 +128,7 @@ test("normalizes repeated non-json Admin GraphQL responses", async () => {
         status: 200,
       }),
     policy: { maxAttempts: 2, retryDelayMs: 1 },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
   });
 
   const response = await client.graphql("query Test { shop { id } }");
@@ -150,7 +150,7 @@ test("never exceeds four Admin GraphQL fetch attempts by default", async () => {
       calls += 1;
       return new Response("unavailable", { status: 503 });
     },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
     sleep: async () => {},
   });
 
@@ -169,7 +169,7 @@ test("stops before the retry delay would exceed the elapsed-time budget", async 
     },
     now: () => elapsed,
     policy: { maxAttempts: 10, maxElapsedMs: 4_000, retryDelayMs: 2_000 },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
     sleep: async (ms) => { elapsed += ms; },
   });
 
@@ -191,7 +191,7 @@ test("uses Shopify throttle status and GraphQL cost in one retry decision", asyn
       } : { data: { ok: true } }), { headers: { "Content-Type": "application/json" } });
     },
     policy: { throttleRetryDelayMs: 1 },
-    shopDomain: "syncbay-dev.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
     sleep: async (ms) => { delays.push(ms); },
   });
 

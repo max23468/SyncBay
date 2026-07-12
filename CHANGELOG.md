@@ -6,6 +6,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Rimossi dal repository i riferimenti operativi al vecchio store Shopify e
+  riallineati documentazione, esempi e fixture allo store pilota Numisleo o a
+  domini sintetici nei test.
+
 ## [1.0.55] — 2026-07-12
 
 ### Correzioni
@@ -460,7 +466,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Correzioni
 
-- Tooling/runtime: rimossi i fallback operativi verso `syncbay-dev.myshopify.com`
+- Tooling/runtime: rimossi i fallback operativi verso il precedente ambiente pilota
   da script diagnostici e route interne; gli shop target devono essere passati
   esplicitamente o configurati tramite ambiente locale.
 
@@ -2449,7 +2455,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### 2026-06-04
 
 - Verificato il trigger reale `orders/paid` via Shopify Admin `orderCreate` sul
-  dev store: il job `UPDATE_EBAY_STOCK` allowlistato aggiorna eBay e il rollback
+  precedente ambiente pilota: il job `UPDATE_EBAY_STOCK` allowlistato aggiorna eBay e il rollback
   ripristina eBay, Shopify e configurazione Vercel.
 
 ## [0.23.3] — 2026-06-04
@@ -2598,7 +2604,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   sessione offline Shopify, scope ordini, coda stock/sync e candidati con
   snapshot `EUR` prima della prova reale `orders/paid`.
 - La configurazione Shopify richiede anche `write_orders` per abilitare una
-  prova automatica controllata via Admin `orderCreate` sul dev store.
+  prova automatica controllata via Admin `orderCreate` sull'ambiente pilota.
 
 ## [0.22.12] — 2026-06-03
 
@@ -3185,7 +3191,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Correzioni
 
-- Verificato sul dev store l'import reale da 50 listing con esito idempotente: 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti gli `ItemID` del batch.
+- Verificato sul precedente ambiente pilota l'import reale da 50 listing con esito idempotente: 26 nuove bozze Shopify, 24 riusi senza duplicati e mapping presenti per tutti gli `ItemID` del batch.
 
 ## [0.13.1] — 2026-05-26
 
@@ -3419,7 +3425,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Novità
 
 - Prima dashboard embedded SyncBay in Shopify Admin, con stato Shopify/eBay, prossime azioni, audit e base tecnica.
-- Connessione Shopify custom app verificata sul development store `syncbay-dev.myshopify.com`.
+- Connessione Shopify custom app verificata sul precedente ambiente pilota.
 
 ### Sotto il cofano
 
@@ -3432,7 +3438,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Formalizzata la policy di pubblicazione GitHub, PR, commit, changelog e versioning futuro con ADR dedicato.
 - Configurati Dependabot per GitHub Actions e workflow `Codex PR comments`, con inbox dedicata ai feedback sulle PR.
 - Definiti i prerequisiti account Shopify/eBay, gli scope MVP, i webhook minimi e le env var previste prima dello scaffold.
-- Collegata Shopify CLI all'app `SyncBay` e configurato il development store `syncbay-dev.myshopify.com`.
+- Collegata Shopify CLI all'app `SyncBay` e configurato il precedente ambiente pilota.
 - Allineato lo stato dei prerequisiti eBay: account Developer confermato e keyset/app SyncBay richiesto a eBay.
 - Chiuse le decisioni tecniche bloccanti con ADR infrastruttura runtime MVP: Vercel + Supabase, Prisma, Supabase Queues/Cron e storage temporaneo immagini.
 - Creati e collegati i progetti runtime minimi Vercel `syncbay` e Supabase `mgjcbuokppfnglsftsmi`, senza deploy production.

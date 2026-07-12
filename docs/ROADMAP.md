@@ -58,7 +58,7 @@ esteso della vecchia roadmap di fondazione sta in
 - Connessione Shopify custom app, OAuth eBay.it, onboarding guidato, import
   controllato idempotente e account deletion eBay sono verificati.
 - Il primo ciclo incrementale reale eBay -> Shopify e il flusso ordine Shopify
-  pagato -> aggiornamento disponibilità eBay sono stati verificati sul dev store
+  pagato -> aggiornamento disponibilità eBay sono stati verificati sul precedente ambiente pilota
   e ripristinati dopo il test.
 - Il redesign embedded a sei superfici è stato implementato, pubblicato e
   rivisto post-publish contro i concept finali; `Impostazioni` è stata chiusa
@@ -66,7 +66,7 @@ esteso della vecchia roadmap di fondazione sta in
   intervallo sync configurabile e conferme esplicite.
 - La UI embedded classifica i conflitti per sicurezza operativa e la timeline
   Attività spiega impatto, prossima azione e retry sicuro dei job.
-- Coda conflitti del dev store verificata e ripulita: 933 falsi positivi `description`
+- Coda conflitti del precedente ambiente pilota verificata e ripulita: 933 falsi positivi `description`
   riallineati con repair script e 41 falsi positivi `images` chiusi dalla nuova
   regola che ignora il conflitto quando eBay non ha media e Shopify sì.
 

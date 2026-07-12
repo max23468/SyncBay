@@ -36,7 +36,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 | --- | --- | --- |
 | Runner conflitti | `547` job `DETECT_SHOPIFY_CHANGES` dovuti; il più vecchio risale al 5 luglio; `0` conflitti aperti | Task 2 e 4 devono ridurre l'età sotto 15 minuti e separare conflitti, no-op e mapping mancanti |
 | Esiti conflitti | Solo `20` esiti di conflitto su `6.445` job osservati, circa `0,31%`; prevalgono `mapping_not_found` e no-op | Task 4 deve batchare senza perdere la semantica di ogni esito |
-| Inventory webhook | Nessun job inventory osservato nei 7 giorni analizzati; lookup limitato alle ultime `300` snapshot | Task 3 normalizza il GID e verifica la consegna su dev store |
+| Inventory webhook | Nessun job inventory osservato nei 7 giorni analizzati; lookup limitato alle ultime `300` snapshot | Task 3 normalizza il GID e verifica la consegna su store pilota Numisleo |
 | Database Supabase | Prima fotografia: circa `346 MB` su `500 MB`. Ricontrollo fresco del 10 luglio: `370.363.539` byte, circa `353,2 MiB`; `AuditLog` circa `144 MiB`, `ProductSnapshot` circa `123 MiB`, `SyncJob` circa `63,7 MiB`; negli ultimi 7 giorni `19.613` snapshot, `39.705` audit log e `11.291` job; `935` job attivi | Task 7, 8 e 13 introducono baseline/checkpoint, maintenance giornaliera, pruning cron e budget storage/egress |
 | Sicurezza Supabase | Nessun advisor sicurezza; tre indici segnalati `unused` a livello informativo | Task 12 mantiene gli indici e richiede 30 giorni di statistiche prima di valutarli |
 | Produzione Vercel | Deploy production `1.0.45`/commit `2962c11` `READY`. I log mostrano un incidente storico 4-5 luglio con `9.855` timeout di connessione, `6.541` timeout di avvio transazione, `818` session storage non pronto, `71` checkout pool, `3` deadlock e un timeout runner a `300 s`; i cluster non ricorrono dopo il 5 luglio. Restano `/robots.txt` `404` e `20` deploy preview/production in 7 giorni | Task 2/4 impongono budget temporale e concorrenza DB limitata; Task 12 corregge `robots.txt` e documenta budget Free; Task 13 richiede una finestra pulita post-rollout senza inventare un outage corrente |
@@ -455,7 +455,7 @@ npm run build
 npm run mappings:backfill-inventory-item -- --dry-run
 ```
 
-Expected: schema/test/build verdi; dry-run senza valori sensibili. Prima dell'apply live, verificare con lo strumento Shopify che offre la prova più completa che `inventory_levels/update` sia registrato. Sul dev store eseguire una sola modifica inventario controllata e verificare la creazione del job senza usare dati cliente.
+Expected: schema/test/build verdi; dry-run senza valori sensibili. Prima dell'apply live, verificare con lo strumento Shopify che offre la prova più completa che `inventory_levels/update` sia registrato. Sul store pilota Numisleo eseguire una sola modifica inventario controllata e verificare la creazione del job senza usare dati cliente.
 
 - [x] **Step 7: Committare**
 
@@ -759,7 +759,7 @@ Expected: tutti verdi; il dry-run stampa solo conteggi.
 3. eseguire dry-run live;
 4. eseguire apply con conferma;
 5. verificare tramite query booleana che i token non vuoti non cifrati siano `0`;
-6. riaprire l'app sul dev store e verificare un refresh/session load reale;
+6. riaprire l'app sullo store pilota Numisleo e verificare un refresh/session load reale;
 7. non stampare mai i valori durante i controlli.
 
 - [x] **Step 7: Committare**
@@ -1243,7 +1243,7 @@ Expected: tutti verdi; dry-run non modifica dati.
 2. eseguire dry-run e conservare solo conteggi fuori repo;
 3. eseguire apply in finestra quieta;
 4. verificare baseline/checkpoint prima di ogni batch di delete;
-5. su record sintetici o dev store, ricostruire un rollback da snapshot e da checkpoint e confrontare i risultati campo per campo;
+5. su record sintetici o store pilota Numisleo, ricostruire un rollback da snapshot e da checkpoint e confrontare i risultati campo per campo;
 6. non eseguire `VACUUM FULL` sulla tabella grande come parte automatica;
 7. osservare il tick cron successivo e log `5xx`;
 8. ricontrollare size e crescita dopo 24 ore e 7 giorni;
@@ -1984,7 +1984,7 @@ Con lo strumento Supabase che copre health, query aggregate, advisor e cron, sen
 - backup logico cifrato recente secondo RPO deciso, checksum valido e restore drill isolato riuscito; se RPO/RTO non sono decisi o non esiste destinazione sicura, il programma non è chiuso;
 - controllare il tick cron successivo al deploy e i log `5xx`.
 
-- [ ] **Step 7: Verificare Shopify dev store e UI live**
+- [ ] **Step 7: Verificare Shopify store pilota Numisleo e UI live**
 
 Dentro Shopify Admin:
 
@@ -1995,7 +1995,7 @@ Dentro Shopify Admin:
 - verificare che Importazione tenga riconnessione e rinomina location secondarie rispetto a preview e prerequisiti;
 - eseguire la matrice sintetica healthy/empty/loading/degraded/error e verificare tastiera, focus visibile, nomi accessibili, `aria-live`, reduced motion, zoom `200%` automatico e `400%` manuale; una verifica screen reader manuale resta obbligatoria per i flussi principali;
 - confermare assenza di errori hydration, `pageerror` e console inattesi;
-- eseguire una modifica prodotto e una inventory controllata sul dev store;
+- eseguire una modifica prodotto e una inventory controllata sullo store pilota Numisleo;
 - confermare creazione e chiusura dei relativi job conflitto;
 - non eseguire import/apply/takeover su store cliente senza un go dedicato;
 - non effettuare scritture eBay salvo il runbook stock esplicitamente autorizzato.
@@ -2033,7 +2033,7 @@ Nel riepilogo finale riportare:
 | 547 job conflitto dovuti e oldest dal 5 luglio | Task 2/4 + oldest <15 minuti e trend 24h non crescente |
 | 0 conflitti aperti potenzialmente non fresco | Task 4 + distinzione tra conflitti, no-op e mapping mancanti |
 | Priorità runner fissa con `limit=2` | Task 2, senza aumento cieco del limite |
-| 7 giorni senza job inventory osservati | Task 3 + verifica registrazione/consegna dev store |
+| 7 giorni senza job inventory osservati | Task 3 + verifica registrazione/consegna store pilota Numisleo |
 | Lookup inventory sulle ultime 300 snapshot | Task 3, lookup indicizzato diretto |
 | Token Shopify plaintext | Task 5/6, zero plaintext live |
 | Refresh HTTP dentro transazione `FOR UPDATE` | Task 6, read/network/CAS |

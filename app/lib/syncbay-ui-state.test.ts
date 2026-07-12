@@ -30,8 +30,8 @@ const {
 
 test("builds eBay OAuth start href with the current shop context", () => {
   assert.equal(
-    getEbayOAuthStartHref("numisleo.myshopify.com"),
-    "/auth/ebay/start?shop=numisleo.myshopify.com",
+    getEbayOAuthStartHref("fixture-shop.myshopify.com"),
+    "/auth/ebay/start?shop=fixture-shop.myshopify.com",
   );
   assert.equal(getEbayOAuthStartHref(null), "/auth/ebay/start");
 });
@@ -45,14 +45,14 @@ test("prioritizes missing eBay connection before other dashboard issues", () => 
     importIncomplete: true,
     openConflictCount: 4,
     quantityIssueCount: 7,
-    shopDomain: "numisleo.myshopify.com",
+    shopDomain: "fixture-shop.myshopify.com",
     settingsMissing: true,
   });
 
   assert.deepEqual(action, {
     body: "Ricollega l'account eBay per riprendere import, aggiornamenti e controlli sulle disponibilità.",
     kind: "ebay_connection",
-    primaryActionHref: "/auth/ebay/start?shop=numisleo.myshopify.com",
+    primaryActionHref: "/auth/ebay/start?shop=fixture-shop.myshopify.com",
     primaryActionLabel: "Ricollega eBay",
     primaryActionTarget: "_top",
     title: "Collegamento eBay mancante o scaduto",
@@ -78,12 +78,12 @@ test("builds eBay connection actions only when OAuth is startable", () => {
     getEbayConnectionAction({
       oauthEnabled: true,
       oauthReady: true,
-      shopDomain: "numisleo.myshopify.com",
+      shopDomain: "fixture-shop.myshopify.com",
       status: "NOT_CONNECTED",
     }),
     {
       blockerText: null,
-      href: "/auth/ebay/start?shop=numisleo.myshopify.com",
+      href: "/auth/ebay/start?shop=fixture-shop.myshopify.com",
       label: "Collega eBay",
       target: "_top",
       variant: "primary",

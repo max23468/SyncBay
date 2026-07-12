@@ -362,7 +362,7 @@ function printReport(report) {
   ) {
     console.log("");
     console.log(
-      "Prossima azione: il runtime può ricevere orders/paid, ma il test automatico via Admin API richiede write_orders. Usa un checkout/admin order manuale sul dev store oppure aggiungi lo scope e riapri l'app Shopify per ottenere una sessione offline aggiornata.",
+      "Prossima azione: il runtime può ricevere orders/paid, ma il test automatico via Admin API richiede write_orders. Usa un checkout/admin order manuale sullo store pilota Numisleo oppure aggiungi lo scope e riapri l'app Shopify per ottenere una sessione offline aggiornata.",
     );
   }
 }
