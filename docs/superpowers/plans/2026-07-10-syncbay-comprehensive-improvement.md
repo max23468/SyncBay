@@ -1119,9 +1119,13 @@ transazione e rollback; backfill eseguito in batch `500 + 484`; `984/984`
 mapping hanno una baseline e i mapping attivi senza baseline sono `0`. Reader,
 writer e fallback compatibile sono stati pubblicati con cleanup distruttivo
 inizialmente disabilitato. Il tick cron successivo al rollout ha continuato a
-processare il runner; la consegna inventory controllata su Numisleo era già
-stata verificata con successo nel checkpoint dell'Ondata B e non è stata
-ripetuta.
+processare il runner. Dopo il deploy delle `20:32 UTC`, quattro job
+`SYNC_INCREMENTAL` sono terminati con successo tra le `20:35` e le `20:55 UTC`;
+il primo giro ha aggiornato quattro `ProductSyncBaseline` tramite il nuovo
+dual-write tra le `20:35:09.539` e le `20:35:09.613 UTC`. La coerenza
+post-deploy richiesta da questo step è quindi osservata sul percorso runtime
+reale, senza ripetere la consegna inventory controllata su Numisleo già
+verificata nell'Ondata B.
 
 ---
 
