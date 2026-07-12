@@ -25,7 +25,7 @@ const FULL_COMMANDS = [
   npmCommand("build:raw"),
   npmCommand("prisma:validate"),
   npmCommand("smoke:ui"),
-  npmCommand("audit:prod"),
+  npmCommand("audit:prod", { live: true }),
 ];
 
 if (isCliEntrypoint()) {
@@ -142,7 +142,8 @@ export function shouldUseReceipt(plan, args = {}) {
     !args.noReceipt &&
     plan.mode !== "publish" &&
     plan.lane !== "publish" &&
-    plan.manualChecks.length === 0
+    plan.manualChecks.length === 0 &&
+    !(plan.commands ?? []).some((entry) => entry.live)
   );
 }
 
@@ -405,12 +406,13 @@ function parseArgs(rawArgs) {
   return parsed;
 }
 
-function npmCommand(scriptName) {
-  return {
+function npmCommand(scriptName, { live = false } = {}) {
+  const command = {
     args: ["run", scriptName],
     command: "npm",
     label: `npm run ${scriptName}`,
   };
+  return live ? { ...command, live: true } : command;
 }
 
 function cloneCommands(commands) {

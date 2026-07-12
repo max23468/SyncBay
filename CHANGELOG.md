@@ -16,6 +16,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   checkout, React Doctor sempre `latest` e senza doppio run al passaggio da
   draft, inbox Codex giornaliera e build Vercel saltati per modifiche solo
   docs/governance/tooling.
+- Reso l'audit di produzione un controllo live nel verifier: `npm audit` non è
+  più coperto dalle ricevute, così la corsia `full` non salta l'audit di
+  sicurezza quando diff, lockfile e Node restano invariati.
 
 ## [1.0.57] — 2026-07-12
 

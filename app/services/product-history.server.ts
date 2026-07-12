@@ -26,11 +26,6 @@ export interface ProductBaselineWrite {
   lastWriterJobId?: string | null;
 }
 
-export interface ProductSyncBaselineRecord extends Required<ProductBaselineWrite> {
-  createdAt: Date;
-  updatedAt: Date;
-}
-
 interface ProductHistoryTransactionPort {
   upsertBaseline(input: ProductBaselineWrite): Promise<void>;
   createSnapshots(rows: Prisma.ProductSnapshotCreateManyInput[]): Promise<void>;
@@ -197,18 +192,6 @@ export async function recordProductSnapshotsInTransaction(
     });
   }
   if (snapshots.length > 0) await tx.productSnapshot.createMany({ data: snapshots });
-}
-
-export async function upsertProductSyncBaseline(input: ProductBaselineWrite) {
-  return recordProductHistory({ baseline: input, snapshots: [] });
-}
-
-export async function loadProductSyncBaselines(mappingIds: string[]) {
-  if (mappingIds.length === 0) return new Map<string, ProductSyncBaselineRecord>();
-  const rows = await prisma.productSyncBaseline.findMany({
-    where: { mappingId: { in: [...new Set(mappingIds)] } },
-  });
-  return new Map(rows.map((row) => [row.mappingId, row as ProductSyncBaselineRecord]));
 }
 
 export async function recordProductHistory(

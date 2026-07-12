@@ -16,17 +16,6 @@ export function mergeProductBaseline<T extends ProductBaselineState>(
   return merged as T & ProductBaselineState;
 }
 
-export function getUtcWeekStart(input: Date) {
-  const date = new Date(Date.UTC(
-    input.getUTCFullYear(),
-    input.getUTCMonth(),
-    input.getUTCDate(),
-  ));
-  const mondayOffset = (date.getUTCDay() + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - mondayOffset);
-  return date;
-}
-
 const PRODUCT_DISPLAY_FALLBACK_FIELDS = [
   "currency",
   "priceAmount",
