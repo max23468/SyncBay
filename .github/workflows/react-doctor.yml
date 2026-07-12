@@ -3,8 +3,30 @@ name: React Doctor
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "app/**/*.ts"
+      - "app/**/*.tsx"
+      - "app/**/*.css"
+      - "package.json"
+      - "package-lock.json"
+      - "react-router.config.ts"
+      - "vite.config.ts"
+      - "tsconfig.json"
+      - "eslint.config.js"
+      - ".github/workflows/react-doctor.yml"
   push:
     branches: [main]
+    paths:
+      - "app/**/*.ts"
+      - "app/**/*.tsx"
+      - "app/**/*.css"
+      - "package.json"
+      - "package-lock.json"
+      - "react-router.config.ts"
+      - "vite.config.ts"
+      - "tsconfig.json"
+      - "eslint.config.js"
+      - ".github/workflows/react-doctor.yml"
 
 permissions:
   contents: read

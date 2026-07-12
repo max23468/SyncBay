@@ -4,6 +4,13 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - ".env.example"
+      - ".github/workflows/doppler-check.yml"
+      - "Dockerfile"
+      - "docs/doppler-setup.md"
+      - "shopify.app*.toml"
+      - "vercel.json"
   workflow_dispatch:
 
 permissions:
