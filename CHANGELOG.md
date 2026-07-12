@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.56] — 2026-07-12
+
 ### Sotto il cofano
 
 - La storia prodotto usa una baseline durevole a doppia scrittura, checkpoint
@@ -13,13 +15,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   dipendono più dalla conservazione indefinita degli snapshot evento.
 - Aggiunti backfill resumibile, budget storage database e controllo provider
   aggregato per governare i limiti gratuiti di Supabase e Vercel.
-
-### Non versionato
-
-- Rimossi dal repository i riferimenti operativi al vecchio store Shopify e
-  riallineati documentazione, esempi e fixture allo store pilota Numisleo o a
-  domini sintetici nei test.
-- Chiusa l'Ondata B dopo il checkpoint aggregato di 24 ore sul backlog conflitti.
 
 ## [1.0.55] — 2026-07-12
 
@@ -31,6 +26,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   solo alla creazione di un nuovo giro, quindi non scattava proprio quando un
   arretrato era già presente; ora un blackout di autenticazione o delle API non
   può più accumulare giri di riconciliazione.
+
+### Non versionato
+
+- Rimossi dal repository i riferimenti operativi al precedente ambiente
+  Shopify e riallineati documentazione, esempi e fixture allo store pilota
+  Numisleo o a domini sintetici nei test.
+- Chiusa l'Ondata B dopo il checkpoint aggregato di 24 ore sul backlog
+  conflitti.
 
 ## [1.0.54] — 2026-07-12
 
@@ -3461,6 +3464,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.56]: #1056--2026-07-12
 [1.0.55]: #1055--2026-07-12
 [1.0.54]: #1054--2026-07-12
 [1.0.53]: #1053--2026-07-11
