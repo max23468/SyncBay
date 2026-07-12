@@ -260,6 +260,7 @@ export async function runDailyOperationalMaintenance(input: {
   };
 
   if (!enabled) {
+    await runRetentionCleanup({ now });
     const [events, checkpoints, oversize] = await Promise.all([
       prisma.productSnapshot.count({ where: { capturedAt: { lt: plan.eventCutoff } } }),
       prisma.productSnapshotCheckpoint.count({ where: { checkpointWeek: { lt: plan.checkpointCutoff } } }),

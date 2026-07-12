@@ -273,11 +273,9 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         result.set(baseline.mappingId, current);
       }
 
-      const missingMappingIds = mappingIds.filter((mappingId) => !result.has(mappingId));
-      if (missingMappingIds.length === 0) return result;
       const snapshots = await prisma.productSnapshot.findMany({
         orderBy: { capturedAt: "desc" },
-        where: { mappingId: { in: missingMappingIds }, source: ProductSnapshotSource.SYNCBAY },
+        where: { mappingId: { in: mappingIds }, source: ProductSnapshotSource.SYNCBAY },
       });
       for (const snapshot of snapshots) {
         if (!snapshot.mappingId) continue;

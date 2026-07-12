@@ -1386,8 +1386,17 @@ export async function resolveSyncConflict(
   }
 
   const now = new Date();
-  const operations: Prisma.PrismaPromise<unknown>[] = [
-    prisma.syncConflict.update({
+  const keepShopifySnapshot = baselineSnapshot
+    ? buildKeepShopifyBaselineSnapshot({
+        conflict,
+        latestDescriptionBaselineHash:
+          descriptionBaselineSnapshot?.descriptionHash ?? null,
+        snapshot: baselineSnapshot,
+      })
+    : null;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.syncConflict.update({
       data: {
         resolution,
         resolvedAt: now,
@@ -1397,8 +1406,8 @@ export async function resolveSyncConflict(
             : SyncConflictStatus.RESOLVED,
       },
       where: { id: conflict.id },
-    }),
-    prisma.auditLog.create({
+    });
+    await tx.auditLog.create({
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: {
@@ -1410,24 +1419,16 @@ export async function resolveSyncConflict(
         shopId: shop.id,
         type: AuditEventType.CONNECTION_CHECK,
       },
-    }),
-  ];
+    });
+    if (keepShopifySnapshot) {
+      await recordProductSnapshotsInTransaction(tx, [keepShopifySnapshot]);
+    }
 
-  const keepShopifySnapshot = baselineSnapshot
-    ? buildKeepShopifyBaselineSnapshot({
-        conflict,
-        latestDescriptionBaselineHash:
-          descriptionBaselineSnapshot?.descriptionHash ?? null,
-        snapshot: baselineSnapshot,
-      })
-    : null;
-
-  if (
-    resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
-    conflict.mapping?.ebayItemId
-  ) {
-    operations.push(
-      prisma.syncJob.create({
+    if (
+      resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
+      conflict.mapping?.ebayItemId
+    ) {
+      await tx.syncJob.create({
         data: {
           payload: {
             ebayItemIds: [conflict.mapping.ebayItemId],
@@ -1439,16 +1440,9 @@ export async function resolveSyncConflict(
           status: SyncJobStatus.PENDING,
           type: SyncJobType.SYNC_INCREMENTAL,
         },
-      }),
-    );
-  }
-
-  await prisma.$transaction(operations);
-  if (keepShopifySnapshot) {
-    await prisma.$transaction((tx) =>
-      recordProductSnapshotsInTransaction(tx, [keepShopifySnapshot]),
-    );
-  }
+      });
+    }
+  });
 
   return {
     message: "Conflitto aggiornato.",
