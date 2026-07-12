@@ -120,6 +120,17 @@ export function getDuplicateShopifyChangeJobIdsToCancel(
 
 export const CATALOG_RECONCILE_JOB_SOURCE = "catalog_reconcile";
 
+export function getCatalogReconcileJobIdsToCancelBeforeNewRun(input: {
+  jobs: Array<{ id: string; payload: unknown }>;
+}) {
+  return input.jobs.flatMap((job) =>
+    getStringField(job.payload, "source") === CATALOG_RECONCILE_JOB_SOURCE &&
+    getStringField(job.payload, "runId")
+      ? [job.id]
+      : [],
+  );
+}
+
 // Ogni giro di reconcile catalogo ripete la stessa scansione full-catalog:
 // tenere aperti più giri contemporaneamente è ridondante. Dato l'insieme dei
 // job reconcile ancora aperti, mantiene solo il giro più recente (il job con

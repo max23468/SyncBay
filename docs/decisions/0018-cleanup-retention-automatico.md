@@ -40,7 +40,9 @@ senza nuovi worker né workflow.
   oltre 30 minuti sono reclamabili con tentativo incrementato.
 - La storia prodotto crea prima checkpoint settimanali completi e poi cancella
   snapshot evento oltre 30 giorni in batch massimi da 1.000. Snapshot mappate
-  senza checkpoint completo restano fino a 180 giorni.
+  senza checkpoint completo restano fino a 180 giorni; nelle settimane stabili
+  vale il checkpoint completo precedente più recente, purché non ne esista uno
+  successivo incompleto.
 - I job vengono cancellati solo se in stato terminale
   (`SUCCEEDED`/`FAILED`/`CANCELLED`), per non rimuovere lavoro ancora in coda.
 - I job `SUCCEEDED`, già coperti da audit sintetico e snapshot quando

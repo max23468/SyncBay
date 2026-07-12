@@ -41,8 +41,11 @@ mapping attivi.
 `ProductSnapshotCheckpoint` conserva per 180 giorni al massimo un checkpoint
 per mapping, sorgente e settimana UTC, soltanto quando lo stato cambia. Il campo
 `isComplete` impedisce di cancellare la snapshot sorgente quando i dati
-reversibili non entrano nel limite di 64 KiB. La timeline diagnostica unisce
-eventi recenti e checkpoint senza confonderli con la baseline corrente.
+reversibili non entrano nel limite di 64 KiB. Nelle settimane senza variazioni,
+il checkpoint completo più recente copre anche le snapshot della settimana
+stabile; un checkpoint più recente ma incompleto blocca invece la cancellazione.
+La timeline diagnostica unisce eventi recenti e checkpoint senza confonderli
+con la baseline corrente.
 
 `MaintenanceRun` rende la maintenance una volta al giorno anche se il runner la
 richiama a ogni tick. Il kill switch

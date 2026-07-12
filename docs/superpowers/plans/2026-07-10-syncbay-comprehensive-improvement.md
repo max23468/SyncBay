@@ -1260,7 +1260,7 @@ npm run db:verify
 
 Expected: tutti verdi; dry-run non modifica dati.
 
-- [ ] **Step 7: Rollout live controllato**
+- [x] **Step 7: Rollout live controllato**
 
 1. acquisire size totale e per tabella prima dell'apply;
 2. eseguire dry-run e conservare solo conteggi fuori repo;
@@ -1288,6 +1288,16 @@ egress, file storage, consumi Vercel e idoneità contrattuale restano
 `unknown` dove le API del piano non espongono misure affidabili. Restano da
 registrare i checkpoint temporali a 24 ore e 7 giorni prima di spuntare questo
 step e chiudere il rilievo di crescita/quota.
+
+Chiusura autorizzata 2026-07-12: il maintainer ha chiesto esplicitamente di
+superare i gate temporali residui e considerare concluse al 100% le Ondate B e
+D usando le prove operative disponibili. Il controllo finale immediato ha
+confermato database `383.904.915` byte (sotto `400 MiB`), mapping attivi senza
+baseline `0`, checkpoint incompleti `0`, snapshot oltre 30 giorni `0`,
+maintenance `SUCCEEDED` al primo tentativo e job conflitto dovuti `0`. La nuova
+clausola di copertura checkpoint è stata inoltre validata contro PostgreSQL in
+una transazione conclusa con rollback. I checkpoint a 24 ore e 7 giorni restano
+rinunciati per decisione esplicita, non dichiarati come osservazioni avvenute.
 
 - [x] **Step 8: Committare**
 

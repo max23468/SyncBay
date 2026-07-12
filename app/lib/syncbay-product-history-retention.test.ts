@@ -6,6 +6,7 @@ import * as retention from "./syncbay-product-history-retention.ts";
 
 const {
   buildProductHistoryRetentionPlan,
+  getCoveringProductCheckpoint,
   getOperationalMaintenanceKey,
   shouldCreateWeeklyCheckpoint,
 } = retention;
@@ -31,4 +32,30 @@ test("creates at most one changed checkpoint per mapping source and week", () =>
   assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: null, nextDigest: "a" }), true);
   assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "a" }), false);
   assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "b" }), true);
+});
+
+test("a complete prior checkpoint covers a stable week without a duplicate checkpoint", () => {
+  assert.deepEqual(
+    getCoveringProductCheckpoint({
+      checkpoints: [
+        { checkpointWeek: new Date("2026-05-04T00:00:00Z"), isComplete: true },
+        { checkpointWeek: new Date("2026-05-18T00:00:00Z"), isComplete: true },
+      ],
+      snapshotWeek: new Date("2026-05-11T00:00:00Z"),
+    }),
+    { checkpointWeek: new Date("2026-05-04T00:00:00Z"), isComplete: true },
+  );
+});
+
+test("an incomplete checkpoint for the current week blocks snapshot deletion", () => {
+  assert.equal(
+    getCoveringProductCheckpoint({
+      checkpoints: [
+        { checkpointWeek: new Date("2026-05-04T00:00:00Z"), isComplete: true },
+        { checkpointWeek: new Date("2026-05-11T00:00:00Z"), isComplete: false },
+      ],
+      snapshotWeek: new Date("2026-05-11T00:00:00Z"),
+    }),
+    null,
+  );
 });
