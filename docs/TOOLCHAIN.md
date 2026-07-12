@@ -73,44 +73,6 @@ con Prisma 7. Future major Prisma restano manuali.
 I tipi Node oltre la major del runtime dichiarato richiedono un pass manuale:
 il runtime repo resta `>=24.15 <25`.
 
-## Tool agenti Shopify
-
-Per sviluppo assistito su superfici Shopify, questa postazione può usare anche
-il plugin Shopify disponibile in Codex Desktop per questo tool e per questa
-repo. Il plugin va considerato un supporto operativo per documentazione,
-validazione e contesto Shopify, non una dipendenza runtime di SyncBay.
-
-La postazione locale può inoltre usare Shopify AI Toolkit installato come skill
-globali dell'agente:
-
-- installazione: `npx skills add Shopify/shopify-ai-toolkit`;
-- skill attese: `shopify-admin`, `shopify-use-shopify-cli`,
-  `shopify-polaris-app-home`, `shopify-app-store-review`, `shopify-dev` e le
-  altre skill Shopify installate dal toolkit;
-- Dev MCP Shopify opzionale: `shopify-dev-mcp` via `npx -y @shopify/dev-mcp@latest`
-  nella configurazione locale Codex.
-
-Questi tool non sono dipendenze runtime di SyncBay e non sostituiscono ADR,
-documentazione del progetto o verifiche locali. Le skill installate manualmente
-non si aggiornano da sole: prima di usarle per decisioni sensibili su API,
-App Store, compliance o CLI, verifica la documentazione Shopify corrente.
-
-## Tool agenti memoria
-
-Questa postazione può usare `mex-agent` come scaffold di memoria locale per
-Codex, Claude Code e altri agenti. Lo scaffold vive in `.mex/`, ignorata da
-Git, ed è una memoria operativa routata, non una dipendenza runtime di SyncBay.
-
-Regole d'uso:
-
-- Codex e Claude Code devono leggere prima `AGENTS.md`; poi, se presente, usare
-  `.mex/ROUTER.md` per aprire solo i file `context/` e `patterns/` pertinenti.
-- Le fonti canoniche restano `AGENTS.md`, `docs/INDEX.md`, ADR e documentazione
-  in `docs/`; se mex è in conflitto, va considerato stale.
-- Usare `npx mex-agent check --quiet` per un controllo rapido e
-  `npx mex-agent sync --dry-run` per preparare un aggiornamento mirato.
-- Non committare `.mex/telemetry-id`, segreti, output locali o dati reali.
-
 ## Comandi locali
 
 | Scopo                         | Comando                                                                                     |
@@ -167,35 +129,12 @@ quando il task riguarda diagnostica o manutenzione live.
 
 ### Copertura dei moduli server
 
-Il censimento distingue test diretto, contratto coperto da test puri/route e
-adapter banale. “Contratto coperto” non equivale a coverage diretta dell'I/O:
-quando uno di questi moduli ad alto rischio viene modificato, il relativo task
-deve aggiungere un test server o un test di contratto esplicito.
+La copertura reale si ricava dai test presenti, non da un inventario manuale.
+Quando cambia un modulo `app/services`, aggiungi o aggiorna un test server o di
+contratto proporzionato al rischio ed esegui `npm run test:runtime`.
 
-| Modulo `app/services` | Classificazione attuale | Evidenza o requisito |
-| --- | --- | --- |
-| `crypto.server.ts` | Contratto coperto | Cifratura/token coperti dai test puri; test server obbligatorio nel Task 5 |
-| `ebay-account-deletion.server.ts` | Contratto coperto | Deduplica, verifica e retention account deletion nei test `app/lib` |
-| `ebay-environment.server.ts` | Adapter banale | Selezione configurazione ambiente senza regole di dominio |
-| `ebay-inventory-preview.server.ts` | Contratto coperto | Modalità e finestra preview nei test `app/lib`; adapter I/O da testare se modificato |
-| `ebay-notifications.server.ts` | Contratto coperto | Firma/deduplica account deletion nei test `app/lib` |
-| `ebay-token.server.ts` | Contratto coperto | Envelope/rate limit/cifratura nei test puri; test server obbligatorio se cambia refresh |
-| `ebay-trading-preview.server.ts` | Test diretto | `ebay-trading-preview.server.test.ts` |
-| `ebay-trading-stock.server.ts` | Contratto coperto | Guardie stock, valuta, allowlist e idempotenza nei test `app/lib` |
-| `ebay.server.ts` | Contratto coperto | Circuit breaker e rate limit nei test `app/lib`; adapter HTTP da testare se modificato |
-| `import-preview.server.ts` | Contratto coperto | Mode/window/stepper/takeover nei test `app/lib` |
-| `pricing-rules.server.ts` | Contratto coperto | Calcolo, normalizzazione e write decision nei test pricing puri |
-| `retention-cleanup.server.ts` | Contratto coperto | Piano e cutoff retention nei test `app/lib` |
-| `shopify-admin-session.server.ts` | Contratto coperto | Client Admin e diagnostica nei test `app/lib`; test server obbligatorio nel Task 6 |
-| `shopify-draft-import.server.ts` | Contratto coperto | Contratti import, pricing, snapshot, media e pubblicazione nei test `app/lib` |
-| `shopify-existing-products.server.ts` | Test diretto | `shopify-existing-products.server.test.ts` |
-| `shopify-location.server.ts` | Contratto coperto | Scope e diagnostica location nei test `app/lib` |
-| `shopify-prisma-session-storage.server.ts` | Test diretto | `shopify-prisma-session-storage.server.test.ts` |
-| `sync-job-runner.server.ts` | Contratto coperto | Fairness/deadline, scheduling, batching, idempotenza, retry e guardie stock coperti dai test `app/lib` e dal test server del rilevamento conflitti |
-| `shopify-conflict-detection.server.ts` | Test diretto | Porte batch, isolamento errori, mapping mancanti, stati mapping e lettura Shopify unica in `shopify-conflict-detection.server.test.ts` |
-| `syncbay-product-facets.server.ts` | Contratto coperto | Proposta, baseline, sync plan e backfill faccette nei test `app/lib` |
-| `syncbay.server.ts` | Contratto coperto | Contratti catalogo/conflitti/snapshot/audit nei test `app/lib`; nuovi verticali richiedono test server |
-`npm run build` esegue sempre `npm run prisma:generate` tramite `prebuild`, per mantenere il Prisma Client allineato allo schema anche nei deploy Vercel con cache installazione.
+`npm run build` esegue `npm run prisma:generate` tramite `prebuild`, mantenendo
+il Prisma Client allineato allo schema anche nei deploy con cache installazione.
 
 ## Verifiche per tipo di modifica
 
