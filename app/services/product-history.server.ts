@@ -240,13 +240,21 @@ function isMaintenanceEnabled() {
     process.env.SYNCBAY_PRODUCT_HISTORY_COMPACTION_ENABLED?.trim() === "true";
 }
 
+export function shouldRunLegacyRetentionCleanup(input: {
+  compactionEnabled: boolean;
+  dryRun: boolean;
+}) {
+  return !input.compactionEnabled && !input.dryRun;
+}
+
 export async function runDailyOperationalMaintenance(input: {
   now?: Date;
   dryRun?: boolean;
 } = {}): Promise<OperationalMaintenanceResult> {
   const now = input.now ?? new Date();
   const key = getOperationalMaintenanceKey(now);
-  const enabled = isMaintenanceEnabled() && !input.dryRun;
+  const compactionEnabled = isMaintenanceEnabled();
+  const enabled = compactionEnabled && !input.dryRun;
   const plan = buildProductHistoryRetentionPlan(now);
   const base = {
     checkpointDeletedCount: 0,
@@ -260,7 +268,9 @@ export async function runDailyOperationalMaintenance(input: {
   };
 
   if (!enabled) {
-    await runRetentionCleanup({ now });
+    if (shouldRunLegacyRetentionCleanup({ compactionEnabled, dryRun: input.dryRun === true })) {
+      await runRetentionCleanup({ now });
+    }
     const [events, checkpoints, oversize] = await Promise.all([
       prisma.productSnapshot.count({ where: { capturedAt: { lt: plan.eventCutoff } } }),
       prisma.productSnapshotCheckpoint.count({ where: { checkpointWeek: { lt: plan.checkpointCutoff } } }),
@@ -281,11 +291,34 @@ export async function runDailyOperationalMaintenance(input: {
     return { ...base, skipped: true };
   }
 
-  await prisma.maintenanceRun.upsert({
-    where: { key },
-    create: { key, status: "RUNNING" },
-    update: { attempt: { increment: 1 }, completedAt: null, errorCode: null, startedAt: now, status: "RUNNING" },
-  });
+  if (existing) {
+    const claimed = await prisma.maintenanceRun.updateMany({
+      where: {
+        key,
+        OR: [
+          { status: "FAILED" },
+          { status: "RUNNING", startedAt: { lte: new Date(now.getTime() - 30 * 60 * 1_000) } },
+        ],
+      },
+      data: {
+        attempt: { increment: 1 },
+        completedAt: null,
+        errorCode: null,
+        startedAt: now,
+        status: "RUNNING",
+      },
+    });
+    if (claimed.count === 0) return { ...base, skipped: true };
+  } else {
+    try {
+      await prisma.maintenanceRun.create({ data: { key, status: "RUNNING" } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        return { ...base, skipped: true };
+      }
+      throw error;
+    }
+  }
 
   try {
     const inserted = await prisma.$executeRaw`

@@ -1,7 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { recordProductHistory } from "./product-history.server";
+import {
+  recordProductHistory,
+  shouldRunLegacyRetentionCleanup,
+} from "./product-history.server";
+
+test("dry-run never invokes the legacy destructive retention cleanup", () => {
+  assert.equal(
+    shouldRunLegacyRetentionCleanup({ compactionEnabled: false, dryRun: true }),
+    false,
+  );
+  assert.equal(
+    shouldRunLegacyRetentionCleanup({ compactionEnabled: true, dryRun: true }),
+    false,
+  );
+});
+
+test("legacy retention continues while compaction is disabled", () => {
+  assert.equal(
+    shouldRunLegacyRetentionCleanup({ compactionEnabled: false, dryRun: false }),
+    true,
+  );
+});
 
 test("writes baseline and snapshots in one transaction", async () => {
   const events: string[] = [];
