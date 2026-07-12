@@ -137,6 +137,15 @@ export function runVerificationPlan(plan, options = {}) {
   return { failedCommand: null, ok: true, status: 0 };
 }
 
+export function shouldUseReceipt(plan, args = {}) {
+  return (
+    !args.noReceipt &&
+    plan.mode !== "publish" &&
+    plan.lane !== "publish" &&
+    plan.manualChecks.length === 0
+  );
+}
+
 function runCli(args) {
   if (args.mode === "classify") {
     const review = readReview(args.base);
@@ -186,9 +195,9 @@ function runCli(args) {
 }
 
 function printAndRun(plan, args) {
-  const receipt = args.noReceipt
-    ? null
-    : buildReceiptContext({ base: args.base, plan });
+  const receipt = shouldUseReceipt(plan, args)
+    ? buildReceiptContext({ base: args.base, plan })
+    : null;
 
   if (!args.force && receipt && readValidReceipt(receipt.path, receipt.fingerprint)) {
     const cached = {

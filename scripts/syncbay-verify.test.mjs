@@ -5,6 +5,7 @@ import {
   buildVerificationPlan,
   createVerificationFingerprint,
   runVerificationPlan,
+  shouldUseReceipt,
 } from "./syncbay-verify.mjs";
 
 test("keeps docs-only changes on one lightweight check", () => {
@@ -85,6 +86,32 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
     ["npm run prisma:validate", "npm run test:tooling"],
   );
   assert.deepEqual(plan.manualChecks, ["npm run db:verify"]);
+});
+
+test("never reuses receipts for publish or plans with live manual checks", () => {
+  assert.equal(
+    shouldUseReceipt({ lane: "publish", manualChecks: [], mode: "publish" }),
+    false,
+  );
+  assert.equal(
+    shouldUseReceipt({
+      lane: "standard",
+      manualChecks: ["npm run db:verify"],
+      mode: "changed",
+    }),
+    false,
+  );
+  assert.equal(
+    shouldUseReceipt({ lane: "full", manualChecks: [], mode: "full" }),
+    true,
+  );
+  assert.equal(
+    shouldUseReceipt(
+      { lane: "full", manualChecks: [], mode: "full" },
+      { noReceipt: true },
+    ),
+    false,
+  );
 });
 
 test("runs verification commands serially and stops at the first failure", () => {
