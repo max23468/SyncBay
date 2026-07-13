@@ -3761,7 +3761,7 @@ async function markJobSucceeded(input: {
 }
 
 function toPrismaJsonObject(value: Record<string, unknown>): Prisma.JsonObject {
-  return JSON.parse(JSON.stringify(value)) as Prisma.JsonObject;
+  return structuredClone(value) as Prisma.JsonObject;
 }
 
 async function splitOversizedEbayItemJobIfNeeded(

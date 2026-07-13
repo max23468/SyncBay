@@ -85,6 +85,8 @@ il runtime repo resta `>=24.15 <25`.
 | Lint                          | `npm run lint`                                                                              |
 | Build                         | `npm run build`                                                                             |
 | Smoke UI                      | `npm run smoke:ui`                                                                          |
+| Render UI fixture isolato     | `npm run ui:check`                                                                          |
+| Browser UI fixture isolato    | `npm run ui:browser-check`                                                                  |
 | Misura performance loader     | `npm run perf:loaders -- --since 10m`                                                       |
 | Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
 | Test librerie pure            | `npm run test:lib`                                                                          |
@@ -111,6 +113,7 @@ il runtime repo resta `>=24.15 <25`.
 | Backfill baseline prodotto    | `npm run product-baselines:backfill -- --dry-run`                                           |
 | Maintenance storia prodotto  | `npm run history:maintain -- --dry-run`                                                     |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |
+| Pensionamento import legacy   | `npm run jobs:retire-internal-import -- --dry-run`                                           |
 | Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop <shop.myshopify.com> [--apply]`       |
 | Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                              |
 | Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`                              |

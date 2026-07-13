@@ -29,7 +29,7 @@ const sql = `with candidates as (
   select id
   from "SyncJob"
   where "idempotencyKey" like 'draft-import:%'
-    and (status in ('SUCCEEDED', 'FAILED', 'CANCELLED')
+    and (status in ('SUCCEEDED', 'FAILED')
       or (status in ('RUNNING', 'RETRYING') and coalesce("startedAt", "createdAt") < now() - interval '15 minutes'))
 )
 ${writeCte}
@@ -43,6 +43,7 @@ const { stdout } = await promisify(execFile)(
   "npx",
   ["supabase", "db", "query", "--linked", "--output", "json", sql],
   {
+    cwd: process.env.SYNCBAY_SUPABASE_CWD || process.cwd(),
     env: await getSupabaseCliEnv(),
     maxBuffer: 10 * 1024 * 1024,
     timeout: 90_000,
