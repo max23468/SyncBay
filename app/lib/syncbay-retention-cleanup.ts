@@ -44,14 +44,18 @@ export function buildRetentionCleanupPlan(input: {
 }): RetentionCleanupTarget[] {
   const allowed = input.areas ? new Set(input.areas) : null;
 
-  return input.policies
-    .filter((policy) => allowed === null || allowed.has(policy.area))
-    .map((policy) => ({
-      area: policy.area,
-      cutoff: getRetentionCutoff(policy.retentionDays, input.now),
-      label: policy.label,
-      retentionDays: policy.retentionDays,
-    }));
+  return input.policies.flatMap((policy) =>
+    allowed === null || allowed.has(policy.area)
+      ? [
+          {
+            area: policy.area,
+            cutoff: getRetentionCutoff(policy.retentionDays, input.now),
+            label: policy.label,
+            retentionDays: policy.retentionDays,
+          },
+        ]
+      : [],
+  );
 }
 
 /**

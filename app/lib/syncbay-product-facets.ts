@@ -592,12 +592,18 @@ function hasAnyToken(value: string, tokens: string[]) {
 }
 
 function hasAnyPhrase(value: string, phrases: string[]) {
+  // react-doctor-disable-next-line react-doctor/js-set-map-lookups -- `value` è una stringa: qui `includes` è String.prototype.includes (ricerca di sottostringa), non Array.includes; un Set non è applicabile.
   return phrases.some((phrase) => value.includes(phrase));
 }
 
 function dedupe(values: string[]) {
   return [
-    ...new Set(values.map(normalizeFacetValue).filter(isNonEmptyString)),
+    ...new Set(
+      values.flatMap((value) => {
+        const normalized = normalizeFacetValue(value);
+        return isNonEmptyString(normalized) ? [normalized] : [];
+      }),
+    ),
   ];
 }
 

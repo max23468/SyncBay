@@ -229,10 +229,12 @@ function getOverviewTime(value: Date | string | null | undefined) {
   return Number.isNaN(time) ? null : time;
 }
 
+const INTEGER_FORMATTER = new Intl.NumberFormat("it-IT", {
+  maximumFractionDigits: 0,
+});
+
 function formatInteger(value: number) {
-  return new Intl.NumberFormat("it-IT", { maximumFractionDigits: 0 }).format(
-    value,
-  );
+  return INTEGER_FORMATTER.format(value);
 }
 
 export function getNextAction(input: NextActionInput): NextAction {

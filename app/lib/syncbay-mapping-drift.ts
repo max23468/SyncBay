@@ -141,7 +141,8 @@ function summarize(items: MappingDriftItem[]) {
 }
 
 function normalizeStrings(values: string[]) {
-  return values
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
+  return values.flatMap((value) => {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  });
 }

@@ -564,6 +564,7 @@ function matchesPrintBooks(value: string) {
 }
 
 function hasAny(value: string, needles: string[]) {
+  // react-doctor-disable-next-line react-doctor/js-set-map-lookups -- `value` è una stringa: qui `includes` è String.prototype.includes (ricerca di sottostringa), non Array.includes; un Set non è applicabile.
   return needles.some((needle) => value.includes(needle));
 }
 

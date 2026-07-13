@@ -64,6 +64,7 @@ export async function runRetentionCleanup(
   let totalDeleted = 0;
 
   for (const target of plan) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- delete massivi per area, in serie per contenere il carico simultaneo sul pooler.
     const deletedCount = enabled ? await deleteExpiredRecords(target) : 0;
     totalDeleted += deletedCount;
     areas.push({

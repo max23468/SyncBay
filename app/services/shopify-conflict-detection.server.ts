@@ -367,6 +367,7 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
     async persist(results) {
       for (const result of results) {
         if (!result.mappingId || !result.shopId || result.outcome === "failed") continue;
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- letture conflitti per mapping, in serie per contenere le connessioni concorrenti sul pooler.
         const open = await prisma.syncConflict.findMany({
           select: { field: true, id: true },
           where: { mappingId: result.mappingId, status: SyncConflictStatus.OPEN },
@@ -380,6 +381,7 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
             lastSyncBayValue: values?.baseline ?? Prisma.JsonNull,
             shopifyValue: values?.shopify ?? Prisma.JsonNull,
           };
+          // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
           if (existing) await prisma.syncConflict.update({ data, where: { id: existing.id } });
           else await prisma.syncConflict.create({ data: { ...data, field, mappingId: result.mappingId, shopId: result.shopId } });
         }

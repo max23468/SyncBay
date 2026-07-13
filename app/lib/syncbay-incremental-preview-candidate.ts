@@ -59,9 +59,10 @@ function serializeItemSpecifics(
 ) {
   return itemSpecifics.flatMap((specific) => {
     const name = specific.name.trim();
-    const values = specific.values
-      .map((value) => value.trim())
-      .filter(Boolean);
+    const values = specific.values.flatMap((value) => {
+      const trimmed = value.trim();
+      return trimmed ? [trimmed] : [];
+    });
     if (!name || values.length === 0) return [];
 
     return [{ name, values }];
@@ -78,10 +79,11 @@ function deserializeItemSpecifics(value: unknown) {
         : null;
     const name = getNullableString(object?.name)?.trim();
     const values = Array.isArray(object?.values)
-      ? object.values
-          .filter((entry): entry is string => typeof entry === "string")
-          .map((entry) => entry.trim())
-          .filter(Boolean)
+      ? object.values.flatMap((entry) => {
+          if (typeof entry !== "string") return [];
+          const trimmed = entry.trim();
+          return trimmed ? [trimmed] : [];
+        })
       : [];
     if (!name || values.length === 0) return [];
 
