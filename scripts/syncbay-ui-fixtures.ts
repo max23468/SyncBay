@@ -1,3 +1,6 @@
+import type { ExistingCatalogTakeoverReport } from "../app/lib/syncbay-existing-catalog-takeover";
+import type { ExistingProductMatchSuggestion } from "../app/lib/syncbay-product-matching";
+
 export const UI_FIXTURE_STATES = ["healthy", "empty", "loading", "degraded", "error"] as const;
 export type UiFixtureState = (typeof UI_FIXTURE_STATES)[number];
 
@@ -460,7 +463,9 @@ export function getImportPreviewFixture() {
                 tags: { add: ["Negozio eBay"], preserve: ["Ceramica"], remove: [] },
               },
               itemId: "123456789001",
-              matchSuggestion: items[0].matchSuggestions[0],
+              matchSuggestion:
+                items[0]
+                  .matchSuggestions[0] as ExistingProductMatchSuggestion,
               plannedOperations: [
                 "claim_mapping",
                 "sync_title",
@@ -475,6 +480,7 @@ export function getImportPreviewFixture() {
               ],
               productGid: "gid://shopify/Product/preview-strong",
               reasons: [],
+              sku: "SYNC-TAZZA-001",
               status: "applicabile",
               variantGid: "gid://shopify/ProductVariant/preview-strong",
             },
@@ -489,6 +495,7 @@ export function getImportPreviewFixture() {
               plannedOperations: [],
               productGid: null,
               reasons: ["match_non_automatico"],
+              sku: "SYNC-RADIO-005",
               status: "da_rivedere",
               variantGid: null,
             },
@@ -503,6 +510,7 @@ export function getImportPreviewFixture() {
               plannedOperations: [],
               productGid: null,
               reasons: ["match_shopify_mancante", "immagini_mancanti"],
+              sku: "SYNC-MISSING-006",
               status: "bloccante",
               variantGid: null,
             },
@@ -515,7 +523,7 @@ export function getImportPreviewFixture() {
             review: 1,
             total: 3,
           },
-        },
+        } satisfies ExistingCatalogTakeoverReport,
         items,
         mode: "live",
         summary: {
