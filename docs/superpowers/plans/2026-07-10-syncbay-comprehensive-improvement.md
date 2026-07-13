@@ -1328,7 +1328,7 @@ git commit -m "perf: compact product sync history"
 - Consumes: il job esterno già claimato dal runner.
 - Produces: `executeShopifyCatalogImport(input): Promise<CatalogImportExecutionResult>` senza creare o finalizzare un secondo `SyncJob`.
 
-- [ ] **Step 1: Definire test e risultato dichiarativo**
+- [x] **Step 1: Definire test e risultato dichiarativo**
 
 ```ts
 export type CatalogImportExecutionResult =
@@ -1348,7 +1348,7 @@ export type CatalogImportExecutionResult =
 
 Testare che il risultato contenga conteggi/warning senza eseguire transizioni job e che gli errori prodotto parziali restino nel summary.
 
-- [ ] **Step 2: Passare l'ID del job proprietario all'esecutore**
+- [x] **Step 2: Passare l'ID del job proprietario all'esecutore**
 
 Estrarre l'input completo e rinominare l'entry point, aggiornando nello stesso task tutti i caller del runner:
 
@@ -1376,7 +1376,7 @@ export async function executeShopifyCatalogImport(
 
 Usare `jobId` per mutation idempotenti, snapshot e audit. Non mantenere un wrapper `createShopifyDraftProductsIfEnabled` che possa continuare a creare job: dopo la migrazione deve esistere un solo entry point e non deve creare job dentro l'esecutore.
 
-- [ ] **Step 3: Eliminare il secondo ciclo vita**
+- [x] **Step 3: Eliminare il secondo ciclo vita**
 
 Rimuovere:
 
@@ -1388,7 +1388,7 @@ Rimuovere:
 
 Il runner interpreta il risultato e chiama una sola volta `markJobSucceeded` oppure `markJobFailedOrRetrying` sul job originale.
 
-- [ ] **Step 4: Gestire i record legacy senza migration distruttiva**
+- [x] **Step 4: Gestire i record legacy senza migration distruttiva**
 
 Lo script `syncbay-retire-internal-import-jobs.mjs` deve trovare solo job con `idempotencyKey` `draft-import:*`, essere dry-run di default e marcare `CANCELLED` quelli terminali/stale solo con `--apply --confirm-apply`. Non cancellare righe e non toccare import ordinari.
 
@@ -1398,7 +1398,7 @@ Aggiungere:
 "jobs:retire-internal-import": "tsx scripts/syncbay-retire-internal-import-jobs.mjs"
 ```
 
-- [ ] **Step 5: Testare il contratto end-to-end con port finti**
+- [x] **Step 5: Testare il contratto end-to-end con port finti**
 
 Aggiungere casi server:
 
@@ -1408,7 +1408,7 @@ test("a retry reuses the outer job id for Shopify idempotency", async () => {});
 test("partial product failures are summarized without an internal job", async () => {});
 ```
 
-- [ ] **Step 6: Verificare e committare**
+- [x] **Step 6: Verificare e committare**
 
 Run:
 
@@ -1446,7 +1446,7 @@ git commit -m "refactor: unify catalog import job lifecycle"
 - Consumes: `ExistingCatalogTakeoverReport`, `ExistingCatalogTakeoverApplyPlan` e field policy già pure.
 - Produces: un servizio verticale proprietario di preview/claim/metafield/job planning e un componente route tipizzato sul report reale.
 
-- [ ] **Step 1: Bloccare il comportamento con test di caratterizzazione**
+- [x] **Step 1: Bloccare il comportamento con test di caratterizzazione**
 
 Prima di spostare codice, aggiungere test server per:
 
@@ -1461,7 +1461,7 @@ Run: `npm run test:services`
 
 Expected: PASS sui comportamenti correnti; questi test sono la rete per il refactor.
 
-- [ ] **Step 2: Estrarre il modulo server senza cambiare interfaccia route**
+- [x] **Step 2: Estrarre il modulo server senza cambiare interfaccia route**
 
 Esportare dal nuovo file:
 
@@ -1472,11 +1472,11 @@ export async function startExistingCatalogTakeoverJobs(input: ExistingCatalogTak
 
 `syncbay.server.ts` può re-esportare temporaneamente queste funzioni per evitare un diff route simultaneo, poi il route importer viene aggiornato nello stesso task.
 
-- [ ] **Step 3: Estrarre copy e componente**
+- [x] **Step 3: Estrarre copy e componente**
 
 Spostare formattatori status/reason/operation/fieldPolicy in `syncbay-existing-catalog-copy.ts` con test esaustivi sulle union. Spostare la sezione UI in `ExistingCatalogTakeoverSection.tsx`, usando solo `s-*` e il contratto `ExistingCatalogTakeoverReport`.
 
-- [ ] **Step 4: Imporre obiettivi di profondità/locality**
+- [x] **Step 4: Imporre obiettivi di profondità/locality**
 
 A fine Task 10:
 
@@ -1487,7 +1487,7 @@ A fine Task 10:
 
 Non spezzare file per sola metrica: ogni modulo nuovo deve possedere una responsabilità completa.
 
-- [ ] **Step 5: Verificare e committare**
+- [x] **Step 5: Verificare e committare**
 
 Run:
 
@@ -1527,7 +1527,7 @@ git commit -m "refactor: deepen existing catalog takeover"
 - Consumes: contratti reali dei loader e `ExistingCatalogTakeoverReport` del Task 10.
 - Produces: `npm run ui:check` e `npm run ui:browser-check`: render SSR e hydration browser delle sei superfici e dei loro stati principali senza `.env`, rete, HMR o screenshot obbligatori. Gli script di render vengono eseguiti con `tsx`, così possono importare le fixture TypeScript senza un secondo formato duplicato.
 
-- [ ] **Step 1: Scrivere test rossi di isolamento**
+- [x] **Step 1: Scrivere test rossi di isolamento**
 
 I test devono spawnare `npm run ui:render -- panoramica --fixture --check` con una env sentinella e verificare:
 
@@ -1539,7 +1539,7 @@ assert.equal(exitCode, 0);
 
 Testare anche `importazione` per riprodurre il rosso corrente su `fieldPolicy` prima della correzione fixture.
 
-- [ ] **Step 2: Analizzare argomenti prima di caricare l'ambiente**
+- [x] **Step 2: Analizzare argomenti prima di caricare l'ambiente**
 
 Spostare:
 
@@ -1557,13 +1557,13 @@ prima di `loadEnvFile`. Se `fixtureMode` è true:
 - non inizializzare loader reali;
 - con `--check`, renderizzare HTML in memoria e non creare PNG.
 
-- [ ] **Step 3: Rendere tipizzate le fixture**
+- [x] **Step 3: Rendere tipizzate le fixture**
 
 Spostare le factory in `syncbay-ui-fixtures.ts`. Costruire `existingCatalogTakeover` chiamando `buildExistingCatalogTakeoverReport` oppure usando `satisfies ExistingCatalogTakeoverReport`; non scrivere più righe manuali senza `fieldPolicy`.
 
 Ogni pagina espone fixture tipizzate almeno per `healthy`, `empty`, `loading`, `degraded` ed `error`; Importazione aggiunge `blocked` e `in_progress`. La fixture Attività deve usare badge coerenti con il suo stato: un catalogo non allineato non può risultare contemporaneamente `Ok` senza una spiegazione esplicita. Gli stati sintetici verificano CTA successiva, retry, messaggio di errore e assenza di dettagli tecnici o segreti.
 
-- [ ] **Step 4: Creare il comando aggregato e aggiungerlo alla CI**
+- [x] **Step 4: Creare il comando aggregato e aggiungerlo alla CI**
 
 `syncbay-ui-check.mjs` esegue in sequenza:
 
@@ -1592,7 +1592,7 @@ Aggiungere:
 
 In CI mantenere `smoke:ui` come controllo statico branding e aggiungere step separati `npm run ui:check` e `npm run ui:browser-check`.
 
-- [ ] **Step 5: Verificare e committare**
+- [x] **Step 5: Verificare e committare**
 
 Run:
 

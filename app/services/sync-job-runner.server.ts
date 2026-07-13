@@ -84,15 +84,12 @@ import {
 } from "../lib/syncbay-incremental-schedule";
 import {
   FACET_BACKFILL_INCREMENTAL_JOB_SOURCE,
-  SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX,
-  SHOPIFY_IMPORT_JOB_SOURCE,
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
   buildSellerEventsNoopMarker,
   getCatalogReconcileJobIdsToCancelBeforeNewRun,
   getSupersededCatalogReconcileJobIds,
   isSchedulableSyncJob,
-  isStaleInternalShopifyImportJob,
   normalizeRunDueLimit,
 } from "../lib/syncbay-job-scheduling";
 import {
@@ -140,7 +137,7 @@ import type {
 } from "./import-preview.server";
 import { buildImportPreview } from "./import-preview.server";
 import {
-  createShopifyDraftProductsIfEnabled,
+  executeShopifyCatalogImport,
   markShopifyProductSoldOut,
 } from "./shopify-draft-import.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
@@ -255,10 +252,6 @@ const RUNNING_SYNC_JOB_STALE_AFTER_MS = 15 * 60 * 1000;
 const STALE_RUNNING_SYNC_JOB_ERROR_CODE = "SYNCBAY_RUNNING_JOB_STALE";
 const STALE_RUNNING_SYNC_JOB_ERROR_MESSAGE =
   "Job SyncBay rimasto RUNNING oltre la finestra di sicurezza del runner.";
-const STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE =
-  "SYNCBAY_INTERNAL_IMPORT_STALE";
-const STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE =
-  "Traccia interna import Shopify rimasta RUNNING oltre la finestra di sicurezza del runner.";
 
 export async function runDueSyncJobs(
   input: {
@@ -273,8 +266,7 @@ export async function runDueSyncJobs(
 
   await enqueueIncrementalSyncJobs(now);
   await recoverStaleRunningSyncJobsForDueShops({ limit, now });
-  const cleanedInternalImportJobCount =
-    await markStaleInternalShopifyImportJobsFailed({ limit, now });
+  const cleanedInternalImportJobCount = 0;
 
   const dueByType = await countDueSyncJobsByType(now);
   const schedulableDueByType = { ...dueByType };
@@ -434,8 +426,6 @@ async function findDueRegularIncrementalSyncJobs(input: {
       AND "runAfter" <= ${input.now}
       AND NOT COALESCE("payload" @> '{"facetOnly": true}'::jsonb, false)
       AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
-      AND COALESCE("payload"->>'source', '') <> ${SHOPIFY_IMPORT_JOB_SOURCE}
-      AND COALESCE("idempotencyKey", '') NOT LIKE ${`${SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX}%`}
       ${
         input.excludeIds?.length
           ? Prisma.sql`AND "id" NOT IN (${Prisma.join(input.excludeIds)})`
@@ -614,91 +604,6 @@ async function recoverStaleRunningSyncJobsForDueShops(input: {
       }),
     ),
   );
-}
-
-async function markStaleInternalShopifyImportJobsFailed(input: {
-  limit: number;
-  now: Date;
-}) {
-  const staleCutoff = getRunningSyncJobStaleCutoff(input.now);
-  const internalJobs = await prisma.syncJob.findMany({
-    orderBy: [{ startedAt: "asc" }, { createdAt: "asc" }],
-    select: {
-      id: true,
-      idempotencyKey: true,
-      shopId: true,
-      startedAt: true,
-      status: true,
-    },
-    take: input.limit,
-    where: {
-      idempotencyKey: { startsWith: "draft-import:" },
-      OR: [{ startedAt: null }, { startedAt: { lte: staleCutoff } }],
-      status: { in: [SyncJobStatus.RUNNING, SyncJobStatus.RETRYING] },
-      type: SyncJobType.IMPORT_CATALOG,
-    },
-  });
-  let cleanedCount = 0;
-
-  for (const job of internalJobs) {
-    if (
-      !isStaleInternalShopifyImportJob({
-        idempotencyKey: job.idempotencyKey,
-        now: input.now,
-        staleAfterMs: RUNNING_SYNC_JOB_STALE_AFTER_MS,
-        startedAt: job.startedAt,
-        status: job.status,
-      })
-    ) {
-      continue;
-    }
-
-    const result = {
-      internalJobKind: "shopify_import",
-      runnerErrorCode: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE,
-      runnerErrorMessage: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE,
-      staleAfterSeconds: RUNNING_SYNC_JOB_STALE_AFTER_MS / 1000,
-      staleStartedAt: job.startedAt?.toISOString() ?? null,
-      willRetry: false,
-    } satisfies Prisma.JsonObject;
-
-    const cleaned = await prisma.$transaction(async (tx) => {
-      const updated = await tx.syncJob.updateMany({
-        data: {
-          errorCode: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_CODE,
-          errorMessage: STALE_INTERNAL_SHOPIFY_IMPORT_JOB_ERROR_MESSAGE,
-          finishedAt: input.now,
-          result,
-          status: SyncJobStatus.FAILED,
-        },
-        where: {
-          id: job.id,
-          idempotencyKey: job.idempotencyKey,
-          startedAt: job.startedAt,
-          status: { in: [SyncJobStatus.RUNNING, SyncJobStatus.RETRYING] },
-          type: SyncJobType.IMPORT_CATALOG,
-        },
-      });
-
-      if (updated.count !== 1) return false;
-
-      await tx.auditLog.create({
-        select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-        data: {
-          details: result,
-          message: "Traccia interna import Shopify stantia chiusa dal runner.",
-          shopId: job.shopId,
-          type: AuditEventType.SYNC_JOB_FAILED,
-        },
-      });
-
-      return true;
-    });
-
-    if (cleaned) cleanedCount += 1;
-  }
-
-  return cleanedCount;
 }
 
 async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) {
@@ -1570,18 +1475,7 @@ function getStaleRunningSyncJobWhere(
 }
 
 function getSchedulableSyncJobWhere(): Prisma.SyncJobWhereInput {
-  return {
-    OR: [
-      { idempotencyKey: null },
-      {
-        NOT: {
-          idempotencyKey: {
-            startsWith: "draft-import:",
-          },
-        },
-      },
-    ],
-  };
+  return {};
 }
 
 async function runDueSyncJob(job: DueSyncJob) {
@@ -1705,7 +1599,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     );
   }
 
-  const result = await createShopifyDraftProductsIfEnabled({
+  const result = await executeShopifyCatalogImport({
     admin,
     catalogImportRunId: getCatalogImportRunId(job.payload),
     defaultLocationGid: job.shop.defaultLocationGid,
@@ -1714,6 +1608,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     facetBaselinesByItemId,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
+    jobId: job.id,
     previewResult: filteredPreviewResult,
     reuseOnly: getBooleanFromPayload(job.payload, "reuseOnly"),
     shopDomain: job.shop.shopDomain,
@@ -1721,13 +1616,13 @@ async function runImportCatalogJob(job: DueSyncJob) {
 
   if (result.status === "blocked") {
     await markJobFailedOrRetrying({
-      errorCode: "SYNCBAY_JOB_BLOCKED",
-      errorMessage: result.readiness.blockers.join(", "),
+      errorCode: result.errorCode,
+      errorMessage: result.errorMessage,
       job,
     });
 
     return {
-      errorMessage: result.readiness.blockers.join(", "),
+      errorMessage: result.errorMessage,
       jobId: job.id,
       status: "failed" as const,
       type: job.type,
@@ -1736,15 +1631,13 @@ async function runImportCatalogJob(job: DueSyncJob) {
 
   if (result.status === "failed") {
     await markJobFailedOrRetrying({
-      errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
-      errorMessage:
-        result.errorMessage ?? "Import Shopify non completato dal runner.",
+      errorCode: result.errorCode,
+      errorMessage: result.errorMessage,
       job,
     });
 
     return {
-      errorMessage:
-        result.errorMessage ?? "Import Shopify non completato dal runner.",
+      errorMessage: result.errorMessage,
       jobId: job.id,
       status: "failed" as const,
       type: job.type,
@@ -1752,9 +1645,9 @@ async function runImportCatalogJob(job: DueSyncJob) {
   }
 
   await markJobSucceeded({
-    delegatedJobId: result.jobId,
     job,
-    warnings: result.warnings ?? [],
+    result: toPrismaJsonObject(result.summary),
+    warnings: result.warnings,
   });
 
   return {
@@ -1894,7 +1787,6 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   if (syncableItemIds.length === 0) {
     await markJobSucceeded({
-      delegatedJobId: null,
       job,
       result: {
         alignedDescriptionConflictResolvedCount:
@@ -1959,34 +1851,26 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     previewResult,
     syncableItemIds,
   );
-  const result = await createShopifyDraftProductsIfEnabled({
+  const result = await executeShopifyCatalogImport({
     admin,
     defaultLocationGid: job.shop.defaultLocationGid,
     facetBaselinesByItemId,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
+    jobId: job.id,
     previewResult: filteredPreviewResult,
     shopDomain: job.shop.shopDomain,
   });
 
   if (result.status === "blocked" || result.status === "failed") {
     await markJobFailedOrRetrying({
-      errorCode:
-        result.status === "blocked"
-          ? "SYNCBAY_INCREMENTAL_BLOCKED"
-          : "SYNCBAY_INCREMENTAL_FAILED",
-      errorMessage:
-        result.status === "blocked"
-          ? result.readiness.blockers.join(", ")
-          : (result.errorMessage ?? "Sync incrementale non completato."),
+      errorCode: result.errorCode,
+      errorMessage: result.errorMessage,
       job,
     });
 
     return {
-      errorMessage:
-        result.status === "blocked"
-          ? result.readiness.blockers.join(", ")
-          : (result.errorMessage ?? "Sync incrementale non completato."),
+      errorMessage: result.errorMessage,
       jobId: job.id,
       status: "failed" as const,
       type: job.type,
@@ -1994,9 +1878,9 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   }
 
   await markJobSucceeded({
-    delegatedJobId: result.jobId,
     job,
     result: {
+      ...result.summary,
       alignedDescriptionConflictResolvedCount:
         alignedDescriptionConflicts.count,
       alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
@@ -2248,7 +2132,6 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   }
 
   await markJobSucceeded({
-    delegatedJobId: null,
     job: input.job,
     result: {
       alignedDescriptionConflictResolvedCount:
@@ -2483,7 +2366,6 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   }
 
   await markJobSucceeded({
-    delegatedJobId: null,
     job: input.job,
     result: {
       alignedDescriptionConflictResolvedCount:
@@ -2781,7 +2663,6 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
 
   if (!orderCurrencyValidation.ok) {
     await markJobSucceeded({
-      delegatedJobId: null,
       job,
       result: {
         dryRun: stockDryRun,
@@ -2989,7 +2870,6 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   }
 
   await markJobSucceeded({
-    delegatedJobId: null,
     job,
     result: {
       dryRun: stockDryRun,
@@ -3116,7 +2996,6 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
 
   if (!mapping) {
     await markJobSucceeded({
-      delegatedJobId: null,
       job,
       result: {
         ebayItemId,
@@ -3198,7 +3077,6 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
   });
 
   await markJobSucceeded({
-    delegatedJobId: null,
     job,
     result: {
       ebayItemId,
@@ -3513,7 +3391,6 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
         continue;
       }
       await markJobSucceeded({
-        delegatedJobId: null,
         job: absorbedJob,
         result: {
           fields: result.fields,
@@ -3848,14 +3725,12 @@ async function markJobFailedOrRetrying(input: {
 }
 
 async function markJobSucceeded(input: {
-  delegatedJobId: string | null;
   job: DueSyncJob;
   result?: Prisma.JsonObject;
   warnings: string[];
 }) {
   const result = {
     ...(input.result ?? {}),
-    delegatedJobId: input.delegatedJobId,
     warnings: [...new Set(input.warnings)],
   } satisfies Prisma.JsonObject;
 
@@ -3883,6 +3758,10 @@ async function markJobSucceeded(input: {
       },
     });
   });
+}
+
+function toPrismaJsonObject(value: Record<string, unknown>): Prisma.JsonObject {
+  return structuredClone(value) as Prisma.JsonObject;
 }
 
 async function splitOversizedEbayItemJobIfNeeded(

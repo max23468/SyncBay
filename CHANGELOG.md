@@ -6,6 +6,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.59] — 2026-07-13
+
+### Correzioni
+
+- L'import catalogo usa un unico `SyncJob` proprietario dall'accodamento alla
+  transizione terminale, evitando job interni duplicati, retry divergenti e
+  idempotenza Shopify legata a un identificativo diverso da quello del runner.
+
+### Sotto il cofano
+
+- Approfondito il verticale del catalogo Shopify esistente: copy e componenti
+  del takeover hanno contratti tipizzati e la route Importazione resta sotto
+  1.500 righe senza ricostruire manualmente il report.
+- Aggiunti gate UI SSR e browser isolati sulle sei superfici embedded e quattro
+  viewport: le fixture non caricano env, database, rete o HMR e la CI verifica
+  errori di render, console e overflow dell'intero documento.
+
+## [1.0.58] — 2026-07-13
+
 ### Non versionato
 
 - Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie
@@ -19,8 +38,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Reso l'audit di produzione un controllo live nel verifier: `npm audit` non è
   più coperto dalle ricevute, così la corsia `full` non salta l'audit di
   sicurezza quando diff, lockfile e Node restano invariati.
-
-## [1.0.58] — 2026-07-13
 
 ### Sotto il cofano
 
@@ -3518,6 +3535,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.59]: #1059--2026-07-13
 [1.0.58]: #1058--2026-07-13
 [1.0.57]: #1057--2026-07-12
 [1.0.56]: #1056--2026-07-12

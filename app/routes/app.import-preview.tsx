@@ -13,13 +13,17 @@ import {
 } from "react-router";
 
 import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
+import { ExistingCatalogTakeoverSection } from "../components/ExistingCatalogTakeoverSection";
+import { AfterImportSection as ExtractedAfterImportSection, DraftImportSection as ExtractedDraftImportSection, ImportTechnicalDetails as ExtractedImportTechnicalDetails } from "../components/ImportExecutionSections";
 import { useActionToast } from "../components/SyncBayLive";
-import {
-  getImportedProductsLabel,
-  getImportedProductSingularLabel,
-} from "../lib/import-product-status";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
+import {
+  formatExistingCatalogFieldPolicy,
+  formatExistingCatalogOperation,
+  formatExistingCatalogReason,
+  formatExistingCatalogTakeoverStatus,
+} from "../lib/syncbay-existing-catalog-copy";
 import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
   getCatalogModeDraftImportBlocker,
@@ -61,10 +65,10 @@ import {
 import {
   getImportWizardState,
   recordShopifyLocationRenamed,
-  startExistingCatalogTakeoverJobs,
   startCatalogImportJobs,
   updateDefaultShopifyLocation,
 } from "../services/syncbay.server";
+import { startExistingCatalogTakeoverJobs } from "../services/existing-catalog-takeover.server";
 
 interface ShopifyLocation {
   fulfillsOnlineOrders: boolean;
@@ -458,7 +462,7 @@ export default function ImportPreview() {
           statusLabel={getStepStatusLabel(stepStatuses[3], "Da avviare")}
           title="Importazione"
         >
-          <DraftImportSection
+          <ExtractedDraftImportSection
             draftCount={
               takeoverActionData?.count ??
               draftActionData?.count ??
@@ -473,7 +477,7 @@ export default function ImportPreview() {
             isCreatingDrafts={isCreatingDrafts}
             isApplyingTakeover={isApplyingTakeover}
             isSaving={isSaving}
-            takeoverActionData={takeoverActionData}
+            takeoverStatus={takeoverActionData?.status ?? null}
             wizard={wizard}
           />
         </Step>
@@ -484,13 +488,13 @@ export default function ImportPreview() {
           statusLabel={stepDone[3] ? "Da fare ora" : "In attesa"}
           title="Dopo l'import"
         >
-          <AfterImportSection wizard={wizard} />
+          <ExtractedAfterImportSection wizard={wizard} />
         </Step>
       </ol>
       <s-box paddingBlockStart="base">
-        <ImportTechnicalDetails
+        <ExtractedImportTechnicalDetails
           previewModeLabel={previewModeLabel}
-          selectedLocation={selectedLocation}
+          selectedLocationName={selectedLocation?.name}
           visibleRuntimePhases={visibleRuntimePhases}
           wizard={wizard}
         />
@@ -512,7 +516,6 @@ type LoaderData = Awaited<ReturnType<typeof loader>>;
 type WizardState = LoaderData["wizard"];
 type PreviewSourceState = WizardState["previewSource"];
 type LocationRenameState = LoaderData["locationRename"];
-type RuntimePhaseState = WizardState["runtimePhases"][number];
 type ImportPreviewFilter = ImportPreviewWindowFilter;
 
 const IMPORT_PREVIEW_FILTERS: Array<{
@@ -1044,62 +1047,6 @@ function MatchSuggestionDetails({
   );
 }
 
-function ExistingCatalogTakeoverSection({
-  report,
-}: {
-  report: NonNullable<WizardState["previewResult"]["existingCatalogTakeover"]>;
-}) {
-  return (
-    <s-section heading="Collega catalogo esistente">
-      <s-stack gap="base">
-        <div className="syncbay-existing-catalog-grid">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(132px, 1fr))"
-          >
-            <MetricTile
-              detail="Righe con match forte e dati eBay validi."
-              icon="check-circle"
-              label="Applicabili"
-              tone={report.summary.applicable > 0 ? "success" : "neutral"}
-              value={formatNumber(report.summary.applicable)}
-            />
-            <MetricTile
-              detail="Casi da classificare prima dell'applicazione."
-              icon="alert-triangle"
-              label="Da rivedere"
-              tone={report.summary.review > 0 ? "warning" : "neutral"}
-              value={formatNumber(report.summary.review)}
-            />
-            <MetricTile
-              detail="Casi che bloccano la messa online automatica."
-              icon="alert-circle"
-              label="Bloccanti"
-              tone={report.summary.blocked > 0 ? "critical" : "neutral"}
-              value={formatNumber(report.summary.blocked)}
-            />
-            <MetricTile
-              detail="Mapping già gestiti da SyncBay."
-              icon="link"
-              label="Già collegati"
-              tone="neutral"
-              value={formatNumber(report.summary.alreadyLinked)}
-            />
-          </s-grid>
-        </div>
-        <s-text color="subdued">
-          SyncBay collega solo righe con segnali forti. I casi incerti restano
-          da rivedere e non vengono scritti dalla simulazione.
-        </s-text>
-        <s-text color="subdued">
-          Le collezioni automatiche non vengono modificate: SyncBay aggiorna
-          solo i campi prodotto usati dalle regole esistenti.
-        </s-text>
-      </s-stack>
-    </s-section>
-  );
-}
-
 function DescriptionPreviewDetails({
   item,
 }: {
@@ -1326,282 +1273,6 @@ function StatusRow({
   );
 }
 
-function DraftImportSection({
-  draftCount,
-  draftMessage,
-  draftStatus,
-  isApplyingTakeover,
-  isCreatingDrafts,
-  isSaving,
-  takeoverActionData,
-  wizard,
-}: {
-  draftCount?: number | string | null;
-  draftMessage?: string | null;
-  draftStatus: ShopifyDraftImportStatus | null;
-  isApplyingTakeover: boolean;
-  isCreatingDrafts: boolean;
-  isSaving: boolean;
-  takeoverActionData:
-    | Extract<
-        ImportPreviewActionData,
-        { intent: "applyExistingCatalogTakeover" }
-      >
-    | null;
-  wizard: WizardState;
-}) {
-  const catalogModeBlocker = getCatalogModeDraftImportBlocker(
-    wizard.catalogMode,
-  );
-  const isDraftImportBlockedByCatalogMode = Boolean(catalogModeBlocker);
-  const takeoverReport = wizard.previewResult.existingCatalogTakeover;
-  const isExistingCatalogMode = wizard.catalogMode === "existing_catalog";
-  const isTakeoverBlocked =
-    !takeoverReport ||
-    takeoverReport.summary.applicable === 0 ||
-    takeoverReport.summary.blocked > 0;
-  const takeoverStatus = takeoverActionData?.status ?? null;
-
-  return (
-    <>
-      <s-text color="subdued">
-        {isExistingCatalogMode
-          ? "Il catalogo esistente resta in simulazione: l'import normale è disattivato per evitare duplicati."
-          : "Avvia la creazione o il riuso dei prodotti Shopify dopo aver controllato anteprima, location e impostazioni."}
-      </s-text>
-      {draftStatus === "created" ? (
-        <s-paragraph>
-          Operazione completata:{" "}
-          {formatDraftImportCount(
-            draftCount,
-            wizard.draftImport.importProductStatus,
-          )}
-          {draftMessage ? ` ${draftMessage}` : null}
-        </s-paragraph>
-      ) : draftStatus === "queued" ? (
-        <s-paragraph>
-          {isExistingCatalogMode
-            ? "Takeover pianificato"
-            : "Import pianificato"}
-          :{" "}
-          {isExistingCatalogMode
-            ? formatTakeoverApplyCount(draftCount)
-            : formatDraftImportCount(
-                draftCount,
-                wizard.draftImport.importProductStatus,
-              )}
-          {draftMessage ? ` ${draftMessage}` : null}
-        </s-paragraph>
-      ) : draftStatus === "blocked" ? (
-        <s-paragraph>
-          Import Shopify bloccato: {draftMessage ?? "requisiti incompleti"}.
-        </s-paragraph>
-      ) : draftStatus === "failed" ? (
-        <s-paragraph>
-          Import Shopify non completato: {draftMessage ?? "errore Shopify"}.
-        </s-paragraph>
-      ) : takeoverStatus === "blocked" ? (
-        <s-paragraph>
-          Takeover catalogo esistente bloccato:{" "}
-          {draftMessage ?? "requisiti incompleti"}.
-        </s-paragraph>
-      ) : null}
-      <s-unordered-list>
-        <s-list-item>
-          Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
-        </s-list-item>
-        {isExistingCatalogMode ? (
-          <>
-            <s-list-item>
-              Righe applicabili nella simulazione:{" "}
-              {takeoverReport?.summary.applicable ?? 0}
-            </s-list-item>
-            <s-list-item>
-              Righe da rivedere: {takeoverReport?.summary.review ?? 0}
-            </s-list-item>
-            <s-list-item>
-              Righe bloccanti: {takeoverReport?.summary.blocked ?? 0}
-            </s-list-item>
-          </>
-        ) : (
-          <>
-            <s-list-item>
-              Prodotti importabili: {wizard.draftImport.importableCount}
-            </s-list-item>
-            <s-list-item>
-              Limite batch operativo: {wizard.draftImport.draftLimit}
-            </s-list-item>
-            <s-list-item>
-              Stato prodotti creati: {wizard.importPreview.defaults.productStatus}
-            </s-list-item>
-            <s-list-item>
-              Prodotti previsti: {wizard.draftImport.plannedCreateCount}
-            </s-list-item>
-            <s-list-item>
-              Import completo: pianifica batch fino al minore tra listing attivi
-              eBay e limite 1.0 {wizard.previewPlan.limits.maxProducts}
-            </s-list-item>
-          </>
-        )}
-        <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
-        {wizard.draftImport.blockers.length > 0 ? (
-          <s-list-item>
-            Blocchi: {wizard.draftImport.blockers.join(", ")}
-          </s-list-item>
-        ) : null}
-        {catalogModeBlocker ? (
-          <s-list-item>Modalità catalogo: {catalogModeBlocker}</s-list-item>
-        ) : null}
-      </s-unordered-list>
-      {isExistingCatalogMode ? (
-        <Form method="post">
-          <input
-            type="hidden"
-            name="intent"
-            value="applyExistingCatalogTakeover"
-          />
-          <s-stack gap="small">
-            <s-text-field
-              id="existingCatalogTakeoverConfirmation"
-              label="Conferma takeover"
-              name="confirmation"
-              placeholder="COLLEGA"
-              required
-            ></s-text-field>
-            <s-text-field
-              label="Tag legacy da rimuovere"
-              name="legacyTagsToRemove"
-              placeholder="Tag esatto 1, Tag esatto 2"
-            ></s-text-field>
-            <s-text color="subdued">
-              Le collezioni automatiche non vengono modificate: SyncBay aggiorna
-              solo i campi prodotto usati dalle regole esistenti.
-            </s-text>
-          </s-stack>
-          <s-button
-            type="submit"
-            variant="primary"
-            disabled={
-              isSaving ||
-              isTakeoverBlocked ||
-              wizard.draftImport.blockers.length > 0
-            }
-          >
-            {isApplyingTakeover
-              ? "Pianificazione in corso..."
-              : "Applica takeover righe sicure"}
-          </s-button>
-        </Form>
-      ) : (
-        <Form method="post">
-          <input type="hidden" name="intent" value="createDraftProducts" />
-          <input
-            type="hidden"
-            name="catalogMode"
-            value={getImportCatalogModeParam(wizard.catalogMode)}
-          />
-          <s-button
-            type="submit"
-            disabled={
-              isSaving ||
-              isDraftImportBlockedByCatalogMode ||
-              wizard.draftImport.blockers.length > 0
-            }
-          >
-            {isDraftImportBlockedByCatalogMode
-              ? "Riallineamento in simulazione"
-              : isCreatingDrafts
-                ? "Avvio in corso..."
-                : "Avvia import catalogo"}
-          </s-button>
-        </Form>
-      )}
-    </>
-  );
-}
-
-function AfterImportSection({ wizard }: { wizard: WizardState }) {
-  return (
-    <>
-      <s-text color="subdued">
-        Una volta avviato l&apos;import puoi controllare i prodotti collegati nel
-        Catalogo e completare eventuali canali o default dalle Impostazioni.
-      </s-text>
-      <s-stack direction="inline" gap="small-200">
-        <s-button href="/app/catalog" variant="primary">
-          Vai al catalogo
-        </s-button>
-        <s-button href="/app/settings">Modifica impostazioni</s-button>
-      </s-stack>
-      <s-stack gap="base">
-        <StatusRow
-          detail="La tabella mostra mapping, disponibilità, prezzo e stato unico."
-          label="Controllo prodotti"
-          tone="info"
-          title="Catalogo"
-        />
-        <StatusRow
-          detail={`Default prodotti: ${wizard.importPreview.defaults.productStatus}. Canali: ${getProductPublicationModeSummaryLabel(
-            wizard.productPublications.mode,
-            wizard.productPublications.selectedCount,
-          )}.`}
-          label="Riepilogo"
-          tone="info"
-          title="Impostazioni import"
-        />
-      </s-stack>
-    </>
-  );
-}
-
-function ImportTechnicalDetails({
-  previewModeLabel,
-  selectedLocation,
-  visibleRuntimePhases,
-  wizard,
-}: {
-  previewModeLabel: string;
-  selectedLocation?: ShopifyLocation;
-  visibleRuntimePhases: RuntimePhaseState[];
-  wizard: WizardState;
-}) {
-  return (
-    <s-section heading="Dettagli tecnici">
-      <details className="syncbay-details">
-        <summary>Apri dettagli importazione</summary>
-        <s-stack gap="base">
-          <s-unordered-list>
-            <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
-            <s-list-item>
-              Fonte: {formatPreviewSource(wizard.previewSource.source)}
-            </s-list-item>
-            <s-list-item>
-              Location salvata: {selectedLocation?.name ?? "non confermata"}
-            </s-list-item>
-            <s-list-item>
-              Scritture Shopify: solo dopo conferma esplicita
-            </s-list-item>
-          </s-unordered-list>
-          <s-unordered-list>
-            {wizard.validationRules.map((rule) => (
-              <s-list-item key={rule.code}>
-                {rule.label}: {rule.severity}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-          <s-unordered-list>
-            {visibleRuntimePhases.map((phase) => (
-              <s-list-item key={phase.label}>
-                {phase.label}: {phase.status} - {phase.detail}
-              </s-list-item>
-            ))}
-          </s-unordered-list>
-        </s-stack>
-      </details>
-    </s-section>
-  );
-}
-
 function formatCatalogImportQueuedMessage(result: {
   batchCount: number;
   createdJobCount: number;
@@ -1620,31 +1291,6 @@ function formatCatalogImportQueuedMessage(result: {
     : "store sotto il limite 1.0 o lettura completata";
 
   return `${result.batchCount} batch; ${result.createdJobCount} nuovi, ${result.requeuedJobCount} ripianificati, ${result.resumedJobCount} ripresi, ${result.existingJobCount} già presenti; ${totalLabel}; ${capLabel}.`;
-}
-
-function formatDraftImportCount(
-  count: number | string | null | undefined,
-  importProductStatus: WizardState["draftImport"]["importProductStatus"],
-) {
-  const normalizedCount = count ?? "0";
-
-  if (String(normalizedCount) === "1") {
-    return `${normalizedCount} ${getImportedProductSingularLabel(importProductStatus)} gestito dalla preview.`;
-  }
-
-  return `${normalizedCount} ${getImportedProductsLabel(importProductStatus)} gestiti dalla preview.`;
-}
-
-function formatTakeoverApplyCount(count: number | string | null | undefined) {
-  const parsed =
-    typeof count === "number"
-      ? count
-      : Number.parseInt(String(count ?? "0"), 10);
-  const value = Number.isFinite(parsed) ? parsed : 0;
-
-  return value === 1
-    ? "1 riga sicura"
-    : `${formatNumber(value)} righe sicure`;
 }
 
 async function fetchShopifyLocations(
@@ -1773,15 +1419,6 @@ function getPreviewModeLabel(mode: string) {
   return mode;
 }
 
-function formatPreviewSource(source: string) {
-  if (source === "inventory_api") return "Inventory API eBay";
-  if (source === "trading_api") return "Trading API eBay";
-  if (source === "deferred") return "preview live da aggiornare";
-  if (source === "mock") return "mock locale";
-
-  return source;
-}
-
 function getPreviewReadLabel(source: string) {
   if (source === "inventory_api") return "Elementi Inventory API letti";
   if (source === "trading_api") return "Elementi Trading API letti";
@@ -1841,71 +1478,4 @@ function formatMatchConfidence(value: string) {
   if (value === "medium") return "media";
 
   return "bassa";
-}
-
-function formatExistingCatalogTakeoverStatus(value: string) {
-  if (value === "applicabile") return "applicabile";
-  if (value === "bloccante") return "bloccante";
-  if (value === "da_rivedere") return "da rivedere";
-  if (value === "gia_collegato") return "già collegato";
-
-  return value;
-}
-
-function formatExistingCatalogOperation(value: string) {
-  const labels: Record<string, string> = {
-    add_syncbay_tag: "aggiungere tag SyncBay",
-    claim_mapping: "creare mapping",
-    preserve_handle: "preservare handle",
-    sync_category: "allineare categoria",
-    sync_description: "ripulire descrizione",
-    sync_facets: "allineare faccette",
-    sync_price: "allineare prezzo",
-    sync_quantity: "allineare disponibilità",
-    sync_seo: "allineare SEO",
-    sync_title: "allineare titolo",
-  };
-
-  return labels[value] ?? value;
-}
-
-function formatExistingCatalogFieldPolicy(
-  policy: NonNullable<
-    NonNullable<
-      WizardState["previewResult"]["existingCatalogTakeover"]
-    >["rows"][number]["fieldPolicy"]
-  >,
-) {
-  const handleLabel = policy.handle.currentHandle
-    ? `URL preservato: ${policy.handle.currentHandle}`
-    : "URL Shopify preservato se presente";
-  const imageLabel =
-    policy.images.operation === "preserve"
-      ? "Immagini Shopify esistenti preservate"
-      : "Immagini eBay aggiunte solo se il prodotto Shopify non ha immagini";
-  const tagLabels = [
-    policy.tags.add.length > 0
-      ? `Tag aggiunti: ${policy.tags.add.join(", ")}`
-      : "Nessun tag SyncBay da aggiungere",
-    policy.tags.remove.length > 0
-      ? `Tag legacy rimossi: ${policy.tags.remove.join(", ")}`
-      : "Nessun tag legacy rimosso automaticamente",
-  ];
-
-  return [handleLabel, imageLabel, ...tagLabels];
-}
-
-function formatExistingCatalogReason(value: string) {
-  const labels: Record<string, string> = {
-    categoria_incerta: "categoria incerta",
-    disponibilita_ebay_non_valida: "disponibilità eBay non valida",
-    immagini_mancanti: "immagini mancanti",
-    match_ambiguo: "match ambiguo",
-    match_non_automatico: "match non automatico",
-    match_shopify_mancante: "match Shopify mancante",
-    prezzo_ebay_non_valido: "prezzo eBay non valido",
-    varianti_non_supportate: "varianti non supportate",
-  };
-
-  return labels[value] ?? value;
 }

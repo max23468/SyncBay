@@ -169,12 +169,14 @@ const checks = [
       "Pronti da importare",
       "Da reimportare",
       "Modifica impostazioni",
-      "Vai al catalogo",
       "Rinomina location",
       "Anteprima prima",
-      "Avvia import catalogo",
       "syncbay-stepper",
     ],
+  },
+  {
+    file: "app/components/ImportExecutionSections.tsx",
+    needles: ["Vai al catalogo", "Avvia import catalogo", "Applica takeover righe sicure"],
   },
   {
     file: "app/routes/app.settings.tsx",

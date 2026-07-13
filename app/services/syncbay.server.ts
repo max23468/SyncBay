@@ -2096,7 +2096,7 @@ function getExistingCatalogSkuHints(previewResult: ImportPreviewResult) {
   ]);
 }
 
-async function getExistingCatalogTakeoverPreview(input: {
+export async function getExistingCatalogTakeoverPreview(input: {
   connection: EbayConnection;
   descriptionRuleMode: DescriptionRuleMode;
   maxProducts: number;
