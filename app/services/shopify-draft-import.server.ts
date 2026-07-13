@@ -71,7 +71,7 @@ import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 // restano in vetrina come esauriti invece di essere archiviati (ADR 0011).
 const SYNCBAY_SOLD_OUT_TAG = "esaurito";
 
-interface ShopifyAdminGraphqlClient {
+export interface ShopifyAdminGraphqlClient {
   graphql: (
     query: string,
     options?: { variables?: Record<string, unknown> },
@@ -510,9 +510,8 @@ function buildShopifyDraftProductInputs(
     });
 }
 
-export async function executeShopifyCatalogImport(input: {
+export interface CatalogImportExecutionInput {
   admin: ShopifyAdminGraphqlClient;
-  catalogImportRunId?: string | null;
   defaultLocationGid?: string | null;
   existingCatalogFieldPoliciesByItemId?: Record<
     string,
@@ -524,10 +523,20 @@ export async function executeShopifyCatalogImport(input: {
   jobId: string;
   previewResult: ImportPreviewResult;
   reuseOnly?: boolean;
+  shopId: string;
   shopDomain: string;
-}): Promise<CatalogImportExecutionResult> {
+}
+
+export async function executeShopifyCatalogImport(
+  input: CatalogImportExecutionInput,
+): Promise<CatalogImportExecutionResult> {
   const shop = await ensureDraftImportShop(input.shopDomain);
-  const pricingRule = await getPricingRuleForShopId(shop.id);
+  if (shop.id !== input.shopId) {
+    throw new Error(
+      "Il negozio del job import non corrisponde al dominio Shopify caricato.",
+    );
+  }
+  const pricingRule = await getPricingRuleForShopId(input.shopId);
   const admin = input.admin;
   const reuseOnly = input.reuseOnly === true;
   const importProductStatus =
@@ -579,7 +588,7 @@ export async function executeShopifyCatalogImport(input: {
         jobId: input.jobId,
         publicationOptions: publicationOptions.options,
         reuseOnly,
-        shopId: shop.id,
+        shopId: input.shopId,
       }),
   );
   const warnings = results.flatMap((result) =>
@@ -611,7 +620,7 @@ export async function executeShopifyCatalogImport(input: {
     jobId: input.jobId,
     products: draftProducts,
     results,
-    shopId: shop.id,
+    shopId: input.shopId,
   });
 
   if (failedResult || inventoryFailureMessage || mediaFailureMessage) {

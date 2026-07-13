@@ -1,4 +1,7 @@
 import {
+  runCatalogImportJobLifecycle,
+} from "../lib/syncbay-catalog-import-execution";
+import {
   AuditEventType,
   EbayConnection,
   EbayConnectionStatus,
@@ -1599,9 +1602,8 @@ async function runImportCatalogJob(job: DueSyncJob) {
     );
   }
 
-  const result = await executeShopifyCatalogImport({
+  const executionInput = {
     admin,
-    catalogImportRunId: getCatalogImportRunId(job.payload),
     defaultLocationGid: job.shop.defaultLocationGid,
     existingCatalogFieldPoliciesByItemId:
       getExistingCatalogFieldPoliciesByItemId(job.payload),
@@ -1611,44 +1613,35 @@ async function runImportCatalogJob(job: DueSyncJob) {
     jobId: job.id,
     previewResult: filteredPreviewResult,
     reuseOnly: getBooleanFromPayload(job.payload, "reuseOnly"),
+    shopId: job.shopId,
     shopDomain: job.shop.shopDomain,
-  });
-
-  if (result.status === "blocked") {
-    await markJobFailedOrRetrying({
-      errorCode: result.errorCode,
-      errorMessage: result.errorMessage,
-      job,
-    });
-
-    return {
-      errorMessage: result.errorMessage,
-      jobId: job.id,
-      status: "failed" as const,
-      type: job.type,
-    };
-  }
-
-  if (result.status === "failed") {
-    await markJobFailedOrRetrying({
-      errorCode: result.errorCode,
-      errorMessage: result.errorMessage,
-      job,
-    });
-
-    return {
-      errorMessage: result.errorMessage,
-      jobId: job.id,
-      status: "failed" as const,
-      type: job.type,
-    };
-  }
-
-  await markJobSucceeded({
+  };
+  const result = await runCatalogImportJobLifecycle({
+    executionInput,
     job,
-    result: toPrismaJsonObject(result.summary),
-    warnings: result.warnings,
+    ports: {
+      execute: executeShopifyCatalogImport,
+      markFailed: async (transition) =>
+        markJobFailedOrRetrying({
+          ...transition,
+          result: toPrismaJsonObject(transition.result),
+        }),
+      markSucceeded: async (transition) =>
+        markJobSucceeded({
+          ...transition,
+          result: toPrismaJsonObject(transition.result),
+        }),
+    },
   });
+
+  if (result.status !== "succeeded") {
+    return {
+      errorMessage: result.errorMessage,
+      jobId: job.id,
+      status: "failed" as const,
+      type: job.type,
+    };
+  }
 
   return {
     jobId: job.id,
@@ -1859,6 +1852,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     importProductStatusOverride: getImportProductStatus(job.payload),
     jobId: job.id,
     previewResult: filteredPreviewResult,
+    shopId: job.shopId,
     shopDomain: job.shop.shopDomain,
   });
 
@@ -3909,15 +3903,6 @@ function getImportProductStatus(payload: Prisma.JsonValue | null) {
   return normalizeImportProductStatus(
     typeof importProductStatus === "string" ? importProductStatus : undefined,
   );
-}
-
-function getCatalogImportRunId(payload: Prisma.JsonValue | null) {
-  const object = getJsonObject(payload);
-  const catalogImportRunId = object?.catalogImportRunId;
-
-  return typeof catalogImportRunId === "string" && catalogImportRunId.trim()
-    ? catalogImportRunId
-    : null;
 }
 
 function getExistingCatalogFieldPoliciesByItemId(
