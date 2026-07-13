@@ -8,6 +8,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie
+  proporzionate e ricevute locali, doctor dei worktree, CI docs-only, preflight
+  Codex direct-first, creazione worktree con preflight e setup seriale
+  riprendibile, stop condition e mappa operativa dei servizi runtime.
+- Ridotti i controlli duplicati: titolo PR isolato in un check leggero senza
+  checkout, React Doctor sempre `latest` e senza doppio run al passaggio da
+  draft, inbox Codex giornaliera e build Vercel saltati per modifiche solo
+  docs/governance/tooling.
+- Reso l'audit di produzione un controllo live nel verifier: `npm audit` non è
+  più coperto dalle ricevute, così la corsia `full` non salta l'audit di
+  sicurezza quando diff, lockfile e Node restano invariati.
+
+## [1.0.58] — 2026-07-13
+
+### Sotto il cofano
+
 - Semplificate le dipendenze senza impatto sul comportamento del prodotto:
   rimossi `dotenv` (sostituito dal nativo `process.loadEnvFile` in
   `prisma.config.ts`), `prettier` (mai configurato) e `@shopify/app-bridge-react`
@@ -21,17 +37,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   `scripts/start-react-router.mjs` e la dipendenza diretta `@react-router/serve`
   (su Vercel il serving passa dal preset `vercelPreset()`, non da
   `react-router-serve`).
-- Accelerato il lavoro di Codex e degli altri agenti: verifier unico con corsie
-  proporzionate e ricevute locali, doctor dei worktree, CI docs-only, preflight
-  Codex direct-first, creazione worktree con preflight e setup seriale
-  riprendibile, stop condition e mappa operativa dei servizi runtime.
-- Ridotti i controlli duplicati: titolo PR isolato in un check leggero senza
-  checkout, React Doctor sempre `latest` e senza doppio run al passaggio da
-  draft, inbox Codex giornaliera e build Vercel saltati per modifiche solo
-  docs/governance/tooling.
-- Reso l'audit di produzione un controllo live nel verifier: `npm audit` non è
-  più coperto dalle ricevute, così la corsia `full` non salta l'audit di
-  sicurezza quando diff, lockfile e Node restano invariati.
 
 ## [1.0.57] — 2026-07-12
 
@@ -3513,6 +3518,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.58]: #1058--2026-07-13
 [1.0.57]: #1057--2026-07-12
 [1.0.56]: #1056--2026-07-12
 [1.0.55]: #1055--2026-07-12
