@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getCatalogReconcileJobIdsToCancelBeforeNewRun, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, isStaleInternalShopifyImportJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getCatalogReconcileJobIdsToCancelBeforeNewRun, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
 
 test("cancels every prior reconcile job before creating a fresh run", () => {
   assert.deepEqual(
@@ -55,20 +55,20 @@ test("never supersedes non-reconcile jobs or reconcile jobs without a runId", ()
   );
 });
 
-test("keeps internal Shopify import jobs out of the runnable queue", () => {
+test("keeps legacy import traces schedulable until the retirement script closes them", () => {
   assert.equal(
     isSchedulableSyncJob({
       idempotencyKey: "draft-import:shop-1:abc",
       payload: { ebayItemIds: ["1"], source: "trading_api" },
     }),
-    false,
+    true,
   );
   assert.equal(
     isSchedulableSyncJob({
       idempotencyKey: null,
       payload: { ebayItemIds: ["1"], source: "shopify_import" },
     }),
-    false,
+    true,
   );
   assert.equal(
     isSchedulableSyncJob({
@@ -146,52 +146,6 @@ test("splits oversized eBay item jobs without dropping payload metadata", () => 
       splitIndex: 3,
     },
   ]);
-});
-
-test("detects stale internal Shopify import traces", () => {
-  const now = new Date("2026-06-03T00:20:00.000Z");
-  const staleAfterMs = 15 * 60 * 1000;
-
-  assert.equal(
-    isStaleInternalShopifyImportJob({
-      idempotencyKey: "draft-import:shop-1:abc",
-      now,
-      staleAfterMs,
-      startedAt: new Date("2026-06-03T00:04:59.000Z"),
-      status: "RUNNING",
-    }),
-    true,
-  );
-  assert.equal(
-    isStaleInternalShopifyImportJob({
-      idempotencyKey: "draft-import:shop-1:abc",
-      now,
-      staleAfterMs,
-      startedAt: new Date("2026-06-03T00:04:59.000Z"),
-      status: "RETRYING",
-    }),
-    true,
-  );
-  assert.equal(
-    isStaleInternalShopifyImportJob({
-      idempotencyKey: "draft-import:shop-1:abc",
-      now,
-      staleAfterMs,
-      startedAt: new Date("2026-06-03T00:10:00.000Z"),
-      status: "RUNNING",
-    }),
-    false,
-  );
-  assert.equal(
-    isStaleInternalShopifyImportJob({
-      idempotencyKey: "catalog-import-batch:shop-1:abc",
-      now,
-      staleAfterMs,
-      startedAt: new Date("2026-06-03T00:04:59.000Z"),
-      status: "RUNNING",
-    }),
-    false,
-  );
 });
 
 test("normalizes run-due job limits for cron drain batches", () => {

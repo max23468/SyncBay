@@ -1,7 +1,5 @@
 import { createHash } from "node:crypto";
 
-export const SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX = "draft-import:";
-export const SHOPIFY_IMPORT_JOB_SOURCE = "shopify_import";
 export const FACET_BACKFILL_INCREMENTAL_JOB_SOURCE = "facet_backfill";
 const DEFAULT_RUN_DUE_LIMIT = 5;
 const MAX_RUN_DUE_LIMIT = 20;
@@ -18,36 +16,13 @@ export function isSchedulableSyncJob(input: {
   idempotencyKey?: string | null;
   payload: unknown;
 }) {
-  if (input.idempotencyKey?.startsWith(SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX)) {
-    return false;
-  }
-
-  return getStringField(input.payload, "source") !== SHOPIFY_IMPORT_JOB_SOURCE;
+  return Boolean(input);
 }
 
 export function shouldCancelSyncJobAfterShopUninstall(status: string | null) {
   return UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES.includes(
     status as (typeof UNINSTALLED_SHOP_SYNC_JOB_CANCELLATION_STATUSES)[number],
   );
-}
-
-export function isStaleInternalShopifyImportJob(input: {
-  idempotencyKey?: string | null;
-  now: Date;
-  staleAfterMs: number;
-  startedAt: Date | null;
-  status: string;
-}) {
-  if (input.status !== "RUNNING" && input.status !== "RETRYING") return false;
-  if (!input.idempotencyKey?.startsWith(SHOPIFY_IMPORT_JOB_IDEMPOTENCY_PREFIX)) {
-    return false;
-  }
-  if (!Number.isFinite(input.staleAfterMs) || input.staleAfterMs <= 0) {
-    return false;
-  }
-  if (!input.startedAt) return true;
-
-  return input.startedAt.getTime() <= input.now.getTime() - input.staleAfterMs;
 }
 
 export function normalizeRunDueLimit(limit?: number) {

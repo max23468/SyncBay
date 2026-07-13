@@ -34,6 +34,10 @@ import {
 } from "react-router";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const args = process.argv.slice(2);
+const fixtureMode = args.includes("--fixture");
+const checkMode = args.includes("--check");
+const page = args.find((arg) => !arg.startsWith("--")) || "panoramica";
 
 // --- 1. Carica env di runtime (distribuzione privata) --------------------- //
 function loadEnvFile(path) {
@@ -65,8 +69,11 @@ function loadEnvFile(path) {
 // `.env` ha i valori locali reali (DB Supabase locale, chiavi Shopify dev).
 // Il file `.vercel/.env.production.local` ha valori vuoti (Vercel non esporta i
 // segreti), quindi non è una fonte utile qui.
-let envCount = loadEnvFile(join(root, ".env"));
-envCount += loadEnvFile(join(root, ".env.shopify"));
+let envCount = 0;
+if (!fixtureMode) {
+  envCount += loadEnvFile(join(root, ".env"));
+  envCount += loadEnvFile(join(root, ".env.shopify"));
+}
 process.env.NODE_ENV = "development";
 
 // Placeholder difensivi: il modulo shopify.server inizializza shopifyApp() al
@@ -76,11 +83,11 @@ process.env.SHOPIFY_API_KEY ||= "render-only";
 process.env.SHOPIFY_API_SECRET ||= "render-only";
 process.env.SCOPES ||= process.env.SHOPIFY_SCOPES || "read_products";
 
-console.error(`env: caricate ${envCount} variabili di runtime da .env`);
-
-const args = process.argv.slice(2);
-const fixtureMode = args.includes("--fixture");
-const page = args.find((arg) => !arg.startsWith("--")) || "panoramica";
+console.error(
+  fixtureMode
+    ? "env: fixture isolata; 0 variabili runtime caricate"
+    : `env: caricate ${envCount} variabili di runtime da .env`,
+);
 
 if (fixtureMode) {
   process.env.SYNCBAY_UI_RENDER_FIXTURE = "1";
@@ -151,6 +158,7 @@ const { createServer } = await import("vite");
 const vite = await createServer({
   root,
   appType: "custom",
+  configFile: join(root, "scripts/vite.ui-render.config.ts"),
   server: { middlewareMode: true, hmr: false },
   logLevel: "error",
 });
@@ -261,6 +269,13 @@ try {
 </body>
 </html>`;
 
+  if (checkMode) {
+    if (markup.trim().length === 0) {
+      throw new Error(`Il render ${page} non ha prodotto markup.`);
+    }
+    console.error(`ok check: ${page}`);
+    console.log(`checked:${page}`);
+  } else {
   const suffix = fixtureMode ? "fixture" : "live";
   const shotsDir = join(root, "preview/shots");
   mkdirSync(shotsDir, { recursive: true });
@@ -298,6 +313,7 @@ try {
   }
 
   console.log(outPath);
+  }
 } finally {
   await vite.close();
 }
@@ -787,6 +803,11 @@ function getImportPreviewFixture() {
         existingCatalogTakeover: {
           rows: [
             {
+              fieldPolicy: {
+                handle: { currentHandle: "set-tazze", operation: "preserve", redirectRequired: false },
+                images: { operation: "preserve" },
+                tags: { add: ["Negozio eBay"], preserve: ["Ceramica"], remove: [] },
+              },
               itemId: "123456789001",
               matchSuggestion: items[0].matchSuggestions[0],
               plannedOperations: [
@@ -807,6 +828,11 @@ function getImportPreviewFixture() {
               variantGid: "gid://shopify/ProductVariant/preview-strong",
             },
             {
+              fieldPolicy: {
+                handle: { currentHandle: "radio-vintage", operation: "preserve", redirectRequired: false },
+                images: { operation: "preserve" },
+                tags: { add: ["Negozio eBay"], preserve: [], remove: [] },
+              },
               itemId: "123456789005",
               matchSuggestion: null,
               plannedOperations: [],
@@ -816,6 +842,11 @@ function getImportPreviewFixture() {
               variantGid: null,
             },
             {
+              fieldPolicy: {
+                handle: { currentHandle: null, operation: "preserve", redirectRequired: false },
+                images: { operation: "sync_from_ebay_if_available" },
+                tags: { add: ["Negozio eBay"], preserve: [], remove: [] },
+              },
               itemId: "123456789006",
               matchSuggestion: null,
               plannedOperations: [],

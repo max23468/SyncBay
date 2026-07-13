@@ -1,13 +1,6 @@
 import { createHash } from "node:crypto";
 
-import {
-  AuditEventType,
-  Prisma,
-  ProductMappingStatus,
-  ProductSnapshotSource,
-  SyncJobStatus,
-  SyncJobType,
-} from "@prisma/client";
+import { Prisma, ProductMappingStatus, ProductSnapshotSource } from "@prisma/client";
 
 import prisma from "../db.server";
 import {
@@ -46,7 +39,10 @@ import {
   buildEbayProductSnapshotPayload,
   getProductSnapshotThumbnailUrl,
 } from "../lib/syncbay-product-snapshot-payload";
-import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
+import {
+  buildCatalogImportExecutionResult,
+  type CatalogImportExecutionResult,
+} from "../lib/syncbay-catalog-import-execution";
 import {
   buildShopifyProductFacetMetafields,
   type SyncBayProductFacet,
@@ -345,7 +341,6 @@ const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 50;
-const DRAFT_IMPORT_MAX_ATTEMPTS = 4;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
@@ -515,7 +510,7 @@ function buildShopifyDraftProductInputs(
     });
 }
 
-export async function createShopifyDraftProductsIfEnabled(input: {
+export async function executeShopifyCatalogImport(input: {
   admin: ShopifyAdminGraphqlClient;
   catalogImportRunId?: string | null;
   defaultLocationGid?: string | null;
@@ -526,10 +521,11 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   facetBaselinesByItemId?: Record<string, SyncBayProductFacet[]>;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
+  jobId: string;
   previewResult: ImportPreviewResult;
   reuseOnly?: boolean;
   shopDomain: string;
-}) {
+}): Promise<CatalogImportExecutionResult> {
   const shop = await ensureDraftImportShop(input.shopDomain);
   const pricingRule = await getPricingRuleForShopId(shop.id);
   const admin = input.admin;
@@ -544,12 +540,12 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   });
 
   if (readiness.blockers.length > 0) {
-    return {
-      createdProducts: [],
-      jobId: null,
-      readiness,
-      status: "blocked" as const,
-    };
+    return buildCatalogImportExecutionResult({
+      errorCode: "SYNCBAY_JOB_BLOCKED",
+      errorMessage: readiness.blockers.join(", "),
+      status: "blocked",
+      summary: { blockers: readiness.blockers },
+    });
   }
 
   const publicationOptions = await resolveDraftImportPublicationOptions(admin, {
@@ -559,15 +555,12 @@ export async function createShopifyDraftProductsIfEnabled(input: {
   });
 
   if (publicationOptions.status === "failed") {
-    return {
-      createdProducts: [],
-      jobId: null,
-      readiness: {
-        ...readiness,
-        blockers: [...readiness.blockers, publicationOptions.errorMessage],
-      },
-      status: "blocked" as const,
-    };
+    return buildCatalogImportExecutionResult({
+      errorCode: "SYNCBAY_JOB_BLOCKED",
+      errorMessage: publicationOptions.errorMessage,
+      status: "blocked",
+      summary: { blockers: [publicationOptions.errorMessage] },
+    });
   }
 
   const draftProducts = buildShopifyDraftProductInputs(
@@ -577,29 +570,17 @@ export async function createShopifyDraftProductsIfEnabled(input: {
     input.existingCatalogFieldPoliciesByItemId ?? {},
     input.facetBaselinesByItemId ?? {},
   );
-  const job = await startDraftImportJob({
-    catalogImportRunId: input.catalogImportRunId ?? null,
-    draftLimit: readiness.draftLimit,
-    importProductStatus,
-    previewMode: input.previewResult.mode,
-    products: draftProducts,
-    reuseOnly,
-    shopId: shop.id,
-  });
   const results = await mapWithConcurrency(
     draftProducts,
     DRAFT_PRODUCT_CREATE_CONCURRENCY,
     (product) =>
       createShopifyDraftProductSafely(admin, product, {
         defaultLocationGid: input.defaultLocationGid ?? null,
-        jobId: job.id,
+        jobId: input.jobId,
         publicationOptions: publicationOptions.options,
         reuseOnly,
         shopId: shop.id,
       }),
-  );
-  const createdProducts = results.flatMap((result) =>
-    result.status === "created" ? [result.product] : [],
   );
   const warnings = results.flatMap((result) =>
     result.status === "created" ? (result.warnings ?? []) : [],
@@ -627,61 +608,42 @@ export async function createShopifyDraftProductsIfEnabled(input: {
       ? `Immagini Shopify non completate per ${mediaFailedResults.length} prodotti.`
       : null;
   const persistenceResult = await recordDraftImportPersistence({
-    jobId: job.id,
+    jobId: input.jobId,
     products: draftProducts,
     results,
     shopId: shop.id,
   });
 
   if (failedResult || inventoryFailureMessage || mediaFailureMessage) {
-    await finishDraftImportJob({
-      errorMessage:
-        failedResult?.errorMessage ??
-        inventoryFailureMessage ??
-        mediaFailureMessage ??
-        undefined,
+    const errorMessage =
+      failedResult?.errorMessage ??
+      inventoryFailureMessage ??
+      mediaFailureMessage ??
+      "Import Shopify non completato dal runner.";
+    return buildCatalogImportExecutionResult({
+      errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
+      errorMessage,
+      status: "failed",
+      summary: buildDraftImportSummary({
+        importProductStatus,
+        persistenceResult,
+        products: draftProducts,
+        results,
+      }),
+      warnings,
+    });
+  }
+
+  return buildCatalogImportExecutionResult({
+    status: "succeeded",
+    summary: buildDraftImportSummary({
       importProductStatus,
-      jobId: job.id,
       persistenceResult,
       products: draftProducts,
       results,
-      shopId: shop.id,
-      status: "failed",
-      warnings,
-    });
-
-    return {
-      createdProducts,
-      errorMessage:
-        failedResult?.errorMessage ??
-        inventoryFailureMessage ??
-        mediaFailureMessage ??
-        undefined,
-      jobId: job.id,
-      readiness,
-      status: "failed" as const,
-      warnings,
-    };
-  }
-
-  await finishDraftImportJob({
-    importProductStatus,
-    jobId: job.id,
-    persistenceResult,
-    products: draftProducts,
-    results,
-    shopId: shop.id,
-    status: "created",
+    }),
     warnings,
   });
-
-  return {
-    createdProducts,
-    jobId: job.id,
-    readiness,
-    status: "created" as const,
-    warnings,
-  };
 }
 
 async function resolveDraftImportPublicationOptions(
@@ -3094,58 +3056,6 @@ async function ensureDraftImportShop(shopDomain: string) {
   });
 }
 
-async function startDraftImportJob(input: {
-  catalogImportRunId?: string | null;
-  draftLimit: number;
-  importProductStatus: ImportProductStatus;
-  previewMode: ImportPreviewResult["mode"];
-  products: ShopifyDraftProductInput[];
-  reuseOnly: boolean;
-  shopId: string;
-}) {
-  const now = new Date();
-  const payload = buildDraftImportJobPayload(input);
-  const idempotencyKey = buildDraftImportJobIdempotencyKey(input);
-  const job = await prisma.syncJob.upsert({
-    where: { idempotencyKey },
-    create: {
-      attempts: 1,
-      idempotencyKey,
-      maxAttempts: DRAFT_IMPORT_MAX_ATTEMPTS,
-      payload,
-      runAfter: now,
-      shopId: input.shopId,
-      startedAt: now,
-      status: SyncJobStatus.RUNNING,
-      type: SyncJobType.IMPORT_CATALOG,
-    },
-    update: {
-      attempts: { increment: 1 },
-      errorCode: null,
-      errorMessage: null,
-      finishedAt: null,
-      maxAttempts: DRAFT_IMPORT_MAX_ATTEMPTS,
-      payload,
-      result: Prisma.DbNull,
-      runAfter: now,
-      startedAt: now,
-      status: SyncJobStatus.RUNNING,
-    },
-  });
-
-  await prisma.auditLog.create({
-    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-    data: {
-      details: payload,
-      message: "Import Shopify avviato.",
-      shopId: input.shopId,
-      type: AuditEventType.SYNC_JOB_CREATED,
-    },
-  });
-
-  return job;
-}
-
 async function recordDraftImportPersistence(input: {
   jobId: string;
   products: ShopifyDraftProductInput[];
@@ -3286,16 +3196,11 @@ async function recordDraftImportPersistence(input: {
   };
 }
 
-async function finishDraftImportJob(input: {
-  errorMessage?: string;
+function buildDraftImportSummary(input: {
   importProductStatus: ImportProductStatus;
-  jobId: string;
   persistenceResult: DraftImportPersistenceResult;
   products: ShopifyDraftProductInput[];
   results: ShopifyDraftProductResult[];
-  shopId: string;
-  status: "created" | "failed";
-  warnings: string[];
 }) {
   const failedResults = input.results.flatMap((result, index) =>
     result.status === "failed"
@@ -3319,7 +3224,7 @@ async function finishDraftImportJob(input: {
     products: input.products,
     results: input.results,
   });
-  const resultPayload = {
+  return {
     createdCount: input.persistenceResult.createdCount,
     failedResults,
     inventoryFailedCount: input.persistenceResult.inventoryFailedCount,
@@ -3341,60 +3246,7 @@ async function finishDraftImportJob(input: {
     publicationSyncedCount: input.persistenceResult.publicationSyncedCount,
     requestedCount: input.products.length,
     reusedCount: input.persistenceResult.reusedCount,
-    warnings: [...new Set(input.warnings)],
-  } satisfies Prisma.JsonObject;
-  const success = input.status === "created";
-  const job = await prisma.syncJob.findUnique({
-    where: { id: input.jobId },
-  });
-  const retryAt =
-    !success && job && job.attempts < job.maxAttempts
-      ? getDraftImportRetryAfter(job.attempts)
-      : null;
-  const finalResultPayload = {
-    ...resultPayload,
-    retryScheduledAt: retryAt?.toISOString() ?? null,
-    willRetry: Boolean(retryAt),
-  } satisfies Prisma.JsonObject;
-
-  await prisma.$transaction([
-    prisma.syncJob.update({
-      data: {
-        errorCode: success ? null : "SHOPIFY_DRAFT_IMPORT_FAILED",
-        errorMessage: success ? null : input.errorMessage,
-        finishedAt: new Date(),
-        result: finalResultPayload,
-        runAfter: retryAt ?? undefined,
-        status: success
-          ? SyncJobStatus.SUCCEEDED
-          : retryAt
-            ? SyncJobStatus.RETRYING
-            : SyncJobStatus.FAILED,
-      },
-      where: { id: input.jobId },
-    }),
-    prisma.auditLog.create({
-      select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-      data: {
-        details: finalResultPayload,
-        message: success
-          ? "Import Shopify completato."
-          : retryAt
-            ? "Import Shopify non completato; retry pianificato."
-            : "Import Shopify non completato.",
-        shopId: input.shopId,
-        type: success
-          ? AuditEventType.SYNC_JOB_SUCCEEDED
-          : AuditEventType.SYNC_JOB_FAILED,
-      },
-    }),
-  ]);
-}
-
-function getDraftImportRetryAfter(attempts: number) {
-  const retryDelaySeconds = attempts <= 1 ? 60 : attempts === 2 ? 300 : 900;
-
-  return new Date(Date.now() + retryDelaySeconds * 1000);
+  } satisfies Record<string, unknown>;
 }
 
 function buildEbayProductSnapshot(input: {
@@ -3659,70 +3511,6 @@ function isAlreadyActiveInventoryError(errors: ShopifyUserError[]) {
         normalizedMessage.includes("stock"))
     );
   });
-}
-
-function buildDraftImportJobPayload(input: {
-  catalogImportRunId?: string | null;
-  draftLimit: number;
-  importProductStatus: ImportProductStatus;
-  previewMode: ImportPreviewResult["mode"];
-  products: ShopifyDraftProductInput[];
-  reuseOnly: boolean;
-  shopId: string;
-}) {
-  return {
-    catalogImportRunId: input.catalogImportRunId ?? null,
-    draftLimit: input.draftLimit,
-    ebayItemIds: input.products.map((product) => product.source.ebayItemId),
-    importProductStatus: input.importProductStatus,
-    marketplaceId: getEbayMarketplaceId(),
-    previewMode: input.previewMode,
-    requestedCount: input.products.length,
-    ...(input.reuseOnly ? { reuseOnly: true } : {}),
-    shopId: input.shopId,
-    source: input.reuseOnly
-      ? "existing_catalog_takeover"
-      : "shopify_import",
-  } satisfies Prisma.JsonObject;
-}
-
-function buildDraftImportJobIdempotencyKey(input: {
-  catalogImportRunId?: string | null;
-  importProductStatus: ImportProductStatus;
-  previewMode: ImportPreviewResult["mode"];
-  products: ShopifyDraftProductInput[];
-  reuseOnly: boolean;
-  shopId: string;
-}) {
-  const keyPayload: {
-    catalogImportRunId?: string;
-    ebayItemIds: string[];
-    importProductStatus: ImportProductStatus;
-    marketplaceId: string;
-    previewMode: ImportPreviewResult["mode"];
-    reuseOnly?: boolean;
-    shopId: string;
-  } = {
-    ebayItemIds: input.products.map((product) => product.source.ebayItemId),
-    importProductStatus: input.importProductStatus,
-    marketplaceId: getEbayMarketplaceId(),
-    previewMode: input.previewMode,
-    shopId: input.shopId,
-  };
-
-  if (input.catalogImportRunId) {
-    keyPayload.catalogImportRunId = input.catalogImportRunId;
-  }
-  if (input.reuseOnly) {
-    keyPayload.reuseOnly = true;
-  }
-
-  const hash = createHash("sha256")
-    .update(JSON.stringify(keyPayload))
-    .digest("hex")
-    .slice(0, 20);
-
-  return `draft-import:${input.shopId}:${hash}`;
 }
 
 function getErrorMessage(error: unknown) {

@@ -25,6 +25,8 @@ const FULL_COMMANDS = [
   npmCommand("build:raw"),
   npmCommand("prisma:validate"),
   npmCommand("smoke:ui"),
+  npmCommand("ui:check"),
+  npmCommand("ui:browser-check"),
   npmCommand("audit:prod", { live: true }),
 ];
 
