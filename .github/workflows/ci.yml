@@ -60,6 +60,10 @@ jobs:
         if: steps.lane.outputs.lane == 'runtime'
         run: npm ci
 
+      - name: Installa Chromium per i controlli UI
+        if: steps.lane.outputs.lane == 'runtime'
+        run: npx playwright install --with-deps chromium
+
       - name: Verifica runtime completa
         if: steps.lane.outputs.lane == 'runtime'
         run: npm run verify:full -- --no-receipt

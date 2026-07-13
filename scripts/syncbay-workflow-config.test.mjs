@@ -17,6 +17,7 @@ test("CI classifies the diff and runs one lane-specific verifier", () => {
   assert.match(source, /syncbay-verify\.mjs classify/);
   assert.match(source, /steps\.lane\.outputs\.lane == 'docs'/);
   assert.match(source, /git diff --check/);
+  assert.match(source, /npx playwright install --with-deps chromium/);
   assert.match(source, /npm run verify:full -- --no-receipt/);
   assert.doesNotMatch(source, /run:\s*npm run test:runtime/);
   assert.doesNotMatch(source, /run:\s*npm run coverage:lib/);
