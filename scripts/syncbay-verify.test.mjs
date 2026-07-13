@@ -45,6 +45,37 @@ test("falls back to the full lane when changed files are not classified", () => 
   );
 });
 
+test("can leave UI gates to separate CI steps without weakening local full verify", () => {
+  const complete = buildVerificationPlan({ mode: "full" });
+  const ciCore = buildVerificationPlan({
+    excludeUiGates: true,
+    mode: "full",
+  });
+
+  assert.deepEqual(
+    complete.commands
+      .map((entry) => entry.label)
+      .filter((label) =>
+        [
+          "npm run smoke:ui",
+          "npm run ui:check",
+          "npm run ui:browser-check",
+        ].includes(label),
+      ),
+    ["npm run smoke:ui", "npm run ui:check", "npm run ui:browser-check"],
+  );
+  assert.equal(
+    ciCore.commands.some((entry) =>
+      [
+        "npm run smoke:ui",
+        "npm run ui:check",
+        "npm run ui:browser-check",
+      ].includes(entry.label),
+    ),
+    false,
+  );
+});
+
 test("deduplicates changed checks and keeps live placeholders manual", () => {
   const plan = buildVerificationPlan({
     mode: "changed",

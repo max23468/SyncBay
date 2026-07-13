@@ -203,6 +203,11 @@ questi due check senza imporre branch aggiornata, approval o deployment. React
 Doctor usa sempre `latest` sulle PR pertinenti e mantiene il full scan manuale;
 Doppler conserva i filtri path dedicati. CodeQL resta advisory.
 
+In CI i tre gate UI restano step distinti e leggibili. Il solo step runtime usa
+`npm run verify:full -- --no-receipt --without-ui-gates`, seguito da
+`smoke:ui`, `ui:check` e `ui:browser-check`; il comando locale `verify:full`
+continua invece a includerli tutti.
+
 Vercel usa `scripts/syncbay-vercel-ignore-build.mjs`: docs, governance, CI,
 test e tooling non runtime non generano build, mentre runtime, Prisma, asset,
 dipendenze, configurazione o file non classificati mantengono il fallback

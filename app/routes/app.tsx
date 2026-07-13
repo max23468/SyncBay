@@ -1,4 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useEffect, useRef } from "react";
 import {
   Link,
   Outlet,
@@ -22,12 +23,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
+  const routeContentRef = useRef<HTMLElement>(null);
+  const hadPendingNavigationRef = useRef(false);
   const isRoutePending =
-    navigation.state === "loading" &&
+    navigation.state !== "idle" &&
     navigation.location?.pathname.startsWith("/app") === true;
   const pendingCopy = getRoutePendingCopy(
     navigation.location?.pathname,
   );
+
+  useEffect(() => {
+    if (isRoutePending) {
+      hadPendingNavigationRef.current = true;
+      return;
+    }
+    if (!hadPendingNavigationRef.current) return;
+
+    hadPendingNavigationRef.current = false;
+    routeContentRef.current?.focus({ preventScroll: true });
+  }, [isRoutePending]);
 
   return (
     <AppProvider embedded apiKey={apiKey}>
@@ -44,9 +58,15 @@ export default function App() {
         <Link to="/app/settings">Impostazioni</Link>
       </ui-nav-menu>
       <RoutePendingIndicator copy={pendingCopy} isVisible={isRoutePending} />
-      <div aria-busy={isRoutePending}>
+      <main
+        aria-busy={isRoutePending}
+        className="syncbay-route-content"
+        data-syncbay-route-content
+        ref={routeContentRef}
+        tabIndex={-1}
+      >
         {isRoutePending ? <RouteSkeleton /> : <Outlet />}
-      </div>
+      </main>
     </AppProvider>
   );
 }

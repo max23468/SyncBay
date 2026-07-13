@@ -353,6 +353,11 @@
   font-family: var(--syncbay-font-sans);
 }
 
+.syncbay-route-content:focus-visible {
+  outline: 3px solid var(--syncbay-blue);
+  outline-offset: 3px;
+}
+
 @keyframes syncbay-route-pending-icon {
   to {
     transform: rotate(360deg);
@@ -1014,6 +1019,7 @@
    spariscono, restano i numeri. */
 @media (prefers-reduced-motion: reduce) {
   .syncbay-pulse__dot {
+    animation: none;
     display: none;
   }
   .syncbay-pulse__spin {

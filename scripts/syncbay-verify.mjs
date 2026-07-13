@@ -14,6 +14,11 @@ import {
 
 const DEFAULT_BASE = "origin/main";
 const RECEIPT_DIRECTORY = ".cache/syncbay-verification";
+const UI_GATE_LABELS = new Set([
+  "npm run smoke:ui",
+  "npm run ui:check",
+  "npm run ui:browser-check",
+]);
 
 const FULL_COMMANDS = [
   npmCommand("prisma:generate"),
@@ -43,12 +48,13 @@ if (isCliEntrypoint()) {
 
 export function buildVerificationPlan({
   base = DEFAULT_BASE,
+  excludeUiGates = false,
   mode,
   review,
 } = {}) {
   if (mode === "full") {
     return {
-      commands: cloneCommands(FULL_COMMANDS),
+      commands: fullCommands({ excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -61,7 +67,7 @@ export function buildVerificationPlan({
 
   if ((review?.unmatchedFiles ?? []).length > 0) {
     return {
-      commands: cloneCommands(FULL_COMMANDS),
+      commands: fullCommands({ excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -191,6 +197,7 @@ function runCli(args) {
   const review = args.mode === "changed" ? readReview(args.base) : null;
   const plan = buildVerificationPlan({
     base: args.base,
+    excludeUiGates: args.excludeUiGates,
     mode: args.mode,
     review,
   });
@@ -367,6 +374,7 @@ function readValidReceipt(receiptPath, fingerprint) {
 function parseArgs(rawArgs) {
   const parsed = {
     base: DEFAULT_BASE,
+    excludeUiGates: false,
     force: false,
     json: false,
     mode: rawArgs[0] ?? "changed",
@@ -385,6 +393,13 @@ function parseArgs(rawArgs) {
     }
     if (arg === "--force") {
       parsed.force = true;
+      continue;
+    }
+    if (arg === "--without-ui-gates") {
+      if (parsed.mode !== "full") {
+        throw new Error("--without-ui-gates è supportato solo con verify:full.");
+      }
+      parsed.excludeUiGates = true;
       continue;
     }
     if (arg === "--json") {
@@ -419,6 +434,13 @@ function npmCommand(scriptName, { live = false } = {}) {
 
 function cloneCommands(commands) {
   return commands.map((entry) => ({ ...entry, args: [...entry.args] }));
+}
+
+function fullCommands({ excludeUiGates = false } = {}) {
+  const commands = excludeUiGates
+    ? FULL_COMMANDS.filter((entry) => !UI_GATE_LABELS.has(entry.label))
+    : FULL_COMMANDS;
+  return cloneCommands(commands);
 }
 
 function runCommandInherited(command, args) {

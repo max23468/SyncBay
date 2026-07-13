@@ -1,8 +1,32 @@
 import type { ExistingCatalogTakeoverReport } from "../app/lib/syncbay-existing-catalog-takeover";
 import type { ExistingProductMatchSuggestion } from "../app/lib/syncbay-product-matching";
 
-export const UI_FIXTURE_STATES = ["healthy", "empty", "loading", "degraded", "error"] as const;
+export type UiFixturePage =
+  | "attivita"
+  | "catalogo"
+  | "conflitti"
+  | "importazione"
+  | "impostazioni"
+  | "panoramica";
+
+export const UI_FIXTURE_STATES = [
+  "healthy",
+  "empty",
+  "loading",
+  "degraded",
+  "error",
+  "blocked",
+  "in_progress",
+] as const;
 export type UiFixtureState = (typeof UI_FIXTURE_STATES)[number];
+
+const COMMON_FIXTURE_STATES = UI_FIXTURE_STATES.slice(0, 5);
+
+export function getUiFixtureStates(page: UiFixturePage): UiFixtureState[] {
+  return page === "importazione"
+    ? [...UI_FIXTURE_STATES]
+    : [...COMMON_FIXTURE_STATES];
+}
 
 export function getCatalogFixture() {
   const rows = [
@@ -278,7 +302,7 @@ export function getDashboardFixture() {
           attempts: 1,
           createdAt: "2026-06-11T15:35:00.000Z",
           errorCode: "EBAY_TRADING_RATE_LIMITED",
-          errorMessage: "eBay ha imposto un cooldown temporaneo.",
+          errorMessage: "eBay ha imposto un cooldown temporaneo",
           id: "job-2",
           maxAttempts: 3,
           runAfter: "2026-06-11T15:58:00.000Z",
@@ -642,15 +666,11 @@ export function getSettingsFixture() {
   };
 }
 
-export type UiFixturePage =
-  | "attivita"
-  | "catalogo"
-  | "conflitti"
-  | "importazione"
-  | "impostazioni"
-  | "panoramica";
-
 export function getUiFixture(page: UiFixturePage, state: UiFixtureState) {
+  if (!getUiFixtureStates(page).includes(state)) {
+    throw new Error(`Stato fixture ${state} non supportato per ${page}.`);
+  }
+
   const base =
     page === "catalogo"
       ? getCatalogFixture()
@@ -670,6 +690,18 @@ export function getUiFixture(page: UiFixturePage, state: UiFixtureState) {
     for (const key of Object.keys(summary)) {
       if (typeof summary[key] === "number") summary[key] = 0;
     }
+    if (page === "panoramica" || page === "attivita") {
+      fixture.audit = [];
+      const conflicts = asRecord(fixture.conflicts);
+      conflicts.openCount = 0;
+      conflicts.recent = [];
+      const imports = asRecord(fixture.imports);
+      imports.mappingCount = 0;
+      const sync = asRecord(fixture.sync);
+      sync.failedJobs = [];
+      sync.lastJobs = [];
+      sync.pendingJobs = 0;
+    }
   }
 
   if (page === "importazione" && (state === "degraded" || state === "error")) {
@@ -686,7 +718,138 @@ export function getUiFixture(page: UiFixturePage, state: UiFixtureState) {
     digest.failedCount = 1;
   }
 
+  if (state === "error") {
+    applyErrorState(page, fixture);
+  }
+
+  if (page === "importazione" && state === "blocked") {
+    const wizard = asRecord(fixture.wizard);
+    const draftImport = asRecord(wizard.draftImport);
+    const importPreview = asRecord(wizard.importPreview);
+    draftImport.blockers = [
+      "Seleziona una location Shopify prima di avviare l’importazione.",
+    ];
+    draftImport.enabled = false;
+    draftImport.nextAction =
+      "Apri Impostazioni, seleziona la location e torna alla simulazione.";
+    importPreview.blockers = [
+      "La location Shopify predefinita non è ancora configurata.",
+    ];
+  }
+
+  if (page === "importazione" && state === "in_progress") {
+    const wizard = asRecord(fixture.wizard);
+    wizard.runtimePhases = [
+      {
+        detail: "SyncBay sta collegando i prodotti applicabili in batch.",
+        label: "Collegamento catalogo",
+        status: "working",
+      },
+      {
+        detail: "Non chiudere la pagina finché la coda non è stata preparata.",
+        label: "Preparazione sincronizzazione",
+        status: "pending",
+      },
+    ];
+  }
+
   return fixture;
+}
+
+export function getUiFixtureScenario(
+  page: UiFixturePage,
+  state: UiFixtureState,
+) {
+  if (!getUiFixtureStates(page).includes(state)) {
+    throw new Error(`Scenario fixture ${state} non supportato per ${page}.`);
+  }
+
+  if (state === "loading") {
+    return {
+      actionHref: null,
+      actionLabel: null,
+      ariaBusy: true,
+      detail: "Attendi: i dati della sezione sono in preparazione.",
+      role: "status" as const,
+      title: "Caricamento in corso",
+    };
+  }
+  if (state === "degraded") {
+    return {
+      actionHref: "/app/activity?filter=errors",
+      actionLabel: "Controlla attività",
+      ariaBusy: false,
+      detail: "Alcuni dati non sono aggiornati. Controlla il dettaglio operativo.",
+      role: "status" as const,
+      title: "Aggiornamento parziale",
+    };
+  }
+  if (state === "error") {
+    return {
+      actionHref: `/${page}`,
+      actionLabel: "Riprova",
+      ariaBusy: false,
+      detail: "La sezione non è stata caricata. Riprova senza modificare i dati.",
+      role: "alert" as const,
+      title: "Caricamento non riuscito",
+    };
+  }
+  if (state === "blocked") {
+    return {
+      actionHref: "/app/settings",
+      actionLabel: "Completa impostazioni",
+      ariaBusy: false,
+      detail: "Manca un requisito obbligatorio prima di collegare il catalogo.",
+      role: "alert" as const,
+      title: "Importazione bloccata",
+    };
+  }
+  if (state === "in_progress") {
+    return {
+      actionHref: "/app/activity",
+      actionLabel: "Segui attività",
+      ariaBusy: true,
+      detail: "I batch sono in preparazione. Lo stato si aggiornerà automaticamente.",
+      role: "status" as const,
+      title: "Importazione in corso",
+    };
+  }
+
+  return {
+    actionHref: null,
+    actionLabel: null,
+    ariaBusy: false,
+    detail:
+      state === "empty"
+        ? "Non ci sono ancora elementi da mostrare in questa sezione."
+        : "Dati sintetici pronti per la verifica.",
+    role: "status" as const,
+    title: state === "empty" ? "Nessun elemento" : "Sezione pronta",
+  };
+}
+
+function applyErrorState(
+  page: UiFixturePage,
+  fixture: Record<string, unknown>,
+) {
+  if (page === "catalogo" && Array.isArray(fixture.rows) && fixture.rows[0]) {
+    Object.assign(asRecord(fixture.rows[0]), {
+      lastErrorCode: "SHOPIFY_READ_FAILED",
+      lastErrorMessage: "Shopify non ha risposto. Riprova da Attività.",
+      status: "mapping_error",
+    });
+  }
+  if (page === "impostazioni") {
+    const publications = asRecord(fixture.productPublications);
+    publications.errorMessage =
+      "Canali Shopify non leggibili. Riprova prima di salvare.";
+  }
+  if (page === "panoramica" || page === "attivita") {
+    const sync = asRecord(fixture.sync);
+    const digest = asRecord(sync.healthDigest);
+    digest.failedCount = 1;
+    digest.headline = "degraded";
+  }
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
