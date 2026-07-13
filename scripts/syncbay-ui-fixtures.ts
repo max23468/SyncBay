@@ -302,7 +302,7 @@ export function getDashboardFixture() {
           attempts: 1,
           createdAt: "2026-06-11T15:35:00.000Z",
           errorCode: "EBAY_TRADING_RATE_LIMITED",
-          errorMessage: "eBay ha imposto un cooldown temporaneo.",
+          errorMessage: "eBay ha imposto un cooldown temporaneo",
           id: "job-2",
           maxAttempts: 3,
           runAfter: "2026-06-11T15:58:00.000Z",
