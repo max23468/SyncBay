@@ -6,7 +6,13 @@ import type {
 } from "./syncbay-existing-catalog-takeover";
 
 export function formatExistingCatalogTakeoverStatus(value: ExistingCatalogTakeoverStatus) {
-  return value === "da_rivedere" ? "da rivedere" : value === "gia_collegato" ? "già collegato" : value;
+  const labels: Record<ExistingCatalogTakeoverStatus, string> = {
+    applicabile: "applicabile",
+    bloccante: "bloccante",
+    da_rivedere: "da rivedere",
+    gia_collegato: "già collegato",
+  };
+  return labels[value];
 }
 
 export function formatExistingCatalogOperation(value: ExistingCatalogPlannedOperation) {

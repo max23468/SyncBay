@@ -218,11 +218,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   if (intent === "applyExistingCatalogTakeover") {
-    const result = await startExistingCatalogTakeoverJobs(session, admin, {
+    const result = await startExistingCatalogTakeoverJobs({
+      admin,
       confirmation: String(formData.get("confirmation") ?? "").trim(),
       legacyTagsToRemove: parseExistingCatalogLegacyTagsToRemove(
         formData.get("legacyTagsToRemove"),
       ),
+      session,
     });
 
     return Response.json(
