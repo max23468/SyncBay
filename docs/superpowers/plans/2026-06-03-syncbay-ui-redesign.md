@@ -1,7 +1,5 @@
 # SyncBay UI Redesign Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Convert the current technical SyncBay dashboard into a Shopify-native, customer-ready embedded app with six clear surfaces: `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`, `Impostazioni`.
 
 **Architecture:** Keep the existing Shopify CLI React Router scaffold, App Bridge, Prisma models and SyncBay service layer. Treat the six concept images as directional references, not pixel-perfect specs; the written plan, real Shopify components and real data contracts win when there is a conflict. Before UI implementation, complete a documentation-only Phase 0 that maps each page to real loaders, actions, empty states and missing data, then redistribute existing dashboard/import/settings data into route-level pages without new providers, workers, schema changes or legacy Polaris React.

@@ -1,7 +1,5 @@
 # SyncBay Conflict Diagnostics Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Make conflict handling and job retry diagnostics safer, clearer and ready for product screenshots.
 
 **Architecture:** Keep the current Shopify CLI React Router app and existing Prisma models. Add pure helper modules for conflict action safety and job diagnostics, then wire them into the existing `Conflitti` and `Attività` routes without schema changes, new workers or provider writes.

@@ -1,7 +1,5 @@
 # SyncBay Automatic Facet Inference Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Rendere automatica e prudente la compilazione delle cinque faccette prodotto `syncbay_facets.*`, usando inferenza deterministica SyncBay e non script manuali come flusso ordinario.
 
 **Architecture:** SyncBay deve dedurre `Categoria`, `Area / Stato`, `Materiale`, `Conservazione` e `Perizia` da segnali osservabili, soprattutto titolo e categoria negozio, con regole versionate, confidenza ed evidenza. La scrittura Shopify deve essere idempotente: aggiorna valori mancanti o ancora allineati all'ultimo baseline SyncBay, ma non sovrascrive valori Shopify divergenti. Il runner `SYNC_INCREMENTAL` gestisce sia aggiornamento ordinario sia backfill automatico `facetOnly`, senza nuovi worker o code esterne.

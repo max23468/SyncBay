@@ -1,7 +1,5 @@
 # Safe Dependency Updates Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Aggiornare tutte le dipendenze SyncBay che risultano compatibili con Node 24 e con la catena React Router, Shopify, Prisma e Vercel attuale, lasciando fuori le migrazioni major.
 
 **Architecture:** Il lavoro modifica solo manifest, lockfile, changelog e documentazione toolchain. Gli aggiornamenti entro la linea corrente vengono applicati insieme; Shopify CLI 4.4 e React Doctor 0.7 vengono mantenuti solo se installazione, audit e gate completi restano verdi.

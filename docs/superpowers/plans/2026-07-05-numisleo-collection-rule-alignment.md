@@ -1,7 +1,5 @@
 # Numisleo Collection Rule Alignment Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** mantenere le collezioni Shopify esistenti di Numisleo sempre coerenti con i nuovi prodotti sincronizzati da SyncBay, riadattando le regole automatiche al `productType` SyncBay e correggendo il mapper a monte quando il tipo prodotto è troppo generico o errato.
 
 **Architecture:** la soluzione resta fuori dal runtime merchant-facing: prima un doctor operativo read-only, poi una matrice regole/prodotti, poi apply esplicito su Shopify solo dopo conferma. La logica riutilizzabile vive in moduli puri `app/lib/*`, mentre lo script `scripts/syncbay-collections-doctor.mjs` usa Shopify Admin GraphQL via Shopify CLI locale per audit e, solo con doppi flag, per mutation sulle collezioni. Gli intenti Numisleo restano in un file operativo passato con `--intent-file`, non hardcoded nello script. SyncBay non crea nuove collezioni Numisleo-specifiche e non sostituisce Shopify: rende affidabili `productType`, regole automatiche e verifiche di drift.

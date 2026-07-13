@@ -1,7 +1,5 @@
 # Sync Maturity E2E Rollback Test Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Run a real, reversible end-to-end test proving that SyncBay can update Shopify from eBay changes and update eBay stock from a Shopify paid order.
 
 **Architecture:** This plan does not introduce a new runtime component. It uses the existing Prisma models, Shopify webhook routes, SyncBay runner, Trading API stock writer, Supabase Cron endpoint and diagnostic scripts, with strict baseline capture and rollback before any provider write is considered complete.

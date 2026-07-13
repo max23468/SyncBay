@@ -1,7 +1,5 @@
 # Operational Self-Service Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Implement the selected SyncBay improvements: persistent description rules, existing-product match suggestions, catalog health diagnostics, eBay rate-limit UI, full reconcile policy visibility, non-opaque quality checklist, and a concrete data retention policy.
 
 **Architecture:** Keep the work inside the existing React Router, Prisma and pure `app/lib` patterns. Add small pure helpers for scoring, matching, catalog health and retention; persist description rules through Prisma and settings; expose operational diagnostics in existing embedded pages without creating new workers or provider integrations.

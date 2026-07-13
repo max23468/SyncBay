@@ -1,7 +1,5 @@
 # SyncBay Comprehensive Improvement Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Eliminare tutti i rilievi validati nella revisione generale di SyncBay: backlog e freschezza conflitti, sicurezza sessioni Shopify, pressione database, retry e transazioni Shopify Admin, doppio ciclo vita import, locality del catalogo esistente, copertura dei moduli runtime, falso verde UI, stati negoziante coerenti, accessibilità e stati degradati, impaginazione e raccolte di box bilanciate senza spazi vuoti, overflow del catalogo, osservabilità e payload frontend, pulizia generale, budget Vercel/Supabase Free, backup/disaster recovery, drift documentale e piccoli debiti verificati.
 
 **Architecture:** Il lavoro approfondisce cinque moduli dentro il runtime esistente: intake/rilevamento conflitti, adapter Shopify Admin/sessioni, storia prodotto, esecuzione import e takeover catalogo esistente. Le modifiche dati seguono rollout additivi e compatibili prima di qualunque compattazione; Supabase Cron, Vercel Functions e Prisma restano l'unico runtime asincrono, senza nuovi worker o code esterne.

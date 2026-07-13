@@ -1,7 +1,5 @@
 # SyncBay Loader Performance Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Ridurre il tempo reale e percepito di apertura delle 6 pagine embedded SyncBay, usando le misure production come fonte di verità.
 
 **Architecture:** La correzione va fatta per route, non come refactor generico. Importazione deve smettere di bloccare l'apertura pagina sulla preview live eBay; Panoramica e Attività devono smettere di condividere sempre il loader dashboard completo; Catalogo riceve solo ottimizzazioni mirate dopo i due colli di bottiglia maggiori. La strumentazione `syncbay-loader-performance` resta il contratto di verifica.
@@ -353,4 +351,3 @@ Dopo merge:
 vercel inspect syncbay.vercel.app
 vercel logs syncbay.vercel.app --since 10m --query syncbay-loader-performance --json
 ```
-
