@@ -213,9 +213,12 @@ export async function runExistingCatalogTakeoverStart(
   const previewItemsByItemId = new Map(
     wizard.previewResult.items.map((item) => [item.itemId, item]),
   );
-  const missingPreviewItemIds = applyPlan.rows
-    .filter((row) => !previewItemsByItemId.has(row.itemId))
-    .map((row) => row.itemId);
+  const missingPreviewItemIds: string[] = [];
+  for (const row of applyPlan.rows) {
+    if (!previewItemsByItemId.has(row.itemId)) {
+      missingPreviewItemIds.push(row.itemId);
+    }
+  }
 
   if (missingPreviewItemIds.length > 0) {
     return {
