@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.62] — 2026-07-13
+
 ### Correzioni
 
 - Eliminati i mismatch di hydration dei campi, checkbox e switch Polaris; dopo
@@ -3570,6 +3572,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.62]: #1062--2026-07-13
 [1.0.61]: #1061--2026-07-13
 [1.0.60]: #1060--2026-07-13
 [1.0.59]: #1059--2026-07-13
