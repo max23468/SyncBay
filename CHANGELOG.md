@@ -6,6 +6,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.59] — 2026-07-13
+
 ### Correzioni
 
 - L'import catalogo usa un unico `SyncJob` proprietario dall'accodamento alla
@@ -3533,6 +3535,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.59]: #1059--2026-07-13
 [1.0.58]: #1058--2026-07-13
 [1.0.57]: #1057--2026-07-12
 [1.0.56]: #1056--2026-07-12
