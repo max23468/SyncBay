@@ -1,5 +1,12 @@
 import type { ProductSnapshotSource } from "@prisma/client";
 
+const VOLATILE_PAYLOAD_KEYS = new Set([
+  "importJobId",
+  "orderLineItemKey",
+  "previousQuantity",
+  "syncJobId",
+]);
+
 type SnapshotComparable = {
   currency?: string | null;
   descriptionHash?: string | null;
@@ -76,14 +83,10 @@ function stripVolatilePayloadKeys(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
 
   return Object.fromEntries(
-    Object.entries(value)
-      .filter(
-        ([key]) =>
-          key !== "importJobId" &&
-          key !== "orderLineItemKey" &&
-          key !== "previousQuantity" &&
-          key !== "syncJobId",
-      )
-      .map(([key, entryValue]) => [key, stripVolatilePayloadKeys(entryValue)]),
+    Object.entries(value).flatMap(([key, entryValue]) =>
+      VOLATILE_PAYLOAD_KEYS.has(key)
+        ? []
+        : [[key, stripVolatilePayloadKeys(entryValue)] as const],
+    ),
   );
 }

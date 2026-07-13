@@ -253,6 +253,7 @@ async function getDashboardState(
       erroredMappingCount,
     ],
     latestImportRun,
+    descriptionRule,
   ] = await Promise.all([
     measureSyncBayPerformanceStage(
       trace,
@@ -386,12 +387,12 @@ async function getDashboardState(
       "dashboard.db.latestImportRun",
       () => getLatestImportRunSummary(shop.id),
     ),
+    measureSyncBayPerformanceStage(
+      trace,
+      "dashboard.db.descriptionRule",
+      () => getExistingDescriptionRuleForSettings(shop.id),
+    ),
   ]);
-  const descriptionRule = await measureSyncBayPerformanceStage(
-    trace,
-    "dashboard.db.descriptionRule",
-    () => getExistingDescriptionRuleForSettings(shop.id),
-  );
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -1168,38 +1169,41 @@ async function getConflictSummaryCounts(input: {
   shopId: string;
   statusFilter: SyncConflictStatus[];
 }) {
-  const [summary] = await prisma.$queryRaw<
-    Array<{
-      filteredCount: number;
-      openCount: number;
-      resolvedCount: number;
-      totalCount: number;
-    }>
-  >`
-    SELECT
-      COUNT(*) FILTER (WHERE "status"::text = 'OPEN')::integer AS "openCount",
-      COUNT(*) FILTER (
-        WHERE "status"::text IN (${Prisma.join(input.resolvedStatuses)})
-      )::integer AS "resolvedCount",
-      COUNT(*) FILTER (
-        WHERE "status"::text IN (${Prisma.join(input.allStatuses)})
-      )::integer AS "totalCount",
-      COUNT(*) FILTER (
-        WHERE "status"::text IN (${Prisma.join(input.statusFilter)})
-      )::integer AS "filteredCount"
-    FROM "SyncConflict"
-    WHERE "shopId" = ${input.shopId}
-  `;
-  const openConflictFields = await prisma.$queryRaw<
-    Array<{ count: number; field: string }>
-  >`
-    SELECT "field", COUNT(*)::integer AS "count"
-    FROM "SyncConflict"
-    WHERE
-      "shopId" = ${input.shopId}
-      AND "status"::text = 'OPEN'
-    GROUP BY "field"
-  `;
+  const [summaryRows, openConflictFields] = await Promise.all([
+    prisma.$queryRaw<
+      Array<{
+        filteredCount: number;
+        openCount: number;
+        resolvedCount: number;
+        totalCount: number;
+      }>
+    >`
+      SELECT
+        COUNT(*) FILTER (WHERE "status"::text = 'OPEN')::integer AS "openCount",
+        COUNT(*) FILTER (
+          WHERE "status"::text IN (${Prisma.join(input.resolvedStatuses)})
+        )::integer AS "resolvedCount",
+        COUNT(*) FILTER (
+          WHERE "status"::text IN (${Prisma.join(input.allStatuses)})
+        )::integer AS "totalCount",
+        COUNT(*) FILTER (
+          WHERE "status"::text IN (${Prisma.join(input.statusFilter)})
+        )::integer AS "filteredCount"
+      FROM "SyncConflict"
+      WHERE "shopId" = ${input.shopId}
+    `,
+    prisma.$queryRaw<
+      Array<{ count: number; field: string }>
+    >`
+      SELECT "field", COUNT(*)::integer AS "count"
+      FROM "SyncConflict"
+      WHERE
+        "shopId" = ${input.shopId}
+        AND "status"::text = 'OPEN'
+      GROUP BY "field"
+    `,
+  ]);
+  const summary = summaryRows[0];
 
   return [
     summary ?? {
@@ -1425,6 +1429,7 @@ export async function resolveBatchSafeConflicts(session: ShopifySessionLike) {
     if (!safeResolution) continue;
 
     try {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- risoluzione conflitti in serie: ogni resolveSyncConflict può scrivere sul provider, seriale per rispettarne i limiti.
       await resolveSyncConflict(session, {
         conflictId: conflict.id,
         resolution: safeResolution,
@@ -1599,6 +1604,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
   let resumedJobCount = 0;
 
   for (const [batchIndex, ebayItemIds] of batches.entries()) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- enqueue batch import in serie: limita il burst di scritture job (egress).
     const result = await upsertCatalogImportBatchJob({
       batchCount: batches.length,
       batchIndex,
@@ -2063,6 +2069,7 @@ export async function updatePricingRuleSettings(
   }
 
   const pricingUpdate = await prisma.$transaction(async (tx) => {
+    // react-doctor-disable-next-line react-doctor/async-parallel -- dentro prisma.$transaction interattiva: query concorrenti sullo stesso tx non supportate da Prisma.
     const savedRule = await tx.pricingRule.upsert({
       create: {
         discountPercent: normalized.discountPercent,
@@ -2079,6 +2086,7 @@ export async function updatePricingRuleSettings(
       },
       where: { shopId: shop.id },
     });
+    // react-doctor-disable-next-line react-doctor/server-sequential-independent-await -- dentro prisma.$transaction interattiva: query concorrenti sullo stesso tx non supportate da Prisma.
     const activeMappings = await tx.productMapping.findMany({
       orderBy: { updatedAt: "asc" },
       select: { ebayItemId: true },
@@ -3564,6 +3572,7 @@ async function getShopifyThumbnailUrlByProductGid(input: {
     const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
 
     for (const productGidBatch of chunkArray(missingProductGids, 50)) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lettura Shopify Admin GraphQL rate-limited: in serie per rispettare i limiti di costo del provider.
       const response = await admin.graphql(
         `#graphql
         query SyncBayCatalogProductThumbnails($ids: [ID!]!) {

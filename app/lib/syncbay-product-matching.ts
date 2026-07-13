@@ -73,44 +73,47 @@ export function buildExistingProductMatchSuggestions(input: {
 
   const bestByProduct = new Map<string, ExistingProductMatchSuggestion>();
 
+  const { ebay } = input;
+  const ebayItemId = ebay.itemId;
+
   for (const product of input.shopifyProducts) {
     const reasonCodes: ExistingProductMatchReasonCode[] = [];
     const reasons: string[] = [];
     let score = 0;
 
-    if (sameToken(input.ebay.itemId, getSyncBayItemId(product.metafields))) {
+    if (sameToken(ebayItemId, getSyncBayItemId(product.metafields))) {
       score += 98;
       reasonCodes.push("syncbay_metafield_item_id");
       reasons.push("ItemID eBay trovato nei metafield SyncBay");
     }
-    const hasExactSkuMatch = sameToken(input.ebay.sku, product.sku);
+    const hasExactSkuMatch = sameToken(ebay.sku, product.sku);
     if (hasExactSkuMatch) {
       score += 100;
       reasonCodes.push("sku_exact");
       reasons.push("SKU identico");
     }
-    if (!hasExactSkuMatch && sameToken(input.ebay.itemId, product.sku)) {
+    if (!hasExactSkuMatch && sameToken(ebayItemId, product.sku)) {
       score += 96;
       reasonCodes.push("shopify_sku_item_id");
       reasons.push("SKU Shopify uguale all'ItemID eBay");
     }
-    if (sameToken(input.ebay.itemId, product.barcode)) {
+    if (sameToken(ebayItemId, product.barcode)) {
       score += 95;
       reasonCodes.push("barcode_item_id");
       reasons.push("ItemID eBay trovato su barcode");
     }
-    if (containsToken(product.handle, input.ebay.itemId)) {
+    if (containsToken(product.handle, ebayItemId)) {
       score += 92;
       reasonCodes.push("handle_item_id");
       reasons.push("ItemID eBay trovato nell'handle Shopify");
     }
-    if ((product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))) {
+    if ((product.tags ?? []).some((tag) => containsToken(tag, ebayItemId))) {
       score += 80;
       reasonCodes.push("tag_item_id");
       reasons.push("ItemID eBay trovato nei tag Shopify");
     }
 
-    const titleSimilarity = getTitleSimilarity(input.ebay.title, product.title);
+    const titleSimilarity = getTitleSimilarity(ebay.title, product.title);
     if (titleSimilarity >= 0.8) {
       score += 40;
       reasonCodes.push("title_very_similar");

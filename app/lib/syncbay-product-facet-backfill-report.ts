@@ -106,10 +106,12 @@ export function buildProductFacetApplyPlan(
   report: ProductFacetBackfillReport,
 ): ProductFacetApplyPlan {
   return {
-    rows: report.rows
-      .filter((row) => row.status === "applicable")
-      .flatMap((row) => {
-        if (!row.shopifyProductGid || row.missingMetafields.length === 0) {
+    rows: report.rows.flatMap((row) => {
+        if (
+          row.status !== "applicable" ||
+          !row.shopifyProductGid ||
+          row.missingMetafields.length === 0
+        ) {
           return [];
         }
 

@@ -269,6 +269,7 @@ export async function runExistingCatalogTakeoverStart(
   };
 
   for (const [batchIndex, ebayItemIds] of batches.entries()) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- enqueue batch in serie: preserva l'ordine dei batchIndex e limita il burst di scritture job (egress).
     const result = await ports.enqueueBatch({
       batchCount: batches.length,
       batchIndex,
@@ -461,6 +462,7 @@ async function loadExistingCatalogTakeoverProducts(
   const productsById = new Map<string, ExistingCatalogTakeoverProductNode>();
 
   for (const ids of chunkArray([...new Set(productGids)], 100)) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lettura Shopify Admin GraphQL rate-limited: in serie per rispettare i limiti di costo del provider.
     const response = await admin.graphql(
       `#graphql
       query SyncBayExistingCatalogTakeoverProducts($ids: [ID!]!) {
@@ -571,6 +573,7 @@ async function applyExistingCatalogTakeoverMetafields(
     metafields,
     TAKEOVER_METAFIELDS_SET_BATCH_SIZE,
   )) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- mutation Shopify Admin GraphQL rate-limited: in serie per rispettare i limiti di costo del provider.
     const response = await admin.graphql(
       `#graphql
       mutation SyncBayExistingCatalogTakeoverMetafields($metafields: [MetafieldsSetInput!]!) {

@@ -36,7 +36,3 @@ export function scrubRuntimeEnv(target = process.env) {
   target.NODE_ENV = "test";
   target.SYNCBAY_UI_RENDER_FIXTURE = "1";
 }
-
-export function listRuntimeEnvKeys(source = process.env) {
-  return Object.keys(source).filter((key) => RUNTIME_ENV_PATTERN.test(key));
-}

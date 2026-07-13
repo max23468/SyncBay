@@ -101,27 +101,31 @@ export function buildCategoryApplyPlan(
   } = {},
 ): CategoryApplyPlan {
   return {
-    rows: report.rows
-      .filter(
-        (row) =>
-          row.status === "applicable" ||
-          (options.forceCategoryConflicts &&
-            row.status === "conflict_manual") ||
-          (options.includeCategoryConflicts &&
-            isKnownLegacyMapperConflict(row)),
-      )
-      .map((row) => ({
+    rows: report.rows.flatMap((row) => {
+      const included =
+        row.status === "applicable" ||
+        (options.forceCategoryConflicts &&
+          row.status === "conflict_manual") ||
+        (options.includeCategoryConflicts &&
+          isKnownLegacyMapperConflict(row));
+      if (!included) return [];
+
+      const mapped = {
         ebayItemId: row.ebayItemId,
         productType: row.proposal?.productType ?? "",
         shopifyCategoryGid: row.proposal?.shopifyCategoryGid ?? "",
         shopifyProductGid: row.shopifyProductGid ?? "",
-      }))
-      .filter(
-        (row) =>
-          row.productType &&
-          row.shopifyCategoryGid &&
-          row.shopifyProductGid,
-      ),
+      };
+      if (
+        !mapped.productType ||
+        !mapped.shopifyCategoryGid ||
+        !mapped.shopifyProductGid
+      ) {
+        return [];
+      }
+
+      return [mapped];
+    }),
     skipped: {
       alreadyCorrect: report.summary.alreadyCorrect,
       conflictsManual: options.forceCategoryConflicts

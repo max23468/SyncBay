@@ -329,12 +329,13 @@ function truncateTemplateTail(html: string) {
   const text = stripTags(html).replace(/\s+/g, " ").trim();
   if (!text) return html;
 
-  const marker = TEMPLATE_TAIL_MARKERS.map((pattern) => {
+  const markerIndices: number[] = [];
+  for (const pattern of TEMPLATE_TAIL_MARKERS) {
     const match = pattern.exec(text);
-    return match?.index ?? -1;
-  })
-    .filter((index) => index >= 0)
-    .sort((left, right) => left - right)[0];
+    if (match && match.index >= 0) markerIndices.push(match.index);
+  }
+  const marker =
+    markerIndices.length > 0 ? Math.min(...markerIndices) : undefined;
 
   if (marker === undefined || marker < 15) return html;
 
@@ -515,12 +516,13 @@ function getSafeRawTextExcerpt(rawText: string, cleanedText: string) {
   if (!rawText) return "";
   if (cleanedText) return cleanedText;
 
-  const firstTemplateSignalIndex = TEMPLATE_SIGNAL_PATTERNS.map((pattern) => {
+  const signalIndices: number[] = [];
+  for (const pattern of TEMPLATE_SIGNAL_PATTERNS) {
     const match = pattern.exec(rawText);
-    return match?.index ?? -1;
-  })
-    .filter((index) => index >= 0)
-    .sort((left, right) => left - right)[0];
+    if (match && match.index >= 0) signalIndices.push(match.index);
+  }
+  const firstTemplateSignalIndex =
+    signalIndices.length > 0 ? Math.min(...signalIndices) : undefined;
 
   if (firstTemplateSignalIndex === undefined) return rawText;
 

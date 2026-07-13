@@ -306,9 +306,10 @@ export async function runDueSyncJobs(
   const completedResults = results.filter(
     (result): result is DueSyncJobRunResult => Boolean(result),
   );
-  const archivedStaleFailedJobCount =
-    await archiveSupersededFailedIncrementalSyncJobs({ now });
-  const retentionCleanup = await runDailyOperationalMaintenance({ now });
+  const [archivedStaleFailedJobCount, retentionCleanup] = await Promise.all([
+    archiveSupersededFailedIncrementalSyncJobs({ now }),
+    runDailyOperationalMaintenance({ now }),
+  ]);
   const selectedByType = buildRunnerLaneCounts(
     completedResults.map((result) => result.type as RunnerLane),
   );
@@ -1190,10 +1191,16 @@ async function enqueueFacetBackfillJobsIfNeeded(input: {
       return batchIndex === null ? [] : [batchIndex];
     }),
   );
-  const jobsToCreate = batches
-    .map((batch, index) => ({ batch, batchIndex: index + 1 }))
-    .filter((batch) => !existingBatchIndexes.has(batch.batchIndex))
-    .slice(0, availableSlots);
+  const jobsToCreate: Array<{
+    batch: (typeof batches)[number];
+    batchIndex: number;
+  }> = [];
+  for (const [index, batch] of batches.entries()) {
+    if (jobsToCreate.length >= availableSlots) break;
+    const batchIndex = index + 1;
+    if (existingBatchIndexes.has(batchIndex)) continue;
+    jobsToCreate.push({ batch, batchIndex });
+  }
 
   if (jobsToCreate.length === 0) return 0;
 
@@ -3377,6 +3384,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
       const absorbedJob = absorbedById.get(result.jobId);
       if (!absorbedJob) continue;
       if (result.outcome === "failed") {
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- transizioni di stato job con guardia RUNNING: l'ordine seriale è necessario per la correttezza.
         await markJobFailedOrRetrying({
           errorCode: result.errorCode ?? "SHOPIFY_CONFLICT_BATCH_FAILED",
           errorMessage: "Rilevamento conflitti Shopify non completato.",
@@ -3406,6 +3414,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     const errorMessage = getErrorMessage(error);
     for (const absorbedJob of absorbedJobs) {
       if (absorbedJob.id === job.id) continue;
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- recovery dei sibling assorbiti con guardia RUNNING: l'ordine seriale è necessario per la correttezza.
       await markJobFailedOrRetrying({
         errorCode: "SHOPIFY_CONFLICT_BATCH_FAILED",
         errorMessage,
@@ -4567,6 +4576,7 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
       continue;
     }
 
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lettura Shopify live per-conflitto rate-limited: in serie per rispettare i limiti del provider.
     const product = await getShopifyProductForConflict(
       admin,
       shopifyProductGid,
@@ -4720,6 +4730,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
     // limitata ai soli conflitti prezzo aperti su mapping ACTIVE (volume basso, nessuna
     // write provider). Quando il mapping conserva una variante Shopify specifica,
     // valida quella invece della prima variante del prodotto.
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- lettura Shopify live per-conflitto rate-limited: in serie per rispettare i limiti del provider.
     const product = await getShopifyProductForConflict(
       admin,
       mapping.shopifyProductGid,

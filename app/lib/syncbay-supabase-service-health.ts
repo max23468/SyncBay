@@ -152,10 +152,11 @@ function normalizeSupabaseResponseMessage(bodyText: string): string | null {
       hint?: unknown;
       message?: unknown;
     };
-    const parts = [parsed.message, parsed.hint]
-      .filter((part): part is string => typeof part === "string")
-      .map((part) => part.trim())
-      .filter(Boolean);
+    const parts = [parsed.message, parsed.hint].flatMap((part) => {
+      if (typeof part !== "string") return [];
+      const trimmed = part.trim();
+      return trimmed ? [trimmed] : [];
+    });
 
     return parts.length > 0 ? parts.join(" ") : trimmed;
   } catch {

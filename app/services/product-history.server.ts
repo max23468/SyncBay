@@ -169,6 +169,7 @@ export async function recordProductSnapshotsInTransaction(
       productFacets: baseline.productFacets,
       lastWriterJobId: baseline.lastWriterJobId,
     });
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- dentro prisma.$transaction interattiva: query concorrenti sullo stesso tx non supportate da Prisma.
     await tx.productSyncBaseline.upsert({
       where: { mappingId: baseline.mappingId },
       create: {
