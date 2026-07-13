@@ -29,8 +29,7 @@ const sql = `with candidates as (
   select id
   from "SyncJob"
   where "idempotencyKey" like 'draft-import:%'
-    and (status in ('SUCCEEDED', 'FAILED')
-      or (status in ('RUNNING', 'RETRYING') and coalesce("startedAt", "createdAt") < now() - interval '15 minutes'))
+    and status <> 'CANCELLED'
 )
 ${writeCte}
 select jsonb_build_object(
