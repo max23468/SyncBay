@@ -1,7 +1,5 @@
 # SyncBay 1.0 Existing Catalog Takeover Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Portare SyncBay a una release privata 1.0 completa e installabile prima di qualunque onboarding cliente, poi usare Numisleo come primo onboarding reale post-1.0 fino a SyncBay come unico gestore del flusso eBay.it -> Shopify.
 
 **Architecture:** Non creare funzionalità Numisleo-specifiche dentro l'app: la capability resta generica e vive nel tab `Importazione` con la modalità `Collega catalogo esistente`, costruita sopra preview, matching conservativo, mapping, snapshot, import worker e policy di conflitto già esistenti. Il piano è separato in due gate: prima release privata `1.0.0` completa, verificata, taggata, deployata e installabile; dopo, onboarding Numisleo come primo cliente reale, con eventuali correzioni rilasciate come `1.0.1+`. Il takeover scrive solo dopo dry-run, conferma esplicita e claim del prodotto Shopify tramite metafield `syncbay` + `ProductMapping`; dopo il claim riusa il percorso ordinario di import/sync in modalità `reuseOnly`, così non crea duplicati.

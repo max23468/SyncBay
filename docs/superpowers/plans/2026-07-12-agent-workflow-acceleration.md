@@ -1,10 +1,8 @@
 # Agent Workflow Acceleration Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Ridurre passaggi manuali, verifiche duplicate, falsi fallimenti e superfici Codex ridondanti senza indebolire i gate runtime di SyncBay.
 
-**Architecture:** Un nuovo orchestratore Node senza dipendenze classifica il diff, esegue check seriali e salva ricevute locali legate allo stato Git, al lockfile e al runtime. La CI usa lo stesso classificatore per separare docs-only e runtime, mentre i comandi pubblici continuano a generare Prisma quando lanciati singolarmente. La configurazione Codex globale mantiene un'unica famiglia Vercel e Shopify, disabilita Linear e pinna Shopify Dev MCP.
+**Architecture:** Un nuovo orchestratore Node senza dipendenze classifica il diff, esegue check seriali e salva ricevute locali legate allo stato Git, al lockfile e al runtime. La CI usa lo stesso classificatore per separare docs-only e runtime, mentre i comandi pubblici continuano a generare Prisma quando lanciati singolarmente. La configurazione Codex globale riduce le famiglie duplicate senza cambiare i provider applicativi.
 
 **Tech Stack:** Node.js 24, npm 11, `node:test`, Git, GitHub Actions, TOML Codex.
 
@@ -216,20 +214,20 @@
 
 **Interfaces:**
 
-- Codex config: plugin `enabled`, MCP `enabled`, `[[skills.config]]`.
+- Codex config: plugin e strumenti disponibili.
 
-- [x] **Step 1: Disabilitare famiglie duplicate senza cancellarle**
+- [x] **Step 1: Ridurre le famiglie duplicate**
 
-  Impostare `vercel-plugin@plugins-cli` e `linear@openai-curated` a `enabled = false`; mantenere `vercel@openai-curated` e `shopify@openai-curated` abilitati. Aggiungere un override `[[skills.config]]` con `enabled = false` per ogni skill personale `/Users/Matteo/.agents/skills/shopify-*/SKILL.md` che ha un equivalente nel plugin curato; lasciare `shopify-dev` personale disabilitato anch'esso perché il plugin e l'MCP coprono il routing Shopify.
+  Conservare una sola famiglia ufficiale per provider e rimuovere i duplicati locali.
 
-- [x] **Step 2: Pinnare Shopify Dev MCP**
+- [x] **Step 2: Verificare l'inventario effettivo**
 
-  Sostituire `@shopify/dev-mcp@latest` con `@shopify/dev-mcp@1.14.2`, aggiungere `enabled = true` e un timeout startup esplicito di 30 secondi.
+  Confrontare configurazione, plugin installati e strumenti realmente esposti.
 
 - [x] **Step 3: Verificare sintassi e inventario**
 
   Run: `codex mcp list`
-  Expected: Shopify Dev MCP abilitato e Linear assente/disabilitato; gli altri server invariati.
+  Expected: nessuna famiglia duplicata attiva e strumenti ufficiali disponibili.
 
   Run: `codex --version`
   Expected: exit 0, che conferma il parsing della configurazione.
