@@ -60,9 +60,21 @@ jobs:
         if: steps.lane.outputs.lane == 'runtime'
         run: npm ci
 
-      - name: Installa Chromium per i controlli UI
+      - name: Ripristina cache Chromium Playwright
         if: steps.lane.outputs.lane == 'runtime'
-        run: npx playwright install --with-deps chromium
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Installa dipendenze di sistema Chromium
+        if: steps.lane.outputs.lane == 'runtime'
+        run: npx playwright install-deps chromium
+
+      - name: Installa Chromium su cache miss
+        if: steps.lane.outputs.lane == 'runtime' && steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install chromium
 
       - name: Verifica runtime completa
         if: steps.lane.outputs.lane == 'runtime'
