@@ -379,7 +379,7 @@ function CatalogViewControls({
           ) : null}
           <s-stack direction="inline" gap="small-200" alignItems="end">
             <s-text-field
-              defaultValue={activeSearch}
+              value={activeSearch}
               label="Cerca nel catalogo"
               name="q"
               placeholder="Titolo, SKU o ItemID eBay"

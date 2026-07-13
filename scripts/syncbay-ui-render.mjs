@@ -27,7 +27,17 @@ import { fileURLToPath } from "node:url";
 
 import React from "react";
 import { renderToString } from "react-dom/server";
-import { getCatalogFixture, getConflictsFixture, getDashboardFixture, getImportPreviewFixture, getSettingsFixture, getUiFixture, UI_FIXTURE_STATES } from "./syncbay-ui-fixtures.ts";
+import {
+  getCatalogFixture,
+  getConflictsFixture,
+  getDashboardFixture,
+  getImportPreviewFixture,
+  getSettingsFixture,
+  getUiFixture,
+  getUiFixtureScenario,
+  getUiFixtureStates,
+} from "./syncbay-ui-fixtures.ts";
+import { scrubRuntimeEnv } from "./syncbay-ui-isolation.mjs";
 import {
   createStaticHandler,
   createStaticRouter,
@@ -38,12 +48,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
 const fixtureMode = args.includes("--fixture");
 const checkMode = args.includes("--check");
+const hydrateMode = args.includes("--hydrate");
 const page = args.find((arg) => !arg.startsWith("--")) || "panoramica";
 const fixtureState = args.find((arg) => arg.startsWith("--state="))?.slice(8) || "healthy";
-
-if (!UI_FIXTURE_STATES.includes(fixtureState)) {
-  throw new Error(`Stato fixture non supportato: ${fixtureState}.`);
-}
 
 // --- 1. Carica env di runtime (distribuzione privata) --------------------- //
 function loadEnvFile(path) {
@@ -76,11 +83,13 @@ function loadEnvFile(path) {
 // Il file `.vercel/.env.production.local` ha valori vuoti (Vercel non esporta i
 // segreti), quindi non è una fonte utile qui.
 let envCount = 0;
-if (!fixtureMode) {
+if (fixtureMode) {
+  scrubRuntimeEnv();
+} else {
   envCount += loadEnvFile(join(root, ".env"));
   envCount += loadEnvFile(join(root, ".env.shopify"));
 }
-process.env.NODE_ENV = "development";
+process.env.NODE_ENV ||= fixtureMode ? "test" : "development";
 
 // Placeholder difensivi: il modulo shopify.server inizializza shopifyApp() al
 // load e richiede questi valori, ma il render non esegue l'auth embedded.
@@ -158,6 +167,11 @@ if (!pageConfig) {
   console.error(`Pagina non supportata: ${page}. Disponibili: ${Object.keys(PAGES).join(", ")}`);
   process.exit(1);
 }
+if (!getUiFixtureStates(page).includes(fixtureState)) {
+  throw new Error(
+    `Stato fixture ${fixtureState} non supportato per ${page}.`,
+  );
+}
 
 // --- 2. Avvia Vite in SSR per risolvere i moduli app come il server ------- //
 const { createServer } = await import("vite");
@@ -204,6 +218,7 @@ try {
       : `sessione: shop ${session.shop}`,
   );
   const routeMod = await vite.ssrLoadModule(pageConfig.module);
+  const shellMod = await vite.ssrLoadModule("/app/routes/app.tsx");
   if (!fixtureMode && !pageConfig.loader) {
     throw new Error(
       `La pagina ${page} supporta solo --fixture in questo harness: il loader richiede una sessione Shopify Admin embedded.`,
@@ -217,11 +232,21 @@ try {
   );
 
   // --- 4. SSR del componente di route reale ------------------------------ //
+  const childRoute = {
+    Component: routeMod.default,
+    id: page,
+    loader: () => data,
+    ...(page === "panoramica"
+      ? { index: true }
+      : { path: pageConfig.path.replace("/app/", "") }),
+  };
   const routes = [
     {
-      path: pageConfig.path,
-      Component: routeMod.default,
-      loader: () => data,
+      children: [childRoute],
+      Component: shellMod.default,
+      id: "app",
+      loader: () => ({ apiKey: "render-only" }),
+      path: "/app",
     },
   ];
   const handler = createStaticHandler(routes);
@@ -233,28 +258,34 @@ try {
   }
   const router = createStaticRouter(handler.dataRoutes, context);
   let markup = renderToString(
-    React.createElement(StaticRouterProvider, { router, context }),
+    React.createElement(StaticRouterProvider, {
+      context,
+      hydrate: false,
+      router,
+    }),
   );
 
   // Adatta le prop di layout Polaris (rese come attributi) a inline style, così
   // gli stand-in `s-*` rispettano griglie e colonne come farebbe Polaris.
-  markup = markup
-    .replace(
-      /<s-thumbnail([^>]*)src="([^"]*)"([^>]*)><\/s-thumbnail>/gi,
-      '<img class="preview-thumbnail" src="$2" alt="" />',
-    )
-    .replace(
-      /<s-select([^>]*)>([\s\S]*?)<\/s-select>/gi,
-      (_match, attrs, body) => renderPreviewSelect(attrs, body),
-    )
-    .replace(
-      /gridtemplatecolumns="([^"]*)"/gi,
-      (_m, value) => `style="grid-template-columns:${value}"`,
-    )
-    .replace(
-      /gridtemplaterows="([^"]*)"/gi,
-      (_m, value) => `style="grid-template-rows:${value}"`,
-    );
+  if (!hydrateMode) {
+    markup = markup
+      .replace(
+        /<s-thumbnail([^>]*)src="([^"]*)"([^>]*)><\/s-thumbnail>/gi,
+        '<img class="preview-thumbnail" src="$2" alt="" />',
+      )
+      .replace(
+        /<s-select([^>]*)>([\s\S]*?)<\/s-select>/gi,
+        (_match, attrs, body) => renderPreviewSelect(attrs, body),
+      )
+      .replace(
+        /gridtemplatecolumns="([^"]*)"/gi,
+        (_m, value) => `style="grid-template-columns:${value}"`,
+      )
+      .replace(
+        /gridtemplaterows="([^"]*)"/gi,
+        (_m, value) => `style="grid-template-rows:${value}"`,
+      );
+  }
 
   // --- 5. HTML con chrome simulata + design layer reale ------------------ //
   const stubCss = readFileSync(join(root, "preview/polaris-preview.css"), "utf8");
@@ -262,16 +293,33 @@ try {
     join(root, "app/styles/syncbay-embedded.css"),
     "utf8",
   );
+  const scenario = fixtureMode
+    ? getUiFixtureScenario(page, fixtureState)
+    : null;
+  const scenarioMarkup = scenario
+    ? renderFixtureScenario(scenario, fixtureState)
+    : "";
+  const hydrationScripts = hydrateMode
+    ? `<script>window.__SYNCBAY_UI_HARNESS__=${serializeForHtml({ page, state: fixtureState })};</script>
+<script src="/scripts/syncbay-ui-polaris-stub.js"></script>
+<script type="module" src="/@id/__x00__virtual:react-router/inject-hmr-runtime"></script>
+<script type="module" src="/scripts/syncbay-ui-browser-client.tsx"></script>`
+    : "";
   const html = `<!doctype html>
 <html lang="it">
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(page)} · SyncBay UI fixture</title>
 <style>${stubCss}</style>
 <style>${realCss}</style>
+<style>[data-syncbay-harness-control]:focus{outline:3px solid #0968f6;outline-offset:2px}</style>
 </head>
 <body>
 <p class="preview-note">Render ${fixtureMode ? "con fixture sintetica" : "con DATI REALI"} dello shop ${session.shop} · componente di route reale · chrome Polaris simulata.</p>
-<div class="preview-frame">${markup}</div>
+${scenarioMarkup}
+<div class="preview-frame" data-fixture-page="${escapeHtml(page)}" data-fixture-state="${escapeHtml(fixtureState)}" id="syncbay-ui-root">${markup}</div>
+${hydrationScripts}
 </body>
 </html>`;
 
@@ -280,9 +328,13 @@ try {
       throw new Error(`Il render ${page} non ha prodotto markup.`);
     }
     console.error(`ok check: ${page}`);
-    console.log(`checked:${page}`);
+    console.log(`checked:${page}:${fixtureState}`);
   } else {
-  const suffix = fixtureMode ? "fixture" : "live";
+  const suffix = fixtureMode
+    ? fixtureState === "healthy"
+      ? "fixture"
+      : `fixture-${fixtureState}`
+    : "live";
   const shotsDir = join(root, "preview/shots");
   mkdirSync(shotsDir, { recursive: true });
   const outPath = join(shotsDir, `${page}-${suffix}.html`);
@@ -292,7 +344,7 @@ try {
   // --- 6. Screenshot headless desktop + stretto --------------------------- //
   const CHROME =
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-  if (existsSync(CHROME)) {
+  if (!hydrateMode && existsSync(CHROME)) {
     const shots = [
       { height: 1600, label: "desktop", width: 1280 },
       { height: 1800, label: "narrow", width: 400 },
@@ -314,7 +366,7 @@ try {
       );
       console.error(`ok png: ${png}`);
     }
-  } else {
+  } else if (!hydrateMode) {
     console.error("Chrome non trovato: salto gli screenshot.");
   }
 
@@ -322,6 +374,18 @@ try {
   }
 } finally {
   await vite.close();
+}
+
+function renderFixtureScenario(scenario, state) {
+  const action = scenario.actionHref && scenario.actionLabel
+    ? `<a data-syncbay-harness-control href="${escapeHtml(scenario.actionHref)}">${escapeHtml(scenario.actionLabel)}</a>`
+    : "";
+
+  return `<aside aria-busy="${scenario.ariaBusy}" aria-live="polite" class="preview-note" data-fixture-scenario="${escapeHtml(state)}" role="${scenario.role}"><strong>${escapeHtml(scenario.title)}</strong><span> ${escapeHtml(scenario.detail)}</span>${action}</aside>`;
+}
+
+function serializeForHtml(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 function renderPreviewSelect(attrs, body) {

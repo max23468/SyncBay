@@ -519,7 +519,7 @@ function SyncCatalogSettingsCard({
           <input type="hidden" name="intent" value="saveSyncSettings" />
           <input type="hidden" name="syncEnabled" value="false" />
           <s-switch
-            defaultChecked={currentSyncEnabled}
+            checked={currentSyncEnabled}
             id="syncEnabled"
             label="Sync automatico eBay verso Shopify"
             name="syncEnabled"
@@ -629,7 +629,7 @@ function ProductPublicationSettingsCard({
             {settings.productPublications.availablePublications.map(
               (publication) => (
                 <s-checkbox
-                  defaultChecked={selectedPublicationIdSet.has(publication.id)}
+                  checked={selectedPublicationIdSet.has(publication.id)}
                   id={`publication-${publication.id}`}
                   key={publication.id}
                   label={publication.title}
@@ -673,7 +673,7 @@ function PricingRuleSettingsCard({
       <Form method="post">
         <input type="hidden" name="intent" value="savePricingRule" />
         <s-text-field
-          defaultValue={String(currentPricingRule.discountPercent)}
+          value={String(currentPricingRule.discountPercent)}
           id="discountPercent"
           label="Sconto sul prezzo eBay"
           name="discountPercent"

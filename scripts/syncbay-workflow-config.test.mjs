@@ -9,7 +9,7 @@ function readWorkflow(name) {
   return fs.readFileSync(`${ROOT}.github/workflows/${name}`, "utf8");
 }
 
-test("CI classifies the diff and runs one lane-specific verifier", () => {
+test("CI classifies the diff and runs the runtime verifier with separate UI gates", () => {
   const source = readWorkflow("ci.yml");
 
   assert.match(source, /fetch-depth:\s*0/);
@@ -22,7 +22,13 @@ test("CI classifies the diff and runs one lane-specific verifier", () => {
   assert.match(source, /playwright-cache\.outputs\.cache-hit != 'true'/);
   assert.match(source, /npx playwright install-deps chromium/);
   assert.match(source, /npx playwright install chromium/);
-  assert.match(source, /npm run verify:full -- --no-receipt/);
+  assert.match(
+    source,
+    /npm run verify:full -- --no-receipt --without-ui-gates/,
+  );
+  assert.match(source, /run:\s*npm run smoke:ui/);
+  assert.match(source, /run:\s*npm run ui:check/);
+  assert.match(source, /run:\s*npm run ui:browser-check/);
   assert.doesNotMatch(source, /run:\s*npm run test:runtime/);
   assert.doesNotMatch(source, /run:\s*npm run coverage:lib/);
 });

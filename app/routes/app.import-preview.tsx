@@ -743,7 +743,7 @@ function LocationRenameForm({
       <input type="hidden" name="locationGid" value={selectedLocation.id} />
       <s-stack gap="base">
         <s-text-field
-          defaultValue={selectedLocation.name}
+          value={selectedLocation.name}
           disabled={!locationRename.canRename || isSaving}
           id="locationName"
           label="Nome location"

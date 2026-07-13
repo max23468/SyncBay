@@ -76,6 +76,18 @@ jobs:
         if: steps.lane.outputs.lane == 'runtime' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium
 
-      - name: Verifica runtime completa
+      - name: Verifica runtime completa senza duplicare i gate UI
         if: steps.lane.outputs.lane == 'runtime'
-        run: npm run verify:full -- --no-receipt
+        run: npm run verify:full -- --no-receipt --without-ui-gates
+
+      - name: Smoke UI statico
+        if: steps.lane.outputs.lane == 'runtime'
+        run: npm run smoke:ui
+
+      - name: Render UI isolato
+        if: steps.lane.outputs.lane == 'runtime'
+        run: npm run ui:check
+
+      - name: Hydration UI isolata in Chromium
+        if: steps.lane.outputs.lane == 'runtime'
+        run: npm run ui:browser-check

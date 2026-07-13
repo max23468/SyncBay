@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Eliminati i mismatch di hydration dei campi, checkbox e switch Polaris; dopo
+  navigazioni e invii il focus torna ora al contenuto della pagina e le
+  animazioni SyncBay rispettano anche `prefers-reduced-motion`.
+
+### Sotto il cofano
+
+- Trasformato il render fixture in un gate UI isolato reale: SSR e hydration
+  delle sei superfici coprono stati sani, vuoti, loading, degradati ed errore,
+  con i due stati aggiuntivi dell’importazione, senza env runtime, rete esterna,
+  HMR o screenshot obbligatori.
+- La CI mantiene separati smoke statico, matrice SSR e Chromium, verificando
+  quattro viewport, zoom 200%, errori console/hydration, accessibilità dei
+  controlli, focus tastiera, overflow, movimento ridotto e focus dopo
+  navigazione o submit.
+
 ## [1.0.61] — 2026-07-13
 
 ### Sotto il cofano

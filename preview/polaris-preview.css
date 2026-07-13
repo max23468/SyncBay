@@ -49,6 +49,14 @@ body {
   font-size: 12px;
 }
 
+/* App Bridge sposta title bar e navigazione nella chrome di Shopify Admin:
+   non fanno parte del documento embedded e non devono occupare layout nella
+   fixture offline. */
+ui-title-bar,
+ui-nav-menu {
+  display: none;
+}
+
 /* Page / Section ---------------------------------------------------------- */
 s-page {
   display: block;
