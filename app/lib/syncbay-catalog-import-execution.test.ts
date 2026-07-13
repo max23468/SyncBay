@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildCatalogImportExecutionResult } from "./syncbay-catalog-import-execution.ts";
+import { buildCatalogImportExecutionResult, runCatalogImportJobLifecycle } from "./syncbay-catalog-import-execution.ts";
 
 test("returns a declarative success result without job transitions", () => {
   assert.deepEqual(
@@ -41,4 +41,25 @@ test("keeps partial product failures in a failed result summary", () => {
       warnings: [],
     },
   );
+});
+
+test("rejects an execution id different from the outer owner job", async () => {
+  let executed = false;
+
+  await assert.rejects(
+    runCatalogImportJobLifecycle({
+      executionInput: { jobId: "internal-job" },
+      job: { id: "outer-job" },
+      ports: {
+        execute: async () => {
+          executed = true;
+          return buildCatalogImportExecutionResult({ status: "succeeded" });
+        },
+        markFailed: async () => {},
+        markSucceeded: async () => {},
+      },
+    }),
+    /ID del job esterno proprietario/,
+  );
+  assert.equal(executed, false);
 });
