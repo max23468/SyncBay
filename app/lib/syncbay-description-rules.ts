@@ -113,8 +113,8 @@ function htmlToPlainText(html: string) {
   return normalizePlainText(
     decodeBasicHtmlEntities(
       html
-        .replace(/<script[\s\S]*?<\/script\s*>/giu, " ")
-        .replace(/<style[\s\S]*?<\/style\s*>/giu, " ")
+        .replace(/<script[\s\S]*?<\/script[^>]*>/giu, " ")
+        .replace(/<style[\s\S]*?<\/style[^>]*>/giu, " ")
         .replace(/<[^>]+>/gu, " ")
         .replace(/\s+/gu, " ")
         .trim(),
