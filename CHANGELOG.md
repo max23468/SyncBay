@@ -6,12 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
-### Non versionato
+## [1.0.66] — 2026-07-15
 
-- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
-  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
-  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
-  segreto. Cambia la chiave corrispondente nell'output `--json`.
+### Correzioni
+
+- La modalità solo testo riconosce i blocchi `script`/`style` solo sui confini
+  reali del nome tag: il corpo dello script non finisce più nella descrizione
+  quando contiene falsi tag di chiusura come `</scriptual>`, e un elemento come
+  `<scripture>` non apre più un blocco cancellando il testo del negoziante fino
+  al `</script>` successivo.
 
 ## [1.0.65] — 2026-07-15
 
@@ -19,6 +22,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Allineate sulla stessa riga le cinque metriche di Conflitti negli spazi
   desktop, mantenendo due colonne su tablet e una su mobile.
+
+### Non versionato
+
+- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
+  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
+  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
+  segreto. Cambia la chiave corrispondente nell'output `--json`.
 
 ## [1.0.64] — 2026-07-15
 
@@ -3638,6 +3648,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.66]: #1066--2026-07-15
 [1.0.65]: #1065--2026-07-15
 [1.0.64]: #1064--2026-07-15
 [1.0.63]: #1063--2026-07-14

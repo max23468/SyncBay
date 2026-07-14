@@ -65,6 +65,51 @@ test("applies full html and text-only description modes", () => {
   assert.ok(textOnly.removedPercent > 0);
 });
 
+test("text-only rimuove il blocco script anche con falsi tag di chiusura", () => {
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: null,
+    html: "<p>Moneta</p><script>a</scriptual>b</script>",
+    mode: "TEXT_ONLY",
+  });
+
+  // `</scriptual>` non e' un tag di chiusura: il corpo `b` non deve finire
+  // nella descrizione del prodotto.
+  assert.equal(textOnly.html, "Moneta");
+});
+
+test("text-only rimuove il blocco style anche con falsi tag di chiusura", () => {
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: null,
+    html: "<p>Moneta</p><style>a</styleguide>b</style>",
+    mode: "TEXT_ONLY",
+  });
+
+  assert.equal(textOnly.html, "Moneta");
+});
+
+test("text-only non lascia che falsi tag di apertura mangino il testo", () => {
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: null,
+    html:
+      "<p>Intro</p><scripture>Salmo</scripture><p>Tieni</p><script>alert(1)</script><p>Fine</p>",
+    mode: "TEXT_ONLY",
+  });
+
+  // `<scripture>` non apre un blocco script: il testo del negoziante fra quel
+  // tag e il `</script>` reale deve restare nella descrizione.
+  assert.equal(textOnly.html, "Intro Salmo Tieni Fine");
+});
+
+test("text-only accetta tag di chiusura con spazi e attributi", () => {
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: null,
+    html: "<p>Moneta</p><script>alert(1)</script\t\n bar>",
+    mode: "TEXT_ONLY",
+  });
+
+  assert.equal(textOnly.html, "Moneta");
+});
+
 test("text-only non fa doppio unescape delle entita' gia' escapate", () => {
   const textOnly = applyDescriptionRuleToHtml({
     cleanedHtml: null,
