@@ -7,31 +7,17 @@ const execFileAsync = promisify(execFile);
 const VERCEL_ANALYTICS_LIMIT = 50_000;
 const VERCEL_SPEED_INSIGHTS_LIMIT = 10_000;
 const SPEED_INSIGHTS_METRICS = ["cls", "fcp", "inp", "lcp", "ttfb"];
+const REPOSITORY_VERCEL_PLAN = "hobby";
 
 export async function observeVercel({ cwd = process.cwd(), env = process.env, execute = executeCommand } = {}) {
   const link = await readVercelLink(cwd);
   const teamsResult = await execute("vercel", ["api", "/v2/teams", "--raw"], { cwd, env });
   const teams = teamsResult.ok ? parseJson(teamsResult.stdout) : null;
   const team = selectVercelTeam(teams, link?.orgId);
-  const declaredPlan = normalizeDeclaredPlan(env.VERCEL_PLAN);
-  const observedPlan = normalizePlan(team?.billing?.plan ?? team?.plan);
-  const plan = observedPlan ?? declaredPlan;
+  const { plan, planObservation } = resolveVercelPlan(env.VERCEL_PLAN);
   const scope = team?.slug;
   const project = link?.projectName ?? link?.projectId ?? env.VERCEL_PROJECT_ID?.trim() ?? undefined;
   const speedWindowDays = plan === "hobby" ? 7 : 30;
-
-  const planObservation = observedPlan
-    ? {
-        status: "observed",
-        value: observedPlan,
-        source: "vercel_api",
-        ...(declaredPlan && declaredPlan !== observedPlan
-          ? { declarationDrift: { declared: declaredPlan, observed: observedPlan } }
-          : {}),
-      }
-    : declaredPlan
-      ? { status: "declared", value: declaredPlan, source: "VERCEL_PLAN" }
-      : { status: "unavailable", action: "authenticate_vercel_cli_or_set_VERCEL_PLAN" };
 
   if (!scope) {
     return {
@@ -117,6 +103,25 @@ export function buildPlanEligibility({ commercialUse, plan }) {
   if (!plan) return "requires_plan_observation";
   if (commercialUse.status === "defaulted_private") return "ok_private_only";
   return "ok";
+}
+
+export function resolveVercelPlan(rawValue) {
+  const declaredPlan = normalizeDeclaredPlan(rawValue);
+  if (declaredPlan) {
+    return {
+      plan: declaredPlan,
+      planObservation: { status: "declared", value: declaredPlan, source: "VERCEL_PLAN" },
+    };
+  }
+  return {
+    plan: REPOSITORY_VERCEL_PLAN,
+    planObservation: {
+      status: "declared_default",
+      value: REPOSITORY_VERCEL_PLAN,
+      source: "repository_policy",
+      action: "verify_vercel_dashboard_and_set_VERCEL_PLAN_before_commercial_use",
+    },
+  };
 }
 
 export function observeCommercialUse(rawValue) {
@@ -297,11 +302,6 @@ function classifyMetricFailure(result, action) {
 function normalizeDeclaredPlan(value) {
   const normalized = String(value ?? "").trim().toLowerCase();
   return normalized && !["auto", "unknown"].includes(normalized) ? normalized : null;
-}
-
-function normalizePlan(value) {
-  const normalized = String(value ?? "").trim().toLowerCase();
-  return normalized || null;
 }
 
 function parseJson(value) {

@@ -10,6 +10,7 @@ import {
   buildVercelUsageObservation,
   metricTotal,
   observeCommercialUse,
+  resolveVercelPlan,
   selectVercelTeam,
 } from "./syncbay-provider-observations.mjs";
 
@@ -19,12 +20,28 @@ const metricResult = (value) => ({
   stderr: "",
 });
 
-test("selects the linked Vercel team and reads its billing plan", () => {
+test("selects the linked Vercel team without relying on undocumented billing fields", () => {
   const team = selectVercelTeam(
     { teams: [{ id: "team_other" }, { id: "team_syncbay", billing: { plan: "hobby" } }] },
     "team_syncbay",
   );
-  assert.equal(team.billing.plan, "hobby");
+  assert.equal(team.id, "team_syncbay");
+});
+
+test("uses the conservative repository plan until VERCEL_PLAN is declared", () => {
+  assert.deepEqual(resolveVercelPlan("auto"), {
+    plan: "hobby",
+    planObservation: {
+      status: "declared_default",
+      value: "hobby",
+      source: "repository_policy",
+      action: "verify_vercel_dashboard_and_set_VERCEL_PLAN_before_commercial_use",
+    },
+  });
+  assert.deepEqual(resolveVercelPlan("pro"), {
+    plan: "pro",
+    planObservation: { status: "declared", value: "pro", source: "VERCEL_PLAN" },
+  });
 });
 
 test("sums only metric summary values", () => {
