@@ -2,6 +2,7 @@ import type {
   ShopifyMatchCandidate,
   ShopifyMatchMetafieldCandidate,
 } from "../lib/syncbay-product-matching";
+import { logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 
 interface ShopifyAdminGraphqlClient {
   graphql: (
@@ -333,17 +334,13 @@ async function fetchTargetedProductsPage(
   });
 
   if (!response.ok) {
-    console.warn("[syncbay-shopify-existing-products] targeted variant lookup failed", {
-      status: response.status,
-    });
+    logSyncBayRuntimeEvent({ event: "shopify-existing-products-lookup", level: "warn", outcome: `http_${response.status}`, requestId: null, route: "shopify-existing-products" });
     return getEmptyTargetedProductsPage();
   }
 
   const json = (await response.json()) as ShopifyExistingVariantMatchResponse;
   if (json.errors?.length) {
-    console.warn("[syncbay-shopify-existing-products] targeted variant lookup returned errors", {
-      errorCount: json.errors.length,
-    });
+    logSyncBayRuntimeEvent({ event: "shopify-existing-products-lookup", level: "warn", failedCount: json.errors.length, outcome: "graphql_errors", requestId: null, route: "shopify-existing-products" });
     return getEmptyTargetedProductsPage();
   }
 

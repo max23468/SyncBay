@@ -2,6 +2,57 @@ import type { ConflictResolution } from "./syncbay-conflict-actions";
 
 type Tone = "critical" | "warning" | "info" | "success";
 
+export type SyncBayJobOutcome = "succeeded" | "failed" | "retrying";
+export type SyncBayCatalogHealth = "aligned" | "catching_up" | "delayed" | "error" | "disabled";
+export type SyncBayRunnerActivity = "running" | "waiting" | "stopped";
+
+export function getSyncJobOutcome(status: string): SyncBayJobOutcome | null {
+  if (status === "SUCCEEDED") return "succeeded";
+  if (status === "FAILED") return "failed";
+  if (status === "RETRYING") return "retrying";
+  return null;
+}
+
+export function getOperationalUiState(input: {
+  activeJobs: number;
+  catalogStatus: string | null | undefined;
+  nextDueAt?: string | null;
+}) {
+  const catalogHealth: SyncBayCatalogHealth =
+    input.catalogStatus === "fresh" ? "aligned" :
+    input.catalogStatus === "running" || input.catalogStatus === "due" ? "catching_up" :
+    input.catalogStatus === "overdue" ? "delayed" :
+    input.catalogStatus === "disabled" ? "disabled" : "error";
+  const runnerActivity: SyncBayRunnerActivity = input.activeJobs > 0
+    ? "running"
+    : input.nextDueAt
+      ? "waiting"
+      : "stopped";
+
+  return {
+    catalogHealth,
+    catalogLabel: catalogHealth === "aligned" ? "Aggiornato" : catalogHealth === "catching_up" ? "In allineamento" : catalogHealth === "delayed" ? "In ritardo" : catalogHealth === "disabled" ? "Non attivo" : "Da controllare",
+    runnerActivity,
+    runnerLabel: runnerActivity === "running" ? "In corso" : runnerActivity === "waiting" ? "In attesa del prossimo controllo" : "Fermo",
+    runnerTone: runnerActivity === "stopped" ? "info" : runnerActivity === "waiting" ? "success" : "info",
+  } as const;
+}
+
+export function getNeutralUnavailableMetric() {
+  return { label: "Dato non disponibile", tone: "info" as const };
+}
+
+export function validateProductMetricCounts(input: { active: number; linked: number; soldOut: number }) {
+  if (input.active < 0 || input.soldOut < 0 || input.linked !== input.active + input.soldOut) {
+    throw new Error("Prodotti collegati deve essere uguale a eBay attivi più esauriti.");
+  }
+  return input;
+}
+
+export function formatSyncMetric(value: number, unit: "job" | "prodotti" | "run", period: string) {
+  return `${formatInteger(value)} ${unit} ${period}`.trim();
+}
+
 export type SyncBayNavigationTarget = "_blank" | "_parent" | "_self" | "_top";
 
 export interface ActivityBadgeStateInput {
@@ -231,10 +282,14 @@ function getOverviewTime(value: Date | string | null | undefined) {
 
 const INTEGER_FORMATTER = new Intl.NumberFormat("it-IT", {
   maximumFractionDigits: 0,
+  useGrouping: true,
 });
 
 function formatInteger(value: number) {
-  return INTEGER_FORMATTER.format(value);
+  const formatted = INTEGER_FORMATTER.format(value);
+  return /^-?\d{4}$/u.test(formatted)
+    ? formatted.replace(/(\d)(\d{3})$/u, "$1.$2")
+    : formatted;
 }
 
 export function getNextAction(input: NextActionInput): NextAction {
@@ -628,9 +683,10 @@ export function formatSyncJobStatus(status: string) {
 }
 
 export function getSyncJobTone(status: string): Tone {
-  if (status === "SUCCEEDED") return "success";
-  if (status === "FAILED") return "critical";
-  if (status === "RETRYING") return "warning";
+  const outcome = getSyncJobOutcome(status);
+  if (outcome === "succeeded") return "success";
+  if (outcome === "failed") return "critical";
+  if (outcome === "retrying") return "warning";
 
   return "info";
 }

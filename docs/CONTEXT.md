@@ -20,6 +20,9 @@ Questo è l'handoff operativo corrente. Per orientarsi nella documentazione usa
 - Runtime asincrono: record `SyncJob` su Postgres drenati dal runner HTTP
   protetto tramite Supabase Cron; le primitive Supabase Queues sono
   predisposte ma non sostituiscono questo percorso applicativo corrente.
+- Baseline operativa: sei superfici fixture verificate a 1440, 1024, 768 e
+  390 px; bundle, payload loader, storage/egress provider e documentazione hanno
+  budget eseguibili. I test live provider e browser restano prove fresche.
 
 ## Vincoli non negoziabili
 
@@ -33,10 +36,17 @@ Questo è l'handoff operativo corrente. Per orientarsi nella documentazione usa
 
 ## Rischi e lavoro aperto
 
+- Storage Supabase osservato il 2026-07-14 a 368,6 MiB su 500 MiB Free
+  (warning operativo): mantenere attivi retention e budget, misurare il dry-run
+  di `history:maintain` prima di qualsiasi compattazione o cancellazione.
+- L'egress resta `unestimated` finché non viene fornita una stima verificata dei
+  byte medi per riga; piano e consumi Vercel/Analytics/Speed Insights restano
+  `unknown` fuori dal dashboard e non vanno presentati come verdi.
 - Completare i gate di onboarding e il runbook per il primo cliente selezionato.
 - Validare su dati correnti classificazione e azioni dei conflitti.
-- Mantenere prioritari cifratura token, webhook GDPR, account deletion eBay,
-  rate limit, retention e rollback.
+- Mantenere prioritari webhook GDPR, account deletion eBay, rate limit,
+  retention, backup offsite e rollback; i token provider persistiti sono
+  cifrati applicativamente a riposo.
 - Billing, support policy pubblica e Shopify App Store restano decisioni future.
 
 Le priorità operative dettagliate vivono esclusivamente in

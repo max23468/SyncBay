@@ -14,7 +14,7 @@ export function ExistingCatalogTakeoverSection({
   return (
     <s-section heading="Collega catalogo esistente">
       <s-stack gap="base">
-        <div className="syncbay-existing-catalog-grid">
+        <div className="syncbay-existing-catalog-grid syncbay-balanced-box-grid">
           <s-grid gap="base" gridTemplateColumns={TAKEOVER_GRID_COLUMNS}>
             <MetricTile
               detail="Righe con match forte e dati eBay validi."

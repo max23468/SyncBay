@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createSyncBayLoaderPerformanceTrace,
+  assertSyncBayLoaderPayloadBudget,
   logSyncBayLoaderPerformance,
   // @ts-expect-error node --experimental-strip-types resolves TypeScript test imports with extensions.
 } from "./syncbay-loader-performance.ts";
@@ -53,11 +54,17 @@ test("logs redacted loader performance without payload contents", () => {
   }
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], "[syncbay-loader-performance]");
-
-  const logged = String(calls[0][1]);
+  const logged = String(calls[0][0]);
 
   assert.match(logged, /"route":"catalog"/);
   assert.match(logged, /"payloadBytes":/);
   assert.doesNotMatch(logged, /Dato prodotto/);
+});
+
+test("enforces route-specific payload budgets", () => {
+  assert.doesNotThrow(() => assertSyncBayLoaderPayloadBudget("overview", { value: "ok" }));
+  assert.throws(
+    () => assertSyncBayLoaderPayloadBudget("overview", { value: "x".repeat(132 * 1024) }),
+    /oltre budget/,
+  );
 });

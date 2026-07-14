@@ -2,11 +2,11 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const sql = `select pg_database_size(current_database())::bigint as bytes;`;
 const { stdout } = await promisify(execFile)("npx", ["supabase", "db", "query", "--linked", "--output", "json", sql], {
-  env: await getSupabaseCliEnv(), maxBuffer: 1024 * 1024, timeout: 45_000,
+  cwd: getSupabaseCliCwd(), env: await getSupabaseCliEnv(), maxBuffer: 1024 * 1024, timeout: 45_000,
 });
 const start = Math.min(...[stdout.indexOf("{"), stdout.indexOf("[")].filter((value) => value >= 0));
 const parsed = JSON.parse(stdout.slice(start));

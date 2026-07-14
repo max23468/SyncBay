@@ -24,6 +24,10 @@ Questo glossario guida UI, documentazione e microcopy.
 | Modalità prudente | Stato di protezione quando disponibilità o sincronizzazione non sono affidabili. |
 | Riserva disponibilità | Quantità non pubblicata su Shopify per ridurre il rischio di vendere prodotti non disponibili. |
 | Regole prezzo | Regole specifiche per Shopify che non modificano eBay. |
+| Prodotti collegati | Tutti i mapping SyncBay: inserzioni eBay attive più inserzioni inattive mantenute su Shopify come esaurite. Il denominatore non cambia tra Panoramica, Catalogo e Impostazioni. |
+| Job | Unità di lavoro persistita nella coda SyncBay. Non equivale necessariamente a un prodotto. |
+| Run | Una singola esecuzione del runner, che può elaborare più job e prodotti. |
+| Stato catalogo | Salute dell'allineamento, distinta dall'esito del singolo job e dall'attività del runner. |
 
 ## Termini da usare con cautela
 

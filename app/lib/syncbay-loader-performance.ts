@@ -1,3 +1,6 @@
+// @ts-expect-error Node strip-types needs the extension in direct lib tests.
+import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "./syncbay-runtime-log.ts";
+
 export type SyncBayLoaderRoute =
   | "activity"
   | "catalog"
@@ -16,6 +19,15 @@ export type SyncBayLoaderPerformanceTrace = {
   metrics: () => SyncBayLoaderPerformanceMetric[];
   startedAt: number;
 };
+
+export const SYNCBAY_LOADER_PAYLOAD_BUDGETS = {
+  activity: 128 * 1024,
+  catalog: 256 * 1024,
+  conflicts: 256 * 1024,
+  import: 256 * 1024,
+  overview: 128 * 1024,
+  settings: 128 * 1024,
+} satisfies Record<SyncBayLoaderRoute, number>;
 
 type SyncBayLoaderPerformanceDetails = Record<
   string,
@@ -56,26 +68,38 @@ export function logSyncBayLoaderPerformance(input: {
   payload: unknown;
   route: SyncBayLoaderRoute;
   trace: SyncBayLoaderPerformanceTrace;
+  requestId?: string | null;
+  request?: Request;
 }) {
   if (process.env.SYNCBAY_LOADER_PERFORMANCE_LOGS === "off") return;
 
   const payloadBytes = getJsonPayloadBytes(input.payload);
   const totalMs = roundDurationMs(performance.now() - input.trace.startedAt);
 
-  console.info(
-    "[syncbay-loader-performance]",
-    JSON.stringify({
-      details: input.details ?? {},
-      metrics: input.trace.metrics(),
-      payloadBytes,
-      route: input.route,
-      runtime: {
-        nodeEnv: process.env.NODE_ENV ?? null,
-        vercelRegion: process.env.VERCEL_REGION ?? null,
-      },
-      totalMs,
-    }),
-  );
+  const budget = SYNCBAY_LOADER_PAYLOAD_BUDGETS[input.route];
+  const ratio = payloadBytes === null ? 0 : payloadBytes / budget;
+  const level = ratio > 1 ? "error" : ratio >= 0.8 ? "warn" : "info";
+
+  logSyncBayRuntimeEvent({
+    event: "syncbay-loader-performance",
+    level,
+    outcome: ratio > 1 ? "payload_budget_exceeded" : ratio >= 0.8 ? "payload_budget_warning" : "ok",
+    payloadBytes,
+    requestId: input.requestId ?? (input.request ? getSyncBayRequestId(input.request) : null),
+    route: input.route,
+    durationMs: totalMs,
+  });
+
+  return { budget, level, payloadBytes, totalMs };
+}
+
+export function assertSyncBayLoaderPayloadBudget(route: SyncBayLoaderRoute, payload: unknown) {
+  const payloadBytes = getJsonPayloadBytes(payload);
+  const budget = SYNCBAY_LOADER_PAYLOAD_BUDGETS[route];
+  if (payloadBytes !== null && payloadBytes > budget) {
+    throw new Error(`Payload ${route} oltre budget: ${payloadBytes}/${budget} byte.`);
+  }
+  return payloadBytes;
 }
 
 function getJsonPayloadBytes(payload: unknown) {

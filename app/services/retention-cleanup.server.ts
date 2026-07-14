@@ -27,6 +27,7 @@ import {
 } from "../lib/syncbay-retention-cleanup";
 import type { RetentionCleanupTarget } from "../lib/syncbay-retention-cleanup";
 import { SYNCBAY_RETENTION_POLICIES } from "../lib/syncbay-retention-policy";
+import { logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 
 const TERMINAL_SYNC_JOB_STATUSES = [
   SyncJobStatus.SUCCEEDED,
@@ -75,10 +76,7 @@ export async function runRetentionCleanup(
   }
 
   if (enabled && totalDeleted > 0) {
-    console.info(
-      `[syncbay] retention cleanup ha rimosso ${totalDeleted} record scaduti`,
-      areas.filter((area) => area.deletedCount > 0),
-    );
+    logSyncBayRuntimeEvent({ event: "retention-cleanup", level: "info", outcome: "deleted", processedCount: totalDeleted, requestId: null, route: "retention-cleanup" });
   }
 
   return { areas, enabled, totalDeleted };

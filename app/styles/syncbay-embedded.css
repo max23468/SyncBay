@@ -370,7 +370,49 @@
   }
 }
 
+.syncbay-balanced-box-grid,
+.syncbay-balanced-box-grid > s-grid,
+s-page,
+s-section {
+  min-inline-size: 0;
+}
+
+.syncbay-balanced-box-grid > s-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.syncbay-balanced-box-grid > s-grid > * {
+  min-inline-size: 0;
+}
+
+.syncbay-balanced-box-grid > s-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.syncbay-table-wrap {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-x: auto;
+}
+
+@media (min-width: 1100px) {
+  .syncbay-balanced-box-grid--compact-three > s-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .syncbay-balanced-box-grid--compact-three > s-grid > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 640px) {
+  .syncbay-balanced-box-grid > s-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .syncbay-balanced-box-grid > s-grid > :last-child:nth-child(odd) {
+    grid-column: auto;
+  }
   .syncbay-route-pending {
     margin-inline: 12px;
   }
@@ -1083,11 +1125,5 @@
   .syncbay-setting__status {
     flex-basis: 100%;
     padding-inline-start: 48px;
-  }
-  .syncbay-setting s-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .syncbay-existing-catalog-grid s-grid {
-    grid-template-columns: 1fr !important;
   }
 }

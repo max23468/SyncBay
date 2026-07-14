@@ -22,11 +22,37 @@ const {
   getProviderHealthNotice,
   getSyncJobTitle,
   getSyncJobTone,
+  getSyncJobOutcome,
   getTimelineCategoryLabel,
   isOverviewSyncWorking,
   isCatalogMappingStale,
   shouldShowOverviewStatusHero,
+  getOperationalUiState,
+  getNeutralUnavailableMetric,
+  validateProductMetricCounts,
+  formatSyncMetric,
 } = uiState;
+
+test("separates successful job outcome from catalog catch-up and runner waiting", () => {
+  assert.deepEqual(getOperationalUiState({ activeJobs: 0, catalogStatus: "due", nextDueAt: "2026-07-13T12:00:00Z" }), {
+    catalogHealth: "catching_up",
+    catalogLabel: "In allineamento",
+    runnerActivity: "waiting",
+    runnerLabel: "In attesa del prossimo controllo",
+    runnerTone: "success",
+  });
+});
+
+test("uses neutral unavailable copy and explicit metric units", () => {
+  assert.deepEqual(getNeutralUnavailableMetric(), { label: "Dato non disponibile", tone: "info" });
+  assert.equal(formatSyncMetric(0, "prodotti", "sincronizzati nelle ultime 24 ore"), "0 prodotti sincronizzati nelle ultime 24 ore");
+  assert.equal(formatSyncMetric(2_000, "run", "negli ultimi 7 giorni"), "2.000 run negli ultimi 7 giorni");
+});
+
+test("keeps linked, active and sold-out product counts arithmetically coherent", () => {
+  assert.deepEqual(validateProductMetricCounts({ active: 8, linked: 10, soldOut: 2 }), { active: 8, linked: 10, soldOut: 2 });
+  assert.throws(() => validateProductMetricCounts({ active: 8, linked: 9, soldOut: 2 }), /deve essere uguale/);
+});
 
 test("builds eBay OAuth start href with the current shop context", () => {
   assert.equal(
@@ -572,6 +598,10 @@ test("formats and tones sync job statuses", () => {
   assert.equal(getSyncJobTone("FAILED"), "critical");
   assert.equal(getSyncJobTone("RETRYING"), "warning");
   assert.equal(getSyncJobTone("PENDING"), "info");
+  assert.equal(getSyncJobOutcome("SUCCEEDED"), "succeeded");
+  assert.equal(getSyncJobOutcome("FAILED"), "failed");
+  assert.equal(getSyncJobOutcome("RETRYING"), "retrying");
+  assert.equal(getSyncJobOutcome("RUNNING"), null);
 });
 
 test("surfaces quarantined updates as a critical provider notice", () => {

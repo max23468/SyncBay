@@ -7,9 +7,6 @@ esteso della vecchia roadmap di fondazione sta in
 
 ## Ora
 
-- Modellare nel tab Importazione la modalità generica `Collega catalogo
-  esistente` per la 1.0 custom privata: matching conservativo, dry-run,
-  eccezioni, report e apply controllato, senza funzioni Numisleo-specifiche.
 - Preparare privacy policy generale SyncBay, termini d'uso minimi e mini kit
   per clienti selezionati prima del primo go-live privato.
 - Verificare in produzione privata le nuove classificazioni dei conflitti su
@@ -19,7 +16,7 @@ esteso della vecchia roadmap di fondazione sta in
   personali.
 - Estendere la diagnostica self-service verso rollback per prodotto dopo il
   primo pass su impatto job, prossima azione e retry sicuro.
-- Tenere sotto controllo sicurezza e dati: cifratura token, webhook GDPR,
+- Tenere sotto controllo sicurezza e dati: webhook GDPR, backup offsite,
   audit log, rate limit/retry e rollback import restano superfici prioritarie.
 
 ## Prossimo

@@ -214,7 +214,7 @@ function installBrowserObservers(page, origin, problems) {
 }
 
 async function inspectRenderedPage(page, input) {
-  return page.evaluate(({ pageName, state }) => {
+  return page.evaluate(({ pageName, state, viewport }) => {
     const problems = [];
     const root = document.querySelector("#syncbay-ui-root");
     const scenario = document.querySelector("[data-fixture-scenario]");
@@ -258,6 +258,23 @@ async function inspectRenderedPage(page, input) {
     for (const badge of document.querySelectorAll("s-badge,[role=status],[role=alert]")) {
       if (visible(badge) && !(badge.textContent?.trim() || badge.getAttribute("aria-label"))) {
         problems.push(`stato senza testo: ${badge.tagName}`);
+      }
+    }
+
+    const balancedGrids = [...document.querySelectorAll(".syncbay-balanced-box-grid > s-grid")];
+    if (state === "healthy" && balancedGrids.length === 0) {
+      problems.push("griglia bilanciata assente");
+    }
+    for (const grid of balancedGrids) {
+      const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
+      const compact = grid.parentElement?.classList.contains("syncbay-balanced-box-grid--compact-three");
+      const expected = viewport.width <= 640 ? 1 : compact && viewport.width >= 1100 ? 3 : 2;
+      if (columns !== expected) problems.push(`griglia ${compact ? "compatta" : "standard"}: ${columns} colonne invece di ${expected}`);
+      const children = [...grid.children];
+      if (viewport.width > 640 && children.length % 2 === 1 && !(compact && viewport.width >= 1100)) {
+        const gridWidth = grid.getBoundingClientRect().width;
+        const lastWidth = children.at(-1)?.getBoundingClientRect().width ?? 0;
+        if (lastWidth < gridWidth * 0.9) problems.push("ultimo box dispari non esteso a tutta riga");
       }
     }
 

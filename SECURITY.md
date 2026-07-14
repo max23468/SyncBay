@@ -64,3 +64,8 @@ In caso di sospetto problema:
 4. proteggere stock con modalità prudente se necessario;
 5. usare snapshot/rollback dove possibile;
 6. documentare incidente, impatto e correzione.
+
+Il ripristino database segue il runbook
+[`docs/guides/backup-e-disaster-recovery.md`](docs/guides/backup-e-disaster-recovery.md):
+nessun dump nel repository o nello stesso progetto Supabase, backup cifrati e
+prove di restore soltanto su target non-production.
