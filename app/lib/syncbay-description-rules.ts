@@ -113,8 +113,16 @@ function htmlToPlainText(html: string) {
   return normalizePlainText(
     decodeBasicHtmlEntities(
       html
-        .replace(/<script[\s\S]*?<\/script[^>]*>/giu, " ")
-        .replace(/<style[\s\S]*?<\/style[^>]*>/giu, " ")
+        // Apertura e chiusura devono entrambe terminare su un confine reale del
+        // nome tag. Senza il confine sulla chiusura un token come
+        // `</scriptual>` verrebbe accettato da `[^>]*` e la rimozione si
+        // fermerebbe prima, lasciando il corpo dello script nella descrizione.
+        // Senza il confine sull'apertura un elemento come `<scripture>`
+        // aprirebbe il blocco e la rimozione correrebbe fino al `</script>`
+        // successivo, cancellando il testo del negoziante nel mezzo.
+        // Il confine ammette comunque spazi e attributi, come `</script\t\n bar>`.
+        .replace(/<script(?=[\s/>])[\s\S]*?<\/script(?=[\s/>])[^>]*>/giu, " ")
+        .replace(/<style(?=[\s/>])[\s\S]*?<\/style(?=[\s/>])[^>]*>/giu, " ")
         .replace(/<[^>]+>/gu, " ")
         .replace(/\s+/gu, " ")
         .trim(),
