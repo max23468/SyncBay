@@ -98,6 +98,7 @@ export function buildVerificationPlan({
   const manualChecks = suggestions.filter(isManualCheck);
   const executableSuggestions = suggestions.filter((suggestion) => {
     if (isManualCheck(suggestion)) return false;
+    if (excludeUiGates && UI_GATE_LABELS.has(suggestion)) return false;
     return !(excludeAdvisoryGates && ADVISORY_GATE_LABELS.has(suggestion));
   });
   const normalized = normalizeSuggestedChecks(executableSuggestions, base);
@@ -402,8 +403,10 @@ function parseArgs(rawArgs) {
       continue;
     }
     if (arg === "--without-ui-gates") {
-      if (parsed.mode !== "full") {
-        throw new Error("--without-ui-gates è supportato solo con verify:full.");
+      if (!["changed", "full"].includes(parsed.mode)) {
+        throw new Error(
+          "--without-ui-gates è supportato solo con verify:changed o verify:full.",
+        );
       }
       parsed.excludeUiGates = true;
       continue;

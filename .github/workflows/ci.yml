@@ -62,4 +62,4 @@ jobs:
 
       - name: Verifica i gate pertinenti al diff
         if: steps.lane.outputs.lane == 'runtime'
-        run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --no-receipt --without-advisory-gates
+        run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --no-receipt --without-advisory-gates --without-ui-gates

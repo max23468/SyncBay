@@ -19,7 +19,7 @@ test("CI classifies the diff and runs only targeted blocking gates", () => {
   assert.match(source, /git diff --check/);
   assert.match(
     source,
-    /npm run verify:changed -- --base .* --no-receipt --without-advisory-gates/,
+    /npm run verify:changed -- --base .* --no-receipt --without-advisory-gates --without-ui-gates/,
   );
   assert.doesNotMatch(source, /playwright install/);
   assert.doesNotMatch(source, /verify:full/);
