@@ -19,6 +19,7 @@ const UI_GATE_LABELS = new Set([
   "npm run ui:check",
   "npm run ui:browser-check",
 ]);
+const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor"]);
 
 const FULL_COMMANDS = [
   npmCommand("prisma:generate"),
@@ -48,6 +49,7 @@ if (isCliEntrypoint()) {
 
 export function buildVerificationPlan({
   base = DEFAULT_BASE,
+  excludeAdvisoryGates = false,
   excludeUiGates = false,
   mode,
   review,
@@ -94,9 +96,10 @@ export function buildVerificationPlan({
   }
 
   const manualChecks = suggestions.filter(isManualCheck);
-  const executableSuggestions = suggestions.filter(
-    (suggestion) => !isManualCheck(suggestion),
-  );
+  const executableSuggestions = suggestions.filter((suggestion) => {
+    if (isManualCheck(suggestion)) return false;
+    return !(excludeAdvisoryGates && ADVISORY_GATE_LABELS.has(suggestion));
+  });
   const normalized = normalizeSuggestedChecks(executableSuggestions, base);
 
   return {
@@ -197,6 +200,7 @@ function runCli(args) {
   const review = args.mode === "changed" ? readReview(args.base) : null;
   const plan = buildVerificationPlan({
     base: args.base,
+    excludeAdvisoryGates: args.excludeAdvisoryGates,
     excludeUiGates: args.excludeUiGates,
     mode: args.mode,
     review,
@@ -294,6 +298,7 @@ function normalizeSuggestedChecks(suggestions, base) {
       "npm run typecheck:raw",
       "npm run build:raw",
       "npm run test:services:raw",
+      "npm run test:tooling",
     ].includes(label),
   );
   if (needsPrisma) normalizedLabels.unshift("npm run prisma:generate");
@@ -374,6 +379,7 @@ function readValidReceipt(receiptPath, fingerprint) {
 function parseArgs(rawArgs) {
   const parsed = {
     base: DEFAULT_BASE,
+    excludeAdvisoryGates: false,
     excludeUiGates: false,
     force: false,
     json: false,
@@ -400,6 +406,15 @@ function parseArgs(rawArgs) {
         throw new Error("--without-ui-gates è supportato solo con verify:full.");
       }
       parsed.excludeUiGates = true;
+      continue;
+    }
+    if (arg === "--without-advisory-gates") {
+      if (parsed.mode !== "changed") {
+        throw new Error(
+          "--without-advisory-gates è supportato solo con verify:changed.",
+        );
+      }
+      parsed.excludeAdvisoryGates = true;
       continue;
     }
     if (arg === "--json") {

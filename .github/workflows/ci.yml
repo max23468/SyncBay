@@ -1,8 +1,8 @@
 name: CI
 
 # CI proporzionata al diff SyncBay (ADR 0004). La corsia docs-only mantiene un
-# check conclusivo leggero; la corsia runtime usa il verifier seriale canonico.
-# I gate con provider live restano fuori e girano in locale quando pertinenti.
+# check conclusivo leggero; la corsia runtime esegue solo i gate dedotti dal
+# diff. Browser, provider live e audit completi restano controlli espliciti.
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ jobs:
   verify:
     name: Verifica proporzionata
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 8
 
     steps:
       - uses: actions/checkout@v7
@@ -60,34 +60,6 @@ jobs:
         if: steps.lane.outputs.lane == 'runtime'
         run: npm ci
 
-      - name: Ripristina cache Chromium Playwright
+      - name: Verifica i gate pertinenti al diff
         if: steps.lane.outputs.lane == 'runtime'
-        id: playwright-cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Installa dipendenze di sistema Chromium
-        if: steps.lane.outputs.lane == 'runtime'
-        run: npx playwright install-deps chromium
-
-      - name: Installa Chromium su cache miss
-        if: steps.lane.outputs.lane == 'runtime' && steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install chromium
-
-      - name: Verifica runtime completa senza duplicare i gate UI
-        if: steps.lane.outputs.lane == 'runtime'
-        run: npm run verify:full -- --no-receipt --without-ui-gates
-
-      - name: Smoke UI statico
-        if: steps.lane.outputs.lane == 'runtime'
-        run: npm run smoke:ui
-
-      - name: Render UI isolato
-        if: steps.lane.outputs.lane == 'runtime'
-        run: npm run ui:check
-
-      - name: Hydration UI isolata in Chromium
-        if: steps.lane.outputs.lane == 'runtime'
-        run: npm run ui:browser-check
+        run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --no-receipt --without-advisory-gates

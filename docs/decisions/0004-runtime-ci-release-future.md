@@ -2,7 +2,7 @@
 
 - **Stato**: Accettato
 - **Data**: 2026-05-09
-- **Aggiornato**: 2026-07-12
+- **Aggiornato**: 2026-07-14
 - **Decisori**: maintainer, Codex
 
 ## Contesto
@@ -11,11 +11,11 @@ SyncBay ora ha scaffold applicativo, `package.json`, build e runtime di base. Qu
 
 ## Decisione
 
-Manteniamo la policy prudente per automazioni remote di release. Il versioning
-locale è attivo. La CI runtime completa è stata attivata il 2026-06-27 e
-consolidata il 2026-07-12 in un gate PR proporzionato. Vercel resta collegato
-al repository, ma salta build privi di impatto sul runtime; le automazioni
-remote di release restano non attive.
+Manteniamo una policy prudente ma rapida. Il versioning locale è attivo; la CI
+usa un gate PR dedotto dal diff e riserva la matrice browser ai cambi UI che la
+richiedono esplicitamente. Vercel resta collegato al repository e salta build
+privi di impatto runtime. `publish:complete` automatizza la sequenza remota già
+approvata senza introdurre Release Please o release periodiche autonome.
 
 ## Runtime
 
@@ -47,26 +47,24 @@ rivalidare title edit e nuovi SHA senza poter sostituire il gate runtime. Il run
 duplicato dopo il merge è stato rimosso perché il ruleset impedisce il normale
 push diretto a `main`.
 
-Il job runtime sceglie una sola corsia:
+Il job sceglie una sola corsia:
 
 - diff docs/governance: `git diff --check`;
-- diff runtime/tooling: `npm ci` e `verify:full -- --no-receipt`.
+- diff runtime/tooling: `npm ci` e `verify:changed -- --no-receipt`, con i gate
+  dedotti dalle superfici toccate.
 
-La corsia completa esegue in serie:
+La corsia mirata può eseguire in serie, quando pertinenti:
 
 - installazione deterministica dipendenze (`npm ci`);
 - generazione Prisma una sola volta;
 - lint (`npm run lint`);
 - test tooling (`npm run test:tooling`);
 - typecheck raw dopo la generazione Prisma;
-- coverage librerie pure (`npm run coverage:lib`);
+- test librerie pure (`npm run test:lib`);
 - test servizi raw;
 - build raw;
-- validazione schema Prisma (`npm run prisma:validate`);
+- validazione schema Prisma (`npm run prisma:validate`) per diff database;
 - smoke UI (`npm run smoke:ui`);
-- audit dipendenze di produzione (`npm run audit:prod`, wrapper di
-  `npm audit --omit=dev` con eccezione mirata per la vulnerabilità moderata
-  nota di Prisma 7).
 
 Esclusioni consapevoli:
 
@@ -92,6 +90,11 @@ Esclusioni consapevoli:
 - Vercel, React Doctor, Doppler e CodeQL restano advisory o path-scoped e non
   sono status richiesti dal ruleset.
 
+Render SSR e hydration Chromium sono nel workflow `UI browser check`, avviato
+manualmente o con label `full-ui-check` per modifiche UI sostanziali. Non sono
+più duplicati su ogni sincronizzazione della PR; `verify:full` locale continua
+a includerli per la prova completa proporzionata al rischio.
+
 Il workflow precedente `pr-quality.yml` (solo `test:lib` + `coverage:lib`) è
 stato rimosso perché interamente sussunto da `ci.yml`.
 
@@ -111,9 +114,10 @@ Poiché lo scaffold esiste, mantenere anche l'ecosistema package coerente col pa
 
 Il versioning locale è definito in ADR 0006 e usa `app/lib/version.ts` + `npm run release`.
 
-Tag GitHub e GitHub Release sono definiti in ADR 0008 e restano manuali,
-obbligatori per release prodotto reali. Restano non attivi Release Please e
-release collegate automaticamente a deploy production.
+Tag GitHub e GitHub Release sono definiti in ADR 0008 e restano obbligatori per
+release prodotto reali. `publish:complete` li crea dopo il merge soltanto se
+`APP_VERSION` è aumentata rispetto a `main`; restano non attivi Release Please
+e bump automatici della versione.
 
 Se verrà introdotta una release collegata a deploy production, dovrà definire:
 
@@ -170,6 +174,8 @@ le guide operative con:
 
 - Ogni merge ordinario passa dalla CI canonica senza duplicare il gate dopo il
   merge.
+- Il percorso critico aspetta solo i check richiesti; browser e advisory non
+  allungano le PR fuori dal proprio perimetro.
 - Check specialistici e provider non bloccano PR fuori dal proprio perimetro.
 - Vercel non ricostruisce il runtime per modifiche solo documentali o di
   governance.

@@ -99,6 +99,19 @@ test("deduplicates changed checks and keeps live placeholders manual", () => {
   ]);
 });
 
+test("CI can omit advisory gates already handled by parallel workflows", () => {
+  const plan = buildVerificationPlan({
+    excludeAdvisoryGates: true,
+    mode: "changed",
+    review: {
+      suggestedChecks: ["npm run smoke:ui", "npm run quality:react-doctor"],
+      unmatchedFiles: [],
+    },
+  });
+
+  assert.deepEqual(plan.commands.map((entry) => entry.label), ["npm run smoke:ui"]);
+});
+
 test("keeps provider-backed checks manual and accepts the tooling wrapper", () => {
   const plan = buildVerificationPlan({
     mode: "changed",
@@ -114,7 +127,11 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run prisma:validate", "npm run test:tooling"],
+    [
+      "npm run prisma:generate",
+      "npm run prisma:validate",
+      "npm run test:tooling",
+    ],
   );
   assert.deepEqual(plan.manualChecks, ["npm run db:verify"]);
 });
