@@ -268,10 +268,25 @@ async function inspectRenderedPage(page, input) {
     for (const grid of balancedGrids) {
       const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
       const compact = grid.parentElement?.classList.contains("syncbay-balanced-box-grid--compact-three");
-      const expected = viewport.width <= 640 ? 1 : compact && viewport.width >= 1100 ? 3 : 2;
-      if (columns !== expected) problems.push(`griglia ${compact ? "compatta" : "standard"}: ${columns} colonne invece di ${expected}`);
+      const five = grid.parentElement?.classList.contains("syncbay-balanced-box-grid--five");
+      const expected =
+        viewport.width <= 640
+          ? 1
+          : five
+            ? viewport.width >= 1100
+              ? 5
+              : 2
+            : compact && viewport.width >= 1100
+              ? 3
+              : 2;
+      const gridKind = five ? "a cinque" : compact ? "compatta" : "standard";
+      if (columns !== expected) problems.push(`griglia ${gridKind}: ${columns} colonne invece di ${expected}`);
       const children = [...grid.children];
-      if (viewport.width > 640 && children.length % 2 === 1 && !(compact && viewport.width >= 1100)) {
+      if (
+        viewport.width > 640 &&
+        children.length % 2 === 1 &&
+        !((compact || five) && viewport.width >= 1100)
+      ) {
         const gridWidth = grid.getBoundingClientRect().width;
         const lastWidth = children.at(-1)?.getBoundingClientRect().width ?? 0;
         if (lastWidth < gridWidth * 0.9) problems.push("ultimo box dispari non esteso a tutta riga");
