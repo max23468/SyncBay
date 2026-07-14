@@ -18,13 +18,27 @@ if (isCliEntrypoint()) {
   }
 }
 
-export function buildPublishPlan({ changedPaths, currentVersion, mainVersion }) {
+export function buildPublishPlan({
+  changedPaths,
+  currentVersion,
+  mainVersion,
+  mergedResume = false,
+  releaseAlreadyPublished = false,
+}) {
+  const versionChanged =
+    Boolean(currentVersion) &&
+    Boolean(mainVersion) &&
+    currentVersion !== mainVersion;
+  // Su una PR aperta la differenza di versione rispetto a origin/main indica
+  // che serve la release. Quando si riprende una PR già mergeata, origin/main
+  // contiene già il bump: la versione coincide, quindi ci si basa sul fatto che
+  // il tag/Release per questa versione sia già stato pubblicato o meno.
   return {
     deploy: shouldBuildVercel(changedPaths),
     release:
       Boolean(currentVersion) &&
-      Boolean(mainVersion) &&
-      currentVersion !== mainVersion,
+      !releaseAlreadyPublished &&
+      (mergedResume ? true : versionChanged),
     tag: currentVersion ? `v${currentVersion}` : null,
   };
 }
@@ -76,7 +90,19 @@ async function runCompletePublish(args) {
   const mainVersion = readVersionFromSource(
     runGit(["show", "origin/main:app/lib/version.ts"]),
   );
-  const plan = buildPublishPlan({ changedPaths, currentVersion, mainVersion });
+  const candidateTag = currentVersion ? `v${currentVersion}` : null;
+  const releaseAlreadyPublished = candidateTag
+    ? Boolean(
+        runGit(["ls-remote", "--tags", "origin", `refs/tags/${candidateTag}`]),
+      )
+    : false;
+  const plan = buildPublishPlan({
+    changedPaths,
+    currentVersion,
+    mainVersion,
+    mergedResume: pr.state === "MERGED",
+    releaseAlreadyPublished,
+  });
   const repository = runGh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
 
   console.log(
@@ -132,6 +158,8 @@ async function runCompletePublish(args) {
       `SyncBay ${currentVersion}`,
       "--generate-notes",
     ]);
+  } else if (releaseAlreadyPublished) {
+    console.log(`Release SemVer già pubblicata: ${plan.tag} esiste già.`);
   } else {
     console.log("Release SemVer non applicabile: versione invariata.");
   }

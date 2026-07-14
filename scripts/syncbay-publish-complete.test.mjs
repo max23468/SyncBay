@@ -29,6 +29,32 @@ test("requires deploy and release for a versioned runtime change", () => {
   );
 });
 
+test("keeps release detection for a merged resume whose tag is missing", () => {
+  assert.deepEqual(
+    buildPublishPlan({
+      changedPaths: ["app/routes/app._index.tsx"],
+      currentVersion: "1.0.64",
+      mainVersion: "1.0.64",
+      mergedResume: true,
+      releaseAlreadyPublished: false,
+    }),
+    { deploy: true, release: true, tag: "v1.0.64" },
+  );
+});
+
+test("skips release on a merged resume once the tag is already published", () => {
+  assert.deepEqual(
+    buildPublishPlan({
+      changedPaths: ["app/routes/app._index.tsx"],
+      currentVersion: "1.0.64",
+      mainVersion: "1.0.64",
+      mergedResume: true,
+      releaseAlreadyPublished: true,
+    }),
+    { deploy: true, release: false, tag: "v1.0.64" },
+  );
+});
+
 test("reads the canonical application version", () => {
   assert.equal(
     readVersionFromSource('export const APP_VERSION = "1.2.3";'),
