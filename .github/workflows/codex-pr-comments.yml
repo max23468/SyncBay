@@ -4,7 +4,7 @@ on:
   issue_comment:
     types: [created, edited]
   pull_request_target:
-    types: [opened, reopened, synchronize, closed]
+    types: [opened, reopened, closed]
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:

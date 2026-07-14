@@ -9,7 +9,7 @@ function readWorkflow(name) {
   return fs.readFileSync(`${ROOT}.github/workflows/${name}`, "utf8");
 }
 
-test("CI classifies the diff and runs the runtime verifier with separate UI gates", () => {
+test("CI classifies the diff and runs only targeted blocking gates", () => {
   const source = readWorkflow("ci.yml");
 
   assert.match(source, /fetch-depth:\s*0/);
@@ -17,20 +17,23 @@ test("CI classifies the diff and runs the runtime verifier with separate UI gate
   assert.match(source, /syncbay-verify\.mjs classify/);
   assert.match(source, /steps\.lane\.outputs\.lane == 'docs'/);
   assert.match(source, /git diff --check/);
-  assert.match(source, /uses:\s*actions\/cache@v5/);
-  assert.match(source, /path:\s*~\/\.cache\/ms-playwright/);
-  assert.match(source, /playwright-cache\.outputs\.cache-hit != 'true'/);
-  assert.match(source, /npx playwright install-deps chromium/);
-  assert.match(source, /npx playwright install chromium/);
   assert.match(
     source,
-    /npm run verify:full -- --no-receipt --without-ui-gates/,
+    /npm run verify:changed -- --base .* --no-receipt --without-advisory-gates/,
   );
-  assert.match(source, /run:\s*npm run smoke:ui/);
+  assert.doesNotMatch(source, /playwright install/);
+  assert.doesNotMatch(source, /verify:full/);
+});
+
+test("browser UI gates run only on explicit request or label", () => {
+  const source = readWorkflow("ui-browser-check.yml");
+
+  assert.match(source, /workflow_dispatch:/);
+  assert.match(source, /types:\s*\[labeled\]/);
+  assert.match(source, /full-ui-check/);
+  assert.match(source, /npx playwright install-deps chromium/);
   assert.match(source, /run:\s*npm run ui:check/);
   assert.match(source, /run:\s*npm run ui:browser-check/);
-  assert.doesNotMatch(source, /run:\s*npm run test:runtime/);
-  assert.doesNotMatch(source, /run:\s*npm run coverage:lib/);
 });
 
 test("React Doctor runs only for runtime and frontend paths", () => {
@@ -71,6 +74,7 @@ test("Codex inbox uses one daily refresh and ignores ordinary issues", () => {
   assert.match(source, /cron:\s*"17 3 \* \* \*"/);
   assert.match(source, /github\.event\.issue\.pull_request/);
   assert.match(source, /Codex feedback inbox/);
+  assert.doesNotMatch(source, /types:\s*\[[^\]]*synchronize/);
 });
 
 test("Vercel delegates ignored builds to the tested classifier", () => {

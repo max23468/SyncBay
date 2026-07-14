@@ -55,6 +55,7 @@
     "worktree:prepare": "node scripts/syncbay-worktree.mjs prepare",
     "review:pre-pr": "node scripts/syncbay-pre-pr-self-review.mjs",
     "publish:preflight": "node scripts/syncbay-publish-preflight.mjs",
+    "publish:complete": "node scripts/syncbay-publish-complete.mjs",
     "verify:changed": "node scripts/syncbay-verify.mjs changed",
     "verify:full": "node scripts/syncbay-verify.mjs full",
     "verify:publish": "node scripts/syncbay-verify.mjs publish",

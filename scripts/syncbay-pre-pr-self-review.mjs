@@ -49,7 +49,13 @@ const AREA_DEFINITIONS = [
       "Le mutation Shopify rispettano product status, inventory item, media, pubblicazioni e location senza inventare dati mancanti?",
       "La UI e il backend concordano su mode, intent, conferme e guardrail critici?",
     ],
-    checks: ["npm run typecheck", "npm run lint", "npm run build"],
+    checks: [
+      "npm run test:lib",
+      "npm run test:services",
+      "npm run typecheck",
+      "npm run lint",
+      "npm run build",
+    ],
     risk: "alto",
   },
   {

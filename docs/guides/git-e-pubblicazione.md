@@ -60,11 +60,10 @@ Percorso standard per lavori non banali:
    diff e correggi i problemi chiari;
 6. esegui `npm run verify:changed -- --base origin/main`, che seleziona e
    deduplica la corsia applicabile;
-7. apri PR verso `main` usando il template;
-8. controlla eventuali review thread Codex della PR corrente con
-   `npm run verify:publish -- --remote`;
-9. mergea quando la PR è pronta;
-10. elimina branch remoto e branch locale quando il lavoro è assorbito.
+7. esegui `npm run publish:complete`: il comando fa push, apre la PR se manca,
+   la controlla, aspetta i soli check richiesti, mergea, verifica il deploy
+   applicabile e pubblica l'eventuale release SemVer;
+8. elimina branch e worktree locali quando il lavoro è assorbito.
 
 Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `BRAND.md`, `docs/**` o altri documenti canonici e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
 
@@ -174,6 +173,12 @@ Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
 React Doctor `latest` e Doppler non partono quando nessun path di loro
 competenza cambia. Vercel salta inoltre i build limitati a docs, governance,
 CI, test e tooling non runtime.
+
+La CI non installa Chromium per ogni sincronizzazione. Le PR con UI sostanziale
+ricevono la label `full-ui-check`, che avvia render e hydration browser in un
+workflow dedicato; lo stesso workflow può essere lanciato manualmente. Il
+workflow della inbox Codex non si riavvia a ogni push: i review thread restano
+comunque letti dal preflight finale.
 
 ## Check prima della chiusura
 

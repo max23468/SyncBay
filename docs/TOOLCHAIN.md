@@ -103,6 +103,7 @@ il runtime repo resta `>=24.15 <25`.
 | Ripresa setup worktree        | `npm run worktree:prepare`                                                                  |
 | Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
 | Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
+| Pubblicazione completa PR     | `npm run publish:complete [-- --pr <numero>]`                                               |
 | Verifica automatica del diff  | `npm run verify:changed -- --base origin/main`                                              |
 | Verifica runtime completa     | `npm run verify:full [-- --force]`                                                          |
 | Verifica pubblicazione        | `npm run verify:publish -- --remote`                                                        |
@@ -199,23 +200,28 @@ lasciata ispezionabile e il setup si riprende al suo interno con
 | Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
 
 La CI PR mantiene un unico job conclusivo: per diff docs-only esegue soltanto
-`git diff --check`; per diff runtime installa le dipendenze ed esegue
-`verify:full -- --no-receipt`. Il titolo Conventional Commit resta un secondo
-check minimale senza checkout, necessario per rivalidare title edit e nuovi
-SHA senza confonderli col gate runtime. Il ruleset di `main` richiede solo
-questi due check senza imporre branch aggiornata, approval o deployment. React
-Doctor usa sempre `latest` sulle PR pertinenti e mantiene il full scan manuale;
-Doppler conserva i filtri path dedicati. CodeQL resta advisory.
+`git diff --check`; per gli altri diff esegue `verify:changed -- --no-receipt`
+e quindi soltanto test, typecheck, lint, build e smoke dedotti dalle superfici
+toccate. React Doctor resta nel workflow parallelo advisory e non viene
+duplicato nel check richiesto.
 
-In CI i tre gate UI restano step distinti e leggibili. Il solo step runtime usa
-`npm run verify:full -- --no-receipt --without-ui-gates`, seguito da
-`smoke:ui`, `ui:check` e `ui:browser-check`; il comando locale `verify:full`
-continua invece a includerli tutti.
+Render SSR e hydration Chromium non vengono più pagati a ogni push. Il workflow
+`UI browser check` parte manualmente o applicando la label `full-ui-check` alle
+PR con modifiche UI sostanziali. `verify:full` locale continua a includere tutti
+i gate ed è la prova completa prima della PR quando il rischio lo richiede.
 
 Vercel usa `scripts/syncbay-vercel-ignore-build.mjs`: docs, governance, CI,
 test e tooling non runtime non generano build, mentre runtime, Prisma, asset,
 dipendenze, configurazione o file non classificati mantengono il fallback
 conservativo al build.
+
+`npm run publish:complete` è il percorso canonico dopo il commit: esegue push,
+apre la PR se manca usando il titolo del commit, lancia il preflight remoto una
+sola volta, aspetta solo i check
+richiesti dal ruleset, fa squash merge, attende e verifica Vercel Production
+solo per diff deployable e pubblica tag/GitHub Release solo quando
+`APP_VERSION` è aumentata. I check advisory continuano in parallelo senza
+allungare artificialmente il percorso critico.
 
 ## Deploy e release
 

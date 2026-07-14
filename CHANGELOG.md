@@ -6,6 +6,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Ridotta la latenza delle PR: la CI esegue i gate pertinenti al diff senza
+  installare Chromium a ogni push; render e hydration browser restano
+  disponibili su richiesta o con label `full-ui-check`.
+- Aggiunto `publish:complete`, che attende solo i check richiesti, esegue merge,
+  verifica il deploy Production quando applicabile e crea tag/GitHub Release
+  solo in presenza di un incremento SemVer.
+
 ## [1.0.63] — 2026-07-14
 
 ### Correzioni
