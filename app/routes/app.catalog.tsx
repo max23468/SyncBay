@@ -27,7 +27,6 @@ import {
 import {
   getCatalogAvailabilityLabel,
   getCatalogStatusLabel,
-  validateProductMetricCounts,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
@@ -128,11 +127,6 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
 
 export default function CatalogRoute() {
   const catalog = useLoaderData<typeof loader>();
-  validateProductMetricCounts({
-    active: catalog.summary.linkedCount - catalog.summary.archivedCount,
-    linked: catalog.summary.linkedCount,
-    soldOut: catalog.summary.archivedCount,
-  });
   const [searchParams] = useSearchParams();
   const activeOrder = normalizeCatalogOrder(searchParams.get("order"));
   const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));

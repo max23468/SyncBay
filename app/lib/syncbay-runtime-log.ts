@@ -17,6 +17,10 @@ export type RuntimeLogEvent = {
 const HEALTHY_SAMPLE_RATE = 0.05;
 const SLOW_REQUEST_MS = 1_000;
 
+export function getSyncBayRunnerCompletionLevel(failedCount: number): RuntimeLogEvent["level"] {
+  return failedCount > 0 ? "warn" : "info";
+}
+
 export function getSyncBayRequestId(request?: Request) {
   const vercelId = request?.headers.get("x-vercel-id")?.slice(0, 128);
   return vercelId && /^[a-zA-Z0-9:._-]+$/u.test(vercelId)

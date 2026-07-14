@@ -1,7 +1,11 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
 import { runDueSyncJobs } from "../services/sync-job-runner.server";
-import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
+import {
+  getSyncBayRequestId,
+  getSyncBayRunnerCompletionLevel,
+  logSyncBayRuntimeEvent,
+} from "../lib/syncbay-runtime-log";
 
 export const action = async ({ request, url }: ActionFunctionArgs) => {
   requireCronSecret(request);
@@ -23,7 +27,7 @@ export const action = async ({ request, url }: ActionFunctionArgs) => {
 
   logSyncBayRuntimeEvent({
     event: "syncbay-runner-completed",
-    level: "info",
+    level: getSyncBayRunnerCompletionLevel(result.failedCount),
     requestId,
     route: "api.jobs.run-due",
     elapsedMs: Math.round(performance.now() - startedAt),

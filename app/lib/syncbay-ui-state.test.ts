@@ -29,7 +29,6 @@ const {
   shouldShowOverviewStatusHero,
   getOperationalUiState,
   getNeutralUnavailableMetric,
-  validateProductMetricCounts,
   formatSyncMetric,
 } = uiState;
 
@@ -47,11 +46,6 @@ test("uses neutral unavailable copy and explicit metric units", () => {
   assert.deepEqual(getNeutralUnavailableMetric(), { label: "Dato non disponibile", tone: "info" });
   assert.equal(formatSyncMetric(0, "prodotti", "sincronizzati nelle ultime 24 ore"), "0 prodotti sincronizzati nelle ultime 24 ore");
   assert.equal(formatSyncMetric(2_000, "run", "negli ultimi 7 giorni"), "2.000 run negli ultimi 7 giorni");
-});
-
-test("keeps linked, active and sold-out product counts arithmetically coherent", () => {
-  assert.deepEqual(validateProductMetricCounts({ active: 8, linked: 10, soldOut: 2 }), { active: 8, linked: 10, soldOut: 2 });
-  assert.throws(() => validateProductMetricCounts({ active: 8, linked: 9, soldOut: 2 }), /deve essere uguale/);
 });
 
 test("builds eBay OAuth start href with the current shop context", () => {

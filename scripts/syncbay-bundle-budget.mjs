@@ -15,17 +15,26 @@ function walk(directory) {
 }
 
 export function measureBundleBudget(root = process.cwd(), budgets = BUDGETS) {
-  const client = walk(path.join(root, "build/client"));
-  const server = walk(path.join(root, "build/server"));
+  const clientDirectory = path.join(root, "build/client");
+  const serverDirectory = path.join(root, "build/server");
+  if (!fs.existsSync(clientDirectory) || !fs.existsSync(serverDirectory)) {
+    throw new Error("Artefatti build mancanti: eseguire npm run build prima del budget bundle.");
+  }
+  const client = walk(clientDirectory);
+  const server = walk(serverDirectory);
   const gzip = (file) => gzipSync(fs.readFileSync(file)).byteLength;
   const js = client.filter((file) => /\.js$/u.test(file));
   const css = client.filter((file) => /syncbay-embedded.*\.css$/u.test(file));
+  const serverJs = server.filter((file) => /\.js$/u.test(file));
+  if (js.length === 0 || css.length === 0 || serverJs.length === 0) {
+    throw new Error("Artefatti build incompleti: bundle client, CSS o server non trovato.");
+  }
   const routes = js.filter((file) => /(?:^|[/.-])app(?:[._-]|$)/u.test(path.relative(root, file)));
   const values = {
     clientTotal: js.reduce((sum, file) => sum + gzip(file), 0),
     css: css.reduce((sum, file) => sum + gzip(file), 0),
     route: Math.max(0, ...routes.map(gzip)),
-    server: server.reduce((sum, file) => sum + gzip(file), 0),
+    server: serverJs.reduce((sum, file) => sum + gzip(file), 0),
   };
   const exceeded = Object.entries(values).filter(([key, value]) => value > budgets[key]);
   return { budgets, exceeded, values };

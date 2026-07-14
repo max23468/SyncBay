@@ -42,13 +42,6 @@ export function getNeutralUnavailableMetric() {
   return { label: "Dato non disponibile", tone: "info" as const };
 }
 
-export function validateProductMetricCounts(input: { active: number; linked: number; soldOut: number }) {
-  if (input.active < 0 || input.soldOut < 0 || input.linked !== input.active + input.soldOut) {
-    throw new Error("Prodotti collegati deve essere uguale a eBay attivi più esauriti.");
-  }
-  return input;
-}
-
 export function formatSyncMetric(value: number, unit: "job" | "prodotti" | "run", period: string) {
   return `${formatInteger(value)} ${unit} ${period}`.trim();
 }

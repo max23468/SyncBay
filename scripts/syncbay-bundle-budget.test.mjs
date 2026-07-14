@@ -7,6 +7,14 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 import { measureBundleBudget } from "./syncbay-bundle-budget.mjs";
 
+test("bundle budget fails when build artifacts are missing", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "syncbay-bundle-missing-"));
+  assert.throws(() => measureBundleBudget(root), /Artefatti build mancanti/);
+  const result = spawnSync(process.execPath, ["scripts/syncbay-bundle-budget.mjs", `--root=${root}`]);
+  assert.notEqual(result.status, 0);
+  fs.rmSync(root, { recursive: true });
+});
+
 test("bundle budget accepts small files and reports exceeded limits", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "syncbay-bundle-"));
   fs.mkdirSync(path.join(root, "build/client/assets"), { recursive: true });

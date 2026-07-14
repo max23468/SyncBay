@@ -3,10 +3,16 @@ import test from "node:test";
 
 import {
   getSyncBayRequestId,
+  getSyncBayRunnerCompletionLevel,
   logSyncBayRuntimeEvent,
   shouldLogSyncBayRuntimeEvent,
   // @ts-expect-error node strip-types resolves TypeScript test imports with extensions.
 } from "./syncbay-runtime-log.ts";
+
+test("runner ticks with partial failures bypass healthy-event sampling", () => {
+  assert.equal(getSyncBayRunnerCompletionLevel(0), "info");
+  assert.equal(getSyncBayRunnerCompletionLevel(1), "warn");
+});
 
 test("uses the Vercel request id without reading request payloads", () => {
   assert.equal(
