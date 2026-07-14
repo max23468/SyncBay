@@ -38,7 +38,7 @@ async function runCompletePublish(args) {
   const prSelector = args.pr ? String(args.pr) : null;
   let pr = readPr(prSelector);
 
-  if (!args.dryRun) {
+  if (!args.dryRun && pr?.state !== "MERGED") {
     runInherited("git", ["push", "--set-upstream", "origin", branch]);
     if (!pr) {
       const title = args.title || runGit(["log", "-1", "--pretty=%s"]);
@@ -61,7 +61,9 @@ async function runCompletePublish(args) {
   if (!pr && args.dryRun) {
     pr = { number: null, state: "OPEN" };
   }
-  if (!pr || pr.state !== "OPEN") throw new Error("PR aperta non trovata.");
+  if (!pr || !["OPEN", "MERGED"].includes(pr.state)) {
+    throw new Error("PR aperta o appena mergeata non trovata.");
+  }
 
   const changedPaths = (pr.number
     ? runGh(["pr", "diff", String(pr.number), "--name-only"])
@@ -82,23 +84,29 @@ async function runCompletePublish(args) {
   );
   if (args.dryRun) return plan;
 
-  runInherited("npm", ["run", "verify:publish", "--", "--remote"]);
-  runInherited("gh", [
-    "pr",
-    "checks",
-    String(pr.number),
-    "--required",
-    "--watch",
-    "--interval",
-    "10",
-  ]);
-  runInherited("gh", [
-    "pr",
-    "merge",
-    String(pr.number),
-    "--squash",
-    "--delete-branch",
-  ]);
+  if (pr.state === "OPEN") {
+    runInherited("npm", ["run", "verify:publish", "--", "--remote"]);
+    runInherited("gh", [
+      "pr",
+      "checks",
+      String(pr.number),
+      "--required",
+      "--watch",
+      "--interval",
+      "10",
+    ]);
+    runInherited("gh", [
+      "pr",
+      "merge",
+      String(pr.number),
+      "--repo",
+      repository,
+      "--squash",
+      "--delete-branch",
+    ]);
+  } else {
+    console.log(`Riprendo la chiusura della PR #${pr.number} già mergeata.`);
+  }
 
   const merged = readPr(String(pr.number));
   const mergeSha = merged?.mergeCommit?.oid;
