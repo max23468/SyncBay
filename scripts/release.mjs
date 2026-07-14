@@ -3,6 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 const changelogPath = path.join(root, "CHANGELOG.md");
@@ -192,7 +193,9 @@ function extractUnreleased(changelog, options = {}) {
 
 function inferBump(unreleasedBody) {
   const sections = validateSections(unreleasedBody);
-  const normalizedBody = normalize(unreleasedBody);
+  // Solo il testo versionato puo' guidare il bump: una nota non versionata che
+  // cita "breaking change" non deve forzare un major.
+  const normalizedBody = normalize(splitUnreleasedBody(unreleasedBody).versioned);
   const hasNonVersioned = sections.some(
     (section) => nonVersionedSections.has(section.title) && section.hasContent,
   );
@@ -204,13 +207,10 @@ function inferBump(unreleasedBody) {
         patchSections.has(section.title)),
   );
 
-  if (hasNonVersioned && hasVersioned) {
-    fail(
-      "Il blocco [Non rilasciato] mescola voci versionate e non versionate. Separa il lavoro prima di rilasciare.",
-    );
-  }
-
-  if (hasNonVersioned) return "none";
+  // Un blocco misto e' legittimo: la release prende le sezioni versionate e
+  // lascia le note non versionate sotto [Non rilasciato]. Senza sezioni
+  // versionate non c'e' nulla da rilasciare.
+  if (!hasVersioned && hasNonVersioned) return "none";
 
   if (
     sections.some((section) => section.hasContent && majorSections.has(section.title)) ||
@@ -265,9 +265,31 @@ function parseSections(markdown) {
 
     return {
       hasContent: sectionHasContent(body),
+      markdown: markdown.slice(heading.index, bodyEnd).trim(),
       title: normalize(heading[1]),
     };
   });
+}
+
+// Le note non versionate restano di proprieta' di [Non rilasciato]: una release
+// porta nella nuova versione solo le sezioni versionate. Senza questa
+// separazione un blocco misto sarebbe irrilasciabile, oppure le note operative
+// finirebbero dentro una versione a cui non appartengono.
+export function splitUnreleasedBody(unreleasedBody) {
+  const sections = parseSections(unreleasedBody);
+  const versioned = [];
+  const nonVersioned = [];
+
+  for (const section of sections) {
+    if (!section.hasContent) continue;
+    if (nonVersionedSections.has(section.title)) nonVersioned.push(section.markdown);
+    else versioned.push(section.markdown);
+  }
+
+  return {
+    nonVersioned: nonVersioned.join("\n\n"),
+    versioned: versioned.join("\n\n"),
+  };
 }
 
 function sectionHasContent(body) {
@@ -323,7 +345,16 @@ function updateChangelog(changelog, release) {
   }
 
   const unreleased = extractUnreleased(changelog);
-  const nextChangelog = `${unreleased.beforeHeader}## [Non rilasciato]\n\n## [${release.version}] — ${release.date}\n\n${unreleased.body}\n${unreleased.rest}`;
+  const { nonVersioned, versioned } = splitUnreleasedBody(unreleased.body);
+
+  if (!versioned) {
+    fail("Il blocco [Non rilasciato] non contiene sezioni versionate da rilasciare.");
+  }
+
+  // Le note non versionate restano sotto [Non rilasciato]: non appartengono a
+  // questa versione e non devono comparire nel suo changelog.
+  const keptUnreleased = nonVersioned ? `\n\n${nonVersioned}` : "";
+  const nextChangelog = `${unreleased.beforeHeader}## [Non rilasciato]${keptUnreleased}\n\n## [${release.version}] — ${release.date}\n\n${versioned}\n${unreleased.rest}`;
   const releaseLink = `[${release.version}]: ${changelogAnchor(release.version, release.date)}`;
 
   if (/^\[Non rilasciato\]: #non-rilasciato$/m.test(nextChangelog)) {
@@ -345,103 +376,101 @@ function updateVersionFile(source, release) {
     .replace(/export const BUILD_DATE = "[^"]+";/, `export const BUILD_DATE = "${release.date}";`);
 }
 
-const options = parseArgs(process.argv.slice(2));
-
-if (options.help) {
-  showHelp();
-  process.exit(0);
+function isCliEntrypoint() {
+  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }
 
-if (options.bump && !validBumps.has(options.bump)) {
-  fail(`--bump deve essere major, minor, patch o none. Ricevuto: ${options.bump}`);
-}
+function runReleaseCli() {
+  const options = parseArgs(process.argv.slice(2));
 
-if (options.bump === "none" && options.version) {
-  fail("--bump none non può essere usato insieme a --version.");
-}
-
-if (options.date && !/^\d{4}-\d{2}-\d{2}$/.test(options.date)) {
-  fail(`--date deve usare il formato YYYY-MM-DD. Ricevuto: ${options.date}`);
-}
-
-if (options.version && !/^\d+\.\d+\.\d+$/.test(options.version)) {
-  fail(`--version deve usare il formato X.Y.Z. Ricevuto: ${options.version}`);
-}
-
-const changelog = readFileSync(changelogPath, "utf8");
-const versionFile = readFileSync(versionPath, "utf8");
-const current = readCurrentVersion(versionFile);
-const unreleased = extractUnreleased(changelog, { allowEmpty: options.dryRun });
-
-if (!unreleased.body) {
-  console.log("Blocco [Non rilasciato] vuoto. Nessuna release SemVer da preparare.");
-  console.log("Nessun file aggiornato.");
-  process.exit(0);
-}
-
-validateSections(unreleased.body);
-const bump = options.bump ?? (options.version ? null : inferBump(unreleased.body));
-const nextVersion = options.version ?? bumpVersion(current.version, bump);
-const releaseDate = options.date ?? todayInRome();
-const strategy = options.version ? "versione esplicita" : `bump ${bump}`;
-
-if (bump === "none") {
-  const sections = validateSections(unreleased.body);
-  const hasVersioned = sections.some(
-    (section) =>
-      section.hasContent &&
-      (majorSections.has(section.title) ||
-        minorSections.has(section.title) ||
-        patchSections.has(section.title)),
-  );
-
-  if (hasVersioned) {
-    fail("--bump none può essere usato solo con voci Non versionato.");
+  if (options.help) {
+    showHelp();
+    process.exit(0);
   }
 
-  console.log("Categoria: non versionato. Nessuna release SemVer da preparare.");
-  console.log("Nessun file aggiornato.");
-  process.exit(0);
+  if (options.bump && !validBumps.has(options.bump)) {
+    fail(`--bump deve essere major, minor, patch o none. Ricevuto: ${options.bump}`);
+  }
+
+  if (options.bump === "none" && options.version) {
+    fail("--bump none non può essere usato insieme a --version.");
+  }
+
+  if (options.date && !/^\d{4}-\d{2}-\d{2}$/.test(options.date)) {
+    fail(`--date deve usare il formato YYYY-MM-DD. Ricevuto: ${options.date}`);
+  }
+
+  if (options.version && !/^\d+\.\d+\.\d+$/.test(options.version)) {
+    fail(`--version deve usare il formato X.Y.Z. Ricevuto: ${options.version}`);
+  }
+
+  const changelog = readFileSync(changelogPath, "utf8");
+  const versionFile = readFileSync(versionPath, "utf8");
+  const current = readCurrentVersion(versionFile);
+  const unreleased = extractUnreleased(changelog, { allowEmpty: options.dryRun });
+
+  if (!unreleased.body) {
+    console.log("Blocco [Non rilasciato] vuoto. Nessuna release SemVer da preparare.");
+    console.log("Nessun file aggiornato.");
+    process.exit(0);
+  }
+
+  validateSections(unreleased.body);
+  const bump = options.bump ?? (options.version ? null : inferBump(unreleased.body));
+  const nextVersion = options.version ?? bumpVersion(current.version, bump);
+  const releaseDate = options.date ?? todayInRome();
+  const strategy = options.version ? "versione esplicita" : `bump ${bump}`;
+
+  if (bump === "none") {
+    if (splitUnreleasedBody(unreleased.body).versioned) {
+      fail("--bump none può essere usato solo con voci Non versionato.");
+    }
+
+    console.log("Categoria: non versionato. Nessuna release SemVer da preparare.");
+    console.log("Nessun file aggiornato.");
+    process.exit(0);
+  }
+
+  if (compareVersions(nextVersion, current.version) <= 0) {
+    fail(
+      `La nuova versione (${nextVersion}) deve essere maggiore della versione corrente (${current.version}).`,
+    );
+  }
+
+  const nextChangelog = updateChangelog(changelog, {
+    date: releaseDate,
+    version: nextVersion,
+  });
+  const nextVersionFile = updateVersionFile(versionFile, {
+    date: releaseDate,
+    version: nextVersion,
+  });
+  const kept = splitUnreleasedBody(unreleased.body).nonVersioned;
+
+  if (options.dryRun) {
+    console.log(`Dry-run release SyncBay ${nextVersion} (${releaseDate})`);
+    console.log(`Versione corrente: ${current.version} (${current.buildDate})`);
+    console.log(`Strategia: ${strategy}`);
+    console.log(`Analisi blocco [Non rilasciato]: ${analyzeUnreleased(unreleased.body)}`);
+    if (kept) {
+      console.log("Le voci Non versionato restano sotto [Non rilasciato].");
+    }
+    console.log("File che verrebbero aggiornati:");
+    console.log("- CHANGELOG.md");
+    console.log("- app/lib/version.ts");
+    process.exit(0);
+  }
+
+  writeFileSync(changelogPath, nextChangelog);
+  writeFileSync(versionPath, nextVersionFile);
+
+  console.log(`Release SyncBay ${nextVersion} preparata (${releaseDate}, ${strategy}).`);
+  if (kept) {
+    console.log("Le voci Non versionato restano sotto [Non rilasciato].");
+  }
+  console.log("Aggiornati CHANGELOG.md e app/lib/version.ts.");
 }
 
-if (
-  validateSections(unreleased.body).some(
-    (section) => section.hasContent && nonVersionedSections.has(section.title),
-  )
-) {
-  fail(
-    "Il blocco [Non rilasciato] contiene voci Non versionato. Separale dalle voci da rilasciare prima di generare una versione.",
-  );
+if (isCliEntrypoint()) {
+  runReleaseCli();
 }
-
-if (compareVersions(nextVersion, current.version) <= 0) {
-  fail(
-    `La nuova versione (${nextVersion}) deve essere maggiore della versione corrente (${current.version}).`,
-  );
-}
-
-const nextChangelog = updateChangelog(changelog, {
-  date: releaseDate,
-  version: nextVersion,
-});
-const nextVersionFile = updateVersionFile(versionFile, {
-  date: releaseDate,
-  version: nextVersion,
-});
-
-if (options.dryRun) {
-  console.log(`Dry-run release SyncBay ${nextVersion} (${releaseDate})`);
-  console.log(`Versione corrente: ${current.version} (${current.buildDate})`);
-  console.log(`Strategia: ${strategy}`);
-  console.log(`Analisi blocco [Non rilasciato]: ${analyzeUnreleased(unreleased.body)}`);
-  console.log("File che verrebbero aggiornati:");
-  console.log("- CHANGELOG.md");
-  console.log("- app/lib/version.ts");
-  process.exit(0);
-}
-
-writeFileSync(changelogPath, nextChangelog);
-writeFileSync(versionPath, nextVersionFile);
-
-console.log(`Release SyncBay ${nextVersion} preparata (${releaseDate}, ${strategy}).`);
-console.log("Aggiornati CHANGELOG.md e app/lib/version.ts.");

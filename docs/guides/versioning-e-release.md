@@ -43,7 +43,8 @@ Il comando:
 - rifiuta il rilascio se `## [Non rilasciato]` è vuoto;
 - inferisce il bump se non viene passato esplicitamente;
 - distingue `### Non versionato`, che non genera una nuova versione;
-- blocca il rilascio se il changelog mescola voci versionate e non versionate;
+- porta nella nuova versione solo le sezioni versionate e lascia le voci
+  `### Non versionato` sotto `[Non rilasciato]`;
 - aggiorna `CHANGELOG.md` e `app/lib/version.ts`.
 
 ## Quando bumpare
@@ -104,7 +105,9 @@ Il blocco `## [Non rilasciato]` deve usare solo sezioni riconosciute:
 - `### Rimosso`
 - `### Non versionato`
 
-Non mescolare `### Non versionato` con sezioni versionate nello stesso rilascio. Se serve pubblicare documentazione interna e runtime insieme, separa i lavori o rilascia solo il blocco versionato dopo aver spostato le note interne.
+`### Non versionato` può convivere con sezioni versionate nello stesso blocco `[Non rilasciato]`: `npm run release` rilascia solo le sezioni versionate e lascia le voci non versionate sotto `[Non rilasciato]`, dove restano finché non sono superate o promosse. Una nota non versionata non guida mai il bump e non entra nel changelog di una versione.
+
+Non spostare a mano le voci `### Non versionato` dentro un blocco già rilasciato: quel lavoro non appartiene a quella versione e il changelog perderebbe la distinzione fra ciò che è versionato e ciò che non lo è.
 
 ## Gate di chiusura
 

@@ -12,6 +12,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
   e la creazione della Release ora viene completato invece che saltato, e i
   passi di tag e push sono idempotenti sui retry.
+- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
+  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
+  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
+  segreto. Cambia la chiave corrispondente nell'output `--json`.
+- `npm run release` porta nella nuova versione solo le sezioni versionate e
+  lascia le voci `Non versionato` sotto `[Non rilasciato]`: un blocco misto non
+  è più un errore e le note operative non entrano in una versione a cui non
+  appartengono.
 
 ## [1.0.66] — 2026-07-15
 
@@ -29,13 +37,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Allineate sulla stessa riga le cinque metriche di Conflitti negli spazi
   desktop, mantenendo due colonne su tablet e una su mobile.
-
-### Non versionato
-
-- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
-  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
-  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
-  segreto. Cambia la chiave corrispondente nell'output `--json`.
 
 ## [1.0.64] — 2026-07-15
 
