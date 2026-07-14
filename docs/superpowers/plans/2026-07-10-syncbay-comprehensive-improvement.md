@@ -1227,7 +1227,13 @@ Il runner continua a chiamare la funzione a ogni tick, ma otto `deleteMany` veng
 - Vercel: invocazioni, Active CPU, memoria provisioned, Fast Data Transfer, Fast Origin Transfer, build execution, numero deploy, Web Analytics events e Speed Insights data points;
 - assenza di bypass: un `402 exceed_egress_quota`, read-only DB o limite Vercel arresta onboarding/backfill/import non essenziali e apre un'azione operativa esplicita.
 
-Se una metrica non è esposta via API/CLI sul piano corrente, lo script restituisce `unknown` e il runbook richiede la verifica dashboard; non deve trasformare l'assenza di dato in verde.
+Se una metrica non è esposta via API/CLI sul piano corrente, lo script usa uno
+stato causale e azionabile (`dashboard_required`, `provider_locked`, `partial`,
+`not_applicable` o `unavailable`) e il runbook richiede la verifica pertinente;
+non deve trasformare l'assenza di dato in verde. Il piano Vercel e Web Analytics
+sono osservati via CLI/API, Speed Insights dichiara la retention parziale Hobby,
+Supabase Storage misura i byte live aggregati e l'egress fatturabile Supabase
+resta esplicitamente di dashboard.
 
 Lo script non decide l'idoneità contrattuale. Registrare separatamente piano/account Vercel effettivo e uso commerciale sì/no: se il progetto production è Hobby e l'uso è commerciale, `provider:budget` deve riportare `plan_eligibility: blocked` anche con consumi bassi.
 
@@ -1286,8 +1292,9 @@ campi reversibili con esito uguale e ha lasciato `0` record persistiti. Baseline
 `984`, mapping attivi senza baseline `0`, checkpoint incompleti `0`, dead tuple
 `ProductSnapshot=0`, finestra cron osservata inferiore a 14 giorni e nessun
 `5xx` Vercel nel post-rollout. `provider:budget` conferma database in warning;
-egress, file storage, consumi Vercel e idoneità contrattuale restano
-`unknown` dove le API del piano non espongono misure affidabili. Restano da
+la rilevazione originaria non disponeva ancora di stati causali per egress,
+file storage, consumi Vercel e idoneità contrattuale dove le API del piano non
+esponevano misure affidabili. Restano da
 registrare i checkpoint temporali a 24 ore e 7 giorni prima di spuntare questo
 step e chiudere il rilievo di crescita/quota.
 
@@ -1924,7 +1931,7 @@ npx mex-agent check --quiet
 git diff --check
 ```
 
-Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider note o esplicitamente `unknown`, documentazione/link/comandi coerenti, strategia backup decisa, `robots.txt` incluso nello smoke e mex con zero errori.
+Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider osservate oppure classificate con uno stato causale e azionabile, documentazione/link/comandi coerenti, strategia backup decisa, `robots.txt` incluso nello smoke e mex con zero errori.
 
 ```bash
 git add app/routes/app._index.tsx app/routes/app.catalog.tsx app/routes/app.conflicts.tsx app/routes/app.import-preview.tsx app/routes/app.activity.tsx app/routes/app.settings.tsx app/routes/api.jobs.run-due.tsx app/routes/webhooks.products.update.tsx app/routes/webhooks.inventory_levels.update.tsx app/lib/syncbay-ui-state.ts app/lib/syncbay-ui-state.test.ts app/lib/syncbay-runtime-log.ts app/lib/syncbay-runtime-log.test.ts app/lib/syncbay-loader-performance.ts app/lib/syncbay-loader-performance.test.ts app/styles/syncbay-embedded.css public/robots.txt scripts/syncbay-bundle-budget.mjs scripts/syncbay-bundle-budget.test.mjs scripts/syncbay-docs-check.mjs scripts/syncbay-docs-check.test.mjs scripts/syncbay-db-backup.mjs scripts/syncbay-db-backup.test.mjs scripts/smoke-ui.mjs scripts/syncbay-ui-check.test.mjs package.json docs/ROADMAP.md docs/CONTEXT.md docs/INDEX.md docs/TOOLCHAIN.md docs/DECISIONS_PENDING.md docs/guides/provisioning-runtime.md docs/guides/backup-e-disaster-recovery.md docs/guides/sicurezza-privacy.md docs/glossario.md SECURITY.md CHANGELOG.md .mex/context/setup.md
@@ -2114,7 +2121,7 @@ Nel riepilogo finale riportare:
 | Attività live contraddittoria e metriche con denominatori ambigui | Task 11/12/13, modello semantico condiviso e glossario |
 | Importazione con azioni secondarie troppo prominenti | Task 12/13, disclosure collegamento e rinomina location avanzata |
 | Bundle client `149.035` byte gzip e server `181,9 kB` gzip | Task 12/13, budget automatico 180/230 kB |
-| Quote Vercel/Supabase Free oltre la sola size DB | Task 8/12/13, soglie 70/85/95%, unknown non verde |
+| Quote Vercel/Supabase Free oltre la sola size DB | Task 8/12/13, soglie 70/85/95%, stati mancanti causali e mai verdi |
 | Vercel Hobby limitato a uso personale/non commerciale | Task 12/13, decisione provider esplicita prima della conformità production |
 | Nessun gate hydration/accessibilità e soli happy path fixture | Task 11/12/13, state matrix, Playwright, tastiera/focus/zoom e QA screen reader |
 | Loader con payload misurato ma senza budget, log sani non campionati | Task 12/13, soglie payload, sampling 5% e correlazione `requestId` |
@@ -2160,7 +2167,7 @@ Esito del controllo: tutti i rilievi validati hanno un task, un criterio di prov
 | Bugfix | Tutti i rilievi HTML, inventory lookup, fixture `fieldPolicy`, stati contraddittori, `robots.txt` | Task 2-6 e 9-13 con test rossi e riproduzione |
 | Stabilità | Fairness/deadline, pool DB, retry/CAS, job lifecycle, backup e restore drill | Task 2-9, 12-13 e monitor post-deploy |
 | Performance | Batch conflitti, storia compatta, payload/bundle, loader timing, sampling log e CWV | Task 2, 4, 7-8, 11-13 |
-| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics, soglie e plan eligibility | Task 8, 12-13; `unknown` non verde e nessun bypass |
+| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics, soglie e plan eligibility | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass |
 | Documentazione | ADR, roadmap, contesto, glossario, toolchain, sicurezza, backup, mex e link/comandi | Task 2, 5, 7-8, 12-13 e `docs:check` |
 
 Questa tabella è la checklist di accettazione del piano: un'area non è chiusa se manca una prova indicata nella terza colonna, anche con CI verde.

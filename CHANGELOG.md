@@ -8,6 +8,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Reso azionabile `provider:budget`: osserva piano, Web Analytics e metriche
+  disponibili via Vercel CLI/API, misura lo storage file Supabase live e
+  distingue retention parziale, dati di dashboard e metriche bloccate dal
+  piano senza usare stati `unknown` generici.
 - Ridotta la latenza delle PR: la CI esegue i gate pertinenti al diff senza
   installare Chromium a ogni push; render e hydration browser restano
   disponibili su richiesta o con label `full-ui-check`.

@@ -36,12 +36,16 @@ Questo è l'handoff operativo corrente. Per orientarsi nella documentazione usa
 
 ## Rischi e lavoro aperto
 
-- Storage Supabase osservato il 2026-07-14 a 368,6 MiB su 500 MiB Free
+- Storage database Supabase osservato il 2026-07-15 a 368,7 MiB su 500 MiB Free
   (warning operativo): mantenere attivi retention e budget, misurare il dry-run
   di `history:maintain` prima di qualsiasi compattazione o cancellazione.
-- L'egress resta `unestimated` finché non viene fornita una stima verificata dei
-  byte medi per riga; piano e consumi Vercel/Analytics/Speed Insights restano
-  `unknown` fuori dal dashboard e non vanno presentati come verdi.
+- L'egress Supabase esatto resta `dashboard_required`: il proxy SQL continua a
+  essere `unestimated` in byte perché `pg_stat_statements` espone righe, non
+  dimensione delle risposte. Il piano Vercel Hobby e Web Analytics sono invece
+  osservati via CLI/API; Speed Insights resta `partial` per la retention Hobby
+  di 7 giorni, mentre Fast Data Transfer e metriche Functions risultano
+  `provider_locked` senza Observability Plus. Questi stati non vanno presentati
+  come verdi né sostituiti con stime arbitrarie.
 - Completare i gate di onboarding e il runbook per il primo cliente selezionato.
 - Validare su dati correnti classificazione e azioni dei conflitti.
 - Mantenere prioritari webhook GDPR, account deletion eBay, rate limit,
