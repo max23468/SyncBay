@@ -39,8 +39,7 @@ jobs:
           if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$BASE_REF" ]; then
             base="origin/$BASE_REF"
           else
-            echo "lane=runtime" >> "$GITHUB_OUTPUT"
-            exit 0
+            base="origin/main"
           fi
           echo "base=$base" >> "$GITHUB_OUTPUT"
           node scripts/syncbay-verify.mjs classify --base "$base" >> "$GITHUB_OUTPUT"

@@ -21,6 +21,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Il browser check installa gli observer anche nei percorsi di focus di
   navigazione e submit: errori pagina o console dopo il click non passano più
   inosservati e fanno fallire il gate.
+- `publish:complete` mantiene la rilevazione della release quando si riprende
+  una PR già mergeata: il tag/GitHub Release non viene più saltato se origin/main
+  contiene già il bump ma la release non è stata pubblicata.
+- La CI assegna una base predefinita ai run manuali (`workflow_dispatch`),
+  evitando il fallimento immediato del verifier invocato con `--base ""`.
 
 ## [1.0.63] — 2026-07-14
 
