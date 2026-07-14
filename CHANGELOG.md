@@ -6,6 +6,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.64] — 2026-07-15
+
+### Correzioni
+
+- Ripristinata la griglia responsiva della pagina Conflitti: le metriche usano
+  due colonne leggibili negli spazi ampi e una colonna negli spazi stretti,
+  senza lasciare la scheda Totale isolata sotto quattro riquadri compressi.
+
 ### Non versionato
 
 - Reso azionabile `provider:budget`: usa una dichiarazione conservativa del
@@ -3616,6 +3624,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.64]: #1064--2026-07-15
 [1.0.63]: #1063--2026-07-14
 [1.0.62]: #1062--2026-07-13
 [1.0.61]: #1061--2026-07-13
