@@ -20,6 +20,17 @@ test("builds a dry-run row with cleanup metrics and safe excerpts", () => {
   assert.equal(row.removedPercent > 50, true);
 });
 
+test("l'estratto di testo non fa doppio unescape delle entita' escapate", () => {
+  const row = buildDescriptionCleanupReportRow({
+    descriptionHtml: "<p>a &amp;quot;b&amp;quot; &amp;amp; c</p>",
+    itemId: "1",
+    title: "t",
+  });
+
+  // `&amp;quot;` deve restare `&quot;`, non collassare in `"`.
+  assert.equal(row.cleanedTextExcerpt, 'a &quot;b&quot; &amp; c');
+});
+
 test("summarizes dry-run cleanup rows", () => {
   assert.deepEqual(
     summarizeDescriptionCleanupReport([

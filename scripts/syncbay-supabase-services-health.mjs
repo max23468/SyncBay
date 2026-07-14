@@ -140,10 +140,14 @@ async function resolveSupabaseApiKey(projectRef) {
     );
   }
 
-  return {
-    source: `supabase-cli:${apiKeyRow.name ?? apiKeyRow.type}`,
-    value,
-  };
+  // Etichetta costante: non interpolare dati grezzi dallo stdout della CLI nel
+  // report stampato, cosi' nessun output del provider finisce nei log.
+  const source =
+    apiKeyRow.name === "anon"
+      ? "supabase-cli:anon"
+      : "supabase-cli:publishable";
+
+  return { source, value };
 }
 
 function parseApiKeyRows(stdout) {

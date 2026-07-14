@@ -231,12 +231,14 @@ export function summarizeDescriptionCleanupReport(
 }
 
 function htmlToText(html: string) {
+  // `&amp;` per ultimo: decodificarlo prima degli altri renderebbe un
+  // `&amp;quot;` gia' escapato in `&quot;` e poi in `"` (doppio unescape).
   return html
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;|&#160;/gi, " ")
-    .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&amp;/gi, "&")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -406,7 +408,17 @@ function normalizeInputDescription(value: string | null | undefined) {
 }
 
 function removeComments(html: string) {
-  return html.replace(/<!--[\s\S]*?-->/g, "");
+  // Un solo passaggio e' incompleto: rimuovere un commento puo' ricomporne un
+  // altro (es. `<!--a<!--b-->-->`), quindi si itera fino a stabilita'.
+  let current = html;
+  let previous = "";
+
+  while (current !== previous) {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?-->/g, "");
+  }
+
+  return current;
 }
 
 function removeUnsafeBlocks(html: string) {

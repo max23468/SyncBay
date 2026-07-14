@@ -12,6 +12,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   piano Vercel e osserva Web Analytics e metriche disponibili via CLI/API,
   misura lo storage file Supabase live e distingue retention parziale, dati di
   dashboard e metriche bloccate dal piano senza stati `unknown` generici.
+- Risolti gli alert CodeQL di sanitizzazione HTML: `&amp;` viene decodificato
+  per ultimo (niente doppio unescape), le chiusure `script`/`style` tollerano
+  spazi e la rimozione di tag e commenti è iterata fino a stabilità nella
+  pulizia descrizioni, nel render UI di verifica e nello script Codex. Il
+  diagnostico servizi Supabase logga un'etichetta di sorgente costante senza
+  interpolare output CLI grezzo.
 - Ridotta la latenza delle PR: la CI esegue i gate pertinenti al diff senza
   installare Chromium a ogni push; render e hydration browser restano
   disponibili su richiesta o con label `full-ui-check`.
