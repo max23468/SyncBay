@@ -8,14 +8,21 @@ Accettata — 2026-07-13.
 
 Vercel Hobby è ammesso soltanto per sviluppo e uso privato non commerciale.
 Prima di onboarding commerciale, billing o uso per clienti paganti SyncBay deve
-passare a un piano Vercel che consenta l'uso commerciale. Il gate
-`provider:budget` blocca la combinazione `VERCEL_PLAN=hobby` e
-`SYNCBAY_COMMERCIAL_USE=true`; se le env mancano lo stato resta `unknown` e non
-può essere presentato come verifica riuscita.
+passare a un piano Vercel che consenta l'uso commerciale. Poiché la REST API
+documentata non espone il piano del team, `provider:budget` usa il default
+conservativo di repository `hobby`; `VERCEL_PLAN` è la dichiarazione esplicita
+da mantenere allineata al dashboard. La combinazione piano dichiarato Hobby e
+`SYNCBAY_COMMERCIAL_USE=true` è bloccata.
+Se l'uso commerciale non è dichiarato, il report non restituisce uno stato
+ambiguo: usa la baseline privata corrente `ok_private_only` e richiede la
+dichiarazione esplicita prima dell'onboarding.
 
-La decisione non attiva billing né cambia piano automaticamente. Web Analytics,
-Speed Insights, Functions e build concorrono al budget Vercel e vanno verificati
-nel dashboard prima di ogni onboarding.
+La decisione non attiva billing né cambia piano automaticamente. Web Analytics
+viene osservato via CLI sulla finestra mobile di 30 giorni del team. Speed
+Insights è una lettura parziale di 7 giorni sul piano Hobby; Fast Data Transfer
+e metriche Functions restano `provider_locked` senza Observability Plus. Gli
+stati parziali o bloccati dal provider richiedono ancora il dashboard prima di
+ogni onboarding.
 
 ## Fonte
 

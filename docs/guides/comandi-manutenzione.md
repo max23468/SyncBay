@@ -5,12 +5,35 @@ operativi elencati in `docs/TOOLCHAIN.md`. Consultala solo per diagnostica o
 manutenzione live; la tabella dei comandi e i gate restano nella toolchain.
 
 `npm run db:storage-budget` misura lo spazio fisico del database e confronta il
-risultato con il budget configurato. `npm run provider:budget` aggrega i budget
-operativi dei provider senza stampare credenziali. Usa
+risultato con il budget configurato. `npm run storage:budget` misura byte e
+numero degli oggetti Supabase Storage dalla tabella aggregata `storage.objects`;
+è una fotografia live, mentre il contatore fatturabile del provider usa la
+media in GB-ore. `npm run provider:budget` aggrega i budget operativi dei
+provider senza stampare credenziali. Usa
 `npm run product-baselines:backfill -- --dry-run` prima di popolare baseline
 prodotto mancanti e `npm run history:maintain -- --dry-run` prima della
 maintenance della storia; le scritture richiedono i flag di conferma previsti
 dai rispettivi script.
+
+Per Vercel, `provider:budget` seleziona il team tramite API documentata, usa il
+piano conservativo dichiarato in `VERCEL_PLAN`, prova `vercel usage`, legge Web
+Analytics sugli ultimi 30 giorni e i data point Speed Insights disponibili.
+Sul piano Hobby `vercel usage` può
+risultare `not_applicable` perché non esiste un ciclo di fatturazione; Speed
+Insights è `partial` per la retention di 7 giorni. Fast Data Transfer e
+metriche Functions sono `provider_locked` quando la CLI richiede Observability
+Plus e devono essere controllate nel dashboard Usage. La quota Web Analytics è
+di team, quindi la lettura usa tutti i progetti del team; Speed Insights resta
+di progetto. La REST API documentata non espone il piano: il default di
+repository è `hobby` e va verificato nel dashboard e aggiornato tramite
+`VERCEL_PLAN` prima di ogni uso commerciale. Se `SYNCBAY_COMMERCIAL_USE` non è dichiarata, il report assume
+prudenzialmente l'uso privato corrente e restituisce `ok_private_only`, con
+azione obbligatoria prima dell'onboarding.
+
+Per Supabase, lo storage file live è osservato via SQL aggregato. Il piano
+organizzazione e l'egress unificato esatto restano `dashboard_required` perché
+la CLI non espone il contatore fatturabile; `egress:budget` continua a fornire
+il proxy diagnostico basato sulle righe senza inventare byte delle risposte.
 
 `npm run db:verify` richiede progetto Supabase linked e credenziali disponibili.
 Quando il comando gira da una worktree che non contiene `supabase/.temp`, gli

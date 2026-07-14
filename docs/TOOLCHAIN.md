@@ -110,6 +110,7 @@ il runtime repo resta `>=24.15 <25`.
 | Diagnostica job import        | `npm run jobs:status -- --shop <shop.myshopify.com>`                                   |
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
 | Budget storage database       | `npm run db:storage-budget`                                                                 |
+| Budget Supabase Storage       | `npm run storage:budget`                                                                    |
 | Budget provider aggregato     | `npm run provider:budget`                                                                   |
 | Budget bundle                  | `npm run bundle:budget`                                                                     |
 | Verifica documentazione       | `npm run docs:check`                                                                        |

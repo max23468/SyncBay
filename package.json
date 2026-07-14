@@ -78,6 +78,7 @@
     "egress:budget": "node --experimental-strip-types scripts/syncbay-egress-budget.mjs",
     "history:maintain": "tsx scripts/syncbay-product-history-maintenance.mjs",
     "db:storage-budget": "node scripts/syncbay-db-storage-budget.mjs",
+    "storage:budget": "node scripts/syncbay-supabase-storage-budget.mjs",
     "provider:budget": "node scripts/syncbay-provider-budget.mjs",
     "bundle:budget": "node scripts/syncbay-bundle-budget.mjs",
     "docs:check": "node scripts/syncbay-docs-check.mjs",

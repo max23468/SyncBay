@@ -112,6 +112,24 @@ test("CI can omit advisory gates already handled by parallel workflows", () => {
   assert.deepEqual(plan.commands.map((entry) => entry.label), ["npm run smoke:ui"]);
 });
 
+test("CI can leave changed UI gates to the explicit cached browser workflow", () => {
+  const plan = buildVerificationPlan({
+    excludeUiGates: true,
+    mode: "changed",
+    review: {
+      suggestedChecks: [
+        "npm run lint",
+        "npm run smoke:ui",
+        "npm run ui:check",
+        "npm run ui:browser-check",
+      ],
+      unmatchedFiles: [],
+    },
+  });
+
+  assert.deepEqual(plan.commands.map((entry) => entry.label), ["npm run lint"]);
+});
+
 test("keeps provider-backed checks manual and accepts the tooling wrapper", () => {
   const plan = buildVerificationPlan({
     mode: "changed",
