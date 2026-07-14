@@ -39,10 +39,12 @@ async function main() {
       probeSupabaseService({ check, headers, supabaseUrl }),
     ),
   );
+  // `resolvedFrom` porta solo l'etichetta di provenienza della chiave, mai il
+  // valore: il nome resta neutro perche' il report viene stampato.
   const report = {
-    apiKeySource: apiKey.source,
     ok: checks.every((check) => check.status === "healthy"),
     projectRef,
+    resolvedFrom: apiKey.source,
     services: checks,
     supabaseUrl,
   };
@@ -202,7 +204,7 @@ function printReport(report) {
   console.log("SyncBay Supabase HTTP services");
   console.log(`- project: ${report.projectRef}`);
   console.log(`- url: ${report.supabaseUrl}`);
-  console.log(`- API key: ${report.apiKeySource} (valore non stampato)`);
+  console.log(`- API key: ${report.resolvedFrom} (valore non stampato)`);
 
   for (const service of report.services) {
     const reason = service.reason ? `, ${service.reason}` : "";
