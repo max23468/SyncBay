@@ -4,7 +4,7 @@ export function formatConflictValueForDisplay(input: {
   field: string;
   value: Prisma.JsonValue | null;
 }) {
-  if (input.value === null) return "Non disponibile";
+  if (input.value === null) return "Dato non disponibile";
 
   if (input.field === "description" && isDescriptionHash(input.value)) {
     return "Descrizione modificata a mano (testo completo non mostrato qui).";

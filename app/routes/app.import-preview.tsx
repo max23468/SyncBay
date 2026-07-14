@@ -15,7 +15,7 @@ import {
 import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
 import { ExistingCatalogTakeoverSection } from "../components/ExistingCatalogTakeoverSection";
 import { AfterImportSection as ExtractedAfterImportSection, DraftImportSection as ExtractedDraftImportSection, ImportTechnicalDetails as ExtractedImportTechnicalDetails } from "../components/ImportExecutionSections";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
 import {
@@ -164,6 +164,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       draftImportEnabled: wizard.draftImport.enabled,
       importableCount: windowedWizard.draftImport.importableCount,
@@ -565,17 +566,16 @@ function PreparationSection({
         {getEbayConnectionStatusLabel(wizard.ebay.status)}. SyncBay ti mostra
         l&apos;anteprima prima di scrivere sul catalogo Shopify.
       </s-text>
-      <s-stack direction="inline" gap="small-200">
-        {ebayAction.href ? (
-          <s-button
-            href={ebayAction.href}
-            target={ebayAction.target}
-            variant={ebayAction.variant}
-          >
-            {ebayAction.label}
-          </s-button>
-        ) : null}
-      </s-stack>
+      {wizard.ebay.status === "CONNECTED" ? (
+        <details className="syncbay-details">
+          <summary>Gestisci collegamento</summary>
+          {ebayAction.href ? <s-button href={ebayAction.href} target={ebayAction.target}>{ebayAction.label}</s-button> : null}
+        </details>
+      ) : (
+        <s-stack direction="inline" gap="small-200">
+          {ebayAction.href ? <s-button href={ebayAction.href} target={ebayAction.target} variant={ebayAction.variant}>{ebayAction.label}</s-button> : null}
+        </s-stack>
+      )}
       {ebayAction.blockerText ? (
         <s-text color="subdued">{ebayAction.blockerText}</s-text>
       ) : null}
@@ -645,13 +645,16 @@ function LocationShopifySection({
         </s-paragraph>
       )}
       {selectedLocation ? (
-        <LocationRenameForm
-          canWriteLocations={locationUiState.canWriteLocations}
-          isRenamingLocation={locationUiState.isRenamingLocation}
-          isSaving={locationUiState.isSaving}
-          locationRename={locationRename}
-          selectedLocation={selectedLocation}
-        />
+        <details className="syncbay-details">
+          <summary>Opzioni avanzate location</summary>
+          <LocationRenameForm
+            canWriteLocations={locationUiState.canWriteLocations}
+            isRenamingLocation={locationUiState.isRenamingLocation}
+            isSaving={locationUiState.isSaving}
+            locationRename={locationRename}
+            selectedLocation={selectedLocation}
+          />
+        </details>
       ) : null}
       <s-stack gap="base">
         <StatusRow
@@ -821,6 +824,7 @@ function PreviewStatusSection({
           Blocchi: {wizard.importPreview.blockers.join(", ")}.
         </s-paragraph>
       ) : null}
+      <div className="syncbay-balanced-box-grid">
       <s-grid
         gap="base"
         gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -858,6 +862,7 @@ function PreviewStatusSection({
           value={formatNumber(errorCount)}
         />
       </s-grid>
+      </div>
       {wizard.previewResult.existingCatalogTakeover ? (
         <ExistingCatalogTakeoverSection
           report={wizard.previewResult.existingCatalogTakeover}

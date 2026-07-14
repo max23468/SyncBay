@@ -7,7 +7,7 @@ import {
   getEgressBudgetReadRows,
   isEgressReadStatementQuery,
 } from "../app/lib/syncbay-egress-budget.ts";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -232,7 +232,7 @@ async function querySupabaseJson(sql) {
     "npx",
     ["supabase", "db", "query", "--linked", "--output", "json", sql],
     {
-      cwd: process.cwd(),
+      cwd: getSupabaseCliCwd(),
       env: await getSupabaseCliEnv(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 45_000,

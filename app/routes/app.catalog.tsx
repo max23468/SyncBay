@@ -108,6 +108,7 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   );
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       filter,
       hasSearch: Boolean(search?.trim()),
@@ -141,6 +142,7 @@ export default function CatalogRoute() {
         {accessory.label}
       </s-badge>
       <s-stack gap="large">
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -174,6 +176,7 @@ export default function CatalogRoute() {
             value={formatNumber(catalog.summary.archivedCount)}
           />
         </s-grid>
+        </div>
 
         <s-section heading="Controllo catalogo">
           <s-stack gap="large">
@@ -185,7 +188,7 @@ export default function CatalogRoute() {
             />
             {rows.length > 0 ? (
               <s-stack gap="base">
-                <div className="syncbay-table-scroll">
+                <div className="syncbay-table-scroll syncbay-table-wrap">
                   <s-table>
                     <s-table-header-row>
                       <s-table-header listSlot="kicker">Immagine</s-table-header>

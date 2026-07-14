@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+## [1.0.63] — 2026-07-14
+
+### Correzioni
+
+- Bilanciate le raccolte di card sulle sei superfici embedded: una colonna su
+  mobile, due colonne desktop senza buchi e tre sole per le metriche compatte
+  della Panoramica; lo scroll della tabella Catalogo resta confinato.
+- Resi coerenti stato catalogo, attività runner e unità delle metriche; le note
+  operative duplicate nello stesso minuto vengono raggruppate e Importazione
+  mantiene riconnessione e rinomina location nelle opzioni secondarie.
+
+### Sotto il cofano
+
+- Aggiunti budget eseguibili per bundle e payload loader, log runtime JSON
+  allowlistati e campionati, policy crawler, verifica documentale e runbook di
+  backup Supabase Free con dry-run sicuro e restore solo non-production.
+
 ## [1.0.62] — 2026-07-13
 
 ### Correzioni
@@ -3572,6 +3589,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.63]: #1063--2026-07-14
 [1.0.62]: #1062--2026-07-13
 [1.0.61]: #1061--2026-07-13
 [1.0.60]: #1060--2026-07-13

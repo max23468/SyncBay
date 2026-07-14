@@ -4,9 +4,11 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 import {
+  getUiFixture,
   getUiFixtureStates,
 } from "./syncbay-ui-fixtures.ts";
 import { buildIsolatedUiEnv } from "./syncbay-ui-isolation.mjs";
+import { assertSyncBayLoaderPayloadBudget } from "../app/lib/syncbay-loader-performance.ts";
 
 export const UI_PAGES = [
   "panoramica",
@@ -17,10 +19,22 @@ export const UI_PAGES = [
   "impostazioni",
 ];
 export const UI_STATES = ["healthy", "empty", "loading", "degraded", "error"];
+const LOADER_ROUTE_BY_PAGE = {
+  attivita: "activity",
+  catalogo: "catalog",
+  conflitti: "conflicts",
+  importazione: "import",
+  impostazioni: "settings",
+  panoramica: "overview",
+};
 
 export function runUiCheck() {
   let scenarioCount = 0;
   for (const page of UI_PAGES) {
+    assertSyncBayLoaderPayloadBudget(
+      LOADER_ROUTE_BY_PAGE[page],
+      getUiFixture(page, "healthy"),
+    );
     for (const state of getUiFixtureStates(page)) {
       const result = spawnSync(
         process.execPath,

@@ -1663,7 +1663,11 @@ git commit -m "test: add isolated UI render gate"
 - Consumes: stato finale dei Task 1-11.
 - Produces: gate React Doctor ancora a `100/100`, stati UI coerenti e accessibili, raccolte di box monocolonna su mobile e bilanciate senza buchi su desktop, overflow confinato, payload e log osservabili senza rumore, budget bundle/provider, disaster recovery esplicito, crawler policy e documentazione verificabile.
 
-- [ ] **Step 1: Verificare che il fix React Doctor già rilasciato non regredisca**
+- [x] **Step 1: Verificare che il fix React Doctor già rilasciato non regredisca**
+
+Checkpoint chiuso per decisione del maintainer: il run è stato escluso da Task
+12. La branch è stata ribasata sulla PR #445, che contiene il fix dedicato, ma
+Task 12 non dichiara una nuova esecuzione di React Doctor.
 
 La base `1.0.45` contiene già:
 
@@ -1681,7 +1685,7 @@ Non modificare nuovamente `app.settings.tsx` salvo regressione dimostrata. Run: 
 
 Expected: `100/100`, nessun warning `Array lookup inside a loop`.
 
-- [ ] **Step 2: Aggiungere una policy crawler minima**
+- [x] **Step 2: Aggiungere una policy crawler minima**
 
 Creare `public/robots.txt`:
 
@@ -1695,7 +1699,7 @@ Disallow: /webhooks/
 
 Aggiungerlo ai file pubblici verificati da `smoke-ui.mjs`.
 
-- [ ] **Step 3: Bilanciare le griglie di box su mobile e desktop**
+- [x] **Step 3: Bilanciare le griglie di box su mobile e desktop**
 
 Avvolgere con `<div className="syncbay-balanced-box-grid">` le `s-grid` che contengono card, metriche o pannelli affiancati. Per il solo gruppo di tre metriche compatte della Panoramica aggiungere anche `syncbay-balanced-box-grid--compact-three`. Per `syncbay-existing-catalog-grid`, aggiungere la nuova classe al wrapper già presente senza crearne un secondo:
 
@@ -1752,7 +1756,7 @@ assert.match(html, /syncbay-balanced-box-grid/);
 
 In `scripts/smoke-ui.mjs` verificare la classe, le due colonne desktop, la regola `:last-child:nth-child(odd)`, l'eccezione Panoramica a tre colonne e la media query monocolonna a `640px`. Expected: su mobile ogni box occupa una riga; su desktop Impostazioni è `2 x 2`, Conflitti è `2 + 2 + 1` con l'ultimo box a tutta riga e Panoramica mantiene tre metriche compatte solo quando c'è spazio reale. Nessuna griglia lascia celle vuote.
 
-- [ ] **Step 4: Correggere layout e overflow riprodotti sullo store Numisleo**
+- [x] **Step 4: Correggere layout e overflow riprodotti sullo store Numisleo**
 
 Applicare le correzioni confermate dall'audit embedded in sola lettura:
 
@@ -1763,7 +1767,7 @@ Applicare le correzioni confermate dall'audit embedded in sola lettura:
 
 Il test browser deve confrontare `document.documentElement.scrollWidth` con `clientWidth`: è ammesso overflow solo nel wrapper della tabella Catalogo. Le fixture restano sintetiche; lo store Numisleo serve solo da riferimento visivo read-only e non produce screenshot versionati.
 
-- [ ] **Step 5: Rendere coerenti stati, metriche e microcopy operative**
+- [x] **Step 5: Rendere coerenti stati, metriche e microcopy operative**
 
 Estendere `syncbay-ui-state.ts` con un modello condiviso che separa:
 
@@ -1782,11 +1786,11 @@ Scrivere prima test rossi che impediscano le combinazioni osservate live:
 
 Le route consumano il modello condiviso; non duplicare ternari di stato. Aggiornare il glossario UI in `docs/glossario.md`.
 
-- [ ] **Step 6: Semplificare l'Importazione senza cambiare il flusso**
+- [x] **Step 6: Semplificare l'Importazione senza cambiare il flusso**
 
 Quando eBay è collegato, mostrare lo stato sano e spostare `Ricollega eBay` dentro un disclosure “Gestisci collegamento”; l'azione principale resta “Aggiorna preview live”. La rinomina location non deve competere con preview/import: lasciarla nelle Impostazioni o in un disclosure avanzato, mentre scelta e conferma location restano nel passo di preparazione. Non eseguire automaticamente preview, OAuth, import o apply all'apertura.
 
-- [ ] **Step 7: Aggiungere budget bundle e rendering**
+- [x] **Step 7: Aggiungere budget bundle e rendering**
 
 Creare `bundle:budget` senza nuove dipendenze. Dopo `npm run build`, misurare gzip e fallire oltre soglie con margine rispetto alla baseline fresca:
 
@@ -1797,7 +1801,7 @@ Creare `bundle:budget` senza nuove dipendenze. Dopo `npm run build`, misurare gz
 
 Il test usa una directory temporanea con file sintetici e verifica exit `0/2`; non dipende dagli hash Vite. Le soglie non sono obiettivi da riempire: una crescita motivata richiede misura, nota nel changelog e aggiornamento esplicito del budget.
 
-- [ ] **Step 8: Strutturare osservabilità e budget dei payload senza aumentare il rumore**
+- [x] **Step 8: Strutturare osservabilità e budget dei payload senza aumentare il rumore**
 
 Creare un logger server condiviso con envelope allowlistato:
 
@@ -1824,7 +1828,7 @@ Riutilizzare `logSyncBayLoaderPerformance`, che già misura `payloadBytes`, inve
 
 Speed Insights e Web Analytics sono già installati: verificare che non vengano duplicati e includere i loro data point/eventi nel budget Vercel. Non aggiungere Sentry, drain o nuova dipendenza in questa fase.
 
-- [ ] **Step 9: Definire backup e disaster recovery compatibili con Supabase Free**
+- [x] **Step 9: Definire backup e disaster recovery compatibili con Supabase Free**
 
 Poiché Supabase Free non include backup automatici, creare un runbook con decisione esplicita su RPO/RTO. Percorso minimo:
 
@@ -1843,7 +1847,7 @@ Esporre comandi espliciti:
 
 `db:backup` parte in dry-run e richiede `--apply --confirm-apply` per creare l'archivio cifrato; `db:restore-check` accetta solo un database target esplicitamente non-production, verifica versione Postgres/Prisma, checksum e manifest prima di scrivere. Nessun comando stampa righe o payload.
 
-- [ ] **Step 10: Rendere verificabile la documentazione e la pulizia generale**
+- [x] **Step 10: Rendere verificabile la documentazione e la pulizia generale**
 
 Creare `docs:check` senza nuove dipendenze per verificare link Markdown relativi, anchor principali, file indicizzati in `docs/INDEX.md`, comandi `npm run` citati e assenza di file generati/temporanei tracciati. Il cleanup include:
 
@@ -1857,7 +1861,7 @@ Creare `docs:check` senza nuove dipendenze per verificare link Markdown relativi
 - duplicati palesi in CSS, microcopy e documenti canonici;
 - `console.*` ad hoc sostituiti dal logger strutturato o motivati nei soli entrypoint framework.
 
-- [ ] **Step 11: Riallineare roadmap e documenti canonici**
+- [x] **Step 11: Riallineare roadmap e documenti canonici**
 
 Aggiornamenti obbligatori:
 
@@ -1873,7 +1877,7 @@ Aggiornamenti obbligatori:
 - aggiungere il nuovo piano a `docs/INDEX.md`;
 - classificare le modifiche runtime nel changelog come patch.
 
-- [ ] **Step 12: Verificare i rilievi classificati come non-azione**
+- [x] **Step 12: Verificare i rilievi classificati come non-azione**
 
 Run:
 
@@ -1889,7 +1893,7 @@ Expected:
 - nessun advisor sicurezza Supabase;
 - nessun redesign generale: le sei superfici e la microcopy italiana restano la base.
 
-- [ ] **Step 13: Riallineare lo scaffold mex senza duplicare le regole canoniche**
+- [x] **Step 13: Riallineare lo scaffold mex senza duplicare le regole canoniche**
 
 Run:
 
@@ -1900,7 +1904,7 @@ npx mex-agent sync --dry-run
 
 Aggiornare `.mex/context/setup.md` con i comandi runtime, test e manutenzione realmente introdotti dal programma. Verificare che `CLAUDE.md` continui a delegare ad `AGENTS.md` invece di copiarne il contenuto e che `.mex/ROUTER.md` descriva lo stato 1.0 effettivo. Correggere drift sostanziale; se mex segnala ancora come stale il thin wrapper `CLAUDE.md` pur essendo coerente, registrare l'eccezione nel riepilogo invece di duplicare centinaia di righe.
 
-- [ ] **Step 14: Verificare e committare**
+- [x] **Step 14: Verificare e committare**
 
 Run:
 

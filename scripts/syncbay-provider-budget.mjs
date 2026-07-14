@@ -30,6 +30,8 @@ const result = {
   vercel: {
     plan: vercelPlan,
     usage: { status: "unknown", action: "verify_dashboard" },
+    analytics: { status: "unknown", action: "verify_dashboard_data_points" },
+    speedInsights: { status: "unknown", action: "verify_dashboard_data_points" },
   },
 };
 console.log(JSON.stringify(result));

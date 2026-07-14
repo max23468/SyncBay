@@ -221,7 +221,29 @@ const publicFiles = [
   "public/favicon.ico",
   "public/syncbay-icon-192.png",
   "public/syncbay-logo-horizontal.png",
+  "public/robots.txt",
 ];
+
+const failures = [];
+
+const embeddedCss = fs.readFileSync("app/styles/syncbay-embedded.css", "utf8");
+for (const needle of [
+  ".syncbay-balanced-box-grid > s-grid",
+  "repeat(2, minmax(0, 1fr))",
+  ":last-child:nth-child(odd)",
+  ".syncbay-balanced-box-grid--compact-three > s-grid",
+  "repeat(3, minmax(0, 1fr))",
+  "@media (max-width: 640px)",
+  "grid-template-columns: minmax(0, 1fr)",
+  ".syncbay-table-wrap",
+]) {
+  if (!embeddedCss.includes(needle)) failures.push(`CSS embedded: manca "${needle}"`);
+}
+
+const robots = fs.readFileSync("public/robots.txt", "utf8");
+for (const route of ["/app/", "/auth/", "/api/", "/webhooks/"]) {
+  if (!robots.includes(`Disallow: ${route}`)) failures.push(`robots.txt: manca ${route}`);
+}
 
 const forbiddenChecks = [
   {
@@ -250,8 +272,6 @@ const visibleOverviewLink = /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<
 const hiddenHomeLink = /<(?:a|Link)\s+(?:href|to)="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/(?:a|Link)>/.test(
   navMenuContent,
 );
-
-const failures = [];
 
 for (const file of publicFiles) {
   if (!fs.existsSync(file)) {

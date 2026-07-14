@@ -110,6 +110,10 @@ il runtime repo resta `>=24.15 <25`.
 | Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
 | Budget storage database       | `npm run db:storage-budget`                                                                 |
 | Budget provider aggregato     | `npm run provider:budget`                                                                   |
+| Budget bundle                  | `npm run bundle:budget`                                                                     |
+| Verifica documentazione       | `npm run docs:check`                                                                        |
+| Backup database (dry-run)     | `npm run db:backup`                                                                         |
+| Prova restore non-production  | `npm run db:restore-check`                                                                  |
 | Backfill baseline prodotto    | `npm run product-baselines:backfill -- --dry-run`                                           |
 | Maintenance storia prodotto  | `npm run history:maintain -- --dry-run`                                                     |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |

@@ -35,6 +35,7 @@ import {
   logSyncBayLoaderPerformance,
 } from "../lib/syncbay-loader-performance";
 import {
+  formatSyncMetric,
   formatSyncJobStatus as formatJobStatus,
   getEbayOAuthStartHref,
   getNextAction,
@@ -73,6 +74,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       mappingCount: dashboard.imports.mappingCount,
       openConflictCount: dashboard.conflicts.openCount,
@@ -242,7 +244,7 @@ export default function Index() {
           </s-stack>
         </s-box>
 
-        <div>
+        <div className="syncbay-balanced-box-grid syncbay-balanced-box-grid--compact-three">
           <s-grid
             gap="base"
             gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
@@ -306,24 +308,29 @@ export default function Index() {
           <div className="syncbay-reliability">
             <s-text color="subdued">
               {reliability.totalJobs > 0
-                ? `Ultimi ${reliability.windowDays} giorni · ${formatNumber(
+                ? `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
                     reliability.totalJobs,
-                  )} sincronizzazioni · ${reliability.successRate}% riuscite.`
-                : "Nessuna sincronizzazione negli ultimi 7 giorni."}
+                    "job",
+                    "",
+                  )} · ${reliability.successRate}% ${
+                    reliability.totalJobs === 1 ? "riuscito" : "riusciti"
+                  }.`
+                : "Nessun job eseguito negli ultimi 7 giorni."}
             </s-text>
             {reliability.totalJobs > 0 ? (
               <Sparkline
-                ariaLabel="Andamento sincronizzazioni ultimi 7 giorni"
+                ariaLabel="Andamento job eseguiti negli ultimi 7 giorni"
                 values={reliability.daily}
               />
             ) : null}
           </div>
         </div>
 
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-        >
+        <div className="syncbay-balanced-box-grid">
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+          >
           <s-section heading="Cosa fare adesso">
             <div className="syncbay-action-list">
               {contextualActions.map((action) => (
@@ -364,7 +371,8 @@ export default function Index() {
               </s-text>
             )}
           </s-section>
-        </s-grid>
+          </s-grid>
+        </div>
         </>
         )}
       </s-stack>
@@ -420,7 +428,11 @@ function getSyncPulse(digest: Dashboard["sync"]["healthDigest"]): {
   label: string;
   tone: SyncBayTone;
 } {
-  const parts = [`${formatNumber(digest.syncedCount)} sincronizzati`];
+  const parts = [
+    `${formatSyncMetric(digest.syncedCount, "job", "")} ${
+      digest.syncedCount === 1 ? "completato" : "completati"
+    }`,
+  ];
 
   if (digest.conflictsOpen > 0) {
     parts.push(`${formatNumber(digest.conflictsOpen)} in conflitto`);

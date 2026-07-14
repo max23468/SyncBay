@@ -18,7 +18,7 @@ import {
   ShopifyMark,
   StatusHero,
 } from "../components/SyncBayUi";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import {
   getConflictActionLabel,
   getConflictFieldLabel,
@@ -97,6 +97,7 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   );
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       filter,
       filteredCount: conflicts.summary.filteredCount,
@@ -189,6 +190,7 @@ export default function ConflictsRoute() {
           tone={hasOpen ? "warning" : "success"}
         />
 
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
@@ -229,6 +231,7 @@ export default function ConflictsRoute() {
             value={formatNumber(conflicts.summary.totalCount)}
           />
         </s-grid>
+        </div>
 
         {hasOpen && safeCount > 0 ? (
           <div className="syncbay-risk syncbay-risk--clear">
@@ -339,6 +342,7 @@ function ConflictItem({
           </s-text>
         </s-stack>
 
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
@@ -355,6 +359,7 @@ function ConflictItem({
             value={row.shopifyValue}
           />
         </s-grid>
+        </div>
 
         <s-stack
           direction="inline"

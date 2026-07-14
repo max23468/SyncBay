@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -7,6 +8,7 @@ import {
   getUiFixtureStates,
 } from "./syncbay-ui-fixtures.ts";
 import { buildIsolatedUiEnv } from "./syncbay-ui-isolation.mjs";
+import { UI_PAGES } from "./syncbay-ui-check.mjs";
 
 const contaminatedEnv = {
   ...process.env,
@@ -85,4 +87,18 @@ test("import exposes blocked and in_progress in addition to common states", () =
     "blocked",
     "in_progress",
   ]);
+});
+
+test("every healthy page fixture renders at least one balanced box grid", () => {
+  for (const page of UI_PAGES) {
+    const result = spawnSync(
+      process.execPath,
+      ["--import", "tsx", "scripts/syncbay-ui-render.mjs", page, "--fixture", "--hydrate", "--state=healthy"],
+      { encoding: "utf8", env: buildIsolatedUiEnv(contaminatedEnv) },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    const outputPath = result.stdout.trim().split("\n").at(-1);
+    assert.ok(outputPath);
+    assert.match(readFileSync(outputPath, "utf8"), /syncbay-balanced-box-grid/u, page);
+  }
 });

@@ -55,6 +55,7 @@ Vincoli da rispettare prima di promuoverla:
 | Rimozione override `ajv` | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata. |
 | Policy production e App Store | Aperta | Esiste un deployment Vercel production per la distribuzione privata, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi. |
+| Aggiornamenti dipendenze compatibili | Separata | Valutare in un filone dedicato le minor/patch rilevate il 2026-07-13 per ESLint, TypeScript ESLint, Shopify CLI, fast-xml-parser e tsx; React Router 8, TypeScript 7 e tipi Node 26 restano major escluse. |
 
 ## Decisioni collegate
 

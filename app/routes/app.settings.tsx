@@ -11,7 +11,7 @@ import {
   SettingCard,
   type SyncBayIcon,
 } from "../components/SyncBayUi";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import {
   getImportProductStatusLabelCapitalized,
   IMPORT_PRODUCT_STATUS_VALUES,
@@ -45,6 +45,7 @@ import {
 import {
   getEbayConnectionStatusLabel,
   getEbayOAuthStartHref,
+  getNeutralUnavailableMetric,
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
@@ -135,6 +136,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       activeMappingCount: settings.sync.activeMappingCount,
       ebayStatus: settings.ebay.status,
@@ -340,6 +342,7 @@ export default function SettingsRoute() {
           settings={settings}
         />
 
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="large"
           gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))"
@@ -363,6 +366,7 @@ export default function SettingsRoute() {
             isSaving={isSaving}
           />
         </s-grid>
+        </div>
 
         <AdvancedSettingsCard
           ebayOauthHref={ebayOauthHref}
@@ -427,6 +431,8 @@ function SyncCatalogSettingsCard({
   isSaving: boolean;
   settings: SettingsState;
 }) {
+  const unavailableMetric = getNeutralUnavailableMetric();
+
   return (
     <SettingCard
       description="Quanto lasciare lavorare SyncBay in autonomia."
@@ -439,26 +445,28 @@ function SyncCatalogSettingsCard({
         Negozio: {settings.shop.domain}. Il catalogo resta eBay verso Shopify;
         la disponibilità eBay viene aggiornata solo dagli ordini Shopify pagati.
       </s-text>
+      <div className="syncbay-balanced-box-grid">
       <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))">
         <MetricTile
           detail="Ultimo aggiornamento incrementale completato."
           icon="check-circle"
           label="Ultimo aggiornamento"
-          tone={settings.sync.lastIncrementalFinishedAt ? "success" : "neutral"}
+          tone={settings.sync.lastIncrementalFinishedAt ? "success" : unavailableMetric.tone}
           value={
             settings.sync.lastIncrementalFinishedAt
               ? formatDateTime(settings.sync.lastIncrementalFinishedAt)
-              : "Mai"
+              : unavailableMetric.label
           }
         />
         <MetricTile
-          detail="Prodotti eBay attivi collegati a Shopify."
+          detail="Inserzioni eBay attive collegate a Shopify; gli esauriti non sono inclusi."
           icon="link"
-          label="Prodotti collegati"
+          label="eBay attivi"
           tone="neutral"
           value={formatNumber(settings.sync.activeMappingCount)}
         />
       </s-grid>
+      </div>
       {settings.sync.enablementBlockers.length > 0 ? (
         <s-box border="base" borderColor="base" borderRadius="base" padding="base">
           <s-stack gap="small-200">

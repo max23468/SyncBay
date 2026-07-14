@@ -136,7 +136,12 @@ quando disponibile e stampa solo stato job sanitizzato.
   Lo script rifiuta l'esecuzione se ci sono job stock/sync attivi, usa il token
   eBay cifrato senza stamparlo, verifica con Trading API `GetItem` e registra
   uno snapshot `SYNCBAY` di ripristino.
-- Vercel Web Analytics e Speed Insights sono integrati nel root React; i dati vanno abilitati/letti dal dashboard Vercel dopo visite reali.
+- Vercel Web Analytics e Speed Insights sono integrati una sola volta nel root
+  React; visite, data point, Functions e build concorrono al budget Vercel e i
+  consumi vanno letti dal dashboard dopo traffico reale. I Runtime Logs usano
+  eventi JSON allowlistati: errori e richieste lente sempre, richieste sane al
+  massimo al 5% in production. I payload loader hanno budget 128 KiB per
+  Panoramica/Attività/Impostazioni e 256 KiB per Catalogo/Conflitti/Importazione.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
 ## Supabase
@@ -235,7 +240,8 @@ Scope Shopify richiesti dal runtime 1.0:
   `orderCreate` sullo store pilota Numisleo; se manca dalla sessione offline, riaprire e
   autorizzare l'app Shopify dopo il deploy degli scope aggiornati.
 
-La schedule Cron attuale richiama il runner `/api/jobs/run-due?limit=2`. Il
+La schedule Cron attuale richiama il runner con il limite documentato nel
+checkpoint di provisioning sopra. Il
 runner applica fairness tra stock, conflitti e lavoro ordinario, usa una
 deadline interna di 70 secondi e può assorbire fino a 25 risorse Shopify
 distinte nello slot conflitti, restando entro il timeout `pg_net` di 90 secondi.

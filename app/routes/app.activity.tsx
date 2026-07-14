@@ -17,7 +17,8 @@ import {
   type SyncBayIcon,
   TimelineEvent,
 } from "../components/SyncBayUi";
-import { LiveSync, useActionToast } from "../components/SyncBayLive";
+import { LiveSync } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {
@@ -38,6 +39,7 @@ import {
   getSyncJobTone as getJobTone,
   getTimelineCategoryLabel,
   type TimelineCategoryKind,
+  getOperationalUiState,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import {
@@ -59,6 +61,7 @@ type ActivityFilter =
 type ActivityRow = {
   category: TimelineCategoryKind | "AUDIT";
   conflict?: ActivityConflict;
+  groupedCount?: number;
   detail: string;
   id: string;
   job?: ActivityJob;
@@ -96,6 +99,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
 
   logSyncBayLoaderPerformance({
+    request,
     details: {
       auditRows: activity.audit.length,
       openConflictCount: activity.conflicts.openCount,
@@ -153,6 +157,11 @@ export default function ActivityRoute() {
     openConflictCount: activity.conflicts.openCount,
     working,
   });
+  const operationalState = getOperationalUiState({
+    activeJobs: activity.sync.catalogHealth.activeIncrementalJobCount,
+    catalogStatus: activity.sync.catalogHealth.status,
+    nextDueAt: activity.sync.catalogHealth.nextDueAt,
+  });
 
   useActionToast(
     { data: actionData, state: navigation.state },
@@ -170,6 +179,7 @@ export default function ActivityRoute() {
           Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti, errori
           e note. Gli errori restano leggibili e, dove si può, riprovabili.
         </s-text>
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="base"
           gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
@@ -203,6 +213,7 @@ export default function ActivityRoute() {
             value={getCatalogHealthLabel(activity)}
           />
         </s-grid>
+        </div>
 
         <s-section heading="Timeline">
           <ActivityFilterNav activeFilter={activeFilter} />
@@ -245,16 +256,8 @@ export default function ActivityRoute() {
                   ? `${activity.sync.catalogHealth.activeIncrementalJobCount} job incrementali attivi.`
                   : "Nessun job incrementale attivo."
               }
-              label={
-                activity.sync.catalogHealth.activeIncrementalJobCount > 0
-                  ? "In corso"
-                  : "Fermo"
-              }
-              tone={
-                activity.sync.catalogHealth.activeIncrementalJobCount > 0
-                  ? "info"
-                  : "success"
-              }
+              label={operationalState.runnerLabel}
+              tone={operationalState.runnerTone}
               icon="refresh"
               title="Aggiornamento automatico"
             />
@@ -347,6 +350,14 @@ function ActivityTimelineRow({
               diagnostic={diagnostic}
               job={row.job}
             />
+          ) : null}
+          {row.type === "audit" && (row.groupedCount ?? 1) > 1 ? (
+            <details className="syncbay-row-details">
+              <summary>Dettagli raggruppamento</summary>
+              <s-text color="subdued">
+                {row.groupedCount} note identiche dello stesso tipo registrate nello stesso minuto.
+              </s-text>
+            </details>
           ) : null}
         </s-stack>
         <div className="syncbay-activity-row__status">
@@ -459,9 +470,17 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       type: "job" as const,
     };
   });
-  const auditRows = activity.audit.map((event) => ({
+  const auditGroups = new Map<string, { count: number; event: Activity["audit"][number] }>();
+  for (const event of activity.audit) {
+    const minute = event.createdAt.slice(0, 16);
+    const key = `${event.type}:${minute}:${event.message}`;
+    const existing = auditGroups.get(key);
+    auditGroups.set(key, existing ? { count: existing.count + 1, event: existing.event } : { count: 1, event });
+  }
+  const auditRows = [...auditGroups.values()].map(({ count, event }) => ({
     category: "AUDIT" as const,
-    detail: event.message,
+    detail: count > 1 ? `${event.message} (${count} eventi raggruppati)` : event.message,
+    groupedCount: count,
     id: `audit-${event.type}-${event.createdAt}`,
     meta: "Sistema",
     timestamp: event.createdAt,
@@ -636,15 +655,11 @@ function getActivityToneLabel(tone: ActivityRow["tone"]) {
 }
 
 function getCatalogHealthLabel(activity: Activity) {
-  const status = activity.sync.catalogHealth.status;
-
-  if (status === "disabled") return "Non attivo";
-  if (status === "due") return "Da eseguire";
-  if (status === "fresh") return "Aggiornato";
-  if (status === "overdue") return "In ritardo";
-  if (status === "running") return "In corso";
-
-  return "Da controllare";
+  return getOperationalUiState({
+    activeJobs: activity.sync.catalogHealth.activeIncrementalJobCount,
+    catalogStatus: activity.sync.catalogHealth.status,
+    nextDueAt: activity.sync.catalogHealth.nextDueAt,
+  }).catalogLabel;
 }
 
 function getCatalogHealthTone(activity: Activity): ActivityRow["tone"] {

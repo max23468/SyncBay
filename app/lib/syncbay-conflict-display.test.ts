@@ -34,6 +34,6 @@ test("does not expose description hashes as merchant-facing values", () => {
 test("keeps missing values explicit", () => {
   assert.equal(
     formatConflictValueForDisplay({ field: "description", value: null }),
-    "Non disponibile",
+    "Dato non disponibile",
   );
 });
