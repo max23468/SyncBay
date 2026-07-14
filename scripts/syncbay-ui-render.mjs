@@ -409,7 +409,17 @@ function getAttribute(attrs, name) {
 }
 
 function stripTags(value) {
-  return value.replace(/<[^>]*>/g, "");
+  // Ripete finche' la stringa non cambia: un solo passaggio puo' lasciare tag
+  // ricomposti dalla rimozione (es. `<<b>>` -> `<b>`).
+  let current = value;
+  let previous = "";
+
+  while (current !== previous) {
+    previous = current;
+    current = current.replace(/<[^>]*>/g, "");
+  }
+
+  return current;
 }
 
 function escapeHtml(value) {

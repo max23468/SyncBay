@@ -64,3 +64,14 @@ test("applies full html and text-only description modes", () => {
   assert.equal(textOnly.wasChanged, true);
   assert.ok(textOnly.removedPercent > 0);
 });
+
+test("text-only non fa doppio unescape delle entita' gia' escapate", () => {
+  const textOnly = applyDescriptionRuleToHtml({
+    cleanedHtml: null,
+    html: "<p>Prezzo &amp;lt;100&amp;gt; &amp;amp; sconto</p>",
+    mode: "TEXT_ONLY",
+  });
+
+  // `&amp;lt;` deve restare il testo letterale `&lt;`, non diventare `<`.
+  assert.equal(textOnly.html, "Prezzo &lt;100&gt; &amp; sconto");
+});

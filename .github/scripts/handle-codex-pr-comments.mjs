@@ -627,9 +627,23 @@ function getFirstCodexComment(thread) {
 function firstLine(value) {
   return value
     .split("\n")
-    .map((line) => line.replace(/<[^>]+>/g, "").trim())
+    .map((line) => stripHtmlTags(line).trim())
     .find(Boolean)
     ?.slice(0, 160);
+}
+
+// Rimuove i tag ripetendo finche' la stringa non cambia: un singolo passaggio
+// puo' ricomporre un tag (es. `<<x>script>` -> `<script>`).
+function stripHtmlTags(value) {
+  let current = value;
+  let previous = "";
+
+  while (current !== previous) {
+    previous = current;
+    current = current.replace(/<[^>]+>/g, "");
+  }
+
+  return current;
 }
 
 async function readGitHubEventPayload() {

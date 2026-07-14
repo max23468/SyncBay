@@ -113,8 +113,8 @@ function htmlToPlainText(html: string) {
   return normalizePlainText(
     decodeBasicHtmlEntities(
       html
-        .replace(/<script[\s\S]*?<\/script>/giu, " ")
-        .replace(/<style[\s\S]*?<\/style>/giu, " ")
+        .replace(/<script[\s\S]*?<\/script\s*>/giu, " ")
+        .replace(/<style[\s\S]*?<\/style\s*>/giu, " ")
         .replace(/<[^>]+>/gu, " ")
         .replace(/\s+/gu, " ")
         .trim(),
@@ -127,13 +127,15 @@ function normalizePlainText(value: string) {
 }
 
 function decodeBasicHtmlEntities(value: string) {
+  // `&amp;` va decodificato per ultimo: farlo prima trasformerebbe un input
+  // gia' escapato come `&amp;lt;` in `&lt;` e poi in `<`, un doppio unescape.
   return value
     .replace(/&nbsp;/giu, " ")
-    .replace(/&amp;/giu, "&")
     .replace(/&lt;/giu, "<")
     .replace(/&gt;/giu, ">")
     .replace(/&quot;/giu, '"')
-    .replace(/&#39;/giu, "'");
+    .replace(/&#39;/giu, "'")
+    .replace(/&amp;/giu, "&");
 }
 
 function getRemovedPercent(
