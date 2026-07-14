@@ -298,6 +298,7 @@ function normalizeSuggestedChecks(suggestions, base) {
       "npm run typecheck:raw",
       "npm run build:raw",
       "npm run test:services:raw",
+      "npm run test:tooling",
     ].includes(label),
   );
   if (needsPrisma) normalizedLabels.unshift("npm run prisma:generate");

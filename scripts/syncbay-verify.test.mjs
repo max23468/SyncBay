@@ -127,7 +127,11 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run prisma:validate", "npm run test:tooling"],
+    [
+      "npm run prisma:generate",
+      "npm run prisma:validate",
+      "npm run test:tooling",
+    ],
   );
   assert.deepEqual(plan.manualChecks, ["npm run db:verify"]);
 });
