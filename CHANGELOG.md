@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- `publish:complete` considera pubblicata una release solo in presenza della
+  GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
+  e la creazione della Release ora viene completato invece che saltato, e i
+  passi di tag e push sono idempotenti sui retry.
+
 ## [1.0.66] — 2026-07-15
 
 ### Correzioni
