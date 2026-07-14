@@ -414,6 +414,8 @@ async function verifyReducedMotion(browser, origin) {
 async function verifyNavigationFocus(browser, origin) {
   const context = await browser.newContext({ viewport: { width: 1024, height: 900 } });
   const page = await context.newPage();
+  const problems = [];
+  installBrowserObservers(page, origin, problems);
   try {
     await page.goto(`${origin}/__syncbay-ui__/panoramica/healthy`, {
       waitUntil: "domcontentloaded",
@@ -431,6 +433,9 @@ async function verifyNavigationFocus(browser, origin) {
           document.querySelector("[data-syncbay-route-content]") &&
         document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "false",
     );
+    if (problems.length > 0) {
+      throw new Error(`focus navigazione: ${problems.join("; ")}`);
+    }
   } finally {
     await context.close();
   }
@@ -439,6 +444,8 @@ async function verifyNavigationFocus(browser, origin) {
 async function verifySubmissionFocus(browser, origin) {
   const context = await browser.newContext({ viewport: { width: 1024, height: 900 } });
   const page = await context.newPage();
+  const problems = [];
+  installBrowserObservers(page, origin, problems);
   try {
     await page.goto(`${origin}/__syncbay-ui__/impostazioni/healthy`, {
       waitUntil: "domcontentloaded",
@@ -456,6 +463,9 @@ async function verifySubmissionFocus(browser, origin) {
           document.querySelector("[data-syncbay-route-content]") &&
         document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "false",
     );
+    if (problems.length > 0) {
+      throw new Error(`focus submit: ${problems.join("; ")}`);
+    }
   } finally {
     await context.close();
   }
