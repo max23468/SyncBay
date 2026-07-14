@@ -18,6 +18,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Aggiunto `publish:complete`, che attende solo i check richiesti, esegue merge,
   verifica il deploy Production quando applicabile e crea tag/GitHub Release
   solo in presenza di un incremento SemVer.
+- Il browser check installa gli observer anche nei percorsi di focus di
+  navigazione e submit: errori pagina o console dopo il click non passano più
+  inosservati e fanno fallire il gate.
 
 ## [1.0.63] — 2026-07-14
 
