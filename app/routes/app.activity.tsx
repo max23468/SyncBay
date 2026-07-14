@@ -17,7 +17,8 @@ import {
   type SyncBayIcon,
   TimelineEvent,
 } from "../components/SyncBayUi";
-import { LiveSync, useActionToast } from "../components/SyncBayLive";
+import { LiveSync } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {

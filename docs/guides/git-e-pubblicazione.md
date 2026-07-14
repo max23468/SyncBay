@@ -16,8 +16,10 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, `Verifica proporzionata` e dal check
   minimale separato del titolo Conventional Commit.
-- React Doctor `latest`, Doppler, CodeQL, Vercel e inbox Codex restano check
-  mirati o advisory e non bloccano indiscriminatamente ogni PR.
+- React Doctor `latest` resta advisory: pubblica score e review sui file React
+  cambiati, ma i finding non generano un run fallito; fallisce soltanto se lo
+  scanner non riesce a completarsi. Doppler, CodeQL, Vercel e inbox Codex
+  restano check mirati o advisory e non bloccano indiscriminatamente ogni PR.
 
 ## Regola base
 

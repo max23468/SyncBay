@@ -40,11 +40,14 @@ jobs:
         with:
           node-version: 24
           version: latest
-          blocking: error
+          # I finding sono advisory: score e review restano visibili, ma non
+          # generano un run rosso. Errori operativi dello scanner continuano a
+          # fallire l'action.
+          blocking: none
           scope: changed
           # Niente commento riassuntivo "sticky": le PR pulite non ricevono
-          # commenti. L'action mantiene il gate sui file cambiati nelle PR e
-          # usa Node 24 senza cache package-manager interna.
+          # commenti. L'action analizza i file cambiati nelle PR e usa Node 24
+          # senza cache package-manager interna.
           comment: false
           review-comments: true
 

@@ -11,7 +11,7 @@ import {
   SettingCard,
   type SyncBayIcon,
 } from "../components/SyncBayUi";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import {
   getImportProductStatusLabelCapitalized,
   IMPORT_PRODUCT_STATUS_VALUES,

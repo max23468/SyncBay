@@ -18,7 +18,7 @@ import {
   ShopifyMark,
   StatusHero,
 } from "../components/SyncBayUi";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import {
   getConflictActionLabel,
   getConflictFieldLabel,

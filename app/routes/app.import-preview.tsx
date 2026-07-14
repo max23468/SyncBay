@@ -15,7 +15,7 @@ import {
 import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
 import { ExistingCatalogTakeoverSection } from "../components/ExistingCatalogTakeoverSection";
 import { AfterImportSection as ExtractedAfterImportSection, DraftImportSection as ExtractedDraftImportSection, ImportTechnicalDetails as ExtractedImportTechnicalDetails } from "../components/ImportExecutionSections";
-import { useActionToast } from "../components/SyncBayLive";
+import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
 import {

@@ -16,37 +16,6 @@ import { useRevalidator } from "react-router";
 
 import { showSyncBayToast } from "./syncbay-toast";
 
-type ActionToastResult = { isError?: boolean; message: string } | null;
-
-/**
- * Hook condiviso per il feedback delle azioni (ADR 0014): quando una `fetcher`
- * di azione si completa, deriva il messaggio dal risultato e mostra un toast.
- * Da usare nelle superfici con azioni (Conflitti, Attività, ...): evita di
- * reinventare il pattern pagina per pagina. Si attiva una sola volta per
- * risultato nuovo.
- */
-export function useActionToast<T>(
-  fetcher: { data: T | undefined; state: string },
-  getToast: (data: T) => ActionToastResult,
-) {
-  const lastDataRef = useRef<T | undefined>(undefined);
-
-  useEffect(() => {
-    if (
-      fetcher.state !== "idle" ||
-      fetcher.data === undefined ||
-      fetcher.data === lastDataRef.current
-    ) {
-      return;
-    }
-    lastDataRef.current = fetcher.data;
-    const result = getToast(fetcher.data);
-    if (result) {
-      showSyncBayToast(result.message, { isError: result.isError });
-    }
-  }, [fetcher.state, fetcher.data, getToast]);
-}
-
 type LiveSyncProps = {
   intervalMs?: number;
   nextRevalidateAt?: string | null;
