@@ -91,9 +91,14 @@ async function runCompletePublish(args) {
     runGit(["show", "origin/main:app/lib/version.ts"]),
   );
   const candidateTag = currentVersion ? `v${currentVersion}` : null;
+  // Il segnale di release completata e' la GitHub Release, non il tag: un tentativo
+  // interrotto fra `git push origin <tag>` e `gh release create` lascia il tag su
+  // origin senza Release, e fermarsi sul tag renderebbe definitiva quella lacuna.
   const releaseAlreadyPublished = candidateTag
     ? Boolean(
-        runGit(["ls-remote", "--tags", "origin", `refs/tags/${candidateTag}`]),
+        runGh(["release", "view", candidateTag, "--json", "tagName"], {
+          allowFailure: true,
+        }),
       )
     : false;
   const plan = buildPublishPlan({
@@ -146,8 +151,14 @@ async function runCompletePublish(args) {
   }
 
   if (plan.release) {
-    runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
-    runInherited("git", ["push", "origin", plan.tag]);
+    // Ogni passo e' idempotente: un retry dopo un tag gia' creato o gia' spinto
+    // deve arrivare comunque a pubblicare la GitHub Release mancante.
+    if (!runGit(["tag", "--list", plan.tag])) {
+      runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
+    }
+    if (!runGit(["ls-remote", "--tags", "origin", `refs/tags/${plan.tag}`])) {
+      runInherited("git", ["push", "origin", plan.tag]);
+    }
     runInherited("gh", [
       "release",
       "create",

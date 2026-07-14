@@ -62,6 +62,24 @@ test("reads the canonical application version", () => {
   );
 });
 
+test("treats the GitHub Release, not the pushed tag, as the release signal", () => {
+  const source = fs.readFileSync(
+    new URL("./syncbay-publish-complete.mjs", import.meta.url),
+    "utf8",
+  );
+
+  // Un tag spinto senza Release non deve far saltare la pubblicazione: la sonda
+  // deve interrogare `gh release view`, non `git ls-remote`.
+  assert.match(source, /runGh\(\["release", "view", candidateTag/);
+  assert.doesNotMatch(
+    source,
+    /releaseAlreadyPublished\s*=\s*candidateTag\s*\?\s*Boolean\(\s*runGit\(\["ls-remote"/,
+  );
+  // I passi di tag e push restano idempotenti sui retry.
+  assert.match(source, /if \(!runGit\(\["tag", "--list", plan\.tag\]\)\)/);
+  assert.match(source, /if \(!runGit\(\["ls-remote", "--tags", "origin"/);
+});
+
 test("merges through the remote repository and can resume an existing merge", () => {
   const source = fs.readFileSync(
     new URL("./syncbay-publish-complete.mjs", import.meta.url),
