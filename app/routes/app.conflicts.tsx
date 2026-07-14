@@ -190,50 +190,45 @@ export default function ConflictsRoute() {
           tone={hasOpen ? "warning" : "success"}
         />
 
-        <s-query-container>
-        <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="@container (inline-size > 640px) 1fr 1fr, 1fr"
-        >
-          <MetricTile
-            detail="Aspettano una tua scelta."
-            icon="alert-triangle"
-            label="Aperti"
-            tone={hasOpen ? "warning" : "neutral"}
-            value={formatNumber(conflicts.summary.openCount)}
-          />
-          <MetricTile
-            detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
-            icon="check-circle"
-            label="Sicuri"
-            tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
-            value={formatNumber(conflicts.summary.batchSafeCount)}
-          />
-          <MetricTile
-            detail="Titoli e immagini: guardali prima di applicarli a tutti."
-            icon="alert-circle"
-            label="Da rivedere"
-            tone={conflicts.summary.guardedCount > 0 ? "warning" : "neutral"}
-            value={formatNumber(conflicts.summary.guardedCount)}
-          />
-          <MetricTile
-            detail="Prezzo, quantità, stato o SKU: da decidere caso per caso."
-            icon="settings"
-            label="Da decidere"
-            tone={conflicts.summary.manualOnlyCount > 0 ? "info" : "neutral"}
-            value={formatNumber(conflicts.summary.manualOnlyCount)}
-          />
-          <MetricTile
-            detail="Tutti i conflitti rilevati, aperti e già risolti."
-            icon="inventory"
-            label="Totale"
-            tone="info"
-            value={formatNumber(conflicts.summary.totalCount)}
-          />
-        </s-grid>
+        <div className="syncbay-balanced-box-grid syncbay-balanced-box-grid--five">
+          <s-grid gap="base" gridTemplateColumns="repeat(5, minmax(0, 1fr))">
+            <MetricTile
+              detail="Aspettano una tua scelta."
+              icon="alert-triangle"
+              label="Aperti"
+              tone={hasOpen ? "warning" : "neutral"}
+              value={formatNumber(conflicts.summary.openCount)}
+            />
+            <MetricTile
+              detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
+              icon="check-circle"
+              label="Sicuri"
+              tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
+              value={formatNumber(conflicts.summary.batchSafeCount)}
+            />
+            <MetricTile
+              detail="Titoli e immagini: guardali prima di applicarli a tutti."
+              icon="alert-circle"
+              label="Da rivedere"
+              tone={conflicts.summary.guardedCount > 0 ? "warning" : "neutral"}
+              value={formatNumber(conflicts.summary.guardedCount)}
+            />
+            <MetricTile
+              detail="Prezzo, quantità, stato o SKU: da decidere caso per caso."
+              icon="settings"
+              label="Da decidere"
+              tone={conflicts.summary.manualOnlyCount > 0 ? "info" : "neutral"}
+              value={formatNumber(conflicts.summary.manualOnlyCount)}
+            />
+            <MetricTile
+              detail="Tutti i conflitti rilevati, aperti e già risolti."
+              icon="inventory"
+              label="Totale"
+              tone="info"
+              value={formatNumber(conflicts.summary.totalCount)}
+            />
+          </s-grid>
         </div>
-        </s-query-container>
 
         {hasOpen && safeCount > 0 ? (
           <div className="syncbay-risk syncbay-risk--clear">

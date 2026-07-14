@@ -13,6 +13,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
   segreto. Cambia la chiave corrispondente nell'output `--json`.
 
+## [1.0.65] — 2026-07-15
+
+### Correzioni
+
+- Allineate sulla stessa riga le cinque metriche di Conflitti negli spazi
+  desktop, mantenendo due colonne su tablet e una su mobile.
+
 ## [1.0.64] — 2026-07-15
 
 ### Correzioni
@@ -3631,6 +3638,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.65]: #1065--2026-07-15
 [1.0.64]: #1064--2026-07-15
 [1.0.63]: #1063--2026-07-14
 [1.0.62]: #1062--2026-07-13

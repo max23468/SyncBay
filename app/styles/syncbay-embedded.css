@@ -389,6 +389,14 @@ s-section {
   grid-column: 1 / -1;
 }
 
+.syncbay-balanced-box-grid--five > s-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+.syncbay-balanced-box-grid--five > s-grid > :last-child:nth-child(odd) {
+  grid-column: auto;
+}
+
 .syncbay-table-wrap {
   max-inline-size: 100%;
   min-inline-size: 0;
@@ -419,6 +427,16 @@ s-section {
 
   .syncbay-route-pending__surface {
     inline-size: 100%;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1099px) {
+  .syncbay-balanced-box-grid--five > s-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .syncbay-balanced-box-grid--five > s-grid > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 
