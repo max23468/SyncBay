@@ -190,10 +190,11 @@ export default function ConflictsRoute() {
           tone={hasOpen ? "warning" : "success"}
         />
 
+        <s-query-container>
         <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+          gridTemplateColumns="@container (inline-size > 640px) 1fr 1fr, 1fr"
         >
           <MetricTile
             detail="Aspettano una tua scelta."
@@ -232,6 +233,7 @@ export default function ConflictsRoute() {
           />
         </s-grid>
         </div>
+        </s-query-container>
 
         {hasOpen && safeCount > 0 ? (
           <div className="syncbay-risk syncbay-risk--clear">
