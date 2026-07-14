@@ -32,17 +32,20 @@ async function main() {
   const supabaseUrl = normalizeSupabaseUrl(
     args.supabaseUrl ?? process.env.SUPABASE_URL ?? `https://${projectRef}.supabase.co`,
   );
-  const apiKey = await resolveSupabaseApiKey(projectRef);
-  const headers = buildSupabaseServiceHeaders(apiKey.value);
+  // Separa subito etichetta e valore: `resolvedFrom` e' solo provenienza e
+  // finisce nel report stampato, `apiKeyValue` resta confinato negli header.
+  const { source: resolvedFrom, value: apiKeyValue } =
+    await resolveSupabaseApiKey(projectRef);
+  const headers = buildSupabaseServiceHeaders(apiKeyValue);
   const checks = await Promise.all(
     SUPABASE_HTTP_SERVICE_CHECKS.map((check) =>
       probeSupabaseService({ check, headers, supabaseUrl }),
     ),
   );
   const report = {
-    apiKeySource: apiKey.source,
     ok: checks.every((check) => check.status === "healthy"),
     projectRef,
+    resolvedFrom,
     services: checks,
     supabaseUrl,
   };
@@ -202,7 +205,7 @@ function printReport(report) {
   console.log("SyncBay Supabase HTTP services");
   console.log(`- project: ${report.projectRef}`);
   console.log(`- url: ${report.supabaseUrl}`);
-  console.log(`- API key: ${report.apiKeySource} (valore non stampato)`);
+  console.log(`- API key: ${report.resolvedFrom} (valore non stampato)`);
 
   for (const service of report.services) {
     const reason = service.reason ? `, ${service.reason}` : "";

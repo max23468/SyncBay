@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
+  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
+  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
+  segreto. Cambia la chiave corrispondente nell'output `--json`.
+
 ## [1.0.64] — 2026-07-15
 
 ### Correzioni
