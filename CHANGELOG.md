@@ -23,9 +23,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - `npm run release` si ferma quando `[Non rilasciato]` contiene testo prima
   della prima sezione `###`: prima quel testo non apparteneva ad alcuna
   categoria e spariva in silenzio dal changelog durante il rilascio.
-- `publish:complete` riusa un tag già presente solo se punta al commit di merge
-  appena completato: un tag rimasto da un tentativo precedente non viene più
-  spinto così com'è, evitando una GitHub Release attaccata al commit sbagliato.
+- `publish:complete` riusa un tag già presente, in locale o su origin, solo se
+  punta al commit di merge appena completato: un tag rimasto da un tentativo
+  precedente non porta più la GitHub Release sul commit sbagliato. Il confronto
+  legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
+  vale anche per i tag annotati.
 
 ## [1.0.68] — 2026-07-15
 

@@ -47,18 +47,45 @@ export function readVersionFromSource(source) {
   return source?.match(/APP_VERSION\s*=\s*["']([^"']+)["']/)?.[1] ?? null;
 }
 
+// Su un tag annotato `ls-remote` riporta due righe: quella semplice porta lo sha
+// dell'oggetto tag, solo quella dereferenziata `^{}` porta il commit. Un tag
+// leggero ha la sola riga semplice, gia' sul commit.
+export function parseRemoteTagSha(lsRemoteOutput) {
+  let plain = "";
+  let dereferenced = "";
+
+  for (const line of lsRemoteOutput.split(/\r?\n/)) {
+    const [sha, ref] = line.trim().split(/\s+/);
+    if (!sha || !ref) continue;
+    if (ref.endsWith("^{}")) dereferenced = sha;
+    else plain = sha;
+  }
+
+  return dereferenced || plain;
+}
+
 // Un tag rimasto da un tentativo precedente puo' puntare a un commit diverso dal
 // merge appena completato. `gh release create --target` usa il target solo se il
-// tag non esiste ancora, quindi riusarlo pubblicherebbe la Release sul commit
-// sbagliato: senza corrispondenza ci si ferma e decide il maintainer.
-export function resolveTagAction({ localTagSha, mergeSha, tag }) {
-  if (!localTagSha) return "create";
-  if (localTagSha === mergeSha) return "reuse";
+// tag non esiste ancora: qualunque tag gia' presente, in locale o su origin,
+// verrebbe usato com'e' e porterebbe la Release sul commit sbagliato. Il tag
+// remoto e' quello che vince sulla Release, quindi va confrontato anche quando
+// in locale non c'e' nulla.
+export function planTagPublication({ localTagSha, remoteTagSha, mergeSha, tag }) {
+  if (remoteTagSha && remoteTagSha !== mergeSha) {
+    throw new Error(
+      `Il tag ${tag} esiste già su origin sul commit ${remoteTagSha.slice(0, 12)}, diverso dal merge ${mergeSha.slice(0, 12)}. ` +
+        `La GitHub Release seguirebbe il tag remoto e non il merge. Verifica cosa è già stato rilasciato con quel tag prima di toccarlo: se è pubblicato per errore va deciso a mano se spostarlo o rilasciare una nuova versione.`,
+    );
+  }
 
-  throw new Error(
-    `Il tag ${tag} esiste già in locale su ${localTagSha.slice(0, 12)} ma il merge è ${mergeSha.slice(0, 12)}. ` +
-      `Verifica quale commit deve essere rilasciato, poi elimina il tag errato con "git tag -d ${tag}" e ripeti la pubblicazione.`,
-  );
+  if (localTagSha && localTagSha !== mergeSha) {
+    throw new Error(
+      `Il tag ${tag} esiste già in locale su ${localTagSha.slice(0, 12)} ma il merge è ${mergeSha.slice(0, 12)}. ` +
+        `Verifica quale commit deve essere rilasciato, poi elimina il tag errato con "git tag -d ${tag}" e ripeti la pubblicazione.`,
+    );
+  }
+
+  return { createTag: !localTagSha, pushTag: !remoteTagSha };
 }
 
 async function runCompletePublish(args) {
@@ -170,10 +197,15 @@ async function runCompletePublish(args) {
     const localTagSha = runGit(["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`], {
       allowFailure: true,
     });
-    if (resolveTagAction({ localTagSha, mergeSha, tag: plan.tag }) === "create") {
+    const remoteTagSha = parseRemoteTagSha(
+      runGit(["ls-remote", "--tags", "origin", `refs/tags/${plan.tag}`, `refs/tags/${plan.tag}^{}`]),
+    );
+    const tagPlan = planTagPublication({ localTagSha, remoteTagSha, mergeSha, tag: plan.tag });
+
+    if (tagPlan.createTag) {
       runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
     }
-    if (!runGit(["ls-remote", "--tags", "origin", `refs/tags/${plan.tag}`])) {
+    if (tagPlan.pushTag) {
       runInherited("git", ["push", "origin", plan.tag]);
     }
     runInherited("gh", [
