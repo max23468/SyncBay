@@ -26,6 +26,14 @@ export const UI_BROWSER_VIEWPORTS = [
   { width: 390, height: 844 },
 ];
 
+// L'app gira embedded in Shopify admin: lo spazio reale e' quello del
+// contenitore, non della finestra. Rendendo le fixture in standalone i due
+// coincidono, quindi un layout keyato sul viewport sembra corretto anche
+// quando da embedded e' gia' collassato. Queste larghezze stringono il
+// contenitore tenendo la finestra larga, che e' la condizione in cui le
+// metriche Conflitti impilavano le lettere in verticale.
+export const UI_NARROW_CONTAINER_WIDTHS = [380, 700];
+
 export const UI_BROWSER_SCENARIOS = [
   { page: "panoramica", state: "empty" },
   { page: "panoramica", state: "loading" },
@@ -58,6 +66,9 @@ export async function runUiBrowserCheck() {
         });
       }
       await verifyZoom(browser, origin, pageName);
+      for (const containerWidth of UI_NARROW_CONTAINER_WIDTHS) {
+        await verifyNarrowContainer(browser, origin, pageName, containerWidth);
+      }
     }
 
     for (const scenario of UI_BROWSER_SCENARIOS) {
@@ -72,7 +83,7 @@ export async function runUiBrowserCheck() {
     await verifyNavigationFocus(browser, origin);
     await verifySubmissionFocus(browser, origin);
     console.log(
-      `UI browser verificate: ${UI_PAGES.length} pagine x ${UI_BROWSER_VIEWPORTS.length} viewport, zoom 200%, ${UI_BROWSER_SCENARIOS.length} stati, focus navigazione e submit`,
+      `UI browser verificate: ${UI_PAGES.length} pagine x ${UI_BROWSER_VIEWPORTS.length} viewport, zoom 200%, contenitore stretto ${UI_NARROW_CONTAINER_WIDTHS.join("/")}px, ${UI_BROWSER_SCENARIOS.length} stati, focus navigazione e submit`,
     );
     return 0;
   } finally {
@@ -189,6 +200,35 @@ async function verifyPage(browser, origin, input) {
   }
 }
 
+async function verifyNarrowContainer(browser, origin, pageName, containerWidth) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const page = await context.newPage();
+  const problems = [];
+  installBrowserObservers(page, origin, problems);
+
+  try {
+    await page.goto(`${origin}/__syncbay-ui__/${pageName}/healthy`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.waitForFunction(
+      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+    );
+    // La finestra resta larga: stringiamo solo il contenitore dell'app.
+    await page.evaluate((width) => {
+      const root = document.querySelector("#syncbay-ui-root");
+      root.style.inlineSize = `${width}px`;
+    }, containerWidth);
+    problems.push(...(await inspectRenderedPage(page, { pageName, state: "healthy" })));
+    if (problems.length > 0) {
+      throw new Error(
+        `${pageName}/healthy contenitore ${containerWidth}px: ${problems.join("; ")}`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 function installBrowserObservers(page, origin, problems) {
   page.on("pageerror", (error) => problems.push(`pageerror: ${error.message}`));
   page.on("console", (message) => {
@@ -214,7 +254,7 @@ function installBrowserObservers(page, origin, problems) {
 }
 
 async function inspectRenderedPage(page, input) {
-  return page.evaluate(({ pageName, state, viewport }) => {
+  return page.evaluate(({ pageName, state }) => {
     const problems = [];
     const root = document.querySelector("#syncbay-ui-root");
     const scenario = document.querySelector("[data-fixture-scenario]");
@@ -265,31 +305,35 @@ async function inspectRenderedPage(page, input) {
     if (state === "healthy" && balancedGrids.length === 0) {
       problems.push("griglia bilanciata assente");
     }
+    // Le colonne non si contano piu' contro il viewport: l'app gira embedded,
+    // dove il contenitore e' piu' stretto della finestra e un'attesa keyata sul
+    // viewport tornerebbe verde mentre la griglia e' gia' schiacciata. Si
+    // verifica l'invariante osservabile: nessun box scende sotto la larghezza
+    // in cui il testo resta leggibile, a meno che sia il contenitore stesso a
+    // non concederla.
+    const MIN_BOX_INLINE_SIZE = 120;
     for (const grid of balancedGrids) {
-      const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length;
-      const compact = grid.parentElement?.classList.contains("syncbay-balanced-box-grid--compact-three");
-      const five = grid.parentElement?.classList.contains("syncbay-balanced-box-grid--five");
-      const expected =
-        viewport.width <= 640
-          ? 1
-          : five
-            ? viewport.width >= 1100
-              ? 5
-              : 2
-            : compact && viewport.width >= 1100
-              ? 3
-              : 2;
-      const gridKind = five ? "a cinque" : compact ? "compatta" : "standard";
-      if (columns !== expected) problems.push(`griglia ${gridKind}: ${columns} colonne invece di ${expected}`);
-      const children = [...grid.children];
-      if (
-        viewport.width > 640 &&
-        children.length % 2 === 1 &&
-        !((compact || five) && viewport.width >= 1100)
-      ) {
-        const gridWidth = grid.getBoundingClientRect().width;
-        const lastWidth = children.at(-1)?.getBoundingClientRect().width ?? 0;
-        if (lastWidth < gridWidth * 0.9) problems.push("ultimo box dispari non esteso a tutta riga");
+      const gridWidth = grid.getBoundingClientRect().width;
+      for (const child of grid.children) {
+        const childWidth = child.getBoundingClientRect().width;
+        if (childWidth + 1 < Math.min(MIN_BOX_INLINE_SIZE, gridWidth)) {
+          problems.push(
+            `box della griglia largo ${Math.round(childWidth)}px: sotto i ${MIN_BOX_INLINE_SIZE}px leggibili`,
+          );
+        }
+      }
+    }
+
+    // Una label che si impila in verticale e' il sintomo con cui il difetto si
+    // manifesta: riga molto piu' alta che larga, fino al caso limite di
+    // larghezza zero. Niente guard su `width > 0` ne' su `visible`: entrambi
+    // scartano proprio la tile azzerata che qui va segnalata.
+    for (const body of document.querySelectorAll(".syncbay-tile__body")) {
+      const box = body.getBoundingClientRect();
+      if (box.height > 0 && box.height > box.width * 3) {
+        problems.push(
+          `testo tile impilato in verticale: ${Math.round(box.width)}x${Math.round(box.height)}px`,
+        );
       }
     }
 

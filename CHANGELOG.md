@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Le griglie di metriche non si schiacciano più quando lo spazio dell'app
+  embedded è stretto: le colonne erano decise da media query sul viewport della
+  finestra, che nell'app embedded non è lo spazio disponibile, e un override
+  CSS con `!important` sostituiva il `repeat(auto-fit, minmax(...))` dichiarato
+  dalle route con due colonne fisse senza larghezza minima. Nel caso peggiore,
+  visibile sulle metriche Conflitti, le tile scendevano a 55px e le etichette
+  si impilavano una lettera per riga. Le colonne tornano alle `s-grid` delle
+  route e rifluiscono sulla larghezza reale del contenitore.
+- La griglia "Collega catalogo esistente" alza il minimo per tile da 132px a
+  170px: sotto quella soglia icona, gap e padding non lasciavano al testo
+  spazio sufficiente.
+- Il gate `ui:browser-check` verifica ogni pagina anche con contenitore stretto
+  (380px e 700px) a finestra larga, la condizione dell'app embedded che il
+  render standalone non riproduceva e in cui il difetto passava inosservato.
+
 ### Non versionato
 
 - `publish:complete` considera pubblicata una release solo in presenza della

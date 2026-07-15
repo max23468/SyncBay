@@ -69,7 +69,11 @@
   border: 1px solid var(--syncbay-mist);
   border-radius: 12px;
   background: var(--syncbay-tint-neutral);
-  overflow-wrap: anywhere;
+  /* `break-word` e non `anywhere`: entrambi spezzano una parola piu' larga
+     della riga, ma `anywhere` azzera anche la min-content width, cosi' la tile
+     dichiara di poter stare in un carattere e la griglia la stringe fino a
+     impilare le lettere in verticale. Vedi il caso metriche Conflitti. */
+  overflow-wrap: break-word;
 }
 
 .syncbay-tile__icon {
@@ -377,24 +381,13 @@ s-section {
   min-inline-size: 0;
 }
 
-.syncbay-balanced-box-grid > s-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
+/* Le colonne restano dichiarate sulle s-grid delle route con
+   `repeat(auto-fit, minmax(<min>px, 1fr))`: auto-fit rifluisce sulla larghezza
+   reale del contenitore, che nell'app embedded non coincide con il viewport.
+   Qui teniamo solo la protezione anti-overflow: nessun override di colonna,
+   altrimenti il minimo per tile dichiarato dalla route andrebbe perso. */
 .syncbay-balanced-box-grid > s-grid > * {
   min-inline-size: 0;
-}
-
-.syncbay-balanced-box-grid > s-grid > :last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.syncbay-balanced-box-grid--five > s-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-}
-
-.syncbay-balanced-box-grid--five > s-grid > :last-child:nth-child(odd) {
-  grid-column: auto;
 }
 
 .syncbay-table-wrap {
@@ -403,40 +396,13 @@ s-section {
   overflow-x: auto;
 }
 
-@media (min-width: 1100px) {
-  .syncbay-balanced-box-grid--compact-three > s-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  }
-
-  .syncbay-balanced-box-grid--compact-three > s-grid > :last-child:nth-child(odd) {
-    grid-column: auto;
-  }
-}
-
 @media (max-width: 640px) {
-  .syncbay-balanced-box-grid > s-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .syncbay-balanced-box-grid > s-grid > :last-child:nth-child(odd) {
-    grid-column: auto;
-  }
   .syncbay-route-pending {
     margin-inline: 12px;
   }
 
   .syncbay-route-pending__surface {
     inline-size: 100%;
-  }
-}
-
-@media (min-width: 641px) and (max-width: 1099px) {
-  .syncbay-balanced-box-grid--five > s-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .syncbay-balanced-box-grid--five > s-grid > :last-child:nth-child(odd) {
-    grid-column: 1 / -1;
   }
 }
 
@@ -695,7 +661,7 @@ s-section {
   background: var(--syncbay-paper);
   min-inline-size: 0;
   padding: 18px 20px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .syncbay-setting__head {
@@ -744,7 +710,7 @@ s-section {
 .syncbay-setting details {
   min-inline-size: 0;
   max-inline-size: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .syncbay-setting form {

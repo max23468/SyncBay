@@ -228,16 +228,25 @@ const failures = [];
 
 const embeddedCss = fs.readFileSync("app/styles/syncbay-embedded.css", "utf8");
 for (const needle of [
-  ".syncbay-balanced-box-grid > s-grid",
-  "repeat(2, minmax(0, 1fr))",
-  ":last-child:nth-child(odd)",
-  ".syncbay-balanced-box-grid--compact-three > s-grid",
-  "repeat(3, minmax(0, 1fr))",
+  ".syncbay-balanced-box-grid > s-grid > *",
   "@media (max-width: 640px)",
-  "grid-template-columns: minmax(0, 1fr)",
   ".syncbay-table-wrap",
 ]) {
   if (!embeddedCss.includes(needle)) failures.push(`CSS embedded: manca "${needle}"`);
+}
+
+// Le colonne appartengono alle s-grid delle route, che usano auto-fit sulla
+// larghezza reale del contenitore. Un override qui rimetterebbe le tile in
+// balia del viewport, che nell'app embedded non e' lo spazio disponibile.
+for (const forbidden of [
+  "grid-template-columns: repeat(2, minmax(0, 1fr)) !important",
+  "grid-template-columns: repeat(3, minmax(0, 1fr)) !important",
+  "grid-template-columns: repeat(5, minmax(0, 1fr)) !important",
+  "overflow-wrap: anywhere",
+]) {
+  if (embeddedCss.includes(forbidden)) {
+    failures.push(`CSS embedded: "${forbidden}" schiaccia le tile sotto la soglia leggibile`);
+  }
 }
 
 const robots = fs.readFileSync("public/robots.txt", "utf8");

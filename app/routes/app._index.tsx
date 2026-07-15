@@ -244,7 +244,7 @@ export default function Index() {
           </s-stack>
         </s-box>
 
-        <div className="syncbay-balanced-box-grid syncbay-balanced-box-grid--compact-three">
+        <div className="syncbay-balanced-box-grid">
           <s-grid
             gap="base"
             gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
