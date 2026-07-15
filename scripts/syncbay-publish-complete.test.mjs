@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   buildPublishPlan,
   readVersionFromSource,
+  resolveTagAction,
 } from "./syncbay-publish-complete.mjs";
 
 test("skips deploy and release for unversioned tooling changes", () => {
@@ -55,6 +56,28 @@ test("skips release on a merged resume once the tag is already published", () =>
   );
 });
 
+test("creates the tag when no local tag exists", () => {
+  assert.equal(resolveTagAction({ localTagSha: "", mergeSha: "a".repeat(40), tag: "v1.0.64" }), "create");
+});
+
+test("reuses a local tag that already points at the merge commit", () => {
+  const mergeSha = "a".repeat(40);
+
+  assert.equal(resolveTagAction({ localTagSha: mergeSha, mergeSha, tag: "v1.0.64" }), "reuse");
+});
+
+test("refuses a stale local tag pointing away from the merge commit", () => {
+  assert.throws(
+    () =>
+      resolveTagAction({
+        localTagSha: "b".repeat(40),
+        mergeSha: "a".repeat(40),
+        tag: "v1.0.64",
+      }),
+    /Il tag v1\.0\.64 esiste già in locale su bbbbbbbbbbbb ma il merge è aaaaaaaaaaaa/,
+  );
+});
+
 test("reads the canonical application version", () => {
   assert.equal(
     readVersionFromSource('export const APP_VERSION = "1.2.3";'),
@@ -75,8 +98,9 @@ test("treats the GitHub Release, not the pushed tag, as the release signal", () 
     source,
     /releaseAlreadyPublished\s*=\s*candidateTag\s*\?\s*Boolean\(\s*runGit\(\["ls-remote"/,
   );
-  // I passi di tag e push restano idempotenti sui retry.
-  assert.match(source, /if \(!runGit\(\["tag", "--list", plan\.tag\]\)\)/);
+  // I passi di tag e push restano idempotenti sui retry, ma un tag gia' presente
+  // vale solo se punta al merge appena completato.
+  assert.match(source, /resolveTagAction\(\{ localTagSha, mergeSha, tag: plan\.tag \}\) === "create"/);
   assert.match(source, /if \(!runGit\(\["ls-remote", "--tags", "origin"/);
 });
 

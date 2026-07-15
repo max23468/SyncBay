@@ -47,6 +47,20 @@ export function readVersionFromSource(source) {
   return source?.match(/APP_VERSION\s*=\s*["']([^"']+)["']/)?.[1] ?? null;
 }
 
+// Un tag rimasto da un tentativo precedente puo' puntare a un commit diverso dal
+// merge appena completato. `gh release create --target` usa il target solo se il
+// tag non esiste ancora, quindi riusarlo pubblicherebbe la Release sul commit
+// sbagliato: senza corrispondenza ci si ferma e decide il maintainer.
+export function resolveTagAction({ localTagSha, mergeSha, tag }) {
+  if (!localTagSha) return "create";
+  if (localTagSha === mergeSha) return "reuse";
+
+  throw new Error(
+    `Il tag ${tag} esiste già in locale su ${localTagSha.slice(0, 12)} ma il merge è ${mergeSha.slice(0, 12)}. ` +
+      `Verifica quale commit deve essere rilasciato, poi elimina il tag errato con "git tag -d ${tag}" e ripeti la pubblicazione.`,
+  );
+}
+
 async function runCompletePublish(args) {
   const branch = requireCleanBranch();
   const prSelector = args.pr ? String(args.pr) : null;
@@ -153,7 +167,10 @@ async function runCompletePublish(args) {
   if (plan.release) {
     // Ogni passo e' idempotente: un retry dopo un tag gia' creato o gia' spinto
     // deve arrivare comunque a pubblicare la GitHub Release mancante.
-    if (!runGit(["tag", "--list", plan.tag])) {
+    const localTagSha = runGit(["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`], {
+      allowFailure: true,
+    });
+    if (resolveTagAction({ localTagSha, mergeSha, tag: plan.tag }) === "create") {
       runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
     }
     if (!runGit(["ls-remote", "--tags", "origin", `refs/tags/${plan.tag}`])) {
@@ -245,8 +262,8 @@ function parseArgs(rawArgs) {
   return parsed;
 }
 
-function runGit(args) {
-  return runCapture("git", args);
+function runGit(args, options) {
+  return runCapture("git", args, options);
 }
 
 function runGh(args, options) {
