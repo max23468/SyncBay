@@ -20,6 +20,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   lascia le voci `Non versionato` sotto `[Non rilasciato]`: un blocco misto non
   è più un errore e le note operative non entrano in una versione a cui non
   appartengono.
+- `npm run release` si ferma quando `[Non rilasciato]` contiene testo prima
+  della prima sezione `###`: prima quel testo non apparteneva ad alcuna
+  categoria e spariva in silenzio dal changelog durante il rilascio.
 
 ## [1.0.66] — 2026-07-15
 

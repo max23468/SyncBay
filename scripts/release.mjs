@@ -244,6 +244,12 @@ function validateSections(unreleasedBody) {
     fail("Il blocco [Non rilasciato] deve usare sezioni ### riconosciute.");
   }
 
+  if (findUnreleasedPreamble(unreleasedBody)) {
+    fail(
+      "Il blocco [Non rilasciato] contiene testo prima della prima sezione ###. La release non saprebbe a quale categoria appartiene: spostalo sotto Novità, Correzioni, Sotto il cofano, Rimosso oppure Non versionato.",
+    );
+  }
+
   if (unknownSections.length > 0) {
     fail(
       `Sezioni changelog non riconosciute: ${unknownSections
@@ -253,6 +259,16 @@ function validateSections(unreleasedBody) {
   }
 
   return sections;
+}
+
+// parseSections vede solo il testo a partire dal primo ###: quello scritto piu'
+// in alto non appartiene ad alcuna sezione e la ricostruzione della release lo
+// perderebbe in silenzio. Lo isoliamo per poterlo rifiutare.
+export function findUnreleasedPreamble(unreleasedBody) {
+  const firstHeading = unreleasedBody.search(/^###\s+.+$/m);
+  const preamble = firstHeading === -1 ? unreleasedBody : unreleasedBody.slice(0, firstHeading);
+
+  return sectionHasContent(preamble) ? preamble.trim() : "";
 }
 
 function parseSections(markdown) {
