@@ -6,6 +6,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Non versionato
+
+- `publish:complete` considera pubblicata una release solo in presenza della
+  GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
+  e la creazione della Release ora viene completato invece che saltato, e i
+  passi di tag e push sono idempotenti sui retry.
+- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
+  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
+  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
+  segreto. Cambia la chiave corrispondente nell'output `--json`.
+- `npm run release` porta nella nuova versione solo le sezioni versionate e
+  lascia le voci `Non versionato` sotto `[Non rilasciato]`: un blocco misto non
+  è più un errore e le note operative non entrano in una versione a cui non
+  appartengono.
+
+## [1.0.67] — 2026-07-15
+
 ### Correzioni
 
 - Le griglie di metriche non si schiacciano più quando lo spazio dell'app
@@ -22,21 +39,6 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Il gate `ui:browser-check` verifica ogni pagina anche con contenitore stretto
   (380px e 700px) a finestra larga, la condizione dell'app embedded che il
   render standalone non riproduceva e in cui il difetto passava inosservato.
-
-### Non versionato
-
-- `publish:complete` considera pubblicata una release solo in presenza della
-  GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
-  e la creazione della Release ora viene completato invece che saltato, e i
-  passi di tag e push sono idempotenti sui retry.
-- Rinominato in `resolvedFrom` il campo `apiKeySource` del report
-  `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
-  mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
-  segreto. Cambia la chiave corrispondente nell'output `--json`.
-- `npm run release` porta nella nuova versione solo le sezioni versionate e
-  lascia le voci `Non versionato` sotto `[Non rilasciato]`: un blocco misto non
-  è più un errore e le note operative non entrano in una versione a cui non
-  appartengono.
 
 ## [1.0.66] — 2026-07-15
 
@@ -3673,6 +3675,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.67]: #1067--2026-07-15
 [1.0.66]: #1066--2026-07-15
 [1.0.65]: #1065--2026-07-15
 [1.0.64]: #1064--2026-07-15
