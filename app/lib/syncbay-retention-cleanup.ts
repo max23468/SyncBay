@@ -18,7 +18,6 @@ import type { SyncBayRetentionPolicy } from "./syncbay-retention-policy";
 export interface RetentionCleanupTarget {
   area: SyncBayRetentionPolicy["area"];
   cutoff: Date;
-  label: string;
   retentionDays: number;
 }
 
@@ -50,7 +49,6 @@ export function buildRetentionCleanupPlan(input: {
           {
             area: policy.area,
             cutoff: getRetentionCutoff(policy.retentionDays, input.now),
-            label: policy.label,
             retentionDays: policy.retentionDays,
           },
         ]
