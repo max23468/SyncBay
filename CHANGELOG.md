@@ -8,6 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- ADR 0018 e `docs/data-model.md` non ripetono più le finestre di retention:
+  rimandano alla tabella di ADR 0017, unica fonte canonica. La duplicazione
+  aveva già prodotto un disallineamento dopo il passaggio degli audit webhook
+  Shopify a 14 giorni in 1.0.68.
+- La guida ai comandi di manutenzione documenta come recuperare spazio dopo una
+  cancellazione massiva: `REINDEX TABLE CONCURRENTLY` sulle tabelle calde come
+  intervento occasionale guidato da `tableSizeBytes`, con `VACUUM FULL` fuori
+  dalla maintenance automatica.
 - `publish:complete` considera pubblicata una release solo in presenza della
   GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
   e la creazione della Release ora viene completato invece che saltato, e i

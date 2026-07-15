@@ -6,12 +6,10 @@
 
 ## Contesto
 
-ADR 0017 ha fissato le finestre di retention operativa del pilota (audit
-webhook Shopify 30 giorni, audit 180 giorni, job riusciti 45 giorni, job 90,
-snapshot 180, OAuth state 7, richieste account deletion senza match 7, richieste
-account deletion collegate 365), ma lasciava esplicitamente aperto il cleanup:
-«resta da implementare o schedulare in modo esplicito prima della beta
-pubblica».
+ADR 0017 ha fissato le finestre di retention operativa del pilota, elencate
+nella tabella di quell'ADR che resta la fonte canonica, ma lasciava
+esplicitamente aperto il cleanup: «resta da implementare o schedulare in modo
+esplicito prima della beta pubblica».
 
 Finché il cleanup non è automatico, i dati scaduti restano nel runtime, in
 contraddizione con la policy dichiarata e con l'obiettivo di non accumulare dati
@@ -46,14 +44,16 @@ senza nuovi worker né workflow.
 - I job vengono cancellati solo se in stato terminale
   (`SUCCEEDED`/`FAILED`/`CANCELLED`), per non rimuovere lavoro ancora in coda.
 - I job `SUCCEEDED`, già coperti da audit sintetico e snapshot quando
-  necessario, usano la finestra più breve di 45 giorni; gli altri terminali
-  restano nella finestra ordinaria di 90 giorni.
+  necessario, usano la finestra più breve dedicata di ADR 0017; gli altri
+  terminali restano nella finestra ordinaria dei job.
 - I marker durevoli `facet-backfill-marker:*` sono esclusi dal cleanup breve:
   rappresentano lo stato di completamento del backfill e impediscono di
   rischedularlo inutilmente.
-- Gli audit `SHOPIFY_WEBHOOK_RECEIVED`, molto frequenti e derivati dai webhook
-  Shopify, usano una finestra di 30 giorni; gli audit operativi critici restano
-  a 180 giorni.
+- Gli audit ad alta frequenza o derivati da un'altra fonte durevole hanno una
+  finestra per tipo, più breve di quella generica: webhook Shopify ricevuti,
+  notifiche eBay account deletion ricevute ed esiti positivi dei job. Le
+  finestre esatte restano nella tabella di ADR 0017; gli audit operativi
+  critici usano la finestra generica.
 - Le richieste eBay account deletion `NO_MATCH` con `matchedShopCount = 0`
   seguono una finestra stretta di 7 giorni; la retention a 365 giorni esclude
   questi record e resta dedicata alle richieste non `NO_MATCH`.
@@ -61,7 +61,11 @@ senza nuovi worker né workflow.
   `SYNCBAY_RETENTION_CLEANUP_ENABLED=false`, che riporta al solo comportamento di
   pianificazione (dry-run) senza cancellare.
 - I conteggi rimossi sono loggati e inclusi nella risposta del cron, così la
-  cancellazione resta osservabile.
+  cancellazione resta osservabile. Dal 2026-07-15 il risultato della
+  maintenance include anche il peso su disco delle tabelle operative
+  principali, persistito in `MaintenanceRun.result`: la crescita è leggibile
+  senza query manuali, ma solo nel tick giornaliero che esegue davvero la
+  maintenance.
 - La maintenance conserva 14 giorni di `cron.job_run_details`; non forza
   `VACUUM FULL` e non interviene su `net._http_response` senza crescita live
   dimostrata.
