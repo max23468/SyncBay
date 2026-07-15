@@ -8,6 +8,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Rimosso il dead code dei metadati di presentazione delle policy retention:
+  `getRetentionPolicySummaryRows` non era consumata da nessuna rotta, e i campi
+  `scope` e `label` che alimentava non erano letti da alcun codice. Le policy
+  restano area più finestra; il motivo di ogni finestra vive nella tabella di
+  ADR 0017. Nessun impatto osservabile: il cleanup usa solo `area` e `cutoff`.
 - ADR 0018 e `docs/data-model.md` non ripetono più le finestre di retention:
   rimandano alla tabella di ADR 0017, unica fonte canonica. La duplicazione
   aveva già prodotto un disallineamento dopo il passaggio degli audit webhook
