@@ -6,7 +6,10 @@ interface ExistingCatalogTakeoverSectionProps {
   report: ExistingCatalogTakeoverReport;
 }
 
-const TAKEOVER_GRID_COLUMNS = "repeat(auto-fit, minmax(132px, 1fr))";
+// 170px come le altre griglie di metriche: sotto questa soglia i ~82px di
+// icona, gap e padding della MetricTile lasciano al testo cosi' poco spazio
+// che le label si impilano in verticale.
+const TAKEOVER_GRID_COLUMNS = "repeat(auto-fit, minmax(170px, 1fr))";
 
 export function ExistingCatalogTakeoverSection({
   report,

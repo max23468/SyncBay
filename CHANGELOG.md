@@ -21,6 +21,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   è più un errore e le note operative non entrano in una versione a cui non
   appartengono.
 
+## [1.0.67] — 2026-07-15
+
+### Correzioni
+
+- Le griglie di metriche non si schiacciano più quando lo spazio dell'app
+  embedded è stretto: le colonne erano decise da media query sul viewport della
+  finestra, che nell'app embedded non è lo spazio disponibile, e un override
+  CSS con `!important` sostituiva il `repeat(auto-fit, minmax(...))` dichiarato
+  dalle route con due colonne fisse senza larghezza minima. Nel caso peggiore,
+  visibile sulle metriche Conflitti, le tile scendevano a 55px e le etichette
+  si impilavano una lettera per riga. Le colonne tornano alle `s-grid` delle
+  route e rifluiscono sulla larghezza reale del contenitore.
+- La griglia "Collega catalogo esistente" alza il minimo per tile da 132px a
+  170px: sotto quella soglia icona, gap e padding non lasciavano al testo
+  spazio sufficiente.
+- Il gate `ui:browser-check` verifica ogni pagina anche con contenitore stretto
+  (380px e 700px) a finestra larga, la condizione dell'app embedded che il
+  render standalone non riproduceva e in cui il difetto passava inosservato.
+
 ## [1.0.66] — 2026-07-15
 
 ### Correzioni
@@ -3656,6 +3675,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.67]: #1067--2026-07-15
 [1.0.66]: #1066--2026-07-15
 [1.0.65]: #1065--2026-07-15
 [1.0.64]: #1064--2026-07-15
