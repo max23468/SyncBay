@@ -28,12 +28,14 @@ test("builds a plan covering every retention policy", () => {
 
   const areas = plan.map((target: { area: string }) => target.area).sort();
   assert.deepEqual(areas, [
+    "account_deletion_audit_logs",
     "account_deletion_no_match_requests",
     "account_deletion_requests",
     "audit_logs",
     "oauth_states",
     "product_snapshots",
     "shopify_webhook_audit_logs",
+    "succeeded_sync_job_audit_logs",
     "succeeded_sync_jobs",
     "sync_jobs",
   ]);
@@ -41,8 +43,8 @@ test("builds a plan covering every retention policy", () => {
   const webhookAudit = plan.find(
     (target: { area: string }) => target.area === "shopify_webhook_audit_logs",
   );
-  assert.equal(webhookAudit?.retentionDays, 30);
-  assert.equal(webhookAudit?.cutoff.toISOString(), "2026-05-21T00:00:00.000Z");
+  assert.equal(webhookAudit?.retentionDays, 14);
+  assert.equal(webhookAudit?.cutoff.toISOString(), "2026-06-06T00:00:00.000Z");
 
   const syncJobs = plan.find(
     (target: { area: string }) => target.area === "sync_jobs",

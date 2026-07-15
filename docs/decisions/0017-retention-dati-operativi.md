@@ -28,7 +28,9 @@ La retention operativa del pilota viene fissata così:
 
 | Famiglia dati | Retention | Motivo |
 | --- | ---: | --- |
-| Audit webhook Shopify ricevuti | 30 giorni | Tracce ad alta frequenza già coperte da job e audit di esito; utili per diagnosi recente ma non come storico lungo. |
+| Audit webhook Shopify ricevuti | 14 giorni | Tracce ad alta frequenza già coperte da job e audit di esito; utili per diagnosi recente ma non come storico lungo. |
+| Audit notifiche account deletion ricevute | 30 giorni | Eco ad alto volume delle notifiche eBay; la prova di trattamento resta nelle richieste account deletion dedicate. |
+| Audit job riusciti | 45 giorni | Eventi di esito positivo dei job, allineati alla finestra dei job riusciti. |
 | Audit log operativi | 180 giorni | Tracciabilità azioni, retry, connessioni e diagnosi negoziante. |
 | Job sync/import riusciti | 45 giorni | Esiti positivi recenti per diagnostica, con baseline conservate in snapshot e audit sintetici. |
 | Job sync/import | 90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito. |
@@ -55,6 +57,18 @@ baseline di sync: gli audit `SHOPIFY_WEBHOOK_RECEIVED` durano 30 giorni e i
 giorni; i job falliti, cancellati o ancora attivi restano nella finestra
 ordinaria di 90 giorni. I marker durevoli che impediscono di ripetere un facet
 backfill già completato sono esclusi dal cleanup dei job riusciti.
+
+Dal 2026-07-15, dopo il flood di notifiche eBay account deletion di
+maggio-giugno 2026 (~51.000 righe audit accumulate in un mese), altre due
+famiglie di eco audit escono dalla finestra generica a 180 giorni: gli audit
+`EBAY_ACCOUNT_DELETION_RECEIVED` durano 30 giorni (la prova di trattamento
+resta in `EbayAccountDeletionRequest` con le sue finestre dedicate) e gli audit
+`SYNC_JOB_SUCCEEDED` durano 45 giorni, allineati ai job riusciti che
+descrivono. Nella stessa revisione gli audit `SHOPIFY_WEBHOOK_RECEIVED`
+scendono da 30 a 14 giorni. La maintenance giornaliera registra inoltre nel
+proprio risultato il peso su disco (`pg_total_relation_size`) delle tabelle
+operative principali, così la crescita del database resta osservabile senza
+interrogazioni manuali.
 
 Dal rollout dell'Ondata D, `ProductSyncBaseline` riceve la stessa scrittura
 degli snapshot e resta finché esiste il mapping. `ProductSnapshotCheckpoint`

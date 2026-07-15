@@ -6,6 +6,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Sotto il cofano
+
+- Retention audit per tipo: gli audit delle notifiche eBay account deletion
+  ricevute durano 30 giorni e gli audit dei job riusciti 45 giorni, invece
+  della finestra generica a 180; gli audit dei webhook Shopify ricevuti
+  scendono da 30 a 14 giorni. La prova di trattamento privacy resta nelle
+  richieste account deletion dedicate (ADR 0017 aggiornato).
+- La maintenance giornaliera registra nel proprio risultato il peso su disco
+  delle tabelle operative principali, così la crescita del database Supabase
+  resta osservabile dal report del cron senza interrogazioni manuali.
+
 ### Non versionato
 
 - `publish:complete` considera pubblicata una release solo in presenza della

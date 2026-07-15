@@ -99,6 +99,24 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
       });
       return count;
     }
+    case "account_deletion_audit_logs": {
+      const { count } = await prisma.auditLog.deleteMany({
+        where: {
+          createdAt: { lte: target.cutoff },
+          type: AuditEventType.EBAY_ACCOUNT_DELETION_RECEIVED,
+        },
+      });
+      return count;
+    }
+    case "succeeded_sync_job_audit_logs": {
+      const { count } = await prisma.auditLog.deleteMany({
+        where: {
+          createdAt: { lte: target.cutoff },
+          type: AuditEventType.SYNC_JOB_SUCCEEDED,
+        },
+      });
+      return count;
+    }
     case "sync_jobs": {
       const { count } = await prisma.syncJob.deleteMany({
         where: {
