@@ -4,8 +4,9 @@ import test from "node:test";
 
 import {
   buildPublishPlan,
+  parseRemoteTagSha,
+  planTagPublication,
   readVersionFromSource,
-  resolveTagAction,
 } from "./syncbay-publish-complete.mjs";
 
 test("skips deploy and release for unversioned tooling changes", () => {
@@ -56,26 +57,82 @@ test("skips release on a merged resume once the tag is already published", () =>
   );
 });
 
-test("creates the tag when no local tag exists", () => {
-  assert.equal(resolveTagAction({ localTagSha: "", mergeSha: "a".repeat(40), tag: "v1.0.64" }), "create");
+const MERGE_SHA = "a".repeat(40);
+const OTHER_SHA = "b".repeat(40);
+const TAG_OBJECT_SHA = "c".repeat(40);
+
+test("creates and pushes the tag when it exists nowhere", () => {
+  assert.deepEqual(
+    planTagPublication({ localTagSha: "", remoteTagSha: "", mergeSha: MERGE_SHA, tag: "v1.0.68" }),
+    { createTag: true, pushTag: true },
+  );
 });
 
-test("reuses a local tag that already points at the merge commit", () => {
-  const mergeSha = "a".repeat(40);
+test("reuses local and remote tags that already point at the merge commit", () => {
+  assert.deepEqual(
+    planTagPublication({
+      localTagSha: MERGE_SHA,
+      remoteTagSha: MERGE_SHA,
+      mergeSha: MERGE_SHA,
+      tag: "v1.0.68",
+    }),
+    { createTag: false, pushTag: false },
+  );
+});
 
-  assert.equal(resolveTagAction({ localTagSha: mergeSha, mergeSha, tag: "v1.0.64" }), "reuse");
+test("still pushes a correct local tag that origin does not have yet", () => {
+  assert.deepEqual(
+    planTagPublication({
+      localTagSha: MERGE_SHA,
+      remoteTagSha: "",
+      mergeSha: MERGE_SHA,
+      tag: "v1.0.68",
+    }),
+    { createTag: false, pushTag: true },
+  );
 });
 
 test("refuses a stale local tag pointing away from the merge commit", () => {
   assert.throws(
     () =>
-      resolveTagAction({
-        localTagSha: "b".repeat(40),
-        mergeSha: "a".repeat(40),
-        tag: "v1.0.64",
+      planTagPublication({
+        localTagSha: OTHER_SHA,
+        remoteTagSha: "",
+        mergeSha: MERGE_SHA,
+        tag: "v1.0.68",
       }),
-    /Il tag v1\.0\.64 esiste già in locale su bbbbbbbbbbbb ma il merge è aaaaaaaaaaaa/,
+    /Il tag v1\.0\.68 esiste già in locale su bbbbbbbbbbbb ma il merge è aaaaaaaaaaaa/,
   );
+});
+
+// Il caso segnalato da Codex: checkout senza tag locale, origin con il tag su un
+// altro commit. Senza il controllo remoto il tag locale corretto non verrebbe
+// spinto e la Release seguirebbe quello stale.
+test("refuses a stale remote tag even when no local tag exists", () => {
+  assert.throws(
+    () =>
+      planTagPublication({
+        localTagSha: "",
+        remoteTagSha: OTHER_SHA,
+        mergeSha: MERGE_SHA,
+        tag: "v1.0.68",
+      }),
+    /Il tag v1\.0\.68 esiste già su origin sul commit bbbbbbbbbbbb, diverso dal merge aaaaaaaaaaaa/,
+  );
+});
+
+test("reads the commit from the dereferenced line of an annotated tag", () => {
+  const output = `${TAG_OBJECT_SHA}\trefs/tags/v1.0.68\n${MERGE_SHA}\trefs/tags/v1.0.68^{}`;
+
+  assert.equal(parseRemoteTagSha(output), MERGE_SHA);
+});
+
+test("reads the commit from the single line of a lightweight tag", () => {
+  assert.equal(parseRemoteTagSha(`${MERGE_SHA}\trefs/tags/v1.0.68`), MERGE_SHA);
+});
+
+test("reports no remote tag when ls-remote returns nothing", () => {
+  assert.equal(parseRemoteTagSha(""), "");
 });
 
 test("reads the canonical application version", () => {
@@ -99,9 +156,12 @@ test("treats the GitHub Release, not the pushed tag, as the release signal", () 
     /releaseAlreadyPublished\s*=\s*candidateTag\s*\?\s*Boolean\(\s*runGit\(\["ls-remote"/,
   );
   // I passi di tag e push restano idempotenti sui retry, ma un tag gia' presente
-  // vale solo se punta al merge appena completato.
-  assert.match(source, /resolveTagAction\(\{ localTagSha, mergeSha, tag: plan\.tag \}\) === "create"/);
-  assert.match(source, /if \(!runGit\(\["ls-remote", "--tags", "origin"/);
+  // vale solo se punta al merge: il confronto copre locale e origin, e il commit
+  // del tag remoto va letto dalla riga dereferenziata.
+  assert.match(source, /planTagPublication\(\{ localTagSha, remoteTagSha, mergeSha, tag: plan\.tag \}\)/);
+  assert.match(source, /if \(tagPlan\.createTag\)/);
+  assert.match(source, /if \(tagPlan\.pushTag\)/);
+  assert.match(source, /refs\/tags\/\$\{plan\.tag\}\^\{\}/);
 });
 
 test("merges through the remote repository and can resume an existing merge", () => {
