@@ -15,6 +15,19 @@ prodotto mancanti e `npm run history:maintain -- --dry-run` prima della
 maintenance della storia; le scritture richiedono i flag di conferma previsti
 dai rispettivi script.
 
+La retention cancella i record scaduti ma Postgres non restituisce le pagine al
+filesystem: dopo una cancellazione massiva le tabelle restano grandi e gli
+indici gonfi. Il segnale è `tableSizeBytes` nel risultato della maintenance
+giornaliera (`MaintenanceRun.result`) confrontato con le righe vive: quando il
+peso resta alto mentre le righe calano, lo spazio è occupato da bloat. In quel
+caso usa `REINDEX TABLE CONCURRENTLY "<Tabella>"` sulle tabelle calde
+(`AuditLog`, `SyncJob`, `ProductSnapshot`): è un intervento occasionale e
+opportunistico, non schedulato, che non prende lock esclusivi e può girare con
+l'app attiva. Non serve toccare autovacuum, che riusa già le pagine liberate.
+`VACUUM FULL` recupera anche l'heap ma prende un lock esclusivo e richiede
+spazio disco temporaneo pari alla tabella: resta fuori dalla maintenance
+automatica (ADR 0018) e va valutato caso per caso in finestra controllata.
+
 Per Vercel, `provider:budget` seleziona il team tramite API documentata, usa il
 piano conservativo dichiarato in `VERCEL_PLAN`, prova `vercel usage`, legge Web
 Analytics sugli ultimi 30 giorni e i data point Speed Insights disponibili.

@@ -305,6 +305,7 @@ Requisiti:
 - Nessun dato reale in test, fixture o documenti.
 - Messa in esaurito su Shopify, non cancellazione automatica, quando un listing eBay sparisce.
 - Snapshot e mapping sono necessari per rollback e diagnostica.
-- Retention operativa secondo ADR 0017: audit log 180 giorni, job 90 giorni,
-  snapshot 180 giorni, state OAuth 7 giorni e richieste eBay account deletion
-  365 giorni.
+- Retention operativa secondo ADR 0017, che resta la fonte canonica delle
+  finestre per area: gli audit critici, i job, gli snapshot e le richieste eBay
+  account deletion hanno finestre lunghe, mentre gli audit rumorosi o derivati
+  da una fonte durevole hanno finestre per tipo più brevi.
