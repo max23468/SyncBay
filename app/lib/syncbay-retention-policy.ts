@@ -1,11 +1,13 @@
 export interface SyncBayRetentionPolicy {
   area:
+    | "account_deletion_audit_logs"
     | "account_deletion_requests"
     | "account_deletion_no_match_requests"
     | "audit_logs"
     | "oauth_states"
     | "product_snapshots"
     | "shopify_webhook_audit_logs"
+    | "succeeded_sync_job_audit_logs"
     | "succeeded_sync_jobs"
     | "sync_jobs";
   label: string;
@@ -17,9 +19,23 @@ export const SYNCBAY_RETENTION_POLICIES: SyncBayRetentionPolicy[] = [
   {
     area: "shopify_webhook_audit_logs",
     label: "Audit webhook Shopify",
-    retentionDays: 30,
+    retentionDays: 14,
     scope:
       "Tracce rumorose dei webhook Shopify ricevuti; il job e gli audit di esito restano la fonte diagnostica primaria.",
+  },
+  {
+    area: "account_deletion_audit_logs",
+    label: "Audit account deletion eBay",
+    retentionDays: 30,
+    scope:
+      "Eco audit delle notifiche eBay account deletion ricevute; la prova di trattamento resta nelle richieste account deletion dedicate.",
+  },
+  {
+    area: "succeeded_sync_job_audit_logs",
+    label: "Audit job riusciti",
+    retentionDays: 45,
+    scope:
+      "Eventi di esito positivo dei job, allineati alla finestra dei job riusciti.",
   },
   {
     area: "audit_logs",

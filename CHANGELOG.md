@@ -21,6 +21,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   è più un errore e le note operative non entrano in una versione a cui non
   appartengono.
 
+## [1.0.68] — 2026-07-15
+
+### Sotto il cofano
+
+- Retention audit per tipo: gli audit delle notifiche eBay account deletion
+  ricevute durano 30 giorni e gli audit dei job riusciti 45 giorni, invece
+  della finestra generica a 180; gli audit dei webhook Shopify ricevuti
+  scendono da 30 a 14 giorni. La prova di trattamento privacy resta nelle
+  richieste account deletion dedicate (ADR 0017 aggiornato).
+- La maintenance giornaliera registra nel proprio risultato il peso su disco
+  delle tabelle operative principali, così la crescita del database Supabase
+  resta osservabile dal report del cron senza interrogazioni manuali.
+
 ## [1.0.67] — 2026-07-15
 
 ### Correzioni
@@ -3675,6 +3688,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.68]: #1068--2026-07-15
 [1.0.67]: #1067--2026-07-15
 [1.0.66]: #1066--2026-07-15
 [1.0.65]: #1065--2026-07-15

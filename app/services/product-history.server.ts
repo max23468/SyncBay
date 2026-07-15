@@ -216,7 +216,36 @@ export interface OperationalMaintenanceResult {
   eventDeletedCount: number;
   key: string;
   skipped: boolean;
+  tableSizeBytes: Record<string, number>;
   uncompactedOversizeCount: number;
+}
+
+const MAINTENANCE_SIZE_TABLES = [
+  "AuditLog",
+  "ProductSnapshot",
+  "SyncJob",
+  "ProductSnapshotCheckpoint",
+  "ProductMapping",
+  "SyncConflict",
+];
+
+async function readMaintenanceTableSizeBytes(): Promise<Record<string, number>> {
+  try {
+    const rows = await prisma.$queryRaw<{ table_name: string; total_bytes: bigint }[]>`
+      SELECT c.relname AS table_name, pg_total_relation_size(c.oid) AS total_bytes
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public'
+        AND c.relname IN (${Prisma.join(MAINTENANCE_SIZE_TABLES)})
+    `;
+    return Object.fromEntries(
+      rows.map((row) => [row.table_name, Number(row.total_bytes)]),
+    );
+  } catch {
+    // La misura del peso è osservabilità accessoria: un errore qui non deve
+    // marcare FAILED una maintenance che ha già pulito correttamente.
+    return {};
+  }
 }
 
 function isMaintenanceEnabled() {
@@ -248,6 +277,7 @@ export async function runDailyOperationalMaintenance(input: {
     eventDeletedCount: 0,
     key,
     skipped: false,
+    tableSizeBytes: {} as Record<string, number>,
     uncompactedOversizeCount: 0,
   };
 
@@ -255,7 +285,7 @@ export async function runDailyOperationalMaintenance(input: {
     if (shouldRunLegacyRetentionCleanup({ compactionEnabled, dryRun: input.dryRun === true })) {
       await runRetentionCleanup({ now });
     }
-    const [events, checkpoints, oversize] = await Promise.all([
+    const [events, checkpoints, oversize, tableSizeBytes] = await Promise.all([
       prisma.productSnapshot.count({ where: { capturedAt: { lt: plan.eventCutoff } } }),
       prisma.productSnapshotCheckpoint.count({ where: { checkpointWeek: { lt: plan.checkpointCutoff } } }),
       prisma.productSnapshot.count({
@@ -265,8 +295,9 @@ export async function runDailyOperationalMaintenance(input: {
           payload: { not: Prisma.DbNull },
         },
       }),
+      readMaintenanceTableSizeBytes(),
     ]);
-    return { ...base, checkpointDeletedCount: checkpoints, eventDeletedCount: events, uncompactedOversizeCount: oversize };
+    return { ...base, checkpointDeletedCount: checkpoints, eventDeletedCount: events, tableSizeBytes, uncompactedOversizeCount: oversize };
   }
 
   const existing = await prisma.maintenanceRun.findUnique({ where: { key } });
@@ -393,12 +424,14 @@ export async function runDailyOperationalMaintenance(input: {
     const uncompactedOversizeCount = await prisma.productSnapshotCheckpoint.count({
       where: { isComplete: false },
     });
+    const tableSizeBytes = await readMaintenanceTableSizeBytes();
     const result: OperationalMaintenanceResult = {
       ...base,
       checkpointDeletedCount: checkpointDeleted.count,
       checkpointUpsertedCount: inserted,
       cronRunDeletedCount,
       eventDeletedCount,
+      tableSizeBytes,
       uncompactedOversizeCount,
     };
     await prisma.maintenanceRun.update({
