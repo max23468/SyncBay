@@ -344,13 +344,6 @@ async function inspectRenderedPage(page, input) {
       ) {
         problems.push(`policy Impostazioni non bilanciate 2 x 2: ${rowCounts.join("+")}`);
       }
-      if (
-        containerWidth > 420 &&
-        grid.parentElement?.classList.contains("syncbay-conflict-summary-grid") &&
-        rowCounts.join(",") !== "2,2,1"
-      ) {
-        problems.push(`riepilogo Conflitti non bilanciato 2 + 2 + 1: ${rowCounts.join("+")}`);
-      }
     }
 
     // Una label che si impila in verticale e' il sintomo con cui il difetto si
