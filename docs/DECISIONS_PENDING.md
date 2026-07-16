@@ -15,10 +15,6 @@ chiusa, crea o aggiorna l'ADR pertinente e rimuovila da questo file.
 | Varianti complesse | Supporto semplice con esclusione guidata | Impatta la copertura dell'import. |
 | Policy production stabile | Produzione Vercel privata controllata | Serve prima di promozioni o nuovi clienti su scala maggiore. |
 
-L'idoneità del piano Vercel non è più aperta: ADR 0021 consente Hobby soltanto
-per uso privato non commerciale e richiede un piano idoneo prima dell'uso
-commerciale.
-
 ## App pubblica
 
 | Decisione | Default attuale | Perché conta |

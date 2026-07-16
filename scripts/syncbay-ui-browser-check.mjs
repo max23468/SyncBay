@@ -314,13 +314,42 @@ async function inspectRenderedPage(page, input) {
     const MIN_BOX_INLINE_SIZE = 120;
     for (const grid of balancedGrids) {
       const gridWidth = grid.getBoundingClientRect().width;
+      const containerWidth = grid.parentElement?.getBoundingClientRect().width ?? gridWidth;
+      const rows = [];
       for (const child of grid.children) {
-        const childWidth = child.getBoundingClientRect().width;
+        const childRect = child.getBoundingClientRect();
+        const childWidth = childRect.width;
+        const rowTop = Math.round(childRect.top);
+        let row = rows.find((candidate) => Math.abs(candidate.top - rowTop) <= 2);
+        if (!row) {
+          row = { count: 0, top: rowTop };
+          rows.push(row);
+        }
+        row.count += 1;
         if (childWidth + 1 < Math.min(MIN_BOX_INLINE_SIZE, gridWidth)) {
           problems.push(
             `box della griglia largo ${Math.round(childWidth)}px: sotto i ${MIN_BOX_INLINE_SIZE}px leggibili`,
           );
         }
+      }
+
+      const rowCounts = rows.sort((a, b) => a.top - b.top).map((row) => row.count);
+      if (containerWidth <= 420 && rowCounts.some((count) => count > 1)) {
+        problems.push(`griglia mobile non monocolonna: ${rowCounts.join("+")}`);
+      }
+      if (
+        containerWidth > 420 &&
+        grid.parentElement?.classList.contains("syncbay-settings-policy-grid") &&
+        rowCounts.join(",") !== "2,2"
+      ) {
+        problems.push(`policy Impostazioni non bilanciate 2 x 2: ${rowCounts.join("+")}`);
+      }
+      if (
+        containerWidth > 420 &&
+        grid.parentElement?.classList.contains("syncbay-conflict-summary-grid") &&
+        rowCounts.join(",") !== "2,2,1"
+      ) {
+        problems.push(`riepilogo Conflitti non bilanciato 2 + 2 + 1: ${rowCounts.join("+")}`);
       }
     }
 

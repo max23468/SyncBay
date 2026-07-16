@@ -4,12 +4,10 @@ import test from "node:test";
 import {
   buildLockedMetricObservation,
   buildMetricObservation,
-  buildPlanEligibility,
   buildSupabaseStorageObservation,
   buildSpeedInsightsObservation,
   buildVercelUsageObservation,
   metricTotal,
-  observeCommercialUse,
   resolveVercelPlan,
   selectVercelTeam,
 } from "./syncbay-provider-observations.mjs";
@@ -35,7 +33,7 @@ test("uses the conservative repository plan until VERCEL_PLAN is declared", () =
       status: "declared_default",
       value: "hobby",
       source: "repository_policy",
-      action: "verify_vercel_dashboard_and_set_VERCEL_PLAN_before_commercial_use",
+      action: "verify_vercel_dashboard_and_update_VERCEL_PLAN_when_changed",
     },
   });
   assert.deepEqual(resolveVercelPlan("pro"), {
@@ -96,17 +94,6 @@ test("classifies missing Hobby costs as not applicable instead of unknown", () =
       action: "use_observed_metrics_and_vercel_usage_dashboard",
     },
   );
-});
-
-test("defaults undeclared commercial use to private-only and keeps it actionable", () => {
-  const commercialUse = observeCommercialUse(undefined);
-  assert.equal(commercialUse.status, "defaulted_private");
-  assert.equal(buildPlanEligibility({ commercialUse, plan: "hobby" }), "ok_private_only");
-});
-
-test("blocks declared commercial use on Vercel Hobby", () => {
-  const commercialUse = observeCommercialUse("true");
-  assert.equal(buildPlanEligibility({ commercialUse, plan: "hobby" }), "blocked");
 });
 
 test("classifies live Supabase Storage bytes against the Free quota", () => {

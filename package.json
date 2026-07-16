@@ -82,8 +82,6 @@
     "provider:budget": "node scripts/syncbay-provider-budget.mjs",
     "bundle:budget": "node scripts/syncbay-bundle-budget.mjs",
     "docs:check": "node scripts/syncbay-docs-check.mjs",
-    "db:backup": "node scripts/syncbay-db-backup.mjs",
-    "db:restore-check": "node scripts/syncbay-db-backup.mjs --restore-check",
     "descriptions:cleanup-report": "node --experimental-strip-types scripts/syncbay-description-cleanup-report.mjs",
     "descriptions:backfill-cleanup": "node --experimental-strip-types scripts/syncbay-description-backfill.mjs",
     "stock:restore-ebay": "node scripts/syncbay-restore-ebay-stock.mjs",

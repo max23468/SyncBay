@@ -16,8 +16,8 @@ esteso della vecchia roadmap di fondazione sta in
   personali.
 - Estendere la diagnostica self-service verso rollback per prodotto dopo il
   primo pass su impatto job, prossima azione e retry sicuro.
-- Tenere sotto controllo sicurezza e dati: webhook GDPR, backup offsite,
-  audit log, rate limit/retry e rollback import restano superfici prioritarie.
+- Tenere sotto controllo sicurezza e dati: webhook GDPR, audit log,
+  rate limit/retry e rollback import restano superfici prioritarie.
 
 ## Prossimo
 

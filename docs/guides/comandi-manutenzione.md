@@ -39,9 +39,8 @@ Plus e devono essere controllate nel dashboard Usage. La quota Web Analytics è
 di team, quindi la lettura usa tutti i progetti del team; Speed Insights resta
 di progetto. La REST API documentata non espone il piano: il default di
 repository è `hobby` e va verificato nel dashboard e aggiornato tramite
-`VERCEL_PLAN` prima di ogni uso commerciale. Se `SYNCBAY_COMMERCIAL_USE` non è dichiarata, il report assume
-prudenzialmente l'uso privato corrente e restituisce `ok_private_only`, con
-azione obbligatoria prima dell'onboarding.
+`VERCEL_PLAN` quando il piano cambia. Il report misura quote e consumi tecnici;
+non applica un gate separato basato sulla classificazione dell'uso.
 
 Per Supabase, lo storage file live è osservato via SQL aggregato. Il piano
 organizzazione e l'egress unificato esatto restano `dashboard_required` perché

@@ -3,8 +3,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
-  buildPlanEligibility,
-  observeCommercialUse,
   observeVercel,
 } from "./syncbay-provider-observations.mjs";
 
@@ -32,13 +30,9 @@ const database = await run("scripts/syncbay-db-storage-budget.mjs");
 const egress = await run("scripts/syncbay-egress-budget.mjs", ["--json"]);
 const supabaseFileStorage = await run("scripts/syncbay-supabase-storage-budget.mjs");
 const vercel = await observeVercel();
-const commercialUse = observeCommercialUse(process.env.SYNCBAY_COMMERCIAL_USE);
-const planEligibility = buildPlanEligibility({ commercialUse, plan: vercel.plan });
 const result = {
   database,
   egress,
-  planEligibility,
-  commercialUse,
   supabase: {
     plan: {
       status: "dashboard_required",
@@ -57,7 +51,6 @@ const result = {
 };
 console.log(JSON.stringify(result));
 if (
-  planEligibility === "blocked" ||
   database.status === "error" ||
   egress.status === "error" ||
   supabaseFileStorage.status === "error" ||

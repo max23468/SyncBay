@@ -49,6 +49,25 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
   vale anche per i tag annotati.
 
+## [1.0.69] — 2026-07-16
+
+### Correzioni
+
+- Rimossi il runbook e i comandi applicativi di backup/restore database:
+  disaster recovery non fa più parte del perimetro SyncBay per decisione del
+  maintainer; baseline, checkpoint e rollback prodotto restano invariati.
+- `provider:budget` continua a misurare piano, quote e consumi tecnici Vercel,
+  ma non applica più un gate separato basato sulla classificazione dell'uso.
+- Le griglie a 390 px usano sempre una sola colonna anche dentro l'iframe
+  Shopify; su desktop le quattro policy di Impostazioni restano 2 x 2 e i
+  cinque riepiloghi Conflitti usano 2 + 2 + 1 con l'ultimo box a tutta
+  larghezza, senza celle vuote o box orfani.
+- Ritirata la vecchia schedule Supabase che cancellava
+  `cron.job_run_details` dopo 7 giorni e `net._http_response` senza evidenza di
+  crescita. La maintenance applicativa giornaliera resta l'unico owner della
+  retention interna, conserva 14 giorni di storico cron e non tocca pg_net in
+  assenza di crescita live dimostrata.
+
 ## [1.0.68] — 2026-07-15
 
 ### Sotto il cofano
@@ -3716,6 +3735,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.69]: #1069--2026-07-16
 [1.0.68]: #1068--2026-07-15
 [1.0.67]: #1067--2026-07-15
 [1.0.66]: #1066--2026-07-15
