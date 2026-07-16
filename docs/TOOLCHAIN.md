@@ -42,6 +42,7 @@ forzare installazioni o downgrade dentro la repo.
 | Storage immagini temporaneo | Supabase Storage privato              |
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights |
 | Quality React               | React Doctor                          |
+| Codice morto                | Knip                                  |
 
 ## Aggiornamenti automatici
 
@@ -74,6 +75,19 @@ con Prisma 7. Future major Prisma restano manuali.
 
 I tipi Node oltre la major del runtime dichiarato richiedono un pass manuale:
 il runtime repo resta `>=24.15 <25`.
+
+Knip cerca file, export e dipendenze non usati. Come React Doctor è risolto via
+`npx` e non vive in `devDependencies`; la major è pinnata perché `knip.json` ne
+segue lo schema. È uno strumento advisory e manuale, non un gate: non entra in
+`verify:changed` né in `verify:full`. La configurazione dichiara come entry i
+file che Knip non può raggiungere perché referenziati via stringa (config Vite e
+stub del render UI) e ignora i binari di sistema `psql`, `security` e `vercel`.
+`ignoreExportsUsedInFile` tiene il report sul codice davvero morto: senza,
+segnala anche i simboli usati solo nel proprio file, che sono over-export
+innocui e non una segnalazione azionabile. Gli export che esistono solo come
+asserzione di compile-time sulla copertura degli enum Prisma (`*CoverPrisma`)
+sono marcati `@knipignore`: non hanno importatori per costruzione e non vanno
+cancellati.
 
 ## Comandi locali
 
@@ -131,6 +145,7 @@ il runtime repo resta `>=24.15 <25`.
 | Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
 | Test script e workflow        | `npm run test:tooling`                                                                      |
 | React Doctor latest           | `npm run quality:react-doctor`                                                              |
+| Codice morto ed export inutili | `npm run quality:knip`                                                                     |
 | Release dry-run               | `npm run release:dry-run`                                                                   |
 | Release locale                | `npm run release`                                                                           |
 
@@ -189,6 +204,7 @@ lasciata ispezionabile e il setup si riprende al suo interno con
 | Moduli puri `app/lib`                                               | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                                                  |
 | Pubblicazione/merge PR                                              | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry                            |
 | Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor`, che risolve esplicitamente `react-doctor@latest`                                                                         |
+| Refactor che rimuovono consumatori, ritiri di funzionalità o consolidamenti | `npm run quality:knip`, che rileva file ed export rimasti senza consumatori                                                                     |
 | Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
 | Prisma/database                                                     | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                                                 |
 | Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |

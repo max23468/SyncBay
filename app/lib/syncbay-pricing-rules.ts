@@ -15,6 +15,11 @@ type MissingPrismaPriceRoundingMode = Exclude<
   (typeof PRICE_ROUNDING_MODES)[number]
 >;
 type AssertNoMissingPriceRoundingMode<T extends never> = T;
+/**
+ * Asserzione di compile-time: fallisce se Prisma aggiunge un valore non coperto
+ * da PRICE_ROUNDING_MODES. Nessuno la importa: va tenuta, non è codice morto.
+ * @knipignore
+ */
 export type PriceRoundingModesCoverPrisma =
   AssertNoMissingPriceRoundingMode<MissingPrismaPriceRoundingMode>;
 
