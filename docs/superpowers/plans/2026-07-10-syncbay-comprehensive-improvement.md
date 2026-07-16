@@ -6,6 +6,8 @@
 
 **Tech Stack:** Node.js 24.18.0, npm 11.x (11.16.0 nella verifica locale), TypeScript 6, React Router 7, React 19, Shopify Admin GraphQL 2026-07, Prisma 7.8, Supabase Postgres/Cron, Vercel, Polaris Web Components, Node test runner + `tsx` per i moduli server.
 
+**Stato:** Completato il 16 luglio 2026: Task 1-13 chiusi e pubblicati, con le esclusioni e le rinunce esplicite del maintainer registrate nei rispettivi task.
+
 ## Global Constraints
 
 - eBay resta la sorgente di verità del catalogo; l'unica scrittura Shopify -> eBay resta la riduzione stock da `orders/paid`.
@@ -40,7 +42,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 | Gate locali | `585` test lib; coverage `95,36%` linee, `83,78%` branch, `96,51%` funzioni; typecheck, lint, build e audit production verdi. Esistono `3` file test server con `14` test, mentre circa `17` moduli server non hanno un test gemello diretto | Task 1 conserva i gate, include i `14` test server verificati con `tsx` e censisce il rischio; Task 4-10 aggiungono test ai moduli profondi toccati |
 | UI e usabilità live | L'audit Computer Use in sola lettura sull'app embedded di Numisleo conferma: Impostazioni con card commerciali sbilanciate; Conflitti con cinque card troppo strette; Catalogo con 50 righe/8 colonne e overflow da confinare alla tabella; Attività con stato `Completata`/`Ok` ma testo “non ancora allineato” e valore “Non disponibile”; Importazione lunga, con `Ricollega eBay` e rinomina location troppo prominenti quando il collegamento è sano. Nessuna azione o scrittura è stata eseguita e nessun dato reale entra nelle fixture | Task 11 crea il render gate isolato; Task 12 corregge layout, semantica, densità e gerarchia; Task 13 ripete QA embedded read-only |
 | Frontend e bundle | Build fresca: `149.035` byte gzip di JS client complessivo, route più grande Importazione circa `7,99 kB` gzip, CSS `3,34 kB` gzip, server bundle `181,9 kB` gzip; React Doctor `100/100` | Task 12 introduce un budget di regressione senza dipendenze e mantiene i valori con margine ragionevole |
-| Accessibilità e stati UI | Esistono `aria-live`, `aria-busy`, riduzione movimento, paginazione e pending route, ma non un gate browser che provi hydration, tastiera, focus, zoom/reflow e stati degradati delle sei superfici | Task 11 aggiunge matrice fixture e browser check; Task 13 mantiene la verifica manuale screen reader/zoom 400% |
+| Accessibilità e stati UI | Esistono `aria-live`, `aria-busy`, riduzione movimento, paginazione e pending route, ma non un gate browser che provi hydration, tastiera, focus, zoom/reflow e stati degradati delle sei superfici | Task 11 aggiunge matrice fixture e browser check; Task 13 mantiene la verifica manuale tramite albero di accessibilità nativo, tastiera e zoom 400%, senza test screen reader |
 | Osservabilità frontend/runtime | Speed Insights e Web Analytics sono già montati; i loader misurano durata e `payloadBytes`, ma i log sani sono emessi di default e manca una correlazione strutturata comune per runner/webhook | Task 12 riusa la telemetria esistente, aggiunge budget payload, sampling e `requestId` senza nuovi provider |
 | Hotspot | `sync-job-runner.server.ts` circa `4.980` righe, `syncbay.server.ts` circa `4.950`, `shopify-draft-import.server.ts` circa `4.041`, `app.import-preview.tsx` circa `1.911` | Task 4, 6, 9 e 10 spostano ownership complete in moduli profondi; Task 13 verifica locality e dimensioni senza spezzare per sola metrica |
 | GitHub e dipendenze | La base Git locale include la PR `#411`; major intenzionalmente rinviate: React Router 8, TypeScript 7 e tipi Node 26. Lo stato delle PR remote non viene assunto dal piano | Task 12 ricontrolla le dipendenze; Task 13 verifica GitHub live |
@@ -62,7 +64,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 | Takeover distribuito tra route e servizi grandi; fixture `fieldPolicy` fuori contratto | Verticale catalogo esistente | 10, 11 |
 | Coverage alta solo su `app/lib`; test server esistenti esclusi dalla CI | Fondazione di verifica | 1 |
 | `smoke:ui` statico passa mentre il render reale fallisce e carica `.env` | Harness UI reale | 11 |
-| Griglie di box possono lasciare buchi con quantità dispari | Regola condivisa: mobile monocolonna; desktop bilanciato, normalmente due colonne e ultimo box dispari a tutta larghezza | 12, 13 |
+| Griglie di box possono lasciare buchi con quantità dispari | Regola condivisa: mobile monocolonna; desktop specifico per superficie, con Impostazioni `2 x 2` e cinque riepiloghi Conflitti sulla stessa riga quando lo spazio lo consente | 12, 13 |
 | Stati live e metriche usano etichette contraddittorie o ambigue | Modello semantico UI condiviso e glossario metriche | 11, 12, 13 |
 | Tabella Catalogo può trascinare l'intera app in overflow orizzontale | Contenitore scroll locale e layout con `min-inline-size: 0` | 12, 13 |
 | Quota Free non governata oltre la sola size DB | Budget provider con soglie 70/85/95%, egress e build/deploy inclusi | 8, 12, 13 |
@@ -1590,7 +1592,7 @@ Aggiungere:
 "ui:browser-check": "node scripts/syncbay-ui-browser-check.mjs"
 ```
 
-`ui:browser-check` avvia il render fixture isolato e usa Playwright Chromium senza rete esterna. Deve fallire per `pageerror`, warning hydration, errore console inatteso, controllo senza nome accessibile, focus invisibile, ordine tastiera bloccato o overflow dell'intero documento. Esegue le sei pagine a `1440`, `1024`, `768` e `390px`, più zoom browser `200%`; l'overflow è ammesso soltanto nei wrapper esplicitamente scrollabili. Verifica anche `aria-live`, `aria-busy`, `prefers-reduced-motion`, ritorno del focus dopo navigazione/submit e che colore/icone non siano l'unico canale dello stato. Non dichiarare conformità WCAG completa: contrasto reale, screen reader e zoom `400%` restano QA manuale nel Task 13.
+`ui:browser-check` avvia il render fixture isolato e usa Playwright Chromium senza rete esterna. Deve fallire per `pageerror`, warning hydration, errore console inatteso, controllo senza nome accessibile, focus invisibile, ordine tastiera bloccato o overflow dell'intero documento. Esegue le sei pagine a `1440`, `1024`, `768` e `390px`, più zoom browser `200%`; l'overflow è ammesso soltanto nei wrapper esplicitamente scrollabili. Verifica anche `aria-live`, `aria-busy`, `prefers-reduced-motion`, ritorno del focus dopo navigazione/submit e che colore/icone non siano l'unico canale dello stato. Non dichiarare conformità WCAG completa né copertura screen reader: contrasto reale, albero di accessibilità nativo, tastiera e zoom `400%` restano QA manuale nel Task 13.
 
 In CI mantenere `smoke:ui` come controllo statico branding e aggiungere step separati `npm run ui:check` e `npm run ui:browser-check`.
 
