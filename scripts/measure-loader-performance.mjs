@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -44,68 +45,30 @@ if (args.json) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {
-    deployment: DEFAULT_DEPLOYMENT,
-    help: false,
-    json: false,
-    since: DEFAULT_SINCE,
-    stdin: false,
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      deployment: { type: "string" },
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      since: { type: "string" },
+      stdin: { type: "boolean" },
+    },
+  });
+
+  for (const key of ["since", "deployment"]) {
+    if (values[key] !== undefined && !values[key]) {
+      throw new Error(`Valore mancante per --${key}.`);
+    }
+  }
+
+  return {
+    deployment: values.deployment ?? DEFAULT_DEPLOYMENT,
+    help: values.help ?? false,
+    json: values.json ?? false,
+    since: values.since ?? DEFAULT_SINCE,
+    stdin: values.stdin ?? false,
   };
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--help" || arg === "-h") {
-      parsed.help = true;
-      continue;
-    }
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--stdin") {
-      parsed.stdin = true;
-      continue;
-    }
-
-    if (arg === "--since") {
-      parsed.since = readOptionValue(rawArgs, index, "--since");
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith("--since=")) {
-      parsed.since = arg.slice("--since=".length);
-      continue;
-    }
-
-    if (arg === "--deployment") {
-      parsed.deployment = readOptionValue(rawArgs, index, "--deployment");
-      index += 1;
-      continue;
-    }
-
-    if (arg.startsWith("--deployment=")) {
-      parsed.deployment = arg.slice("--deployment=".length);
-      continue;
-    }
-
-    throw new Error(`Opzione non riconosciuta: ${arg}`);
-  }
-
-  return parsed;
-}
-
-function readOptionValue(rawArgs, index, optionName) {
-  const value = rawArgs[index + 1];
-
-  if (!value || value.startsWith("--")) {
-    throw new Error(`Valore mancante per ${optionName}`);
-  }
-
-  return value;
 }
 
 function readVercelLogs({ deployment, since }) {

@@ -1,9 +1,6 @@
 #!/usr/bin/env node
-import crypto from "node:crypto";
 import fs from "node:fs";
-import { spawnSync } from "node:child_process";
-
-import { XMLParser } from "fast-xml-parser";
+import { parseArgs as parseNodeArgs } from "node:util";
 
 import {
   buildDescriptionBackfillApplyFile,
@@ -23,9 +20,18 @@ import {
   buildTradingItemCache,
 } from "../app/lib/syncbay-ebay-trading-bulk.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
+import {
+  asRecord,
+  ensureTokenEncryptionKey,
+  getAccessToken,
+  getShopifyAccessToken,
+  getString,
+  getTradingItem,
+  loadDotEnv,
+  tradingCall,
+} from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const GET_ITEM_CONCURRENCY = 4;
@@ -34,8 +40,6 @@ const GET_SELLER_LIST_ENTRIES_PER_PAGE = 200;
 const GET_SELLER_LIST_WINDOW_DAYS = 119;
 const APPLY_CONCURRENCY = 4;
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
-const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
-const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const APPLY_DESCRIPTION_MUTATION = `mutation SyncBayBackfillCleanDescription($product: ProductUpdateInput!) {
   productUpdate(product: $product) {
     product {
@@ -69,21 +73,6 @@ const marketplaceId = args.marketplace ?? DEFAULT_MARKETPLACE_ID;
 
 ensureTokenEncryptionKey();
 
-const supabaseEnv = {
-  ...process.env,
-  ...(await getSupabaseCliEnv()),
-  SUPABASE_TELEMETRY_DISABLED: "1",
-};
-const xmlParser = new XMLParser({
-  attributeNamePrefix: "@_",
-  ignoreAttributes: false,
-  parseAttributeValue: false,
-  parseTagValue: false,
-  removeNSPrefix: true,
-  textNodeName: "#text",
-  trimValues: true,
-});
-
 await main().catch((error) => {
   console.error(`Backfill descrizioni non riuscito: ${formatError(error)}`);
   process.exit(1);
@@ -106,7 +95,7 @@ async function main() {
     throw new Error("--confirm-apply richiede anche --apply.");
   }
 
-  const state = getBackfillState();
+  const state = await getBackfillState();
   if (!args.applyPlan && !state.connection) {
     throw new Error(`Nessuna connessione eBay attiva per ${shopDomain}.`);
   }
@@ -133,7 +122,7 @@ async function main() {
       );
     }
 
-    const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession);
+    const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
     const shopifyProducts = await loadShopifyProducts({
       accessToken: shopifyAccessToken,
       productGids: applyFile.rows
@@ -202,7 +191,7 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE/OUT_OF_STOCK da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession);
+  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
@@ -319,6 +308,7 @@ async function buildReportRow(input) {
       (await getTradingItem({
         accessToken: input.accessToken,
         connection: input.connection,
+        includeItemSpecifics: true,
         itemId: input.mapping.ebayItemId,
       }));
 
@@ -374,8 +364,8 @@ function buildRowFromDescriptions(input) {
   });
 }
 
-function getBackfillState() {
-  const rows = querySupabaseJson(`
+async function getBackfillState() {
+  const { rows } = await querySupabaseJson(`
 with shop_row as (
   select id
   from "Shop"
@@ -590,7 +580,7 @@ async function recordDescriptionBackfillSnapshot(input) {
     originalDescriptionHash: input.row.originalDescriptionHash,
   });
 
-  querySupabaseJson(`
+  await querySupabaseJson(`
 with latest_baseline as (
   select
     sku,
@@ -663,48 +653,6 @@ select jsonb_build_object(
 `);
 }
 
-async function getTradingItem(input) {
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: `<?xml version="1.0" encoding="utf-8"?>
-<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <IncludeItemSpecifics>true</IncludeItemSpecifics>
-  <ItemID>${escapeXml(input.itemId)}</ItemID>
-</GetItemRequest>`,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": "GetItem",
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-    },
-    method: "POST",
-  });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`eBay Trading API HTTP ${response.status}.`);
-  }
-
-  const body = asRecord(
-    asRecord(xmlParser.parse(responseText))?.GetItemResponse,
-  );
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    const errors = asRecord(body?.Errors);
-    throw new Error(
-      getString(errors, "LongMessage") ??
-        getString(errors, "ShortMessage") ??
-        "eBay GetItem non riuscita.",
-    );
-  }
-
-  return asRecord(body?.Item) ?? {};
-}
-
 async function loadTradingSellerListItemCache(input) {
   const targetItemIds = new Set(input.itemIds.filter(Boolean));
   const foundItems = new Map();
@@ -744,169 +692,19 @@ async function loadTradingSellerListItemCache(input) {
 }
 
 async function getTradingSellerListPage(input) {
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: buildGetSellerListRequest({
-      entriesPerPage: GET_SELLER_LIST_ENTRIES_PER_PAGE,
-      pageNumber: input.pageNumber,
-      windowEnd: input.windowEnd,
-      windowStart: input.windowStart,
-    }),
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": "GetSellerList",
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-    },
-    method: "POST",
-  });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`eBay Trading API GetSellerList HTTP ${response.status}.`);
-  }
-
-  const body = asRecord(
-    asRecord(xmlParser.parse(responseText))?.GetSellerListResponse,
+  return (
+    (await tradingCall({
+      accessToken: input.accessToken,
+      callName: "GetSellerList",
+      connection: input.connection,
+      requestXml: buildGetSellerListRequest({
+        entriesPerPage: GET_SELLER_LIST_ENTRIES_PER_PAGE,
+        pageNumber: input.pageNumber,
+        windowEnd: input.windowEnd,
+        windowStart: input.windowStart,
+      }),
+    })) ?? {}
   );
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    const errors = asRecord(body?.Errors);
-    throw new Error(
-      getString(errors, "LongMessage") ??
-        getString(errors, "ShortMessage") ??
-        "eBay GetSellerList non riuscita.",
-    );
-  }
-
-  return body ?? {};
-}
-
-async function getShopifyAccessToken(session) {
-  if (!session?.accessToken) {
-    throw new Error(`Sessione offline Shopify non disponibile per ${shopDomain}.`);
-  }
-
-  const expiresAt = session.expires ? new Date(session.expires) : null;
-  if (!expiresAt || expiresAt.getTime() > Date.now() + 5 * 60 * 1000) {
-    return session.accessToken;
-  }
-
-  if (!session.refreshToken) {
-    throw new Error(
-      "Sessione offline Shopify scaduta senza refresh token: riapri l'app Shopify.",
-    );
-  }
-
-  const refreshTokenExpiresAt = session.refreshTokenExpires
-    ? new Date(session.refreshTokenExpires)
-    : null;
-  if (refreshTokenExpiresAt && refreshTokenExpiresAt.getTime() <= Date.now()) {
-    throw new Error(
-      "Refresh token Shopify offline scaduto: riapri l'app Shopify.",
-    );
-  }
-
-  const response = await fetch(`https://${shopDomain}/admin/oauth/access_token`, {
-    body: JSON.stringify({
-      client_id: requiredEnv("SHOPIFY_API_KEY"),
-      client_secret: requiredEnv("SHOPIFY_API_SECRET"),
-      grant_type: "refresh_token",
-      refresh_token: session.refreshToken,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-  const json = await response.json().catch(() => null);
-
-  if (!response.ok || !json?.access_token) {
-    throw new Error(
-      `Refresh token Shopify offline non riuscito (HTTP ${response.status}).`,
-    );
-  }
-
-  const expiresAtNext = new Date(
-    Date.now() + Number(json.expires_in ?? 3600) * 1000,
-  );
-  const refreshTokenExpiresAtNext = json.refresh_token_expires_in
-    ? new Date(Date.now() + Number(json.refresh_token_expires_in) * 1000)
-    : null;
-
-  querySupabaseJson(`
-update "Session"
-set "accessToken" = ${sqlQuote(json.access_token)},
-    expires = ${sqlQuote(expiresAtNext.toISOString())}::timestamp,
-    "refreshToken" = coalesce(${sqlQuote(json.refresh_token ?? null)}, "refreshToken"),
-    "refreshTokenExpires" = coalesce(${sqlQuote(refreshTokenExpiresAtNext?.toISOString() ?? null)}::timestamp, "refreshTokenExpires"),
-    scope = coalesce(${sqlQuote(json.scope ?? null)}, scope)
-where id = ${sqlQuote(session.id)}
-returning id;
-`);
-
-  return json.access_token;
-}
-
-async function getAccessToken(connection) {
-  const expiresAt = connection.tokenExpiresAt
-    ? new Date(connection.tokenExpiresAt)
-    : null;
-
-  if (
-    connection.encryptedAccessToken &&
-    expiresAt &&
-    expiresAt.getTime() > Date.now() + 5 * 60 * 1000
-  ) {
-    return { accessToken: decryptSecret(connection.encryptedAccessToken) };
-  }
-
-  if (!connection.encryptedRefreshToken) {
-    throw new Error("Refresh token eBay assente.");
-  }
-
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: decryptSecret(connection.encryptedRefreshToken),
-  });
-  const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
-  if (scopes) body.set("scope", scopes);
-
-  const response = await fetch(getTokenUrl(connection.environment), {
-    body,
-    headers: {
-      Authorization: `Basic ${Buffer.from(
-        `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-        "utf8",
-      ).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    method: "POST",
-  });
-  const json = await response.json();
-
-  if (!response.ok || !json.access_token) {
-    throw new Error(
-      json.error_description ?? json.error ?? "Refresh token eBay non riuscito.",
-    );
-  }
-
-  const tokenExpiresAt = new Date(
-    Date.now() + Number(json.expires_in ?? 7200) * 1000,
-  );
-
-  querySupabaseJson(`
-update "EbayConnection"
-set "encryptedAccessToken" = ${sqlQuote(encryptSecret(json.access_token))},
-    "lastRefreshAt" = now(),
-    "tokenExpiresAt" = ${sqlQuote(tokenExpiresAt.toISOString())}::timestamp,
-    "scopes" = coalesce(${sqlQuote(json.scope ?? null)}, "scopes"),
-    "updatedAt" = now()
-where id = ${sqlQuote(connection.id)}
-returning id;
-`);
-
-  return { accessToken: json.access_token };
 }
 
 async function mapWithConcurrency(items, concurrency, mapper) {
@@ -926,31 +724,6 @@ async function mapWithConcurrency(items, concurrency, mapper) {
   );
 
   return results;
-}
-
-function querySupabaseJson(sql) {
-  const result = spawnSync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.env.SYNCBAY_SUPABASE_CWD ?? process.cwd(),
-      encoding: "utf8",
-      env: supabaseEnv,
-      maxBuffer: 20 * 1024 * 1024,
-    },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout);
-  }
-
-  const parsed = JSON.parse(result.stdout);
-  const rows = Array.isArray(parsed) ? parsed : parsed.rows;
-  if (!Array.isArray(rows)) {
-    throw new Error("Output Supabase inatteso: rows non e' un array JSON.");
-  }
-
-  return rows;
 }
 
 function printReport(report) {
@@ -1062,76 +835,44 @@ function sanitizeOutput(output) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      apply: { type: "boolean" },
+      "apply-plan": { type: "string" },
+      "confirm-apply": { type: "boolean" },
+      "ebay-source": { type: "string" },
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      limit: { type: "string" },
+      marketplace: { type: "string" },
+      shop: { type: "string" },
+      "write-apply-plan": { type: "string" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--apply") {
-      parsed.apply = true;
-      continue;
-    }
-
-    if (arg === "--confirm-apply") {
-      parsed.confirmApply = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      parsed.help = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--marketplace") {
-      parsed.marketplace = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--limit") {
-      parsed.limit = parsePositiveLimitOption(rawArgs[index + 1], "--limit");
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--write-apply-plan") {
-      parsed.writeApplyPlan = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--apply-plan") {
-      parsed.applyPlan = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--ebay-source") {
-      const source = rawArgs[index + 1];
-      if (!["get-item", "seller-list"].includes(source)) {
-        throw new Error("--ebay-source supporta solo get-item o seller-list.");
-      }
-
-      parsed.ebaySource = source;
-      index += 1;
-      continue;
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
+  if (
+    values["ebay-source"] !== undefined &&
+    !["get-item", "seller-list"].includes(values["ebay-source"])
+  ) {
+    throw new Error("--ebay-source supporta solo get-item o seller-list.");
   }
 
-  return parsed;
+  return {
+    apply: values.apply,
+    applyPlan: values["apply-plan"],
+    confirmApply: values["confirm-apply"],
+    ebaySource: values["ebay-source"],
+    help: values.help,
+    json: values.json,
+    limit:
+      values.limit === undefined
+        ? undefined
+        : parsePositiveLimitOption(values.limit, "--limit"),
+    marketplace: values.marketplace,
+    shop: values.shop,
+    writeApplyPlan: values["write-apply-plan"],
+  };
 }
 
 function printUsage() {
@@ -1156,103 +897,6 @@ eBay. Con --json non stampa HTML completo delle descrizioni.
   --confirm-apply   Conferma obbligatoria per qualunque scrittura prodotto Shopify.`);
 }
 
-function decryptSecret(secret) {
-  const [version, encodedIv, encodedAuthTag, encodedCiphertext] =
-    secret.split(".");
-  if (version !== "v1" || !encodedIv || !encodedAuthTag || !encodedCiphertext) {
-    throw new Error("Formato segreto cifrato non valido.");
-  }
-
-  const decipher = crypto.createDecipheriv(
-    "aes-256-gcm",
-    getTokenKey(),
-    Buffer.from(encodedIv, "base64url"),
-  );
-  decipher.setAuthTag(Buffer.from(encodedAuthTag, "base64url"));
-
-  return Buffer.concat([
-    decipher.update(Buffer.from(encodedCiphertext, "base64url")),
-    decipher.final(),
-  ]).toString("utf8");
-}
-
-function encryptSecret(plaintext) {
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", getTokenKey(), iv);
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
-  const authTag = cipher.getAuthTag();
-
-  return [
-    "v1",
-    iv.toString("base64url"),
-    authTag.toString("base64url"),
-    ciphertext.toString("base64url"),
-  ].join(".");
-}
-
-function getTokenKey() {
-  return crypto
-    .createHash("sha256")
-    .update(requiredEnv("TOKEN_ENCRYPTION_KEY"))
-    .digest();
-}
-
-function ensureTokenEncryptionKey() {
-  const selected = selectTokenEncryptionKey({
-    envValue: process.env.TOKEN_ENCRYPTION_KEY,
-    keychainValue: readKeychainSecret(TOKEN_ENCRYPTION_KEYCHAIN_SERVICE),
-  });
-
-  if (selected.value) {
-    process.env.TOKEN_ENCRYPTION_KEY = selected.value;
-    return;
-  }
-
-  throw new Error(
-    `TOKEN_ENCRYPTION_KEY non configurata e segreto Portachiavi mancante: ${TOKEN_ENCRYPTION_KEYCHAIN_SERVICE}.`,
-  );
-}
-
-function readKeychainSecret(service) {
-  if (process.platform !== "darwin") return null;
-
-  const result = spawnSync(
-    "security",
-    ["find-generic-password", "-s", service, "-w"],
-    { encoding: "utf8" },
-  );
-
-  if (result.status !== 0) return null;
-
-  return result.stdout.replace(/\r?\n$/, "");
-}
-
-function loadDotEnv(path) {
-  if (!fs.existsSync(path)) return;
-
-  for (const rawLine of fs.readFileSync(path, "utf8").split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    const separatorIndex = line.indexOf("=");
-    if (separatorIndex === -1) continue;
-
-    const key = line.slice(0, separatorIndex).trim();
-    let value = line.slice(separatorIndex + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    process.env[key] ??= value;
-  }
-}
-
 function normalizeStringArray(value) {
   return Array.isArray(value)
     ? value.filter((item) => typeof item === "string")
@@ -1266,55 +910,11 @@ function hasScope(scopeText, requiredScope) {
     .includes(requiredScope);
 }
 
-function getTokenUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/identity/v1/oauth2/token"
-    : "https://api.sandbox.ebay.com/identity/v1/oauth2/token";
-}
-
-function getTradingBaseUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/ws/api.dll"
-    : "https://api.sandbox.ebay.com/ws/api.dll";
-}
-
-function getTradingSiteId(value) {
-  if (value === "EBAY_IT") return "101";
-
-  throw new Error(`Marketplace Trading API non supportato: ${value}.`);
-}
-
-function requiredEnv(key) {
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} non configurata.`);
-
-  return value;
-}
-
-function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : null;
-}
-
 function asArray(value) {
   if (Array.isArray(value)) return value;
   if (value == null) return [];
 
   return [value];
-}
-
-function getString(record, key) {
-  const value = asRecord(record)?.[key];
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const nested = asRecord(value);
-  const text = nested?.["#text"];
-
-  return typeof text === "string" || typeof text === "number"
-    ? String(text)
-    : null;
 }
 
 function getTradingItems(container) {
@@ -1334,15 +934,6 @@ function getTotalPages(container) {
   return Number.isInteger(total) && total > 0 ? total : null;
 }
 
-function escapeXml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
 function chunkArray(items, size) {
   const chunks = [];
   for (let index = 0; index < items.length; index += size) {
@@ -1350,12 +941,6 @@ function chunkArray(items, size) {
   }
 
   return chunks;
-}
-
-function sqlQuote(value) {
-  if (value == null) return "null";
-
-  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
 function formatError(error) {

@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 import { Session as ShopifySession } from "@shopify/shopify-api";
 import type { SessionStorage } from "@shopify/shopify-app-session-storage";
 
@@ -285,10 +287,6 @@ function pushOptional(
   if (value !== null && value !== undefined) {
     entries.push([key, value]);
   }
-}
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function isUniqueConstraintError(error: unknown) {

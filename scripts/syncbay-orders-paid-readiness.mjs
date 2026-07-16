@@ -1,22 +1,44 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs } from "node:util";
 import { buildReadinessReport } from "./syncbay-orders-paid-readiness-report.mjs";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import {
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
+} from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-
-const execFileAsync = promisify(execFile);
 
 const DEFAULT_CANDIDATE_LIMIT = 5;
 const ACTIVE_JOB_STATUSES = ["PENDING", "RUNNING", "RETRYING"];
 
-const args = parseArgs(process.argv.slice(2));
+const { values: args } = parseArgs({
+  options: {
+    help: { short: "h", type: "boolean" },
+    json: { type: "boolean" },
+    limit: { type: "string" },
+    shop: { type: "string" },
+  },
+});
+
+if (args.help) {
+  console.log(`Uso: npm run orders:paid-readiness -- [--shop dominio.myshopify.com] [--limit 5] [--json]
+
+Interroga Supabase remoto in sola lettura e verifica se il runtime orders/paid
+e il test automatico via Shopify Admin orderCreate sono pronti. Non stampa token,
+segreti o dati cliente.`);
+  process.exit(0);
+}
+
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
 });
-const candidateLimit = args.limit ?? DEFAULT_CANDIDATE_LIMIT;
+const parsedCandidateLimit = Number.parseInt(args.limit ?? "", 10);
+const candidateLimit =
+  Number.isInteger(parsedCandidateLimit) && parsedCandidateLimit > 0
+    ? parsedCandidateLimit
+    : DEFAULT_CANDIDATE_LIMIT;
 
 await main().catch((error) => {
   console.error(`Readiness orders/paid non riuscita: ${formatCliError(error)}`);
@@ -228,38 +250,6 @@ select jsonb_build_object(
 `;
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.cwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
 function printReport(report) {
   console.log(`Shop: ${report.shopDomain}`);
   console.log(
@@ -365,71 +355,4 @@ function printReport(report) {
       "Prossima azione: il runtime può ricevere orders/paid, ma il test automatico via Admin API richiede write_orders. Usa un checkout/admin order manuale sullo store pilota Numisleo oppure aggiungi lo scope e riapri l'app Shopify per ottenere una sessione offline aggiornata.",
     );
   }
-}
-
-function parseArgs(rawArgs) {
-  const parsed = {};
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--limit") {
-      const limit = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.limit = Number.isInteger(limit) && limit > 0 ? limit : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run orders:paid-readiness -- [--shop dominio.myshopify.com] [--limit 5] [--json]
-
-Interroga Supabase remoto in sola lettura e verifica se il runtime orders/paid
-e il test automatico via Shopify Admin orderCreate sono pronti. Non stampa token,
-segreti o dati cliente.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query Supabase. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith shop_row[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
 }

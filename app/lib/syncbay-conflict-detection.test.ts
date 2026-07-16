@@ -211,10 +211,6 @@ test("resolves open conflicts automatically only for inactive-source mappings", 
     shouldResolveOpenConflictsForInactiveMappingStatus("OUT_OF_STOCK"),
     true,
   );
-  assert.equal(
-    shouldResolveOpenConflictsForInactiveMappingStatus("ARCHIVED"),
-    true,
-  );
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);

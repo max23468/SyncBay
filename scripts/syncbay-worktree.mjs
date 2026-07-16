@@ -3,11 +3,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const DEFAULT_BASE = "origin/main";
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   try {
     runCli(process.argv.slice(2));
   } catch (error) {
@@ -411,10 +410,4 @@ function normalizeExistingPath(value) {
 
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", `'\\''`)}'`;
-}
-
-function isCliEntrypoint() {
-  return process.argv[1]
-    ? import.meta.url === pathToFileURL(process.argv[1]).href
-    : false;
 }

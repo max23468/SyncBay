@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   const audit = spawnSync("npm", ["audit", "--omit=dev", "--json"], {
     encoding: "utf8",
   });
@@ -63,10 +63,6 @@ export function readAuditVulnerabilities(report) {
   }
 
   return report.vulnerabilities;
-}
-
-function isCliEntrypoint() {
-  return process.argv[1]?.endsWith("syncbay-audit-prod.mjs") ?? false;
 }
 
 function isRecord(value) {

@@ -205,15 +205,6 @@ const checks = [
     file: "app/services/shopify-location.server.ts",
     needles: ["locationEdit", "write_locations", "nome location"],
   },
-  {
-    file: "scripts/syncbay-repair-description-conflicts.mjs",
-    needles: [
-      "latest_description_syncbay",
-      "current_field_baselines",
-      "updatedEbayFromShopifyOrder",
-      "restoredEbayAfterTest",
-    ],
-  },
 ];
 
 const publicFiles = [

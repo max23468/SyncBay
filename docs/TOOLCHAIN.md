@@ -114,17 +114,13 @@ il runtime repo resta `>=24.15 <25`.
 | Budget provider aggregato     | `npm run provider:budget`                                                                   |
 | Budget bundle                  | `npm run bundle:budget`                                                                     |
 | Verifica documentazione       | `npm run docs:check`                                                                        |
-| Backfill baseline prodotto    | `npm run product-baselines:backfill -- --dry-run`                                           |
 | Maintenance storia prodotto  | `npm run history:maintain -- --dry-run`                                                     |
 | Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |
-| Pensionamento import legacy   | `npm run jobs:retire-internal-import -- --dry-run`                                           |
-| Coalescenza webhook Shopify   | `npm run jobs:coalesce-shopify-changes -- --shop <shop.myshopify.com> [--apply]`       |
 | Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                              |
 | Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`                              |
 | Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop <shop.myshopify.com>`                         |
 | Verifica campione import      | `npm run import:verify -- --shop <shop.myshopify.com> --sample 10`                     |
 | Report pulizia descrizioni    | `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com> --sample 20`       |
-| Riparazione prezzo/SKU        | `npm run import:repair-commercial-fields -- --shop <shop.myshopify.com> --dry-run`     |
 | Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
 | Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop <shop.myshopify.com> [--limit N]`       |
 | Dry-run categorie             | `npm run categories:backfill -- --shop <shop.myshopify.com> [--limit N]`               |

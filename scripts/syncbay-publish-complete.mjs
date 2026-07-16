@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
+import { setTimeout as sleep } from "node:timers/promises";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 import { shouldBuildVercel } from "./syncbay-vercel-ignore-build.mjs";
 
 const POLL_MS = 5_000;
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   try {
     await runCompletePublish(parseArgs(process.argv.slice(2)));
   } catch (error) {
@@ -249,7 +250,7 @@ async function waitForProductionDeployment({ mergeSha, repository }) {
         `Deployment Production concluso con stato ${vercelStatus.state}.`,
       );
     }
-    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    await sleep(POLL_MS);
   }
   throw new Error("Timeout attendendo il deployment Vercel Production.");
 }
@@ -277,21 +278,28 @@ function readPr(selector) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = { dryRun: false, pr: null, title: null };
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-    if (arg === "--dry-run") parsed.dryRun = true;
-    else if (arg === "--pr") {
-      parsed.pr = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      if (!Number.isInteger(parsed.pr)) throw new Error("PR non valida.");
-      index += 1;
-    } else if (arg === "--title") {
-      parsed.title = rawArgs[index + 1] ?? "";
-      if (!parsed.title) throw new Error("Titolo PR mancante.");
-      index += 1;
-    } else throw new Error(`Argomento non supportato: ${arg}`);
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      "dry-run": { type: "boolean" },
+      pr: { type: "string" },
+      title: { type: "string" },
+    },
+  });
+  const pr =
+    values.pr === undefined ? null : Number.parseInt(values.pr, 10);
+  if (values.pr !== undefined && !Number.isInteger(pr)) {
+    throw new Error("PR non valida.");
   }
-  return parsed;
+  if (values.title !== undefined && !values.title) {
+    throw new Error("Titolo PR mancante.");
+  }
+
+  return {
+    dryRun: values["dry-run"] ?? false,
+    pr,
+    title: values.title ?? null,
+  };
 }
 
 function runGit(args, options) {
@@ -316,8 +324,4 @@ function runInherited(command, args) {
   if (result.status !== 0) {
     throw new Error(`${command} ${args.join(" ")} non riuscito.`);
   }
-}
-
-function isCliEntrypoint() {
-  return Boolean(process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href);
 }

@@ -13,7 +13,7 @@ import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
 export interface ConflictMapping {
   id: string;
   shopId: string;
-  status: "ACTIVE" | "ARCHIVED" | "OUT_OF_STOCK" | "PAUSED" | "ERROR";
+  status: "ACTIVE" | "OUT_OF_STOCK" | "PAUSED" | "ERROR";
   shopifyProductGid: string | null;
   shopifyVariantGid: string | null;
   shopifyInventoryItemGid: string | null;

@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from "node:timers/promises";
+
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const DEFAULT_MAX_GRAPHQL_ATTEMPTS = 4;
 const DEFAULT_MAX_ELAPSED_MS = 45_000;
@@ -228,8 +230,4 @@ function parseJsonObject(text: string) {
 
 function normalizePositiveInteger(value: number | undefined, fallback: number) {
   return Number.isInteger(value) && Number(value) > 0 ? Number(value) : fallback;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }

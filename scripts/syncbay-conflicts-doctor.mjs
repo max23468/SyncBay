@@ -1,24 +1,42 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs } from "node:util";
 import {
-  getSupabaseCliCwd,
-  getSupabaseCliEnv,
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
 } from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-
-const execFileAsync = promisify(execFile);
 
 const DEFAULT_STALE_HOURS = 24;
 const ACTIVE_JOB_STATUSES = ["PENDING", "RUNNING", "RETRYING"];
 
-const args = parseArgs(process.argv.slice(2));
+const { values: args } = parseArgs({
+  options: {
+    help: { short: "h", type: "boolean" },
+    json: { type: "boolean" },
+    shop: { type: "string" },
+    "stale-hours": { type: "string" },
+  },
+});
+
+if (args.help) {
+  console.log(`Uso: npm run conflicts:doctor -- [--shop dominio.myshopify.com] [--stale-hours 24] [--json]
+
+Diagnostica in sola lettura per conflitti e retry stale. Non stampa valori
+prodotto, descrizioni, token o dati cliente.`);
+  process.exit(0);
+}
+
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
 });
-const staleHours = args.staleHours ?? DEFAULT_STALE_HOURS;
+const parsedStaleHours = Number.parseInt(args["stale-hours"] ?? "", 10);
+const staleHours =
+  Number.isInteger(parsedStaleHours) && parsedStaleHours > 0
+    ? parsedStaleHours
+    : DEFAULT_STALE_HOURS;
 
 await main().catch((error) => {
   console.error(`Doctor conflitti non riuscito: ${formatCliError(error)}`);
@@ -97,12 +115,12 @@ inactive_mapping_conflicts as (
   join shop_row s on s.id = sc."shopId"
   join "ProductMapping" pm on pm.id = sc."mappingId"
   where sc.status = 'OPEN'
-    and pm.status in ('OUT_OF_STOCK', 'ARCHIVED')
+    and pm.status = 'OUT_OF_STOCK'
 ),
 repairable_images as (
   -- Falsi conflitti immagini da baseline stale: baseline diversa dal valore
   -- Shopify ma una precedente baseline SyncBay aveva già registrato quel
-  -- conteggio. Stesso predicato di conflicts:repair-images.
+  -- conteggio.
   select sc.id
   from "SyncConflict" sc
   join shop_row s on s.id = sc."shopId"
@@ -244,38 +262,6 @@ select jsonb_build_object(
 `;
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: getSupabaseCliCwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
 function printReport(report) {
   console.log(`Shop: ${report.shopDomain}`);
   console.log(`Controllo: ${report.checkedAt}`);
@@ -315,19 +301,13 @@ function printReport(report) {
     console.log("");
   }
 
-  const repairSteps = [];
-  if (report.repairableDescriptionConflictCount > 0) {
-    repairSteps.push("npm run conflicts:repair-description -- --apply");
-  }
-  if ((report.imageRepairableConflictCount ?? 0) > 0) {
-    repairSteps.push("npm run conflicts:repair-images -- --apply");
-  }
-
-  if (repairSteps.length > 0) {
-    console.log("Prossimo passo:");
-    for (const step of repairSteps) {
-      console.log(`- ${step}`);
-    }
+  const repairableFalsePositives =
+    report.repairableDescriptionConflictCount +
+    (report.imageRepairableConflictCount ?? 0);
+  if (repairableFalsePositives > 0) {
+    console.log(
+      `Prossimo passo: ${repairableFalsePositives} falsi positivi da baseline superate; risolvili dalla pagina Conflitti (gli script di riparazione una tantum sono stati ritirati).`,
+    );
   } else if (report.repairableConflictCount > 0) {
     console.log(
       "Prossimo passo: chiudi i conflitti dei mapping inattivi dalla pagina Conflitti.",
@@ -339,72 +319,6 @@ function printReport(report) {
   } else {
     console.log("Prossimo passo: nessuna riparazione dedicata richiesta.");
   }
-}
-
-function parseArgs(rawArgs) {
-  const parsed = {};
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--stale-hours") {
-      const value = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.staleHours = Number.isInteger(value) && value > 0 ? value : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run conflicts:doctor -- [--shop dominio.myshopify.com] [--stale-hours 24] [--json]
-
-Diagnostica in sola lettura per conflitti e retry stale. Non stampa valori
-prodotto, descrizioni, token o dati cliente.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query Supabase. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith shop_row[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
 function sumRows(rows) {

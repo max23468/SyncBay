@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { setTimeout as sleep } from "node:timers/promises";
+import { parseArgs as parseNodeArgs } from "node:util";
+import {
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
+} from "./supabase-cli-env.mjs";
+import {
+  decryptSecret,
+  ensureTokenEncryptionKey,
+} from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-
-const execFileAsync = promisify(execFile);
 
 const DEFAULT_PUBLICATION_TITLE = "Online Store";
 const DEFAULT_BATCH_SIZE = 20;
@@ -221,8 +227,16 @@ limit 1;
     throw new Error(`Token offline Shopify non trovato per ${shopDomain}.`);
   }
 
+  // Le sessioni Shopify sono cifrate a riposo: il token va decifrato prima
+  // dell'uso, senza mai stamparlo.
+  let accessToken = payload.accessToken;
+  if (accessToken.startsWith("v1.")) {
+    ensureTokenEncryptionKey();
+    accessToken = decryptSecret(accessToken);
+  }
+
   return {
-    accessToken: payload.accessToken,
+    accessToken,
     productGids: payload.productGids ?? [],
     shopId: payload.shopId,
   };
@@ -369,99 +383,31 @@ function getShopifyGraphqlErrorMessage(json) {
     .join("; ");
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.cwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 60_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    return { rows: [] };
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
 function parseArgs(argv) {
+  const { values } = parseNodeArgs({
+    args: argv,
+    options: {
+      "batch-size": { type: "string" },
+      "configure-settings": { type: "boolean" },
+      "dry-run": { type: "boolean" },
+      "publication-title": { type: "string" },
+      shop: { type: "string" },
+    },
+  });
   const parsed = {
-    batchSize: DEFAULT_BATCH_SIZE,
-    configureSettings: false,
-    dryRun: false,
-    publicationTitle: DEFAULT_PUBLICATION_TITLE,
-    shop: null,
+    batchSize:
+      values["batch-size"] === undefined
+        ? DEFAULT_BATCH_SIZE
+        : Number.parseInt(values["batch-size"], 10),
+    configureSettings: values["configure-settings"] ?? false,
+    dryRun: values["dry-run"] ?? false,
+    publicationTitle: values["publication-title"] ?? DEFAULT_PUBLICATION_TITLE,
+    shop: values.shop ?? null,
   };
-
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-
-    if (arg === "--batch-size") {
-      parsed.batchSize = Number.parseInt(argv[++index] ?? "", 10);
-    } else if (arg === "--configure-settings") {
-      parsed.configureSettings = true;
-    } else if (arg === "--dry-run") {
-      parsed.dryRun = true;
-    } else if (arg === "--publication-title") {
-      parsed.publicationTitle = argv[++index] ?? DEFAULT_PUBLICATION_TITLE;
-    } else if (arg === "--shop") {
-      parsed.shop = argv[++index] ?? null;
-    } else {
-      throw new Error(`Argomento non supportato: ${arg}`);
-    }
-  }
 
   if (!Number.isInteger(parsed.batchSize) || parsed.batchSize < 1) {
     throw new Error("--batch-size deve essere un intero positivo.");
   }
 
   return parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query o mutation. Riprova tra poco o riduci il batch.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\s+/g, " ")
-    .trim();
 }

@@ -8,7 +8,7 @@ import {
 
 const VALID_TYPES = new Set(["security", "performance"]);
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   const advisorType = parseAdvisorType(process.argv.slice(2));
   const result = spawnSync(
     "npx",
@@ -38,8 +38,4 @@ export function parseAdvisorType(rawArgs) {
   }
 
   return advisorType;
-}
-
-function isCliEntrypoint() {
-  return process.argv[1]?.endsWith("syncbay-supabase-advisors.mjs") ?? false;
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { parseArgs as parseNodeArgs } from "node:util";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 
@@ -297,20 +298,33 @@ function printHumanReport(output) {
 }
 
 function parseArgs(argv) {
-  const parsed = {};
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (arg === "--help" || arg === "-h") parsed.help = true;
-    else if (arg === "--shop") parsed.shop = argv[++index];
-    else if (arg === "--json") parsed.json = true;
-    else if (arg === "--apply") parsed.apply = true;
-    else if (arg === "--confirm-apply") parsed.confirmApply = true;
-    else if (arg === "--intent-file") parsed.intentFile = argv[++index];
-    else if (arg === "--write-plan") parsed.writePlan = argv[++index];
-    else if (arg === "--limit-products") parsed.limitProducts = Number(argv[++index]);
-    else throw new Error(`Argomento non riconosciuto: ${arg}`);
-  }
-  return parsed;
+  const { values } = parseNodeArgs({
+    args: argv,
+    options: {
+      apply: { type: "boolean" },
+      "confirm-apply": { type: "boolean" },
+      help: { short: "h", type: "boolean" },
+      "intent-file": { type: "string" },
+      json: { type: "boolean" },
+      "limit-products": { type: "string" },
+      shop: { type: "string" },
+      "write-plan": { type: "string" },
+    },
+  });
+
+  return {
+    apply: values.apply,
+    confirmApply: values["confirm-apply"],
+    help: values.help,
+    intentFile: values["intent-file"],
+    json: values.json,
+    limitProducts:
+      values["limit-products"] === undefined
+        ? undefined
+        : Number(values["limit-products"]),
+    shop: values.shop,
+    writePlan: values["write-plan"],
+  };
 }
 
 function printUsage() {

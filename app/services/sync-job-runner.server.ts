@@ -17,7 +17,6 @@ import {
 import prisma from "../db.server";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
-import { getCatalogReconcileBlockingJobTypes } from "../lib/syncbay-catalog-reconcile-blockers";
 import { parseExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
 import {
   SYNCBAY_DESCRIPTION_BASELINE_PAYLOAD_SQL,
@@ -714,11 +713,11 @@ async function enqueueIncrementalSyncJobs(now: Date) {
           ],
         },
         type: {
-          in: getCatalogReconcileBlockingJobTypes({
-            archiveInactiveListing: SyncJobType.ARCHIVE_INACTIVE_LISTING,
-            importCatalog: SyncJobType.IMPORT_CATALOG,
-            syncIncremental: SyncJobType.SYNC_INCREMENTAL,
-          }),
+          in: [
+            SyncJobType.IMPORT_CATALOG,
+            SyncJobType.SYNC_INCREMENTAL,
+            SyncJobType.ARCHIVE_INACTIVE_LISTING,
+          ],
         },
       },
     });

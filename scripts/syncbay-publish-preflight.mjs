@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const REQUIRED_SCRIPTS = [
   "doctor:local",
@@ -12,7 +12,7 @@ const REQUIRED_SCRIPTS = [
   "release:dry-run",
 ];
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   const args = parseArgs(process.argv.slice(2));
   const report = buildReport(args);
 
@@ -171,43 +171,31 @@ function printReport(currentReport) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      "allow-dirty": { type: "boolean" },
+      "allow-main": { type: "boolean" },
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      remote: { type: "boolean" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--allow-dirty") {
-      parsed.allowDirty = true;
-      continue;
-    }
-
-    if (arg === "--allow-main") {
-      parsed.allowMain = true;
-      continue;
-    }
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--remote") {
-      parsed.remote = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run publish:preflight -- [--remote] [--allow-dirty] [--allow-main] [--json]
+  if (values.help) {
+    console.log(`Uso: npm run publish:preflight -- [--remote] [--allow-dirty] [--allow-main] [--json]
 
 Controlla branch, worktree, changelog, script minimi e, con --remote, PR
 GitHub più Codex feedback inbox prima di merge/pubblicazione.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
+    process.exit(0);
   }
 
-  return parsed;
+  return {
+    allowDirty: values["allow-dirty"],
+    allowMain: values["allow-main"],
+    json: values.json,
+    remote: values.remote,
+  };
 }
 
 function runGit(gitArgs) {
@@ -436,10 +424,6 @@ export function isPublishedMainPreflight(input) {
     input.upstreamState?.ahead === 0 &&
     input.upstreamState?.behind === 0
   );
-}
-
-function isCliEntrypoint() {
-  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }
 
 function hasActionableThreads(markdown) {

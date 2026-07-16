@@ -6,6 +6,44 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Rimosso
+
+- Lo stato mapping `ARCHIVED` non esiste più: i listing eBay inattivi restano
+  `OUT_OF_STOCK` (ADR 0011), il backfill una tantum aveva già migrato le righe
+  storiche e la verifica live ne conta zero. Migration dedicata e corsia
+  Catalogo "Esaurito" invariata per il negoziante.
+- Rimosso il fallback di decifratura sulla chiave non normalizzata in
+  `crypto.server.ts`: verificato che ogni envelope persistito si decifra con la
+  sola chiave trimmata. La cifratura era già sempre normalizzata.
+- Rimosso il percorso retention legacy parallelo alla maintenance giornaliera:
+  in produzione la compaction è l'unico motore attivo (MaintenanceRun regolari)
+  e con compaction disattivata la maintenance resta in sola osservazione.
+- Rimossi i moduli mai importati `syncbay-mapping-drift`,
+  `syncbay-provider-circuit-breaker` e `shopify-graphql-throttle`, e gli script
+  una tantum già consumati (cifratura sessioni, backfill inventory item e
+  baseline, pensionamento import interni, coalescenza webhook, riparazioni
+  conflitti descrizione/prezzo/immagini, riparazione campi commerciali,
+  backfill archiviati→esaurito) con i relativi comandi npm e docs.
+
+### Modificato
+
+- Gli script CLI condividono gli helper Supabase (`querySupabaseJson`,
+  `sqlString`, `formatCliError`) e il nuovo modulo `syncbay-ebay-cli.mjs`
+  (token cifrati, OAuth eBay/Shopify, Trading API): eliminate le copie
+  duplicate in ~20 script. Il parsing argomenti usa `node:util parseArgs`;
+  `verify` e `worktree` mantengono il parser dedicato per passthrough e
+  sottocomandi. `import.meta.main` sostituisce i check manuali di entrypoint e
+  gli sleep usano `node:timers/promises`.
+- Rimosso il flag ridondante `--experimental-strip-types`: il type stripping è
+  attivo di default sul Node richiesto da `engines`.
+
+### Corretto
+
+- `products:publish-channel` e il refresh sessione Shopify degli script di
+  backfill decifrano il token di sessione (cifrato a riposo) invece di usarlo
+  in chiaro, e il refresh da CLI riscrive i token cifrati: prima fallivano o
+  avrebbero lasciato token in chiaro nel database.
+
 ### Non versionato
 
 - La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`

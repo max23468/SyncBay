@@ -1,17 +1,44 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs } from "node:util";
 import {
   buildEgressBudgetReport,
   getEgressBudgetReadRows,
   isEgressReadStatementQuery,
 } from "../app/lib/syncbay-egress-budget.ts";
-import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import {
+  formatCliError,
+  querySupabaseJson,
+} from "./supabase-cli-env.mjs";
 
-const execFileAsync = promisify(execFile);
+const { values: rawArgs } = parseArgs({
+  options: {
+    "avg-bytes-per-row": { type: "string" },
+    "budget-gb": { type: "string" },
+    help: { short: "h", type: "boolean" },
+    json: { type: "boolean" },
+    top: { type: "string" },
+  },
+});
 
-const args = parseArgs(process.argv.slice(2));
+if (rawArgs.help) {
+  console.log(`Uso: npm run egress:budget -- [--budget-gb 5] [--avg-bytes-per-row N] [--top 10] [--json]
+
+Interroga pg_stat_statements su Supabase remoto tramite \`supabase db query --linked\`.
+Lo script è read-only: misura calls/rows, top query e presenza di query su ProductSnapshot.payload.`);
+  process.exit(0);
+}
+
+const parsedTop = Number.parseInt(rawArgs.top ?? "", 10);
+const args = {
+  avgBytesPerRow: parsePositiveNumber(rawArgs["avg-bytes-per-row"]),
+  budgetGb: parsePositiveNumber(rawArgs["budget-gb"]),
+  json: rawArgs.json,
+  top:
+    Number.isInteger(parsedTop) && parsedTop > 0
+      ? Math.min(parsedTop, 50)
+      : undefined,
+};
 const topLimit = args.top ?? 10;
 const MASSIVE_PAYLOAD_ROWS_THRESHOLD = 1_000;
 const MASSIVE_PAYLOAD_AVG_ROWS_PER_CALL_THRESHOLD = 20;
@@ -227,38 +254,6 @@ function hasProductSnapshotPayload(row) {
   return query.includes("productsnapshot") && query.includes("payload");
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: getSupabaseCliCwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
 function printSummary({ budget, diagnostics }) {
   const payloadReadStats = diagnostics.productSnapshotPayloadReads ?? {};
   const payloadStatementStats = diagnostics.productSnapshotPayloadStatements ?? {};
@@ -354,76 +349,8 @@ function round3(value) {
   return Math.round(value * 1000) / 1000;
 }
 
-function parseArgs(rawArgs) {
-  const parsed = {};
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--budget-gb") {
-      parsed.budgetGb = parsePositiveNumber(rawArgs[index + 1]);
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--avg-bytes-per-row") {
-      parsed.avgBytesPerRow = parsePositiveNumber(rawArgs[index + 1]);
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--top") {
-      const top = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.top = Number.isInteger(top) && top > 0 ? Math.min(top, 50) : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run egress:budget -- [--budget-gb 5] [--avg-bytes-per-row N] [--top 10] [--json]
-
-Interroga pg_stat_statements su Supabase remoto tramite \`supabase db query --linked\`.
-Lo script è read-only: misura calls/rows, top query e presenza di query su ProductSnapshot.payload.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
-}
-
 function parsePositiveNumber(value) {
   const parsed = Number(value);
 
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query Supabase. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith statement_rows[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
 }

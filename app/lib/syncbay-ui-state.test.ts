@@ -410,14 +410,6 @@ test("maps catalog status labels", () => {
 test("computes catalog row status from mapping health", () => {
   assert.equal(
     getCatalogRowStatus({
-      mappingStatus: "ARCHIVED",
-      openConflictCount: 3,
-      stale: true,
-    }),
-    "archived",
-  );
-  assert.equal(
-    getCatalogRowStatus({
       mappingStatus: "OUT_OF_STOCK",
       openConflictCount: 3,
       stale: true,

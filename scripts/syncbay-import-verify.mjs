@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
 import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs as parseNodeArgs, promisify } from "node:util";
 import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import {
+  findJsonStart,
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
+} from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -450,38 +455,6 @@ function normalizeProductStatus(value) {
   return typeof value === "string" && value.trim() ? value.trim() : "ACTIVE";
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.cwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
 function parseJsonObject(value) {
   const jsonStart = findJsonStart(value);
 
@@ -517,30 +490,6 @@ function printSummary(input) {
   }
 }
 
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith latest_run[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
 function normalizeMoney(value) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -558,64 +507,44 @@ function normalizeNumber(value) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      "runtime-url": { type: "string" },
+      sample: { type: "string" },
+      shop: { type: "string" },
+      "shopify-source": { type: "string" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--sample") {
-      const sample = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.sample =
-        Number.isInteger(sample) && sample > 0 ? sample : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--shopify-source") {
-      const source = rawArgs[index + 1];
-      if (!["runtime", "cli"].includes(source)) {
-        throw new Error("--shopify-source supporta solo runtime oppure cli.");
-      }
-      parsed.shopifySource = source;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--runtime-url") {
-      parsed.runtimeUrl = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run import:verify -- [--shop dominio.myshopify.com] [--sample 10] [--shopify-source runtime|cli] [--runtime-url https://syncbay.vercel.app] [--json]
+  if (values.help) {
+    console.log(`Uso: npm run import:verify -- [--shop dominio.myshopify.com] [--sample 10] [--shopify-source runtime|cli] [--runtime-url https://syncbay.vercel.app] [--json]
 
 Confronta un campione dell'ultima run import tra snapshot eBay/SyncBay,
 mapping ProductMapping e prodotti Shopify live tramite endpoint runtime SyncBay.
 Usa Supabase CLI linked, non richiede DATABASE_URL locale e non stampa segreti.
 La sorgente cli resta disponibile solo come fallback manuale esplicito.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
+    process.exit(0);
   }
 
-  return parsed;
-}
+  if (
+    values["shopify-source"] !== undefined &&
+    !["runtime", "cli"].includes(values["shopify-source"])
+  ) {
+    throw new Error("--shopify-source supporta solo runtime oppure cli.");
+  }
 
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
+  const sample = Number.parseInt(values.sample ?? "", 10);
+
+  return {
+    json: values.json,
+    runtimeUrl: values["runtime-url"],
+    sample: Number.isInteger(sample) && sample > 0 ? sample : undefined,
+    shop: values.shop,
+    shopifySource: values["shopify-source"],
+  };
 }
 
 function chunkArray(values, size) {

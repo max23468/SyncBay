@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { parseArgs } from "node:util";
+import {
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
+} from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-
-const execFileAsync = promisify(execFile);
 
 const DEFAULT_MAX_AGE_HOURS = 24;
 const ARCHIVABLE_ERROR_CODES = [
@@ -13,12 +14,33 @@ const ARCHIVABLE_ERROR_CODES = [
   "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
 ];
 
-const args = parseArgs(process.argv.slice(2));
+const { values: args } = parseArgs({
+  options: {
+    apply: { type: "boolean" },
+    help: { short: "h", type: "boolean" },
+    json: { type: "boolean" },
+    "max-age-hours": { type: "string" },
+    shop: { type: "string" },
+  },
+});
+
+if (args.help) {
+  console.log(`Uso: npm run jobs:archive-stale-failures -- [--shop dominio.myshopify.com] [--max-age-hours 24] [--apply] [--json]
+
+Archivia come CANCELLED i vecchi job SYNC_INCREMENTAL FAILED superati da un sync incrementale riuscito più recente.
+Senza --apply esegue solo una preview. Non stampa payload prodotto, token o dati personali.`);
+  process.exit(0);
+}
+
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
 });
-const maxAgeHours = args.maxAgeHours ?? DEFAULT_MAX_AGE_HOURS;
+const parsedMaxAgeHours = Number.parseInt(args["max-age-hours"] ?? "", 10);
+const maxAgeHours =
+  Number.isInteger(parsedMaxAgeHours) && parsedMaxAgeHours > 0
+    ? parsedMaxAgeHours
+    : DEFAULT_MAX_AGE_HOURS;
 
 await main().catch((error) => {
   console.error(`Archivio job storici non riuscito: ${formatCliError(error)}`);
@@ -153,28 +175,6 @@ select jsonb_build_object(
 `;
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.cwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
 function printSummary(result) {
   const count = result.archivedCount ?? result.archivableCount ?? 0;
   const verb = result.mode === "apply" ? "archiviati" : "archiviabili";
@@ -194,86 +194,4 @@ function printSummary(result) {
       `- ${row.errorCode}: ${row.jobCount} job, aggiornati da ${row.firstUpdatedAt} a ${row.lastUpdatedAt}`,
     );
   }
-}
-
-function parseArgs(rawArgs) {
-  const parsed = {};
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--apply") {
-      parsed.apply = true;
-      continue;
-    }
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--max-age-hours") {
-      const hours = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.maxAgeHours =
-        Number.isInteger(hours) && hours > 0 ? hours : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run jobs:archive-stale-failures -- [--shop dominio.myshopify.com] [--max-age-hours 24] [--apply] [--json]
-
-Archivia come CANCELLED i vecchi job SYNC_INCREMENTAL FAILED superati da un sync incrementale riuscito più recente.
-Senza --apply esegue solo una preview. Non stampa payload prodotto, token o dati personali.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query Supabase. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith shop[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
 }

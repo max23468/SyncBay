@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -220,57 +221,41 @@ function printReport(report) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      "project-ref": { type: "string" },
+      "supabase-url": { type: "string" },
+      "timeout-ms": { type: "string" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--project-ref") {
-      parsed.projectRef = readRequiredValue(rawArgs, index, arg);
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--supabase-url") {
-      parsed.supabaseUrl = readRequiredValue(rawArgs, index, arg);
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--timeout-ms") {
-      parsed.timeoutMs = parsePositiveInteger(readRequiredValue(rawArgs, index, arg));
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run supabase:services -- [--project-ref ref] [--supabase-url url] [--timeout-ms ms] [--json]
+  if (values.help) {
+    console.log(`Uso: npm run supabase:services -- [--project-ref ref] [--supabase-url url] [--timeout-ms ms] [--json]
 
 Verifica PostgREST, Auth e Storage via HTTP con apikey Supabase anon/publishable.
 Non stampa chiavi o segreti. Serve a distinguere 401 da API key mancante e
 restrizioni provider, per esempio 402 exceed_egress_quota.`);
-      process.exit(0);
+    process.exit(0);
+  }
+
+  for (const key of ["project-ref", "supabase-url", "timeout-ms"]) {
+    if (values[key] !== undefined && !values[key]) {
+      throw new Error(`Valore mancante per --${key}.`);
     }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
   }
 
-  return parsed;
-}
-
-function readRequiredValue(rawArgs, index, flag) {
-  const value = rawArgs[index + 1]?.trim();
-
-  if (!value || value.startsWith("--")) {
-    throw new Error(`Valore mancante per ${flag}.`);
-  }
-
-  return value;
+  return {
+    json: values.json,
+    projectRef: values["project-ref"],
+    supabaseUrl: values["supabase-url"],
+    timeoutMs:
+      values["timeout-ms"] === undefined
+        ? undefined
+        : parsePositiveInteger(values["timeout-ms"]),
+  };
 }
 
 function parsePositiveInteger(value) {
