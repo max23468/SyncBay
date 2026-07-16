@@ -394,22 +394,11 @@ s-section {
   min-inline-size: 0;
 }
 
-/* Le route dichiarano direttamente due colonne sulle griglie che devono
-   restare bilanciate. I cinque riepiloghi Conflitti usano 2 + 2 + 1 con
-   l'ultimo elemento a tutta larghezza, quindi non lasciano un box orfano. */
-.syncbay-conflict-summary-grid > s-grid > :last-child {
-  grid-column: 1 / -1;
-}
-
 /* Nell'app embedded conta la larghezza del contenitore, non quella della
    finestra Shopify. Sotto 420px ogni box occupa una riga intera. */
 @container (max-width: 420px) {
   .syncbay-balanced-box-grid > s-grid {
     grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .syncbay-conflict-summary-grid > s-grid > :last-child {
-    grid-column: auto;
   }
 }
 

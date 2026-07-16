@@ -190,10 +190,10 @@ export default function ConflictsRoute() {
           tone={hasOpen ? "warning" : "success"}
         />
 
-        <div className="syncbay-balanced-box-grid syncbay-conflict-summary-grid">
+        <div className="syncbay-balanced-box-grid">
           <s-grid
             gap="base"
-            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
           >
             <MetricTile
               detail="Aspettano una tua scelta."

@@ -18,7 +18,7 @@
 - Scegliere caso per caso lo strumento provider più affidabile tra plugin, connector, MCP, app, CLI, API e browser; dichiarare soltanto limiti, risultati parziali o cambi di strumento che alterano la qualità delle prove.
 - Ogni task runtime segue test-first: bug e nuove capacità partono da un test rosso; i refactor puri partono da test di caratterizzazione verdi, poi preservano il comportamento durante lo spostamento. Ogni task chiude con gate proporzionati e commit atomico.
 - Le fixture restano sintetiche; nessun dato Numisleo o di altro negoziante entra nel repository.
-- Le griglie che raggruppano box, card, metriche o pannelli di confronto usano una colonna fino a `640px`. Oltre `640px` usano il numero minimo di colonne che preserva leggibilità e righe complete: due colonne come default, con l'ultimo box a tutta riga quando il totale è dispari; sono ammesse tre colonne soltanto per tre metriche compatte che entrano senza wrapping e senza celle vuote. Impostazioni resta `2 x 2`, Conflitti resta `2 + 2 + 1` con l'ultimo box a tutta larghezza. Non rendere il desktop monocolonna e non applicare la regola a griglie interne di form, pulse o intestazioni.
+- Le griglie che raggruppano box, card, metriche o pannelli di confronto usano una colonna sui contenitori mobile. Su desktop preservano il layout specifico della superficie: Impostazioni resta `2 x 2`; i cinque riepiloghi Conflitti restano sulla stessa riga quando lo spazio lo consente, senza forzare l'ultimo box a tutta larghezza. Non rendere il desktop monocolonna e non applicare regole globali a griglie interne di form, pulse o intestazioni.
 - React Router 8, TypeScript 7 e tipi Node 26 restano migrazioni separate e fuori da questo piano.
 - App Store, billing, multi-marketplace, multi-location avanzato, varianti complesse e rollback self-service per prodotto restano fuori dal programma: non erano difetti validati dell'audit e richiedono decisioni prodotto dedicate.
 - Ogni ondata che modifica il runtime produce una release patch `1.0.x`, PR separata, deploy Vercel verificato e controllo del tick cron successivo prima di iniziare l'ondata seguente. Task e ondate esclusivamente documentali o di test restano non versionati quando il changelog non contiene cambi runtime.
@@ -1755,14 +1755,14 @@ In `scripts/syncbay-ui-check.test.mjs`, per ciascuna delle sei fixture, verifica
 assert.match(html, /syncbay-balanced-box-grid/);
 ```
 
-In `scripts/smoke-ui.mjs` verificare la classe, le due colonne desktop, la regola `:last-child:nth-child(odd)`, l'eccezione Panoramica a tre colonne e la media query monocolonna a `640px`. Expected: su mobile ogni box occupa una riga; su desktop Impostazioni è `2 x 2`, Conflitti è `2 + 2 + 1` con l'ultimo box a tutta riga e Panoramica mantiene tre metriche compatte solo quando c'è spazio reale. Nessuna griglia lascia celle vuote.
+In `scripts/smoke-ui.mjs` verificare la classe, le due colonne desktop di Impostazioni, l'eccezione Panoramica a tre colonne e la regola monocolonna mobile sul contenitore reale. Expected: su mobile ogni box occupa una riga; su desktop Impostazioni è `2 x 2`, Conflitti conserva i cinque riepiloghi sulla stessa riga quando lo spazio lo consente e Panoramica mantiene tre metriche compatte solo quando c'è spazio reale.
 
 - [x] **Step 4: Correggere layout e overflow riprodotti sullo store Numisleo**
 
 Applicare le correzioni confermate dall'audit embedded in sola lettura:
 
 1. Impostazioni: quattro card commerciali in `2 x 2` desktop e una colonna mobile, senza slot vuoti; diagnostica tecnica e azioni distruttive restano nei disclosure esistenti;
-2. Conflitti: non mostrare cinque card strette nella stessa riga; usare `2 + 2 + 1` desktop e una colonna mobile;
+2. Conflitti: mantenere i cinque riepiloghi sulla stessa riga desktop quando lo spazio lo consente, senza allargare l'ultimo; usare una colonna mobile;
 3. Catalogo: filtri/chip possono andare a capo; la tabella a otto colonne vive in un wrapper `max-inline-size: 100%; overflow-x: auto`; `s-page`, sezioni e griglie restano a `min-inline-size: 0`, quindi lo scroll orizzontale non trascina l'intera app embedded;
 4. tutte le superfici: nessun testo, controllo o badge tagliato a `1440px`, `1024px`, `768px` e `390px`; touch target e focus restano nativi Shopify.
 
@@ -2033,7 +2033,7 @@ Con lo strumento Supabase che copre health, query aggregate, advisor e cron, sen
 Dentro Shopify Admin:
 
 - aprire le sei superfici;
-- verificare le sei superfici a `1440px`, `1024px`, `768px` e `390px`: desktop non monocolonna, Impostazioni `2 x 2`, Conflitti `2 + 2 + 1`, una colonna mobile e nessun box orfano;
+- verificare le sei superfici a `1440px`, `1024px`, `768px` e `390px`: desktop non monocolonna, Impostazioni `2 x 2`, cinque riepiloghi Conflitti sulla stessa riga quando lo spazio lo consente, una colonna mobile e nessun ultimo box forzato a tutta larghezza;
 - confermare che la pagina embedded non abbia overflow orizzontale; nel Catalogo può scorrere soltanto il wrapper della tabella;
 - verificare le semantiche live: nessun `Completata`/`Ok` associato a “non ancora allineato”, nessun `Fermo` con prossimo controllo pianificato e denominatori coerenti tra prodotti seguiti, attivi ed esauriti;
 - verificare che Importazione tenga riconnessione e rinomina location secondarie rispetto a preview e prerequisiti;
