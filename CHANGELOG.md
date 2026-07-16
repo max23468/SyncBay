@@ -49,6 +49,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
   vale anche per i tag annotati.
 
+## [1.0.72] — 2026-07-16
+
+### Correzioni
+
+- Il rilevamento dei conflitti legge la baseline dopo la risposta Shopify, evitando conflitti transitori quando un job SyncBay concorrente aggiorna la baseline durante la lettura del provider.
+
 ## [1.0.71] — 2026-07-16
 
 ### Correzioni
@@ -3752,6 +3758,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.72]: #1072--2026-07-16
 [1.0.71]: #1071--2026-07-16
 [1.0.70]: #1070--2026-07-16
 [1.0.69]: #1069--2026-07-16

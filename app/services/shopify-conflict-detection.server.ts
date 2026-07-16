@@ -123,7 +123,6 @@ export async function detectShopifyChangesBatch(
   const activeMappings = [...new Map(
     [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
   ).values()];
-  const baselines = await ports.loadBaselines(activeMappings.map(({ id }) => id));
   // Un target per mapping (non per prodotto): due mapping su varianti diverse
   // dello stesso prodotto Shopify devono confrontare ciascuno la propria
   // variante/location, non solo la prima vista. Il risultato è indicizzato per
@@ -144,6 +143,10 @@ export async function detectShopifyChangesBatch(
         defaultLocationGid: input.defaultLocationGid ?? null,
       })
     : new Map<string, ShopifyConflictProduct>();
+  // La lettura Shopify può durare abbastanza da sovrapporsi a un job SyncBay
+  // che aggiorna la baseline. Leggerla dopo il provider evita di aprire un
+  // conflitto usando una copia già superata durante la stessa esecuzione.
+  const baselines = await ports.loadBaselines(activeMappings.map(({ id }) => id));
 
   for (const job of input.jobs) {
     const mapping = mappingByJob.get(job.id);
