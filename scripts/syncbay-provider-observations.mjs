@@ -98,13 +98,6 @@ export async function observeVercel({ cwd = process.cwd(), env = process.env, ex
   };
 }
 
-export function buildPlanEligibility({ commercialUse, plan }) {
-  if (plan === "hobby" && commercialUse.value === true) return "blocked";
-  if (!plan) return "requires_plan_observation";
-  if (commercialUse.status === "defaulted_private") return "ok_private_only";
-  return "ok";
-}
-
 export function resolveVercelPlan(rawValue) {
   const declaredPlan = normalizeDeclaredPlan(rawValue);
   if (declaredPlan) {
@@ -119,16 +112,9 @@ export function resolveVercelPlan(rawValue) {
       status: "declared_default",
       value: REPOSITORY_VERCEL_PLAN,
       source: "repository_policy",
-      action: "verify_vercel_dashboard_and_set_VERCEL_PLAN_before_commercial_use",
+      action: "verify_vercel_dashboard_and_update_VERCEL_PLAN_when_changed",
     },
   };
-}
-
-export function observeCommercialUse(rawValue) {
-  const normalized = String(rawValue ?? "").trim().toLowerCase();
-  if (normalized === "true") return { status: "declared", value: true };
-  if (normalized === "false") return { status: "declared", value: false };
-  return { status: "defaulted_private", value: false, action: "set_SYNCBAY_COMMERCIAL_USE_before_onboarding" };
 }
 
 export function buildSupabaseStorageObservation({ bytes, objectCount, quotaBytes = 1_000_000_000 }) {

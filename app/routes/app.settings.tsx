@@ -342,10 +342,10 @@ export default function SettingsRoute() {
           settings={settings}
         />
 
-        <div className="syncbay-balanced-box-grid">
+        <div className="syncbay-balanced-box-grid syncbay-settings-policy-grid">
         <s-grid
           gap="large"
-          gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))"
+          gridTemplateColumns="repeat(2, minmax(0, 1fr))"
         >
           <ImportProductSettingsCard
             currentStatus={currentStatus}

@@ -1,6 +1,6 @@
 # SyncBay Comprehensive Improvement Implementation Plan
 
-**Goal:** Eliminare tutti i rilievi validati nella revisione generale di SyncBay: backlog e freschezza conflitti, sicurezza sessioni Shopify, pressione database, retry e transazioni Shopify Admin, doppio ciclo vita import, locality del catalogo esistente, copertura dei moduli runtime, falso verde UI, stati negoziante coerenti, accessibilità e stati degradati, impaginazione e raccolte di box bilanciate senza spazi vuoti, overflow del catalogo, osservabilità e payload frontend, pulizia generale, budget Vercel/Supabase Free, backup/disaster recovery, drift documentale e piccoli debiti verificati.
+**Goal:** Eliminare tutti i rilievi validati nella revisione generale di SyncBay: backlog e freschezza conflitti, sicurezza sessioni Shopify, pressione database, retry e transazioni Shopify Admin, doppio ciclo vita import, locality del catalogo esistente, copertura dei moduli runtime, falso verde UI, stati negoziante coerenti, accessibilità e stati degradati, impaginazione e raccolte di box bilanciate senza spazi vuoti, overflow del catalogo, osservabilità e payload frontend, pulizia generale, budget Vercel/Supabase Free, drift documentale e piccoli debiti verificati.
 
 **Architecture:** Il lavoro approfondisce cinque moduli dentro il runtime esistente: intake/rilevamento conflitti, adapter Shopify Admin/sessioni, storia prodotto, esecuzione import e takeover catalogo esistente. Le modifiche dati seguono rollout additivi e compatibili prima di qualunque compattazione; Supabase Cron, Vercel Functions e Prisma restano l'unico runtime asincrono, senza nuovi worker o code esterne.
 
@@ -16,7 +16,6 @@
 - Ogni scrittura o migrazione live deve avere dry-run, conferma esplicita, conteggi senza payload e strategia di rollback.
 - Non stampare token, segreti, dati cliente, titoli, SKU, descrizioni o payload reali nei log di migrazione/verifica.
 - Scegliere caso per caso lo strumento provider più affidabile tra plugin, connector, MCP, app, CLI, API e browser; dichiarare soltanto limiti, risultati parziali o cambi di strumento che alterano la qualità delle prove.
-- Non trattare “entro quota” come sinonimo di “conforme al piano”: verificare l'idoneità contrattuale del piano Vercel corrente. Se la distribuzione privata è uso commerciale e il progetto è su Hobby, l'ottimizzazione tecnica non aggira il vincolo non-commerciale; la decisione upgrade/restrizione d'uso va portata al maintainer prima di dichiarare produzione conforme.
 - Ogni task runtime segue test-first: bug e nuove capacità partono da un test rosso; i refactor puri partono da test di caratterizzazione verdi, poi preservano il comportamento durante lo spostamento. Ogni task chiude con gate proporzionati e commit atomico.
 - Le fixture restano sintetiche; nessun dato Numisleo o di altro negoziante entra nel repository.
 - Le griglie che raggruppano box, card, metriche o pannelli di confronto usano una colonna fino a `640px`. Oltre `640px` usano il numero minimo di colonne che preserva leggibilità e righe complete: due colonne come default, con l'ultimo box a tutta riga quando il totale è dispari; sono ammesse tre colonne soltanto per tre metriche compatte che entrano senza wrapping e senza celle vuote. Impostazioni resta `2 x 2`, Conflitti resta `2 + 2 + 1` con l'ultimo box a tutta larghezza. Non rendere il desktop monocolonna e non applicare la regola a griglie interne di form, pulse o intestazioni.
@@ -43,7 +42,6 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 | Frontend e bundle | Build fresca: `149.035` byte gzip di JS client complessivo, route più grande Importazione circa `7,99 kB` gzip, CSS `3,34 kB` gzip, server bundle `181,9 kB` gzip; React Doctor `100/100` | Task 12 introduce un budget di regressione senza dipendenze e mantiene i valori con margine ragionevole |
 | Accessibilità e stati UI | Esistono `aria-live`, `aria-busy`, riduzione movimento, paginazione e pending route, ma non un gate browser che provi hydration, tastiera, focus, zoom/reflow e stati degradati delle sei superfici | Task 11 aggiunge matrice fixture e browser check; Task 13 mantiene la verifica manuale screen reader/zoom 400% |
 | Osservabilità frontend/runtime | Speed Insights e Web Analytics sono già montati; i loader misurano durata e `payloadBytes`, ma i log sani sono emessi di default e manca una correlazione strutturata comune per runner/webhook | Task 12 riusa la telemetria esistente, aggiunge budget payload, sampling e `requestId` senza nuovi provider |
-| Disaster recovery | Supabase Free non include backup automatici; checkpoint prodotto e rollback applicativo non equivalgono a un ripristino completo del database | Task 12 definisce RPO/RTO, backup cifrato fuori progetto e restore drill; Task 13 lo rende gate |
 | Hotspot | `sync-job-runner.server.ts` circa `4.980` righe, `syncbay.server.ts` circa `4.950`, `shopify-draft-import.server.ts` circa `4.041`, `app.import-preview.tsx` circa `1.911` | Task 4, 6, 9 e 10 spostano ownership complete in moduli profondi; Task 13 verifica locality e dimensioni senza spezzare per sola metrica |
 | GitHub e dipendenze | La base Git locale include la PR `#411`; major intenzionalmente rinviate: React Router 8, TypeScript 7 e tipi Node 26. Lo stato delle PR remote non viene assunto dal piano | Task 12 ricontrolla le dipendenze; Task 13 verifica GitHub live |
 
@@ -68,10 +66,8 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 | Stati live e metriche usano etichette contraddittorie o ambigue | Modello semantico UI condiviso e glossario metriche | 11, 12, 13 |
 | Tabella Catalogo può trascinare l'intera app in overflow orizzontale | Contenitore scroll locale e layout con `min-inline-size: 0` | 12, 13 |
 | Quota Free non governata oltre la sola size DB | Budget provider con soglie 70/85/95%, egress e build/deploy inclusi | 8, 12, 13 |
-| Possibile incompatibilità tra produzione commerciale e Vercel Hobby | Decisione provider esplicita; nessun bypass tramite ottimizzazione quote | 12, 13 |
 | Nessun gate browser/accessibilità sugli stati non-happy-path | Fixture state matrix, hydration e QA accessibilità | 11, 12, 13 |
 | Log loader non campionati e senza correlazione comune | Logger strutturato e budget payload/log | 12, 13 |
-| Nessun backup automatico nel piano Supabase Free | Runbook disaster recovery e restore drill | 12, 13 |
 | Controllo egress esistente rischiava di essere duplicato | `provider:budget` compone `egress:budget`, non lo sostituisce | 8, 13 |
 | Warning React Doctor già risolto in `1.0.45`, `/robots.txt` 404, docs cron/roadmap incoerenti | Igiene finale e gate anti-regressione | 12 |
 | Verifica release/deploy/provider e stabilità post-fix | Chiusura programma | 13 |
@@ -1235,7 +1231,8 @@ sono osservati via CLI/API, Speed Insights dichiara la retention parziale Hobby,
 Supabase Storage misura i byte live aggregati e l'egress fatturabile Supabase
 resta esplicitamente di dashboard.
 
-Lo script non decide l'idoneità contrattuale. Registrare separatamente piano/account Vercel effettivo e uso commerciale sì/no: se il progetto production è Hobby e l'uso è commerciale, `provider:budget` deve riportare `plan_eligibility: blocked` anche con consumi bassi.
+Lo script osserva quote e consumi tecnici e non applica un gate separato basato
+sulla classificazione dell'uso.
 
 - [x] **Step 5: Aggiornare policy e rollback**
 
@@ -1646,8 +1643,6 @@ git commit -m "test: add isolated UI render gate"
 - Create: `scripts/syncbay-bundle-budget.test.mjs`
 - Create: `scripts/syncbay-docs-check.mjs`
 - Create: `scripts/syncbay-docs-check.test.mjs`
-- Create: `scripts/syncbay-db-backup.mjs`
-- Create: `scripts/syncbay-db-backup.test.mjs`
 - Modify: `scripts/smoke-ui.mjs`
 - Modify: `scripts/syncbay-ui-check.test.mjs`
 - Modify: `package.json`
@@ -1658,7 +1653,6 @@ git commit -m "test: add isolated UI render gate"
 - Modify: `docs/DECISIONS_PENDING.md`
 - Modify: `docs/glossario.md`
 - Modify: `docs/guides/provisioning-runtime.md`
-- Create: `docs/guides/backup-e-disaster-recovery.md`
 - Modify: `docs/guides/sicurezza-privacy.md`
 - Modify: `SECURITY.md`
 - Modify: `CHANGELOG.md`
@@ -1668,7 +1662,7 @@ git commit -m "test: add isolated UI render gate"
 
 **Interfaces:**
 - Consumes: stato finale dei Task 1-11.
-- Produces: gate React Doctor ancora a `100/100`, stati UI coerenti e accessibili, raccolte di box monocolonna su mobile e bilanciate senza buchi su desktop, overflow confinato, payload e log osservabili senza rumore, budget bundle/provider, disaster recovery esplicito, crawler policy e documentazione verificabile.
+- Produces: gate React Doctor ancora a `100/100`, stati UI coerenti e accessibili, raccolte di box monocolonna su mobile e bilanciate senza buchi su desktop, overflow confinato, payload e log osservabili senza rumore, budget bundle/provider, crawler policy e documentazione verificabile.
 
 - [x] **Step 1: Verificare che il fix React Doctor già rilasciato non regredisca**
 
@@ -1835,24 +1829,12 @@ Riutilizzare `logSyncBayLoaderPerformance`, che già misura `payloadBytes`, inve
 
 Speed Insights e Web Analytics sono già installati: verificare che non vengano duplicati e includere i loro data point/eventi nel budget Vercel. Non aggiungere Sentry, drain o nuova dipendenza in questa fase.
 
-- [x] **Step 9: Definire backup e disaster recovery compatibili con Supabase Free**
+- [x] **Step 9: Rimuovere disaster recovery dal perimetro**
 
-Poiché Supabase Free non include backup automatici, creare un runbook con decisione esplicita su RPO/RTO. Percorso minimo:
-
-1. export logico cifrato settimanale delle sole tabelle necessarie al ripristino, mai nel repository o in Supabase Storage dello stesso progetto;
-2. retention e destinazione controllate dal maintainer, con verifica spazio e cancellazione sicura;
-3. checksum, manifest senza dati negoziante e prova di restore trimestrale in database isolato;
-4. backup immediato prima di migration distruttive, backfill o prima compattazione;
-5. se non esiste una destinazione cifrata affidabile o l'RPO richiesto non è compatibile, registrare upgrade/provider backup come decisione bloccante, non fingere protezione.
-
-Esporre comandi espliciti:
-
-```json
-"db:backup": "node scripts/syncbay-db-backup.mjs",
-"db:restore-check": "node scripts/syncbay-db-backup.mjs --restore-check"
-```
-
-`db:backup` parte in dry-run e richiede `--apply --confirm-apply` per creare l'archivio cifrato; `db:restore-check` accetta solo un database target esplicitamente non-production, verifica versione Postgres/Prisma, checksum e manifest prima di scrivere. Nessun comando stampa righe o payload.
+Per decisione del maintainer del 16 luglio 2026, SyncBay non implementa né
+documenta backup o restore del database. Rimossi script, comandi, env, test e
+runbook dedicati. Baseline, checkpoint e rollback applicativo restano nel loro
+perimetro e non vengono presentati come disaster recovery.
 
 - [x] **Step 10: Rendere verificabile la documentazione e la pulizia generale**
 
@@ -1878,8 +1860,6 @@ Aggiornamenti obbligatori:
 - documentare baseline/checkpoint e test server/UI reali;
 - documentare budget provider Free, significato delle metriche UI e limiti di osservabilità del piano corrente;
 - documentare payload/log sampling, Core Web Vitals disponibili, accessibilità verificata e limiti manuali residui;
-- indicizzare il runbook backup/disaster recovery e registrare RPO/RTO o decisione bloccante;
-- registrare in `docs/DECISIONS_PENDING.md` l'idoneità del piano Vercel: chiuderla con fonte ufficiale e scelta del maintainer, non con un'assunzione tecnica;
 - aggiornare sicurezza da “storage template da decidere” a token Shopify cifrati;
 - aggiungere il nuovo piano a `docs/INDEX.md`;
 - classificare le modifiche runtime nel changelog come patch.
@@ -1926,15 +1906,14 @@ npm run build
 npm run bundle:budget
 npm run provider:budget
 npm run docs:check
-npm run db:backup -- --dry-run
 npx mex-agent check --quiet
 git diff --check
 ```
 
-Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider osservate oppure classificate con uno stato causale e azionabile, documentazione/link/comandi coerenti, strategia backup decisa, `robots.txt` incluso nello smoke e mex con zero errori.
+Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider osservate oppure classificate con uno stato causale e azionabile, documentazione/link/comandi coerenti, `robots.txt` incluso nello smoke e mex con zero errori.
 
 ```bash
-git add app/routes/app._index.tsx app/routes/app.catalog.tsx app/routes/app.conflicts.tsx app/routes/app.import-preview.tsx app/routes/app.activity.tsx app/routes/app.settings.tsx app/routes/api.jobs.run-due.tsx app/routes/webhooks.products.update.tsx app/routes/webhooks.inventory_levels.update.tsx app/lib/syncbay-ui-state.ts app/lib/syncbay-ui-state.test.ts app/lib/syncbay-runtime-log.ts app/lib/syncbay-runtime-log.test.ts app/lib/syncbay-loader-performance.ts app/lib/syncbay-loader-performance.test.ts app/styles/syncbay-embedded.css public/robots.txt scripts/syncbay-bundle-budget.mjs scripts/syncbay-bundle-budget.test.mjs scripts/syncbay-docs-check.mjs scripts/syncbay-docs-check.test.mjs scripts/syncbay-db-backup.mjs scripts/syncbay-db-backup.test.mjs scripts/smoke-ui.mjs scripts/syncbay-ui-check.test.mjs package.json docs/ROADMAP.md docs/CONTEXT.md docs/INDEX.md docs/TOOLCHAIN.md docs/DECISIONS_PENDING.md docs/guides/provisioning-runtime.md docs/guides/backup-e-disaster-recovery.md docs/guides/sicurezza-privacy.md docs/glossario.md SECURITY.md CHANGELOG.md .mex/context/setup.md
+git add app/routes/app._index.tsx app/routes/app.catalog.tsx app/routes/app.conflicts.tsx app/routes/app.import-preview.tsx app/routes/app.activity.tsx app/routes/app.settings.tsx app/routes/api.jobs.run-due.tsx app/routes/webhooks.products.update.tsx app/routes/webhooks.inventory_levels.update.tsx app/lib/syncbay-ui-state.ts app/lib/syncbay-ui-state.test.ts app/lib/syncbay-runtime-log.ts app/lib/syncbay-runtime-log.test.ts app/lib/syncbay-loader-performance.ts app/lib/syncbay-loader-performance.test.ts app/styles/syncbay-embedded.css public/robots.txt scripts/syncbay-bundle-budget.mjs scripts/syncbay-bundle-budget.test.mjs scripts/syncbay-docs-check.mjs scripts/syncbay-docs-check.test.mjs scripts/smoke-ui.mjs scripts/syncbay-ui-check.test.mjs package.json docs/ROADMAP.md docs/CONTEXT.md docs/INDEX.md docs/TOOLCHAIN.md docs/DECISIONS_PENDING.md docs/guides/provisioning-runtime.md docs/guides/sicurezza-privacy.md docs/glossario.md SECURITY.md CHANGELOG.md .mex/context/setup.md
 git add -u CLAUDE.md .mex/ROUTER.md
 git commit -m "fix: align UI states and operational budgets"
 ```
@@ -1953,14 +1932,14 @@ git commit -m "fix: align UI states and operational budgets"
 - Consumes: tutte le ondate completate e i rollout live verificati.
 - Produces: release private `1.0.x` verificata, deploy production sano, provider stabili e matrice audit completamente chiusa.
 
-- [ ] **Step 1: Eseguire il gate locale completo in sequenza**
+- [x] **Step 1: Eseguire il gate locale completo in sequenza**
 
 Non parallelizzare `prisma:generate`, test e build.
 
 ```bash
 npm ci
-npm run doctor:local
 npm run prisma:generate
+npm run doctor:local
 npm run test:runtime
 npm run coverage:lib
 npm run typecheck
@@ -1977,13 +1956,18 @@ npm run db:verify
 npm run db:storage-budget
 npm run provider:budget
 npm run docs:check
-npm run db:backup -- --dry-run
 npx mex-agent check --quiet
 ```
 
 Expected: tutti exit `0`; `db:storage-budget` resta sotto 400 MB (`warning` ammesso ma dichiarato), `provider:budget` non ha metriche in fascia urgente/blocco e non presenta dati mancanti come verdi. Mex deve avere zero errori e nessun warning non già classificato nel Task 12.
 
-- [ ] **Step 2: Eseguire self-review e controllo di copertura**
+Eseguito il 16 luglio 2026 dopo riallineamento a `origin/main`: full gate verde,
+coverage `95,42%` linee / `83,28%` branch, bundle nei budget, database
+`306,1 MiB`, React Doctor `100/100` sul diff. Mex resta `94/100` con i due
+warning già classificati nel Task 12: wrapper `CLAUDE.md` intenzionalmente
+stale e confronto testuale con `AGENTS.md`, senza drift sostanziale delle regole.
+
+- [x] **Step 2: Eseguire self-review e controllo di copertura**
 
 ```bash
 npm run review:pre-pr -- --base origin/main
@@ -2023,7 +2007,6 @@ Con lo strumento Vercel che restituisce deployment, commit e log verificabili:
 - uso Vercel Free sotto le soglie 70/85/95% per invocazioni, CPU, memoria, transfer e build execution; deploy preview ridondanti classificati, senza disabilitare le preview utili;
 - Speed Insights senza regressioni evidenti su LCP, INP, CLS e TTFB e relativi data point sotto quota; Web Analytics montata una sola volta e sotto quota eventi;
 - log runtime JSON correlabili per `requestId`, errori/slow request sempre presenti e richieste sane campionate senza payload sensibili;
-- piano Vercel idoneo all'uso effettivo; se la production commerciale è su Hobby, la chiusura resta bloccata finché il maintainer non approva upgrade o restrizione a uso non commerciale;
 - il solo vecchio rumore `/robots.txt` non ricompare.
 
 - [ ] **Step 6: Verificare Supabase e runner live**
@@ -2043,7 +2026,6 @@ Con lo strumento Supabase che copre health, query aggregate, advisor e cron, sen
 - nessuna snapshot mappata cancellata senza checkpoint completo e ricostruzione rollback campionata con esito equivalente;
 - database sotto 400 MB e crescita settimanale entro 5%;
 - egress/cached egress Supabase, file storage e altre quote Free sotto la fascia urgente; nessun `402` o read-only;
-- backup logico cifrato recente secondo RPO deciso, checksum valido e restore drill isolato riuscito; se RPO/RTO non sono decisi o non esiste destinazione sicura, il programma non è chiuso;
 - controllare il tick cron successivo al deploy e i log `5xx`.
 
 - [ ] **Step 7: Verificare Shopify store pilota Numisleo e UI live**
@@ -2055,14 +2037,14 @@ Dentro Shopify Admin:
 - confermare che la pagina embedded non abbia overflow orizzontale; nel Catalogo può scorrere soltanto il wrapper della tabella;
 - verificare le semantiche live: nessun `Completata`/`Ok` associato a “non ancora allineato”, nessun `Fermo` con prossimo controllo pianificato e denominatori coerenti tra prodotti seguiti, attivi ed esauriti;
 - verificare che Importazione tenga riconnessione e rinomina location secondarie rispetto a preview e prerequisiti;
-- eseguire la matrice sintetica healthy/empty/loading/degraded/error e verificare tastiera, focus visibile, nomi accessibili, `aria-live`, reduced motion, zoom `200%` automatico e `400%` manuale; una verifica screen reader manuale resta obbligatoria per i flussi principali;
+- eseguire la matrice sintetica healthy/empty/loading/degraded/error e verificare tastiera, focus visibile, nomi accessibili, `aria-live`, reduced motion, zoom `200%` automatico e `400%` manuale; per decisione del maintainer del 16 luglio 2026 non usare VoiceOver: verificare i flussi principali tramite albero di accessibilità nativo e navigazione completa da tastiera, senza presentare l'esito come test screen reader;
 - confermare assenza di errori hydration, `pageerror` e console inattesi;
 - eseguire una modifica prodotto e una inventory controllata sullo store pilota Numisleo;
 - confermare creazione e chiusura dei relativi job conflitto;
 - non eseguire import/apply/takeover su store cliente senza un go dedicato;
 - non effettuare scritture eBay salvo il runbook stock esplicitamente autorizzato.
 
-- [ ] **Step 8: Verificare la riduzione degli hotspot senza metric gaming**
+- [x] **Step 8: Verificare la riduzione degli hotspot senza metric gaming**
 
 Run:
 
@@ -2073,6 +2055,12 @@ find app/lib app/services app/components -type f \( -name '*.ts' -o -name '*.tsx
 
 Expected: `app.import-preview.tsx` sotto 1.500 righe; runner, `syncbay.server.ts` e draft import hanno perso rispettivamente ownership conflitti, takeover e ciclo vita/retry import; nessun nuovo modulo supera 1.000 righe. Se una metrica resta alta, il task può chiudersi solo mostrando che il relativo verticale non è più disperso, non con split nominali.
 
+Esito: `app.import-preview.tsx` è a `1.488` righe; i tre orchestratori storici
+restano a `5.017`, `4.428` e `3.728` righe, ma delegano i verticali ai moduli
+dedicati di conflitto, takeover ed esecuzione import. Nessun nuovo modulo
+estratto supera `1.000` righe; il massimo nuovo owner è
+`existing-catalog-takeover.server.ts` a `650`.
+
 - [ ] **Step 9: Chiusura e handoff**
 
 Nel riepilogo finale riportare:
@@ -2081,7 +2069,7 @@ Nel riepilogo finale riportare:
 - migrazioni applicate;
 - conteggi backlog/storage senza payload;
 - test realmente eseguiti;
-- esito accessibilità manuale, Core Web Vitals, payload/log budget e restore drill;
+- esito accessibilità da albero nativo/tastiera/zoom, Core Web Vitals e payload/log budget;
 - eventuali monitor 7 giorni ancora attivi;
 - rischi residui concreti;
 - conferma che App Store/billing/2.0 non sono stati avviati.
@@ -2122,11 +2110,9 @@ Nel riepilogo finale riportare:
 | Importazione con azioni secondarie troppo prominenti | Task 12/13, disclosure collegamento e rinomina location avanzata |
 | Bundle client `149.035` byte gzip e server `181,9 kB` gzip | Task 12/13, budget automatico 180/230 kB |
 | Quote Vercel/Supabase Free oltre la sola size DB | Task 8/12/13, soglie 70/85/95%, stati mancanti causali e mai verdi |
-| Vercel Hobby limitato a uso personale/non commerciale | Task 12/13, decisione provider esplicita prima della conformità production |
-| Nessun gate hydration/accessibilità e soli happy path fixture | Task 11/12/13, state matrix, Playwright, tastiera/focus/zoom e QA screen reader |
+| Nessun gate hydration/accessibilità e soli happy path fixture | Task 11/12/13, state matrix, Playwright, tastiera/focus/zoom e albero di accessibilità nativo; VoiceOver escluso su richiesta del maintainer |
 | Loader con payload misurato ma senza budget, log sani non campionati | Task 12/13, soglie payload, sampling 5% e correlazione `requestId` |
 | Analytics/Speed Insights già presenti ma non inclusi nel budget | Task 8/12/13, nessun doppio mount e consumo data point/eventi monitorato |
-| Supabase Free senza backup automatici | Task 12/13, RPO/RTO, backup cifrato fuori progetto e restore drill |
 | `egress:budget` già esistente | Task 8, riuso obbligatorio dentro `provider:budget`, nessun duplicato |
 | Pulizia generale non automatizzata | Task 12, `docs:check`, file temporanei, TODO/FIXME, script e `console.*` censiti |
 | Tre indici Supabase INFO unused | Task 12, osservare 30 giorni; nessuna rimozione cieca |
@@ -2149,7 +2135,7 @@ Il confronto finale tra questo documento, il thread di revisione e `/tmp/syncbay
 | Thread — qualità e test | Coverage attuale alta ma limitata a `app/lib`, test server fuori CI, runner Node nativo incompatibile, `tsx` verificato | Task 1 e gate finali Task 13 |
 | Thread — UI reale e audit Numisleo Computer Use | Smoke statico falso verde, `fieldPolicy` mancante, env/HMR nella fixture; live: Attività semanticamente incoerente, Catalogo con overflow, Conflitti troppo stretti, Importazione sovraccarica e Impostazioni sbilanciate | Task 10-12 e verifica embedded a 1440/1024/768/390px nel Task 13 |
 | Thread — performance e limiti Free | Bundle fresco contenuto, timeout runner storico, crescita storage, egress/build/invocation da governare | Task 2, 4, 8, 12, 13 |
-| Passata finale — accessibilità, stati degradati, osservabilità e recovery | Gate browser/hydration, payload/log sampling, riuso egress budget, backup Supabase Free e restore drill | Task 8, 11-13 |
+| Passata finale — accessibilità, stati degradati e osservabilità | Gate browser/hydration, payload/log sampling e riuso egress budget | Task 8, 11-13 |
 | Thread — debito minore e non-azioni | Warning React Doctor già chiuso in `1.0.45`, docs stale, major dipendenze intenzionali, indici `unused` da non rimuovere alla cieca, nessun outage corrente | Task 12-13 ed esclusioni globali |
 | Thread — concentrazione architetturale | Quattro hotspot da circa 1.900-4.980 righe e ownership disperse | Task 4, 6, 9, 10 e controllo hotspot Task 13 |
 
@@ -2162,13 +2148,13 @@ Esito del controllo: tutti i rilievi validati hanno un task, un criterio di prov
 | UI | Stati semantici condivisi, gerarchia Importazione, card e microcopy Numisleo | Task 11-13, fixture state matrix e QA embedded |
 | Frontend | Hydration browser, bundle e payload budget, pending/error state, React Doctor | Task 11-13, `ui:browser-check`, `bundle:budget` e gate runtime |
 | Impaginazione | Mobile monocolonna; desktop bilanciato non monocolonna; overflow confinato | Vincolo globale, Task 12 e quattro breakpoint live |
-| Usabilità | CTA successiva, empty/degraded/error, retry, tastiera, focus, zoom e screen reader | Task 11-13, automatico più verifica manuale dichiarata |
+| Usabilità | CTA successiva, empty/degraded/error, retry, tastiera, focus, zoom e albero accessibilità | Task 11-13, automatico più verifica manuale dichiarata; nessun claim screen reader |
 | Pulizia generale | File temporanei, TODO/FIXME, script, CSS/copy duplicata, `console.*`, link e indice docs | Task 12, `docs:check` e self-review |
 | Bugfix | Tutti i rilievi HTML, inventory lookup, fixture `fieldPolicy`, stati contraddittori, `robots.txt` | Task 2-6 e 9-13 con test rossi e riproduzione |
-| Stabilità | Fairness/deadline, pool DB, retry/CAS, job lifecycle, backup e restore drill | Task 2-9, 12-13 e monitor post-deploy |
+| Stabilità | Fairness/deadline, pool DB, retry/CAS e job lifecycle | Task 2-9, 12-13 e monitor post-deploy |
 | Performance | Batch conflitti, storia compatta, payload/bundle, loader timing, sampling log e CWV | Task 2, 4, 7-8, 11-13 |
-| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics, soglie e plan eligibility | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass |
-| Documentazione | ADR, roadmap, contesto, glossario, toolchain, sicurezza, backup, mex e link/comandi | Task 2, 5, 7-8, 12-13 e `docs:check` |
+| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics e soglie | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass |
+| Documentazione | ADR, roadmap, contesto, glossario, toolchain, sicurezza, mex e link/comandi | Task 2, 5, 7-8, 12-13 e `docs:check` |
 
 Questa tabella è la checklist di accettazione del piano: un'area non è chiusa se manca una prova indicata nella terza colonna, anche con CI verde.
 

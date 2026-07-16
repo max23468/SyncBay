@@ -33,10 +33,6 @@ Runtime deciso:
 - `sessions:encrypt-shopify` è dry-run per default, scrive soltanto con
   `--apply --confirm-apply` e stampa esclusivamente conteggi, mai token o ID.
 - `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
-- I backup seguono [`backup-e-disaster-recovery.md`](backup-e-disaster-recovery.md):
-  export logico cifrato offsite, manifest senza dati e restore trimestrale su
-  database isolato.
-
 Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.
 
 ## Compliance minima

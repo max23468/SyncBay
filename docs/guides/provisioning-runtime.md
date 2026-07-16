@@ -175,9 +175,10 @@ Non salvarla in Git e non stamparla nei log.
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
 - schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=2` ogni 5 minuti tramite `pg_net` e secret in Supabase Vault, con timeout HTTP 90 s; il runner non anticipa più i sync incrementali in scadenza entro il tick successivo, per preservare l'intervallo target configurato
-- schedule Supabase Cron `syncbay-maintain-supabase-internal-tables` applicata
-  via migration; pulisce ogni giorno `cron.job_run_details` oltre 7 giorni e
-  `net._http_response` oltre 1 giorno per limitare bloat interno Supabase.
+- la schedule Supabase Cron legacy `syncbay-maintain-supabase-internal-tables`
+  è stata ritirata: la maintenance applicativa giornaliera conserva 14 giorni
+  di `cron.job_run_details` e non interviene su `net._http_response` senza una
+  crescita live dimostrata.
 - retry reale verificato sul precedente ambiente pilota con job `IMPORT_CATALOG` in stato `RETRYING`: risposta HTTP `200`, riuso della bozza Shopify esistente e transizione finale del job originale a `SUCCEEDED`
 - batch reale storico da 50 prodotti verificato sul precedente ambiente pilota: job
   `IMPORT_CATALOG` `SUCCEEDED`, 50 listing gestiti, 26 nuove bozze Shopify, 24

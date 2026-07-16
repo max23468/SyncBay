@@ -49,7 +49,7 @@ Questo è l'handoff operativo corrente. Per orientarsi nella documentazione usa
 - Completare i gate di onboarding e il runbook per il primo cliente selezionato.
 - Validare su dati correnti classificazione e azioni dei conflitti.
 - Mantenere prioritari webhook GDPR, account deletion eBay, rate limit,
-  retention, backup offsite e rollback; i token provider persistiti sono
+  retention e rollback; i token provider persistiti sono
   cifrati applicativamente a riposo.
 - Billing, support policy pubblica e Shopify App Store restano decisioni future.
 
