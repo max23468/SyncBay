@@ -5,6 +5,8 @@
  * riusciti, tasso percentuale e serie giornaliera per la sparkline. Nessun dato
  * sintetico: con zero job la finestra è vuota e il tasso è 100.
  */
+export const DASHBOARD_RELIABILITY_JOB_LIMIT = 2000;
+
 export function summarizeReliability(
   jobs: { createdAt: Date; status: string }[],
   now: Date,

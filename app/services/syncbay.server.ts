@@ -35,7 +35,10 @@ import {
   getCatalogQueryPlan,
   isCatalogRowNeedingCheck,
 } from "../lib/syncbay-catalog-page";
-import { summarizeReliability } from "../lib/syncbay-dashboard-metrics";
+import {
+  DASHBOARD_RELIABILITY_JOB_LIMIT,
+  summarizeReliability,
+} from "../lib/syncbay-dashboard-metrics";
 import { summarizeSyncJobQuarantine } from "../lib/syncbay-job-quarantine";
 import { buildSyncHealthDigest } from "../lib/syncbay-sync-health-digest";
 import {
@@ -353,14 +356,14 @@ async function getDashboardState(
             },
           }),
           prisma.syncJob.findMany({
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "desc" },
             select: {
               attempts: true,
               createdAt: true,
               maxAttempts: true,
               status: true,
             },
-            take: 2000,
+            take: DASHBOARD_RELIABILITY_JOB_LIMIT,
             where: { createdAt: { gte: weekAgo }, shopId: shop.id },
           }),
           prisma.productMapping.count({
