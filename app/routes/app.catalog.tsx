@@ -692,6 +692,28 @@ function getShopifyProductAdminUrl(
   return `https://admin.shopify.com/store/${shopHandle}/products/${productId}`;
 }
 
+// Formatter riusati tra le righe: costruirli a ogni cella costa (react-doctor
+// js-hoist-intl). La valuta varia per riga solo in teoria, quindi una piccola
+// cache per codice basta.
+const PLAIN_PRICE_FORMAT = new Intl.NumberFormat("it-IT", {
+  minimumFractionDigits: 2,
+});
+const CURRENCY_PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyPriceFormat(currency: string) {
+  const cached = CURRENCY_PRICE_FORMATS.get(currency);
+
+  if (cached) return cached;
+
+  const format = new Intl.NumberFormat("it-IT", {
+    currency,
+    style: "currency",
+  });
+  CURRENCY_PRICE_FORMATS.set(currency, format);
+
+  return format;
+}
+
 function formatPrice(price: { amount: string; currency: string | null } | null) {
   if (!price) return "Non letto";
 
@@ -702,18 +724,13 @@ function formatPrice(price: { amount: string; currency: string | null } | null) 
     return `${price.amount}${price.currency ? ` ${price.currency}` : ""}`;
   }
 
+  if (!price.currency) return PLAIN_PRICE_FORMAT.format(amount);
+
   try {
-    return new Intl.NumberFormat(
-      "it-IT",
-      price.currency
-        ? { currency: price.currency, style: "currency" }
-        : { minimumFractionDigits: 2 },
-    ).format(amount);
+    return getCurrencyPriceFormat(price.currency).format(amount);
   } catch {
     // Codice valuta non ISO: numero localizzato + codice dichiarato.
-    return `${new Intl.NumberFormat("it-IT", {
-      minimumFractionDigits: 2,
-    }).format(amount)} ${price.currency}`;
+    return `${PLAIN_PRICE_FORMAT.format(amount)} ${price.currency}`;
   }
 }
 
