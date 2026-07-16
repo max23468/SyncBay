@@ -2031,6 +2031,12 @@ Nella finestra precedente i tick runner osservabili erano al massimo
 zero run fallite nelle 24 ore.
 Analytics usa `642/50.000` eventi su 30 giorni; Speed Insights espone
 `16/10.000` data point nei 7 giorni disponibili, entrambi sotto quota.
+La lettura p75 production tramite Vercel CLI del 16 luglio 2026 rileva
+LCP `2.364 ms`, INP `128 ms`, CLS `0,0624` e TTFB `542 ms`, tutti entro le
+soglie di qualità buone. La retention di 7 giorni e i campioni radi non
+permettono un confronto statistico affidabile prima/dopo: il piano registra
+lo stato corrente senza attribuire al rollout una regressione o un
+miglioramento non dimostrabile.
 Fast Data Transfer e metriche runtime restano `provider_locked` sul piano
 Hobby: `provider:budget` le classifica con causa e azione dashboard, senza
 presentarle come verdi o stimarle. Web Analytics e Speed Insights risultano
