@@ -120,6 +120,49 @@ test("opens conflicts from one batched Shopify read", async () => {
   assert.equal(execution.results[0]?.outcome, "conflict_opened");
 });
 
+test("loads baselines after Shopify so concurrent SyncBay writes cannot create stale conflicts", async () => {
+  const order: string[] = [];
+  const fakePorts = ports({
+    async loadBaselines() {
+      order.push("baselines");
+      return new Map([
+        [
+          "mapping-1",
+          [{ mappingId: "mapping-1", field: "title", serializedValue: "New" }],
+        ],
+      ]);
+    },
+    async loadProducts() {
+      order.push("shopify");
+      return new Map([
+        [
+          "mapping-1",
+          {
+            productGid: "gid://shopify/Product/1",
+            title: "New",
+            descriptionHtml: "",
+            status: "ACTIVE",
+            priceAmount: null,
+            quantity: null,
+            imageCount: 0,
+          },
+        ],
+      ]);
+    },
+    async persist() {
+      order.push("persist");
+    },
+  });
+
+  const execution = await detectShopifyChangesBatch(
+    { jobs, shopDomain: "example.myshopify.com" },
+    fakePorts,
+  );
+
+  assert.deepEqual(order, ["shopify", "baselines", "persist"]);
+  assert.equal(execution.results[0]?.outcome, "conflict_resolved");
+});
+
 test("passes the mapped variant and default location to the product read", async () => {
   let seenInput: { targets: unknown; defaultLocationGid: unknown } | null = null;
   const fakePorts = ports({
