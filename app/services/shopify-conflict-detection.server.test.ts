@@ -120,26 +120,34 @@ test("opens conflicts from one batched Shopify read", async () => {
   assert.equal(execution.results[0]?.outcome, "conflict_opened");
 });
 
-test("loads baselines after Shopify so concurrent SyncBay writes cannot create stale conflicts", async () => {
+test("rereads Shopify when the baseline advances during the first provider read", async () => {
   const order: string[] = [];
+  let baselineReads = 0;
+  let productReads = 0;
   const fakePorts = ports({
     async loadBaselines() {
-      order.push("baselines");
+      baselineReads += 1;
+      order.push(`baselines-${baselineReads}`);
       return new Map([
         [
           "mapping-1",
-          [{ mappingId: "mapping-1", field: "title", serializedValue: "New" }],
+          [{
+            mappingId: "mapping-1",
+            field: "title",
+            serializedValue: baselineReads === 1 ? "Old" : "New",
+          }],
         ],
       ]);
     },
     async loadProducts() {
-      order.push("shopify");
+      productReads += 1;
+      order.push(`shopify-${productReads}`);
       return new Map([
         [
           "mapping-1",
           {
             productGid: "gid://shopify/Product/1",
-            title: "New",
+            title: productReads === 1 ? "Old" : "New",
             descriptionHtml: "",
             status: "ACTIVE",
             priceAmount: null,
@@ -159,8 +167,49 @@ test("loads baselines after Shopify so concurrent SyncBay writes cannot create s
     fakePorts,
   );
 
-  assert.deepEqual(order, ["shopify", "baselines", "persist"]);
+  assert.deepEqual(order, [
+    "baselines-1",
+    "shopify-1",
+    "baselines-2",
+    "shopify-2",
+    "baselines-3",
+    "persist",
+  ]);
+  assert.equal(execution.providerReadCount, 2);
   assert.equal(execution.results[0]?.outcome, "conflict_resolved");
+});
+
+test("retries the job without persisting conflicts when the baseline keeps advancing", async () => {
+  let baselineReads = 0;
+  const fakePorts = ports({
+    async loadBaselines() {
+      baselineReads += 1;
+      return new Map([
+        [
+          "mapping-1",
+          [{
+            mappingId: "mapping-1",
+            field: "title",
+            serializedValue: `Version ${baselineReads}`,
+          }],
+        ],
+      ]);
+    },
+  });
+
+  const execution = await detectShopifyChangesBatch(
+    { jobs, shopDomain: "example.myshopify.com" },
+    fakePorts,
+  );
+
+  assert.equal(execution.providerReadCount, 2);
+  assert.deepEqual(execution.results[0], {
+    errorCode: "SHOPIFY_CONFLICT_BASELINE_UNSTABLE",
+    fields: [],
+    jobId: "job-1",
+    mappingId: "mapping-1",
+    outcome: "failed",
+  });
 });
 
 test("passes the mapped variant and default location to the product read", async () => {

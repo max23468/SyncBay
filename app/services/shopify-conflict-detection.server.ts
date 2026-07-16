@@ -123,6 +123,8 @@ export async function detectShopifyChangesBatch(
   const activeMappings = [...new Map(
     [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
   ).values()];
+  const mappingIds = activeMappings.map(({ id }) => id);
+  const baselinesBeforeShopify = await ports.loadBaselines(mappingIds);
   // Un target per mapping (non per prodotto): due mapping su varianti diverse
   // dello stesso prodotto Shopify devono confrontare ciascuno la propria
   // variante/location, non solo la prima vista. Il risultato è indicizzato per
@@ -143,14 +145,47 @@ export async function detectShopifyChangesBatch(
         defaultLocationGid: input.defaultLocationGid ?? null,
       })
     : new Map<string, ShopifyConflictProduct>();
-  // La lettura Shopify può durare abbastanza da sovrapporsi a un job SyncBay
-  // che aggiorna la baseline. Leggerla dopo il provider evita di aprire un
-  // conflitto usando una copia già superata durante la stessa esecuzione.
-  const baselines = await ports.loadBaselines(activeMappings.map(({ id }) => id));
+  let providerReadCount = targets.length > 0 ? 1 : 0;
+  const baselines = await ports.loadBaselines(mappingIds);
+  const advancedMappingIds = new Set(mappingIds.filter((mappingId) =>
+    baselineSignature(baselinesBeforeShopify.get(mappingId)) !==
+    baselineSignature(baselines.get(mappingId)),
+  ));
+  const unstableMappingIds = new Set<string>();
+
+  if (advancedMappingIds.size > 0) {
+    const retryTargets = targets.filter(({ mappingId }) => advancedMappingIds.has(mappingId));
+    const retryProducts = await ports.loadProducts({
+      targets: retryTargets,
+      shopDomain: input.shopDomain,
+      defaultLocationGid: input.defaultLocationGid ?? null,
+    });
+    providerReadCount += 1;
+    for (const [mappingId, product] of retryProducts) products.set(mappingId, product);
+
+    const retryBaselines = await ports.loadBaselines([...advancedMappingIds]);
+    for (const mappingId of advancedMappingIds) {
+      if (
+        baselineSignature(baselines.get(mappingId)) !==
+        baselineSignature(retryBaselines.get(mappingId))
+      ) unstableMappingIds.add(mappingId);
+      baselines.set(mappingId, retryBaselines.get(mappingId) ?? []);
+    }
+  }
 
   for (const job of input.jobs) {
     const mapping = mappingByJob.get(job.id);
     if (!mapping?.shopifyProductGid) continue;
+    if (unstableMappingIds.has(mapping.id)) {
+      results.push({
+        errorCode: "SHOPIFY_CONFLICT_BASELINE_UNSTABLE",
+        fields: [],
+        jobId: job.id,
+        mappingId: mapping.id,
+        outcome: "failed",
+      });
+      continue;
+    }
     const product = products.get(mapping.id);
     if (!product) {
       results.push({
@@ -176,7 +211,14 @@ export async function detectShopifyChangesBatch(
   }
 
   await ports.persist(results);
-  return { results, providerReadCount: targets.length > 0 ? 1 : 0 };
+  return { results, providerReadCount };
+}
+
+function baselineSignature(baselines: ConflictBaseline[] | undefined) {
+  return (baselines ?? [])
+    .map(({ field, serializedValue }) => `${field}:${serializedValue ?? ""}`)
+    .sort()
+    .join("\n");
 }
 
 function getConflictValues(
