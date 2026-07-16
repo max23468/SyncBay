@@ -1977,7 +1977,7 @@ git status --short
 
 Rileggere la tabella “Mappa unica” e associare a ogni riga almeno un test, un diff e una verifica live. Nessun rilievo può essere chiuso solo perché build/CI sono verdi.
 
-- [ ] **Step 3: Eseguire preflight GitHub**
+- [x] **Step 3: Eseguire preflight GitHub**
 
 Usare il percorso GitHub che espone in modo più completo check-run, review thread e stato PR; `gh` e connector sono entrambi ammessi.
 
@@ -1986,6 +1986,11 @@ npm run publish:preflight -- --remote
 ```
 
 Expected: PR corrente pronta, titolo Conventional Commit, nessun thread Codex actionable sulla PR e check obbligatori verdi.
+
+Eseguito sulla PR `#469`: titolo Conventional Commit, preflight remoto pulito
+e `9` check conclusi con successo, inclusi CI proporzionata, CodeQL, React
+Doctor `100/100`, Vercel e controllo titolo. La PR è stata squash-mergeata nel
+commit `0d93304`.
 
 - [x] **Step 4: Preparare la release solo se esistono cambi non ancora rilasciati**
 
@@ -2010,15 +2015,20 @@ Con lo strumento Vercel che restituisce deployment, commit e log verificabili:
 - il solo vecchio rumore `/robots.txt` non ricompare.
 
 Verifica fresca del 16 luglio 2026: deployment production
-`dpl_DJgXR2CV8VPKhXvA9VaTK7oyXz2n` `READY` sul commit `1a4e67f` e tag
-`v1.0.70`; `audit:prod` pulito e smoke pubblici verdi. Nei log production delle
-24 ore non risultano `5xx`, timeout runner o ricorrenze dei cluster storici;
-l'unico `404` è una richiesta a un asset con hash di un deployment precedente.
-I tick runner osservabili sono `200`, `failedCount=0`, con massimo `26.818 ms`
-e nessun campione oltre `70 s`; lo storico cron Supabase conferma zero run
-fallite nelle 24 ore anche nelle finestre non campionate dai log Vercel.
+`dpl_HBf7awL3UqexdfDRbrxD6HGpFVgD` `READY` sul commit `0d93304` e tag
+`v1.0.71`; `audit:prod` pulito e smoke pubblici verdi. Il primo tick cron
+successivo, alle `09:35 UTC`, ha risposto `200` in `1.295 ms`, con
+`processedCount=0` e `failedCount=0`; il nuovo deployment non presenta gruppi
+di errore. Il controllo ha rilevato un singolo `P2028` alle `09:20 UTC` sul
+deployment precedente `v1.0.70`, non un cluster: resta dichiarato e non viene
+presentato come finestra pulita di 24 ore. Per la precedente autorizzazione del
+maintainer a superare i gate temporali residui, la nuova finestra non resta un
+blocco; un'eventuale ricorrenza sul deployment `v1.0.71` riapre il rilievo.
+Nella finestra precedente i tick runner osservabili erano al massimo
+`26.818 ms`, senza campioni oltre `70 s`; lo storico cron Supabase conferma
+zero run fallite nelle 24 ore.
 Analytics usa `642/50.000` eventi su 30 giorni; Speed Insights espone
-`16/10.000` data point nei 7 giorni disponibili, senza regressioni osservabili.
+`16/10.000` data point nei 7 giorni disponibili, entrambi sotto quota.
 Fast Data Transfer e metriche runtime restano `provider_locked` sul piano
 Hobby: `provider:budget` le classifica con causa e azione dashboard, senza
 presentarle come verdi o stimarle. Web Analytics e Speed Insights risultano
@@ -2107,7 +2117,7 @@ dedicati di conflitto, takeover ed esecuzione import. Nessun nuovo modulo
 estratto supera `1.000` righe; il massimo nuovo owner è
 `existing-catalog-takeover.server.ts` a `650`.
 
-- [ ] **Step 9: Chiusura e handoff**
+- [x] **Step 9: Chiusura e handoff**
 
 Nel riepilogo finale riportare:
 
@@ -2119,6 +2129,20 @@ Nel riepilogo finale riportare:
 - eventuali monitor 7 giorni ancora attivi;
 - rischi residui concreti;
 - conferma che App Store/billing/2.0 non sono stati avviati.
+
+Chiusura pubblicata il 16 luglio 2026: PR `#469`, commit `0d93304`, release e
+tag `v1.0.71`, GitHub Release pubblica e deployment production
+`dpl_HBf7awL3UqexdfDRbrxD6HGpFVgD` `READY`. Nessuna migration nuova. Database
+`306,1 MiB`; backlog conflitti aperti `0`, trend 24 ore non monotono e storage
+file `0` byte. Gate completo fresco verde: `125` test tooling, `630` test lib,
+`43` test servizi, coverage `95,42%` linee / `83,28%` branch, typecheck, lint,
+build, Prisma, bundle, `32` scenari SSR, browser `6 x 4`, audit produzione,
+advisor e budget provider. Verifica Numisleo tramite albero accessibile,
+tastiera, zoom automatico `200%` e Chrome manuale `400%`; VoiceOver escluso.
+Le quote non esposte restano classificate `provider_locked` o
+`dashboard_required`; il monitor temporale post-release è stato rinunciato per
+decisione esplicita, non dichiarato come trascorso. App Store, billing e
+perimetro 2.0 non sono stati avviati.
 
 ---
 
