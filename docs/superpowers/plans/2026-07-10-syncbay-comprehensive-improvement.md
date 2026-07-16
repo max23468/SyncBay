@@ -1987,7 +1987,7 @@ npm run publish:preflight -- --remote
 
 Expected: PR corrente pronta, titolo Conventional Commit, nessun thread Codex actionable sulla PR e check obbligatori verdi.
 
-- [ ] **Step 4: Preparare la release solo se esistono cambi non ancora rilasciati**
+- [x] **Step 4: Preparare la release solo se esistono cambi non ancora rilasciati**
 
 ```bash
 npm run release:dry-run
@@ -2043,6 +2043,12 @@ Dentro Shopify Admin:
 - confermare creazione e chiusura dei relativi job conflitto;
 - non eseguire import/apply/takeover su store cliente senza un go dedicato;
 - non effettuare scritture eBay salvo il runbook stock esplicitamente autorizzato.
+
+Prova prodotto eseguita il 16 luglio 2026 sul mapping controllato già usato dai
+test operativi: titolo modificato temporaneamente, webhook e job
+`DETECT_SHOPIFY_CHANGES` riusciti, conflitto titolo aperto; dopo il ripristino
+esatto del titolo originale il secondo job è riuscito e il conflitto è stato
+risolto. Inventario rimasto a `28`; nessuna scrittura eBay.
 
 - [x] **Step 8: Verificare la riduzione degli hotspot senza metric gaming**
 
