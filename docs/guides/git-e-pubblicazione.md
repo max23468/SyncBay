@@ -65,7 +65,7 @@ Percorso standard per lavori non banali:
    applicabile e pubblica l'eventuale release SemVer;
 8. elimina branch e worktree locali quando il lavoro è assorbito.
 
-Per modifiche minuscole e chiaramente docs-only è ammesso commit diretto su `main`, se il diff resta limitato a `AGENTS.md`, `README.md`, `CHANGELOG.md`, `BRAND.md`, `docs/**` o altri documenti canonici e non introduce ambiguità su runtime, workflow, deploy, release o segreti.
+Il commit diretto su `main` non è più praticabile, nemmeno per docs-only: la ruleset GitHub "Protezione main proporzionata" richiede la PR (verificato il 2026-07-17 con push respinto). Anche le modifiche minuscole ai documenti canonici passano da un branch `codex/<tema>` e da una PR squash.
 
 Prima di eliminare un branch locale assorbito:
 
@@ -86,7 +86,7 @@ Usa `git branch -D <branch>` solo se il comando non mostra commit unici da conse
 Nella fase attuale:
 
 - "pubblica", "manda su GitHub", "carica" = portare il diff su GitHub e su `main`
-  con branch dedicato e PR/merge quando non è docs-only diretto; se il diff contiene
+  con branch dedicato e PR/merge; se il diff contiene
   sezioni versionate nel blocco `[Non rilasciato]` del changelog, eseguire anche
   `npm run release` prima di commit/push, così versione e pubblicazione restano nello stesso flusso.
 - una PR aperta o un push su branch non bastano se l'utente chiede pubblicazione completa;

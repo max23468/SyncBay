@@ -194,9 +194,9 @@ Segui `docs/guides/git-e-pubblicazione.md` e
 `docs/guides/versioning-e-release.md`. In sintesi:
 
 - usa Conventional Commit; il tipo riflette l'impatto osservabile;
-- per lavori non banali usa `codex/<tema>`, PR verso `main`, verifiche,
-  self-review e cleanup; piccoli docs-only possono andare direttamente su
-  `main` se non toccano runtime, workflow, deploy, release o segreti;
+- ogni modifica passa da branch `codex/<tema>` e PR verso `main` con
+  verifiche, self-review e cleanup: la ruleset GitHub respinge i push diretti
+  su `main`, anche docs-only;
 - il titolo PR deve essere Conventional Commit, non il nome del branch;
 - `pubblica`, `manda su GitHub` o `carica` significa portare il diff fino a
   GitHub/`main`, completando i gate e il cleanup previsti; per modifiche che
