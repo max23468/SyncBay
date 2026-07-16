@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const REQUIRED_ENV_GROUPS = [
   { key: "DATABASE_URL" },
@@ -16,7 +16,7 @@ const REQUIRED_ENV_GROUPS = [
   { key: "TOKEN_ENCRYPTION_KEY" },
 ];
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const report = buildReport({ args });
@@ -248,22 +248,25 @@ function printReport(report) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      "strict-env": { type: "boolean" },
+    },
+  });
 
-  for (const arg of rawArgs) {
-    if (arg === "--json") parsed.json = true;
-    else if (arg === "--strict-env") parsed.strictEnv = true;
-    else if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run doctor:local -- [--strict-env] [--json]
+  if (values.help) {
+    console.log(`Uso: npm run doctor:local -- [--strict-env] [--json]
 
 Verifica toolchain locale, dipendenze/lockfile, Prisma Client, file base e
 presenza delle env SyncBay senza stampare valori sensibili. Senza --strict-env
 le env mancanti sono avvisi, perché alcuni check non richiedono provider live.`);
-      process.exit(0);
-    } else throw new Error(`Argomento non supportato: ${arg}`);
+    process.exit(0);
   }
 
-  return parsed;
+  return { json: values.json, strictEnv: values["strict-env"] };
 }
 
 function readText(root, filePath) {
@@ -340,8 +343,4 @@ function parseVersionParts(version) {
   return String(version)
     .split(".")
     .map((part) => Number.parseInt(part, 10));
-}
-
-function isCliEntrypoint() {
-  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }

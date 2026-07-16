@@ -522,12 +522,9 @@ export function getCatalogStatusLabel(status: CatalogStatusKind) {
 export function getCatalogRowStatus(
   input: CatalogRowStatusInput,
 ): CatalogStatusKind {
-  // La corsia "archived" del catalogo ora rappresenta i prodotti esauriti
-  // (listing eBay inattivo) oltre agli eventuali archiviati storici. Vedi ADR 0011.
-  if (
-    input.mappingStatus === "OUT_OF_STOCK" ||
-    input.mappingStatus === "ARCHIVED"
-  ) {
+  // La corsia "archived" del catalogo rappresenta i prodotti esauriti
+  // (listing eBay inattivo). Vedi ADR 0011.
+  if (input.mappingStatus === "OUT_OF_STOCK") {
     return "archived";
   }
   if (input.mappingStatus === "ERROR" || input.lastErrorCode) {

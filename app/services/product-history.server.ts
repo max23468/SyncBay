@@ -253,13 +253,6 @@ function isMaintenanceEnabled() {
     process.env.SYNCBAY_PRODUCT_HISTORY_COMPACTION_ENABLED?.trim() === "true";
 }
 
-export function shouldRunLegacyRetentionCleanup(input: {
-  compactionEnabled: boolean;
-  dryRun: boolean;
-}) {
-  return !input.compactionEnabled && !input.dryRun;
-}
-
 export async function runDailyOperationalMaintenance(input: {
   now?: Date;
   dryRun?: boolean;
@@ -282,9 +275,10 @@ export async function runDailyOperationalMaintenance(input: {
   };
 
   if (!enabled) {
-    if (shouldRunLegacyRetentionCleanup({ compactionEnabled, dryRun: input.dryRun === true })) {
-      await runRetentionCleanup({ now });
-    }
+    // Compaction disattivata o dry-run: solo osservazione, nessuna scrittura.
+    // Il vecchio cleanup retention parallelo è stato ritirato: in produzione
+    // la maintenance giornaliera con compaction è l'unico percorso attivo
+    // (MaintenanceRun SUCCEEDED regolari, verificato 2026-07-16).
     const [events, checkpoints, oversize, tableSizeBytes] = await Promise.all([
       prisma.productSnapshot.count({ where: { capturedAt: { lt: plan.eventCutoff } } }),
       prisma.productSnapshotCheckpoint.count({ where: { checkpointWeek: { lt: plan.checkpointCutoff } } }),

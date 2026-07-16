@@ -21,6 +21,9 @@ export function checkDocs(root = process.cwd()) {
         if (!anchors.has(decodeURIComponent(anchor).toLowerCase())) failures.push(`${path.relative(root, file)}: anchor mancante #${anchor}`);
       }
     }
+    // I piani in docs/superpowers/plans sono fotografie storiche: i comandi
+    // npm citati lì non devono restare allineati al package.json corrente.
+    if (file.includes(`${path.sep}superpowers${path.sep}plans${path.sep}`)) continue;
     for (const match of content.matchAll(/npm run ([\w:-]+)/gu)) {
       if (!packageJson.scripts[match[1]]) failures.push(`${path.relative(root, file)}: script npm inesistente ${match[1]}`);
     }

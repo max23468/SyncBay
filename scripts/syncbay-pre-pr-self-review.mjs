@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const DEFAULT_BASE = "origin/main";
 const DOCS_ONLY_AREA_IDS = new Set(["documentazione", "release_governance"]);
@@ -163,7 +163,7 @@ const AREA_DEFINITIONS = [
 
 const RISK_ORDER = { basso: 1, medio: 2, alto: 3 };
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const changedFiles = readChangedFiles(args.base);
@@ -312,36 +312,28 @@ export function parseShortStatus(output) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = { base: DEFAULT_BASE };
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      base: { type: "string" },
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--base") {
-      const nextValue = rawArgs[index + 1];
-      if (!nextValue) throw new Error("Valore mancante per --base.");
-      parsed.base = nextValue;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run review:pre-pr -- [--base origin/main] [--json]
+  if (values.help) {
+    console.log(`Uso: npm run review:pre-pr -- [--base origin/main] [--json]
 
 Genera una self-review mirata del diff prima di aprire o sincronizzare una PR.
 Non sostituisce i test: serve a trovare prima i commenti Codex prevedibili.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
+    process.exit(0);
   }
 
-  return parsed;
+  if (values.base !== undefined && !values.base) {
+    throw new Error("Valore mancante per --base.");
+  }
+
+  return { base: values.base ?? DEFAULT_BASE, json: values.json };
 }
 
 function readChangedFiles(base) {
@@ -442,8 +434,4 @@ function dedupeFiles(files) {
 
 function unique(items) {
   return [...new Set(items)];
-}
-
-function isCliEntrypoint() {
-  return import.meta.url === pathToFileURL(process.argv[1]).href;
 }

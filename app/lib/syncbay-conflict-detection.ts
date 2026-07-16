@@ -96,7 +96,7 @@ export function shouldBlockIncrementalSyncForOpenConflictMappingStatus(
 export function shouldResolveOpenConflictsForInactiveMappingStatus(
   mappingStatus: string | null,
 ) {
-  return mappingStatus === "OUT_OF_STOCK" || mappingStatus === "ARCHIVED";
+  return mappingStatus === "OUT_OF_STOCK";
 }
 
 export function shouldResolveLiveAlignedDescriptionConflictForMappingStatus(

@@ -1,21 +1,41 @@
 #!/usr/bin/env node
 
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { parseArgs } from "node:util";
 import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import {
+  formatCliError,
+  querySupabaseJson,
+  sqlString,
+} from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-
-const execFileAsync = promisify(execFile);
 
 const DEFAULT_RECENT_LIMIT = 12;
 
-const args = parseArgs(process.argv.slice(2));
+const { values: args } = parseArgs({
+  options: {
+    help: { short: "h", type: "boolean" },
+    json: { type: "boolean" },
+    limit: { type: "string" },
+    shop: { type: "string" },
+  },
+});
+
+if (args.help) {
+  console.log(`Uso: npm run jobs:status -- [--shop dominio.myshopify.com] [--limit 12] [--json]
+
+Interroga il database Supabase remoto tramite \`supabase db query --linked\`.
+Non richiede DATABASE_URL locale; usa SUPABASE_DB_PASSWORD o il Portachiavi macOS e non stampa segreti.`);
+  process.exit(0);
+}
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
 });
-const recentLimit = args.limit ?? DEFAULT_RECENT_LIMIT;
+const parsedLimit = Number.parseInt(args.limit ?? "", 10);
+const recentLimit =
+  Number.isInteger(parsedLimit) && parsedLimit > 0
+    ? parsedLimit
+    : DEFAULT_RECENT_LIMIT;
 const importRunScopeSql = buildImportRunScopeSql("j");
 
 const diagnosticsSql = `
@@ -125,62 +145,6 @@ async function main() {
   printSummary(payload);
 }
 
-async function querySupabaseJson(sql) {
-  const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      cwd: process.cwd(),
-      env: await getSupabaseCliEnv(),
-      maxBuffer: 1024 * 1024 * 10,
-      timeout: 45_000,
-    },
-  );
-  const jsonStart = findJsonStart(stdout);
-
-  if (jsonStart < 0) {
-    throw new Error("Supabase CLI non ha restituito JSON.");
-  }
-
-  const parsed = JSON.parse(stdout.slice(jsonStart));
-
-  return Array.isArray(parsed) ? { rows: parsed } : parsed;
-}
-
-function findJsonStart(value) {
-  const objectStart = value.indexOf("{");
-  const arrayStart = value.indexOf("[");
-
-  if (objectStart < 0) return arrayStart;
-  if (arrayStart < 0) return objectStart;
-
-  return Math.min(objectStart, arrayStart);
-}
-
-function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
-  const message = sanitizeErrorText(error?.message ?? String(error));
-  const useful = stderr || message;
-
-  if (useful.includes("ECIRCUITBREAKER")) {
-    return "Supabase ha bloccato temporaneamente nuove connessioni per troppi tentativi di autenticazione. Attendi qualche minuto e riprova.";
-  }
-
-  if (error?.signal === "SIGTERM") {
-    return "timeout durante la query Supabase. Riprova tra poco o riduci il carico di query concorrenti.";
-  }
-
-  return useful.split("\n").filter(Boolean).slice(0, 3).join(" ");
-}
-
-function sanitizeErrorText(value) {
-  return String(value)
-    .replaceAll(/\nwith latest_run[\s\S]*/g, "")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
 function printSummary(payload) {
   const activeStatuses = new Set(["PENDING", "RUNNING", "RETRYING"]);
   const rows = payload.statusRows ?? [];
@@ -237,46 +201,4 @@ function printSummary(payload) {
       `- ${row.jobKind}${batch}: ${row.status}, item ${row.itemCount}, tentativi ${row.attempts}, aggiornato ${row.updatedAt}${result}${error}`,
     );
   }
-}
-
-function parseArgs(rawArgs) {
-  const parsed = {};
-
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--limit") {
-      const limit = Number.parseInt(rawArgs[index + 1] ?? "", 10);
-      parsed.limit = Number.isInteger(limit) && limit > 0 ? limit : undefined;
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      console.log(`Uso: npm run jobs:status -- [--shop dominio.myshopify.com] [--limit 12] [--json]
-
-Interroga il database Supabase remoto tramite \`supabase db query --linked\`.
-Non richiede DATABASE_URL locale; usa SUPABASE_DB_PASSWORD o il Portachiavi macOS e non stampa segreti.`);
-      process.exit(0);
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
-}
-
-function sqlString(value) {
-  return `'${String(value).replaceAll("'", "''")}'`;
 }

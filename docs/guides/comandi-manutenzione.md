@@ -10,10 +10,8 @@ numero degli oggetti Supabase Storage dalla tabella aggregata `storage.objects`;
 è una fotografia live, mentre il contatore fatturabile del provider usa la
 media in GB-ore. `npm run provider:budget` aggrega i budget operativi dei
 provider senza stampare credenziali. Usa
-`npm run product-baselines:backfill -- --dry-run` prima di popolare baseline
-prodotto mancanti e `npm run history:maintain -- --dry-run` prima della
-maintenance della storia; le scritture richiedono i flag di conferma previsti
-dai rispettivi script.
+`npm run history:maintain -- --dry-run` prima della maintenance della storia;
+le scritture richiedono i flag di conferma previsti dai rispettivi script.
 
 La retention cancella i record scaduti ma Postgres non restituisce le pagine al
 filesystem: dopo una cancellazione massiva le tabelle restano grandi e gli
@@ -108,12 +106,6 @@ avvio; gli output restano in `preview/shots/`.
 dry-run di default e, con `--apply`, marca come `CANCELLED` solo i vecchi
 fallimenti `SYNC_INCREMENTAL` superati da un sync incrementale riuscito più
 recente. Non riprova i job, non stampa payload prodotto, token o dati personali.
-`npm run jobs:coalesce-shopify-changes` usa lo stesso accesso Supabase in
-modalità dry-run di default e, con `--apply`, marca come `CANCELLED` solo i job
-`DETECT_SHOPIFY_CHANGES` duplicati più vecchi quando esiste un job `PENDING` più
-recente per lo stesso shop, topic Shopify e prodotto/inventory item. Non elimina
-righe, non stampa payload prodotto e riduce lavoro ripetuto del runner quando
-Shopify invia raffiche di webhook per gli stessi prodotti.
 `npm run conflicts:doctor` usa Supabase CLI linked in sola lettura per
 distinguere conflitti aperti, conflitti stale, falsi positivi description
 riparabili e cooldown eBay che bloccano il retry; non stampa valori prodotto o
@@ -146,7 +138,6 @@ contiene l'HTML pulito completo e non va committato. Il piano può essere ripres
 con `--apply-plan /tmp/syncbay-description-apply-plan.json --apply
 --confirm-apply`, che rilegge solo Shopify per bloccare modifiche manuali
 successive e non consuma quota eBay.
-`npm run import:repair-commercial-fields` usa gli stessi snapshot per riallineare prezzo e SKU variante Shopify quando serve riparare prodotti creati prima del fix dedicato; usa sempre `--dry-run` prima della mutation reale.
 `npm run stock:restore-ebay` è una scrittura reale su eBay: richiede `--confirm-real-ebay-write`, blocca l'esecuzione se ci sono job stock/sync attivi, verifica con Trading API `GetItem` e registra uno snapshot `SYNCBAY` di ripristino.
 `npm run ebay:store-category-orphans` è in sola lettura: per ogni mapping ACTIVE chiama Trading API `GetItem` e segnala i listing attivi senza categoria del negozio (quelli non visibili nella vetrina pubblica eBay, normalizzando i placeholder `0`/`-999`). Non scrive su eBay né sui dati prodotto e aggiorna solo il token eBay cifrato se scaduto; usa `--limit N` per una lista parziale rapida.
 `npm run categories:backfill` è un dry-run di default: per i mapping ACTIVE

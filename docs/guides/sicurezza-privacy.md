@@ -30,8 +30,9 @@ Runtime deciso:
 - Vercel env secrets per app e backend HTTP.
 - Supabase project secrets solo per funzioni/servizi Supabase che ne avranno bisogno.
 - Supabase Postgres come database, ma la cifratura at-rest del provider non sostituisce la cifratura applicativa dei token OAuth.
-- `sessions:encrypt-shopify` è dry-run per default, scrive soltanto con
-  `--apply --confirm-apply` e stampa esclusivamente conteggi, mai token o ID.
+- La migrazione una tantum delle sessioni Shopify a token cifrati è stata
+  completata; il runtime rifiuta le sessioni in chiaro e lo script di
+  migrazione è stato rimosso.
 - `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
 Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.
 

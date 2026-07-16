@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 const NON_DEPLOY_PREFIXES = [
   ".github/",
@@ -45,7 +44,7 @@ export function isDeployRelevantPath(path) {
   return true;
 }
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   const base = process.env.VERCEL_GIT_PREVIOUS_SHA || "HEAD^";
   const diff = spawnSync(
     "git",
@@ -75,11 +74,5 @@ if (isCliEntrypoint()) {
 
   console.log(
     `Vercel build saltato: ${paths.join(", ")} non modifica il runtime distribuito.`,
-  );
-}
-
-function isCliEntrypoint() {
-  return Boolean(
-    process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href,
   );
 }

@@ -48,7 +48,6 @@ enum SyncJobStatus {
 
 enum ProductMappingStatus {
   ACTIVE
-  ARCHIVED
   OUT_OF_STOCK
   PAUSED
   ERROR

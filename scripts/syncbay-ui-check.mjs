@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 import {
   getUiFixture,
@@ -66,6 +65,6 @@ export function runUiCheck() {
   return 0;
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (import.meta.main) {
   process.exit(runUiCheck());
 }

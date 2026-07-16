@@ -132,7 +132,7 @@ Schema iniziale:
 - Shopify variant id;
 - Shopify inventory item GID nullable, univoco per shop e indicizzato per il
   lookup diretto dei webhook `inventory_levels/update`;
-- stato mapping (`ACTIVE`, `OUT_OF_STOCK`, `ARCHIVED`, `PAUSED`, `ERROR`);
+- stato mapping (`ACTIVE`, `OUT_OF_STOCK`, `PAUSED`, `ERROR`);
 - ultimo sync riuscito;
 - ultima causa errore.
 

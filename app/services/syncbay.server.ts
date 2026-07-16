@@ -3681,9 +3681,7 @@ function getCatalogDatabasePageWhere(
   if (filter === "archived") {
     return {
       ...baseWhere,
-      status: {
-        in: [ProductMappingStatus.ARCHIVED, ProductMappingStatus.OUT_OF_STOCK],
-      },
+      status: ProductMappingStatus.OUT_OF_STOCK,
     };
   }
 
@@ -3761,7 +3759,7 @@ async function getCatalogSummaryCounts(input: {
     catalog_rows AS (
       SELECT
         CASE
-          WHEN m."status"::text IN ('OUT_OF_STOCK', 'ARCHIVED') THEN 'archived'
+          WHEN m."status"::text = 'OUT_OF_STOCK' THEN 'archived'
           WHEN m."status"::text = 'ERROR' OR m."lastErrorCode" IS NOT NULL THEN 'mapping_error'
           WHEN COALESCE(oc."openConflictCount", 0) > 0 THEN 'open_conflict'
           WHEN

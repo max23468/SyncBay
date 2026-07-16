@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-import crypto from "node:crypto";
-import fs from "node:fs";
-import { spawnSync } from "node:child_process";
-
-import { XMLParser } from "fast-xml-parser";
+import { parseArgs as parseNodeArgs } from "node:util";
 
 import {
   buildProductFacetApplyPlan,
@@ -15,12 +11,18 @@ import {
 } from "../app/lib/syncbay-product-facets.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getProductFacetsFromSnapshotPayload } from "../app/lib/syncbay-product-snapshot-payload.ts";
-import { getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
+import {
+  asRecord,
+  ensureTokenEncryptionKey,
+  getAccessToken,
+  getShopifyAccessToken,
+  getString,
+  getTradingItem,
+  loadDotEnv,
+} from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
-import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
-const TRADING_API_COMPATIBILITY_LEVEL = "1453";
-const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
 const MAX_RUNTIME_PRODUCT_BATCH_SIZE = 20;
 const GET_ITEM_CONCURRENCY = 4;
@@ -57,21 +59,6 @@ const shopDomain = resolveRequiredShopDomainOption({
 
 ensureTokenEncryptionKey();
 
-const supabaseEnv = {
-  ...process.env,
-  ...(await getSupabaseCliEnv()),
-  SUPABASE_TELEMETRY_DISABLED: "1",
-};
-const xmlParser = new XMLParser({
-  attributeNamePrefix: "@_",
-  ignoreAttributes: false,
-  parseAttributeValue: false,
-  parseTagValue: false,
-  removeNSPrefix: true,
-  textNodeName: "#text",
-  trimValues: true,
-});
-
 await main().catch((error) => {
   console.error(`Backfill faccette non riuscito: ${formatError(error)}`);
   process.exit(1);
@@ -88,7 +75,7 @@ async function main() {
     throw new Error("--confirm-apply richiede anche --apply.");
   }
 
-  const state = getBackfillState();
+  const state = await getBackfillState();
   if (!state.connection) {
     throw new Error(`Nessuna connessione eBay attiva per ${shopDomain}.`);
   }
@@ -109,7 +96,7 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession);
+  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
@@ -177,6 +164,7 @@ async function buildReportRow(input) {
       const item = await getTradingItem({
         accessToken: input.accessToken,
         connection: input.connection,
+        includeItemSpecifics: true,
         itemId: input.mapping.ebayItemId,
       });
       source = {
@@ -238,8 +226,8 @@ function getCurrentFacetMetafields(product) {
   });
 }
 
-function getBackfillState() {
-  const rows = querySupabaseJson(`
+async function getBackfillState() {
+  const { rows } = await querySupabaseJson(`
 with shop_row as (
   select id
   from "Shop"
@@ -347,90 +335,6 @@ async function loadShopifyProducts(input) {
   return products;
 }
 
-async function getShopifyAccessToken(session) {
-  if (!session?.accessToken) {
-    throw new Error(`Sessione offline Shopify non disponibile per ${shopDomain}.`);
-  }
-
-  const expiresAt = session.expires ? new Date(session.expires) : null;
-  if (!expiresAt || expiresAt.getTime() > Date.now() + 5 * 60 * 1000) {
-    return session.accessToken;
-  }
-
-  if (!session.refreshToken) {
-    throw new Error(
-      "Sessione offline Shopify scaduta senza refresh token: riapri l'app Shopify.",
-    );
-  }
-
-  const refreshTokenExpiresAt = session.refreshTokenExpires
-    ? new Date(session.refreshTokenExpires)
-    : null;
-  if (refreshTokenExpiresAt && refreshTokenExpiresAt.getTime() <= Date.now()) {
-    throw new Error(
-      "Refresh token Shopify offline scaduto: riapri l'app Shopify.",
-    );
-  }
-
-  const response = await fetch(`https://${shopDomain}/admin/oauth/access_token`, {
-    body: JSON.stringify({
-      client_id: requiredEnv("SHOPIFY_API_KEY"),
-      client_secret: requiredEnv("SHOPIFY_API_SECRET"),
-      grant_type: "refresh_token",
-      refresh_token: session.refreshToken,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-  const json = await response.json().catch(() => null);
-
-  if (!response.ok || !json?.access_token) {
-    throw new Error(
-      `Refresh token Shopify offline non riuscito (HTTP ${response.status}).`,
-    );
-  }
-
-  const expiresAtNext = new Date(
-    Date.now() + Number(json.expires_in ?? 3600) * 1000,
-  );
-  const refreshTokenExpiresAtNext = json.refresh_token_expires_in
-    ? new Date(Date.now() + Number(json.refresh_token_expires_in) * 1000)
-    : null;
-
-  querySupabaseJson(`
-update "Session"
-set "accessToken" = ${sqlQuote(json.access_token)},
-    expires = ${sqlQuote(expiresAtNext.toISOString())}::timestamp,
-    "refreshToken" = coalesce(${sqlQuote(json.refresh_token ?? null)}, "refreshToken"),
-    "refreshTokenExpires" = coalesce(${sqlQuote(refreshTokenExpiresAtNext?.toISOString() ?? null)}::timestamp, "refreshTokenExpires"),
-    scope = coalesce(${sqlQuote(json.scope ?? null)}, scope)
-where id = ${sqlQuote(session.id)}
-returning id;
-`);
-
-  return json.access_token;
-}
-
-async function getTradingItem(input) {
-  const body = await tradingCall({
-    accessToken: input.accessToken,
-    callName: "GetItem",
-    connection: input.connection,
-    requestXml: `<?xml version="1.0" encoding="utf-8"?>
-<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <IncludeItemSpecifics>true</IncludeItemSpecifics>
-  <WarningLevel>High</WarningLevel>
-  <ItemID>${escapeXml(input.itemId)}</ItemID>
-</GetItemRequest>`,
-  });
-
-  return asRecord(body.Item);
-}
-
 async function applyFacetPlan(input) {
   const results = await mapWithConcurrency(
     input.plan.rows,
@@ -500,110 +404,6 @@ async function applyFacetRow(input) {
   };
 }
 
-async function tradingCall(input) {
-  const response = await fetch(
-    getTradingBaseUrl(input.connection.environment),
-    {
-      body: input.requestXml,
-      headers: {
-        "Content-Type": "text/xml; charset=utf-8",
-        "X-EBAY-API-CALL-NAME": input.callName,
-        "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-        "X-EBAY-API-IAF-TOKEN": input.accessToken,
-        "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-      },
-      method: "POST",
-    },
-  );
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`eBay Trading API HTTP ${response.status}.`);
-  }
-
-  const parsed = xmlParser.parse(responseText);
-  const body = asRecord(asRecord(parsed)?.[`${input.callName}Response`]);
-  if (!body) {
-    throw new Error(`eBay Trading API ${input.callName} non leggibile.`);
-  }
-
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    const errors = asRecord(body.Errors);
-    throw new Error(
-      getString(errors, "LongMessage") ??
-        getString(errors, "ShortMessage") ??
-        `eBay Trading API ${input.callName} non riuscita.`,
-    );
-  }
-
-  return body;
-}
-
-async function getAccessToken(connection) {
-  const expiresAt = connection.tokenExpiresAt
-    ? new Date(connection.tokenExpiresAt)
-    : null;
-
-  if (
-    connection.encryptedAccessToken &&
-    expiresAt &&
-    expiresAt.getTime() > Date.now() + 5 * 60 * 1000
-  ) {
-    return { accessToken: decryptSecret(connection.encryptedAccessToken) };
-  }
-
-  if (!connection.encryptedRefreshToken) {
-    throw new Error("Refresh token eBay assente.");
-  }
-
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: decryptSecret(connection.encryptedRefreshToken),
-  });
-  const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
-  if (scopes) body.set("scope", scopes);
-
-  const response = await fetch(getTokenUrl(connection.environment), {
-    body,
-    headers: {
-      Authorization: `Basic ${Buffer.from(
-        `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-        "utf8",
-      ).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    method: "POST",
-  });
-  const json = await response.json();
-
-  if (!response.ok || !json.access_token) {
-    throw new Error(
-      json.error_description ??
-        json.error ??
-        "Refresh token eBay non riuscito.",
-    );
-  }
-
-  const tokenExpiresAt = new Date(
-    Date.now() + Number(json.expires_in ?? 7200) * 1000,
-  );
-  const encryptedAccessToken = encryptSecret(json.access_token);
-
-  querySupabaseJson(`
-update "EbayConnection"
-set "encryptedAccessToken" = ${sqlQuote(encryptedAccessToken)},
-    "lastRefreshAt" = now(),
-    "tokenExpiresAt" = ${sqlQuote(tokenExpiresAt.toISOString())}::timestamp,
-    "scopes" = coalesce(${sqlQuote(json.scope ?? null)}, "scopes"),
-    "updatedAt" = now()
-where id = ${sqlQuote(connection.id)}
-returning id;
-`);
-
-  return { accessToken: json.access_token };
-}
-
 function getPrimaryCategoryName(item) {
   return getString(asRecord(item?.PrimaryCategory), "CategoryName");
 }
@@ -635,122 +435,6 @@ async function mapWithConcurrency(items, concurrency, mapper) {
   );
 
   return results;
-}
-
-function querySupabaseJson(sql) {
-  const result = spawnSync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
-    {
-      encoding: "utf8",
-      env: supabaseEnv,
-      maxBuffer: 20 * 1024 * 1024,
-    },
-  );
-
-  if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout);
-  }
-
-  return JSON.parse(result.stdout).rows;
-}
-
-function decryptSecret(secret) {
-  const [version, encodedIv, encodedAuthTag, encodedCiphertext] =
-    secret.split(".");
-  if (version !== "v1" || !encodedIv || !encodedAuthTag || !encodedCiphertext) {
-    throw new Error("Formato segreto cifrato non valido.");
-  }
-
-  const decipher = crypto.createDecipheriv(
-    "aes-256-gcm",
-    getTokenKey(),
-    Buffer.from(encodedIv, "base64url"),
-  );
-  decipher.setAuthTag(Buffer.from(encodedAuthTag, "base64url"));
-
-  return Buffer.concat([
-    decipher.update(Buffer.from(encodedCiphertext, "base64url")),
-    decipher.final(),
-  ]).toString("utf8");
-}
-
-function encryptSecret(plaintext) {
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", getTokenKey(), iv);
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
-  const authTag = cipher.getAuthTag();
-
-  return [
-    "v1",
-    iv.toString("base64url"),
-    authTag.toString("base64url"),
-    ciphertext.toString("base64url"),
-  ].join(".");
-}
-
-function getTokenKey() {
-  return crypto
-    .createHash("sha256")
-    .update(requiredEnv("TOKEN_ENCRYPTION_KEY"))
-    .digest();
-}
-
-function ensureTokenEncryptionKey() {
-  const keychainSecret = readKeychainSecret(TOKEN_ENCRYPTION_KEYCHAIN_SERVICE);
-  const selected = selectTokenEncryptionKey({
-    envValue: process.env.TOKEN_ENCRYPTION_KEY,
-    keychainValue: keychainSecret,
-  });
-
-  if (selected.value) {
-    process.env.TOKEN_ENCRYPTION_KEY = selected.value;
-    return;
-  }
-
-  throw new Error(
-    `TOKEN_ENCRYPTION_KEY non configurata e segreto Portachiavi mancante: ${TOKEN_ENCRYPTION_KEYCHAIN_SERVICE}.`,
-  );
-}
-
-function readKeychainSecret(service) {
-  if (process.platform !== "darwin") return null;
-
-  const result = spawnSync(
-    "security",
-    ["find-generic-password", "-s", service, "-w"],
-    { encoding: "utf8" },
-  );
-
-  if (result.status !== 0) return null;
-
-  return result.stdout.replace(/\r?\n$/, "");
-}
-
-function loadDotEnv(path) {
-  if (!fs.existsSync(path)) return;
-
-  for (const rawLine of fs.readFileSync(path, "utf8").split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    const separatorIndex = line.indexOf("=");
-    if (separatorIndex === -1) continue;
-
-    const key = line.slice(0, separatorIndex).trim();
-    let value = line.slice(separatorIndex + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    process.env[key] ??= value;
-  }
 }
 
 function printReport(report) {
@@ -840,52 +524,31 @@ function printSample(report, label, status) {
 }
 
 function parseArgs(rawArgs) {
-  const parsed = {};
+  const { values } = parseNodeArgs({
+    args: rawArgs,
+    options: {
+      apply: { type: "boolean" },
+      "confirm-apply": { type: "boolean" },
+      help: { short: "h", type: "boolean" },
+      json: { type: "boolean" },
+      limit: { type: "string" },
+      shop: { type: "string" },
+      "snapshot-only": { type: "boolean" },
+    },
+  });
 
-  for (let index = 0; index < rawArgs.length; index += 1) {
-    const arg = rawArgs[index];
-
-    if (arg === "--json") {
-      parsed.json = true;
-      continue;
-    }
-
-    if (arg === "--apply") {
-      parsed.apply = true;
-      continue;
-    }
-
-    if (arg === "--confirm-apply") {
-      parsed.confirmApply = true;
-      continue;
-    }
-
-    if (arg === "--snapshot-only") {
-      parsed.snapshotOnly = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      parsed.help = true;
-      continue;
-    }
-
-    if (arg === "--shop") {
-      parsed.shop = rawArgs[index + 1];
-      index += 1;
-      continue;
-    }
-
-    if (arg === "--limit") {
-      parsed.limit = parsePositiveLimitOption(rawArgs[index + 1], "--limit");
-      index += 1;
-      continue;
-    }
-
-    throw new Error(`Argomento non supportato: ${arg}`);
-  }
-
-  return parsed;
+  return {
+    apply: values.apply,
+    confirmApply: values["confirm-apply"],
+    help: values.help,
+    json: values.json,
+    limit:
+      values.limit === undefined
+        ? undefined
+        : parsePositiveLimitOption(values.limit, "--limit"),
+    shop: values.shop,
+    snapshotOnly: values["snapshot-only"],
+  };
 }
 
 function printUsage() {
@@ -904,55 +567,11 @@ sessione offline Shopify e del token eBay cifrato se scaduti.
   --confirm-apply   Conferma obbligatoria per qualunque scrittura prodotto Shopify.`);
 }
 
-function getTokenUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/identity/v1/oauth2/token"
-    : "https://api.sandbox.ebay.com/identity/v1/oauth2/token";
-}
-
-function getTradingBaseUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/ws/api.dll"
-    : "https://api.sandbox.ebay.com/ws/api.dll";
-}
-
-function getTradingSiteId(marketplaceId) {
-  if (marketplaceId === "EBAY_IT") return "101";
-
-  throw new Error(`Marketplace Trading API non supportato: ${marketplaceId}.`);
-}
-
-function requiredEnv(key) {
-  const value = process.env[key];
-  if (!value) throw new Error(`${key} non configurata.`);
-
-  return value;
-}
-
 function hasScope(scopeText, requiredScope) {
   return String(scopeText)
     .split(",")
     .map((scope) => scope.trim())
     .includes(requiredScope);
-}
-
-function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : null;
-}
-
-function getString(record, key) {
-  const value = asRecord(record)?.[key];
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const nested = asRecord(value);
-  const text = nested?.["#text"];
-
-  return typeof text === "string" || typeof text === "number"
-    ? String(text)
-    : null;
 }
 
 function normalizeText(value) {
@@ -963,15 +582,6 @@ function normalizeText(value) {
   return normalized.length > 0 ? normalized : null;
 }
 
-function escapeXml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
 function chunkArray(items, size) {
   const chunks = [];
   for (let index = 0; index < items.length; index += size) {
@@ -979,12 +589,6 @@ function chunkArray(items, size) {
   }
 
   return chunks;
-}
-
-function sqlQuote(value) {
-  if (value == null) return "null";
-
-  return `'${String(value).replaceAll("'", "''")}'`;
 }
 
 function formatError(error) {

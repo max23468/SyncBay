@@ -359,8 +359,8 @@ test("keeps one failed product isolated from successful siblings", async () => {
   );
 });
 
-test("skips archived paused and error mappings without a Shopify read", async () => {
-  for (const status of ["ARCHIVED", "PAUSED", "ERROR"] as const) {
+test("skips out-of-stock paused and error mappings without a Shopify read", async () => {
+  for (const status of ["OUT_OF_STOCK", "PAUSED", "ERROR"] as const) {
     let productReads = 0;
     const fakePorts = ports({
       async loadMappings() {

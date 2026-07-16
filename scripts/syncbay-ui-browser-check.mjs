@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { createServer as createHttpServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { chromium } from "playwright";
 import { createServer as createViteServer } from "vite";
@@ -552,6 +552,6 @@ async function verifySubmissionFocus(browser, origin) {
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+if (import.meta.main) {
   process.exit(await runUiBrowserCheck());
 }

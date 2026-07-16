@@ -4,7 +4,6 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { pathToFileURL } from "node:url";
 
 import {
   buildPrePrSelfReview,
@@ -36,7 +35,7 @@ const FULL_COMMANDS = [
   npmCommand("audit:prod", { live: true }),
 ];
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const result = runCli(args);
@@ -496,8 +495,4 @@ function isManualCheck(value) {
 
 function unique(values) {
   return [...new Set(values)];
-}
-
-function isCliEntrypoint() {
-  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 }

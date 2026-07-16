@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { parseArgs as parseNodeArgs } from "node:util";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
 
 const root = process.cwd();
 const changelogPath = path.join(root, "CHANGELOG.md");
@@ -26,66 +26,40 @@ const nonVersionedSections = new Set([
 ]);
 
 function parseArgs(argv) {
-  const options = {
-    bump: null,
-    date: null,
-    dryRun: false,
-    help: false,
-    version: null,
-  };
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-
-    if (arg === "--dry-run") {
-      options.dryRun = true;
-      continue;
-    }
-
-    if (arg === "--help" || arg === "-h") {
-      options.help = true;
-      continue;
-    }
-
-    if (arg.startsWith("--bump=")) {
-      options.bump = arg.slice("--bump=".length);
-      continue;
-    }
-
-    if (arg === "--bump") {
-      options.bump = argv[++i];
-      continue;
-    }
-
-    if (arg.startsWith("--version=")) {
-      options.version = arg.slice("--version=".length);
-      continue;
-    }
-
-    if (arg === "--version") {
-      options.version = argv[++i];
-      continue;
-    }
-
-    if (arg.startsWith("--date=")) {
-      options.date = arg.slice("--date=".length);
-      continue;
-    }
-
-    if (arg === "--date") {
-      options.date = argv[++i];
-      continue;
-    }
-
-    if (!options.bump && validBumps.has(arg)) {
-      options.bump = arg;
-      continue;
-    }
-
-    fail(`Argomento non riconosciuto: ${arg}`);
+  let values;
+  let positionals;
+  try {
+    ({ values, positionals } = parseNodeArgs({
+      allowPositionals: true,
+      args: argv,
+      options: {
+        bump: { type: "string" },
+        date: { type: "string" },
+        "dry-run": { type: "boolean" },
+        help: { short: "h", type: "boolean" },
+        version: { type: "string" },
+      },
+    }));
+  } catch (error) {
+    fail(error.message);
   }
 
-  return options;
+  let bump = values.bump ?? null;
+  for (const positional of positionals) {
+    if (!bump && validBumps.has(positional)) {
+      bump = positional;
+      continue;
+    }
+    fail(`Argomento non riconosciuto: ${positional}`);
+  }
+
+  return {
+    bump,
+    date: values.date ?? null,
+    dryRun: values["dry-run"] ?? false,
+    help: values.help ?? false,
+    version: values.version ?? null,
+  };
 }
 
 function showHelp() {
@@ -392,10 +366,6 @@ function updateVersionFile(source, release) {
     .replace(/export const BUILD_DATE = "[^"]+";/, `export const BUILD_DATE = "${release.date}";`);
 }
 
-function isCliEntrypoint() {
-  return import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
-}
-
 function runReleaseCli() {
   const options = parseArgs(process.argv.slice(2));
 
@@ -487,6 +457,6 @@ function runReleaseCli() {
   console.log("Aggiornati CHANGELOG.md e app/lib/version.ts.");
 }
 
-if (isCliEntrypoint()) {
+if (import.meta.main) {
   runReleaseCli();
 }

@@ -52,6 +52,43 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
   vale anche per i tag annotati.
 
+## [1.0.74] — 2026-07-16
+
+### Sotto il cofano
+
+- Lo stato mapping `ARCHIVED` non esiste più: i listing eBay inattivi restano
+  `OUT_OF_STOCK` (ADR 0011), il backfill una tantum aveva già migrato le righe
+  storiche e la verifica live ne conta zero. Migration dedicata e corsia
+  Catalogo "Esaurito" invariata per il negoziante.
+- Rimosso il fallback di decifratura sulla chiave non normalizzata in
+  `crypto.server.ts`: verificato che ogni envelope persistito si decifra con la
+  sola chiave trimmata. La cifratura era già sempre normalizzata.
+- Rimosso il percorso retention legacy parallelo alla maintenance giornaliera:
+  in produzione la compaction è l'unico motore attivo (MaintenanceRun regolari)
+  e con compaction disattivata la maintenance resta in sola osservazione.
+- Rimossi i moduli mai importati `syncbay-mapping-drift`,
+  `syncbay-provider-circuit-breaker` e `shopify-graphql-throttle`, e gli script
+  una tantum già consumati (cifratura sessioni, backfill inventory item e
+  baseline, pensionamento import interni, coalescenza webhook, riparazioni
+  conflitti descrizione/prezzo/immagini, riparazione campi commerciali,
+  backfill archiviati→esaurito) con i relativi comandi npm e docs.
+- Gli script CLI condividono gli helper Supabase (`querySupabaseJson`,
+  `sqlString`, `formatCliError`) e il nuovo modulo `syncbay-ebay-cli.mjs`
+  (token cifrati, OAuth eBay/Shopify, Trading API): eliminate le copie
+  duplicate in ~20 script. Il parsing argomenti usa `node:util parseArgs`;
+  `verify` e `worktree` mantengono il parser dedicato per passthrough e
+  sottocomandi. `import.meta.main` sostituisce i check manuali di entrypoint e
+  gli sleep usano `node:timers/promises`.
+- Rimosso il flag ridondante `--experimental-strip-types`: il type stripping è
+  attivo di default sul Node richiesto da `engines`.
+
+### Correzioni
+
+- `products:publish-channel` e il refresh sessione Shopify degli script di
+  backfill decifrano il token di sessione (cifrato a riposo) invece di usarlo
+  in chiaro, e il refresh da CLI riscrive i token cifrati: prima fallivano o
+  avrebbero lasciato token in chiaro nel database.
+
 ## [1.0.73] — 2026-07-16
 
 ### Correzioni
@@ -3767,6 +3804,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.74]: #1074--2026-07-16
 [1.0.73]: #1073--2026-07-16
 [1.0.72]: #1072--2026-07-16
 [1.0.71]: #1071--2026-07-16

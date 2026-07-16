@@ -33,27 +33,13 @@ export function decryptSecret(secret: string) {
   const authTag = Buffer.from(encodedAuthTag, "base64url");
   const ciphertext = Buffer.from(encodedCiphertext, "base64url");
 
-  // Prova prima la chiave normalizzata (nuovi envelope e script CLI), poi la
-  // chiave grezza: gli envelope scritti dal runtime precedente, quando il
-  // segreto aveva spazi/fine riga, erano cifrati con la chiave non trimmata e
-  // vanno ancora decifrati invece di perdere l'accesso ai token già salvati.
-  let lastError: unknown;
-  for (const key of getTokenKeyCandidates()) {
-    try {
-      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-      decipher.setAuthTag(authTag);
-      return Buffer.concat([
-        decipher.update(ciphertext),
-        decipher.final(),
-      ]).toString("utf8");
-    } catch (error) {
-      lastError = error;
-    }
-  }
+  const decipher = crypto.createDecipheriv(ALGORITHM, getTokenKey(), iv);
+  decipher.setAuthTag(authTag);
 
-  throw lastError instanceof Error
-    ? lastError
-    : new Error("Segreto cifrato non decifrabile.");
+  return Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final(),
+  ]).toString("utf8");
 }
 
 export function encryptSecretIfNeeded(value: string) {
@@ -94,19 +80,9 @@ function deriveTokenKey(material: string) {
 
 // Chiave canonica: normalizzata (trim) come gli script CLI
 // (`selectTokenEncryptionKey`), che impostano `process.env.TOKEN_ENCRYPTION_KEY`
-// al valore trimmato prima di cifrare. Usata per cifratura e HMAC così i nuovi
-// envelope restano allineati tra script locali e runtime Vercel.
+// al valore trimmato prima di cifrare. Verificato 2026-07-16 che ogni envelope
+// persistito si decifra con questa sola chiave: il fallback sulla chiave grezza
+// non serve più.
 function getTokenKey() {
   return deriveTokenKey(getTokenKeyMaterial().trim());
-}
-
-// Chiavi candidate per la decifratura, dalla canonica alla grezza, senza
-// duplicati quando il segreto non ha spazi da normalizzare.
-function getTokenKeyCandidates() {
-  const material = getTokenKeyMaterial();
-  const normalized = material.trim();
-  const candidates = [normalized];
-  if (material !== normalized) candidates.push(material);
-
-  return candidates.map(deriveTokenKey);
 }
