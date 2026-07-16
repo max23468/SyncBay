@@ -640,6 +640,7 @@ function parseArgs(rawArgs) {
       help: { short: "h", type: "boolean" },
       json: { type: "boolean" },
       limit: { type: "string" },
+      "repair-category-conflicts": { type: "boolean" },
       shop: { type: "string" },
     },
   });
@@ -654,6 +655,7 @@ function parseArgs(rawArgs) {
     help: values.help,
     json: values.json,
     limit: Number.isInteger(limit) && limit > 0 ? limit : undefined,
+    repairCategoryConflicts: values["repair-category-conflicts"],
     shop: values.shop,
   };
 }

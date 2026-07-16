@@ -10,6 +10,7 @@ import {
 import {
   decryptSecret,
   ensureTokenEncryptionKey,
+  loadDotEnv,
 } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
@@ -22,6 +23,9 @@ const MAX_SHOPIFY_GRAPHQL_ATTEMPTS = 5;
 const SHOPIFY_API_VERSION = "2026-07";
 
 const args = parseArgs(process.argv.slice(2));
+
+loadDotEnv(".env");
+
 const shopDomain = resolveRequiredShopDomainOption({
   args,
   env: process.env,
