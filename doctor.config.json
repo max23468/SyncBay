@@ -4,6 +4,7 @@
     "overrides": [
       {
         "files": [
+          "app/routes/app.tsx",
           "app/routes/app._index.tsx",
           "app/routes/app.import-preview.tsx",
           "app/routes/app.settings.tsx"

@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`
+  come route module React Router: gli export obbligatori `loader`, `headers` ed
+  `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 - Aggiornate alle ultime patch in range le dipendenze `vite` (8.1.5),
   `fast-xml-parser` (5.10.1) e `@eslint-react/eslint-plugin` (5.16.1). Cambia
   solo `package-lock.json`: i range di `package.json` già le ammettevano e
