@@ -199,9 +199,11 @@ Segui `docs/guides/git-e-pubblicazione.md` e
   `main` se non toccano runtime, workflow, deploy, release o segreti;
 - il titolo PR deve essere Conventional Commit, non il nome del branch;
 - `pubblica`, `manda su GitHub` o `carica` significa portare il diff fino a
-  GitHub/`main`, completando i gate e il cleanup previsti;
-- `deploya` o `pubblica e deploy` include il deployment Vercel production
-  privato e la sua verifica; non implica App Store o billing;
+  GitHub/`main`, completando i gate e il cleanup previsti; per modifiche che
+  toccano runtime o UI include anche il deploy Vercel production verificato
+  (vedi `docs/guides/git-e-pubblicazione.md`, "Cosa significa pubblicare");
+- `deploya` include il deployment Vercel production privato e la sua verifica
+  anche per diff senza runtime/UI; non implica App Store o billing;
 - `rilascia` include il flusso SemVer locale e la pubblicazione su GitHub;
 - prima di pubblicare controlla `[Non rilasciato]` in `CHANGELOG.md`: sezioni
   versionate richiedono `npm run release`; solo `Non versionato` non richiede
