@@ -30,6 +30,7 @@ import {
   formatItDateTime as formatDateTime,
   formatItNumber as formatNumber,
 } from "../lib/syncbay-datetime-format";
+import { DASHBOARD_RELIABILITY_JOB_LIMIT } from "../lib/syncbay-dashboard-metrics";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
@@ -308,11 +309,17 @@ export default function Index() {
           <div className="syncbay-reliability">
             <s-text color="subdued">
               {reliability.totalJobs > 0
-                ? `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
-                    reliability.totalJobs,
-                    "job",
-                    "",
-                  )} · ${reliability.successRate}% ${
+                ? `${
+                    reliability.totalJobs === DASHBOARD_RELIABILITY_JOB_LIMIT
+                      ? `Ultimi ${formatNumber(
+                          DASHBOARD_RELIABILITY_JOB_LIMIT,
+                        )} job in ${reliability.windowDays} giorni`
+                      : `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
+                          reliability.totalJobs,
+                          "job",
+                          "",
+                        )}`
+                  } · ${reliability.successRate}% ${
                     reliability.totalJobs === 1 ? "riuscito" : "riusciti"
                   }.`
                 : "Nessun job eseguito negli ultimi 7 giorni."}

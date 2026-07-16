@@ -1995,7 +1995,7 @@ npm run release:dry-run
 
 Se `[Non rilasciato]` contiene cambi runtime versionati, eseguire `npm run release -- --bump patch`. Se l'ultima ondata ha già prodotto e pubblicato la propria patch e non restano cambi versionati, non creare una release vuota: verificare tag e GitHub Release esistenti. In entrambi i casi versione, changelog, tag `vX.Y.Z` e GitHub Release seguono ADR 0006/0008. Mergeare su `main`, pulire branch/worktree e confermare che il deploy automatico punti al commit mergeato.
 
-- [ ] **Step 5: Verificare Vercel production**
+- [x] **Step 5: Verificare Vercel production**
 
 Con lo strumento Vercel che restituisce deployment, commit e log verificabili:
 
@@ -2009,7 +2009,22 @@ Con lo strumento Vercel che restituisce deployment, commit e log verificabili:
 - log runtime JSON correlabili per `requestId`, errori/slow request sempre presenti e richieste sane campionate senza payload sensibili;
 - il solo vecchio rumore `/robots.txt` non ricompare.
 
-- [ ] **Step 6: Verificare Supabase e runner live**
+Verifica fresca del 16 luglio 2026: deployment production
+`dpl_DJgXR2CV8VPKhXvA9VaTK7oyXz2n` `READY` sul commit `1a4e67f` e tag
+`v1.0.70`; `audit:prod` pulito e smoke pubblici verdi. Nei log production delle
+24 ore non risultano `5xx`, timeout runner o ricorrenze dei cluster storici;
+l'unico `404` è una richiesta a un asset con hash di un deployment precedente.
+I tick runner osservabili sono `200`, `failedCount=0`, con massimo `26.818 ms`
+e nessun campione oltre `70 s`; lo storico cron Supabase conferma zero run
+fallite nelle 24 ore anche nelle finestre non campionate dai log Vercel.
+Analytics usa `642/50.000` eventi su 30 giorni; Speed Insights espone
+`16/10.000` data point nei 7 giorni disponibili, senza regressioni osservabili.
+Fast Data Transfer e metriche runtime restano `provider_locked` sul piano
+Hobby: `provider:budget` le classifica con causa e azione dashboard, senza
+presentarle come verdi o stimarle. Web Analytics e Speed Insights risultano
+montate una sola volta.
+
+- [x] **Step 6: Verificare Supabase e runner live**
 
 Con lo strumento Supabase che copre health, query aggregate, advisor e cron, senza stampare dati sensibili:
 
@@ -2028,7 +2043,20 @@ Con lo strumento Supabase che copre health, query aggregate, advisor e cron, sen
 - egress/cached egress Supabase, file storage e altre quote Free sotto la fascia urgente; nessun `402` o read-only;
 - controllare il tick cron successivo al deploy e i log `5xx`.
 
-- [ ] **Step 7: Verificare Shopify store pilota Numisleo e UI live**
+Verifica fresca del 16 luglio 2026: progetto `ACTIVE_HEALTHY`, `db:verify`
+senza finding e database `321.014.931` byte (`306,1 MiB`, stato `ok`). Il cron
+attivo gira ogni 5 minuti e legge da Vault un URL con `limit=2`; la schedule
+legacy è disattivata. Job dovuti più vecchi circa `6,4 min`, conflitti aperti
+`0`, fallimenti nelle 24 ore `0`, backlog `DETECT_SHOPIFY_CHANGES` non
+monotono (picco `10`, valore iniziale/finale `1`). Collisioni inventory,
+mapping attivi senza baseline, checkpoint incompleti, snapshot mappate oltre
+la retention senza checkpoint e token Shopify plaintext sono tutti `0`.
+Maintenance riuscita due volte nelle 48 ore; storico cron più vecchio di 14
+giorni `0`; storage file `0` oggetti/byte; API senza `402`, read-only o `5xx`.
+L'egress provider non è esposto dalla CLI: resta `dashboard_required` con
+diagnostica SQL osservata e senza stima presentata come consumo reale.
+
+- [x] **Step 7: Verificare Shopify store pilota Numisleo e UI live**
 
 Dentro Shopify Admin:
 
@@ -2049,6 +2077,18 @@ test operativi: titolo modificato temporaneamente, webhook e job
 `DETECT_SHOPIFY_CHANGES` riusciti, conflitto titolo aperto; dopo il ripristino
 esatto del titolo originale il secondo job è riuscito e il conflitto è stato
 risolto. Inventario rimasto a `28`; nessuna scrittura eBay.
+
+Chiusura UI del 16 luglio 2026 sullo store reale Numisleo: le sei superfici
+sono state verificate automaticamente a `1440/1024/768/390 px`, zoom `200%`,
+contenitori embedded stretti e matrice healthy/empty/loading/degraded/error.
+Il controllo manuale in Chrome autenticato a zoom esatto `400%` ha caricato
+tutte le sei superfici senza overflow orizzontale dell'iframe; Impostazioni
+resta `2 x 2` desktop, Conflitti mantiene cinque riepiloghi sulla stessa riga
+quando lo spazio lo consente e il mobile resta monocolonna. Navigazione da
+tastiera, focus e nomi accessibili sono presenti; VoiceOver non è stato usato
+per decisione del maintainer. La consegna inventory controllata era già stata
+eseguita con successo e accettata dal maintainer tramite Claude; non è stata
+ripetuta. Nessun import/apply/takeover né scrittura eBay è stato eseguito.
 
 - [x] **Step 8: Verificare la riduzione degli hotspot senza metric gaming**
 
