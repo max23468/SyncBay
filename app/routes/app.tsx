@@ -25,8 +25,12 @@ export default function App() {
   const navigation = useNavigation();
   const routeContentRef = useRef<HTMLElement>(null);
   const hadPendingNavigationRef = useRef(false);
+  // Solo navigazioni GET: durante submit e redirect post-action
+  // `navigation.formMethod` resta valorizzato, e sostituire la pagina con lo
+  // scheletro cancellerebbe gli stati "Salvataggio..." delle route.
   const isRoutePending =
-    navigation.state !== "idle" &&
+    navigation.state === "loading" &&
+    navigation.formMethod == null &&
     navigation.location?.pathname.startsWith("/app") === true;
   const pendingCopy = getRoutePendingCopy(
     navigation.location?.pathname,

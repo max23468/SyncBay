@@ -14,6 +14,7 @@ import {
 import {
   EmptyState,
   MetricTile,
+  StatusRow,
   type SyncBayIcon,
   TimelineEvent,
 } from "../components/SyncBayUi";
@@ -412,44 +413,6 @@ function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
         ))}
       </s-stack>
     </div>
-  );
-}
-
-function StatusRow({
-  detail,
-  icon,
-  label,
-  title,
-  tone,
-}: {
-  detail: string;
-  icon: SyncBayIcon;
-  label: string;
-  title: string;
-  tone: "critical" | "info" | "success" | "warning";
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack
-        direction="inline"
-        gap="base"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <s-stack direction="inline" gap="base" alignItems="center">
-          <span className="syncbay-tile__icon">
-            <s-icon type={icon} tone="neutral" size="base" />
-          </span>
-          <s-stack gap="small-200">
-            <s-heading>{title}</s-heading>
-            <s-text color="subdued">{detail}</s-text>
-          </s-stack>
-        </s-stack>
-        <span className="syncbay-activity-badge">
-          <s-badge tone={tone}>{label}</s-badge>
-        </span>
-      </s-stack>
-    </s-box>
   );
 }
 

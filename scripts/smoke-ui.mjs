@@ -116,8 +116,8 @@ const checks = [
       "CatalogViewControls",
       "getEbayItemUrl",
       "getShopifyProductAdminUrl",
-      "Dettagli",
-      "Riprova",
+      "Apri in Shopify",
+      "Vedi errori",
     ],
   },
   {
