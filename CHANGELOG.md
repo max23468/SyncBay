@@ -8,6 +8,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Aggiornate alle ultime patch in range le dipendenze `vite` (8.1.5),
+  `fast-xml-parser` (5.10.1) e `@eslint-react/eslint-plugin` (5.16.1). Cambia
+  solo `package-lock.json`: i range di `package.json` già le ammettevano e
+  nessun impatto è osservabile. I major disponibili restano fuori e richiedono
+  valutazione separata: React Router 8 tocca il routing dell'app embedded e
+  dipende da `@shopify/shopify-app-react-router`, TypeScript 7 è pinnato a
+  `~6.0.3`, e `@types/node` resta su 24 per coerenza con `engines`.
 - Rimosso il dead code dei metadati di presentazione delle policy retention:
   `getRetentionPolicySummaryRows` non era consumata da nessuna rotta, e i campi
   `scope` e `label` che alimentava non erano letti da alcun codice. Le policy
