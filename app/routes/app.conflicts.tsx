@@ -15,6 +15,9 @@ import {
   EbayMark,
   EmptyState,
   MetricTile,
+  PaginationNav,
+  ProductThumbnail,
+  RiskLens,
   ShopifyMark,
   StatusHero,
 } from "../components/SyncBayUi";
@@ -234,23 +237,8 @@ export default function ConflictsRoute() {
         </div>
 
         {hasOpen && safeCount > 0 ? (
-          <div className="syncbay-risk syncbay-risk--clear">
-            <span className="syncbay-risk__icon">
-              <s-icon type="check-circle" tone="success" size="base" />
-            </span>
-            <span className="syncbay-risk__body">
-              <s-heading>
-                {safeCount === 1
-                  ? "1 conflitto sicuro da sistemare in blocco"
-                  : `${formatNumber(safeCount)} conflitti sicuri da sistemare in blocco`}
-              </s-heading>
-              <s-text color="subdued">
-                Sono tutte descrizioni: SyncBay tiene la versione di Shopify come
-                riferimento, senza toccare eBay. Le scelte delicate (titoli,
-                immagini, prezzi) restano qui sotto, una per una.
-              </s-text>
-            </span>
-            <span className="syncbay-risk__actions">
+          <RiskLens
+            actions={
               <Form method="post">
                 <input name="intent" type="hidden" value="resolveBatchSafe" />
                 <s-button disabled={isSaving} type="submit" variant="primary">
@@ -261,8 +249,15 @@ export default function ConflictsRoute() {
                       : `Applica ai ${formatNumber(safeCount)} sicuri`}
                 </s-button>
               </Form>
-            </span>
-          </div>
+            }
+            body="Sono tutte descrizioni: SyncBay tiene la versione di Shopify come riferimento, senza toccare eBay. Le scelte delicate (titoli, immagini, prezzi) restano qui sotto, una per una."
+            title={
+              safeCount === 1
+                ? "1 conflitto sicuro da sistemare in blocco"
+                : `${formatNumber(safeCount)} conflitti sicuri da sistemare in blocco`
+            }
+            tone="success"
+          />
         ) : null}
 
         <s-section heading="Conflitti da gestire">
@@ -313,7 +308,7 @@ function ConflictItem({
           alignItems="start"
         >
           <s-stack direction="inline" gap="base" alignItems="center">
-            <ProductThumbnail row={row} />
+            <ProductThumbnail thumbnailUrl={row.product.thumbnailUrl} />
             <s-stack gap="small-200">
               <s-text type="strong">{row.product.title}</s-text>
               <s-text color="subdued">
@@ -479,54 +474,16 @@ function ConflictPagination({
 }) {
   const pagination = conflicts.pagination;
 
-  if (pagination.totalRows === 0) return null;
-
   return (
-    <s-stack gap="small-200">
-      <s-text color="subdued">
-        Mostrati {formatNumber(pagination.currentStart)}-
-        {formatNumber(pagination.currentEnd)} di{" "}
-        {formatNumber(pagination.totalRows)} risultati
-        {activeFilter === "all" ? "" : " per questo filtro"}. In totale:{" "}
-        {formatNumber(conflicts.summary.totalCount)}.
-      </s-text>
-      <s-stack direction="inline" gap="small-200">
-        {pagination.hasPreviousPage && pagination.previousPage ? (
-          <s-button
-            href={getConflictHref(activeFilter, pagination.previousPage)}
-          >
-            Precedente
-          </s-button>
-        ) : null}
-        <s-text color="subdued">
-          Pagina {formatNumber(pagination.page)} di{" "}
-          {formatNumber(pagination.totalPages)}
-        </s-text>
-        {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getConflictHref(activeFilter, pagination.nextPage)}>
-            Successiva
-          </s-button>
-        ) : null}
-      </s-stack>
-    </s-stack>
-  );
-}
-
-function ProductThumbnail({ row }: { row: ConflictRow }) {
-  if (row.product.thumbnailUrl) {
-    return (
-      <s-thumbnail
-        alt=""
-        size="large"
-        src={row.product.thumbnailUrl}
-      />
-    );
-  }
-
-  return (
-    <span aria-hidden="true" className="syncbay-product-placeholder">
-      <s-icon type="image" tone="neutral" />
-    </span>
+    <PaginationNav
+      getPageHref={(page) => getConflictHref(activeFilter, page)}
+      pagination={pagination}
+      summary={`Mostrati ${formatNumber(pagination.currentStart)}-${formatNumber(
+        pagination.currentEnd,
+      )} di ${formatNumber(pagination.totalRows)} risultati${
+        activeFilter === "all" ? "" : " per questo filtro"
+      }. In totale: ${formatNumber(conflicts.summary.totalCount)}.`}
+    />
   );
 }
 

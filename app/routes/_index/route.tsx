@@ -50,7 +50,7 @@ export default function App() {
         <s-section heading="Distribuzione privata">
           <s-grid
             gap="base"
-            gridTemplateColumns="repeat(3, minmax(0, 1fr))"
+            gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
           >
             <InfoBox
               body="Import guidato dei listing attivi in Shopify."

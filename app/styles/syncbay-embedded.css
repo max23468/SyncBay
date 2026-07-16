@@ -4,9 +4,6 @@
   --syncbay-ink: #15202b;
   --syncbay-slate: #51615f;
   --syncbay-mist: #d8e0dd;
-  /* Colori di palette legacy (non più ruoli semantici, vedi sotto). */
-  --syncbay-harbor: #0f5e6e;
-  --syncbay-current: #1a8f7a;
 
   /* Colori semantici = palette eBay/Shopify (ADR 0013, decisione maintainer
      2026-06-14, distribuzione privata): verde Shopify per il successo, blu eBay
@@ -55,7 +52,10 @@
 
 /* ----------------------------------------------------------------------------
    Design layer SyncBay (ADR 0010). Lista chiusa: tile metrica, hero di stato,
-   pannello connessioni. Wrapper in light DOM attorno a componenti nativi s-*.
+   azione consigliata, decision card conflitto, pannello sorgente, tappa
+   stepper, evento timeline, scheda impostazione, battito del sync, lente
+   rischio, sparkline, riga di stato, stato vuoto e scheletro di sezione.
+   Wrapper in light DOM attorno a componenti nativi s-*.
    --------------------------------------------------------------------------- */
 
 /* Tile metrica: icona + sfondo a tinta tenue. Altezza pari via grid stretch
@@ -94,6 +94,16 @@
   gap: 2px;
   min-inline-size: 0;
   flex: 1 1 auto;
+}
+
+/* Valore della tile: prominente ma senza semantica di heading (il numero non
+   appartiene all'outline del documento). */
+.syncbay-tile__value {
+  color: var(--syncbay-ink);
+  font-family: var(--syncbay-font-sans);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
 .syncbay-tile--info {
@@ -215,48 +225,6 @@
   display: inline-flex;
 }
 
-/* Pannello connessioni: marchio sorgente/destinazione + stato. */
-.syncbay-connection {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid var(--syncbay-mist);
-  border-radius: 12px;
-  background: var(--syncbay-paper);
-}
-
-.syncbay-connection__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 40px;
-  block-size: 40px;
-  border-radius: 10px;
-  background: var(--syncbay-cloud);
-  border: 1px solid var(--syncbay-mist);
-  flex: 0 0 auto;
-  overflow: hidden;
-}
-
-.syncbay-connection__mark img {
-  inline-size: 28px;
-  block-size: 28px;
-  object-fit: contain;
-}
-
-.syncbay-connection__body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-inline-size: 0;
-  flex: 1 1 auto;
-}
-
-.syncbay-connection__status {
-  flex: 0 0 auto;
-}
-
 .syncbay-filter-nav,
 .syncbay-conflict-filter-nav,
 .syncbay-activity-filter-nav {
@@ -358,7 +326,7 @@
 }
 
 .syncbay-route-content:focus-visible {
-  outline: 3px solid var(--syncbay-blue);
+  outline: 3px solid var(--syncbay-accent);
   outline-offset: 3px;
 }
 

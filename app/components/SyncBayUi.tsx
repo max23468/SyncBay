@@ -1,16 +1,19 @@
 /**
  * Componenti del design layer SyncBay (ADR 0010).
  *
- * Lista chiusa: tile metrica, hero di stato, scheda connessione, decision card
+ * Lista chiusa: tile metrica, hero di stato, azione consigliata, decision card
  * conflitto, pannello sorgente, tappa stepper, evento timeline, scheda
- * impostazione, stato vuoto e scheletro di sezione. Sono wrapper in light DOM con
- * CSS minimo (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris
- * Web Components nativi. Non aggiungere altri wrapper custom senza aggiornare
- * l'ADR.
+ * impostazione, battito del sync, lente rischio, sparkline, riga di stato,
+ * stato vuoto e scheletro di sezione. Sono wrapper in light DOM con CSS minimo
+ * (`app/styles/syncbay-embedded.css`) attorno a componenti Polaris Web
+ * Components nativi. Non aggiungere altri wrapper custom senza aggiornare
+ * l'ADR. Qui vivono anche le composizioni native condivise tra le route
+ * (paginazione, miniatura prodotto) che non introducono CSS proprio.
  */
 
 import type { ReactNode } from "react";
 
+import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import type { ImportStepStatus } from "../lib/syncbay-import-step-status";
 
 export type SyncBayTone =
@@ -73,7 +76,9 @@ export function MetricTile({
       </span>
       <span className="syncbay-tile__body">
         <s-text color="subdued">{label}</s-text>
-        <s-heading>{value}</s-heading>
+        {/* Non un heading: il valore metrico non appartiene all'outline del
+            documento (una pagina ne mostra anche una decina). */}
+        <span className="syncbay-tile__value">{value}</span>
         {detail ? <s-text color="subdued">{detail}</s-text> : null}
         {trend ? (
           trend.tone === "neutral" ? (
@@ -227,27 +232,27 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
 }
 
 type RiskLensProps = {
+  actions?: ReactNode;
   body: string;
-  count: number;
-  href?: string;
   title: string;
+  tone: "success" | "warning";
 };
 
 /**
- * Lente rischio disponibilità (Panoramica): la card più pesante della pagina.
- * Quando ci sono prodotti a rischio è in tono di attenzione con azione diretta;
- * a zero diventa una rassicurazione verde. Protezione disponibilità = valore #1
- * del prodotto. Vedi ADR 0010/0011.
+ * Lente rischio (Panoramica e Conflitti): la card più pesante della pagina.
+ * In tono di attenzione quando c'è qualcosa da proteggere, verde quando è una
+ * rassicurazione o un'azione sicura in blocco. Le azioni (link o form) le
+ * decide la route. Vedi ADR 0010/0011.
  */
-export function RiskLens({ body, count, href, title }: RiskLensProps) {
-  const clear = count === 0;
+export function RiskLens({ actions, body, title, tone }: RiskLensProps) {
+  const clear = tone === "success";
 
   return (
     <div className={`syncbay-risk ${clear ? "syncbay-risk--clear" : ""}`}>
       <span className="syncbay-risk__icon">
         <s-icon
           type={clear ? "check-circle" : "alert-triangle"}
-          tone={clear ? "success" : "warning"}
+          tone={tone}
           size="base"
         />
       </span>
@@ -255,13 +260,7 @@ export function RiskLens({ body, count, href, title }: RiskLensProps) {
         <s-heading>{title}</s-heading>
         <s-text color="subdued">{body}</s-text>
       </span>
-      {!clear && href ? (
-        <span className="syncbay-risk__actions">
-          <s-button href={href} variant="primary">
-            Rivedi
-          </s-button>
-        </span>
-      ) : null}
+      {actions ? <span className="syncbay-risk__actions">{actions}</span> : null}
     </div>
   );
 }
@@ -459,6 +458,121 @@ export function EmptyState({
   );
 }
 
+type StatusRowProps = {
+  detail: string;
+  icon?: SyncBayIcon;
+  label: string;
+  title: string;
+  tone: Exclude<SyncBayTone, "neutral">;
+};
+
+/**
+ * Riga di stato (Attività, Impostazioni, Importazione): box nativo con titolo,
+ * dettaglio e badge di esito, con icona opzionale. Consolida le tre copie
+ * hand-rolled per superficie. Vedi ADR 0010.
+ */
+export function StatusRow({ detail, icon, label, title, tone }: StatusRowProps) {
+  return (
+    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-stack
+        direction="inline"
+        gap="base"
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <s-stack direction="inline" gap="base" alignItems="center">
+          {icon ? (
+            <span className="syncbay-tile__icon">
+              <s-icon type={icon} tone="neutral" size="base" />
+            </span>
+          ) : null}
+          <s-stack gap="small-200">
+            <s-text type="strong">{title}</s-text>
+            <s-text color="subdued">{detail}</s-text>
+          </s-stack>
+        </s-stack>
+        <span className="syncbay-activity-badge">
+          <s-badge tone={tone}>{label}</s-badge>
+        </span>
+      </s-stack>
+    </s-box>
+  );
+}
+
+type ProductThumbnailProps = {
+  thumbnailUrl: string | null;
+};
+
+/**
+ * Miniatura prodotto (Catalogo, Conflitti): immagine quando c'è, altrimenti
+ * segnaposto neutro con icona. Decorativa: il titolo del prodotto è già testo.
+ */
+export function ProductThumbnail({ thumbnailUrl }: ProductThumbnailProps) {
+  if (thumbnailUrl) {
+    return <s-thumbnail alt="" size="large" src={thumbnailUrl} />;
+  }
+
+  return (
+    <span aria-hidden="true" className="syncbay-product-placeholder">
+      <s-icon type="image" tone="neutral" />
+    </span>
+  );
+}
+
+type PageWindowState = {
+  currentEnd: number;
+  currentStart: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  nextPage: number | null;
+  page: number;
+  previousPage: number | null;
+  totalPages: number;
+  totalRows: number;
+};
+
+type PaginationNavProps = {
+  getPageHref: (page: number) => string;
+  note?: string;
+  pagination: PageWindowState;
+  summary: string;
+};
+
+/**
+ * Paginazione condivisa (Catalogo, Conflitti, Importazione): riepilogo dei
+ * risultati mostrati, nota opzionale (es. limite 1.0) e controlli
+ * Precedente/Successiva come link.
+ */
+export function PaginationNav({
+  getPageHref,
+  note,
+  pagination,
+  summary,
+}: PaginationNavProps) {
+  if (pagination.totalRows === 0) return null;
+
+  return (
+    <s-stack gap="small-200">
+      <s-text color="subdued">{summary}</s-text>
+      {note ? <s-text color="subdued">{note}</s-text> : null}
+      <s-stack direction="inline" gap="small-200">
+        {pagination.hasPreviousPage && pagination.previousPage ? (
+          <s-button href={getPageHref(pagination.previousPage)}>
+            Precedente
+          </s-button>
+        ) : null}
+        <s-text color="subdued">
+          Pagina {formatNumber(pagination.page)} di{" "}
+          {formatNumber(pagination.totalPages)}
+        </s-text>
+        {pagination.hasNextPage && pagination.nextPage ? (
+          <s-button href={getPageHref(pagination.nextPage)}>Successiva</s-button>
+        ) : null}
+      </s-stack>
+    </s-stack>
+  );
+}
+
 type StatusHeroProps = {
   actionHref?: string;
   actionLabel?: string;
@@ -546,19 +660,19 @@ export function EbayMark() {
     >
       <path
         d="m 633.08,212.53 c -45.44,1.49 -73.67,9.69 -73.67,39.62 0,19.38 15.45,40.38 54.66,40.38 52.58,0 80.64,-28.66 80.64,-75.66 l 0,-5.17 c -18.43,0 -41.16,0.16 -61.64,0.83 z m 111.75,62.1 c 0,14.58 0.42,28.98 1.69,41.94 h -46.61 c -1.24,-10.67 -1.7,-21.28 -1.7,-31.57 -25.2,30.98 -55.18,39.89 -96.76,39.89 -61.68,0 -94.7,-32.6 -94.7,-70.31 0,-54.61 44.92,-73.87 122.89,-75.65 21.32,-0.49 45.27,-0.56 65.08,-0.56 l 0,-5.34 c 0,-36.56 -23.44,-51.59 -64.07,-51.59 -30.16,0 -52.39,12.48 -54.68,34.05 h -52.65 c 5.57,-53.77 62.07,-67.37 111.74,-67.37 59.51,0 109.77,21.17 109.77,84.11 z"
-        fill="#ffbc13"
+        fill="#f5af02"
       />
       <path
         d="m 199.64,185.87 c -1.94,-46.88 -35.78,-64.42 -71.94,-64.42 -38.99,0 -70.13,19.73 -75.58,64.42 z M 51.03,219.19 c 2.7,45.48 34.07,72.38 77.2,72.38 29.88,0 56.46,-12.17 65.36,-38.66 h 51.68 c -10.05,53.74 -67.15,71.98 -116.3,71.98 C 39.61,324.9 0,275.68 0,209.31 0,136.24 40.97,88.12 129.79,88.12 c 70.7,0 122.5,37 122.5,117.76 v 13.31 z"
-        fill="#f12c2d"
+        fill="#e53238"
       />
       <path
         d="M 380.83,290.62 c 46.57,0 78.44,-33.52 78.44,-84.11 0,-50.58 -31.87,-84.11 -78.44,-84.11 -46.31,0 -78.44,33.53 -78.44,84.11 0,50.59 32.13,84.11 78.44,84.11 z M 252.29,0 h 50.1 l 0,125.88 c 24.56,-29.26 58.39,-37.76 91.69,-37.76 55.84,0 117.85,37.68 117.85,119.03 0,68.12 -49.32,117.74 -118.78,117.74 -36.36,0 -70.58,-13.04 -91.69,-38.88 0,10.32 -0.58,20.72 -1.71,30.56 h -49.17 c 0.86,-15.91 1.71,-35.72 1.71,-51.75 z"
-        fill="#0968f6"
+        fill="#0064d2"
       />
       <path
         d="M 1000,96.46 845.06,400.75 H 788.95 L 833.5,316.26 716.89,96.46 h 58.63 l 85.8,171.73 85.56,-171.73 z"
-        fill="#93c822"
+        fill="#86b817"
       />
     </svg>
   );

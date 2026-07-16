@@ -52,6 +52,46 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
   vale anche per i tag annotati.
 
+## [1.0.75] — 2026-07-16
+
+### Correzioni
+
+- Salvare un'azione (impostazioni, conflitti, retry) non sostituisce più
+  l'intera pagina con lo scheletro di caricamento: lo scheletro compare solo
+  nelle navigazioni tra sezioni, così gli stati "Salvataggio..." e i bottoni
+  disabilitati restano visibili e il focus non viene strappato dal form.
+- Ripristinato l'indicatore di focus visibile sul contenuto di pagina dopo un
+  cambio sezione: puntava a una variabile colore inesistente e l'outline non
+  veniva disegnato.
+- I prezzi del Catalogo sono formattati in italiano con il simbolo della
+  valuta (`1.234,50 €`) invece dell'importo grezzo con mappa manuale dei
+  simboli.
+- In Catalogo l'azione "Riprova" ora si chiama "Vedi errori" (porta alla
+  timeline errori, non riprova nulla) e "Dettagli" dichiara la destinazione
+  esterna ("Apri in Shopify" / "Apri su eBay").
+- Le card delle regole in Impostazioni non restano più schiacciate su due
+  colonne nelle finestre strette: la griglia rifluisce come le altre superfici.
+- I glifi del marchio eBay usano i colori ufficiali del brand (gli stessi dei
+  token semantici di ADR 0013), non una variante approssimata.
+
+### Sotto il cofano
+
+- Il design layer guadagna la "riga di stato" condivisa (ADR 0010, punto 12):
+  Attività, Impostazioni e Importazione usavano tre copie hand-rolled dello
+  stesso box. Consolidate anche miniatura prodotto e paginazione, prima
+  duplicate per superficie.
+- Il banner "conflitti sicuri" riusa il componente lente rischio invece di
+  copiarne il markup; la lente espone le azioni come contenuto della route.
+- I valori delle tile metriche e i titoli delle righe di stato non sono più
+  heading: l'outline del documento resta ai titoli di pagina e sezione.
+- Il selettore modalità catalogo dell'Importazione usa i chip filtro come le
+  altre superfici, non bottoni primari; il quinto passo dello stepper deriva
+  dallo stesso calcolo sequenziale degli altri.
+- Rimossi CSS e variabili morti (`.syncbay-connection*`, palette legacy
+  Harbor/Current, classi senza regole) e allineati i commenti della lista
+  chiusa del design layer; `ImportExecutionSections.tsx` è riformattato in
+  stile leggibile coerente col repo.
+
 ## [1.0.74] — 2026-07-16
 
 ### Sotto il cofano
@@ -3804,6 +3844,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.75]: #1075--2026-07-16
 [1.0.74]: #1074--2026-07-16
 [1.0.73]: #1073--2026-07-16
 [1.0.72]: #1072--2026-07-16

@@ -337,13 +337,9 @@ async function inspectRenderedPage(page, input) {
       if (containerWidth <= 420 && rowCounts.some((count) => count > 1)) {
         problems.push(`griglia mobile non monocolonna: ${rowCounts.join("+")}`);
       }
-      if (
-        containerWidth > 420 &&
-        grid.parentElement?.classList.contains("syncbay-settings-policy-grid") &&
-        rowCounts.join(",") !== "2,2"
-      ) {
-        problems.push(`policy Impostazioni non bilanciate 2 x 2: ${rowCounts.join("+")}`);
-      }
+      // Le policy Impostazioni non hanno piu' un layout fisso 2 x 2: la
+      // griglia rifluisce con auto-fit come le altre superfici, coperta dai
+      // controlli generici su larghezza minima e monocolonna mobile.
     }
 
     // Una label che si impila in verticale e' il sintomo con cui il difetto si

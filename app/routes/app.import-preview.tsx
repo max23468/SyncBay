@@ -12,9 +12,19 @@ import {
   useSearchParams,
 } from "react-router";
 
-import { MetricTile, Step, type StepStatus } from "../components/SyncBayUi";
+import {
+  MetricTile,
+  PaginationNav,
+  StatusRow,
+  Step,
+  type StepStatus,
+} from "../components/SyncBayUi";
 import { ExistingCatalogTakeoverSection } from "../components/ExistingCatalogTakeoverSection";
-import { AfterImportSection as ExtractedAfterImportSection, DraftImportSection as ExtractedDraftImportSection, ImportTechnicalDetails as ExtractedImportTechnicalDetails } from "../components/ImportExecutionSections";
+import {
+  AfterImportSection as ExtractedAfterImportSection,
+  DraftImportSection as ExtractedDraftImportSection,
+  ImportTechnicalDetails as ExtractedImportTechnicalDetails,
+} from "../components/ImportExecutionSections";
 import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
@@ -403,6 +413,9 @@ export default function ImportPreview() {
       previewSource: wizard.previewSource.source,
     }),
     takeoverQueued || draftStatus === "created" || draftStatus === "queued",
+    // "Dopo l'import" non si completa mai: diventa attivo quando l'import è
+    // avviato e resta l'ultimo passo del percorso.
+    false,
   ];
   const stepStatuses = computeSequentialStepStatuses(stepDone);
 
@@ -487,8 +500,8 @@ export default function ImportPreview() {
         <Step
           index={5}
           isLast
-          status={stepDone[3] ? "active" : "pending"}
-          statusLabel={stepDone[3] ? "Da fare ora" : "In attesa"}
+          status={stepStatuses[4]}
+          statusLabel={getStepStatusLabel(stepStatuses[4], "Da fare ora")}
           title="Dopo l'import"
         >
           <ExtractedAfterImportSection wizard={wizard} />
@@ -1111,48 +1124,18 @@ function ImportPreviewPagination({
   previewMode: WizardState["previewResult"]["mode"];
   totalCatalogRows: number;
 }) {
-  if (pagination.totalRows === 0) return null;
-
   return (
-    <s-stack gap="small-200">
-      <s-text color="subdued">
-        Mostrati {formatNumber(pagination.currentStart)}-
-        {formatNumber(pagination.currentEnd)} di{" "}
-        {formatNumber(pagination.totalRows)} elementi
-        {activeFilter === "all" ? "" : " per questo filtro"}. Anteprima
-        totale: {formatNumber(totalCatalogRows)}.
-      </s-text>
-      <s-stack direction="inline" gap="small-200">
-        {pagination.hasPreviousPage && pagination.previousPage ? (
-          <s-button
-            href={getImportPreviewHref(
-              activeFilter,
-              pagination.previousPage,
-              catalogMode,
-              previewMode,
-            )}
-          >
-            Precedente
-          </s-button>
-        ) : null}
-        <s-text color="subdued">
-          Pagina {formatNumber(pagination.page)} di{" "}
-          {formatNumber(pagination.totalPages)}
-        </s-text>
-        {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button
-            href={getImportPreviewHref(
-              activeFilter,
-              pagination.nextPage,
-              catalogMode,
-              previewMode,
-            )}
-          >
-            Successiva
-          </s-button>
-        ) : null}
-      </s-stack>
-    </s-stack>
+    <PaginationNav
+      getPageHref={(page) =>
+        getImportPreviewHref(activeFilter, page, catalogMode, previewMode)
+      }
+      pagination={pagination}
+      summary={`Mostrati ${formatNumber(pagination.currentStart)}-${formatNumber(
+        pagination.currentEnd,
+      )} di ${formatNumber(pagination.totalRows)} elementi${
+        activeFilter === "all" ? "" : " per questo filtro"
+      }. Anteprima totale: ${formatNumber(totalCatalogRows)}.`}
+    />
   );
 }
 
@@ -1190,16 +1173,19 @@ function ImportCatalogModeSelector({
   activeMode: ImportCatalogMode;
   searchParams: URLSearchParams;
 }) {
+  // Chip come i filtri delle altre superfici: è una scelta di vista, non
+  // un'azione.
   return (
-    <s-stack direction="inline" gap="small-200">
+    <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
       {IMPORT_CATALOG_MODES.map((mode) => (
-        <s-button
+        <s-clickable-chip
+          aria-current={activeMode === mode ? "page" : undefined}
+          color={activeMode === mode ? "strong" : "base"}
           href={getImportCatalogModeHref(searchParams, mode)}
           key={mode}
-          variant={activeMode === mode ? "primary" : undefined}
         >
           {getImportCatalogModeLabel(mode)}
-        </s-button>
+        </s-clickable-chip>
       ))}
     </s-stack>
   );
@@ -1254,30 +1240,6 @@ function getImportPreviewHref(
   return queryString
     ? `/app/import-preview?${queryString}`
     : "/app/import-preview";
-}
-
-function StatusRow({
-  detail,
-  label,
-  title,
-  tone,
-}: {
-  detail: string;
-  label: string;
-  title: string;
-  tone: "critical" | "info" | "success" | "warning";
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack direction="inline" gap="base" justifyContent="space-between">
-        <s-stack gap="small-200">
-          <s-heading>{title}</s-heading>
-          <s-text color="subdued">{detail}</s-text>
-        </s-stack>
-        <s-badge tone={tone}>{label}</s-badge>
-      </s-stack>
-    </s-box>
-  );
 }
 
 function formatCatalogImportQueuedMessage(result: {

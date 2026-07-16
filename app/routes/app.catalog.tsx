@@ -4,7 +4,12 @@ import type {
 } from "react-router";
 import { Form, useLoaderData, useSearchParams } from "react-router";
 
-import { EmptyState, MetricTile } from "../components/SyncBayUi";
+import {
+  EmptyState,
+  MetricTile,
+  PaginationNav,
+  ProductThumbnail,
+} from "../components/SyncBayUi";
 import {
   type CatalogPageFilter,
   type CatalogSortDir,
@@ -284,7 +289,7 @@ function CatalogTableRow({
   return (
     <s-table-row>
       <s-table-cell>
-        <ProductThumbnail row={row} />
+        <ProductThumbnail thumbnailUrl={row.thumbnailUrl} />
       </s-table-cell>
       <s-table-cell>
         <s-stack gap="small-200">
@@ -343,13 +348,13 @@ function CatalogTableRow({
             </s-button>
           ) : null}
           {row.status === "mapping_error" ? (
-            <s-button href="/app/activity?filter=errors">Riprova</s-button>
+            <s-button href="/app/activity?filter=errors">Vedi errori</s-button>
           ) : null}
           <s-button
             href={shopifyProductUrl ?? getEbayItemUrl(row.ebayItemId)}
             target="_blank"
           >
-            Dettagli
+            {shopifyProductUrl ? "Apri in Shopify" : "Apri su eBay"}
           </s-button>
         </s-stack>
       </s-table-cell>
@@ -464,57 +469,24 @@ function CatalogPagination({
       : " per questo filtro";
 
   return (
-    <s-stack gap="small-200">
-      <s-text color="subdued">
-        Mostrati {formatNumber(pagination.currentStart)}-
-        {formatNumber(pagination.currentEnd)} di{" "}
-        {formatNumber(pagination.totalRows)} risultati{resultQualifier}. Catalogo
-        totale: {formatNumber(catalog.summary.totalCount)}.
-      </s-text>
-      {pagination.cappedAtMaxProducts ? (
-        <s-text color="subdued">
-          SyncBay carica al massimo {formatNumber(pagination.maxProducts)}{" "}
-          mapping per questa vista. Il resto del catalogo resta preservato e
-          verrà incluso quando la paginazione estesa sarà attiva.
-        </s-text>
-      ) : null}
-      <s-stack direction="inline" gap="small-200">
-        {pagination.hasPreviousPage && pagination.previousPage ? (
-          <s-button
-            href={getCatalogHref(activeFilter, pagination.previousPage, activeSort, activeSortDir, activeSearch)}
-          >
-            Precedente
-          </s-button>
-        ) : null}
-        <s-text color="subdued">
-          Pagina {formatNumber(pagination.page)} di{" "}
-          {formatNumber(pagination.totalPages)}
-        </s-text>
-        {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getCatalogHref(activeFilter, pagination.nextPage, activeSort, activeSortDir, activeSearch)}>
-            Successiva
-          </s-button>
-        ) : null}
-      </s-stack>
-    </s-stack>
-  );
-}
-
-function ProductThumbnail({ row }: { row: CatalogRow }) {
-  if (row.thumbnailUrl) {
-    return (
-      <s-thumbnail
-        alt=""
-        size="large"
-        src={row.thumbnailUrl}
-      />
-    );
-  }
-
-  return (
-    <span aria-hidden="true" className="syncbay-product-placeholder">
-      <s-icon type="image" tone="neutral" />
-    </span>
+    <PaginationNav
+      getPageHref={(page) =>
+        getCatalogHref(activeFilter, page, activeSort, activeSortDir, activeSearch)
+      }
+      note={
+        pagination.cappedAtMaxProducts
+          ? `SyncBay carica al massimo ${formatNumber(pagination.maxProducts)} mapping per questa vista. Il resto del catalogo resta preservato e verrà incluso quando la paginazione estesa sarà attiva.`
+          : undefined
+      }
+      pagination={pagination}
+      summary={`Mostrati ${formatNumber(pagination.currentStart)}-${formatNumber(
+        pagination.currentEnd,
+      )} di ${formatNumber(
+        pagination.totalRows,
+      )} risultati${resultQualifier}. Catalogo totale: ${formatNumber(
+        catalog.summary.totalCount,
+      )}.`}
+    />
   );
 }
 
@@ -588,14 +560,15 @@ function EmptyCatalogState({
 // Direzione iniziale al primo clic su una colonna non ancora attiva: i dati
 // più "interessanti" devono comparire per primi (recenti in alto per data,
 // crescente per nome/prezzo). I clic successivi sulla stessa colonna invertono.
-const SORT_DEFAULT_DIR: Record<CatalogSortKey, CatalogSortDir> = {
-  availability: "asc",
-  link: "asc",
+// Solo le colonne esposte come ordinabili nella tabella.
+const SORT_DEFAULT_DIR = {
   price: "asc",
   product: "asc",
   status: "asc",
   updated: "desc",
-};
+} satisfies Partial<Record<CatalogSortKey, CatalogSortDir>>;
+
+type SortableColumnKey = keyof typeof SORT_DEFAULT_DIR;
 
 function SortableHeader({
   activeFilter,
@@ -614,7 +587,7 @@ function SortableHeader({
   format?: "numeric";
   label: string;
   listSlot: "primary" | "inline" | "secondary";
-  sortKey: CatalogSortKey;
+  sortKey: SortableColumnKey;
 }) {
   const active = activeSort === sortKey;
   const targetDir: CatalogSortDir = active
@@ -719,20 +692,46 @@ function getShopifyProductAdminUrl(
   return `https://admin.shopify.com/store/${shopHandle}/products/${productId}`;
 }
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  EUR: "€",
-  GBP: "£",
-  USD: "$",
-};
+// Formatter riusati tra le righe: costruirli a ogni cella costa (react-doctor
+// js-hoist-intl). La valuta varia per riga solo in teoria, quindi una piccola
+// cache per codice basta.
+const PLAIN_PRICE_FORMAT = new Intl.NumberFormat("it-IT", {
+  minimumFractionDigits: 2,
+});
+const CURRENCY_PRICE_FORMATS = new Map<string, Intl.NumberFormat>();
+
+function getCurrencyPriceFormat(currency: string) {
+  const cached = CURRENCY_PRICE_FORMATS.get(currency);
+
+  if (cached) return cached;
+
+  const format = new Intl.NumberFormat("it-IT", {
+    currency,
+    style: "currency",
+  });
+  CURRENCY_PRICE_FORMATS.set(currency, format);
+
+  return format;
+}
 
 function formatPrice(price: { amount: string; currency: string | null } | null) {
   if (!price) return "Non letto";
 
-  const symbol = price.currency ? CURRENCY_SYMBOLS[price.currency] : null;
+  const amount = Number(price.amount);
 
-  if (symbol) return `${price.amount} ${symbol}`;
+  // Importo non numerico dal provider: mostralo com'è, senza inventare.
+  if (!Number.isFinite(amount)) {
+    return `${price.amount}${price.currency ? ` ${price.currency}` : ""}`;
+  }
 
-  return `${price.amount}${price.currency ? ` ${price.currency}` : ""}`;
+  if (!price.currency) return PLAIN_PRICE_FORMAT.format(amount);
+
+  try {
+    return getCurrencyPriceFormat(price.currency).format(amount);
+  } catch {
+    // Codice valuta non ISO: numero localizzato + codice dichiarato.
+    return `${PLAIN_PRICE_FORMAT.format(amount)} ${price.currency}`;
+  }
 }
 
 function formatDateTime(value: string | null) {

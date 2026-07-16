@@ -212,10 +212,16 @@ export default function Index() {
         ) : null}
 
         <RiskLens
+          actions={
+            riskCount > 0 ? (
+              <s-button href="/app/catalog" variant="primary">
+                Rivedi
+              </s-button>
+            ) : undefined
+          }
           body={getRiskBody(riskCount)}
-          count={riskCount}
-          href="/app/catalog"
           title={getRiskTitle(riskCount)}
+          tone={riskCount === 0 ? "success" : "warning"}
         />
 
         <s-box
@@ -356,7 +362,7 @@ export default function Index() {
 
           <s-section heading="Attività recente">
             {recentActivity.length > 0 ? (
-              <ul className="syncbay-timeline">
+              <ol className="syncbay-timeline">
                 {recentActivity.map((activity, index) => (
                   <TimelineEvent
                     icon={getActivityIcon(activity.tone)}
@@ -365,12 +371,12 @@ export default function Index() {
                     tone={activity.tone}
                   >
                     <s-stack gap="small-200">
-                      <s-heading>{activity.title}</s-heading>
+                      <s-text type="strong">{activity.title}</s-text>
                       <s-text color="subdued">{activity.detail}</s-text>
                     </s-stack>
                   </TimelineEvent>
                 ))}
-              </ul>
+              </ol>
             ) : (
               <s-text color="subdued">
                 Ancora nessuna attività. Appena SyncBay importa o aggiorna il
@@ -652,9 +658,11 @@ function getRecentActivity(dashboard: Dashboard): RecentActivity[] {
     title: getJobTitle(job.type),
     tone: getJobTone(job.status),
   }));
-  const auditActivity = dashboard.audit.slice(0, 2).map((event) => ({
+  const auditActivity = dashboard.audit.slice(0, 2).map((event, index) => ({
     detail: formatDateTime(event.createdAt),
-    id: `audit-${event.type}-${event.createdAt}`,
+    // L'indice evita chiavi React duplicate con due note identiche nello
+    // stesso istante (qui non c'è il raggruppamento della pagina Attività).
+    id: `audit-${event.type}-${event.createdAt}-${index}`,
     title: event.message,
     tone: "info" as const,
   }));

@@ -68,6 +68,19 @@ attorno a componenti nativi:
     sincronizzazioni degli ultimi 7 giorni in accento, da aggregazione dello
     storico job; serie vuota o piatta resa come baseline, mai dati sintetici.
 
+Estensione 2026-07-16 (consolidamento post-audit UI):
+
+12. **Riga di stato** (Attività, Impostazioni, Importazione): box nativo con
+    titolo, dettaglio e badge di esito, icona opzionale; consolida le tre
+    copie hand-rolled per superficie in un unico componente del design layer.
+
+Il **pannello connessioni** (punto 2) non è più usato dalla UI: in
+Impostazioni lo sostituisce la riga di stato (punto 12) e il relativo CSS è
+stato rimosso. Resta autorizzato dai marchi qui sotto l'uso dei glifi
+eBay/Shopify nel pannello sorgente (punto 5). La lente rischio (punto 10) è
+riusata in Conflitti per l'azione batch sui conflitti sicuri, con lo stesso
+wrapper e tono verde.
+
 Il first-run della Panoramica riusa la **tappa stepper** (punto 6) per
 l'onboarding guidato Collega -> Importa -> Attiva. L'accento di questi elementi
 è il Bay Blue del logo con uso disciplinato (ADR 0013), non più il solo

@@ -9,7 +9,7 @@ import {
   ActionRow,
   MetricTile,
   SettingCard,
-  type SyncBayIcon,
+  StatusRow,
 } from "../components/SyncBayUi";
 import { useActionToast } from "../hooks/use-action-toast";
 import {
@@ -342,10 +342,10 @@ export default function SettingsRoute() {
           settings={settings}
         />
 
-        <div className="syncbay-balanced-box-grid syncbay-settings-policy-grid">
+        <div className="syncbay-balanced-box-grid">
         <s-grid
           gap="large"
-          gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
         >
           <ImportProductSettingsCard
             currentStatus={currentStatus}
@@ -849,44 +849,6 @@ function getShopifyScopesDetail(settings: SettingsState) {
   }
 
   return `Permessi da sistemare: ${parts.join("; ")}.`;
-}
-
-function StatusRow({
-  detail,
-  icon,
-  label,
-  title,
-  tone,
-}: {
-  detail: string;
-  icon: SyncBayIcon;
-  label: string;
-  title: string;
-  tone: "critical" | "info" | "success" | "warning";
-}) {
-  return (
-    <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack
-        direction="inline"
-        gap="base"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <s-stack direction="inline" gap="base" alignItems="center">
-          <span className="syncbay-tile__icon">
-            <s-icon type={icon} tone="neutral" size="base" />
-          </span>
-          <s-stack gap="small-200">
-            <s-heading>{title}</s-heading>
-            <s-text color="subdued">{detail}</s-text>
-          </s-stack>
-        </s-stack>
-        <span className="syncbay-activity-badge">
-          <s-badge tone={tone}>{label}</s-badge>
-        </span>
-      </s-stack>
-    </s-box>
-  );
 }
 
 function getProductPublicationModeLabel(mode: ProductPublicationMode) {
