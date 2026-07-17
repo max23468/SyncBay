@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildProductFacetApplyPlan, buildProductFacetBackfillReport } from "./syncbay-product-facet-backfill-report.ts";
+import {
+  buildProductFacetApplyPlan,
+  buildProductFacetBackfillReport,
+} from "./syncbay-product-facet-backfill-report.ts";
 
 const categoriaFacet = {
   key: "categoria" as const,
@@ -79,7 +82,12 @@ test("classifies facet backfill rows without applying changes", () => {
     ["applicable", "already_correct", "conflict_manual", "uncertain"],
   );
   assert.deepEqual(report.proposedFacets, [
-    { count: 3, key: "categoria", label: "Categoria", value: "Monete italiane in lire" },
+    {
+      count: 3,
+      key: "categoria",
+      label: "Categoria",
+      value: "Monete italiane in lire",
+    },
     {
       count: 1,
       key: "conservazione",
@@ -115,7 +123,10 @@ test("keeps missing Shopify products and failed lookups out of applicable change
     ["missing_shopify_product", "ebay_lookup_failed"],
   );
   assert.equal(report.summary.applicable, 0);
-  assert.equal(report.rows[1]?.lookupFailureReason, "Limite Trading API raggiunto.");
+  assert.equal(
+    report.rows[1]?.lookupFailureReason,
+    "Limite Trading API raggiunto.",
+  );
 });
 
 test("builds an apply plan only for missing approved facet metafields", () => {

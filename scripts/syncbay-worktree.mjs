@@ -105,10 +105,7 @@ export function getSetupCommands() {
   ];
 }
 
-export function runCommandsSerially(
-  commands,
-  { cwd, spawn = spawnSync } = {},
-) {
+export function runCommandsSerially(commands, { cwd, spawn = spawnSync } = {}) {
   for (const entry of commands) {
     console.log(`\n[worktree] ${entry.label}`);
     const result = spawn(entry.command, entry.args, {
@@ -176,9 +173,7 @@ function runCli(rawArgs) {
     return;
   }
 
-  console.log(
-    `Creo ${plan.branch} da ${plan.base} in ${plan.target}.`,
-  );
+  console.log(`Creo ${plan.branch} da ${plan.base} in ${plan.target}.`);
   fs.mkdirSync(path.dirname(plan.target), { recursive: true });
   const creation = spawnSync(
     plan.createCommand.command,
@@ -276,9 +271,7 @@ function deriveTargetPath(repoRoot, branch) {
 
 function validateBranchName(branch) {
   const components =
-    typeof branch === "string"
-      ? branch.slice("codex/".length).split("/")
-      : [];
+    typeof branch === "string" ? branch.slice("codex/".length).split("/") : [];
   if (
     typeof branch !== "string" ||
     !/^codex\/[a-z0-9][a-z0-9._/-]*$/i.test(branch) ||
@@ -303,7 +296,8 @@ function parseWorktreeList(source) {
   const paths = [];
   const branches = [];
   for (const line of source.split(/\r?\n/)) {
-    if (line.startsWith("worktree ")) paths.push(line.slice("worktree ".length));
+    if (line.startsWith("worktree "))
+      paths.push(line.slice("worktree ".length));
     if (line.startsWith("branch ")) branches.push(line.slice("branch ".length));
   }
   return { branches, paths };
@@ -330,7 +324,8 @@ function parseArgs(rawArgs) {
   for (let index = 1; index < rawArgs.length; index += 1) {
     const arg = rawArgs[index];
     if (arg === "--branch") parsed.branch = requireValue(rawArgs, ++index, arg);
-    else if (arg === "--base") parsed.base = requireValue(rawArgs, ++index, arg);
+    else if (arg === "--base")
+      parsed.base = requireValue(rawArgs, ++index, arg);
     else if (arg === "--dry-run") parsed.dryRun = true;
     else if (arg === "--json") parsed.json = true;
     else if (arg === "--help" || arg === "-h") parsed.help = true;
@@ -381,9 +376,7 @@ function runGitText(args, cwd, { allowEmpty = false } = {}) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.status !== 0) {
-    throw new Error(
-      result.stderr?.trim() || `git ${args.join(" ")} fallito.`,
-    );
+    throw new Error(result.stderr?.trim() || `git ${args.join(" ")} fallito.`);
   }
   const output = result.stdout.trim();
   if (!allowEmpty && !output) {

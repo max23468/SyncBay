@@ -123,7 +123,8 @@ export async function syncShopifyProductPublications(
 
   if (publicationIds.length === 0) {
     return {
-      message: "Shopify non ha restituito publication/canali su cui pubblicare.",
+      message:
+        "Shopify non ha restituito publication/canali su cui pubblicare.",
       publicationCount: 0,
       reason: "no_publications",
       status: "skipped",
@@ -223,7 +224,9 @@ export async function loadShopifyProductPublications(
   );
 }
 
-function shouldPublishProductToSalesChannels(status: string | null | undefined) {
+function shouldPublishProductToSalesChannels(
+  status: string | null | undefined,
+) {
   return status === "ACTIVE";
 }
 

@@ -26,14 +26,14 @@ SyncBay 1.0 privata è:
 
 ## Limiti operativi
 
-| Area | Limite 1.0 | Azione se il limite viene superato |
-| --- | --- | --- |
-| Catalogo | 2.000 prodotti per shop | Bloccare import o richiedere piano Growth. |
-| Account eBay | 1 per shop | Rimandare multi-account a decisione post-1.0. |
-| Location Shopify | 1 predefinita | Mostrare limite in onboarding. |
-| Sync | Finestra configurabile 5-30 minuti; real-time dove sostenibile | Usare polling come fallback obbligatorio. |
-| Errori ordinari | Self-service | Mostrare causa, impatto, retry e azione consigliata. |
-| Supporto umano | Non previsto come requisito 1.0 | Progettare diagnostica e runbook interno. |
+| Area             | Limite 1.0                                                     | Azione se il limite viene superato                   |
+| ---------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
+| Catalogo         | 2.000 prodotti per shop                                        | Bloccare import o richiedere piano Growth.           |
+| Account eBay     | 1 per shop                                                     | Rimandare multi-account a decisione post-1.0.        |
+| Location Shopify | 1 predefinita                                                  | Mostrare limite in onboarding.                       |
+| Sync             | Finestra configurabile 5-30 minuti; real-time dove sostenibile | Usare polling come fallback obbligatorio.            |
+| Errori ordinari  | Self-service                                                   | Mostrare causa, impatto, retry e azione consigliata. |
+| Supporto umano   | Non previsto come requisito 1.0                                | Progettare diagnostica e runbook interno.            |
 
 ## Retention operativa
 

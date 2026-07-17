@@ -128,7 +128,10 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
+  const shopifyAccessToken = await getShopifyAccessToken(
+    state.shopifySession,
+    shopDomain,
+  );
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
@@ -190,7 +193,10 @@ async function buildReportRow(input) {
   const snapshotSource = getSnapshotCategorySource(input.mapping);
   const metafieldSource = getMetafieldCategorySource(input.shopifyProduct);
   let source = mergeCategorySources(snapshotSource, metafieldSource);
-  let categorySource = getCachedCategorySourceName(snapshotSource, metafieldSource);
+  let categorySource = getCachedCategorySourceName(
+    snapshotSource,
+    metafieldSource,
+  );
   let lookupFailureReason = null;
   let lookupFailed = false;
 
@@ -470,7 +476,9 @@ async function applyCategoryRow(input) {
     return {
       ebayItemId: input.row.ebayItemId,
       error: userErrors
-        .map((error) => `${error.field?.join(".") ?? "product"}: ${error.message}`)
+        .map(
+          (error) => `${error.field?.join(".") ?? "product"}: ${error.message}`,
+        )
         .join("; "),
       ok: false,
       shopifyProductGid: input.row.shopifyProductGid,
@@ -582,7 +590,9 @@ function printApplySummary(apply) {
   console.log(
     `- senza prodotto Shopify saltati: ${apply.skipped.missingShopifyProduct}`,
   );
-  console.log(`- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`);
+  console.log(
+    `- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`,
+  );
 
   if (apply.failures?.length > 0) {
     console.log("");
@@ -605,7 +615,9 @@ function printSample(report, label, status) {
   console.log(`${label} (campione):`);
   for (const row of rows) {
     const proposal = row.proposal;
-    const reason = row.lookupFailureReason ? ` · ${row.lookupFailureReason}` : "";
+    const reason = row.lookupFailureReason
+      ? ` · ${row.lookupFailureReason}`
+      : "";
     console.log(
       `- ItemID ${row.ebayItemId}: ${proposal?.shopifyCategoryName ?? "nessuna categoria"} · ${proposal?.confidence ?? "n/a"}${reason}`,
     );

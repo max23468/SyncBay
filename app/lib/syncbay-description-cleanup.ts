@@ -256,9 +256,8 @@ function removeUnmatchedTrailingParagraphClosers(html: string) {
 }
 
 function countTag(html: string, tagName: string) {
-  return Array.from(
-    html.matchAll(new RegExp(`<${tagName}\\b[^>]*>`, "gi")),
-  ).length;
+  return Array.from(html.matchAll(new RegExp(`<${tagName}\\b[^>]*>`, "gi")))
+    .length;
 }
 
 function countClosingTag(html: string, tagName: string) {
@@ -281,8 +280,7 @@ function removeLeadingTemplatePhrases(html: string) {
 }
 
 function removeLeadingTemplatePhrase(html: string, phrase: RegExp) {
-  const leadingMarkup =
-    String.raw`(?:(?:<br>|</?p>|</?strong>|</?b>|</?em>|</?i>|</?u>)|\s|&nbsp;|&#160;|[!.,:;\-|])*`;
+  const leadingMarkup = String.raw`(?:(?:<br>|</?p>|</?strong>|</?b>|</?em>|</?i>|</?u>)|\s|&nbsp;|&#160;|[!.,:;\-|])*`;
   const pattern = new RegExp(
     `^${leadingMarkup}${phrase.source}(?:\\s|&nbsp;|&#160;|<br>|</?p>|</?strong>|</?b>|</?em>|</?i>|</?u>|[!.,:;\\-|])*`,
     "i",
@@ -475,9 +473,7 @@ function stripAttributes(html: string) {
       return `<${normalizedTagName}>`;
     }
 
-    return normalizedTagName === "br"
-      ? "<br>"
-      : `<${normalizedTagName}>`;
+    return normalizedTagName === "br" ? "<br>" : `<${normalizedTagName}>`;
   });
 }
 
@@ -542,7 +538,8 @@ function getSafeRawTextExcerpt(rawText: string, cleanedText: string) {
 }
 
 function countTemplateSignals(text: string) {
-  return TEMPLATE_SIGNAL_PATTERNS.filter((pattern) => pattern.test(text)).length;
+  return TEMPLATE_SIGNAL_PATTERNS.filter((pattern) => pattern.test(text))
+    .length;
 }
 
 function excerpt(text: string, maxLength = 220) {

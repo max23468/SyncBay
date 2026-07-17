@@ -7,7 +7,6 @@ export function shouldRefreshOfflineShopifySession(
   if (!expires) return true;
 
   return (
-    expires.getTime() <=
-    now.getTime() + SHOPIFY_OFFLINE_TOKEN_REFRESH_SAFETY_MS
+    expires.getTime() <= now.getTime() + SHOPIFY_OFFLINE_TOKEN_REFRESH_SAFETY_MS
   );
 }

@@ -26,4 +26,3 @@ Cosa è stato deciso, in una frase chiara.
 ## Riferimenti
 
 - Link a documenti, fonti, issue o conversazioni.
-

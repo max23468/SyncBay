@@ -34,7 +34,7 @@ Runtime deciso:
   completata; il runtime rifiuta le sessioni in chiaro e lo script di
   migrazione è stato rimosso.
 - `TOKEN_ENCRYPTION_KEY` custodita nei provider runtime, mai nel repository.
-Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.
+  Per Supabase, non esporre tabelle operative a client pubblici senza RLS e policy esplicite. Le tabelle con token, job, audit, mapping e dati shop devono restare server-side nella 1.0 privata.
 
 ## Compliance minima
 

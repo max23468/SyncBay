@@ -8,11 +8,7 @@ export type SupabaseHttpServiceCheck = {
 };
 
 export type SupabaseHttpServiceStatus =
-  | "healthy"
-  | "restricted"
-  | "missing_api_key"
-  | "unauthorized"
-  | "unhealthy";
+  "healthy" | "restricted" | "missing_api_key" | "unauthorized" | "unhealthy";
 
 export type SupabaseHttpServiceDiagnosis = {
   message: string | null;

@@ -9,7 +9,12 @@ import type {
 } from "./syncbay-existing-catalog-takeover";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { formatExistingCatalogFieldPolicy, formatExistingCatalogOperation, formatExistingCatalogReason, formatExistingCatalogTakeoverStatus } from "./syncbay-existing-catalog-copy.ts";
+import {
+  formatExistingCatalogFieldPolicy,
+  formatExistingCatalogOperation,
+  formatExistingCatalogReason,
+  formatExistingCatalogTakeoverStatus,
+} from "./syncbay-existing-catalog-copy.ts";
 
 test("formats every existing catalog takeover status", () => {
   const values: ExistingCatalogTakeoverStatus[] = [

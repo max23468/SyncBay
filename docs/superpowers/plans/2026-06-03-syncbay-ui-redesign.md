@@ -50,42 +50,42 @@ No provider, schema, worker or integration change is part of this closeout.
 
 This plan integrates these decisions from the recovered threads:
 
-| Thread decision | Plan coverage |
-| --- | --- |
-| Work is concept-to-code, not a quick CSS polish. | Tasks are phased by shell, data helpers, routes, smoke checks and visual QA. |
-| The six Image Gen concepts are directional references, not pixel-perfect specs. | Visual QA checks hierarchy, density, copy, color and anatomy; implementation follows real Shopify components and written decisions first. |
-| Before UI work, review real data contracts to avoid double work. | New Phase 0 documents loaders, actions, real data, missing data, empty states and decisions per page before runtime edits. |
-| Implementation should be real-data first, not static mock screens. | Phase 0 and route tasks reuse existing loaders/actions where available and add server-side selectors for missing pages; demo/empty states are explicit. |
-| Home must be a daily operating center, not a permanent wizard. | Task 4 rebuilds `/app` as `Panoramica` with next action first. |
-| Final nav order: `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`, `Impostazioni`. | Task 2 sets exactly these six nav items. |
-| `Diagnostica` is not a nav item. | Task 8 puts diagnostics inside `Attività`; Task 9 keeps advanced diagnostics inside `Impostazioni > Avanzate`. |
-| `Account` is not a nav item. | Task 7 keeps eBay connection inside `Importazione`; Task 9 puts account/ricollegamento inside `Avanzate`. |
-| `Dashboard` label is rejected. Use `Panoramica`. | All plan labels use `Panoramica`. |
-| eBay remains catalog source of truth, Shopify is destination, except Shopify paid orders update eBay stock. | Non-scope and copy guardrails prohibit export/bidirectional catalog UI. |
-| Avoid `Esporta`, bidirectional arrows and broad `Sincronizza tutto`. | Tasks 4, 5 and 8 explicitly remove those patterns. |
-| Use updated Shopify-native components, not legacy Polaris React. | Task 2 uses App Bridge `NavMenu`; Task 3 is Polaris Web Components first and keeps CSS only for documented exceptions. |
-| Visual direction: 75% Shopify-native, 25% SyncBay. | Task 3 defines tokens, compact surfaces and restrained accents from `BRAND.md`. |
-| Use real SyncBay logo in implementation, not generated logos. | Task 3 uses repo assets or an inline component derived from approved assets; concepts are references, not logo sources. |
-| eBay/Shopify marks are allowed only as sober indicators, not co-branding. | Task 3 includes this as a visual guardrail. |
-| Competitor inspiration: QuickSync/Infoshore/Marketplace Connect/DPL style clarity, not marketplace-suite complexity. | Scope keeps SyncBay narrow: import, catalog sync, conflicts, activity and settings only. |
-| `Catalogo` is table-first, not a product editor. | Task 5 creates a product-control table, not editing surfaces. |
-| Catalog first column is thumbnail + title, with SKU/ItemID secondary. | Task 5 table anatomy uses `Prodotto` with thumbnail, title and secondary identifiers. |
-| Do not show separate primary columns `Stato Shopify` and `Stato SyncBay`. | Task 5 uses one computed `Stato` badge. |
-| Catalog filters differ from import filters. | Task 5 and Task 7 define separate filters. |
-| `Conflitti` defaults to open conflicts, with resolved history secondary. | Task 6 implements `Aperti`, `Risolti`, `Tutti`. |
-| Conflict actions are `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`. | Task 6 maps existing enum actions to customer-facing labels. |
-| `Importazione` is one page with progressive steps. | Task 7 keeps one route and rebuilds it as a step flow. |
-| Default publication status and channel policy live in `Impostazioni`; `Importazione` shows summary + shortcut. | Task 7 and Task 9 split responsibility this way. |
-| `Attività` is a timeline with diagnostics secondary. | Task 8 turns jobs/audit/errors into a readable timeline and collapses technical details. |
-| `Impostazioni` must have four vertical boxes, one below another, not a four-column row. | Task 9 defines a one-column layout for the four boxes. |
-| `Impostazioni` boxes: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. | Task 9 uses exactly these four boxes. |
-| Existing UI functions must not disappear without an explicit decision. | Each route task lists preservation requirements and smoke checks. |
-| Two implicit user levels: negoziante first, diagnostics/operator second. | Copy and layout tasks keep technical details in disclosures or advanced sections. |
-| Use `Quantità da verificare`, not `Disponibilità non protetta`. | Task 1 state helper and Task 4 copy priority use this label, after the eBay connection prerequisite. |
-| If eBay is missing or expired, that is the top next-action priority. | Task 1 and Task 4 put `Collegamento eBay mancante o scaduto` before all operational issues. |
-| Setup/import block appears only when a prerequisite or blocking state exists. | Task 4 next-action logic hides onboarding when shop is operational. |
-| `Attività` concept may show `Sincronizza tutto`, but implementation should remove or narrowly scope it. | Task 8 excludes broad manual sync. |
-| Preserve final six concept images in the repo. | Source inputs point to `docs/assets/ui-concepts/2026-06-03/`. |
+| Thread decision                                                                                                      | Plan coverage                                                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Work is concept-to-code, not a quick CSS polish.                                                                     | Tasks are phased by shell, data helpers, routes, smoke checks and visual QA.                                                                            |
+| The six Image Gen concepts are directional references, not pixel-perfect specs.                                      | Visual QA checks hierarchy, density, copy, color and anatomy; implementation follows real Shopify components and written decisions first.               |
+| Before UI work, review real data contracts to avoid double work.                                                     | New Phase 0 documents loaders, actions, real data, missing data, empty states and decisions per page before runtime edits.                              |
+| Implementation should be real-data first, not static mock screens.                                                   | Phase 0 and route tasks reuse existing loaders/actions where available and add server-side selectors for missing pages; demo/empty states are explicit. |
+| Home must be a daily operating center, not a permanent wizard.                                                       | Task 4 rebuilds `/app` as `Panoramica` with next action first.                                                                                          |
+| Final nav order: `Panoramica`, `Catalogo`, `Conflitti`, `Importazione`, `Attività`, `Impostazioni`.                  | Task 2 sets exactly these six nav items.                                                                                                                |
+| `Diagnostica` is not a nav item.                                                                                     | Task 8 puts diagnostics inside `Attività`; Task 9 keeps advanced diagnostics inside `Impostazioni > Avanzate`.                                          |
+| `Account` is not a nav item.                                                                                         | Task 7 keeps eBay connection inside `Importazione`; Task 9 puts account/ricollegamento inside `Avanzate`.                                               |
+| `Dashboard` label is rejected. Use `Panoramica`.                                                                     | All plan labels use `Panoramica`.                                                                                                                       |
+| eBay remains catalog source of truth, Shopify is destination, except Shopify paid orders update eBay stock.          | Non-scope and copy guardrails prohibit export/bidirectional catalog UI.                                                                                 |
+| Avoid `Esporta`, bidirectional arrows and broad `Sincronizza tutto`.                                                 | Tasks 4, 5 and 8 explicitly remove those patterns.                                                                                                      |
+| Use updated Shopify-native components, not legacy Polaris React.                                                     | Task 2 uses App Bridge `NavMenu`; Task 3 is Polaris Web Components first and keeps CSS only for documented exceptions.                                  |
+| Visual direction: 75% Shopify-native, 25% SyncBay.                                                                   | Task 3 defines tokens, compact surfaces and restrained accents from `BRAND.md`.                                                                         |
+| Use real SyncBay logo in implementation, not generated logos.                                                        | Task 3 uses repo assets or an inline component derived from approved assets; concepts are references, not logo sources.                                 |
+| eBay/Shopify marks are allowed only as sober indicators, not co-branding.                                            | Task 3 includes this as a visual guardrail.                                                                                                             |
+| Competitor inspiration: QuickSync/Infoshore/Marketplace Connect/DPL style clarity, not marketplace-suite complexity. | Scope keeps SyncBay narrow: import, catalog sync, conflicts, activity and settings only.                                                                |
+| `Catalogo` is table-first, not a product editor.                                                                     | Task 5 creates a product-control table, not editing surfaces.                                                                                           |
+| Catalog first column is thumbnail + title, with SKU/ItemID secondary.                                                | Task 5 table anatomy uses `Prodotto` with thumbnail, title and secondary identifiers.                                                                   |
+| Do not show separate primary columns `Stato Shopify` and `Stato SyncBay`.                                            | Task 5 uses one computed `Stato` badge.                                                                                                                 |
+| Catalog filters differ from import filters.                                                                          | Task 5 and Task 7 define separate filters.                                                                                                              |
+| `Conflitti` defaults to open conflicts, with resolved history secondary.                                             | Task 6 implements `Aperti`, `Risolti`, `Tutti`.                                                                                                         |
+| Conflict actions are `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`.                                          | Task 6 maps existing enum actions to customer-facing labels.                                                                                            |
+| `Importazione` is one page with progressive steps.                                                                   | Task 7 keeps one route and rebuilds it as a step flow.                                                                                                  |
+| Default publication status and channel policy live in `Impostazioni`; `Importazione` shows summary + shortcut.       | Task 7 and Task 9 split responsibility this way.                                                                                                        |
+| `Attività` is a timeline with diagnostics secondary.                                                                 | Task 8 turns jobs/audit/errors into a readable timeline and collapses technical details.                                                                |
+| `Impostazioni` must have four vertical boxes, one below another, not a four-column row.                              | Task 9 defines a one-column layout for the four boxes.                                                                                                  |
+| `Impostazioni` boxes: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`.                           | Task 9 uses exactly these four boxes.                                                                                                                   |
+| Existing UI functions must not disappear without an explicit decision.                                               | Each route task lists preservation requirements and smoke checks.                                                                                       |
+| Two implicit user levels: negoziante first, diagnostics/operator second.                                             | Copy and layout tasks keep technical details in disclosures or advanced sections.                                                                       |
+| Use `Quantità da verificare`, not `Disponibilità non protetta`.                                                      | Task 1 state helper and Task 4 copy priority use this label, after the eBay connection prerequisite.                                                    |
+| If eBay is missing or expired, that is the top next-action priority.                                                 | Task 1 and Task 4 put `Collegamento eBay mancante o scaduto` before all operational issues.                                                             |
+| Setup/import block appears only when a prerequisite or blocking state exists.                                        | Task 4 next-action logic hides onboarding when shop is operational.                                                                                     |
+| `Attività` concept may show `Sincronizza tutto`, but implementation should remove or narrowly scope it.              | Task 8 excludes broad manual sync.                                                                                                                      |
+| Preserve final six concept images in the repo.                                                                       | Source inputs point to `docs/assets/ui-concepts/2026-06-03/`.                                                                                           |
 
 ## Scope
 

@@ -31,48 +31,48 @@ Questi numeri sono la fotografia raccolta durante l'audit del 10 luglio 2026. Pr
 
 Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel.com/docs/plans/hobby), [limiti Vercel](https://vercel.com/docs/limits), [dimensione database Supabase](https://supabase.com/docs/guides/platform/database-size), [pricing Supabase](https://supabase.com/pricing) e [changelog Supabase](https://supabase.com/changelog). Versionare nel runbook la data di verifica, non copiare limiti come costanti eterne.
 
-| Superficie | Baseline dell'audit | Uso nel piano |
-| --- | --- | --- |
-| Runner conflitti | `547` job `DETECT_SHOPIFY_CHANGES` dovuti; il più vecchio risale al 5 luglio; `0` conflitti aperti | Task 2 e 4 devono ridurre l'età sotto 15 minuti e separare conflitti, no-op e mapping mancanti |
-| Esiti conflitti | Solo `20` esiti di conflitto su `6.445` job osservati, circa `0,31%`; prevalgono `mapping_not_found` e no-op | Task 4 deve batchare senza perdere la semantica di ogni esito |
-| Inventory webhook | Nessun job inventory osservato nei 7 giorni analizzati; lookup limitato alle ultime `300` snapshot | Task 3 normalizza il GID e verifica la consegna su store pilota Numisleo |
-| Database Supabase | Prima fotografia: circa `346 MB` su `500 MB`. Ricontrollo fresco del 10 luglio: `370.363.539` byte, circa `353,2 MiB`; `AuditLog` circa `144 MiB`, `ProductSnapshot` circa `123 MiB`, `SyncJob` circa `63,7 MiB`; negli ultimi 7 giorni `19.613` snapshot, `39.705` audit log e `11.291` job; `935` job attivi | Task 7, 8 e 13 introducono baseline/checkpoint, maintenance giornaliera, pruning cron e budget storage/egress |
-| Sicurezza Supabase | Nessun advisor sicurezza; tre indici segnalati `unused` a livello informativo | Task 12 mantiene gli indici e richiede 30 giorni di statistiche prima di valutarli |
-| Produzione Vercel | Deploy production `1.0.45`/commit `2962c11` `READY`. I log mostrano un incidente storico 4-5 luglio con `9.855` timeout di connessione, `6.541` timeout di avvio transazione, `818` session storage non pronto, `71` checkout pool, `3` deadlock e un timeout runner a `300 s`; i cluster non ricorrono dopo il 5 luglio. Restano `/robots.txt` `404` e `20` deploy preview/production in 7 giorni | Task 2/4 impongono budget temporale e concorrenza DB limitata; Task 12 corregge `robots.txt` e documenta budget Free; Task 13 richiede una finestra pulita post-rollout senza inventare un outage corrente |
-| Gate locali | `585` test lib; coverage `95,36%` linee, `83,78%` branch, `96,51%` funzioni; typecheck, lint, build e audit production verdi. Esistono `3` file test server con `14` test, mentre circa `17` moduli server non hanno un test gemello diretto | Task 1 conserva i gate, include i `14` test server verificati con `tsx` e censisce il rischio; Task 4-10 aggiungono test ai moduli profondi toccati |
-| UI e usabilità live | L'audit Computer Use in sola lettura sull'app embedded di Numisleo conferma: Impostazioni con card commerciali sbilanciate; Conflitti con cinque card troppo strette; Catalogo con 50 righe/8 colonne e overflow da confinare alla tabella; Attività con stato `Completata`/`Ok` ma testo “non ancora allineato” e valore “Non disponibile”; Importazione lunga, con `Ricollega eBay` e rinomina location troppo prominenti quando il collegamento è sano. Nessuna azione o scrittura è stata eseguita e nessun dato reale entra nelle fixture | Task 11 crea il render gate isolato; Task 12 corregge layout, semantica, densità e gerarchia; Task 13 ripete QA embedded read-only |
-| Frontend e bundle | Build fresca: `149.035` byte gzip di JS client complessivo, route più grande Importazione circa `7,99 kB` gzip, CSS `3,34 kB` gzip, server bundle `181,9 kB` gzip; React Doctor `100/100` | Task 12 introduce un budget di regressione senza dipendenze e mantiene i valori con margine ragionevole |
-| Accessibilità e stati UI | Esistono `aria-live`, `aria-busy`, riduzione movimento, paginazione e pending route, ma non un gate browser che provi hydration, tastiera, focus, zoom/reflow e stati degradati delle sei superfici | Task 11 aggiunge matrice fixture e browser check; Task 13 mantiene la verifica manuale tramite albero di accessibilità nativo, tastiera e zoom 400%, senza test screen reader |
-| Osservabilità frontend/runtime | Speed Insights e Web Analytics sono già montati; i loader misurano durata e `payloadBytes`, ma i log sani sono emessi di default e manca una correlazione strutturata comune per runner/webhook | Task 12 riusa la telemetria esistente, aggiunge budget payload, sampling e `requestId` senza nuovi provider |
-| Hotspot | `sync-job-runner.server.ts` circa `4.980` righe, `syncbay.server.ts` circa `4.950`, `shopify-draft-import.server.ts` circa `4.041`, `app.import-preview.tsx` circa `1.911` | Task 4, 6, 9 e 10 spostano ownership complete in moduli profondi; Task 13 verifica locality e dimensioni senza spezzare per sola metrica |
-| GitHub e dipendenze | La base Git locale include la PR `#411`; major intenzionalmente rinviate: React Router 8, TypeScript 7 e tipi Node 26. Lo stato delle PR remote non viene assunto dal piano | Task 12 ricontrolla le dipendenze; Task 13 verifica GitHub live |
+| Superficie                     | Baseline dell'audit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Uso nel piano                                                                                                                                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runner conflitti               | `547` job `DETECT_SHOPIFY_CHANGES` dovuti; il più vecchio risale al 5 luglio; `0` conflitti aperti                                                                                                                                                                                                                                                                                                                                                                                                                                             | Task 2 e 4 devono ridurre l'età sotto 15 minuti e separare conflitti, no-op e mapping mancanti                                                                                                             |
+| Esiti conflitti                | Solo `20` esiti di conflitto su `6.445` job osservati, circa `0,31%`; prevalgono `mapping_not_found` e no-op                                                                                                                                                                                                                                                                                                                                                                                                                                   | Task 4 deve batchare senza perdere la semantica di ogni esito                                                                                                                                              |
+| Inventory webhook              | Nessun job inventory osservato nei 7 giorni analizzati; lookup limitato alle ultime `300` snapshot                                                                                                                                                                                                                                                                                                                                                                                                                                             | Task 3 normalizza il GID e verifica la consegna su store pilota Numisleo                                                                                                                                   |
+| Database Supabase              | Prima fotografia: circa `346 MB` su `500 MB`. Ricontrollo fresco del 10 luglio: `370.363.539` byte, circa `353,2 MiB`; `AuditLog` circa `144 MiB`, `ProductSnapshot` circa `123 MiB`, `SyncJob` circa `63,7 MiB`; negli ultimi 7 giorni `19.613` snapshot, `39.705` audit log e `11.291` job; `935` job attivi                                                                                                                                                                                                                                 | Task 7, 8 e 13 introducono baseline/checkpoint, maintenance giornaliera, pruning cron e budget storage/egress                                                                                              |
+| Sicurezza Supabase             | Nessun advisor sicurezza; tre indici segnalati `unused` a livello informativo                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Task 12 mantiene gli indici e richiede 30 giorni di statistiche prima di valutarli                                                                                                                         |
+| Produzione Vercel              | Deploy production `1.0.45`/commit `2962c11` `READY`. I log mostrano un incidente storico 4-5 luglio con `9.855` timeout di connessione, `6.541` timeout di avvio transazione, `818` session storage non pronto, `71` checkout pool, `3` deadlock e un timeout runner a `300 s`; i cluster non ricorrono dopo il 5 luglio. Restano `/robots.txt` `404` e `20` deploy preview/production in 7 giorni                                                                                                                                             | Task 2/4 impongono budget temporale e concorrenza DB limitata; Task 12 corregge `robots.txt` e documenta budget Free; Task 13 richiede una finestra pulita post-rollout senza inventare un outage corrente |
+| Gate locali                    | `585` test lib; coverage `95,36%` linee, `83,78%` branch, `96,51%` funzioni; typecheck, lint, build e audit production verdi. Esistono `3` file test server con `14` test, mentre circa `17` moduli server non hanno un test gemello diretto                                                                                                                                                                                                                                                                                                   | Task 1 conserva i gate, include i `14` test server verificati con `tsx` e censisce il rischio; Task 4-10 aggiungono test ai moduli profondi toccati                                                        |
+| UI e usabilità live            | L'audit Computer Use in sola lettura sull'app embedded di Numisleo conferma: Impostazioni con card commerciali sbilanciate; Conflitti con cinque card troppo strette; Catalogo con 50 righe/8 colonne e overflow da confinare alla tabella; Attività con stato `Completata`/`Ok` ma testo “non ancora allineato” e valore “Non disponibile”; Importazione lunga, con `Ricollega eBay` e rinomina location troppo prominenti quando il collegamento è sano. Nessuna azione o scrittura è stata eseguita e nessun dato reale entra nelle fixture | Task 11 crea il render gate isolato; Task 12 corregge layout, semantica, densità e gerarchia; Task 13 ripete QA embedded read-only                                                                         |
+| Frontend e bundle              | Build fresca: `149.035` byte gzip di JS client complessivo, route più grande Importazione circa `7,99 kB` gzip, CSS `3,34 kB` gzip, server bundle `181,9 kB` gzip; React Doctor `100/100`                                                                                                                                                                                                                                                                                                                                                      | Task 12 introduce un budget di regressione senza dipendenze e mantiene i valori con margine ragionevole                                                                                                    |
+| Accessibilità e stati UI       | Esistono `aria-live`, `aria-busy`, riduzione movimento, paginazione e pending route, ma non un gate browser che provi hydration, tastiera, focus, zoom/reflow e stati degradati delle sei superfici                                                                                                                                                                                                                                                                                                                                            | Task 11 aggiunge matrice fixture e browser check; Task 13 mantiene la verifica manuale tramite albero di accessibilità nativo, tastiera e zoom 400%, senza test screen reader                              |
+| Osservabilità frontend/runtime | Speed Insights e Web Analytics sono già montati; i loader misurano durata e `payloadBytes`, ma i log sani sono emessi di default e manca una correlazione strutturata comune per runner/webhook                                                                                                                                                                                                                                                                                                                                                | Task 12 riusa la telemetria esistente, aggiunge budget payload, sampling e `requestId` senza nuovi provider                                                                                                |
+| Hotspot                        | `sync-job-runner.server.ts` circa `4.980` righe, `syncbay.server.ts` circa `4.950`, `shopify-draft-import.server.ts` circa `4.041`, `app.import-preview.tsx` circa `1.911`                                                                                                                                                                                                                                                                                                                                                                     | Task 4, 6, 9 e 10 spostano ownership complete in moduli profondi; Task 13 verifica locality e dimensioni senza spezzare per sola metrica                                                                   |
+| GitHub e dipendenze            | La base Git locale include la PR `#411`; major intenzionalmente rinviate: React Router 8, TypeScript 7 e tipi Node 26. Lo stato delle PR remote non viene assunto dal piano                                                                                                                                                                                                                                                                                                                                                                    | Task 12 ricontrolla le dipendenze; Task 13 verifica GitHub live                                                                                                                                            |
 
 ---
 
 ## Mappa unica: rilievi, architettura e task
 
-| Rilievo validato | Candidato architetturale | Task |
-| --- | --- | --- |
-| Backlog `DETECT_SHOPIFY_CHANGES`, priorità fissa e conflitti non freschi | Modulo conflitti e fairness | 2, 4 |
-| Lookup inventory limitato alle ultime 300 snapshot e assenza di segnali inventory recenti | Modulo conflitti e mapping stabile | 3, 4 |
-| Token Shopify persistiti in chiaro | Adapter Shopify Admin/sessioni | 5, 6 |
-| Refresh Shopify dentro `FOR UPDATE` e retry annidati fino a 4 x 4 | Adapter Shopify Admin/sessioni | 6 |
-| `ProductSnapshot`, `AuditLog` e `SyncJob` dominano la size; cleanup eseguito a ogni tick | Storia prodotto profonda | 7, 8 |
-| `cron.job_run_details` non viene ripulita automaticamente e conta circa `2.071` righe | Maintenance operativa giornaliera | 8 |
-| Incidente storico di connection storm e runner arrivato a 300 secondi | Budget temporale runner e intake webhook limitato | 2, 4, 13 |
-| Job import esterno + job interno con due cicli vita | Esecutore import profondo | 9 |
-| Takeover distribuito tra route e servizi grandi; fixture `fieldPolicy` fuori contratto | Verticale catalogo esistente | 10, 11 |
-| Coverage alta solo su `app/lib`; test server esistenti esclusi dalla CI | Fondazione di verifica | 1 |
-| `smoke:ui` statico passa mentre il render reale fallisce e carica `.env` | Harness UI reale | 11 |
-| Griglie di box possono lasciare buchi con quantità dispari | Regola condivisa: mobile monocolonna; desktop specifico per superficie, con Impostazioni `2 x 2` e cinque riepiloghi Conflitti sulla stessa riga quando lo spazio lo consente | 12, 13 |
-| Stati live e metriche usano etichette contraddittorie o ambigue | Modello semantico UI condiviso e glossario metriche | 11, 12, 13 |
-| Tabella Catalogo può trascinare l'intera app in overflow orizzontale | Contenitore scroll locale e layout con `min-inline-size: 0` | 12, 13 |
-| Quota Free non governata oltre la sola size DB | Budget provider con soglie 70/85/95%, egress e build/deploy inclusi | 8, 12, 13 |
-| Nessun gate browser/accessibilità sugli stati non-happy-path | Fixture state matrix, hydration e QA accessibilità | 11, 12, 13 |
-| Log loader non campionati e senza correlazione comune | Logger strutturato e budget payload/log | 12, 13 |
-| Controllo egress esistente rischiava di essere duplicato | `provider:budget` compone `egress:budget`, non lo sostituisce | 8, 13 |
-| Warning React Doctor già risolto in `1.0.45`, `/robots.txt` 404, docs cron/roadmap incoerenti | Igiene finale e gate anti-regressione | 12 |
-| Verifica release/deploy/provider e stabilità post-fix | Chiusura programma | 13 |
+| Rilievo validato                                                                              | Candidato architetturale                                                                                                                                                      | Task       |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| Backlog `DETECT_SHOPIFY_CHANGES`, priorità fissa e conflitti non freschi                      | Modulo conflitti e fairness                                                                                                                                                   | 2, 4       |
+| Lookup inventory limitato alle ultime 300 snapshot e assenza di segnali inventory recenti     | Modulo conflitti e mapping stabile                                                                                                                                            | 3, 4       |
+| Token Shopify persistiti in chiaro                                                            | Adapter Shopify Admin/sessioni                                                                                                                                                | 5, 6       |
+| Refresh Shopify dentro `FOR UPDATE` e retry annidati fino a 4 x 4                             | Adapter Shopify Admin/sessioni                                                                                                                                                | 6          |
+| `ProductSnapshot`, `AuditLog` e `SyncJob` dominano la size; cleanup eseguito a ogni tick      | Storia prodotto profonda                                                                                                                                                      | 7, 8       |
+| `cron.job_run_details` non viene ripulita automaticamente e conta circa `2.071` righe         | Maintenance operativa giornaliera                                                                                                                                             | 8          |
+| Incidente storico di connection storm e runner arrivato a 300 secondi                         | Budget temporale runner e intake webhook limitato                                                                                                                             | 2, 4, 13   |
+| Job import esterno + job interno con due cicli vita                                           | Esecutore import profondo                                                                                                                                                     | 9          |
+| Takeover distribuito tra route e servizi grandi; fixture `fieldPolicy` fuori contratto        | Verticale catalogo esistente                                                                                                                                                  | 10, 11     |
+| Coverage alta solo su `app/lib`; test server esistenti esclusi dalla CI                       | Fondazione di verifica                                                                                                                                                        | 1          |
+| `smoke:ui` statico passa mentre il render reale fallisce e carica `.env`                      | Harness UI reale                                                                                                                                                              | 11         |
+| Griglie di box possono lasciare buchi con quantità dispari                                    | Regola condivisa: mobile monocolonna; desktop specifico per superficie, con Impostazioni `2 x 2` e cinque riepiloghi Conflitti sulla stessa riga quando lo spazio lo consente | 12, 13     |
+| Stati live e metriche usano etichette contraddittorie o ambigue                               | Modello semantico UI condiviso e glossario metriche                                                                                                                           | 11, 12, 13 |
+| Tabella Catalogo può trascinare l'intera app in overflow orizzontale                          | Contenitore scroll locale e layout con `min-inline-size: 0`                                                                                                                   | 12, 13     |
+| Quota Free non governata oltre la sola size DB                                                | Budget provider con soglie 70/85/95%, egress e build/deploy inclusi                                                                                                           | 8, 12, 13  |
+| Nessun gate browser/accessibilità sugli stati non-happy-path                                  | Fixture state matrix, hydration e QA accessibilità                                                                                                                            | 11, 12, 13 |
+| Log loader non campionati e senza correlazione comune                                         | Logger strutturato e budget payload/log                                                                                                                                       | 12, 13     |
+| Controllo egress esistente rischiava di essere duplicato                                      | `provider:budget` compone `egress:budget`, non lo sostituisce                                                                                                                 | 8, 13      |
+| Warning React Doctor già risolto in `1.0.45`, `/robots.txt` 404, docs cron/roadmap incoerenti | Igiene finale e gate anti-regressione                                                                                                                                         | 12         |
+| Verifica release/deploy/provider e stabilità post-fix                                         | Chiusura programma                                                                                                                                                            | 13         |
 
 ## Ondate di consegna
 
@@ -88,6 +88,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 ### Task 1: Portare i test dei moduli server dentro il gate ufficiale
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `.github/workflows/ci.yml`
@@ -97,6 +98,7 @@ Riferimenti provider verificati il 10 luglio 2026: [Vercel Hobby](https://vercel
 - Verify: `app/services/shopify-prisma-session-storage.server.test.ts`
 
 **Interfaces:**
+
 - Consumes: i test Node esistenti e la toolchain Node 24.
 - Produces: `npm run test:services` e `npm run test:runtime`, usati da tutti i task successivi e dalla CI.
 
@@ -174,6 +176,7 @@ git commit -m "test: add server runtime gate"
 ### Task 2: Rendere equo e osservabile il prelievo dei job
 
 **Files:**
+
 - Create: `app/lib/syncbay-runner-fairness.ts`
 - Create: `app/lib/syncbay-runner-fairness.test.ts`
 - Modify: `app/services/sync-job-runner.server.ts:245-397`
@@ -182,6 +185,7 @@ git commit -m "test: add server runtime gate"
 - Modify: `docs/guides/provisioning-runtime.md`
 
 **Interfaces:**
+
 - Consumes: conteggi dei job dovuti per tipo e limite cron normalizzato.
 - Produces: `buildRunnerLanePlan(input): RunnerLane[]`, budget richiesta di `70 s` entro il timeout `pg_net` di `90 s` e diagnostica `dueByType`/`selectedByType`/`continuationNeeded` nella risposta protetta del runner.
 
@@ -338,6 +342,7 @@ git commit -m "perf: reserve conflict detection runner capacity"
 ### Task 3: Normalizzare l'identità inventory Shopify sul mapping
 
 **Files:**
+
 - Modify: `prisma/schema.prisma:252-275`
 - Create: `prisma/migrations/20260710120000_add_mapping_inventory_item_gid/migration.sql`
 - Create: `app/lib/syncbay-inventory-mapping.ts`
@@ -350,6 +355,7 @@ git commit -m "perf: reserve conflict detection runner capacity"
 - Modify: `docs/data-model.md`
 
 **Interfaces:**
+
 - Consumes: `inventorySync.inventoryItemGid` già restituito dall'import Shopify.
 - Produces: `ProductMapping.shopifyInventoryItemGid` e lookup indicizzato `(shopId, shopifyInventoryItemGid)`.
 
@@ -413,7 +419,10 @@ Sostituire `findMappingByInventoryItemGid` con:
 ```ts
 return prisma.productMapping.findUnique({
   where: {
-    shopId_shopifyInventoryItemGid: { shopId, shopifyInventoryItemGid: inventoryItemGid },
+    shopId_shopifyInventoryItemGid: {
+      shopId,
+      shopifyInventoryItemGid: inventoryItemGid,
+    },
   },
 });
 ```
@@ -469,6 +478,7 @@ git commit -m "perf: index Shopify inventory mappings"
 ### Task 4: Estrarre e batchare il rilevamento conflitti Shopify
 
 **Files:**
+
 - Create: `app/lib/syncbay-shopify-change-batch.ts`
 - Create: `app/lib/syncbay-shopify-change-batch.test.ts`
 - Create: `app/services/shopify-conflict-detection.server.ts`
@@ -481,6 +491,7 @@ git commit -m "perf: index Shopify inventory mappings"
 - Modify: `scripts/syncbay-coalesce-shopify-change-jobs.mjs`
 
 **Interfaces:**
+
 - Consumes: una seed `DETECT_SHOPIFY_CHANGES`, mapping indicizzati del Task 3 e regole pure di conflitto esistenti.
 - Produces: `detectShopifyChangesBatch(input, ports): Promise<ShopifyChangeBatchExecution>`; un solo slot runner può chiudere fino a 25 risorse distinte dello stesso shop.
 
@@ -522,7 +533,9 @@ In `shopify-conflict-detection.server.ts` dichiarare:
 
 ```ts
 export interface ShopifyConflictDetectionPorts {
-  loadMappings(jobs: ShopifyChangeBatchJob[]): Promise<Map<string, ConflictMapping>>;
+  loadMappings(
+    jobs: ShopifyChangeBatchJob[],
+  ): Promise<Map<string, ConflictMapping>>;
   loadBaselines(mappingIds: string[]): Promise<Map<string, ConflictBaseline>>;
   loadProducts(input: {
     productGids: string[];
@@ -559,7 +572,12 @@ export interface ShopifyConflictProduct {
 export interface ConflictDetectionPersistence {
   jobId: string;
   mappingId: string | null;
-  outcome: "conflict_opened" | "conflict_resolved" | "mapping_not_found" | "noop" | "failed";
+  outcome:
+    | "conflict_opened"
+    | "conflict_resolved"
+    | "mapping_not_found"
+    | "noop"
+    | "failed";
   fields: string[];
   errorCode?: string;
 }
@@ -669,6 +687,7 @@ git commit -m "perf: batch Shopify conflict detection"
 ### Task 5: Cifrare le sessioni Shopify con rollout compatibile
 
 **Files:**
+
 - Create: `app/lib/syncbay-secret-envelope.ts`
 - Create: `app/lib/syncbay-secret-envelope.test.ts`
 - Modify: `app/services/crypto.server.ts`
@@ -680,6 +699,7 @@ git commit -m "perf: batch Shopify conflict detection"
 - Modify: `docs/guides/sicurezza-privacy.md`
 
 **Interfaces:**
+
 - Consumes: `TOKEN_ENCRYPTION_KEY` e il formato AES-GCM `v1` già usato per eBay.
 - Produces: storage Shopify che scrive sempre ciphertext e, solo durante il rollout, legge sia `v1.*` sia plaintext legacy.
 
@@ -737,7 +757,13 @@ Lo script deve accettare:
 Deve leggere le sessioni server-side, cifrare soltanto i due campi non vuoti e non già `v1`, aggiornare per ID e stampare esclusivamente:
 
 ```json
-{"scanned":0,"plaintextAccessTokens":0,"plaintextRefreshTokens":0,"updated":0,"failed":0}
+{
+  "scanned": 0,
+  "plaintextAccessTokens": 0,
+  "plaintextRefreshTokens": 0,
+  "updated": 0,
+  "failed": 0
+}
 ```
 
 Aggiungere:
@@ -784,6 +810,7 @@ git commit -m "fix: encrypt Shopify session tokens"
 ### Task 6: Unificare retry Shopify Admin e accorciare il refresh sessione
 
 **Files:**
+
 - Modify: `app/lib/syncbay-shopify-admin.ts`
 - Modify: `app/lib/syncbay-shopify-admin.test.ts`
 - Modify: `app/services/shopify-admin-session.server.ts`
@@ -793,6 +820,7 @@ git commit -m "fix: encrypt Shopify session tokens"
 - Modify: `app/services/shopify-prisma-session-storage.server.ts`
 
 **Interfaces:**
+
 - Consumes: sessioni tutte cifrate dal Task 5.
 - Produces: un unico adapter Shopify Admin proprietario di refresh, retry, throttling e budget temporale; nessuna fetch dentro una transazione Prisma.
 
@@ -841,11 +869,7 @@ Rimuovere `createShopifyAdminGraphqlClientWithBackoff`, `SHOPIFY_GRAPHQL_MAX_ATT
 In `shopify-admin-session.server.test.ts`, usare port finti e una sequenza eventi:
 
 ```ts
-assert.deepEqual(events, [
-  "read-session",
-  "refresh-http",
-  "compare-and-swap",
-]);
+assert.deepEqual(events, ["read-session", "refresh-http", "compare-and-swap"]);
 ```
 
 Testare anche che, quando il compare-and-swap perde una corsa, venga riletta e restituita la sessione aggiornata da un altro invocatore.
@@ -865,7 +889,7 @@ Sostituire la transazione `FOR UPDATE` con:
 La funzione resta:
 
 ```ts
-export async function getShopifyAdminGraphqlClient(shopDomain: string)
+export async function getShopifyAdminGraphqlClient(shopDomain: string);
 ```
 
 - [x] **Step 6: Rimuovere il fallback plaintext**
@@ -898,6 +922,7 @@ git commit -m "fix: centralize Shopify Admin retries"
 ### Task 7: Introdurre baseline durevole e storia prodotto a doppia scrittura
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/20260710130000_add_product_baselines_and_checkpoints/migration.sql`
 - Create: `app/lib/syncbay-product-baseline.ts`
@@ -913,6 +938,7 @@ git commit -m "fix: centralize Shopify Admin retries"
 - Modify: `docs/decisions/0017-retention-dati-operativi.md`
 
 **Interfaces:**
+
 - Consumes: snapshot parziali prodotte da import, sync, stock e takeover.
 - Produces: `ProductSyncBaseline` durevole per conflitti/current state, `ProductSnapshotCheckpoint` per rollback storico compatto e `MaintenanceRun` per cadenza giornaliera idempotente.
 
@@ -1041,8 +1067,12 @@ export interface ProductSyncBaselineRecord extends Required<ProductBaselineWrite
   updatedAt: Date;
 }
 
-export async function upsertProductSyncBaseline(input: ProductBaselineWrite): Promise<void>;
-export async function loadProductSyncBaselines(mappingIds: string[]): Promise<Map<string, ProductSyncBaselineRecord>>;
+export async function upsertProductSyncBaseline(
+  input: ProductBaselineWrite,
+): Promise<void>;
+export async function loadProductSyncBaselines(
+  mappingIds: string[],
+): Promise<Map<string, ProductSyncBaselineRecord>>;
 export async function recordProductHistory(input: {
   baseline: ProductBaselineWrite;
   snapshots: Prisma.ProductSnapshotCreateManyInput[];
@@ -1128,6 +1158,7 @@ verificata nell'Ondata B.
 ### Task 8: Compattare la storia e rendere giornaliera la retention
 
 **Files:**
+
 - Create: `app/lib/syncbay-product-history-retention.ts`
 - Create: `app/lib/syncbay-product-history-retention.test.ts`
 - Modify: `app/services/product-history.server.ts`
@@ -1146,6 +1177,7 @@ verificata nell'Ondata B.
 - Modify: `docs/decisions/0018-cleanup-retention-automatico.md`
 
 **Interfaces:**
+
 - Consumes: baseline/checkpoint dual-write verificati nel Task 7.
 - Produces: storia evento densa 30 giorni, checkpoint settimanali sparsi per 180 giorni, reader basati su baseline/checkpoint, retention globale una volta al giorno, pruning `cron.job_run_details` e gate storage/provider.
 
@@ -1319,6 +1351,7 @@ git commit -m "perf: compact product sync history"
 ### Task 9: Rendere il runner unico proprietario del ciclo vita import
 
 **Files:**
+
 - Create: `app/lib/syncbay-catalog-import-execution.ts`
 - Create: `app/lib/syncbay-catalog-import-execution.test.ts`
 - Modify: `app/services/shopify-draft-import.server.ts:640-802,3210-3470`
@@ -1329,6 +1362,7 @@ git commit -m "perf: compact product sync history"
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Consumes: il job esterno già claimato dal runner.
 - Produces: `executeShopifyCatalogImport(input): Promise<CatalogImportExecutionResult>` senza creare o finalizzare un secondo `SyncJob`.
 
@@ -1362,7 +1396,10 @@ export interface CatalogImportExecutionInput {
   jobId: string;
   shopId: string;
   defaultLocationGid?: string | null;
-  existingCatalogFieldPoliciesByItemId?: Record<string, ExistingCatalogFieldPolicy>;
+  existingCatalogFieldPoliciesByItemId?: Record<
+    string,
+    ExistingCatalogFieldPolicy
+  >;
   facetBaselinesByItemId?: Record<string, SyncBayProductFacet[]>;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
@@ -1437,6 +1474,7 @@ git commit -m "refactor: unify catalog import job lifecycle"
 ### Task 10: Creare il verticale profondo del catalogo Shopify esistente
 
 **Files:**
+
 - Create: `app/services/existing-catalog-takeover.server.ts`
 - Create: `app/services/existing-catalog-takeover.server.test.ts`
 - Create: `app/components/ExistingCatalogTakeoverSection.tsx`
@@ -1447,6 +1485,7 @@ git commit -m "refactor: unify catalog import job lifecycle"
 - Modify: `app/lib/syncbay-existing-catalog-takeover.ts`
 
 **Interfaces:**
+
 - Consumes: `ExistingCatalogTakeoverReport`, `ExistingCatalogTakeoverApplyPlan` e field policy già pure.
 - Produces: un servizio verticale proprietario di preview/claim/metafield/job planning e un componente route tipizzato sul report reale.
 
@@ -1470,8 +1509,12 @@ Expected: PASS sui comportamenti correnti; questi test sono la rete per il refac
 Esportare dal nuovo file:
 
 ```ts
-export async function getExistingCatalogTakeoverPreview(input: ExistingCatalogPreviewInput): Promise<ExistingCatalogTakeoverPreview>;
-export async function startExistingCatalogTakeoverJobs(input: ExistingCatalogTakeoverStartInput): Promise<ExistingCatalogTakeoverStartResult>;
+export async function getExistingCatalogTakeoverPreview(
+  input: ExistingCatalogPreviewInput,
+): Promise<ExistingCatalogTakeoverPreview>;
+export async function startExistingCatalogTakeoverJobs(
+  input: ExistingCatalogTakeoverStartInput,
+): Promise<ExistingCatalogTakeoverStartResult>;
 ```
 
 `syncbay.server.ts` può re-esportare temporaneamente queste funzioni per evitare un diff route simultaneo, poi il route importer viene aggiornato nello stesso task.
@@ -1517,6 +1560,7 @@ git commit -m "refactor: deepen existing catalog takeover"
 ### Task 11: Trasformare il render fixture in un vero gate UI isolato
 
 **Files:**
+
 - Create: `scripts/syncbay-ui-fixtures.ts`
 - Create: `scripts/syncbay-ui-check.mjs`
 - Create: `scripts/syncbay-ui-check.test.mjs`
@@ -1528,6 +1572,7 @@ git commit -m "refactor: deepen existing catalog takeover"
 - Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Consumes: contratti reali dei loader e `ExistingCatalogTakeoverReport` del Task 10.
 - Produces: `npm run ui:check` e `npm run ui:browser-check`: render SSR e hydration browser delle sei superfici e dei loro stati principali senza `.env`, rete, HMR o screenshot obbligatori. Gli script di render vengono eseguiti con `tsx`, così possono importare le fixture TypeScript senza un secondo formato duplicato.
 
@@ -1623,6 +1668,7 @@ git commit -m "test: add isolated UI render gate"
 ### Task 12: Correggere UI live, budget frontend/provider e igiene documentale
 
 **Files:**
+
 - Verify: `app/routes/app.settings.tsx:586-632`
 - Modify: `app/routes/app._index.tsx:246-367`
 - Modify: `app/routes/app.catalog.tsx:144-176`
@@ -1663,13 +1709,13 @@ git commit -m "test: add isolated UI render gate"
 - Modify: `.mex/context/setup.md`
 
 **Interfaces:**
+
 - Consumes: stato finale dei Task 1-11.
 - Produces: gate React Doctor ancora a `100/100`, stati UI coerenti e accessibili, raccolte di box monocolonna su mobile e bilanciate senza buchi su desktop, overflow confinato, payload e log osservabili senza rumore, budget bundle/provider, crawler policy e documentazione verificabile.
 
 - [x] **Step 1: Verificare che il fix React Doctor già rilasciato non regredisca**
 
-Checkpoint chiuso per decisione del maintainer: il run è stato escluso da Task
-12. La branch è stata ribasata sulla PR #445, che contiene il fix dedicato, ma
+Checkpoint chiuso per decisione del maintainer: il run è stato escluso da Task 12. La branch è stata ribasata sulla PR #445, che contiene il fix dedicato, ma
 Task 12 non dichiara una nuova esecuzione di React Doctor.
 
 La base `1.0.45` contiene già:
@@ -1735,7 +1781,9 @@ In `app/styles/syncbay-embedded.css` aggiungere:
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  .syncbay-balanced-box-grid--compact-three > s-grid > :last-child:nth-child(odd) {
+  .syncbay-balanced-box-grid--compact-three
+    > s-grid
+    > :last-child:nth-child(odd) {
     grid-column: auto;
   }
 }
@@ -1925,12 +1973,14 @@ git commit -m "fix: align UI states and operational budgets"
 ### Task 13: Verifica completa, release, deploy e chiusura del programma
 
 **Files:**
+
 - Verify: all files changed by Task 1-12
 - Modify when required by release: `app/lib/version.ts`
 - Modify when required by release: `CHANGELOG.md`
 - Verify: `docs/superpowers/plans/2026-07-10-syncbay-comprehensive-improvement.md`
 
 **Interfaces:**
+
 - Consumes: tutte le ondate completate e i rollout live verificati.
 - Produces: release private `1.0.x` verificata, deploy production sano, provider stabili e matrice audit completamente chiusa.
 
@@ -2156,83 +2206,83 @@ perimetro 2.0 non sono stati avviati.
 
 ## Matrice finale di copertura dell'audit
 
-| Punto emerso | Chiusura richiesta |
-| --- | --- |
-| 547 job conflitto dovuti e oldest dal 5 luglio | Task 2/4 + oldest <15 minuti e trend 24h non crescente |
-| 0 conflitti aperti potenzialmente non fresco | Task 4 + distinzione tra conflitti, no-op e mapping mancanti |
-| Priorità runner fissa con `limit=2` | Task 2, senza aumento cieco del limite |
-| 7 giorni senza job inventory osservati | Task 3 + verifica registrazione/consegna store pilota Numisleo |
-| Lookup inventory sulle ultime 300 snapshot | Task 3, lookup indicizzato diretto |
-| Token Shopify plaintext | Task 5/6, zero plaintext live |
-| Refresh HTTP dentro transazione `FOR UPDATE` | Task 6, read/network/CAS |
-| Retry Shopify annidati teorici 4 x 4 | Task 6, massimo 4 fetch totali |
-| Database 346 MB / 500 MB | Task 7/8/13, budget sotto 400 MB |
-| Ricontrollo DB a 370.363.539 byte, 19.613 snapshot e 39.705 audit/7d | Task 8/13, delta settimanale e soglie 350/400/450 MB |
-| `AuditLog`, `ProductSnapshot`, `SyncJob` dominanti | Task 7/8, baseline + checkpoint + retention differenziata |
-| Retention con otto delete a ogni tick | Task 8, maintenance una volta al giorno |
-| `cron.job_run_details` senza cleanup automatico | Task 8/13, retention 14 giorni |
-| Incidenti storici pool/transaction/session e timeout runner 300 s | Task 2/4/13, deadline 70 s, intake breve e finestra 24h pulita |
-| File runtime da 4-5 mila righe | Task 4/6/9/10, moduli profondi e locality misurata |
-| Solo tre test server e nessun gate CI | Task 1, `test:services`/`test:runtime` |
-| Job import esterno e interno | Task 9, un solo proprietario |
-| Fixture Importazione senza `fieldPolicy` | Task 10/11, contratto condiviso |
-| `smoke:ui` statico falso verde | Task 11, `ui:check` SSR |
-| Fixture carica `.env` e apre HMR non locale | Task 11, isolamento completo |
-| Warning React Doctor `includes` nel loop | Già risolto dalla base `1.0.45`; Task 12/13 mantengono il gate `100/100` |
-| `/robots.txt` 404 nei log | Task 12, file statico + smoke |
-| Roadmap e guida cron stale | Task 2/12, fonti canoniche riallineate |
-| Impostazioni dense | Task 12, QA live e disclosure solo tecnico; nessun redesign senza evidenza |
-| Cinque card Conflitti troppo strette e box dispari | Vincolo globale + Task 12/13, mobile monocolonna, desktop bilanciato senza buchi e QA a quattro breakpoint |
-| Catalogo live da 50 righe/8 colonne con overflow | Task 12/13, scroll confinato alla tabella e nessun overflow dell'iframe |
-| Attività live contraddittoria e metriche con denominatori ambigui | Task 11/12/13, modello semantico condiviso e glossario |
-| Importazione con azioni secondarie troppo prominenti | Task 12/13, disclosure collegamento e rinomina location avanzata |
-| Bundle client `149.035` byte gzip e server `181,9 kB` gzip | Task 12/13, budget automatico 180/230 kB |
-| Quote Vercel/Supabase Free oltre la sola size DB | Task 8/12/13, soglie 70/85/95%, stati mancanti causali e mai verdi |
-| Nessun gate hydration/accessibilità e soli happy path fixture | Task 11/12/13, state matrix, Playwright, tastiera/focus/zoom e albero di accessibilità nativo; VoiceOver escluso su richiesta del maintainer |
-| Loader con payload misurato ma senza budget, log sani non campionati | Task 12/13, soglie payload, sampling 5% e correlazione `requestId` |
-| Analytics/Speed Insights già presenti ma non inclusi nel budget | Task 8/12/13, nessun doppio mount e consumo data point/eventi monitorato |
-| `egress:budget` già esistente | Task 8, riuso obbligatorio dentro `provider:budget`, nessun duplicato |
-| Pulizia generale non automatizzata | Task 12, `docs:check`, file temporanei, TODO/FIXME, script e `console.*` censiti |
-| Tre indici Supabase INFO unused | Task 12, osservare 30 giorni; nessuna rimozione cieca |
-| Mex a `76/100` con 8 warning preesistenti | Task 12, documentare i comandi nuovi, correggere drift sostanziale e spiegare eventuali warning intenzionali |
-| React Router 8, TypeScript 7, Node types 26 | Esclusioni esplicite; migrazioni separate, non difetti di questo programma |
-| Deploy/provider attualmente sani | Task 13 li usa come baseline; nessun “fix outage” inventato |
+| Punto emerso                                                         | Chiusura richiesta                                                                                                                           |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 547 job conflitto dovuti e oldest dal 5 luglio                       | Task 2/4 + oldest <15 minuti e trend 24h non crescente                                                                                       |
+| 0 conflitti aperti potenzialmente non fresco                         | Task 4 + distinzione tra conflitti, no-op e mapping mancanti                                                                                 |
+| Priorità runner fissa con `limit=2`                                  | Task 2, senza aumento cieco del limite                                                                                                       |
+| 7 giorni senza job inventory osservati                               | Task 3 + verifica registrazione/consegna store pilota Numisleo                                                                               |
+| Lookup inventory sulle ultime 300 snapshot                           | Task 3, lookup indicizzato diretto                                                                                                           |
+| Token Shopify plaintext                                              | Task 5/6, zero plaintext live                                                                                                                |
+| Refresh HTTP dentro transazione `FOR UPDATE`                         | Task 6, read/network/CAS                                                                                                                     |
+| Retry Shopify annidati teorici 4 x 4                                 | Task 6, massimo 4 fetch totali                                                                                                               |
+| Database 346 MB / 500 MB                                             | Task 7/8/13, budget sotto 400 MB                                                                                                             |
+| Ricontrollo DB a 370.363.539 byte, 19.613 snapshot e 39.705 audit/7d | Task 8/13, delta settimanale e soglie 350/400/450 MB                                                                                         |
+| `AuditLog`, `ProductSnapshot`, `SyncJob` dominanti                   | Task 7/8, baseline + checkpoint + retention differenziata                                                                                    |
+| Retention con otto delete a ogni tick                                | Task 8, maintenance una volta al giorno                                                                                                      |
+| `cron.job_run_details` senza cleanup automatico                      | Task 8/13, retention 14 giorni                                                                                                               |
+| Incidenti storici pool/transaction/session e timeout runner 300 s    | Task 2/4/13, deadline 70 s, intake breve e finestra 24h pulita                                                                               |
+| File runtime da 4-5 mila righe                                       | Task 4/6/9/10, moduli profondi e locality misurata                                                                                           |
+| Solo tre test server e nessun gate CI                                | Task 1, `test:services`/`test:runtime`                                                                                                       |
+| Job import esterno e interno                                         | Task 9, un solo proprietario                                                                                                                 |
+| Fixture Importazione senza `fieldPolicy`                             | Task 10/11, contratto condiviso                                                                                                              |
+| `smoke:ui` statico falso verde                                       | Task 11, `ui:check` SSR                                                                                                                      |
+| Fixture carica `.env` e apre HMR non locale                          | Task 11, isolamento completo                                                                                                                 |
+| Warning React Doctor `includes` nel loop                             | Già risolto dalla base `1.0.45`; Task 12/13 mantengono il gate `100/100`                                                                     |
+| `/robots.txt` 404 nei log                                            | Task 12, file statico + smoke                                                                                                                |
+| Roadmap e guida cron stale                                           | Task 2/12, fonti canoniche riallineate                                                                                                       |
+| Impostazioni dense                                                   | Task 12, QA live e disclosure solo tecnico; nessun redesign senza evidenza                                                                   |
+| Cinque card Conflitti troppo strette e box dispari                   | Vincolo globale + Task 12/13, mobile monocolonna, desktop bilanciato senza buchi e QA a quattro breakpoint                                   |
+| Catalogo live da 50 righe/8 colonne con overflow                     | Task 12/13, scroll confinato alla tabella e nessun overflow dell'iframe                                                                      |
+| Attività live contraddittoria e metriche con denominatori ambigui    | Task 11/12/13, modello semantico condiviso e glossario                                                                                       |
+| Importazione con azioni secondarie troppo prominenti                 | Task 12/13, disclosure collegamento e rinomina location avanzata                                                                             |
+| Bundle client `149.035` byte gzip e server `181,9 kB` gzip           | Task 12/13, budget automatico 180/230 kB                                                                                                     |
+| Quote Vercel/Supabase Free oltre la sola size DB                     | Task 8/12/13, soglie 70/85/95%, stati mancanti causali e mai verdi                                                                           |
+| Nessun gate hydration/accessibilità e soli happy path fixture        | Task 11/12/13, state matrix, Playwright, tastiera/focus/zoom e albero di accessibilità nativo; VoiceOver escluso su richiesta del maintainer |
+| Loader con payload misurato ma senza budget, log sani non campionati | Task 12/13, soglie payload, sampling 5% e correlazione `requestId`                                                                           |
+| Analytics/Speed Insights già presenti ma non inclusi nel budget      | Task 8/12/13, nessun doppio mount e consumo data point/eventi monitorato                                                                     |
+| `egress:budget` già esistente                                        | Task 8, riuso obbligatorio dentro `provider:budget`, nessun duplicato                                                                        |
+| Pulizia generale non automatizzata                                   | Task 12, `docs:check`, file temporanei, TODO/FIXME, script e `console.*` censiti                                                             |
+| Tre indici Supabase INFO unused                                      | Task 12, osservare 30 giorni; nessuna rimozione cieca                                                                                        |
+| Mex a `76/100` con 8 warning preesistenti                            | Task 12, documentare i comandi nuovi, correggere drift sostanziale e spiegare eventuali warning intenzionali                                 |
+| React Router 8, TypeScript 7, Node types 26                          | Esclusioni esplicite; migrazioni separate, non difetti di questo programma                                                                   |
+| Deploy/provider attualmente sani                                     | Task 13 li usa come baseline; nessun “fix outage” inventato                                                                                  |
 
 ## Controllo di copertura eseguito prima della chiusura del piano
 
 Il confronto finale tra questo documento, il thread di revisione e `/tmp/syncbay-architecture-review-20260710-095510.html` produce questa corrispondenza completa:
 
-| Fonte verificata | Contenuto | Copertura nel piano |
-| --- | --- | --- |
-| HTML 1 — conflitti e fairness, indicato come prima scelta | Coalescenza, baseline batch, decisioni dichiarative, stock prioritario e corsia conflitti | Task 2-4; Ondata B |
-| HTML 2 — adapter Shopify Admin/sessioni | Retry unici, budget temporale, refresh fuori transazione, CAS e token cifrati | Task 5-6; Ondata C |
-| HTML 3 — ciclo vita import | Runner unico proprietario, risultato dichiarativo e audit senza secondo job | Task 9; Ondata E |
-| HTML 4 — storia baseline prodotto | Baseline durevole, storia recente densa, checkpoint compatti e budget storage | Task 7-8; Ondata D |
-| HTML 5 — catalogo Shopify esistente | Verticale condiviso tra preview, policy, apply, route e fixture tipizzata | Task 10-11; Ondata E, dopo conflitti e adapter come richiesto dal report |
-| Thread — prove operative | Backlog `547`, soli `20/6.445` conflitti, assenza job inventory, crescita DB da circa `346 MB` a `370.363.539` byte, tabelle dominanti, incidente Vercel storico non corrente, `robots.txt` 404 | Sezione Baseline; Task 2-4, 7-8, 12-13 |
-| Thread — qualità e test | Coverage attuale alta ma limitata a `app/lib`, test server fuori CI, runner Node nativo incompatibile, `tsx` verificato | Task 1 e gate finali Task 13 |
-| Thread — UI reale e audit Numisleo Computer Use | Smoke statico falso verde, `fieldPolicy` mancante, env/HMR nella fixture; live: Attività semanticamente incoerente, Catalogo con overflow, Conflitti troppo stretti, Importazione sovraccarica e Impostazioni sbilanciate | Task 10-12 e verifica embedded a 1440/1024/768/390px nel Task 13 |
-| Thread — performance e limiti Free | Bundle fresco contenuto, timeout runner storico, crescita storage, egress/build/invocation da governare | Task 2, 4, 8, 12, 13 |
-| Passata finale — accessibilità, stati degradati e osservabilità | Gate browser/hydration, payload/log sampling e riuso egress budget | Task 8, 11-13 |
-| Thread — debito minore e non-azioni | Warning React Doctor già chiuso in `1.0.45`, docs stale, major dipendenze intenzionali, indici `unused` da non rimuovere alla cieca, nessun outage corrente | Task 12-13 ed esclusioni globali |
-| Thread — concentrazione architetturale | Quattro hotspot da circa 1.900-4.980 righe e ownership disperse | Task 4, 6, 9, 10 e controllo hotspot Task 13 |
+| Fonte verificata                                                | Contenuto                                                                                                                                                                                                                 | Copertura nel piano                                                      |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| HTML 1 — conflitti e fairness, indicato come prima scelta       | Coalescenza, baseline batch, decisioni dichiarative, stock prioritario e corsia conflitti                                                                                                                                 | Task 2-4; Ondata B                                                       |
+| HTML 2 — adapter Shopify Admin/sessioni                         | Retry unici, budget temporale, refresh fuori transazione, CAS e token cifrati                                                                                                                                             | Task 5-6; Ondata C                                                       |
+| HTML 3 — ciclo vita import                                      | Runner unico proprietario, risultato dichiarativo e audit senza secondo job                                                                                                                                               | Task 9; Ondata E                                                         |
+| HTML 4 — storia baseline prodotto                               | Baseline durevole, storia recente densa, checkpoint compatti e budget storage                                                                                                                                             | Task 7-8; Ondata D                                                       |
+| HTML 5 — catalogo Shopify esistente                             | Verticale condiviso tra preview, policy, apply, route e fixture tipizzata                                                                                                                                                 | Task 10-11; Ondata E, dopo conflitti e adapter come richiesto dal report |
+| Thread — prove operative                                        | Backlog `547`, soli `20/6.445` conflitti, assenza job inventory, crescita DB da circa `346 MB` a `370.363.539` byte, tabelle dominanti, incidente Vercel storico non corrente, `robots.txt` 404                           | Sezione Baseline; Task 2-4, 7-8, 12-13                                   |
+| Thread — qualità e test                                         | Coverage attuale alta ma limitata a `app/lib`, test server fuori CI, runner Node nativo incompatibile, `tsx` verificato                                                                                                   | Task 1 e gate finali Task 13                                             |
+| Thread — UI reale e audit Numisleo Computer Use                 | Smoke statico falso verde, `fieldPolicy` mancante, env/HMR nella fixture; live: Attività semanticamente incoerente, Catalogo con overflow, Conflitti troppo stretti, Importazione sovraccarica e Impostazioni sbilanciate | Task 10-12 e verifica embedded a 1440/1024/768/390px nel Task 13         |
+| Thread — performance e limiti Free                              | Bundle fresco contenuto, timeout runner storico, crescita storage, egress/build/invocation da governare                                                                                                                   | Task 2, 4, 8, 12, 13                                                     |
+| Passata finale — accessibilità, stati degradati e osservabilità | Gate browser/hydration, payload/log sampling e riuso egress budget                                                                                                                                                        | Task 8, 11-13                                                            |
+| Thread — debito minore e non-azioni                             | Warning React Doctor già chiuso in `1.0.45`, docs stale, major dipendenze intenzionali, indici `unused` da non rimuovere alla cieca, nessun outage corrente                                                               | Task 12-13 ed esclusioni globali                                         |
+| Thread — concentrazione architetturale                          | Quattro hotspot da circa 1.900-4.980 righe e ownership disperse                                                                                                                                                           | Task 4, 6, 9, 10 e controllo hotspot Task 13                             |
 
 Esito del controllo: tutti i rilievi validati hanno un task, un criterio di prova e, quando toccano runtime o dati, una verifica live. L'audit Numisleo è stato read-only: nessuna preview live, OAuth, import, apply, salvataggio o modifica prodotto è stata eseguita. Gli elementi osservati ma non dimostrati come bug — indici `unused`, major dipendenze e provider attualmente sani — sono coperti come verifiche o non-azioni esplicite, non trasformati in refactor arbitrari.
 
 ## Passata finale per area richiesta
 
-| Area | Copertura definitiva | Prova di chiusura |
-| --- | --- | --- |
-| UI | Stati semantici condivisi, gerarchia Importazione, card e microcopy Numisleo | Task 11-13, fixture state matrix e QA embedded |
-| Frontend | Hydration browser, bundle e payload budget, pending/error state, React Doctor | Task 11-13, `ui:browser-check`, `bundle:budget` e gate runtime |
-| Impaginazione | Mobile monocolonna; desktop bilanciato non monocolonna; overflow confinato | Vincolo globale, Task 12 e quattro breakpoint live |
-| Usabilità | CTA successiva, empty/degraded/error, retry, tastiera, focus, zoom e albero accessibilità | Task 11-13, automatico più verifica manuale dichiarata; nessun claim screen reader |
-| Pulizia generale | File temporanei, TODO/FIXME, script, CSS/copy duplicata, `console.*`, link e indice docs | Task 12, `docs:check` e self-review |
-| Bugfix | Tutti i rilievi HTML, inventory lookup, fixture `fieldPolicy`, stati contraddittori, `robots.txt` | Task 2-6 e 9-13 con test rossi e riproduzione |
-| Stabilità | Fairness/deadline, pool DB, retry/CAS e job lifecycle | Task 2-9, 12-13 e monitor post-deploy |
-| Performance | Batch conflitti, storia compatta, payload/bundle, loader timing, sampling log e CWV | Task 2, 4, 7-8, 11-13 |
-| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics e soglie | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass |
-| Documentazione | ADR, roadmap, contesto, glossario, toolchain, sicurezza, mex e link/comandi | Task 2, 5, 7-8, 12-13 e `docs:check` |
+| Area                 | Copertura definitiva                                                                              | Prova di chiusura                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| UI                   | Stati semantici condivisi, gerarchia Importazione, card e microcopy Numisleo                      | Task 11-13, fixture state matrix e QA embedded                                     |
+| Frontend             | Hydration browser, bundle e payload budget, pending/error state, React Doctor                     | Task 11-13, `ui:browser-check`, `bundle:budget` e gate runtime                     |
+| Impaginazione        | Mobile monocolonna; desktop bilanciato non monocolonna; overflow confinato                        | Vincolo globale, Task 12 e quattro breakpoint live                                 |
+| Usabilità            | CTA successiva, empty/degraded/error, retry, tastiera, focus, zoom e albero accessibilità         | Task 11-13, automatico più verifica manuale dichiarata; nessun claim screen reader |
+| Pulizia generale     | File temporanei, TODO/FIXME, script, CSS/copy duplicata, `console.*`, link e indice docs          | Task 12, `docs:check` e self-review                                                |
+| Bugfix               | Tutti i rilievi HTML, inventory lookup, fixture `fieldPolicy`, stati contraddittori, `robots.txt` | Task 2-6 e 9-13 con test rossi e riproduzione                                      |
+| Stabilità            | Fairness/deadline, pool DB, retry/CAS e job lifecycle                                             | Task 2-9, 12-13 e monitor post-deploy                                              |
+| Performance          | Batch conflitti, storia compatta, payload/bundle, loader timing, sampling log e CWV               | Task 2, 4, 7-8, 11-13                                                              |
+| Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics e soglie                           | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass                 |
+| Documentazione       | ADR, roadmap, contesto, glossario, toolchain, sicurezza, mex e link/comandi                       | Task 2, 5, 7-8, 12-13 e `docs:check`                                               |
 
 Questa tabella è la checklist di accettazione del piano: un'area non è chiusa se manca una prova indicata nella terza colonna, anche con CI verde.
 

@@ -44,7 +44,11 @@ function ports(
           "mapping-1",
           [
             { mappingId: "mapping-1", field: "title", serializedValue: "Old" },
-            { mappingId: "mapping-1", field: "status", serializedValue: "ACTIVE" },
+            {
+              mappingId: "mapping-1",
+              field: "status",
+              serializedValue: "ACTIVE",
+            },
           ],
         ],
       ]);
@@ -131,11 +135,13 @@ test("rereads Shopify when the baseline advances during the first provider read"
       return new Map([
         [
           "mapping-1",
-          [{
-            mappingId: "mapping-1",
-            field: "title",
-            serializedValue: baselineReads === 1 ? "Old" : "New",
-          }],
+          [
+            {
+              mappingId: "mapping-1",
+              field: "title",
+              serializedValue: baselineReads === 1 ? "Old" : "New",
+            },
+          ],
         ],
       ]);
     },
@@ -187,11 +193,13 @@ test("retries the job without persisting conflicts when the baseline keeps advan
       return new Map([
         [
           "mapping-1",
-          [{
-            mappingId: "mapping-1",
-            field: "title",
-            serializedValue: `Version ${baselineReads}`,
-          }],
+          [
+            {
+              mappingId: "mapping-1",
+              field: "title",
+              serializedValue: `Version ${baselineReads}`,
+            },
+          ],
         ],
       ]);
     },
@@ -213,7 +221,8 @@ test("retries the job without persisting conflicts when the baseline keeps advan
 });
 
 test("passes the mapped variant and default location to the product read", async () => {
-  let seenInput: { targets: unknown; defaultLocationGid: unknown } | null = null;
+  let seenInput: { targets: unknown; defaultLocationGid: unknown } | null =
+    null;
   const fakePorts = ports({
     async loadMappings() {
       const mappings = await ports().loadMappings(jobs);
@@ -277,8 +286,14 @@ test("keeps separate targets for sibling variants of the same product", async ()
     },
     async loadBaselines() {
       return new Map([
-        ["mapping-1", [{ mappingId: "mapping-1", field: "title", serializedValue: "Old" }]],
-        ["mapping-2", [{ mappingId: "mapping-2", field: "title", serializedValue: "Old" }]],
+        [
+          "mapping-1",
+          [{ mappingId: "mapping-1", field: "title", serializedValue: "Old" }],
+        ],
+        [
+          "mapping-2",
+          [{ mappingId: "mapping-2", field: "title", serializedValue: "Old" }],
+        ],
       ]);
     },
     async loadProducts(input) {
@@ -296,24 +311,30 @@ test("keeps separate targets for sibling variants of the same product", async ()
         },
       ]);
       return new Map([
-        ["mapping-1", {
-          productGid: "gid://shopify/Product/1",
-          title: "New",
-          descriptionHtml: "",
-          status: "ACTIVE",
-          priceAmount: null,
-          quantity: null,
-          imageCount: 0,
-        }],
-        ["mapping-2", {
-          productGid: "gid://shopify/Product/1",
-          title: "Old",
-          descriptionHtml: "",
-          status: "ACTIVE",
-          priceAmount: null,
-          quantity: null,
-          imageCount: 0,
-        }],
+        [
+          "mapping-1",
+          {
+            productGid: "gid://shopify/Product/1",
+            title: "New",
+            descriptionHtml: "",
+            status: "ACTIVE",
+            priceAmount: null,
+            quantity: null,
+            imageCount: 0,
+          },
+        ],
+        [
+          "mapping-2",
+          {
+            productGid: "gid://shopify/Product/1",
+            title: "Old",
+            descriptionHtml: "",
+            status: "ACTIVE",
+            priceAmount: null,
+            quantity: null,
+            imageCount: 0,
+          },
+        ],
       ]);
     },
   });
@@ -385,9 +406,15 @@ test("skips out-of-stock paused and error mappings without a Shopify read", asyn
 
 test("reports every absorbed job id exactly once", async () => {
   const execution = await detectShopifyChangesBatch(
-    { jobs: [...jobs, { ...jobs[0], id: "job-2" }], shopDomain: "example.myshopify.com" },
+    {
+      jobs: [...jobs, { ...jobs[0], id: "job-2" }],
+      shopDomain: "example.myshopify.com",
+    },
     ports(),
   );
 
-  assert.deepEqual(execution.results.map(({ jobId }) => jobId), ["job-1", "job-2"]);
+  assert.deepEqual(
+    execution.results.map(({ jobId }) => jobId),
+    ["job-1", "job-2"],
+  );
 });

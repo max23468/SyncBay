@@ -14,8 +14,5 @@ test("adds no-store headers without dropping existing boundary headers", () => {
   assert.equal(headers.get("Cache-Control"), "no-store, max-age=0");
   assert.equal(headers.get("CDN-Cache-Control"), "no-store");
   assert.equal(headers.get("Vercel-CDN-Cache-Control"), "no-store");
-  assert.equal(
-    headers.get("X-Shopify-API-Request-Failure-Reauthorize"),
-    "1",
-  );
+  assert.equal(headers.get("X-Shopify-API-Request-Failure-Reauthorize"), "1");
 });

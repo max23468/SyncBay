@@ -62,9 +62,14 @@ test("logs redacted loader performance without payload contents", () => {
 });
 
 test("enforces route-specific payload budgets", () => {
-  assert.doesNotThrow(() => assertSyncBayLoaderPayloadBudget("overview", { value: "ok" }));
+  assert.doesNotThrow(() =>
+    assertSyncBayLoaderPayloadBudget("overview", { value: "ok" }),
+  );
   assert.throws(
-    () => assertSyncBayLoaderPayloadBudget("overview", { value: "x".repeat(132 * 1024) }),
+    () =>
+      assertSyncBayLoaderPayloadBudget("overview", {
+        value: "x".repeat(132 * 1024),
+      }),
     /oltre budget/,
   );
 });

@@ -40,7 +40,7 @@ Impostazioni (box Avanzate), dietro conferma esplicita. La disconnessione:
 
 È **reversibile**: il catalogo già importato (mapping, snapshot, prodotti
 Shopify) **non** viene toccato, distinguendola dalla cancellazione dati per
-*eBay marketplace account deletion* (compliance), che resta separata. Il
+_eBay marketplace account deletion_ (compliance), che resta separata. Il
 negoziante può ricollegare eBay e riprendere gli aggiornamenti.
 
 La revoca lato eBay del refresh token via API non è inclusa in questa fase:

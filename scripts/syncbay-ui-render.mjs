@@ -50,7 +50,8 @@ const fixtureMode = args.includes("--fixture");
 const checkMode = args.includes("--check");
 const hydrateMode = args.includes("--hydrate");
 const page = args.find((arg) => !arg.startsWith("--")) || "panoramica";
-const fixtureState = args.find((arg) => arg.startsWith("--state="))?.slice(8) || "healthy";
+const fixtureState =
+  args.find((arg) => arg.startsWith("--state="))?.slice(8) || "healthy";
 
 // --- 1. Carica env di runtime (distribuzione privata) --------------------- //
 function loadEnvFile(path) {
@@ -164,13 +165,13 @@ const PAGES = {
 
 const pageConfig = PAGES[page];
 if (!pageConfig) {
-  console.error(`Pagina non supportata: ${page}. Disponibili: ${Object.keys(PAGES).join(", ")}`);
+  console.error(
+    `Pagina non supportata: ${page}. Disponibili: ${Object.keys(PAGES).join(", ")}`,
+  );
   process.exit(1);
 }
 if (!getUiFixtureStates(page).includes(fixtureState)) {
-  throw new Error(
-    `Stato fixture ${fixtureState} non supportato per ${page}.`,
-  );
+  throw new Error(`Stato fixture ${fixtureState} non supportato per ${page}.`);
 }
 
 // --- 2. Avvia Vite in SSR per risolvere i moduli app come il server ------- //
@@ -186,7 +187,9 @@ const vite = await createServer({
 let cachedServices;
 async function loadServices() {
   if (!cachedServices) {
-    cachedServices = await vite.ssrLoadModule("/app/services/syncbay.server.ts");
+    cachedServices = await vite.ssrLoadModule(
+      "/app/services/syncbay.server.ts",
+    );
   }
   return cachedServices;
 }
@@ -228,7 +231,9 @@ try {
     ? getUiFixture(page, fixtureState)
     : await pageConfig.loader(routeMod, session);
   console.error(
-    fixtureMode ? "dati: fixture sintetica caricata" : "dati: loader reale eseguito",
+    fixtureMode
+      ? "dati: fixture sintetica caricata"
+      : "dati: loader reale eseguito",
   );
 
   // --- 4. SSR del componente di route reale ------------------------------ //
@@ -254,7 +259,9 @@ try {
     new Request(`http://localhost${pageConfig.path}`),
   );
   if (context instanceof Response) {
-    throw new Error(`Route ha restituito una Response (status ${context.status}).`);
+    throw new Error(
+      `Route ha restituito una Response (status ${context.status}).`,
+    );
   }
   const router = createStaticRouter(handler.dataRoutes, context);
   let markup = renderToString(
@@ -288,7 +295,10 @@ try {
   }
 
   // --- 5. HTML con chrome simulata + design layer reale ------------------ //
-  const stubCss = readFileSync(join(root, "preview/polaris-preview.css"), "utf8");
+  const stubCss = readFileSync(
+    join(root, "preview/polaris-preview.css"),
+    "utf8",
+  );
   const realCss = readFileSync(
     join(root, "app/styles/syncbay-embedded.css"),
     "utf8",
@@ -330,56 +340,60 @@ ${hydrationScripts}
     console.error(`ok check: ${page}`);
     console.log(`checked:${page}:${fixtureState}`);
   } else {
-  const suffix = fixtureMode
-    ? fixtureState === "healthy"
-      ? "fixture"
-      : `fixture-${fixtureState}`
-    : "live";
-  const shotsDir = join(root, "preview/shots");
-  mkdirSync(shotsDir, { recursive: true });
-  const outPath = join(shotsDir, `${page}-${suffix}.html`);
-  writeFileSync(outPath, html);
-  console.error(`ok html: ${outPath}`);
+    const suffix = fixtureMode
+      ? fixtureState === "healthy"
+        ? "fixture"
+        : `fixture-${fixtureState}`
+      : "live";
+    const shotsDir = join(root, "preview/shots");
+    mkdirSync(shotsDir, { recursive: true });
+    const outPath = join(shotsDir, `${page}-${suffix}.html`);
+    writeFileSync(outPath, html);
+    console.error(`ok html: ${outPath}`);
 
-  // --- 6. Screenshot headless desktop + stretto --------------------------- //
-  const CHROME =
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-  if (!hydrateMode && existsSync(CHROME)) {
-    const shots = [
-      { height: 1600, label: "desktop", width: 1280 },
-      { height: 1800, label: "narrow", width: 400 },
-    ];
-    for (const shot of shots) {
-      const png = join(root, `preview/shots/${page}-${suffix}-${shot.label}.png`);
-      execFileSync(
-        CHROME,
-        [
-          "--headless=new",
-          "--disable-gpu",
-          "--hide-scrollbars",
-          "--force-device-scale-factor=2",
-          `--window-size=${shot.width},${shot.height}`,
-          `--screenshot=${png}`,
-          `file://${outPath}`,
-        ],
-        { stdio: "ignore" },
-      );
-      console.error(`ok png: ${png}`);
+    // --- 6. Screenshot headless desktop + stretto --------------------------- //
+    const CHROME =
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    if (!hydrateMode && existsSync(CHROME)) {
+      const shots = [
+        { height: 1600, label: "desktop", width: 1280 },
+        { height: 1800, label: "narrow", width: 400 },
+      ];
+      for (const shot of shots) {
+        const png = join(
+          root,
+          `preview/shots/${page}-${suffix}-${shot.label}.png`,
+        );
+        execFileSync(
+          CHROME,
+          [
+            "--headless=new",
+            "--disable-gpu",
+            "--hide-scrollbars",
+            "--force-device-scale-factor=2",
+            `--window-size=${shot.width},${shot.height}`,
+            `--screenshot=${png}`,
+            `file://${outPath}`,
+          ],
+          { stdio: "ignore" },
+        );
+        console.error(`ok png: ${png}`);
+      }
+    } else if (!hydrateMode) {
+      console.error("Chrome non trovato: salto gli screenshot.");
     }
-  } else if (!hydrateMode) {
-    console.error("Chrome non trovato: salto gli screenshot.");
-  }
 
-  console.log(outPath);
+    console.log(outPath);
   }
 } finally {
   await vite.close();
 }
 
 function renderFixtureScenario(scenario, state) {
-  const action = scenario.actionHref && scenario.actionLabel
-    ? `<a data-syncbay-harness-control href="${escapeHtml(scenario.actionHref)}">${escapeHtml(scenario.actionLabel)}</a>`
-    : "";
+  const action =
+    scenario.actionHref && scenario.actionLabel
+      ? `<a data-syncbay-harness-control href="${escapeHtml(scenario.actionHref)}">${escapeHtml(scenario.actionLabel)}</a>`
+      : "";
 
   return `<aside aria-busy="${scenario.ariaBusy}" aria-live="polite" class="preview-note" data-fixture-scenario="${escapeHtml(state)}" role="${scenario.role}"><strong>${escapeHtml(scenario.title)}</strong><span> ${escapeHtml(scenario.detail)}</span>${action}</aside>`;
 }
@@ -391,11 +405,12 @@ function serializeForHtml(value) {
 function renderPreviewSelect(attrs, body) {
   const label = getAttribute(attrs, "label") ?? "";
   const value = getAttribute(attrs, "value") ?? "";
-  const optionLabels = [...body.matchAll(/<s-option([^>]*)>([\s\S]*?)<\/s-option>/gi)]
-    .map((match) => ({
-      label: stripTags(match[2]).trim(),
-      value: getAttribute(match[1], "value") ?? "",
-    }));
+  const optionLabels = [
+    ...body.matchAll(/<s-option([^>]*)>([\s\S]*?)<\/s-option>/gi),
+  ].map((match) => ({
+    label: stripTags(match[2]).trim(),
+    value: getAttribute(match[1], "value") ?? "",
+  }));
   const selectedLabel =
     optionLabels.find((option) => option.value === value)?.label || value;
 

@@ -3,10 +3,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-import {
-  getSyncBayMeta,
-  SYNCBAY_BRAND_ASSETS,
-} from "./lib/syncbay-brand";
+import { getSyncBayMeta, SYNCBAY_BRAND_ASSETS } from "./lib/syncbay-brand";
 import syncbayEmbeddedStyles from "./styles/syncbay-embedded.css?url";
 
 export const meta: MetaFunction = () => getSyncBayMeta();

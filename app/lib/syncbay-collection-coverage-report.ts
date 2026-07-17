@@ -61,7 +61,9 @@ export function buildCollectionCoverageReport(input: {
   function toReportRow(
     product: CollectionCoverageProduct,
   ): CollectionCoverageReportRow {
-    const collections = product.collections.map((collection) => collection.title);
+    const collections = product.collections.map(
+      (collection) => collection.title,
+    );
     const specificCollections = product.collections.flatMap((collection) =>
       genericHandles.has(collection.handle) ? [] : [collection.title],
     );

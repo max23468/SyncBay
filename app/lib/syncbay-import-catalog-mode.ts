@@ -21,9 +21,7 @@ export function getImportCatalogModeLabel(mode: ImportCatalogMode) {
     : "Nuovi prodotti";
 }
 
-export function canCreateDraftProductsForCatalogMode(
-  mode: ImportCatalogMode,
-) {
+export function canCreateDraftProductsForCatalogMode(mode: ImportCatalogMode) {
   return mode === "new_products";
 }
 

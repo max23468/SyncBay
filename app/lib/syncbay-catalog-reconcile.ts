@@ -13,10 +13,9 @@ export function buildCatalogReconcilePlan(input: {
   const activeSet = new Set(activeEbayItemIds);
 
   return {
-    inactiveEbayItemIds:
-      input.activeScanComplete
-        ? mappedEbayItemIds.filter((itemId) => !activeSet.has(itemId))
-        : [],
+    inactiveEbayItemIds: input.activeScanComplete
+      ? mappedEbayItemIds.filter((itemId) => !activeSet.has(itemId))
+      : [],
     syncBatches: chunkArray(activeEbayItemIds, input.batchSize),
   };
 }

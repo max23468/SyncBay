@@ -137,16 +137,16 @@ Non committare `.mex/telemetry-id`, segreti, output locali o dati reali.
 Aggiorna la documentazione solo quando cambia una decisione, un comportamento o
 una procedura stabile. Non creare documenti duplicati.
 
-| Cambiamento | Fonte canonica |
-| --- | --- |
-| Perimetro prodotto o requisiti 1.0 | `docs/syncbay-product-technical-plan.md` |
-| Stato e handoff rapido | `docs/CONTEXT.md` |
-| Priorità future o debiti | `docs/ROADMAP.md` / `docs/BACKLOG.md` |
-| Decisione architetturale, dati, provider o release | `docs/decisions/` |
-| Comandi e toolchain | `docs/TOOLCHAIN.md` |
-| Procedura operativa | guida pertinente in `docs/guides/` |
-| Identità, tono o palette | `BRAND.md` |
-| Nuova env o scope | `.env.example` e documentazione pertinente |
+| Cambiamento                                        | Fonte canonica                             |
+| -------------------------------------------------- | ------------------------------------------ |
+| Perimetro prodotto o requisiti 1.0                 | `docs/syncbay-product-technical-plan.md`   |
+| Stato e handoff rapido                             | `docs/CONTEXT.md`                          |
+| Priorità future o debiti                           | `docs/ROADMAP.md` / `docs/BACKLOG.md`      |
+| Decisione architetturale, dati, provider o release | `docs/decisions/`                          |
+| Comandi e toolchain                                | `docs/TOOLCHAIN.md`                        |
+| Procedura operativa                                | guida pertinente in `docs/guides/`         |
+| Identità, tono o palette                           | `BRAND.md`                                 |
+| Nuova env o scope                                  | `.env.example` e documentazione pertinente |
 
 Durante migrazioni o rinomini preserva contenuti validi, aggiorna link e indici
 e dichiara cosa rimuovi perché superato.
@@ -178,7 +178,7 @@ self-review dell'intero diff pertinente.
 - Dopo merge, rebase o cambio di `package-lock.json`, riallinea checkout,
   dipendenze e Prisma Client prima di classificare un errore come regressione.
 - Non creare una worktree da un'altra worktree e non ripetere `git worktree
-  add` dopo un setup incompleto: usa il preflight del comando canonico e
+add` dopo un setup incompleto: usa il preflight del comando canonico e
   riprendi con `npm run worktree:prepare`.
 - `npm run verify:changed` sceglie ed esegue la corsia minima sicura;
   `npm run verify:full` esegue i gate runtime completi una sola volta. Le
@@ -212,7 +212,7 @@ Segui `docs/guides/git-e-pubblicazione.md` e
   ADR 0008; docs e governance non versionati non richiedono tag;
 - prima di PR ready, merge, publish, deploy o release esegui il preflight remoto
   e controlla i review thread Codex della PR corrente. La `Codex feedback
-  inbox` è fallback e controllo post-merge; i thread di altre PR non entrano
+inbox` è fallback e controllo post-merge; i thread di altre PR non entrano
   nel preflight del filone corrente;
 - non avviare billing o pubblicazione Shopify App Store senza decisione
   esplicita. Non attivare nuovi negozi, account o integrazioni provider

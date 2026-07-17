@@ -24,9 +24,7 @@ export interface CatalogImportJobLifecyclePorts<
   TJob extends CatalogImportOwnerJob,
   TExecutionInput extends CatalogImportExecutionInput,
 > {
-  execute: (
-    input: TExecutionInput,
-  ) => Promise<CatalogImportExecutionResult>;
+  execute: (input: TExecutionInput) => Promise<CatalogImportExecutionResult>;
   markFailed: (input: {
     errorCode: string;
     errorMessage: string;

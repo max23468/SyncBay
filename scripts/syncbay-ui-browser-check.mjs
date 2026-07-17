@@ -121,10 +121,15 @@ function renderBrowserFixtures() {
     if (result.status !== 0) {
       throw new Error(result.stderr || result.stdout);
     }
-    if (!/env: fixture isolata; 0 variabili runtime caricate/.test(result.stderr)) {
+    if (
+      !/env: fixture isolata; 0 variabili runtime caricate/.test(result.stderr)
+    ) {
       throw new Error(`Il render browser ${page}/${state} non è isolato.`);
     }
-    fixtureFiles.set(`${page}/${state}`, result.stdout.trim().split("\n").at(-1));
+    fixtureFiles.set(
+      `${page}/${state}`,
+      result.stdout.trim().split("\n").at(-1),
+    );
   }
 
   return fixtureFiles;
@@ -156,9 +161,13 @@ function createHarnessServer(vite, fixtureFiles) {
       });
       response.end(html);
     } catch (error) {
-      response.writeHead(500).end(
-        error instanceof Error ? error.message : "Trasformazione Vite fallita.",
-      );
+      response
+        .writeHead(500)
+        .end(
+          error instanceof Error
+            ? error.message
+            : "Trasformazione Vite fallita.",
+        );
     }
   });
 }
@@ -182,11 +191,15 @@ async function verifyPage(browser, origin, input) {
   installBrowserObservers(page, origin, problems);
 
   try {
-    await page.goto(`${origin}/__syncbay-ui__/${input.pageName}/${input.state}`, {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto(
+      `${origin}/__syncbay-ui__/${input.pageName}/${input.state}`,
+      {
+        waitUntil: "domcontentloaded",
+      },
+    );
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     problems.push(...(await inspectRenderedPage(page, input)));
     problems.push(...(await verifyKeyboardAndFocus(page)));
@@ -200,8 +213,15 @@ async function verifyPage(browser, origin, input) {
   }
 }
 
-async function verifyNarrowContainer(browser, origin, pageName, containerWidth) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+async function verifyNarrowContainer(
+  browser,
+  origin,
+  pageName,
+  containerWidth,
+) {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
   const page = await context.newPage();
   const problems = [];
   installBrowserObservers(page, origin, problems);
@@ -211,14 +231,17 @@ async function verifyNarrowContainer(browser, origin, pageName, containerWidth) 
       waitUntil: "domcontentloaded",
     });
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     // La finestra resta larga: stringiamo solo il contenitore dell'app.
     await page.evaluate((width) => {
       const root = document.querySelector("#syncbay-ui-root");
       root.style.inlineSize = `${width}px`;
     }, containerWidth);
-    problems.push(...(await inspectRenderedPage(page, { pageName, state: "healthy" })));
+    problems.push(
+      ...(await inspectRenderedPage(page, { pageName, state: "healthy" })),
+    );
     if (problems.length > 0) {
       throw new Error(
         `${pageName}/healthy contenitore ${containerWidth}px: ${problems.join("; ")}`,
@@ -264,15 +287,18 @@ async function inspectRenderedPage(page, input) {
       return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
     };
 
-    if (!document.title.includes(pageName)) problems.push("titolo pagina errato");
+    if (!document.title.includes(pageName))
+      problems.push("titolo pagina errato");
     if (!root || (root.textContent?.trim().length ?? 0) < 80) {
       problems.push("pagina vuota o incompleta");
     }
     if (document.querySelector("vite-error-overlay, react-error-overlay")) {
       problems.push("overlay framework visibile");
     }
-    if (!scenario?.hasAttribute("aria-live")) problems.push("aria-live assente");
-    if (!scenario?.hasAttribute("aria-busy")) problems.push("aria-busy assente");
+    if (!scenario?.hasAttribute("aria-live"))
+      problems.push("aria-live assente");
+    if (!scenario?.hasAttribute("aria-busy"))
+      problems.push("aria-busy assente");
     if (scenario?.getAttribute("data-fixture-scenario") !== state) {
       problems.push("scenario fixture non coerente");
     }
@@ -295,13 +321,20 @@ async function inspectRenderedPage(page, input) {
       if (!name) problems.push(`controllo senza nome: ${control.tagName}`);
     }
 
-    for (const badge of document.querySelectorAll("s-badge,[role=status],[role=alert]")) {
-      if (visible(badge) && !(badge.textContent?.trim() || badge.getAttribute("aria-label"))) {
+    for (const badge of document.querySelectorAll(
+      "s-badge,[role=status],[role=alert]",
+    )) {
+      if (
+        visible(badge) &&
+        !(badge.textContent?.trim() || badge.getAttribute("aria-label"))
+      ) {
         problems.push(`stato senza testo: ${badge.tagName}`);
       }
     }
 
-    const balancedGrids = [...document.querySelectorAll(".syncbay-balanced-box-grid > s-grid")];
+    const balancedGrids = [
+      ...document.querySelectorAll(".syncbay-balanced-box-grid > s-grid"),
+    ];
     if (state === "healthy" && balancedGrids.length === 0) {
       problems.push("griglia bilanciata assente");
     }
@@ -314,13 +347,16 @@ async function inspectRenderedPage(page, input) {
     const MIN_BOX_INLINE_SIZE = 120;
     for (const grid of balancedGrids) {
       const gridWidth = grid.getBoundingClientRect().width;
-      const containerWidth = grid.parentElement?.getBoundingClientRect().width ?? gridWidth;
+      const containerWidth =
+        grid.parentElement?.getBoundingClientRect().width ?? gridWidth;
       const rows = [];
       for (const child of grid.children) {
         const childRect = child.getBoundingClientRect();
         const childWidth = childRect.width;
         const rowTop = Math.round(childRect.top);
-        let row = rows.find((candidate) => Math.abs(candidate.top - rowTop) <= 2);
+        let row = rows.find(
+          (candidate) => Math.abs(candidate.top - rowTop) <= 2,
+        );
         if (!row) {
           row = { count: 0, top: rowTop };
           rows.push(row);
@@ -333,7 +369,9 @@ async function inspectRenderedPage(page, input) {
         }
       }
 
-      const rowCounts = rows.sort((a, b) => a.top - b.top).map((row) => row.count);
+      const rowCounts = rows
+        .sort((a, b) => a.top - b.top)
+        .map((row) => row.count);
       if (containerWidth <= 420 && rowCounts.some((count) => count > 1)) {
         problems.push(`griglia mobile non monocolonna: ${rowCounts.join("+")}`);
       }
@@ -371,7 +409,9 @@ async function inspectRenderedPage(page, input) {
         }`,
       );
     }
-    for (const element of document.querySelectorAll(".syncbay-table-wrap,.syncbay-filter-scroll,.syncbay-pulse")) {
+    for (const element of document.querySelectorAll(
+      ".syncbay-table-wrap,.syncbay-filter-scroll,.syncbay-pulse",
+    )) {
       if (element.scrollWidth <= element.clientWidth + 1) continue;
       const overflow = getComputedStyle(element).overflowX;
       if (overflow !== "auto" && overflow !== "scroll") {
@@ -386,22 +426,30 @@ async function inspectRenderedPage(page, input) {
 async function verifyKeyboardAndFocus(page) {
   const problems = [];
   const seen = new Set();
-  const focusableCount = await page.evaluate(() =>
-    [...document.querySelectorAll('a[href],button,input:not([type="hidden"]),select,textarea,[tabindex="0"]')]
-      .filter((element) => {
+  const focusableCount = await page.evaluate(
+    () =>
+      [
+        ...document.querySelectorAll(
+          'a[href],button,input:not([type="hidden"]),select,textarea,[tabindex="0"]',
+        ),
+      ].filter((element) => {
         const rect = element.getBoundingClientRect();
         const style = getComputedStyle(element);
-        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
+        return (
+          rect.width > 0 && rect.height > 0 && style.visibility !== "hidden"
+        );
       }).length,
   );
-  if (focusableCount === 0) return ["nessun controllo raggiungibile da tastiera"];
+  if (focusableCount === 0)
+    return ["nessun controllo raggiungibile da tastiera"];
   await page.locator("body").click({ position: { x: 1, y: 1 } });
 
   for (let index = 0; index < Math.min(8, focusableCount); index += 1) {
     await page.keyboard.press("Tab");
     const focus = await page.evaluate(() => {
       const element = document.activeElement;
-      if (!(element instanceof HTMLElement) || element === document.body) return null;
+      if (!(element instanceof HTMLElement) || element === document.body)
+        return null;
       const style = getComputedStyle(element);
       return {
         key: String([...document.querySelectorAll("*")].indexOf(element)),
@@ -426,7 +474,9 @@ async function verifyKeyboardAndFocus(page) {
 }
 
 async function verifyZoom(browser, origin, pageName) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+  });
   const page = await context.newPage();
   const problems = [];
   installBrowserObservers(page, origin, problems);
@@ -435,7 +485,8 @@ async function verifyZoom(browser, origin, pageName) {
       waitUntil: "domcontentloaded",
     });
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     await page.evaluate(() => {
       document.documentElement.style.zoom = "2";
@@ -468,13 +519,17 @@ async function verifyReducedMotion(browser, origin) {
       waitUntil: "domcontentloaded",
     });
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     const animated = await page.evaluate(() =>
       [...document.querySelectorAll("*")].flatMap((element) => {
         const style = getComputedStyle(element);
-        return style.animationName !== "none" && style.animationDuration !== "0s"
-          ? [`${element.tagName.toLowerCase()}.${element.className || "-"}:${style.animationName}`]
+        return style.animationName !== "none" &&
+          style.animationDuration !== "0s"
+          ? [
+              `${element.tagName.toLowerCase()}.${element.className || "-"}:${style.animationName}`,
+            ]
           : [];
       }),
     );
@@ -489,7 +544,9 @@ async function verifyReducedMotion(browser, origin) {
 }
 
 async function verifyNavigationFocus(browser, origin) {
-  const context = await browser.newContext({ viewport: { width: 1024, height: 900 } });
+  const context = await browser.newContext({
+    viewport: { width: 1024, height: 900 },
+  });
   const page = await context.newPage();
   const problems = [];
   installBrowserObservers(page, origin, problems);
@@ -498,17 +555,23 @@ async function verifyNavigationFocus(browser, origin) {
       waitUntil: "domcontentloaded",
     });
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     await page.getByRole("link", { name: "Rivedi", exact: true }).click();
     await page.waitForFunction(
-      () => document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "true",
+      () =>
+        document
+          .querySelector("[data-syncbay-route-content]")
+          ?.getAttribute("aria-busy") === "true",
     );
     await page.waitForFunction(
       () =>
         document.activeElement ===
           document.querySelector("[data-syncbay-route-content]") &&
-        document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "false",
+        document
+          .querySelector("[data-syncbay-route-content]")
+          ?.getAttribute("aria-busy") === "false",
     );
     if (problems.length > 0) {
       throw new Error(`focus navigazione: ${problems.join("; ")}`);
@@ -522,7 +585,9 @@ function inspectSubmissionFocus(page) {
   return page.evaluate(() => {
     const found = [];
     const content = document.querySelector("[data-syncbay-route-content]");
-    if (document.activeElement !== document.querySelector("s-button[type=submit]")) {
+    if (
+      document.activeElement !== document.querySelector("s-button[type=submit]")
+    ) {
       found.push(
         `focus uscito dal bottone di submit (${document.activeElement?.tagName.toLowerCase() ?? "nessuno"})`,
       );
@@ -538,7 +603,9 @@ function inspectSubmissionFocus(page) {
 }
 
 async function verifySubmissionFocus(browser, origin) {
-  const context = await browser.newContext({ viewport: { width: 1024, height: 900 } });
+  const context = await browser.newContext({
+    viewport: { width: 1024, height: 900 },
+  });
   const page = await context.newPage();
   const problems = [];
   installBrowserObservers(page, origin, problems);
@@ -547,17 +614,21 @@ async function verifySubmissionFocus(browser, origin) {
       waitUntil: "domcontentloaded",
     });
     await page.waitForFunction(
-      () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
+      () =>
+        document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
-    await page.getByRole("button", { name: "Salva intervallo", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Salva intervallo", exact: true })
+      .click();
     // Un submit non e' una navigazione: la pagina resta al suo posto con lo
     // stato "Salvataggio..." e il focus non si muove dal bottone. Lo scheletro
     // di rotta e aria-busy restano riservati alle navigazioni GET.
     await page
       .waitForFunction(
         () =>
-          document.querySelector("s-button[type=submit]")?.textContent?.trim() ===
-          "Salvataggio...",
+          document
+            .querySelector("s-button[type=submit]")
+            ?.textContent?.trim() === "Salvataggio...",
       )
       .catch(() => {
         throw new Error(

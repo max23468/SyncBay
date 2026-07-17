@@ -135,9 +135,12 @@ async function markReconnectRequired(connectionId: string) {
 function isAuthTokenError(error?: string) {
   if (!error) return false;
 
-  return ["invalid_grant", "invalid_request", "invalid_client", "unauthorized_client"].includes(
-    error.toLowerCase(),
-  );
+  return [
+    "invalid_grant",
+    "invalid_request",
+    "invalid_client",
+    "unauthorized_client",
+  ].includes(error.toLowerCase());
 }
 
 function secondsFromNow(seconds: number) {

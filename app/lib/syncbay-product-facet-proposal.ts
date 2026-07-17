@@ -17,7 +17,9 @@ export interface SyncBayProductFacetProposalInput {
 export function buildSyncBayProductFacetProposalFromSnapshot(
   input: SyncBayProductFacetProposalInput,
 ): SyncBayProductFacet[] {
-  const snapshotFacets = getProductFacetBaselineFromSnapshotPayload(input.payload);
+  const snapshotFacets = getProductFacetBaselineFromSnapshotPayload(
+    input.payload,
+  );
   if (snapshotFacets !== null) return snapshotFacets;
 
   return buildSyncBayProductFacets({

@@ -1,8 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 export type InternalAppSecretVerificationResult =
-  | { ok: true }
-  | { ok: false; message: string; status: 401 | 503 };
+  { ok: true } | { ok: false; message: string; status: 401 | 503 };
 
 export function verifyInternalAppSecret(input: {
   authorization?: string | null;
@@ -22,7 +21,8 @@ export function verifyInternalAppSecret(input: {
   const authorizationSecret = input.authorization
     ?.match(/^Bearer\s+(.+)$/i)?.[1]
     ?.trim();
-  const providedSecret = authorizationSecret || input.headerSecret?.trim() || "";
+  const providedSecret =
+    authorizationSecret || input.headerSecret?.trim() || "";
 
   if (secureEqual(providedSecret, expectedSecret)) {
     return { ok: true };

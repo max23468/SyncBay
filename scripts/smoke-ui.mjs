@@ -28,7 +28,7 @@ const checks = [
       "useNavigation",
       "RoutePendingIndicator",
       "syncbay-route-pending__surface",
-      'aria-busy={isRoutePending}',
+      "aria-busy={isRoutePending}",
       'aria-live="polite"',
       "Apro Catalogo",
       "Apro Conflitti",
@@ -79,11 +79,7 @@ const checks = [
   },
   {
     file: "app/lib/syncbay-job-diagnostics.ts",
-    needles: [
-      "Disponibilità eBay non aggiornata",
-      "Attendi eBay",
-      "cooldown",
-    ],
+    needles: ["Disponibilità eBay non aggiornata", "Attendi eBay", "cooldown"],
   },
   {
     file: "app/routes/app._index.tsx",
@@ -100,7 +96,7 @@ const checks = [
       "Cosa fare adesso",
       "Attività recente",
       "Benvenuto in SyncBay",
-      "slot=\"accessory\"",
+      'slot="accessory"',
     ],
   },
   {
@@ -137,7 +133,7 @@ const checks = [
       "Sicuri",
       "Decisioni da prendere",
       "CONFLICT_RESOLUTIONS.map",
-      "alignItems=\"start\"",
+      'alignItems="start"',
       "senza il tuo via libera",
     ],
   },
@@ -176,7 +172,11 @@ const checks = [
   },
   {
     file: "app/components/ImportExecutionSections.tsx",
-    needles: ["Vai al catalogo", "Avvia import catalogo", "Applica takeover righe sicure"],
+    needles: [
+      "Vai al catalogo",
+      "Avvia import catalogo",
+      "Applica takeover righe sicure",
+    ],
   },
   {
     file: "app/routes/app.settings.tsx",
@@ -223,7 +223,8 @@ for (const needle of [
   "@media (max-width: 640px)",
   ".syncbay-table-wrap",
 ]) {
-  if (!embeddedCss.includes(needle)) failures.push(`CSS embedded: manca "${needle}"`);
+  if (!embeddedCss.includes(needle))
+    failures.push(`CSS embedded: manca "${needle}"`);
 }
 
 // Le colonne appartengono alle s-grid delle route, che usano auto-fit sulla
@@ -236,13 +237,16 @@ for (const forbidden of [
   "overflow-wrap: anywhere",
 ]) {
   if (embeddedCss.includes(forbidden)) {
-    failures.push(`CSS embedded: "${forbidden}" schiaccia le tile sotto la soglia leggibile`);
+    failures.push(
+      `CSS embedded: "${forbidden}" schiaccia le tile sotto la soglia leggibile`,
+    );
   }
 }
 
 const robots = fs.readFileSync("public/robots.txt", "utf8");
 for (const route of ["/app/", "/auth/", "/api/", "/webhooks/"]) {
-  if (!robots.includes(`Disallow: ${route}`)) failures.push(`robots.txt: manca ${route}`);
+  if (!robots.includes(`Disallow: ${route}`))
+    failures.push(`robots.txt: manca ${route}`);
 }
 
 const forbiddenChecks = [
@@ -265,13 +269,15 @@ const navMenuContent = fs.existsSync("app/routes/app.tsx")
   ? fs.readFileSync("app/routes/app.tsx", "utf8")
   : "";
 
-const visibleOverviewLink = /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<\/(?:a|Link)>/.test(
-  navMenuContent,
-);
+const visibleOverviewLink =
+  /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<\/(?:a|Link)>/.test(
+    navMenuContent,
+  );
 
-const hiddenHomeLink = /<(?:a|Link)\s+(?:href|to)="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/(?:a|Link)>/.test(
-  navMenuContent,
-);
+const hiddenHomeLink =
+  /<(?:a|Link)\s+(?:href|to)="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/(?:a|Link)>/.test(
+    navMenuContent,
+  );
 
 for (const file of publicFiles) {
   if (!fs.existsSync(file)) {

@@ -142,8 +142,5 @@ test("blocks the Admin orderCreate test while an eBay Trading cooldown is active
   assert.equal(report.adminOrderCreateTestReady, false);
   assert.match(report.adminOrderCreateBlockers.join("\n"), /Trading API eBay/);
   assert.equal(report.ebayTradingCooldown.active, true);
-  assert.equal(
-    report.ebayTradingCooldown.retryAt,
-    "2026-06-04T07:05:00.000Z",
-  );
+  assert.equal(report.ebayTradingCooldown.retryAt, "2026-06-04T07:05:00.000Z");
 });

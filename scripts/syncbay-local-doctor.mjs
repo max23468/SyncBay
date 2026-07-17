@@ -63,7 +63,9 @@ export function buildReport({
       ? findTopLevelLockMismatches(packageLock, installedLock)
       : [];
   const lockfileAligned =
-    dependenciesInstalled && Boolean(installedLock) && lockfileMismatches.length === 0;
+    dependenciesInstalled &&
+    Boolean(installedLock) &&
+    lockfileMismatches.length === 0;
   const prismaClient = inspectPrismaClient(root);
 
   if (!expectedNodeVersion) {

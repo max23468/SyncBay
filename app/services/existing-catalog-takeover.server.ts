@@ -309,7 +309,8 @@ export async function runExistingCatalogTakeoverStart(
     totalAvailable: wizard.previewSource.totalAvailable,
     truncatedAtMaxProducts:
       wizard.previewSource.totalAvailable !== null
-        ? wizard.previewSource.totalAvailable > wizard.previewResult.items.length
+        ? wizard.previewSource.totalAvailable >
+          wizard.previewResult.items.length
         : wizard.previewResult.items.length >= CATALOG_IMPORT_MAX_PRODUCTS,
   } satisfies Prisma.JsonObject;
 

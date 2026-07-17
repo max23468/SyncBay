@@ -444,9 +444,10 @@ function getActualQuantitySource(input) {
 }
 
 function getVariantLocationQuantity(variant) {
-  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities
-    ?.find((quantity) => quantity.name === "available")
-    ?.quantity;
+  const availableQuantity =
+    variant?.inventoryItem?.inventoryLevel?.quantities?.find(
+      (quantity) => quantity.name === "available",
+    )?.quantity;
 
   return typeof availableQuantity === "number" ? availableQuantity : null;
 }

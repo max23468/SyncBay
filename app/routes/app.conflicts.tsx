@@ -164,10 +164,9 @@ export default function ConflictsRoute() {
   const hasOpen = openCount > 0;
   const safeCount = conflicts.summary.batchSafeCount;
 
-  useActionToast(
-    { data: actionData, state: navigation.state },
-    (data) => ({ message: data.message }),
-  );
+  useActionToast({ data: actionData, state: navigation.state }, (data) => ({
+    message: data.message,
+  }));
 
   return (
     <s-page heading="Conflitti" inlineSize="large">
@@ -186,7 +185,9 @@ export default function ConflictsRoute() {
           title={
             hasOpen
               ? `${formatNumber(openCount)} ${
-                  openCount === 1 ? "conflitto da decidere" : "conflitti da decidere"
+                  openCount === 1
+                    ? "conflitto da decidere"
+                    : "conflitti da decidere"
                 }`
               : "Nessun conflitto in sospeso"
           }
@@ -209,7 +210,9 @@ export default function ConflictsRoute() {
               detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
               icon="check-circle"
               label="Sicuri"
-              tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
+              tone={
+                conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"
+              }
               value={formatNumber(conflicts.summary.batchSafeCount)}
             />
             <MetricTile
@@ -265,11 +268,7 @@ export default function ConflictsRoute() {
           {rows.length > 0 ? (
             <s-stack gap="base">
               {rows.map((row) => (
-                <ConflictItem
-                  isSaving={isSaving}
-                  key={row.id}
-                  row={row}
-                />
+                <ConflictItem isSaving={isSaving} key={row.id} row={row} />
               ))}
             </s-stack>
           ) : (
@@ -338,22 +337,22 @@ function ConflictItem({
         </s-stack>
 
         <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
-        >
-          <SourcePanel
-            label="eBay · versione di riferimento"
-            mark="ebay"
-            truth
-            value={row.sourceValue}
-          />
-          <SourcePanel
-            label="Shopify · versione in vetrina"
-            mark="shopify"
-            value={row.shopifyValue}
-          />
-        </s-grid>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
+          >
+            <SourcePanel
+              label="eBay · versione di riferimento"
+              mark="ebay"
+              truth
+              value={row.sourceValue}
+            />
+            <SourcePanel
+              label="Shopify · versione in vetrina"
+              mark="shopify"
+              value={row.shopifyValue}
+            />
+          </s-grid>
         </div>
 
         <s-stack
@@ -405,7 +404,9 @@ function SourcePanel({
         <span className="syncbay-source__mark">
           {mark === "ebay" ? <EbayMark /> : <ShopifyMark />}
         </span>
-        <s-text color="subdued" type="strong">{label}</s-text>
+        <s-text color="subdued" type="strong">
+          {label}
+        </s-text>
       </span>
       <s-text>{value}</s-text>
     </div>
@@ -449,7 +450,11 @@ function ResolveConflictForm({
 function FilterNav({ activeFilter }: { activeFilter: ConflictFilter }) {
   return (
     <div className="syncbay-conflict-filter-nav">
-      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+      <s-stack
+        direction="inline"
+        gap="small-200"
+        accessibilityRole="navigation"
+      >
         {CONFLICT_FILTERS.map((filter) => (
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}

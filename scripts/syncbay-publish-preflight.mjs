@@ -89,7 +89,11 @@ function buildReport(args) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
-  if (args.remote && (pr || publishedMainPreflight) && !codexFeedback?.readable) {
+  if (
+    args.remote &&
+    (pr || publishedMainPreflight) &&
+    !codexFeedback?.readable
+  ) {
     failures.push(
       "Feedback Codex non leggibile: verificare autenticazione GitHub, review thread PR e issue #2 prima della pubblicazione.",
     );
@@ -294,7 +298,8 @@ function readCodexInbox(prNumber) {
 }
 
 export function loadCodexFeedback(input, readers = {}) {
-  if (!input.remote || (!input.pr && !input.publishedMainPreflight)) return null;
+  if (!input.remote || (!input.pr && !input.publishedMainPreflight))
+    return null;
 
   const readInbox = readers.readInbox ?? readCodexInbox;
   const readThreads = readers.readThreads ?? readCodexReviewThreads;
@@ -398,8 +403,7 @@ export function buildCodexFeedbackPreflight(input) {
     readable: false,
     source: "reviewThreads",
   };
-  const canUseReviewThreads =
-    Boolean(input.prNumber) && reviewThreads.readable;
+  const canUseReviewThreads = Boolean(input.prNumber) && reviewThreads.readable;
   const actionable = canUseReviewThreads
     ? Boolean(reviewThreads.actionable)
     : input.prNumber

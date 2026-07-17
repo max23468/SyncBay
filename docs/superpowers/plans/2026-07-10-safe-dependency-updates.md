@@ -19,12 +19,14 @@
 ### Task 1: Aggiornare il lotto compatibile
 
 **Files:**
+
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `docs/TOOLCHAIN.md`
 - Modify: `CHANGELOG.md`
 
 **Interfaces:**
+
 - Consumes: i range Node/npm e i peer dependency correnti del repository.
 - Produces: un grafo npm installabile e documentato senza cambio di framework o runtime.
 
@@ -62,12 +64,14 @@ In `docs/TOOLCHAIN.md`, sostituire Shopify CLI `4.3.0` con `4.4.0` se il candida
 ### Task 2: Verificare compatibilità e sicurezza
 
 **Files:**
+
 - Verify: `package.json`
 - Verify: `package-lock.json`
 - Verify: `docs/TOOLCHAIN.md`
 - Verify: `CHANGELOG.md`
 
 **Interfaces:**
+
 - Consumes: il grafo aggiornato prodotto dal Task 1.
 - Produces: evidenza fresca per installazione, static analysis, test, build, Prisma e qualità React.
 
@@ -115,10 +119,12 @@ Expected: diff focalizzato, nessun errore di whitespace e classificazione releas
 ### Task 3: Confermare le esclusioni major
 
 **Files:**
+
 - Verify: `package.json`
 - Verify: `docs/TOOLCHAIN.md`
 
 **Interfaces:**
+
 - Consumes: metadata registry correnti.
 - Produces: una lista esplicita degli update non applicati perché non sicuri come drop-in.
 

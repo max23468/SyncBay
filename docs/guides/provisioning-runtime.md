@@ -130,7 +130,7 @@ Note:
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
 <shop.myshopify.com>`, che interroga Supabase remoto via `supabase db
 query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
-quando disponibile e stampa solo stato job sanitizzato.
+  quando disponibile e stampa solo stato job sanitizzato.
 - Per ripristinare lo stock eBay dopo un test reale mirato usa
   `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write`.
   Lo script rifiuta l'esecuzione se ci sono job stock/sync attivi, usa il token

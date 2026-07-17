@@ -61,7 +61,9 @@ test("recognizes connection pool checkout timeouts nested in cause as transient"
 test("recognizes driver handler exits as transient webhook persistence errors", () => {
   assert.equal(
     isTransientWebhookPersistenceError(
-      new Error("(EDBHANDLEREXITED) DbHandler exited. Check logs for more information"),
+      new Error(
+        "(EDBHANDLEREXITED) DbHandler exited. Check logs for more information",
+      ),
     ),
     true,
   );

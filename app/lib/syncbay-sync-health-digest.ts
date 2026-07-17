@@ -58,10 +58,7 @@ export function buildSyncHealthDigest(
     input.now.getTime() - windowHours * 60 * 60 * 1000,
   );
   const conflictsOpen = Math.max(0, Math.trunc(input.conflictsOpen) || 0);
-  const quarantinedCount = Math.max(
-    0,
-    Math.trunc(input.quarantinedCount) || 0,
-  );
+  const quarantinedCount = Math.max(0, Math.trunc(input.quarantinedCount) || 0);
 
   const windowJobs = input.jobs.filter((job) => job.createdAt >= windowStart);
   const syncedCount = windowJobs.filter(

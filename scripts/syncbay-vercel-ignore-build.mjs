@@ -24,9 +24,7 @@ const NON_DEPLOY_ROOT_FILES = new Set([
   "shopify.web.toml",
 ]);
 
-const DEPLOY_SCRIPTS = new Set([
-  "scripts/link-prisma-client.mjs",
-]);
+const DEPLOY_SCRIPTS = new Set(["scripts/link-prisma-client.mjs"]);
 
 export function shouldBuildVercel(paths) {
   if (!Array.isArray(paths) || paths.length === 0) return true;

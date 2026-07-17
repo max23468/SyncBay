@@ -2,13 +2,14 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import {
-  observeVercel,
-} from "./syncbay-provider-observations.mjs";
+import { observeVercel } from "./syncbay-provider-observations.mjs";
 
 const run = async (script, args = []) => {
   try {
-    const { stdout } = await promisify(execFile)("node", [script, ...args], { maxBuffer: 5 * 1024 * 1024, timeout: 60_000 });
+    const { stdout } = await promisify(execFile)("node", [script, ...args], {
+      maxBuffer: 5 * 1024 * 1024,
+      timeout: 60_000,
+    });
     const output = stdout.trim();
     try {
       return { status: "observed", value: JSON.parse(output) };
@@ -18,7 +19,11 @@ const run = async (script, args = []) => {
   } catch (error) {
     const output = String(error.stdout ?? "").trim();
     try {
-      return { status: "observed", value: JSON.parse(output), exitCode: error.code ?? 1 };
+      return {
+        status: "observed",
+        value: JSON.parse(output),
+        exitCode: error.code ?? 1,
+      };
     } catch {
       // Il comando non ha prodotto un report JSON recuperabile.
     }
@@ -28,7 +33,9 @@ const run = async (script, args = []) => {
 
 const database = await run("scripts/syncbay-db-storage-budget.mjs");
 const egress = await run("scripts/syncbay-egress-budget.mjs", ["--json"]);
-const supabaseFileStorage = await run("scripts/syncbay-supabase-storage-budget.mjs");
+const supabaseFileStorage = await run(
+  "scripts/syncbay-supabase-storage-budget.mjs",
+);
 const vercel = await observeVercel();
 const result = {
   database,
@@ -56,4 +63,5 @@ if (
   supabaseFileStorage.status === "error" ||
   ["urgent", "blocked"].includes(database.value?.status) ||
   ["urgent", "blocked"].includes(supabaseFileStorage.value?.status)
-) process.exitCode = 2;
+)
+  process.exitCode = 2;

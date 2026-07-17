@@ -66,9 +66,15 @@ test("reports missing worktree dependencies with exact repair commands", () => {
     encoding: "utf8",
   }).trim();
   fs.mkdirSync(path.join(root, "prisma"));
-  fs.writeFileSync(path.join(root, ".node-version"), `${process.versions.node}\n`);
+  fs.writeFileSync(
+    path.join(root, ".node-version"),
+    `${process.versions.node}\n`,
+  );
   fs.writeFileSync(path.join(root, ".npmrc"), "engine-strict=true\n");
-  fs.writeFileSync(path.join(root, "prisma/schema.prisma"), "generator client {}\n");
+  fs.writeFileSync(
+    path.join(root, "prisma/schema.prisma"),
+    "generator client {}\n",
+  );
   fs.writeFileSync(
     path.join(root, "package.json"),
     `${JSON.stringify(
@@ -95,9 +101,7 @@ test("reports missing worktree dependencies with exact repair commands", () => {
   const report = JSON.parse(result.stdout);
 
   assert.notEqual(result.status, 0);
-  assert.ok(
-    report.failures.some((failure) => failure.includes("npm install")),
-  );
+  assert.ok(report.failures.some((failure) => failure.includes("npm install")));
   assert.ok(
     report.failures.some((failure) =>
       failure.includes("npm run prisma:generate"),

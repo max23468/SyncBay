@@ -3,10 +3,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { Session as ShopifySession } from "@shopify/shopify-api";
 import type { SessionStorage } from "@shopify/shopify-app-session-storage";
 
-import {
-  decryptSecret,
-  encryptSecretIfNeeded,
-} from "./crypto.server";
+import { decryptSecret, encryptSecretIfNeeded } from "./crypto.server";
 
 const UNIQUE_KEY_CONSTRAINT_ERROR_CODE = "P2002";
 const RECORD_NOT_FOUND_ERROR_CODE = "P2025";
@@ -191,7 +188,9 @@ export class PrismaSessionStorage implements SessionStorage {
       }
     }
 
-    throw new Error("The table `session` does not exist in the current database");
+    throw new Error(
+      "The table `session` does not exist in the current database",
+    );
   }
 
   private sessionToRow(session: ShopifySession): SessionRowInput {
@@ -247,9 +246,7 @@ export class PrismaSessionStorage implements SessionStorage {
     pushOptional(
       sessionParams,
       "refreshToken",
-      row.refreshToken
-        ? decryptSessionSecret(row.refreshToken)
-        : null,
+      row.refreshToken ? decryptSessionSecret(row.refreshToken) : null,
     );
     pushOptional(
       sessionParams,

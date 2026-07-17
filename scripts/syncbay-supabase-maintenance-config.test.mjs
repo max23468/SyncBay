@@ -15,7 +15,10 @@ test("retires the legacy internal maintenance cron in favor of daily app mainten
     "utf8",
   );
 
-  assert.match(migration, /cron\.unschedule\('syncbay-maintain-supabase-internal-tables'\)/);
+  assert.match(
+    migration,
+    /cron\.unschedule\('syncbay-maintain-supabase-internal-tables'\)/,
+  );
   assert.doesNotMatch(migration, /cron\.schedule\(/);
   assert.match(service, /14 \* 24 \* 60 \* 60 \* 1_000/);
   assert.doesNotMatch(service, /net\._http_response/);

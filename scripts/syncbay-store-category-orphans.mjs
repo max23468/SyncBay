@@ -202,7 +202,9 @@ function printReport(report) {
     }
     console.log("");
   } else {
-    console.log("Nessun listing attivo senza categoria del negozio nel campione.");
+    console.log(
+      "Nessun listing attivo senza categoria del negozio nel campione.",
+    );
     console.log("");
   }
 

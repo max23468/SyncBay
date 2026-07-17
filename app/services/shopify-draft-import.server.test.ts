@@ -8,9 +8,7 @@ import {
   type CatalogImportExecutionResult,
 } from "../lib/syncbay-catalog-import-execution";
 
-function createLifecycleHarness(
-  results: CatalogImportExecutionResult[],
-) {
+function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
   const executedJobIds: string[] = [];
   const failedTransitions: Array<Record<string, unknown>> = [];
   const succeededTransitions: Array<Record<string, unknown>> = [];
@@ -127,6 +125,9 @@ test("the real catalog executor cannot create or finalize an internal job", () =
     "utf8",
   );
 
-  assert.doesNotMatch(importSource, /prisma\.syncJob\.(?:create|update|upsert)/);
+  assert.doesNotMatch(
+    importSource,
+    /prisma\.syncJob\.(?:create|update|upsert)/,
+  );
   assert.doesNotMatch(importSource, /startDraftImportJob|finishDraftImportJob/);
 });

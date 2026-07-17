@@ -9,7 +9,7 @@ I Polaris Web Components (`s-page`, `s-section`, `s-stack`, `s-icon`, …) sono
 registrati **solo** dal runtime App Bridge dentro Shopify Admin embedded. Fuori
 da quel contesto non esistono come elementi definiti (verificato: App Bridge non
 li espone standalone) e non c'è un pacchetto runtime pubblico. Quindi una resa
-*pixel-true* in locale non è possibile senza una sessione Admin autenticata.
+_pixel-true_ in locale non è possibile senza una sessione Admin autenticata.
 
 Questo harness aggira il limite con **stand-in neutri** dei componenti `s-*`
 (`polaris-preview.css`) e renderizza il **design layer SyncBay reale**

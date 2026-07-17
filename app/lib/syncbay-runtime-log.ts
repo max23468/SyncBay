@@ -18,7 +18,9 @@ export type RuntimeLogEvent = {
 const HEALTHY_SAMPLE_RATE = 0.05;
 const SLOW_REQUEST_MS = 1_000;
 
-export function getSyncBayRunnerCompletionLevel(failedCount: number): RuntimeLogEvent["level"] {
+export function getSyncBayRunnerCompletionLevel(
+  failedCount: number,
+): RuntimeLogEvent["level"] {
   return failedCount > 0 ? "warn" : "info";
 }
 
@@ -52,12 +54,20 @@ export function logSyncBayRuntimeEvent(
     route: event.route,
     ...(event.shopDomain === undefined ? {} : { shopDomain: event.shopDomain }),
     ...(event.durationMs === undefined ? {} : { durationMs: event.durationMs }),
-    ...(event.payloadBytes === undefined ? {} : { payloadBytes: event.payloadBytes }),
+    ...(event.payloadBytes === undefined
+      ? {}
+      : { payloadBytes: event.payloadBytes }),
     ...(event.outcome === undefined ? {} : { outcome: event.outcome }),
-    ...(event.processedCount === undefined ? {} : { processedCount: event.processedCount }),
-    ...(event.failedCount === undefined ? {} : { failedCount: event.failedCount }),
+    ...(event.processedCount === undefined
+      ? {}
+      : { processedCount: event.processedCount }),
+    ...(event.failedCount === undefined
+      ? {}
+      : { failedCount: event.failedCount }),
     ...(event.elapsedMs === undefined ? {} : { elapsedMs: event.elapsedMs }),
-    ...(event.continuationNeeded === undefined ? {} : { continuationNeeded: event.continuationNeeded }),
+    ...(event.continuationNeeded === undefined
+      ? {}
+      : { continuationNeeded: event.continuationNeeded }),
     runtime: {
       nodeEnv: process.env.NODE_ENV ?? null,
       vercelRegion: process.env.VERCEL_REGION ?? null,

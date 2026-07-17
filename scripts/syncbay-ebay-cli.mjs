@@ -157,7 +157,9 @@ export async function getAccessToken(connection) {
 
   if (!response.ok || !json.access_token) {
     throw new Error(
-      json.error_description ?? json.error ?? "Refresh token eBay non riuscito.",
+      json.error_description ??
+        json.error ??
+        "Refresh token eBay non riuscito.",
     );
   }
 
@@ -272,17 +274,20 @@ export function getTradingSiteId(marketplaceId) {
 }
 
 export async function tradingCall(input) {
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: input.requestXml,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": input.callName,
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+  const response = await fetch(
+    getTradingBaseUrl(input.connection.environment),
+    {
+      body: input.requestXml,
+      headers: {
+        "Content-Type": "text/xml; charset=utf-8",
+        "X-EBAY-API-CALL-NAME": input.callName,
+        "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
+        "X-EBAY-API-IAF-TOKEN": input.accessToken,
+        "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
+      },
+      method: "POST",
     },
-    method: "POST",
-  });
+  );
   const responseText = await response.text();
 
   if (!response.ok) {

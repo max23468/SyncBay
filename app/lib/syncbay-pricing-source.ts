@@ -45,7 +45,9 @@ export function buildSnapshotPricingSourcesByItemId(
       ...(snapshot.productStatus !== undefined
         ? { productStatus: snapshot.productStatus }
         : {}),
-      ...(snapshot.quantity !== undefined ? { quantity: snapshot.quantity } : {}),
+      ...(snapshot.quantity !== undefined
+        ? { quantity: snapshot.quantity }
+        : {}),
     });
   }
 
@@ -55,7 +57,8 @@ export function buildSnapshotPricingSourcesByItemId(
 function getSnapshotOriginalPriceAmount(
   snapshot: SyncBaySnapshotPricingSourceInput,
 ) {
-  if (snapshot.source === "EBAY") return normalizeMoneyAmount(snapshot.priceAmount);
+  if (snapshot.source === "EBAY")
+    return normalizeMoneyAmount(snapshot.priceAmount);
 
   return (
     getJsonNumber(

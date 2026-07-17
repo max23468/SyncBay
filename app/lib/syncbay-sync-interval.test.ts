@@ -10,7 +10,10 @@ const { SYNC_TARGET_OPTIONS, getSyncTargetLabel, normalizeSyncTargetSeconds } =
 test("accepts only the allowed sync target values", () => {
   for (const option of SYNC_TARGET_OPTIONS) {
     assert.equal(normalizeSyncTargetSeconds(option.value), option.value);
-    assert.equal(normalizeSyncTargetSeconds(String(option.value)), option.value);
+    assert.equal(
+      normalizeSyncTargetSeconds(String(option.value)),
+      option.value,
+    );
   }
 });
 
@@ -22,7 +25,23 @@ test("accepts the conservative 5-30 minute sync target set", () => {
 });
 
 test("rejects values outside the 5-30 minute set", () => {
-  for (const invalid of [0, 30, 60, 90, 120, 180, 240, 301, 599, 1801, -60, "abc", "", null, undefined]) {
+  for (const invalid of [
+    0,
+    30,
+    60,
+    90,
+    120,
+    180,
+    240,
+    301,
+    599,
+    1801,
+    -60,
+    "abc",
+    "",
+    null,
+    undefined,
+  ]) {
     assert.equal(normalizeSyncTargetSeconds(invalid), null);
   }
 });

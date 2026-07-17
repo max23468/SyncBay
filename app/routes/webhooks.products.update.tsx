@@ -2,7 +2,10 @@ import type { ActionFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import { isTransientWebhookPersistenceError } from "../lib/syncbay-webhook-errors";
-import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
+import {
+  getSyncBayRequestId,
+  logSyncBayRuntimeEvent,
+} from "../lib/syncbay-runtime-log";
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
@@ -24,11 +27,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   } catch (error) {
     if (!isTransientWebhookPersistenceError(error)) {
-      logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "error", requestId, route: "webhooks.products.update", durationMs: Math.round(performance.now() - startedAt), outcome: "failed" });
+      logSyncBayRuntimeEvent({
+        event: "shopify-webhook",
+        level: "error",
+        requestId,
+        route: "webhooks.products.update",
+        durationMs: Math.round(performance.now() - startedAt),
+        outcome: "failed",
+      });
       throw error;
     }
 
-    logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "warn", requestId, route: "webhooks.products.update", durationMs: Math.round(performance.now() - startedAt), outcome: "degraded" });
+    logSyncBayRuntimeEvent({
+      event: "shopify-webhook",
+      level: "warn",
+      requestId,
+      route: "webhooks.products.update",
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: "degraded",
+    });
 
     return new Response(null, {
       headers: {
@@ -39,7 +56,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   }
 
-  logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "info", requestId, route: "webhooks.products.update", durationMs: Math.round(performance.now() - startedAt), outcome: "accepted" });
+  logSyncBayRuntimeEvent({
+    event: "shopify-webhook",
+    level: "info",
+    requestId,
+    route: "webhooks.products.update",
+    durationMs: Math.round(performance.now() - startedAt),
+    outcome: "accepted",
+  });
 
   return new Response();
 };

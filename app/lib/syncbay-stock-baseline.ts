@@ -10,8 +10,7 @@ export function selectLatestStockBaselineSnapshot<
   return (
     [...snapshots]
       .sort(
-        (left, right) =>
-          right.capturedAt.getTime() - left.capturedAt.getTime(),
+        (left, right) => right.capturedAt.getTime() - left.capturedAt.getTime(),
       )
       .find(
         (snapshot) =>

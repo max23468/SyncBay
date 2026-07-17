@@ -2,17 +2,12 @@ import type { ImportPreviewItem } from "../services/import-preview.server";
 // @ts-expect-error Node --experimental-strip-types resolves this pure module import.
 import * as existingCatalogFieldPolicy from "./syncbay-existing-catalog-field-policy.ts";
 import type { ExistingCatalogFieldPolicy } from "./syncbay-existing-catalog-field-policy";
-import type {
-  ExistingProductMatchSuggestion,
-} from "./syncbay-product-matching";
+import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching";
 
 const { buildExistingCatalogFieldPolicy } = existingCatalogFieldPolicy;
 
 export type ExistingCatalogTakeoverStatus =
-  | "applicabile"
-  | "bloccante"
-  | "da_rivedere"
-  | "gia_collegato";
+  "applicabile" | "bloccante" | "da_rivedere" | "gia_collegato";
 
 export type ExistingCatalogTakeoverReason =
   | "categoria_incerta"

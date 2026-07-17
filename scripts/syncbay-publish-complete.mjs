@@ -71,7 +71,12 @@ export function parseRemoteTagSha(lsRemoteOutput) {
 // verrebbe usato com'e' e porterebbe la Release sul commit sbagliato. Il tag
 // remoto e' quello che vince sulla Release, quindi va confrontato anche quando
 // in locale non c'e' nulla.
-export function planTagPublication({ localTagSha, remoteTagSha, mergeSha, tag }) {
+export function planTagPublication({
+  localTagSha,
+  remoteTagSha,
+  mergeSha,
+  tag,
+}) {
   if (remoteTagSha && remoteTagSha !== mergeSha) {
     throw new Error(
       `Il tag ${tag} esiste già su origin sul commit ${remoteTagSha.slice(0, 12)}, diverso dal merge ${mergeSha.slice(0, 12)}. ` +
@@ -121,9 +126,11 @@ async function runCompletePublish(args) {
     throw new Error("PR aperta o appena mergeata non trovata.");
   }
 
-  const changedPaths = (pr.number
-    ? runGh(["pr", "diff", String(pr.number), "--name-only"])
-    : runGit(["diff", "--name-only", "origin/main...HEAD"]))
+  const changedPaths = (
+    pr.number
+      ? runGh(["pr", "diff", String(pr.number), "--name-only"])
+      : runGit(["diff", "--name-only", "origin/main...HEAD"])
+  )
     .split(/\r?\n/)
     .filter(Boolean);
   const currentVersion = readVersionFromSource(
@@ -150,7 +157,14 @@ async function runCompletePublish(args) {
     mergedResume: pr.state === "MERGED",
     releaseAlreadyPublished,
   });
-  const repository = runGh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
+  const repository = runGh([
+    "repo",
+    "view",
+    "--json",
+    "nameWithOwner",
+    "--jq",
+    ".nameWithOwner",
+  ]);
 
   console.log(
     `Pubblicazione completa${pr.number ? ` PR #${pr.number}` : " (dry-run locale)"}: deploy ${plan.deploy ? "sì" : "no"}, release ${plan.release ? plan.tag : "no"}.`,
@@ -189,34 +203,45 @@ async function runCompletePublish(args) {
     await waitForProductionDeployment({ mergeSha, repository });
     runInherited("npm", ["run", "audit:prod"]);
   } else {
-    console.log("Deploy Vercel non applicabile: il diff non modifica il runtime.");
+    console.log(
+      "Deploy Vercel non applicabile: il diff non modifica il runtime.",
+    );
   }
 
   if (plan.release) {
     // Ogni passo e' idempotente: un retry dopo un tag gia' creato o gia' spinto
     // deve arrivare comunque a pubblicare la GitHub Release mancante.
-    const localTagSha = runGit(["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`], {
-      allowFailure: true,
-    });
-    const remoteTagSha = parseRemoteTagSha(
-      runGit(["ls-remote", "--tags", "origin", `refs/tags/${plan.tag}`, `refs/tags/${plan.tag}^{}`]),
+    const localTagSha = runGit(
+      ["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`],
+      {
+        allowFailure: true,
+      },
     );
-    const tagPlan = planTagPublication({ localTagSha, remoteTagSha, mergeSha, tag: plan.tag });
+    const remoteTagSha = parseRemoteTagSha(
+      runGit([
+        "ls-remote",
+        "--tags",
+        "origin",
+        `refs/tags/${plan.tag}`,
+        `refs/tags/${plan.tag}^{}`,
+      ]),
+    );
+    const tagPlan = planTagPublication({
+      localTagSha,
+      remoteTagSha,
+      mergeSha,
+      tag: plan.tag,
+    });
 
     if (tagPlan.createTag) {
-      // Il merge commit lo crea GitHub: senza fetch puo' non esistere ancora in
-      // locale e `git tag` fallirebbe con "fatal: tipo oggetto errato".
-      runInherited("git", ["fetch", "origin", "main"]);
-      try {
-        runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
-      } catch (error) {
-        throw new Error(
-          `${error instanceof Error ? error.message : String(error)} ` +
-            `Il merge ${mergeSha.slice(0, 12)} potrebbe non essere ancora raggiungibile da origin/main: ` +
-            `attendi qualche secondo e ripeti la pubblicazione, il flusso è idempotente.`,
-          { cause: error },
-        );
-      }
+      runInherited("git", [
+        "tag",
+        "-a",
+        plan.tag,
+        mergeSha,
+        "-m",
+        `SyncBay ${currentVersion}`,
+      ]);
     }
     if (tagPlan.pushTag) {
       runInherited("git", ["push", "origin", plan.tag]);
@@ -238,7 +263,9 @@ async function runCompletePublish(args) {
   }
 
   console.log(`Pubblicazione completata su ${mergeSha.slice(0, 12)}.`);
-  console.log("Resta solo il cleanup della worktree locale dal checkout principale.");
+  console.log(
+    "Resta solo il cleanup della worktree locale dal checkout principale.",
+  );
   return { ...plan, mergeSha };
 }
 
@@ -248,10 +275,7 @@ async function waitForProductionDeployment({ mergeSha, repository }) {
 
   while (Date.now() - startedAt < DEPLOY_TIMEOUT_MS) {
     const combinedStatus = JSON.parse(
-      runGh([
-        "api",
-        `repos/${repository}/commits/${mergeSha}/status`,
-      ]) || "{}",
+      runGh(["api", `repos/${repository}/commits/${mergeSha}/status`]) || "{}",
     );
     const vercelStatus = combinedStatus.statuses?.find(
       (status) => status.context === "Vercel",
@@ -281,10 +305,7 @@ function requireCleanBranch() {
 function readPr(selector) {
   const args = ["pr", "view"];
   if (selector) args.push(selector);
-  args.push(
-    "--json",
-    "number,state,title,url,mergeCommit",
-  );
+  args.push("--json", "number,state,title,url,mergeCommit");
   const output = runGh(args, { allowFailure: true });
   return output ? JSON.parse(output) : null;
 }
@@ -298,8 +319,7 @@ function parseArgs(rawArgs) {
       title: { type: "string" },
     },
   });
-  const pr =
-    values.pr === undefined ? null : Number.parseInt(values.pr, 10);
+  const pr = values.pr === undefined ? null : Number.parseInt(values.pr, 10);
   if (values.pr !== undefined && !Number.isInteger(pr)) {
     throw new Error("PR non valida.");
   }
@@ -326,7 +346,9 @@ function runCapture(command, args, { allowFailure = false } = {}) {
   const result = spawnSync(command, args, { encoding: "utf8" });
   if (result.status !== 0) {
     if (allowFailure) return "";
-    throw new Error(result.stderr.trim() || `${command} ${args.join(" ")} non riuscito.`);
+    throw new Error(
+      result.stderr.trim() || `${command} ${args.join(" ")} non riuscito.`,
+    );
   }
   return result.stdout.trim();
 }

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { createShopifyAdminGraphqlClient, getOfflineShopifySessionId } from "./syncbay-shopify-admin.ts";
+import {
+  createShopifyAdminGraphqlClient,
+  getOfflineShopifySessionId,
+} from "./syncbay-shopify-admin.ts";
 
 test("builds the offline Shopify session id used by Shopify apps", () => {
   assert.equal(
@@ -18,17 +21,23 @@ test("creates an Admin GraphQL client backed by the offline access token", async
     fetch: async (input, init) => {
       calls.push({ input, init });
 
-      return new Response(JSON.stringify({ data: { shop: { name: "SyncBay" } } }), {
-        headers: { "Content-Type": "application/json" },
-        status: 200,
-      });
+      return new Response(
+        JSON.stringify({ data: { shop: { name: "SyncBay" } } }),
+        {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        },
+      );
     },
     shopDomain: "fixture-shop.myshopify.com",
   });
 
-  const response = await client.graphql("query Test($id: ID!) { node(id: $id) { id } }", {
-    variables: { id: "gid://shopify/Product/1" },
-  });
+  const response = await client.graphql(
+    "query Test($id: ID!) { node(id: $id) { id } }",
+    {
+      variables: { id: "gid://shopify/Product/1" },
+    },
+  );
 
   assert.equal(response.ok, true);
   assert.equal(
@@ -136,10 +145,7 @@ test("normalizes repeated non-json Admin GraphQL responses", async () => {
 
   assert.equal(response.ok, false);
   assert.equal(response.status, 502);
-  assert.match(
-    json.errors[0].message,
-    /risposta non JSON/,
-  );
+  assert.match(json.errors[0].message, /risposta non JSON/);
 });
 
 test("never exceeds four Admin GraphQL fetch attempts by default", async () => {
@@ -170,7 +176,9 @@ test("stops before the retry delay would exceed the elapsed-time budget", async 
     now: () => elapsed,
     policy: { maxAttempts: 10, maxElapsedMs: 4_000, retryDelayMs: 2_000 },
     shopDomain: "fixture-shop.myshopify.com",
-    sleep: async (ms) => { elapsed += ms; },
+    sleep: async (ms) => {
+      elapsed += ms;
+    },
   });
 
   await client.graphql("query Test { shop { id } }");
@@ -185,14 +193,30 @@ test("uses Shopify throttle status and GraphQL cost in one retry decision", asyn
     accessToken: "shpat_test",
     fetch: async () => {
       calls += 1;
-      return new Response(JSON.stringify(calls === 1 ? {
-        errors: [{ extensions: { code: "THROTTLED" }, message: "Throttled" }],
-        extensions: { cost: { requestedQueryCost: 100, throttleStatus: { currentlyAvailable: 10, restoreRate: 10 } } },
-      } : { data: { ok: true } }), { headers: { "Content-Type": "application/json" } });
+      return new Response(
+        JSON.stringify(
+          calls === 1
+            ? {
+                errors: [
+                  { extensions: { code: "THROTTLED" }, message: "Throttled" },
+                ],
+                extensions: {
+                  cost: {
+                    requestedQueryCost: 100,
+                    throttleStatus: { currentlyAvailable: 10, restoreRate: 10 },
+                  },
+                },
+              }
+            : { data: { ok: true } },
+        ),
+        { headers: { "Content-Type": "application/json" } },
+      );
     },
     policy: { throttleRetryDelayMs: 1 },
     shopDomain: "fixture-shop.myshopify.com",
-    sleep: async (ms) => { delays.push(ms); },
+    sleep: async (ms) => {
+      delays.push(ms);
+    },
   });
 
   await client.graphql("query Test { shop { id } }");

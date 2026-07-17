@@ -1,7 +1,4 @@
-import type {
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "react-router";
+import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, useLoaderData, useSearchParams } from "react-router";
 
 import {
@@ -94,7 +91,8 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   const filter = normalizeCatalogPageFilter(url.searchParams.get("filter"));
   const page = normalizeCatalogPage(url.searchParams.get("page"));
   const search = url.searchParams.get("q") ?? undefined;
-  const sort = order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort"));
+  const sort =
+    order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort"));
   const sortDir =
     order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir"));
 
@@ -135,8 +133,10 @@ export default function CatalogRoute() {
   const [searchParams] = useSearchParams();
   const activeOrder = normalizeCatalogOrder(searchParams.get("order"));
   const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));
-  const activeSort = activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
-  const activeSortDir = activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
+  const activeSort =
+    activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
+  const activeSortDir =
+    activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
   const activeSearch = searchParams.get("q") ?? "";
   const rows = catalog.rows;
   const accessory = getCatalogAccessory(catalog);
@@ -148,39 +148,39 @@ export default function CatalogRoute() {
       </s-badge>
       <s-stack gap="large">
         <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-        >
-          <MetricTile
-            detail="Prodotti eBay collegati a Shopify."
-            icon="product"
-            label="Totale"
-            tone="info"
-            value={formatNumber(catalog.summary.linkedCount)}
-          />
-          <MetricTile
-            detail="Senza conflitti o ritardi evidenti."
-            icon="check-circle"
-            label="Aggiornati"
-            tone="success"
-            value={formatNumber(catalog.summary.freshCount)}
-          />
-          <MetricTile
-            detail="Da controllare prima del prossimo allineamento."
-            icon="alert-triangle"
-            label="Da controllare"
-            tone={catalog.summary.needsCheckCount > 0 ? "warning" : "neutral"}
-            value={formatNumber(catalog.summary.needsCheckCount)}
-          />
-          <MetricTile
-            detail="Listing eBay non più attivo: prodotto in vetrina come esaurito."
-            icon="package"
-            label="Esauriti"
-            tone="neutral"
-            value={formatNumber(catalog.summary.archivedCount)}
-          />
-        </s-grid>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+          >
+            <MetricTile
+              detail="Prodotti eBay collegati a Shopify."
+              icon="product"
+              label="Totale"
+              tone="info"
+              value={formatNumber(catalog.summary.linkedCount)}
+            />
+            <MetricTile
+              detail="Senza conflitti o ritardi evidenti."
+              icon="check-circle"
+              label="Aggiornati"
+              tone="success"
+              value={formatNumber(catalog.summary.freshCount)}
+            />
+            <MetricTile
+              detail="Da controllare prima del prossimo allineamento."
+              icon="alert-triangle"
+              label="Da controllare"
+              tone={catalog.summary.needsCheckCount > 0 ? "warning" : "neutral"}
+              value={formatNumber(catalog.summary.needsCheckCount)}
+            />
+            <MetricTile
+              detail="Listing eBay non più attivo: prodotto in vetrina come esaurito."
+              icon="package"
+              label="Esauriti"
+              tone="neutral"
+              value={formatNumber(catalog.summary.archivedCount)}
+            />
+          </s-grid>
         </div>
 
         <s-section heading="Controllo catalogo">
@@ -196,7 +196,9 @@ export default function CatalogRoute() {
                 <div className="syncbay-table-scroll syncbay-table-wrap">
                   <s-table>
                     <s-table-header-row>
-                      <s-table-header listSlot="kicker">Immagine</s-table-header>
+                      <s-table-header listSlot="kicker">
+                        Immagine
+                      </s-table-header>
                       <SortableHeader
                         activeFilter={activeFilter}
                         activeSearch={activeSearch}
@@ -206,7 +208,9 @@ export default function CatalogRoute() {
                         listSlot="primary"
                         sortKey="product"
                       />
-                      <s-table-header listSlot="inline">Collegamento</s-table-header>
+                      <s-table-header listSlot="inline">
+                        Collegamento
+                      </s-table-header>
                       <s-table-header format="numeric" listSlot="labeled">
                         Disponibilità
                       </s-table-header>
@@ -317,7 +321,9 @@ function CatalogTableRow({
         <s-stack gap="small-200">
           <s-text>{getCatalogAvailabilityLabel(row.availability)}</s-text>
           <s-text color="subdued">
-            {row.quantity === null ? "Quantità non letta" : `${row.quantity} pz`}
+            {row.quantity === null
+              ? "Quantità non letta"
+              : `${row.quantity} pz`}
           </s-text>
         </s-stack>
       </s-table-cell>
@@ -395,7 +401,13 @@ function CatalogViewControls({
             <s-button type="submit">Cerca</s-button>
             {activeSearch ? (
               <s-button
-                href={getCatalogHref(activeFilter, 1, activeSort, activeSortDir, "")}
+                href={getCatalogHref(
+                  activeFilter,
+                  1,
+                  activeSort,
+                  activeSortDir,
+                  "",
+                )}
               >
                 Azzera
               </s-button>
@@ -428,7 +440,9 @@ function CatalogViewControls({
           <s-text color="subdued">Ordine</s-text>
           {CATALOG_ORDER_OPTIONS.map((order) => (
             <s-clickable-chip
-              aria-current={activeOrderValue === order.value ? "page" : undefined}
+              aria-current={
+                activeOrderValue === order.value ? "page" : undefined
+              }
               color={activeOrderValue === order.value ? "strong" : "base"}
               href={getCatalogHref(
                 activeFilter,
@@ -471,7 +485,13 @@ function CatalogPagination({
   return (
     <PaginationNav
       getPageHref={(page) =>
-        getCatalogHref(activeFilter, page, activeSort, activeSortDir, activeSearch)
+        getCatalogHref(
+          activeFilter,
+          page,
+          activeSort,
+          activeSortDir,
+          activeSearch,
+        )
       }
       note={
         pagination.cappedAtMaxProducts
@@ -651,9 +671,7 @@ function getCatalogHref(
 function normalizeCatalogOrder(value: string | null | undefined) {
   if (!value) return null;
 
-  return (
-    CATALOG_ORDER_OPTIONS.find((option) => option.value === value) ?? null
-  );
+  return CATALOG_ORDER_OPTIONS.find((option) => option.value === value) ?? null;
 }
 
 function getCatalogOrderValue(
@@ -714,7 +732,9 @@ function getCurrencyPriceFormat(currency: string) {
   return format;
 }
 
-function formatPrice(price: { amount: string; currency: string | null } | null) {
+function formatPrice(
+  price: { amount: string; currency: string | null } | null,
+) {
   if (!price) return "Non letto";
 
   const amount = Number(price.amount);

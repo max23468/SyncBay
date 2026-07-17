@@ -1,7 +1,4 @@
-import {
-  SYNCBAY_BRAND_ASSETS,
-  SYNCBAY_TAGLINE,
-} from "../lib/syncbay-brand";
+import { SYNCBAY_BRAND_ASSETS, SYNCBAY_TAGLINE } from "../lib/syncbay-brand";
 
 type SyncBayBrandPanelProps = {
   detail: string;

@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { readFreshThumbnailCacheEntries, writeThumbnailCacheEntries } from "./syncbay-thumbnail-cache.ts";
+import {
+  readFreshThumbnailCacheEntries,
+  writeThumbnailCacheEntries,
+} from "./syncbay-thumbnail-cache.ts";
 
 test("returns fresh thumbnail cache hits and misses", () => {
   const cache = new Map();
@@ -38,10 +41,9 @@ test("returns fresh thumbnail cache hits and misses", () => {
 
 test("caches misses so repeated page loads avoid immediate fallback queries", () => {
   const cache = new Map();
-  const values = new Map([[
-    "gid://shopify/Product/1",
-    "https://cdn.shopify.example/1.jpg",
-  ]]);
+  const values = new Map([
+    ["gid://shopify/Product/1", "https://cdn.shopify.example/1.jpg"],
+  ]);
 
   writeThumbnailCacheEntries({
     cache,

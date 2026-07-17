@@ -58,8 +58,8 @@ test("isolated UI env excludes every provider and database sentinel", () => {
 });
 
 test("import fixture carries real field policies for every takeover row", () => {
-  const report = getImportPreviewFixture().wizard.previewResult
-    .existingCatalogTakeover;
+  const report =
+    getImportPreviewFixture().wizard.previewResult.existingCatalogTakeover;
 
   assert.ok(report);
   assert.equal(report.rows.length, 3);
@@ -93,12 +93,24 @@ test("every healthy page fixture renders at least one balanced box grid", () => 
   for (const page of UI_PAGES) {
     const result = spawnSync(
       process.execPath,
-      ["--import", "tsx", "scripts/syncbay-ui-render.mjs", page, "--fixture", "--hydrate", "--state=healthy"],
+      [
+        "--import",
+        "tsx",
+        "scripts/syncbay-ui-render.mjs",
+        page,
+        "--fixture",
+        "--hydrate",
+        "--state=healthy",
+      ],
       { encoding: "utf8", env: buildIsolatedUiEnv(contaminatedEnv) },
     );
     assert.equal(result.status, 0, result.stderr);
     const outputPath = result.stdout.trim().split("\n").at(-1);
     assert.ok(outputPath);
-    assert.match(readFileSync(outputPath, "utf8"), /syncbay-balanced-box-grid/u, page);
+    assert.match(
+      readFileSync(outputPath, "utf8"),
+      /syncbay-balanced-box-grid/u,
+      page,
+    );
   }
 });

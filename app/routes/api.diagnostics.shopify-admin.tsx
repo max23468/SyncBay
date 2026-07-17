@@ -130,9 +130,9 @@ function normalizeDiagnosticsProductInput(
 function hasGraphqlErrors(payload: unknown) {
   return Boolean(
     payload &&
-      typeof payload === "object" &&
-      "errors" in payload &&
-      Array.isArray(payload.errors) &&
-      payload.errors.length > 0,
+    typeof payload === "object" &&
+    "errors" in payload &&
+    Array.isArray(payload.errors) &&
+    payload.errors.length > 0,
   );
 }

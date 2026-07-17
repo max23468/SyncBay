@@ -294,7 +294,7 @@ Copertura attuale della preview live:
   confronta un campione dell'ultima run tra snapshot eBay/SyncBay, mapping e
   prodotti Shopify live.
 - `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com>
-  --sample 20` misura su listing eBay reali la pulizia descrizioni prima
+--sample 20` misura su listing eBay reali la pulizia descrizioni prima
   dell'import, riportando caratteri rimossi, segnali template e brevi estratti
   testuali.
 

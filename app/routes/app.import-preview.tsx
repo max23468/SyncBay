@@ -51,10 +51,7 @@ import {
   windowImportPreviewResult,
   type ImportPreviewWindowFilter,
 } from "../lib/syncbay-import-preview-window";
-import {
-  getPageWindow,
-  normalizePage,
-} from "../lib/syncbay-pagination";
+import { getPageWindow, normalizePage } from "../lib/syncbay-pagination";
 import { isLiveImportPreviewStepComplete } from "../lib/syncbay-import-preview-stepper";
 import { computeSequentialStepStatuses } from "../lib/syncbay-import-step-status";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
@@ -69,9 +66,7 @@ import {
   renameShopifyLocation,
   type ShopifyLocationRenameStatus,
 } from "../services/shopify-location.server";
-import {
-  type ShopifyDraftImportStatus,
-} from "../services/shopify-draft-import.server";
+import { type ShopifyDraftImportStatus } from "../services/shopify-draft-import.server";
 import {
   getImportWizardState,
   recordShopifyLocationRenamed,
@@ -140,7 +135,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     authenticate.admin(request),
   );
   const [locationResult, wizard] = await Promise.all([
-    trace.measure("import.shopify.locations", () => fetchShopifyLocations(admin)),
+    trace.measure("import.shopify.locations", () =>
+      fetchShopifyLocations(admin),
+    ),
     trace.measure("import.wizard", () =>
       getImportWizardState(session, admin, trace, {
         catalogMode,
@@ -217,7 +214,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const result = await startCatalogImportJobs(session);
 
     return Response.json({
-      count: result.status === "queued" ? result.plannedListingCount : undefined,
+      count:
+        result.status === "queued" ? result.plannedListingCount : undefined,
       draftStatus: result.status,
       intent,
       jobCount: result.status === "queued" ? result.batchCount : undefined,
@@ -241,9 +239,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return Response.json(
       {
         count:
-          result.status === "queued"
-            ? result.plannedListingCount
-            : undefined,
+          result.status === "queued" ? result.plannedListingCount : undefined,
         intent,
         jobCount: result.status === "queued" ? result.batchCount : undefined,
         message:
@@ -421,7 +417,9 @@ export default function ImportPreview() {
 
   return (
     <s-page heading="Importazione" inlineSize="large">
-      <s-badge slot="accessory" tone="info">Anteprima prima</s-badge>
+      <s-badge slot="accessory" tone="info">
+        Anteprima prima
+      </s-badge>
       <ol className="syncbay-stepper">
         <Step
           index={1}
@@ -582,19 +580,29 @@ function PreparationSection({
       {wizard.ebay.status === "CONNECTED" ? (
         <details className="syncbay-details">
           <summary>Gestisci collegamento</summary>
-          {ebayAction.href ? <s-button href={ebayAction.href} target={ebayAction.target}>{ebayAction.label}</s-button> : null}
+          {ebayAction.href ? (
+            <s-button href={ebayAction.href} target={ebayAction.target}>
+              {ebayAction.label}
+            </s-button>
+          ) : null}
         </details>
       ) : (
         <s-stack direction="inline" gap="small-200">
-          {ebayAction.href ? <s-button href={ebayAction.href} target={ebayAction.target} variant={ebayAction.variant}>{ebayAction.label}</s-button> : null}
+          {ebayAction.href ? (
+            <s-button
+              href={ebayAction.href}
+              target={ebayAction.target}
+              variant={ebayAction.variant}
+            >
+              {ebayAction.label}
+            </s-button>
+          ) : null}
         </s-stack>
       )}
       {ebayAction.blockerText ? (
         <s-text color="subdued">{ebayAction.blockerText}</s-text>
       ) : null}
-      <s-text color="subdued">
-        {getPreviewIntro(previewSource.source)}
-      </s-text>
+      <s-text color="subdued">{getPreviewIntro(previewSource.source)}</s-text>
       {searchParams.get("updated") === "location" ? (
         <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
       ) : null}
@@ -779,8 +787,8 @@ function LocationRenameForm({
         {!canWriteLocations ? (
           <>
             <s-paragraph>
-              Apri di nuovo SyncBay da Shopify Admin per autorizzare la
-              modifica del nome location.
+              Apri di nuovo SyncBay da Shopify Admin per autorizzare la modifica
+              del nome location.
             </s-paragraph>
             <details className="syncbay-row-details">
               <summary>Dettagli tecnici</summary>
@@ -838,43 +846,43 @@ function PreviewStatusSection({
         </s-paragraph>
       ) : null}
       <div className="syncbay-balanced-box-grid">
-      <s-grid
-        gap="base"
-        gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-      >
-        <MetricTile
-          detail={previewReadLabel}
-          icon="import"
-          label="Letti da eBay"
-          tone="info"
-          value={formatNumber(wizard.previewSource.readCount)}
-        />
-        <MetricTile
-          detail="Prodotti in anteprima."
-          icon="package"
-          label="Totale"
-          tone="neutral"
-          value={formatNumber(wizard.previewResult.summary.totalCount)}
-        />
-        <MetricTile
-          detail="Pronti per il primo import."
-          icon="check-circle"
-          label="Importabili"
-          tone={
-            wizard.previewResult.summary.importableCount > 0
-              ? "success"
-              : "neutral"
-          }
-          value={formatNumber(wizard.previewResult.summary.importableCount)}
-        />
-        <MetricTile
-          detail="Da correggere o saltare."
-          icon="alert-triangle"
-          label="Errori"
-          tone={errorCount > 0 ? "critical" : "neutral"}
-          value={formatNumber(errorCount)}
-        />
-      </s-grid>
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        >
+          <MetricTile
+            detail={previewReadLabel}
+            icon="import"
+            label="Letti da eBay"
+            tone="info"
+            value={formatNumber(wizard.previewSource.readCount)}
+          />
+          <MetricTile
+            detail="Prodotti in anteprima."
+            icon="package"
+            label="Totale"
+            tone="neutral"
+            value={formatNumber(wizard.previewResult.summary.totalCount)}
+          />
+          <MetricTile
+            detail="Pronti per il primo import."
+            icon="check-circle"
+            label="Importabili"
+            tone={
+              wizard.previewResult.summary.importableCount > 0
+                ? "success"
+                : "neutral"
+            }
+            value={formatNumber(wizard.previewResult.summary.importableCount)}
+          />
+          <MetricTile
+            detail="Da correggere o saltare."
+            icon="alert-triangle"
+            label="Errori"
+            tone={errorCount > 0 ? "critical" : "neutral"}
+            value={formatNumber(errorCount)}
+          />
+        </s-grid>
       </div>
       {wizard.previewResult.existingCatalogTakeover ? (
         <ExistingCatalogTakeoverSection
@@ -967,7 +975,12 @@ function PreviewExamplesSection({
           />
         </>
       ) : (
-        <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-box
+          border="base"
+          borderColor="base"
+          borderRadius="base"
+          padding="base"
+        >
           <s-stack gap="base">
             <s-heading>Nessun elemento in questa vista</s-heading>
             <s-text>
@@ -1091,9 +1104,9 @@ function DescriptionPreviewDetails({
       </summary>
       <s-stack gap="small-200">
         <s-text color="subdued">
-          Prima: {formatNumber(description.descriptionOriginalLength)} caratteri.
-          Dopo: {formatNumber(description.descriptionCleanedLength)} caratteri.
-          Segnali template:{" "}
+          Prima: {formatNumber(description.descriptionOriginalLength)}{" "}
+          caratteri. Dopo: {formatNumber(description.descriptionCleanedLength)}{" "}
+          caratteri. Segnali template:{" "}
           {formatNumber(description.descriptionTemplateSignalCount)}.
         </s-text>
         {description.descriptionOriginalTextExcerpt ? (
@@ -1102,9 +1115,7 @@ function DescriptionPreviewDetails({
           </s-text>
         ) : null}
         {description.descriptionCleanedTextExcerpt ? (
-          <s-text>
-            Preview: {description.descriptionCleanedTextExcerpt}
-          </s-text>
+          <s-text>Preview: {description.descriptionCleanedTextExcerpt}</s-text>
         ) : null}
       </s-stack>
     </details>
@@ -1150,12 +1161,21 @@ function ImportPreviewFilterNav({
 }) {
   return (
     <div className="syncbay-filter-nav">
-      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+      <s-stack
+        direction="inline"
+        gap="small-200"
+        accessibilityRole="navigation"
+      >
         {IMPORT_PREVIEW_FILTERS.map((filter) => (
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}
             color={activeFilter === filter.value ? "strong" : "base"}
-            href={getImportPreviewHref(filter.value, 1, catalogMode, previewMode)}
+            href={getImportPreviewHref(
+              filter.value,
+              1,
+              catalogMode,
+              previewMode,
+            )}
             key={filter.value}
           >
             {filter.label}

@@ -312,7 +312,10 @@ function printReport(report) {
     console.log(
       "Prossimo passo: chiudi i conflitti dei mapping inattivi dalla pagina Conflitti.",
     );
-  } else if (report.staleOpenConflictCount > 0 || report.cooldownRows.length > 0) {
+  } else if (
+    report.staleOpenConflictCount > 0 ||
+    report.cooldownRows.length > 0
+  ) {
     console.log(
       "Prossimo passo: attendi il cooldown provider oppure risolvi i conflitti aperti dalla pagina Conflitti.",
     );

@@ -84,7 +84,7 @@ Regole principali:
 - "oro" o "argento" non bastano per classificare una moneta come bullion;
 - le monete restano sulla categoria Shopify neutra `Collectible Coins`; il
   dettaglio commerciale vive nel `productType` (`Monete italiane`, `Monete
-  commemorative`, `Monete bullion`) per evitare classificazioni troppo strette
+commemorative`, `Monete bullion`) per evitare classificazioni troppo strette
   o fuorvianti come `Rare Coins`, `Commemorative Coins` o `Bullion Coins`;
 - "bullion", "commemorative", "FDC" o segnali simili specializzano il
   `productType`, non la categoria Shopify, salvo evidenze future più affidabili;

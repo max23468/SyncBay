@@ -17,11 +17,7 @@ import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import type { ImportStepStatus } from "../lib/syncbay-import-step-status";
 
 export type SyncBayTone =
-  | "neutral"
-  | "info"
-  | "success"
-  | "warning"
-  | "critical";
+  "neutral" | "info" | "success" | "warning" | "critical";
 
 // Sottoinsieme dell'icon set Polaris effettivamente usato nelle sei superfici.
 export type SyncBayIcon =
@@ -46,11 +42,7 @@ type MetricTrend = {
   tone: "up" | "watch" | "neutral";
 };
 
-export type SyncBayNavigationTarget =
-  | "_blank"
-  | "_parent"
-  | "_self"
-  | "_top";
+export type SyncBayNavigationTarget = "_blank" | "_parent" | "_self" | "_top";
 
 type MetricTileProps = {
   detail?: string;
@@ -84,7 +76,9 @@ export function MetricTile({
           trend.tone === "neutral" ? (
             <s-text color="subdued">{trend.label}</s-text>
           ) : (
-            <span className={`syncbay-tile__trend syncbay-tile__trend--${trend.tone}`}>
+            <span
+              className={`syncbay-tile__trend syncbay-tile__trend--${trend.tone}`}
+            >
               {trend.label}
             </span>
           )
@@ -186,7 +180,9 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
   const count = values.length;
   const point = (value: number, index: number) => {
     const x =
-      count <= 1 ? width - pad : (index / (count - 1)) * (width - pad * 2) + pad;
+      count <= 1
+        ? width - pad
+        : (index / (count - 1)) * (width - pad * 2) + pad;
     const y = height - pad - (value / max) * (height - pad * 2);
 
     return { x, y };
@@ -226,7 +222,9 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
           y2={height / 2}
         />
       )}
-      {last ? <circle cx={last.x} cy={last.y} fill="var(--syncbay-accent)" r="3" /> : null}
+      {last ? (
+        <circle cx={last.x} cy={last.y} fill="var(--syncbay-accent)" r="3" />
+      ) : null}
     </svg>
   );
 }
@@ -260,7 +258,9 @@ export function RiskLens({ actions, body, title, tone }: RiskLensProps) {
         <s-heading>{title}</s-heading>
         <s-text color="subdued">{body}</s-text>
       </span>
-      {actions ? <span className="syncbay-risk__actions">{actions}</span> : null}
+      {actions ? (
+        <span className="syncbay-risk__actions">{actions}</span>
+      ) : null}
     </div>
   );
 }
@@ -289,7 +289,11 @@ export function Step({
   title,
 }: StepProps) {
   const tone: SyncBayTone =
-    status === "completed" ? "success" : status === "active" ? "info" : "neutral";
+    status === "completed"
+      ? "success"
+      : status === "active"
+        ? "info"
+        : "neutral";
 
   return (
     <li className={`syncbay-step syncbay-step--${status}`}>
@@ -471,7 +475,13 @@ type StatusRowProps = {
  * dettaglio e badge di esito, con icona opzionale. Consolida le tre copie
  * hand-rolled per superficie. Vedi ADR 0010.
  */
-export function StatusRow({ detail, icon, label, title, tone }: StatusRowProps) {
+export function StatusRow({
+  detail,
+  icon,
+  label,
+  title,
+  tone,
+}: StatusRowProps) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
       <s-stack
@@ -566,7 +576,9 @@ export function PaginationNav({
           {formatNumber(pagination.totalPages)}
         </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getPageHref(pagination.nextPage)}>Successiva</s-button>
+          <s-button href={getPageHref(pagination.nextPage)}>
+            Successiva
+          </s-button>
         ) : null}
       </s-stack>
     </s-stack>

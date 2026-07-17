@@ -22,11 +22,15 @@ test("builds existing catalog previews without fetching every item detail", asyn
     }
 
     if (callName === "GetItem") {
-      const itemId = String(init?.body ?? "").match(/<ItemID>([^<]+)<\/ItemID>/)?.[1];
+      const itemId = String(init?.body ?? "").match(
+        /<ItemID>([^<]+)<\/ItemID>/,
+      )?.[1];
       return xmlResponse(buildGetItemResponse(itemId ?? "missing"));
     }
 
-    return xmlResponse("<UnsupportedResponse><Ack>Failure</Ack></UnsupportedResponse>");
+    return xmlResponse(
+      "<UnsupportedResponse><Ack>Failure</Ack></UnsupportedResponse>",
+    );
   };
 
   try {

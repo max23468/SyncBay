@@ -51,7 +51,11 @@ test("adds inventory guard only to conjunctive specific automatic collections", 
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "TYPE", relation: "CONTAINS", condition: "Cataloghi e accessori" },
+            {
+              column: "TYPE",
+              relation: "CONTAINS",
+              condition: "Cataloghi e accessori",
+            },
           ],
         },
         title: "Cataloghi accessori",
@@ -65,7 +69,11 @@ test("adds inventory guard only to conjunctive specific automatic collections", 
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [
-      { column: "TYPE", relation: "CONTAINS", condition: "Cataloghi e accessori" },
+      {
+        column: "TYPE",
+        relation: "CONTAINS",
+        condition: "Cataloghi e accessori",
+      },
       { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
     ],
   });
@@ -90,7 +98,11 @@ test("proposes title-based rules with inventory guard for a title intent", () =>
           rules: [
             { column: "TITLE", relation: "CONTAINS", condition: "capsul" },
             { column: "TITLE", relation: "CONTAINS", condition: "masterphil" },
-            { column: "TITLE", relation: "CONTAINS", condition: "raccoglitore" },
+            {
+              column: "TITLE",
+              relation: "CONTAINS",
+              condition: "raccoglitore",
+            },
           ],
         },
         title: "Accessori numismatici",
@@ -129,7 +141,11 @@ test("does not propose changes for generic collections", () => {
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+            {
+              column: "VARIANT_INVENTORY",
+              relation: "GREATER_THAN",
+              condition: "0",
+            },
           ],
         },
         title: "Negozio Online",
@@ -160,7 +176,11 @@ test("does not propose a no-op when the live rule already matches the intent reg
           // Shopify returns rule fields as column/relation/condition.
           rules: [
             { column: "TYPE", relation: "CONTAINS", condition: "Francobolli" },
-            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+            {
+              column: "VARIANT_INVENTORY",
+              relation: "GREATER_THAN",
+              condition: "0",
+            },
           ],
         },
         title: "Francobolli",
@@ -189,8 +209,16 @@ test("uses product type rules from explicit collection intent", () => {
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "TYPE", relation: "CONTAINS", condition: "Monete e banconote:Banconote" },
-            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+            {
+              column: "TYPE",
+              relation: "CONTAINS",
+              condition: "Monete e banconote:Banconote",
+            },
+            {
+              column: "VARIANT_INVENTORY",
+              relation: "GREATER_THAN",
+              condition: "0",
+            },
           ],
         },
         title: "Banconote",
@@ -199,7 +227,10 @@ test("uses product type rules from explicit collection intent", () => {
   });
 
   assert.equal(review.proposals.length, 1);
-  assert.equal(review.proposals[0]?.reason, "configured_product_type_alignment");
+  assert.equal(
+    review.proposals[0]?.reason,
+    "configured_product_type_alignment",
+  );
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [

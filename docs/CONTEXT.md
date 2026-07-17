@@ -58,13 +58,13 @@ Le priorità operative dettagliate vivono esclusivamente in
 
 ## Dove approfondire
 
-| Tema | Fonte |
-| --- | --- |
-| Architettura e runtime | [`guides/architettura.md`](guides/architettura.md) |
-| Import e onboarding | [`guides/onboarding-e-import.md`](guides/onboarding-e-import.md) |
-| Sync, stock e conflitti | [`guides/sync-engine.md`](guides/sync-engine.md) |
-| Provisioning provider | [`guides/provisioning-runtime.md`](guides/provisioning-runtime.md) |
-| Comandi e verifiche | [`TOOLCHAIN.md`](TOOLCHAIN.md) |
-| Decisioni stabili | [`DECISIONS.md`](DECISIONS.md) |
-| Decisioni aperte | [`DECISIONS_PENDING.md`](DECISIONS_PENDING.md) |
-| Git, publish e release | [`guides/git-e-pubblicazione.md`](guides/git-e-pubblicazione.md) |
+| Tema                    | Fonte                                                              |
+| ----------------------- | ------------------------------------------------------------------ |
+| Architettura e runtime  | [`guides/architettura.md`](guides/architettura.md)                 |
+| Import e onboarding     | [`guides/onboarding-e-import.md`](guides/onboarding-e-import.md)   |
+| Sync, stock e conflitti | [`guides/sync-engine.md`](guides/sync-engine.md)                   |
+| Provisioning provider   | [`guides/provisioning-runtime.md`](guides/provisioning-runtime.md) |
+| Comandi e verifiche     | [`TOOLCHAIN.md`](TOOLCHAIN.md)                                     |
+| Decisioni stabili       | [`DECISIONS.md`](DECISIONS.md)                                     |
+| Decisioni aperte        | [`DECISIONS_PENDING.md`](DECISIONS_PENDING.md)                     |
+| Git, publish e release  | [`guides/git-e-pubblicazione.md`](guides/git-e-pubblicazione.md)   |

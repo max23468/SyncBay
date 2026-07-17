@@ -22,9 +22,10 @@ test("flags available products that only belong to generic collections", () => {
   });
 
   assert.equal(report.summary.availableOnlyGeneric, 1);
-  assert.deepEqual(report.availableOnlyGeneric.map((row) => row.handle), [
-    "syncbay-ebay-1",
-  ]);
+  assert.deepEqual(
+    report.availableOnlyGeneric.map((row) => row.handle),
+    ["syncbay-ebay-1"],
+  );
 });
 
 test("flags unavailable products that remain in specific collections", () => {

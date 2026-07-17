@@ -42,7 +42,9 @@ export async function processEbayAccountDeletionNotification(input: {
     body: input.body,
     signatureHeader: input.signatureHeader,
   });
-  const notification = parseAccountDeletionNotification(input.body.toString("utf8"));
+  const notification = parseAccountDeletionNotification(
+    input.body.toString("utf8"),
+  );
   const hashedUserId = hashSecretIdentifier(
     notification.userId,
     "ebay-account-deletion-user-id",
@@ -88,7 +90,9 @@ export async function processEbayAccountDeletionNotification(input: {
     },
   });
   const connectionIds = connections.map((connection) => connection.id);
-  const shopIds = [...new Set(connections.map((connection) => connection.shopId))];
+  const shopIds = [
+    ...new Set(connections.map((connection) => connection.shopId)),
+  ];
   const matchedShopCount = shopIds.length;
   const status =
     matchedShopCount > 0
@@ -203,7 +207,9 @@ async function findProcessedDuplicateAccountDeletionRequest(input: {
   });
 }
 
-function parseAccountDeletionNotification(body: string): AccountDeletionNotification {
+function parseAccountDeletionNotification(
+  body: string,
+): AccountDeletionNotification {
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
@@ -348,7 +354,9 @@ async function purgeEbayDataForShops(
 }
 
 function getObject(value: unknown) {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+  return value && typeof value === "object"
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 function getString(value: unknown) {

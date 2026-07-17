@@ -350,10 +350,10 @@ test("serializes product facets as Shopify metafields without audit labels", () 
     ]),
     [
       {
-          key: "materiale",
-          namespace: "syncbay_facets",
-          type: "list.single_line_text_field",
-          value: JSON.stringify(["Argento"]),
+        key: "materiale",
+        namespace: "syncbay_facets",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Argento"]),
       },
     ],
   );

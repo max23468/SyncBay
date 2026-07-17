@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildCatalogReconcilePlan, isCatalogReconcileScanComplete } from "./syncbay-catalog-reconcile.ts";
+import {
+  buildCatalogReconcilePlan,
+  isCatalogReconcileScanComplete,
+} from "./syncbay-catalog-reconcile.ts";
 
 test("plans active eBay item ids in stable batches", () => {
   assert.deepEqual(
@@ -14,10 +17,7 @@ test("plans active eBay item ids in stable batches", () => {
     }),
     {
       inactiveEbayItemIds: [],
-      syncBatches: [
-        ["3", "1"],
-        ["2"],
-      ],
+      syncBatches: [["3", "1"], ["2"]],
     },
   );
 });

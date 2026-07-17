@@ -73,7 +73,7 @@ Il parser titolo è limitato a segnali espliciti:
 - perizia: `Perizia`, `Periziata`, `Periziato`, `Certificata`,
   `Certificato`, `Cartellino`;
 - area/stato: alcuni valori ricorrenti del catalogo pilota, come `Italia -
-  Repubblica`, `Italia - Regno`, `Vaticano`, `Stato Pontificio`, `Germania`,
+Repubblica`, `Italia - Regno`, `Vaticano`, `Stato Pontificio`, `Germania`,
   `Regno Unito`, `Francia`, `San Marino`, `Stati Uniti`;
 - categoria fallback: `Medaglie`, `Banconote`, `Francobolli`,
   `Divisionali e serie`, `Monete`.

@@ -1,9 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
-import {
-  createEbayAuthorizationRedirect,
-} from "../services/ebay.server";
+import { createEbayAuthorizationRedirect } from "../services/ebay.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { redirect, session } = await authenticate.admin(request);

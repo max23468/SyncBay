@@ -1,6 +1,4 @@
-import {
-  runCatalogImportJobLifecycle,
-} from "../lib/syncbay-catalog-import-execution";
+import { runCatalogImportJobLifecycle } from "../lib/syncbay-catalog-import-execution";
 import {
   AuditEventType,
   EbayConnection,
@@ -278,7 +276,10 @@ export async function runDueSyncJobs(
       schedulableDueByType[lane] = 0;
     }
   }
-  const lanePlan = buildRunnerLanePlan({ dueByType: schedulableDueByType, limit });
+  const lanePlan = buildRunnerLanePlan({
+    dueByType: schedulableDueByType,
+    limit,
+  });
   const jobs = await findDueSyncJobsByPriority({ lanePlan, now });
   const results = new Array<DueSyncJobRunResult>(jobs.length);
   const runnableJobsByShop = new Map<string, DueSyncJobRunQueueItem[]>();
@@ -609,7 +610,9 @@ async function recoverStaleRunningSyncJobsForDueShops(input: {
   );
 }
 
-async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) {
+async function archiveSupersededFailedIncrementalSyncJobs(input: {
+  now: Date;
+}) {
   const failedJobShops = await prisma.syncJob.findMany({
     distinct: ["shopId"],
     select: { shopId: true },
@@ -1033,9 +1036,12 @@ async function cancelCatalogReconcileRuns(input: {
       },
     },
   });
-  const supersededJobIds = input.mode === "before_new_run"
-    ? getCatalogReconcileJobIdsToCancelBeforeNewRun({ jobs: openReconcileJobs })
-    : getSupersededCatalogReconcileJobIds({ jobs: openReconcileJobs });
+  const supersededJobIds =
+    input.mode === "before_new_run"
+      ? getCatalogReconcileJobIdsToCancelBeforeNewRun({
+          jobs: openReconcileJobs,
+        })
+      : getSupersededCatalogReconcileJobIds({ jobs: openReconcileJobs });
 
   if (supersededJobIds.length === 0) return;
 
@@ -1205,23 +1211,23 @@ async function enqueueFacetBackfillJobsIfNeeded(input: {
 
   const result = await prisma.syncJob.createMany({
     data: jobsToCreate.map(({ batch, batchIndex }) => ({
-        idempotencyKey: `facet-backfill:${runId}:${batchIndex}`,
-        maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
-        payload: {
-          batchCount: batches.length,
-          batchIndex,
-          ebayItemIds: batch,
-          facetBackfillRunId: runId,
-          facetBackfillVersion: version,
-          facetOnly: true,
-          marketplaceId: DEFAULT_MARKETPLACE_ID,
-          source: "facet_backfill",
-        } satisfies Prisma.JsonObject,
-        runAfter: input.now,
-        shopId: input.shopId,
-        status: SyncJobStatus.PENDING,
-        type: SyncJobType.SYNC_INCREMENTAL,
-      })),
+      idempotencyKey: `facet-backfill:${runId}:${batchIndex}`,
+      maxAttempts: INCREMENTAL_SYNC_MAX_ATTEMPTS,
+      payload: {
+        batchCount: batches.length,
+        batchIndex,
+        ebayItemIds: batch,
+        facetBackfillRunId: runId,
+        facetBackfillVersion: version,
+        facetOnly: true,
+        marketplaceId: DEFAULT_MARKETPLACE_ID,
+        source: "facet_backfill",
+      } satisfies Prisma.JsonObject,
+      runAfter: input.now,
+      shopId: input.shopId,
+      status: SyncJobStatus.PENDING,
+      type: SyncJobType.SYNC_INCREMENTAL,
+    })),
     skipDuplicates: true,
   });
 
@@ -1453,8 +1459,7 @@ async function recoverStaleRunningSyncJobs(
           runnerErrorCode: STALE_RUNNING_SYNC_JOB_ERROR_CODE,
           staleAfterSeconds: RUNNING_SYNC_JOB_STALE_AFTER_MS / 1000,
         } satisfies Prisma.JsonObject,
-        message:
-          "Job SyncBay RUNNING stantii recuperati dal runner.",
+        message: "Job SyncBay RUNNING stantii recuperati dal runner.",
         shopId: input.shopId,
         type: AuditEventType.SYNC_JOB_FAILED,
       },
@@ -1740,7 +1745,8 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   const interruptedJobBeforeConflictProbe =
     await getInterruptedRunningSyncJobResult(job);
-  if (interruptedJobBeforeConflictProbe) return interruptedJobBeforeConflictProbe;
+  if (interruptedJobBeforeConflictProbe)
+    return interruptedJobBeforeConflictProbe;
 
   const alignedDescriptionConflicts =
     await resolveLiveAlignedDescriptionConflicts({
@@ -1910,53 +1916,54 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const interruptedJobBeforeProvider =
-    await getInterruptedRunningSyncJobResult(input.job);
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(
+    input.job,
+  );
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, previewResult, pricingRule, mappings, snapshots] =
     await Promise.all([
-    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
-    getIncrementalPreviewResult(input.job, input.syncableItemIds),
-    getPricingRuleForShopId(input.job.shopId),
-    prisma.productMapping.findMany({
-      select: {
-        ebayItemId: true,
-        id: true,
-        shopifyProductGid: true,
-        shopifyVariantGid: true,
-        sku: true,
-      },
-      where: {
-        ebayItemId: { in: input.syncableItemIds },
-        marketplaceId: getEbayMarketplaceId(input.job.payload),
-        shopId: input.job.shopId,
-      },
-    }),
-    prisma.productSnapshot.findMany({
-      orderBy: { capturedAt: "desc" },
-      select: {
-        capturedAt: true,
-        currency: true,
-        ebayItemId: true,
-        payload: true,
-        priceAmount: true,
-        productStatus: true,
-        quantity: true,
-        sku: true,
-        source: true,
-        title: true,
-      },
-      where: {
-        ebayItemId: { in: input.syncableItemIds },
-        priceAmount: { not: null },
-        shopId: input.job.shopId,
-        source: {
-          in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY],
+      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+      getIncrementalPreviewResult(input.job, input.syncableItemIds),
+      getPricingRuleForShopId(input.job.shopId),
+      prisma.productMapping.findMany({
+        select: {
+          ebayItemId: true,
+          id: true,
+          shopifyProductGid: true,
+          shopifyVariantGid: true,
+          sku: true,
         },
-      },
-    }),
-  ]);
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          marketplaceId: getEbayMarketplaceId(input.job.payload),
+          shopId: input.job.shopId,
+        },
+      }),
+      prisma.productSnapshot.findMany({
+        orderBy: { capturedAt: "desc" },
+        select: {
+          capturedAt: true,
+          currency: true,
+          ebayItemId: true,
+          payload: true,
+          priceAmount: true,
+          productStatus: true,
+          quantity: true,
+          sku: true,
+          source: true,
+          title: true,
+        },
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          priceAmount: { not: null },
+          shopId: input.job.shopId,
+          source: {
+            in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY],
+          },
+        },
+      }),
+    ]);
   const previewItemsById = new Map(
     filterPreviewResultByItemIds(
       previewResult,
@@ -2062,7 +2069,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
 
     const interruptedJobBeforePricingWrite =
       await getInterruptedRunningSyncJobResult(input.job);
-    if (interruptedJobBeforePricingWrite) return interruptedJobBeforePricingWrite;
+    if (interruptedJobBeforePricingWrite)
+      return interruptedJobBeforePricingWrite;
 
     const updateResult = await updateShopifyVariantPricingOnly(admin, {
       compareAtPrice,
@@ -2136,7 +2144,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     result: {
       alignedDescriptionConflictResolvedCount:
         input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
+      alignedPriceConflictResolvedCount:
+        input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       pricingOnly: true,
       reactivationConflictResolvedCount:
@@ -2151,9 +2160,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     },
     warnings:
       skipped.length > 0
-        ? [
-            `Sync prezzo completato con ${skipped.length} prodotti saltati.`,
-          ]
+        ? [`Sync prezzo completato con ${skipped.length} prodotti saltati.`]
         : [],
   });
   await maybeMarkSellerEventsRunWatermarkSucceeded(input.job);
@@ -2175,8 +2182,9 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const interruptedJobBeforeProvider =
-    await getInterruptedRunningSyncJobResult(input.job);
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(
+    input.job,
+  );
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] =
@@ -2370,14 +2378,16 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     result: {
       alignedDescriptionConflictResolvedCount:
         input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
+      alignedPriceConflictResolvedCount:
+        input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       facetConflictCount,
       facetDeletedCount,
       facetOnly: true,
       facetSkippedCount,
       facetWrittenCount,
-      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
+      reactivationConflictResolvedCount:
+        input.reactivationConflictResolvedCount,
       requestedCount: input.requestedItemIds.length,
       skipped,
       skippedCount: skipped.length,
@@ -2596,8 +2606,7 @@ async function updateShopifyVariantPricingOnly(
       },
     },
   );
-  const json =
-    (await response.json()) as ShopifyPricingVariantUpdateResponse;
+  const json = (await response.json()) as ShopifyPricingVariantUpdateResponse;
 
   if (!response.ok) {
     return {
@@ -2879,7 +2888,8 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST?.trim(),
       ),
       quantityConflictCleanupFailures,
-      quantityConflictCleanupFailureCount: quantityConflictCleanupFailures.length,
+      quantityConflictCleanupFailureCount:
+        quantityConflictCleanupFailures.length,
       resolvedQuantityConflictCount,
       skipped,
       skippedCount: skipped.length,
@@ -2935,8 +2945,9 @@ async function filterChangedSyncBayProductSnapshots(
 
   if (mappingIds.length === 0) return snapshots;
 
-  const previousSnapshots =
-    await prisma.$queryRaw<LatestSyncBayProductSnapshotForDedupe[]>`
+  const previousSnapshots = await prisma.$queryRaw<
+    LatestSyncBayProductSnapshotForDedupe[]
+  >`
       SELECT DISTINCT ON ("mappingId")
         "currency",
         "descriptionHash",
@@ -3048,8 +3059,9 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
     sku: mapping.sku,
     source: ProductSnapshotSource.SYNCBAY,
   } satisfies Prisma.ProductSnapshotCreateManyInput;
-  const changedSoldOutSnapshots =
-    await filterChangedSyncBayProductSnapshots([soldOutSnapshot]);
+  const changedSoldOutSnapshots = await filterChangedSyncBayProductSnapshots([
+    soldOutSnapshot,
+  ]);
   const resolvedConflicts = await prisma.$transaction(async (tx) => {
     await tx.productMapping.update({
       data: {
@@ -3364,20 +3376,21 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
         result: { reason: "superseded_by_newer_queued_webhook" },
         status: SyncJobStatus.CANCELLED,
       },
-      where: { id: { in: batch.duplicateJobIds }, status: SyncJobStatus.RUNNING },
+      where: {
+        id: { in: batch.duplicateJobIds },
+        status: SyncJobStatus.RUNNING,
+      },
     });
   }
 
   const distinctJobs = batch.jobs.filter(({ id }) => absorbedById.has(id));
   let execution: ShopifyChangeBatchExecution;
   try {
-    execution = await detectShopifyChangesBatch(
-      {
-        jobs: distinctJobs,
-        shopDomain: job.shop.shopDomain,
-        defaultLocationGid: job.shop.defaultLocationGid,
-      },
-    );
+    execution = await detectShopifyChangesBatch({
+      jobs: distinctJobs,
+      shopDomain: job.shop.shopDomain,
+      defaultLocationGid: job.shop.defaultLocationGid,
+    });
 
     for (const result of execution.results) {
       const absorbedJob = absorbedById.get(result.jobId);
@@ -3398,9 +3411,10 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
           outcome: result.outcome,
           providerReadCount: execution.providerReadCount,
         },
-        warnings: result.outcome === "mapping_not_found"
-          ? ["Webhook Shopify senza mapping SyncBay collegato."]
-          : [],
+        warnings:
+          result.outcome === "mapping_not_found"
+            ? ["Webhook Shopify senza mapping SyncBay collegato."]
+            : [],
       });
     }
   } catch (error) {
@@ -3925,8 +3939,7 @@ function isFacetOnlySyncJobPayload(payload: Prisma.JsonValue | null) {
   const source = getStringFromPayload(payload, "source");
 
   return (
-    getBooleanFromPayload(payload, "facetOnly") ||
-    source === "facet_backfill"
+    getBooleanFromPayload(payload, "facetOnly") || source === "facet_backfill"
   );
 }
 
@@ -4236,18 +4249,17 @@ function getDetectedShopifyConflicts(
   const shopifyDescriptionHash = hashNullableText(
     product.descriptionHtml ?? null,
   );
-  const descriptionConflict = shouldSkipDescriptionConflictWhenEbayHasNoDescription(
-    {
+  const descriptionConflict =
+    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
       shopifyDescriptionHash,
       syncBayDescriptionHash: snapshot.descriptionHash,
-    },
-  )
-    ? null
-    : buildConflict(
-        "description",
-        snapshot.descriptionHash,
-        shopifyDescriptionHash,
-      );
+    })
+      ? null
+      : buildConflict(
+          "description",
+          snapshot.descriptionHash,
+          shopifyDescriptionHash,
+        );
   const fields = [
     buildConflict("title", snapshot.title, product.title),
     descriptionConflict,
@@ -4585,11 +4597,13 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
       ? hashNullableText(product.descriptionHtml ?? null)
       : null;
 
-    if (isLiveDescriptionConflictAligned({
-      currentShopifyDescriptionHash,
-      field: conflict.field,
-      latestSyncBayDescriptionHash,
-    })) {
+    if (
+      isLiveDescriptionConflictAligned({
+        currentShopifyDescriptionHash,
+        field: conflict.field,
+        latestSyncBayDescriptionHash,
+      })
+    ) {
       conflictIds.push(conflict.id);
     }
   }
@@ -4644,7 +4658,9 @@ async function resolveLiveAlignedPriceConflicts(input: {
       ),
   );
   const itemIds = [
-    ...new Set(candidates.flatMap((conflict) => conflict.mapping?.ebayItemId ?? [])),
+    ...new Set(
+      candidates.flatMap((conflict) => conflict.mapping?.ebayItemId ?? []),
+    ),
   ];
   const mappingIds = [
     ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
@@ -4696,7 +4712,10 @@ async function resolveLiveAlignedPriceConflicts(input: {
   >();
 
   for (const snapshot of latestSyncBaySnapshots) {
-    if (snapshot.mappingId && !latestSnapshotByMappingId.has(snapshot.mappingId)) {
+    if (
+      snapshot.mappingId &&
+      !latestSnapshotByMappingId.has(snapshot.mappingId)
+    ) {
       latestSnapshotByMappingId.set(snapshot.mappingId, snapshot);
     }
   }

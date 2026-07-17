@@ -122,7 +122,10 @@ async function main() {
       );
     }
 
-    const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
+    const shopifyAccessToken = await getShopifyAccessToken(
+      state.shopifySession,
+      shopDomain,
+    );
     const shopifyProducts = await loadShopifyProducts({
       accessToken: shopifyAccessToken,
       productGids: applyFile.rows
@@ -191,7 +194,10 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE/OUT_OF_STOCK da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
+  const shopifyAccessToken = await getShopifyAccessToken(
+    state.shopifySession,
+    shopDomain,
+  );
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
@@ -274,7 +280,8 @@ async function buildReportRow(input) {
     input.mapping.openConflictFields,
   );
   const baseInput = {
-    currentShopifyDescriptionHtml: input.shopifyProduct?.descriptionHtml ?? null,
+    currentShopifyDescriptionHtml:
+      input.shopifyProduct?.descriptionHtml ?? null,
     currentShopifyDescriptionHash: hashNullableText(
       input.shopifyProduct?.descriptionHtml ?? null,
     ),
@@ -315,7 +322,9 @@ async function buildReportRow(input) {
     return buildRowFromDescriptions({
       ...baseInput,
       ebayDescriptionHtml:
-        "descriptionHtml" in item ? item.descriptionHtml : getString(item, "Description"),
+        "descriptionHtml" in item
+          ? item.descriptionHtml
+          : getString(item, "Description"),
       title:
         ("title" in item ? item.title : getString(item, "Title")) ??
         input.mapping.title ??
@@ -540,7 +549,9 @@ async function applyDescriptionRow(input) {
     return {
       ebayItemId: input.row.ebayItemId,
       error: userErrors
-        .map((error) => `${error.field?.join(".") ?? "product"}: ${error.message}`)
+        .map(
+          (error) => `${error.field?.join(".") ?? "product"}: ${error.message}`,
+        )
         .join("; "),
       ok: false,
       shopifyProductGid: input.row.shopifyProductGid,
@@ -729,7 +740,9 @@ async function mapWithConcurrency(items, concurrency, mapper) {
 function printReport(report) {
   console.log(`Shop: ${report.shopDomain}`);
   console.log(`Marketplace: ${marketplaceId}`);
-  console.log(`Mapping ACTIVE/OUT_OF_STOCK totali: ${report.activeMappingsTotal}`);
+  console.log(
+    `Mapping ACTIVE/OUT_OF_STOCK totali: ${report.activeMappingsTotal}`,
+  );
   console.log(
     `Analizzati: ${report.analyzed}${report.partial ? " (parziale, usa senza --limit per la lista completa)" : ""}`,
   );
@@ -774,8 +787,12 @@ function printApplySummary(apply) {
   console.log(
     `- senza prodotto Shopify saltati: ${apply.skipped.missingShopifyProduct}`,
   );
-  console.log(`- lookup Shopify falliti saltati: ${apply.skipped.shopifyLookupFailed}`);
-  console.log(`- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`);
+  console.log(
+    `- lookup Shopify falliti saltati: ${apply.skipped.shopifyLookupFailed}`,
+  );
+  console.log(
+    `- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`,
+  );
 
   if (apply.failures?.length > 0) {
     console.log("");
@@ -803,7 +820,9 @@ function printSample(report, label, status) {
     const lookup = row.ebayLookupFailureReason
       ? ` · ${row.ebayLookupFailureReason}`
       : "";
-    console.log(`- ItemID ${row.ebayItemId}: ${row.title} · ${detail}${lookup}`);
+    console.log(
+      `- ItemID ${row.ebayItemId}: ${row.title} · ${detail}${lookup}`,
+    );
     if (row.status === "applicable") {
       console.log(`  Pulita: ${row.cleanedTextExcerpt || "vuota"}`);
     }

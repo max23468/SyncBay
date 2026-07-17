@@ -21,16 +21,16 @@ Finché OAuth e account deletion non sono verificati su un nuovo runtime o ambie
 
 ### Cosa serve
 
-| Campo                      | Stato                | Note                                                                                   |
-| -------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| Account Shopify Partner    | Confermato           | Login CLI: `matteofilisina@icloud.com`.                                                |
-| Store pilota Numisleo       | Operativo            | `numisleo.myshopify.com` è l'unico store collegato al runtime SyncBay.                 |
-| Nome app custom            | Confermato           | `SyncBay`                                                                              |
-| Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                        |
-| App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                      |
-| Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest 1.0 privata.                   |
+| Campo                      | Stato                | Note                                                                                          |
+| -------------------------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| Account Shopify Partner    | Confermato           | Login CLI: `matteofilisina@icloud.com`.                                                       |
+| Store pilota Numisleo      | Operativo            | `numisleo.myshopify.com` è l'unico store collegato al runtime SyncBay.                        |
+| Nome app custom            | Confermato           | `SyncBay`                                                                                     |
+| Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                               |
+| App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                             |
+| Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest 1.0 privata.                          |
 | Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità da ordini pagati nella custom app privata. |
-| Webhook minimi             | Configurati          | Include `orders/paid`, `products/update` e `inventory_levels/update`.                  |
+| Webhook minimi             | Configurati          | Include `orders/paid`, `products/update` e `inventory_levels/update`.                         |
 
 ### App e URL
 

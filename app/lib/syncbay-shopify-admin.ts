@@ -37,12 +37,22 @@ export function createShopifyAdminGraphqlClient(input: {
   const sleepImplementation = input.sleep ?? sleep;
   const endpoint = `https://${input.shopDomain}/admin/api/${SHOPIFY_ADMIN_API_VERSION}/graphql.json`;
   const policy: ShopifyAdminRetryPolicy = {
-    maxAttempts: normalizePositiveInteger(input.policy?.maxAttempts,
-    DEFAULT_MAX_GRAPHQL_ATTEMPTS,
+    maxAttempts: normalizePositiveInteger(
+      input.policy?.maxAttempts,
+      DEFAULT_MAX_GRAPHQL_ATTEMPTS,
     ),
-    maxElapsedMs: normalizePositiveInteger(input.policy?.maxElapsedMs, DEFAULT_MAX_ELAPSED_MS),
-    retryDelayMs: normalizePositiveInteger(input.policy?.retryDelayMs, DEFAULT_RETRY_DELAY_MS),
-    throttleRetryDelayMs: normalizePositiveInteger(input.policy?.throttleRetryDelayMs, DEFAULT_THROTTLE_RETRY_DELAY_MS),
+    maxElapsedMs: normalizePositiveInteger(
+      input.policy?.maxElapsedMs,
+      DEFAULT_MAX_ELAPSED_MS,
+    ),
+    retryDelayMs: normalizePositiveInteger(
+      input.policy?.retryDelayMs,
+      DEFAULT_RETRY_DELAY_MS,
+    ),
+    throttleRetryDelayMs: normalizePositiveInteger(
+      input.policy?.throttleRetryDelayMs,
+      DEFAULT_THROTTLE_RETRY_DELAY_MS,
+    ),
   };
 
   return {
@@ -51,11 +61,15 @@ export function createShopifyAdminGraphqlClient(input: {
       const startedAt = now();
 
       for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
-        lastResponse = await fetchShopifyGraphql(fetchImplementation, endpoint, {
-          accessToken: input.accessToken,
-          query,
-          variables: options?.variables ?? {},
-        });
+        lastResponse = await fetchShopifyGraphql(
+          fetchImplementation,
+          endpoint,
+          {
+            accessToken: input.accessToken,
+            query,
+            variables: options?.variables ?? {},
+          },
+        );
 
         const retryReason = getRetryReason(lastResponse);
 
@@ -151,10 +165,7 @@ function toJsonResponse(response: ShopifyGraphqlFetchResponse | null) {
 }
 
 function getRetryReason(response: ShopifyGraphqlFetchResponse) {
-  if (
-    response.status === 429 ||
-    hasGraphqlThrottleSignal(response.json)
-  ) {
+  if (response.status === 429 || hasGraphqlThrottleSignal(response.json)) {
     return "throttled" as const;
   }
 
@@ -182,13 +193,27 @@ function getRetryDelayMs(
 function getThrottleCostDelayMs(json: Record<string, unknown> | null) {
   const extensions = json?.extensions;
   if (!extensions || typeof extensions !== "object") return 0;
-  const cost = "cost" in extensions && extensions.cost && typeof extensions.cost === "object"
-    ? extensions.cost : null;
-  const throttle = cost && "throttleStatus" in cost && cost.throttleStatus && typeof cost.throttleStatus === "object"
-    ? cost.throttleStatus : null;
-  const requested = cost && "requestedQueryCost" in cost ? Number(cost.requestedQueryCost) : 0;
-  const available = throttle && "currentlyAvailable" in throttle ? Number(throttle.currentlyAvailable) : 0;
-  const restoreRate = throttle && "restoreRate" in throttle ? Number(throttle.restoreRate) : 0;
+  const cost =
+    "cost" in extensions &&
+    extensions.cost &&
+    typeof extensions.cost === "object"
+      ? extensions.cost
+      : null;
+  const throttle =
+    cost &&
+    "throttleStatus" in cost &&
+    cost.throttleStatus &&
+    typeof cost.throttleStatus === "object"
+      ? cost.throttleStatus
+      : null;
+  const requested =
+    cost && "requestedQueryCost" in cost ? Number(cost.requestedQueryCost) : 0;
+  const available =
+    throttle && "currentlyAvailable" in throttle
+      ? Number(throttle.currentlyAvailable)
+      : 0;
+  const restoreRate =
+    throttle && "restoreRate" in throttle ? Number(throttle.restoreRate) : 0;
   if (restoreRate <= 0 || requested <= available) return 0;
   return Math.ceil(((requested - available) / restoreRate) * 1000);
 }
@@ -229,5 +254,7 @@ function parseJsonObject(text: string) {
 }
 
 function normalizePositiveInteger(value: number | undefined, fallback: number) {
-  return Number.isInteger(value) && Number(value) > 0 ? Number(value) : fallback;
+  return Number.isInteger(value) && Number(value) > 0
+    ? Number(value)
+    : fallback;
 }

@@ -63,7 +63,12 @@ const TAG_OBJECT_SHA = "c".repeat(40);
 
 test("creates and pushes the tag when it exists nowhere", () => {
   assert.deepEqual(
-    planTagPublication({ localTagSha: "", remoteTagSha: "", mergeSha: MERGE_SHA, tag: "v1.0.68" }),
+    planTagPublication({
+      localTagSha: "",
+      remoteTagSha: "",
+      mergeSha: MERGE_SHA,
+      tag: "v1.0.68",
+    }),
     { createTag: true, pushTag: true },
   );
 });
@@ -158,7 +163,10 @@ test("treats the GitHub Release, not the pushed tag, as the release signal", () 
   // I passi di tag e push restano idempotenti sui retry, ma un tag gia' presente
   // vale solo se punta al merge: il confronto copre locale e origin, e il commit
   // del tag remoto va letto dalla riga dereferenziata.
-  assert.match(source, /planTagPublication\(\{ localTagSha, remoteTagSha, mergeSha, tag: plan\.tag \}\)/);
+  assert.match(
+    source,
+    /planTagPublication\(\{ localTagSha, remoteTagSha, mergeSha, tag: plan\.tag \}\)/,
+  );
   assert.match(source, /if \(tagPlan\.createTag\)/);
   assert.match(source, /if \(tagPlan\.pushTag\)/);
   assert.match(source, /refs\/tags\/\$\{plan\.tag\}\^\{\}/);

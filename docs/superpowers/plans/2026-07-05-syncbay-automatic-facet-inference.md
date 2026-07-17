@@ -59,6 +59,7 @@ Resta fuori scope:
 ### Task 0: Verificare Definizioni Metafield E Namespace
 
 **Files:**
+
 - Inspect: `shopify.app.toml`
 - Modify only if Shopify CLI supports existing namespace safely: `shopify.app.toml`
 - Modify if blocked: `docs/TOOLCHAIN.md`
@@ -107,6 +108,7 @@ automatico dei valori.
 ### Task 1: Documentare La Nuova Regola Di Prodotto
 
 **Files:**
+
 - Modify: `docs/decisions/0016-faccette-storefront-import.md`
 - Modify: `docs/syncbay-product-technical-plan.md`
 - Modify: `docs/data-model.md`
@@ -211,6 +213,7 @@ Expected: no whitespace errors.
 ### Task 2: Rendere Esplicita L'Inferenza Deterministica
 
 **Files:**
+
 - Modify: `app/lib/syncbay-product-facets.ts`
 - Modify: `app/lib/syncbay-product-facets.test.ts`
 
@@ -222,9 +225,7 @@ At the top of `app/lib/syncbay-product-facets.ts`, after `SyncBayProductFacetKey
 export type SyncBayProductFacetConfidence = "high" | "medium" | "low";
 
 export type SyncBayProductFacetSource =
-  | "title_rule"
-  | "category_hint"
-  | "ebay_specific";
+  "title_rule" | "category_hint" | "ebay_specific";
 
 export interface SyncBayProductFacetInference extends SyncBayProductFacet {
   confidence: SyncBayProductFacetConfidence;
@@ -303,15 +304,13 @@ function getFacetInference(
   key: SyncBayProductFacetKey,
   input: SyncBayProductFacetInput,
   aliases: readonly string[],
-):
-  | {
-      confidence: SyncBayProductFacetConfidence;
-      evidence: string[];
-      ruleId: string;
-      source: SyncBayProductFacetSource;
-      values: string[];
-    }
-  | null {
+): {
+  confidence: SyncBayProductFacetConfidence;
+  evidence: string[];
+  ruleId: string;
+  source: SyncBayProductFacetSource;
+  values: string[];
+} | null {
   const titleValues = getTitleFacetValues(key, input.title);
   if (titleValues.length > 0) {
     return {
@@ -324,7 +323,9 @@ function getFacetInference(
   }
 
   if (key === "categoria") {
-    const storefrontCategory = getStorefrontCategoryValue(input.storeCategoryName);
+    const storefrontCategory = getStorefrontCategoryValue(
+      input.storeCategoryName,
+    );
     if (storefrontCategory) {
       return {
         confidence: "high",
@@ -374,8 +375,7 @@ Add to `app/lib/syncbay-product-facets.test.ts`:
 test("marks title-derived facet values as high confidence inferences", () => {
   assert.deepEqual(
     buildSyncBayProductFacetInferences({
-      title:
-        "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
+      title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
     }).map((inference) => ({
       confidence: inference.confidence,
       key: inference.key,
@@ -436,10 +436,15 @@ test("keeps eBay item specifics as medium confidence suggestions", () => {
       { confidence: "medium", key: "conservazione", source: "ebay_specific" },
     ],
   );
-  assert.deepEqual(buildSyncBayProductFacets({ itemSpecifics: [
-    { name: "Materiale", values: ["Argento"] },
-    { name: "Conservazione", values: ["FDC"] },
-  ] }), []);
+  assert.deepEqual(
+    buildSyncBayProductFacets({
+      itemSpecifics: [
+        { name: "Materiale", values: ["Argento"] },
+        { name: "Conservazione", values: ["FDC"] },
+      ],
+    }),
+    [],
+  );
 });
 ```
 
@@ -458,6 +463,7 @@ Expected: all tests pass.
 ### Task 3: Creare Il Piano Di Scrittura Idempotente
 
 **Files:**
+
 - Create: `app/lib/syncbay-product-facet-sync-plan.ts`
 - Create: `app/lib/syncbay-product-facet-sync-plan.test.ts`
 
@@ -715,6 +721,7 @@ Expected: all tests pass.
 ### Task 4: Creare Il Servizio Runtime Shopify
 
 **Files:**
+
 - Create: `app/services/syncbay-product-facets.server.ts`
 - Test indirectly through Task 5 and Task 6 runner tests.
 
@@ -974,6 +981,7 @@ Expected: pass. If it fails on unrelated existing worktree changes, record exact
 ### Task 5: Agganciare Import Riusato E Sync Incrementale
 
 **Files:**
+
 - Modify: `app/services/shopify-draft-import.server.ts`
 - Modify: `app/services/sync-job-runner.server.ts`
 - Modify: `app/lib/syncbay-product-snapshot-payload.ts`
@@ -1041,13 +1049,13 @@ const facetSyncResult = await syncShopifyProductFacets({
 If `facetSyncResult.written.length > 0`, add warning:
 
 ```ts
-`SyncBay ha aggiornato ${facetSyncResult.written.length} metafield faccette.`
+`SyncBay ha aggiornato ${facetSyncResult.written.length} metafield faccette.`;
 ```
 
 If `facetSyncResult.conflicts.length > 0`, add warning:
 
 ```ts
-`SyncBay non ha sovrascritto ${facetSyncResult.conflicts.length} faccette modificate su Shopify.`
+`SyncBay non ha sovrascritto ${facetSyncResult.conflicts.length} faccette modificate su Shopify.`;
 ```
 
 If `facetSyncResult.written.length > 0 || facetSyncResult.deleted.length > 0`,
@@ -1117,10 +1125,7 @@ async function getLatestFacetBaselinesByItemId(input: {
       ebayItemId: { in: input.ebayItemIds },
       shopId: input.shopId,
       source: {
-        in: [
-          ProductSnapshotSource.SYNCBAY,
-          ProductSnapshotSource.EBAY,
-        ],
+        in: [ProductSnapshotSource.SYNCBAY, ProductSnapshotSource.EBAY],
       },
     },
   });
@@ -1277,6 +1282,7 @@ Expected: pass.
 ### Task 6: Backfill Automatico Con `SYNC_INCREMENTAL` `facetOnly`
 
 **Files:**
+
 - Modify: `app/services/sync-job-runner.server.ts`
 - Modify: `app/lib/syncbay-job-diagnostics.ts`
 - Modify: `app/lib/syncbay-ui-state.ts` only if visible labels need a clearer distinction.
@@ -1326,44 +1332,40 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const [
-    admin,
-    mappings,
-    ebaySnapshots,
-    facetBaselinesByItemId,
-  ] = await Promise.all([
-    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
-    prisma.productMapping.findMany({
-      select: {
-        ebayItemId: true,
-        id: true,
-        shopifyProductGid: true,
-      },
-      where: {
-        ebayItemId: { in: input.syncableItemIds },
-        marketplaceId: getEbayMarketplaceId(input.job.payload),
+  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] =
+    await Promise.all([
+      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+      prisma.productMapping.findMany({
+        select: {
+          ebayItemId: true,
+          id: true,
+          shopifyProductGid: true,
+        },
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          marketplaceId: getEbayMarketplaceId(input.job.payload),
+          shopId: input.job.shopId,
+          status: ProductMappingStatus.ACTIVE,
+        },
+      }),
+      prisma.productSnapshot.findMany({
+        orderBy: { capturedAt: "desc" },
+        select: {
+          ebayItemId: true,
+          payload: true,
+          title: true,
+        },
+        where: {
+          ebayItemId: { in: input.syncableItemIds },
+          shopId: input.job.shopId,
+          source: ProductSnapshotSource.EBAY,
+        },
+      }),
+      getLatestFacetBaselinesByItemId({
+        ebayItemIds: input.syncableItemIds,
         shopId: input.job.shopId,
-        status: ProductMappingStatus.ACTIVE,
-      },
-    }),
-    prisma.productSnapshot.findMany({
-      orderBy: { capturedAt: "desc" },
-      select: {
-        ebayItemId: true,
-        payload: true,
-        title: true,
-      },
-      where: {
-        ebayItemId: { in: input.syncableItemIds },
-        shopId: input.job.shopId,
-        source: ProductSnapshotSource.EBAY,
-      },
-    }),
-    getLatestFacetBaselinesByItemId({
-      ebayItemIds: input.syncableItemIds,
-      shopId: input.job.shopId,
-    }),
-  ]);
+      }),
+    ]);
 
   const latestEbaySnapshotByItemId = new Map<
     string,
@@ -1413,7 +1415,10 @@ async function runFacetOnlyIncrementalSyncJob(input: {
         "ebayPrimaryCategoryName",
       ),
       itemSpecifics: [],
-      storeCategoryName: getNullableStringFromRecord(payload, "storeCategoryName"),
+      storeCategoryName: getNullableStringFromRecord(
+        payload,
+        "storeCategoryName",
+      ),
       title: ebaySnapshot.title,
     });
     const previousSyncBayFacets =
@@ -1464,13 +1469,15 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     result: {
       alignedDescriptionConflictResolvedCount:
         input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
+      alignedPriceConflictResolvedCount:
+        input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       facetConflictCount,
       facetOnly: true,
       facetSkippedCount,
       facetWrittenCount,
-      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
+      reactivationConflictResolvedCount:
+        input.reactivationConflictResolvedCount,
       requestedCount: input.requestedItemIds.length,
       skipped,
       syncedCount,
@@ -1660,6 +1667,7 @@ Expected: pass. If `lint` or `typecheck` fail on unrelated dirty files, capture 
 ### Task 7: Verifica Finale E Pubblicazione
 
 **Files:**
+
 - Modify if needed: `CHANGELOG.md`
 - Modify if needed: `app/lib/version.ts` through release flow only if `[Non rilasciato]` has versioned runtime changes and maintainer asks to publish.
 

@@ -2,7 +2,10 @@ import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { markShopUninstalled } from "../services/syncbay.server";
-import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
+import {
+  getSyncBayRequestId,
+  logSyncBayRuntimeEvent,
+} from "../lib/syncbay-runtime-log";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, session, topic } = await authenticate.webhook(request);
@@ -15,7 +18,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await db.session.deleteMany({ where: { shop } });
   }
   await markShopUninstalled(shop);
-  logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "info", requestId, route: "webhooks.app.uninstalled", outcome: topic });
+  logSyncBayRuntimeEvent({
+    event: "shopify-webhook",
+    level: "info",
+    requestId,
+    route: "webhooks.app.uninstalled",
+    outcome: topic,
+  });
 
   return new Response();
 };

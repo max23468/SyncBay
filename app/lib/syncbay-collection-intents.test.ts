@@ -7,8 +7,18 @@ import { parseCollectionIntents } from "./syncbay-collection-intents.ts";
 test("parses valid collection intents", () => {
   const intents = parseCollectionIntents({
     collectionIntents: [
-      { generic: true, handle: "negozio-online", requirePositiveInventory: true, title: "Negozio Online" },
-      { handle: "banconote", productTypeContains: ["Banconote"], requirePositiveInventory: true, title: "Banconote" },
+      {
+        generic: true,
+        handle: "negozio-online",
+        requirePositiveInventory: true,
+        title: "Negozio Online",
+      },
+      {
+        handle: "banconote",
+        productTypeContains: ["Banconote"],
+        requirePositiveInventory: true,
+        title: "Banconote",
+      },
     ],
   });
 
@@ -21,8 +31,16 @@ test("rejects duplicated handles", () => {
     () =>
       parseCollectionIntents({
         collectionIntents: [
-          { handle: "banconote", requirePositiveInventory: true, title: "Banconote" },
-          { handle: "banconote", requirePositiveInventory: true, title: "Banconote duplicate" },
+          {
+            handle: "banconote",
+            requirePositiveInventory: true,
+            title: "Banconote",
+          },
+          {
+            handle: "banconote",
+            requirePositiveInventory: true,
+            title: "Banconote duplicate",
+          },
         ],
       }),
     /duplicato/i,
@@ -41,7 +59,11 @@ test("parses a title-based intent", () => {
     ],
   });
 
-  assert.deepEqual(intents[0]?.titleContains, ["capsul", "masterphil", "raccoglitore"]);
+  assert.deepEqual(intents[0]?.titleContains, [
+    "capsul",
+    "masterphil",
+    "raccoglitore",
+  ]);
 });
 
 test("rejects intents that mix product type and title selectors", () => {

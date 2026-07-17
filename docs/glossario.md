@@ -4,40 +4,40 @@ Questo glossario guida UI, documentazione e microcopy.
 
 ## Termini preferiti
 
-| Termine | Uso |
-| --- | --- |
-| Negozio Shopify | Lo shop collegato a SyncBay. |
-| Account eBay | Account venditore eBay collegato. |
-| Inserzione eBay | Listing eBay sorgente. Evitare "annuncio" salvo contesto non tecnico. |
-| Prodotto Shopify | Prodotto creato o aggiornato su Shopify. |
-| Catalogo eBay | Insieme delle inserzioni attive da importare/sincronizzare. |
-| Copia Shopify | Il catalogo derivato da eBay dentro Shopify. |
-| Sincronizzazione | Azione ricorrente di allineamento. "Sync" resta ammesso solo in contesti tecnici o label molto compatte. |
-| Import | Prima creazione/collegamento dei prodotti Shopify da eBay. |
-| Collega catalogo esistente | Modalità di prima configurazione per collegare prodotti Shopify già presenti ai listing eBay senza creare duplicati. |
-| Anteprima import | Anteprima prima di scrivere su Shopify. |
-| Takeover | Passaggio controllato in cui SyncBay diventa l'unico gestore del flusso eBay -> Shopify dopo una precedente app o gestione manuale. |
-| Freeze operativo | Finestra concordata in cui non si modificano manualmente eBay o Shopify durante dry-run, apply e verifica. |
-| Eccezione da rivedere | Riga non applicata automaticamente perché il dato eBay è assente, non affidabile o il match non è sicuro. |
-| Ripristino | Azione per annullare o recuperare modifiche fatte da SyncBay. |
-| Conflitto | Divergenza tra eBay, ultimo valore SyncBay e valore Shopify modificato manualmente. |
-| Modalità prudente | Stato di protezione quando disponibilità o sincronizzazione non sono affidabili. |
-| Riserva disponibilità | Quantità non pubblicata su Shopify per ridurre il rischio di vendere prodotti non disponibili. |
-| Regole prezzo | Regole specifiche per Shopify che non modificano eBay. |
-| Prodotti collegati | Tutti i mapping SyncBay: inserzioni eBay attive più inserzioni inattive mantenute su Shopify come esaurite. Il denominatore non cambia tra Panoramica, Catalogo e Impostazioni. |
-| Job | Unità di lavoro persistita nella coda SyncBay. Non equivale necessariamente a un prodotto. |
-| Run | Una singola esecuzione del runner, che può elaborare più job e prodotti. |
-| Stato catalogo | Salute dell'allineamento, distinta dall'esito del singolo job e dall'attività del runner. |
+| Termine                    | Uso                                                                                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Negozio Shopify            | Lo shop collegato a SyncBay.                                                                                                                                                    |
+| Account eBay               | Account venditore eBay collegato.                                                                                                                                               |
+| Inserzione eBay            | Listing eBay sorgente. Evitare "annuncio" salvo contesto non tecnico.                                                                                                           |
+| Prodotto Shopify           | Prodotto creato o aggiornato su Shopify.                                                                                                                                        |
+| Catalogo eBay              | Insieme delle inserzioni attive da importare/sincronizzare.                                                                                                                     |
+| Copia Shopify              | Il catalogo derivato da eBay dentro Shopify.                                                                                                                                    |
+| Sincronizzazione           | Azione ricorrente di allineamento. "Sync" resta ammesso solo in contesti tecnici o label molto compatte.                                                                        |
+| Import                     | Prima creazione/collegamento dei prodotti Shopify da eBay.                                                                                                                      |
+| Collega catalogo esistente | Modalità di prima configurazione per collegare prodotti Shopify già presenti ai listing eBay senza creare duplicati.                                                            |
+| Anteprima import           | Anteprima prima di scrivere su Shopify.                                                                                                                                         |
+| Takeover                   | Passaggio controllato in cui SyncBay diventa l'unico gestore del flusso eBay -> Shopify dopo una precedente app o gestione manuale.                                             |
+| Freeze operativo           | Finestra concordata in cui non si modificano manualmente eBay o Shopify durante dry-run, apply e verifica.                                                                      |
+| Eccezione da rivedere      | Riga non applicata automaticamente perché il dato eBay è assente, non affidabile o il match non è sicuro.                                                                       |
+| Ripristino                 | Azione per annullare o recuperare modifiche fatte da SyncBay.                                                                                                                   |
+| Conflitto                  | Divergenza tra eBay, ultimo valore SyncBay e valore Shopify modificato manualmente.                                                                                             |
+| Modalità prudente          | Stato di protezione quando disponibilità o sincronizzazione non sono affidabili.                                                                                                |
+| Riserva disponibilità      | Quantità non pubblicata su Shopify per ridurre il rischio di vendere prodotti non disponibili.                                                                                  |
+| Regole prezzo              | Regole specifiche per Shopify che non modificano eBay.                                                                                                                          |
+| Prodotti collegati         | Tutti i mapping SyncBay: inserzioni eBay attive più inserzioni inattive mantenute su Shopify come esaurite. Il denominatore non cambia tra Panoramica, Catalogo e Impostazioni. |
+| Job                        | Unità di lavoro persistita nella coda SyncBay. Non equivale necessariamente a un prodotto.                                                                                      |
+| Run                        | Una singola esecuzione del runner, che può elaborare più job e prodotti.                                                                                                        |
+| Stato catalogo             | Salute dell'allineamento, distinta dall'esito del singolo job e dall'attività del runner.                                                                                       |
 
 ## Termini da usare con cautela
 
-| Termine | Nota |
-| --- | --- |
-| Real-time | Evitare come promessa assoluta. Usare la finestra target configurabile come garanzia base; usare real-time/quasi real-time solo dove tecnicamente possibile e sostenibile. |
-| Bidirezionale | Non usarlo per la 1.0, salvo spiegare l'eccezione sulla disponibilità dopo ordini Shopify. |
-| Marketplace globale | Fuori dalla 1.0. |
-| Supporto umano | Non deve essere pilastro prodotto nella prima fase. Preferire "diagnostica self-service". |
-| Overselling | Evitare in UI e materiali per negozianti. Preferire "vendere prodotti non disponibili", "disponibilità non aggiornata" o "vendite oltre disponibilità". |
+| Termine             | Nota                                                                                                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Real-time           | Evitare come promessa assoluta. Usare la finestra target configurabile come garanzia base; usare real-time/quasi real-time solo dove tecnicamente possibile e sostenibile. |
+| Bidirezionale       | Non usarlo per la 1.0, salvo spiegare l'eccezione sulla disponibilità dopo ordini Shopify.                                                                                 |
+| Marketplace globale | Fuori dalla 1.0.                                                                                                                                                           |
+| Supporto umano      | Non deve essere pilastro prodotto nella prima fase. Preferire "diagnostica self-service".                                                                                  |
+| Overselling         | Evitare in UI e materiali per negozianti. Preferire "vendere prodotti non disponibili", "disponibilità non aggiornata" o "vendite oltre disponibilità".                    |
 
 ## Regole microcopy
 

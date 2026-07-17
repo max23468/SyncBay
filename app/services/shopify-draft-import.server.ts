@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
-import { Prisma, ProductMappingStatus, ProductSnapshotSource } from "@prisma/client";
+import {
+  Prisma,
+  ProductMappingStatus,
+  ProductSnapshotSource,
+} from "@prisma/client";
 
 import prisma from "../db.server";
 import {
@@ -156,8 +160,7 @@ interface ShopifyDraftProductLookupNode extends ShopifyDraftProductNode {
   } | null;
 }
 
-interface ShopifyDraftProductVariantLookupNode
-  extends ShopifyDraftProductVariantNode {
+interface ShopifyDraftProductVariantLookupNode extends ShopifyDraftProductVariantNode {
   product?: {
     id?: string | null;
   } | null;
@@ -307,10 +310,7 @@ interface ShopifyInventoryVerificationResponse {
 }
 
 export type ShopifyDraftImportStatus =
-  | "blocked"
-  | "created"
-  | "failed"
-  | "queued";
+  "blocked" | "created" | "failed" | "queued";
 
 type ShopifyDraftProductInput = ReturnType<
   typeof buildShopifyDraftProductInputs
@@ -357,9 +357,7 @@ type ShopifyInventorySyncResult =
   | {
       message: string;
       reason:
-        | "missing_inventory_item"
-        | "missing_location"
-        | "missing_quantity";
+        "missing_inventory_item" | "missing_location" | "missing_quantity";
       status: "skipped";
       variantGid?: string;
     }
@@ -3101,7 +3099,9 @@ async function recordDraftImportPersistence(input: {
           pair.result.facetSync
             ? pair.result.facetSync.baselineFacets
             : undefined;
-        const thumbnailUrl = getProductSnapshotThumbnailUrl(ebaySnapshot.payload);
+        const thumbnailUrl = getProductSnapshotThumbnailUrl(
+          ebaySnapshot.payload,
+        );
         const mapping = await tx.productMapping.upsert({
           where: {
             shopId_marketplaceId_ebayItemId: {
@@ -3127,7 +3127,9 @@ async function recordDraftImportPersistence(input: {
             lastErrorMessage: null,
             lastSyncedAt: now,
             shopifyProductGid: pair.result.product.id,
-            ...(inventoryItemGid ? { shopifyInventoryItemGid: inventoryItemGid } : {}),
+            ...(inventoryItemGid
+              ? { shopifyInventoryItemGid: inventoryItemGid }
+              : {}),
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,
@@ -3136,18 +3138,18 @@ async function recordDraftImportPersistence(input: {
         });
 
         await recordProductSnapshotsInTransaction(tx, [
-            { ...ebaySnapshot, mappingId: mapping.id },
-            buildSyncBayProductSnapshot({
-              draftProduct: pair.draftProduct,
-              importProductStatus: normalizeImportProductStatus(
-                pair.draftProduct.product.status,
-              ),
-              jobId: input.jobId,
-              mappingId: mapping.id,
-              productFacets: facetBaseline,
-              result: pair.result,
-              shopId: input.shopId,
-            }),
+          { ...ebaySnapshot, mappingId: mapping.id },
+          buildSyncBayProductSnapshot({
+            draftProduct: pair.draftProduct,
+            importProductStatus: normalizeImportProductStatus(
+              pair.draftProduct.product.status,
+            ),
+            jobId: input.jobId,
+            mappingId: mapping.id,
+            productFacets: facetBaseline,
+            result: pair.result,
+            shopId: input.shopId,
+          }),
         ]);
       }),
     );
@@ -3285,8 +3287,7 @@ function shouldPersistProductFacetBaseline(
   facetSync: ShopifyProductFacetSyncResult | undefined,
 ) {
   return Boolean(
-    facetSync &&
-      (facetSync.written.length > 0 || facetSync.deleted.length > 0),
+    facetSync && (facetSync.written.length > 0 || facetSync.deleted.length > 0),
   );
 }
 
@@ -3340,7 +3341,11 @@ function buildSyncBayProductSnapshot(input: {
       resultType: input.result.resultType,
       tags: input.draftProduct.product.tags,
       ...(Object.hasOwn(input, "productFacets")
-        ? { productFacets: (input.productFacets ?? []).map(serializeProductFacet) }
+        ? {
+            productFacets: (input.productFacets ?? []).map(
+              serializeProductFacet,
+            ),
+          }
         : {}),
     } satisfies Prisma.JsonObject,
     priceAmount: input.draftProduct.pricing.priceAmount,

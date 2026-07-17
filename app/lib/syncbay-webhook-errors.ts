@@ -67,7 +67,9 @@ export function isTransientWebhookPersistenceError(error: unknown): boolean {
     normalizedMessage.includes("timeout exceeded when trying to connect") ||
     normalizedMessage.includes("prisma session storage is not ready") ||
     // Connection pool checkout timeout in transaction mode (ECHECKOUTTIMEOUT).
-    normalizedMessage.includes("unable to check out connection from the pool") ||
+    normalizedMessage.includes(
+      "unable to check out connection from the pool",
+    ) ||
     // Supavisor/pg driver handler dropped the connection (EDBHANDLEREXITED).
     normalizedMessage.includes("dbhandler exited") ||
     // Lock contention under webhook echo bursts resolves on the next sync.

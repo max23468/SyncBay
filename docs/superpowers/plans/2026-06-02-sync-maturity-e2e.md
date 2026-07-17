@@ -84,6 +84,7 @@ with rollback.
 ### Task 1: Stabilize Workspace State
 
 **Files:**
+
 - Read: `app/services/sync-job-runner.server.ts`
 - Read: `app/services/syncbay.server.ts`
 - Read: `docs/superpowers/specs/2026-06-02-sync-maturity-e2e-design.md`
@@ -123,6 +124,7 @@ Expected: the spec states one listing, baseline first, rollback mandatory, and a
 ### Task 2: Run Local Safety Gates
 
 **Files:**
+
 - Test: `app/lib/syncbay-stock-guard.test.ts`
 - Read: `prisma/schema.prisma`
 - Read: `package.json`
@@ -171,6 +173,7 @@ order creation path.
 ### Task 3: Select One Safe Test Mapping
 
 **Files:**
+
 - Read: `scripts/syncbay-job-status.mjs`
 - Read: `scripts/syncbay-import-verify.mjs`
 - Read: `docs/guides/provisioning-runtime.md`
@@ -221,6 +224,7 @@ Expected: no provider writes happen when a stop condition is true.
 ### Task 4: Capture Baseline
 
 **Files:**
+
 - Read: `app/services/ebay-trading-preview.server.ts`
 - Read: `scripts/syncbay-restore-ebay-stock.mjs`
 - Read: `scripts/syncbay-import-verify.mjs`
@@ -262,6 +266,7 @@ Expected: rollback target is known before any Shopify order test.
 ### Task 5: Test eBay -> Shopify Sync
 
 **Files:**
+
 - Read: `app/services/sync-job-runner.server.ts`
 - Read: `app/services/shopify-draft-import.server.ts`
 - Read: `app/services/ebay-trading-preview.server.ts`
@@ -308,6 +313,7 @@ Expected: selected product/variant shows the temporary quantity on the SyncBay d
 ### Task 6: Test Shopify Paid Order -> eBay Stock
 
 **Files:**
+
 - Read: `app/routes/webhooks.orders.paid.tsx`
 - Read: `app/services/syncbay.server.ts`
 - Read: `app/services/sync-job-runner.server.ts`
@@ -368,6 +374,7 @@ If the observed quantity differs, stop and restore baseline before further testi
 ### Task 7: Roll Back Provider and Runtime State
 
 **Files:**
+
 - Run: `scripts/syncbay-restore-ebay-stock.mjs`
 - Read: `docs/guides/provisioning-runtime.md`
 
@@ -416,6 +423,7 @@ Expected: no `UPDATE_EBAY_STOCK` or `SYNC_INCREMENTAL` job remains `RUNNING`, an
 ### Task 8: Decide Next Development Work
 
 **Files:**
+
 - Modify if needed: `docs/ROADMAP.md`
 - Modify if needed: `docs/CONTEXT.md`
 - Modify if needed: `docs/guides/provisioning-runtime.md`

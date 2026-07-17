@@ -49,18 +49,23 @@ async function getUsableOfflineShopifySession(shopDomain: string) {
   return dedupeInFlight(inFlightOfflineSessions, sessionId, () =>
     getUsableOfflineShopifySessionWithPorts({
       now: () => new Date(),
-      readSession: () => prisma.session.findUnique({ select, where: { id: sessionId } }),
-      refresh: (refreshToken) => refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
-      compareAndSwap: (oldAccessToken, refreshed, scope) => prisma.session.updateMany({
-        data: {
-          accessToken: encryptSecret(refreshed.accessToken),
-          expires: refreshed.expiresAt,
-          refreshToken: encryptSecret(refreshed.refreshToken),
-          refreshTokenExpires: refreshed.refreshTokenExpiresAt,
-          scope: refreshed.scope ?? scope,
-        },
-        where: { id: sessionId, accessToken: oldAccessToken },
-      }).then(({ count }) => count === 1),
+      readSession: () =>
+        prisma.session.findUnique({ select, where: { id: sessionId } }),
+      refresh: (refreshToken) =>
+        refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
+      compareAndSwap: (oldAccessToken, refreshed, scope) =>
+        prisma.session
+          .updateMany({
+            data: {
+              accessToken: encryptSecret(refreshed.accessToken),
+              expires: refreshed.expiresAt,
+              refreshToken: encryptSecret(refreshed.refreshToken),
+              refreshTokenExpires: refreshed.refreshTokenExpiresAt,
+              scope: refreshed.scope ?? scope,
+            },
+            where: { id: sessionId, accessToken: oldAccessToken },
+          })
+          .then(({ count }) => count === 1),
       log: (event) =>
         logSyncBayRuntimeEvent(
           {
@@ -106,7 +111,11 @@ type OfflineSessionRefreshLog = (event: {
 const REFRESH_RECOVERY_DELAYS_MS = [0, 500, 1500];
 
 export async function getUsableOfflineShopifySessionWithPorts(input: {
-  compareAndSwap: (oldAccessToken: string, refreshed: RefreshedOfflineSession, scope: string | null) => Promise<boolean>;
+  compareAndSwap: (
+    oldAccessToken: string,
+    refreshed: RefreshedOfflineSession,
+    scope: string | null,
+  ) => Promise<boolean>;
   log?: OfflineSessionRefreshLog;
   now: () => Date;
   readSession: () => Promise<PersistedOfflineSession | null>;
@@ -138,14 +147,19 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     );
   }
 
-  if (session.refreshTokenExpires && session.refreshTokenExpires.getTime() <= input.now().getTime()) {
+  if (
+    session.refreshTokenExpires &&
+    session.refreshTokenExpires.getTime() <= input.now().getTime()
+  ) {
     throw new Error(
       "Refresh token Shopify offline scaduto: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
     );
   }
 
   const log: OfflineSessionRefreshLog = input.log ?? (() => {});
-  const sleep = input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const sleep =
+    input.sleep ??
+    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const refreshStartedAt = Date.now();
 
   let refreshed: RefreshedOfflineSession;
@@ -206,7 +220,9 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
       level: "error",
       outcome: "cas-perso-sessione-rimossa",
     });
-    throw new Error("Sessione offline Shopify rimossa durante l'aggiornamento.");
+    throw new Error(
+      "Sessione offline Shopify rimossa durante l'aggiornamento.",
+    );
   }
   log({
     durationMs: Date.now() - refreshStartedAt,
@@ -221,12 +237,16 @@ function describeRefreshFailure(error: unknown) {
   return typeof status === "number" ? `http-${status}` : "senza-status";
 }
 
-function decryptPersistedSession<T extends { accessToken: string; refreshToken: string | null }>(session: T) {
+function decryptPersistedSession<
+  T extends { accessToken: string; refreshToken: string | null },
+>(session: T) {
   try {
     return {
       ...session,
       accessToken: decryptSecret(session.accessToken),
-      refreshToken: session.refreshToken ? decryptSecret(session.refreshToken) : null,
+      refreshToken: session.refreshToken
+        ? decryptSecret(session.refreshToken)
+        : null,
     };
   } catch {
     throw new Error(
@@ -264,15 +284,13 @@ async function refreshOfflineShopifyAccessToken(input: {
       method: "POST",
     },
   );
-  const json = (await response.json().catch(() => null)) as
-    | {
-        access_token?: string;
-        expires_in?: number;
-        refresh_token?: string;
-        refresh_token_expires_in?: number;
-        scope?: string;
-      }
-    | null;
+  const json = (await response.json().catch(() => null)) as {
+    access_token?: string;
+    expires_in?: number;
+    refresh_token?: string;
+    refresh_token_expires_in?: number;
+    scope?: string;
+  } | null;
 
   if (!response.ok || !json?.access_token || !json.refresh_token) {
     const error = new Error(

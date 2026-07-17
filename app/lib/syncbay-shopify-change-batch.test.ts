@@ -2,15 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildSeededShopifyChangeBatch, buildShopifyChangeBatch } from "./syncbay-shopify-change-batch.ts";
+import {
+  buildSeededShopifyChangeBatch,
+  buildShopifyChangeBatch,
+} from "./syncbay-shopify-change-batch.ts";
 
-function job(input: Partial<{
-  id: string;
-  createdAt: Date;
-  inventoryItemGid: string | null;
-  productGid: string | null;
-  topic: string;
-}> = {}) {
+function job(
+  input: Partial<{
+    id: string;
+    createdAt: Date;
+    inventoryItemGid: string | null;
+    productGid: string | null;
+    topic: string;
+  }> = {},
+) {
   return {
     id: input.id ?? "job-1",
     createdAt: input.createdAt ?? new Date("2026-07-11T10:00:00Z"),
@@ -27,7 +32,10 @@ test("keeps the newest job and absorbs an older duplicate", () => {
     job({ id: "new", createdAt: new Date("2026-07-11T10:01:00Z") }),
   ]);
 
-  assert.deepEqual(batch.jobs.map(({ id }) => id), ["new"]);
+  assert.deepEqual(
+    batch.jobs.map(({ id }) => id),
+    ["new"],
+  );
   assert.deepEqual(batch.duplicateJobIds, ["old"]);
 });
 
@@ -62,7 +70,10 @@ test("keeps jobs without a resource so they can report mapping_not_found", () =>
     job({ id: "missing", productGid: null, inventoryItemGid: null }),
   ]);
 
-  assert.deepEqual(batch.jobs.map(({ id }) => id), ["missing"]);
+  assert.deepEqual(
+    batch.jobs.map(({ id }) => id),
+    ["missing"],
+  );
 });
 
 test("always keeps the claimed seed inside a full batch", () => {
@@ -74,7 +85,9 @@ test("always keeps the claimed seed inside a full batch", () => {
   const newerJobs = Array.from({ length: 49 }, (_, index) =>
     job({
       id: `newer-${index}`,
-      createdAt: new Date(`2026-07-11T10:${String(index).padStart(2, "0")}:00Z`),
+      createdAt: new Date(
+        `2026-07-11T10:${String(index).padStart(2, "0")}:00Z`,
+      ),
       productGid: `gid://shopify/Product/${index}`,
     }),
   );
@@ -82,5 +95,8 @@ test("always keeps the claimed seed inside a full batch", () => {
   const batch = buildSeededShopifyChangeBatch(seed, newerJobs);
 
   assert.equal(batch.jobs.length, 25);
-  assert.equal(batch.jobs.some(({ id }) => id === seed.id), true);
+  assert.equal(
+    batch.jobs.some(({ id }) => id === seed.id),
+    true,
+  );
 });

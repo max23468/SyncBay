@@ -11,6 +11,7 @@
 ### Task 1: Persistent Description Rules
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/20260620090000_add_description_rules/migration.sql`
 - Create: `app/lib/syncbay-description-rules.ts`
@@ -26,6 +27,7 @@
 ### Task 2: Matching Suggestions and Quality Checklist
 
 **Files:**
+
 - Create: `app/lib/syncbay-product-matching.ts`
 - Create: `app/lib/syncbay-quality-checklist.ts`
 - Modify: `app/services/import-preview.server.ts`
@@ -40,6 +42,7 @@
 ### Task 3: Catalog Health and Rate-Limit Diagnostics
 
 **Files:**
+
 - Create: `app/lib/syncbay-catalog-health-center.ts`
 - Modify: `app/lib/syncbay-job-diagnostics.ts`
 - Modify: `app/services/syncbay.server.ts`
@@ -54,6 +57,7 @@
 ### Task 4: Full Reconcile Policy Visibility
 
 **Files:**
+
 - Create: `app/lib/syncbay-full-reconcile-policy.ts`
 - Modify: `app/services/syncbay.server.ts`
 - Modify: `app/routes/app.activity.tsx`
@@ -66,6 +70,7 @@
 ### Task 5: Retention Policy
 
 **Files:**
+
 - Create: `app/lib/syncbay-retention-policy.ts`
 - Test: `app/lib/syncbay-retention-policy.test.ts`
 - Create: `docs/decisions/0017-retention-dati-operativi.md`

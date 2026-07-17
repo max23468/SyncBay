@@ -170,11 +170,7 @@ export function buildDescriptionBackfillRow(
     );
   }
 
-  return withStatus(
-    baseRow,
-    "applicable",
-    "description_cleanup_available",
-  );
+  return withStatus(baseRow, "applicable", "description_cleanup_available");
 }
 
 export function buildDescriptionBackfillReport(input: {
@@ -280,7 +276,10 @@ export function filterDescriptionBackfillApplyFileRows(input: {
         currentHash === undefined
           ? "shopify_product_not_loaded"
           : "shopify_description_changed_since_apply_file",
-      status: currentHash === undefined ? "shopify_lookup_failed" : "conflict_skipped",
+      status:
+        currentHash === undefined
+          ? "shopify_lookup_failed"
+          : "conflict_skipped",
     });
   }
 

@@ -34,7 +34,9 @@ const publicationTitle = args.publicationTitle ?? DEFAULT_PUBLICATION_TITLE;
 const batchSize = args.batchSize ?? DEFAULT_BATCH_SIZE;
 
 await main().catch((error) => {
-  console.error(`Pubblicazione prodotti non riuscita: ${formatCliError(error)}`);
+  console.error(
+    `Pubblicazione prodotti non riuscita: ${formatCliError(error)}`,
+  );
   process.exit(1);
 });
 
@@ -46,7 +48,9 @@ async function main() {
   );
 
   if (target.productGids.length === 0) {
-    console.log(`Nessun prodotto SyncBay attivo da pubblicare per ${shopDomain}.`);
+    console.log(
+      `Nessun prodotto SyncBay attivo da pubblicare per ${shopDomain}.`,
+    );
     return;
   }
 

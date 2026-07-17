@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 // @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildSyncBayProductMetafields, getSyncBayCategorySourceFromMetafields } from "./syncbay-shopify-product-metafields.ts";
+import {
+  buildSyncBayProductMetafields,
+  getSyncBayCategorySourceFromMetafields,
+} from "./syncbay-shopify-product-metafields.ts";
 
 test("builds Shopify product metafields for eBay product and store categories", () => {
   assert.deepEqual(

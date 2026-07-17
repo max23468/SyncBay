@@ -3,7 +3,12 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "react-router";
-import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+} from "react-router";
 
 import {
   ActionRow,
@@ -324,10 +329,10 @@ export default function SettingsRoute() {
     settings.shopify.missingScopes.length === 0 &&
     settings.shopify.missingConfiguredScopes.length === 0;
 
-  useActionToast(
-    { data: actionData, state: navigation.state },
-    (data) => ({ isError: data.status === "blocked", message: data.message }),
-  );
+  useActionToast({ data: actionData, state: navigation.state }, (data) => ({
+    isError: data.status === "blocked",
+    message: data.message,
+  }));
 
   return (
     <s-page heading="Impostazioni" inlineSize="large">
@@ -343,29 +348,29 @@ export default function SettingsRoute() {
         />
 
         <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="large"
-          gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-        >
-          <ImportProductSettingsCard
-            currentStatus={currentStatus}
-            isSaving={isSaving}
-          />
-          <ProductPublicationSettingsCard
-            currentPublicationMode={currentPublicationMode}
-            isSaving={isSaving}
-            selectedPublicationIds={selectedPublicationIds}
-            settings={settings}
-          />
-          <PricingRuleSettingsCard
-            currentPricingRule={currentPricingRule}
-            isSaving={isSaving}
-          />
-          <DescriptionRuleSettingsCard
-            currentDescriptionRule={currentDescriptionRule}
-            isSaving={isSaving}
-          />
-        </s-grid>
+          <s-grid
+            gap="large"
+            gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+          >
+            <ImportProductSettingsCard
+              currentStatus={currentStatus}
+              isSaving={isSaving}
+            />
+            <ProductPublicationSettingsCard
+              currentPublicationMode={currentPublicationMode}
+              isSaving={isSaving}
+              selectedPublicationIds={selectedPublicationIds}
+              settings={settings}
+            />
+            <PricingRuleSettingsCard
+              currentPricingRule={currentPricingRule}
+              isSaving={isSaving}
+            />
+            <DescriptionRuleSettingsCard
+              currentDescriptionRule={currentDescriptionRule}
+              isSaving={isSaving}
+            />
+          </s-grid>
         </div>
 
         <AdvancedSettingsCard
@@ -393,7 +398,9 @@ function DescriptionRuleSettingsCard({
       statusTone="info"
       title="Regola descrizione"
     >
-      <s-paragraph>{getDescriptionRuleDetail(currentDescriptionRule.mode)}</s-paragraph>
+      <s-paragraph>
+        {getDescriptionRuleDetail(currentDescriptionRule.mode)}
+      </s-paragraph>
       <Form method="post">
         <input type="hidden" name="intent" value="saveDescriptionRule" />
         <s-select
@@ -446,29 +453,41 @@ function SyncCatalogSettingsCard({
         la disponibilità eBay viene aggiornata solo dagli ordini Shopify pagati.
       </s-text>
       <div className="syncbay-balanced-box-grid">
-      <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))">
-        <MetricTile
-          detail="Ultimo aggiornamento incrementale completato."
-          icon="check-circle"
-          label="Ultimo aggiornamento"
-          tone={settings.sync.lastIncrementalFinishedAt ? "success" : unavailableMetric.tone}
-          value={
-            settings.sync.lastIncrementalFinishedAt
-              ? formatDateTime(settings.sync.lastIncrementalFinishedAt)
-              : unavailableMetric.label
-          }
-        />
-        <MetricTile
-          detail="Inserzioni eBay attive collegate a Shopify; gli esauriti non sono inclusi."
-          icon="link"
-          label="eBay attivi"
-          tone="neutral"
-          value={formatNumber(settings.sync.activeMappingCount)}
-        />
-      </s-grid>
+        <s-grid
+          gap="base"
+          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
+        >
+          <MetricTile
+            detail="Ultimo aggiornamento incrementale completato."
+            icon="check-circle"
+            label="Ultimo aggiornamento"
+            tone={
+              settings.sync.lastIncrementalFinishedAt
+                ? "success"
+                : unavailableMetric.tone
+            }
+            value={
+              settings.sync.lastIncrementalFinishedAt
+                ? formatDateTime(settings.sync.lastIncrementalFinishedAt)
+                : unavailableMetric.label
+            }
+          />
+          <MetricTile
+            detail="Inserzioni eBay attive collegate a Shopify; gli esauriti non sono inclusi."
+            icon="link"
+            label="eBay attivi"
+            tone="neutral"
+            value={formatNumber(settings.sync.activeMappingCount)}
+          />
+        </s-grid>
       </div>
       {settings.sync.enablementBlockers.length > 0 ? (
-        <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+        <s-box
+          border="base"
+          borderColor="base"
+          borderRadius="base"
+          padding="base"
+        >
           <s-stack gap="small-200">
             <s-badge tone="warning">Sync non attivabile</s-badge>
             <s-text>
@@ -670,7 +689,9 @@ function PricingRuleSettingsCard({
       description="Prezzo Shopify calcolato dal prezzo eBay."
       icon="product"
       statusLabel={getPricingRuleSummaryLabel(currentPricingRule)}
-      statusTone={currentPricingRule.discountPercent > 0 ? "success" : "neutral"}
+      statusTone={
+        currentPricingRule.discountPercent > 0 ? "success" : "neutral"
+      }
       title="Regola prezzo"
     >
       <s-paragraph>

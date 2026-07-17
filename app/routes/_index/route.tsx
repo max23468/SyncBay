@@ -22,28 +22,28 @@ export default function App() {
   return (
     <AppProvider embedded={false}>
       <s-page heading="SyncBay">
-        <s-badge slot="accessory" tone="info">1.0 privata</s-badge>
+        <s-badge slot="accessory" tone="info">
+          1.0 privata
+        </s-badge>
         <s-section heading="Accesso">
           <s-stack gap="base">
-            <SyncBayBrandPanel
-              detail="Collega il negozio Shopify a SyncBay 1.0 privata e porta il catalogo eBay.it in un flusso controllato."
-            />
-        {showForm && (
-          <Form method="post" action="/auth/login">
-            <s-stack gap="base">
-              <s-text-field
-                id="shop"
-                label="Dominio shop"
-                name="shop"
-                placeholder="my-shop-domain.myshopify.com"
-                required
-              />
-              <s-button type="submit" variant="primary">
-              Accedi
-              </s-button>
-            </s-stack>
-          </Form>
-        )}
+            <SyncBayBrandPanel detail="Collega il negozio Shopify a SyncBay 1.0 privata e porta il catalogo eBay.it in un flusso controllato." />
+            {showForm && (
+              <Form method="post" action="/auth/login">
+                <s-stack gap="base">
+                  <s-text-field
+                    id="shop"
+                    label="Dominio shop"
+                    name="shop"
+                    placeholder="my-shop-domain.myshopify.com"
+                    required
+                  />
+                  <s-button type="submit" variant="primary">
+                    Accedi
+                  </s-button>
+                </s-stack>
+              </Form>
+            )}
           </s-stack>
         </s-section>
 
