@@ -214,6 +214,7 @@ async function runCompletePublish(args) {
           `${error instanceof Error ? error.message : String(error)} ` +
             `Il merge ${mergeSha.slice(0, 12)} potrebbe non essere ancora raggiungibile da origin/main: ` +
             `attendi qualche secondo e ripeti la pubblicazione, il flusso è idempotente.`,
+          { cause: error },
         );
       }
     }
