@@ -1866,6 +1866,10 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     previewResult: filteredPreviewResult,
     shopId: job.shopId,
     shopDomain: job.shop.shopDomain,
+    // Reconcile e delta seller events ripassano l'intero catalogo: senza
+    // questo skip ogni giro riscrive su Shopify anche i prodotti identici,
+    // generando eco products/update e job DETECT a valanga (egress).
+    skipUnchangedSinceLastEbaySnapshot: true,
   });
 
   if (result.status === "blocked" || result.status === "failed") {

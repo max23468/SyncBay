@@ -43,6 +43,7 @@ import {
   buildEbayProductSnapshotPayload,
   getProductSnapshotThumbnailUrl,
 } from "../lib/syncbay-product-snapshot-payload";
+import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
 import {
   buildCatalogImportExecutionResult,
   type CatalogImportExecutionResult,
@@ -523,6 +524,7 @@ export interface CatalogImportExecutionInput {
   reuseOnly?: boolean;
   shopId: string;
   shopDomain: string;
+  skipUnchangedSinceLastEbaySnapshot?: boolean;
 }
 
 export async function executeShopifyCatalogImport(
@@ -570,13 +572,21 @@ export async function executeShopifyCatalogImport(
     });
   }
 
-  const draftProducts = buildShopifyDraftProductInputs(
+  const allDraftProducts = buildShopifyDraftProductInputs(
     input.previewResult,
     importProductStatus,
     pricingRule,
     input.existingCatalogFieldPoliciesByItemId ?? {},
     input.facetBaselinesByItemId ?? {},
   );
+  const unchangedPartition =
+    input.skipUnchangedSinceLastEbaySnapshot === true
+      ? await partitionUnchangedDraftProducts({
+          draftProducts: allDraftProducts,
+          shopId: input.shopId,
+        })
+      : { draftProducts: allDraftProducts, unchangedSkippedCount: 0 };
+  const draftProducts = unchangedPartition.draftProducts;
   const results = await mapWithConcurrency(
     draftProducts,
     DRAFT_PRODUCT_CREATE_CONCURRENCY,
@@ -636,6 +646,7 @@ export async function executeShopifyCatalogImport(
         persistenceResult,
         products: draftProducts,
         results,
+        unchangedSkippedCount: unchangedPartition.unchangedSkippedCount,
       }),
       warnings,
     });
@@ -648,6 +659,7 @@ export async function executeShopifyCatalogImport(
       persistenceResult,
       products: draftProducts,
       results,
+      unchangedSkippedCount: unchangedPartition.unchangedSkippedCount,
     }),
     warnings,
   });
@@ -3212,6 +3224,7 @@ function buildDraftImportSummary(input: {
   persistenceResult: DraftImportPersistenceResult;
   products: ShopifyDraftProductInput[];
   results: ShopifyDraftProductResult[];
+  unchangedSkippedCount?: number;
 }) {
   const failedResults = input.results.flatMap((result, index) =>
     result.status === "failed"
@@ -3255,9 +3268,109 @@ function buildDraftImportSummary(input: {
       input.persistenceResult.publicationPublishedCount,
     publicationSkippedCount: input.persistenceResult.publicationSkippedCount,
     publicationSyncedCount: input.persistenceResult.publicationSyncedCount,
-    requestedCount: input.products.length,
+    requestedCount: input.products.length + (input.unchangedSkippedCount ?? 0),
     reusedCount: input.persistenceResult.reusedCount,
+    unchangedSkippedCount: input.unchangedSkippedCount ?? 0,
   } satisfies Record<string, unknown>;
+}
+
+// Contenuto eBay normalizzato identico all'ultimo snapshot EBAY registrato:
+// la pipeline Shopify può essere saltata senza perdere alcuna modifica.
+export function isDraftProductUnchangedSinceLastEbaySnapshot(input: {
+  draftProduct: ShopifyDraftProductInput;
+  previousEbaySnapshot: Parameters<
+    typeof shouldCreateProductSnapshot
+  >[0]["previous"];
+  shopId: string;
+}) {
+  if (!input.previousEbaySnapshot) return false;
+
+  return !shouldCreateProductSnapshot({
+    next: buildEbayProductSnapshot({
+      draftProduct: input.draftProduct,
+      mappingId: "",
+      shopId: input.shopId,
+    }),
+    previous: input.previousEbaySnapshot,
+  });
+}
+
+async function partitionUnchangedDraftProducts(input: {
+  draftProducts: ShopifyDraftProductInput[];
+  shopId: string;
+}) {
+  if (input.draftProducts.length === 0) {
+    return { draftProducts: input.draftProducts, unchangedSkippedCount: 0 };
+  }
+
+  const mappings = await prisma.productMapping.findMany({
+    select: {
+      ebayItemId: true,
+      id: true,
+      snapshots: {
+        orderBy: { capturedAt: "desc" },
+        select: {
+          currency: true,
+          descriptionHash: true,
+          ebayItemId: true,
+          imageCount: true,
+          payload: true,
+          priceAmount: true,
+          productStatus: true,
+          quantity: true,
+          shopifyProductGid: true,
+          shopifyVariantGid: true,
+          sku: true,
+          source: true,
+          title: true,
+        },
+        take: 1,
+        where: { source: ProductSnapshotSource.EBAY },
+      },
+    },
+    where: {
+      ebayItemId: {
+        in: input.draftProducts.map(
+          (draftProduct) => draftProduct.source.ebayItemId,
+        ),
+      },
+      lastErrorCode: null,
+      marketplaceId: getEbayMarketplaceId(),
+      shopId: input.shopId,
+      shopifyProductGid: { not: null },
+      status: ProductMappingStatus.ACTIVE,
+    },
+  });
+  const mappingsByItemId = new Map(
+    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
+  );
+  const unchangedMappingIds: string[] = [];
+  const changedDraftProducts = input.draftProducts.filter((draftProduct) => {
+    const mapping = mappingsByItemId.get(draftProduct.source.ebayItemId);
+    const unchanged =
+      mapping !== undefined &&
+      isDraftProductUnchangedSinceLastEbaySnapshot({
+        draftProduct,
+        previousEbaySnapshot: mapping.snapshots[0] ?? null,
+        shopId: input.shopId,
+      });
+
+    if (unchanged) unchangedMappingIds.push(mapping.id);
+
+    return !unchanged;
+  });
+
+  if (unchangedMappingIds.length > 0) {
+    await prisma.productMapping.updateMany({
+      data: { lastSyncedAt: new Date() },
+      where: { id: { in: unchangedMappingIds }, shopId: input.shopId },
+    });
+  }
+
+  return {
+    draftProducts: changedDraftProducts,
+    unchangedSkippedCount: unchangedMappingIds.length,
+  };
 }
 
 function buildEbayProductSnapshot(input: {
