@@ -13,7 +13,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   verifica. Configurazione default (`.prettierrc` vuota), `.prettierignore`
   dello scaffold esteso con lockfile, patch e output locali. L'intero repo è
   stato riformattato in un commit dedicato solo-formatting; lo SHA squash su
-  `main` va registrato in `.git-blame-ignore-revs` (PR di follow-up) per non
+  `main` (`013ea1f`) è registrato in `.git-blame-ignore-revs` per non
   inquinare il blame. ESLint non ha regole di formato in conflitto, quindi
   `eslint-config-prettier` non è necessario.
 - Integrato Knip come controllo advisory di file ed export senza consumatori:
