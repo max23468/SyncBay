@@ -1,0 +1,5 @@
+# Commit da ignorare nel blame (git config blame.ignoreRevsFile .git-blame-ignore-revs).
+# GitHub lo applica automaticamente nella vista blame.
+
+# chore: introduci Prettier e riformatta il repository (#484, squash solo-formatting)
+013ea1f8b28cb18fc26994392cae3cd8935123eb
