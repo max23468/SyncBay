@@ -51,6 +51,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   precedente non porta più la GitHub Release sul commit sbagliato. Il confronto
   legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
   vale anche per i tag annotati.
+- `ui:browser-check` verifica il submit per quello che è: la rotta resta al suo
+  posto con lo stato "Salvataggio...", il focus non lascia il bottone e
+  `aria-busy` resta `false`. Il controllo attendeva ancora lo scheletro di
+  rotta rimosso dai submit in 1.0.75, quindi il gate falliva in timeout su
+  `main` pulito. La UI non aveva regressioni.
 
 ## [1.0.75] — 2026-07-16
 
