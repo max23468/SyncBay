@@ -165,7 +165,7 @@ test("treats the GitHub Release, not the pushed tag, as the release signal", () 
   // del tag remoto va letto dalla riga dereferenziata.
   assert.match(
     source,
-    /planTagPublication\(\{ localTagSha, remoteTagSha, mergeSha, tag: plan\.tag \}\)/,
+    /planTagPublication\(\{\s*localTagSha,\s*remoteTagSha,\s*mergeSha,\s*tag: plan\.tag,?\s*\}\)/,
   );
   assert.match(source, /if \(tagPlan\.createTag\)/);
   assert.match(source, /if \(tagPlan\.pushTag\)/);
