@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { shouldRefreshOfflineShopifySession } from "./syncbay-shopify-session-refresh.ts";
 
 test("refreshes non-expiring offline Shopify sessions for Shopify 2027 readiness", () => {

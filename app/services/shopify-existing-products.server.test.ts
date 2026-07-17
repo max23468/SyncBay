@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as shopifyExistingProducts from "./shopify-existing-products.server.ts";
 
 const { loadExistingShopifyProductsForMatching } = shopifyExistingProducts;

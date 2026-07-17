@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { verifyInternalAppSecret } from "./syncbay-internal-auth.ts";
 
 test("rejects internal requests when APP_SECRET is not configured", () => {

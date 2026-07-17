@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as backfillModule from "./syncbay-description-backfill.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as cleanupModule from "./syncbay-description-cleanup.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as descriptionHashModule from "./syncbay-description-hash.ts";
 
 const {

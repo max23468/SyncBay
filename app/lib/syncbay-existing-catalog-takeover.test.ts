@@ -4,7 +4,6 @@ import test from "node:test";
 import type { ImportPreviewItem } from "../services/import-preview.server";
 import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as existingCatalogTakeover from "./syncbay-existing-catalog-takeover.ts";
 
 const {

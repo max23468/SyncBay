@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as syncInterval from "./syncbay-sync-interval.ts";
 
 const { SYNC_TARGET_OPTIONS, getSyncTargetLabel, normalizeSyncTargetSeconds } =

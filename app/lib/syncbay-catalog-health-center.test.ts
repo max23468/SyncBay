@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as catalogHealthCenter from "./syncbay-catalog-health-center.ts";
 
 const { buildCatalogHealthCenter, getCatalogHealthCenterSummary } =

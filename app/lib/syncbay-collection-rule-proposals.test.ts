@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildCollectionRuleReview } from "./syncbay-collection-rule-proposals.ts";
 
 test("warns instead of changing disjunctive title rules without product type intent", () => {

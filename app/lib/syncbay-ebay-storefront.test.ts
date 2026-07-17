@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { getEbayStorefrontMetadata } from "./syncbay-ebay-storefront.ts";
 
 test("extracts assigned eBay store category id and name", () => {

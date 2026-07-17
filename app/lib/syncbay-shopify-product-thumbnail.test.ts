@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { getShopifyProductThumbnailUrl } from "./syncbay-shopify-product-thumbnail.ts";
 
 test("reads the first ready Shopify media image URL", () => {

@@ -1,4 +1,3 @@
-// @ts-expect-error Node strip-types needs the extension in direct lib tests.
 import {
   getSyncBayRequestId,
   logSyncBayRuntimeEvent,

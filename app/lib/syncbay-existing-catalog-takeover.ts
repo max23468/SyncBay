@@ -1,5 +1,4 @@
 import type { ImportPreviewItem } from "../services/import-preview.server";
-// @ts-expect-error Node --experimental-strip-types resolves this pure module import.
 import * as existingCatalogFieldPolicy from "./syncbay-existing-catalog-field-policy.ts";
 import type { ExistingCatalogFieldPolicy } from "./syncbay-existing-catalog-field-policy";
 import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching";

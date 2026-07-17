@@ -1,12 +1,10 @@
 import {
   calculateShopifyPricing,
   type PriceRoundingMode,
-  // @ts-expect-error Node --experimental-strip-types resolves this import.
 } from "./syncbay-pricing-rules.ts";
 import {
   selectShopifyVariantForSync,
   type ShopifyVariantSelectionCandidate,
-  // @ts-expect-error Node --experimental-strip-types resolves this import.
 } from "./syncbay-shopify-variant-selection.ts";
 
 type PriceConflictValue = {

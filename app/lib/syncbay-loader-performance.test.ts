@@ -5,7 +5,6 @@ import {
   createSyncBayLoaderPerformanceTrace,
   assertSyncBayLoaderPayloadBudget,
   logSyncBayLoaderPerformance,
-  // @ts-expect-error node --experimental-strip-types resolves TypeScript test imports with extensions.
 } from "./syncbay-loader-performance.ts";
 
 test("records measured loader performance stages", async () => {

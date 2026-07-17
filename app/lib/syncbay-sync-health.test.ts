@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { getCatalogSyncHealth } from "./syncbay-sync-health.ts";
 
 const now = new Date("2026-06-02T18:00:00.000Z");

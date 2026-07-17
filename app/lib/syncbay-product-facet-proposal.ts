@@ -1,6 +1,4 @@
-// @ts-expect-error Node --experimental-strip-types resolves this pure module import.
 import * as snapshotPayload from "./syncbay-product-snapshot-payload.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this pure module import.
 import * as productFacets from "./syncbay-product-facets.ts";
 import type { SyncBayProductFacet } from "./syncbay-product-facets";
 

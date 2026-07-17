@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { hasProcessedStockLineInJobResults } from "./syncbay-stock-job-idempotency.ts";
 
 test("detects duplicate stock lines already updated by an earlier job", () => {

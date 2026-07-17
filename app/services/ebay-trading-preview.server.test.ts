@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { EbayConnection } from "@prisma/client";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as ebayTradingPreview from "./ebay-trading-preview.server.ts";
 
 const { getEbayTradingCatalogImportPreview } = ebayTradingPreview;

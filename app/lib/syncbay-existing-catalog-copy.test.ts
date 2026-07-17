@@ -8,7 +8,6 @@ import type {
   ExistingCatalogTakeoverStatus,
 } from "./syncbay-existing-catalog-takeover";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import {
   formatExistingCatalogFieldPolicy,
   formatExistingCatalogOperation,
