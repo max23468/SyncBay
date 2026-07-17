@@ -37,7 +37,9 @@ export function buildEbayProductSnapshotPayload(input: {
     skuGenerated: input.skuGenerated,
     status: input.status,
     ...(Object.hasOwn(input, "productFacets")
-      ? { productFacets: (input.productFacets ?? []).map(serializeProductFacet) }
+      ? {
+          productFacets: (input.productFacets ?? []).map(serializeProductFacet),
+        }
       : {}),
     ...(input.ebayPrimaryCategoryId
       ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId }
@@ -155,7 +157,13 @@ export function getProductFacetsFromSnapshotPayload(
     const type = getProductFacetType(candidate?.type);
     const facetValue = getString(candidate?.value);
 
-    if (!key || !label || namespace !== "syncbay_facets" || !type || !facetValue) {
+    if (
+      !key ||
+      !label ||
+      namespace !== "syncbay_facets" ||
+      !type ||
+      !facetValue
+    ) {
       return [];
     }
 

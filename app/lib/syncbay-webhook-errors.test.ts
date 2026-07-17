@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { isTransientWebhookPersistenceError } from "./syncbay-webhook-errors.ts";
 
 test("recognizes database connection timeouts as transient webhook persistence errors", () => {
@@ -61,7 +60,9 @@ test("recognizes connection pool checkout timeouts nested in cause as transient"
 test("recognizes driver handler exits as transient webhook persistence errors", () => {
   assert.equal(
     isTransientWebhookPersistenceError(
-      new Error("(EDBHANDLEREXITED) DbHandler exited. Check logs for more information"),
+      new Error(
+        "(EDBHANDLEREXITED) DbHandler exited. Check logs for more information",
+      ),
     ),
     true,
   );

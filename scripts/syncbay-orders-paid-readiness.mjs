@@ -291,13 +291,21 @@ function printReport(report) {
   console.log("");
   console.log("Coda:");
   console.log(`- job attivi: ${report.queue?.activeJobs ?? 0}`);
-  console.log(`- UPDATE_EBAY_STOCK attivi: ${report.queue?.activeStockJobs ?? 0}`);
-  console.log(`- SYNC_INCREMENTAL attivi: ${report.queue?.activeSyncJobs ?? 0}`);
+  console.log(
+    `- UPDATE_EBAY_STOCK attivi: ${report.queue?.activeStockJobs ?? 0}`,
+  );
+  console.log(
+    `- SYNC_INCREMENTAL attivi: ${report.queue?.activeSyncJobs ?? 0}`,
+  );
   console.log("");
   console.log("Mapping idonei al test:");
   console.log(`- attivi: ${report.mappingCounts?.activeMappings ?? 0}`);
-  console.log(`- attivi con variante Shopify: ${report.mappingCounts?.activeWithVariant ?? 0}`);
-  console.log(`- attivi con snapshot EUR: ${report.mappingCounts?.activeWithEurSnapshot ?? 0}`);
+  console.log(
+    `- attivi con variante Shopify: ${report.mappingCounts?.activeWithVariant ?? 0}`,
+  );
+  console.log(
+    `- attivi con snapshot EUR: ${report.mappingCounts?.activeWithEurSnapshot ?? 0}`,
+  );
   console.log(
     `- idonei con quantità positiva: ${report.mappingCounts?.eligibleQuantityPositive ?? 0}`,
   );
@@ -339,7 +347,9 @@ function printReport(report) {
     ]
       .filter(Boolean)
       .join(", ");
-    const error = job.errorCode ? `, ${job.errorCode}: ${job.errorMessage}` : "";
+    const error = job.errorCode
+      ? `, ${job.errorCode}: ${job.errorMessage}`
+      : "";
     console.log(
       `- ${job.id}: ${job.status}, tentativi ${job.attempts}, aggiornato ${job.updatedAt}${result ? `, ${result}` : ""}${error}`,
     );

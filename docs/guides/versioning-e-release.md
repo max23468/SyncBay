@@ -124,8 +124,7 @@ Prima di dichiarare conclusa una fase, pubblicazione o release:
 
 Il versioning locale non crea deploy.
 
-Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR
-0008.
+Tag Git `vX.Y.Z` e GitHub Release sono obbligatori per release prodotto reali secondo ADR 0008.
 
 Con il deployment Vercel production privato attivo, una pubblicazione completa deve includere:
 

@@ -1,9 +1,6 @@
 type ShopifyCategoryProposalConfidence = "high" | "medium" | "low";
 type ShopifyCategoryProposalSource =
-  | "ebay_primary_category"
-  | "ebay_store_category"
-  | "title"
-  | "fallback";
+  "ebay_primary_category" | "ebay_store_category" | "title" | "fallback";
 
 export interface ShopifyCategoryProposalInput {
   ebayPrimaryCategoryName?: string | null;
@@ -358,7 +355,9 @@ function findMedalsSignal(
   return null;
 }
 
-function findFirstDayCoversSignal(signals: ReturnType<typeof getProposalSignals>) {
+function findFirstDayCoversSignal(
+  signals: ReturnType<typeof getProposalSignals>,
+) {
   const explicitSignal = findMatchingSignal(signals, matchesFirstDayCovers);
   if (explicitSignal) return explicitSignal;
 

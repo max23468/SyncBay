@@ -29,7 +29,10 @@ export function getCoveringProductCheckpoint(input: {
 }) {
   const latest = input.checkpoints
     .filter((checkpoint) => checkpoint.checkpointWeek <= input.snapshotWeek)
-    .sort((left, right) => right.checkpointWeek.getTime() - left.checkpointWeek.getTime())[0];
+    .sort(
+      (left, right) =>
+        right.checkpointWeek.getTime() - left.checkpointWeek.getTime(),
+    )[0];
 
   return latest?.isComplete ? latest : null;
 }

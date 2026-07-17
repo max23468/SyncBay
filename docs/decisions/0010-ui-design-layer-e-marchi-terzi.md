@@ -49,8 +49,8 @@ ammesse oltre allo styling dei disclosure `details/summary` sono:
    connettore verticale, per leggere la cronologia operativa come timeline
    invece che come pila di box uguali.
 8. **Scheda impostazione** (Impostazioni): box verticale con intestazione icona
-   + titolo + badge di stato corrente a colpo d'occhio, poi i controlli; tiene
-   le regole essenziali leggibili senza aprire ogni sezione.
+   - titolo + badge di stato corrente a colpo d'occhio, poi i controlli; tiene
+     le regole essenziali leggibili senza aprire ogni sezione.
 
 Estensione 2026-06-14 (Panoramica), stessa logica di wrapper in light DOM
 attorno a componenti nativi:

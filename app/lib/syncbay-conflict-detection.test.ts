@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as conflictDetection from "./syncbay-conflict-detection.ts";
 
 const {
@@ -172,7 +171,10 @@ test("keeps order stock quantity conflicts open when live Shopify is not aligned
 
 test("detects Shopify conflicts only for active mappings", () => {
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ACTIVE"), true);
-  assert.equal(shouldDetectShopifyConflictsForMappingStatus("OUT_OF_STOCK"), false);
+  assert.equal(
+    shouldDetectShopifyConflictsForMappingStatus("OUT_OF_STOCK"),
+    false,
+  );
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ARCHIVED"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("PAUSED"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ERROR"), false);
@@ -211,9 +213,18 @@ test("resolves open conflicts automatically only for inactive-source mappings", 
     shouldResolveOpenConflictsForInactiveMappingStatus("OUT_OF_STOCK"),
     true,
   );
-  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"), false);
-  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
-  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);
+  assert.equal(
+    shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"),
+    false,
+  );
+  assert.equal(
+    shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"),
+    false,
+  );
+  assert.equal(
+    shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"),
+    false,
+  );
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus(null), false);
 });
 

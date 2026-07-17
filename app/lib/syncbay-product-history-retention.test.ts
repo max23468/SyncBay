@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as retention from "./syncbay-product-history-retention.ts";
 
 const {
@@ -29,9 +28,18 @@ test("uses one UTC maintenance key per day", () => {
 });
 
 test("creates at most one changed checkpoint per mapping source and week", () => {
-  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: null, nextDigest: "a" }), true);
-  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "a" }), false);
-  assert.equal(shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "b" }), true);
+  assert.equal(
+    shouldCreateWeeklyCheckpoint({ currentDigest: null, nextDigest: "a" }),
+    true,
+  );
+  assert.equal(
+    shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "a" }),
+    false,
+  );
+  assert.equal(
+    shouldCreateWeeklyCheckpoint({ currentDigest: "a", nextDigest: "b" }),
+    true,
+  );
 });
 
 test("a complete prior checkpoint covers a stable week without a duplicate checkpoint", () => {

@@ -8,8 +8,10 @@ try {
 
 const FALLBACK_DATABASE_URL = "postgresql://user:pass@localhost:5432/syncbay";
 const databaseUrl =
-  firstPresentEnvValue(process.env.DATABASE_DIRECT_URL, process.env.DATABASE_URL) ??
-  FALLBACK_DATABASE_URL;
+  firstPresentEnvValue(
+    process.env.DATABASE_DIRECT_URL,
+    process.env.DATABASE_URL,
+  ) ?? FALLBACK_DATABASE_URL;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

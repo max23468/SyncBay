@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getImportedProductSingularLabel, getImportedProductsLabel, getImportProductStatusLabelCapitalized, normalizeImportProductStatus } from "./import-product-status.ts";
+import {
+  getImportedProductSingularLabel,
+  getImportedProductsLabel,
+  getImportProductStatusLabelCapitalized,
+  normalizeImportProductStatus,
+} from "./import-product-status.ts";
 
 test("normalizes only DRAFT as a draft import status", () => {
   assert.equal(normalizeImportProductStatus("DRAFT"), "DRAFT");

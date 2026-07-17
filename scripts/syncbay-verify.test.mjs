@@ -109,7 +109,10 @@ test("CI can omit advisory gates already handled by parallel workflows", () => {
     },
   });
 
-  assert.deepEqual(plan.commands.map((entry) => entry.label), ["npm run smoke:ui"]);
+  assert.deepEqual(
+    plan.commands.map((entry) => entry.label),
+    ["npm run smoke:ui"],
+  );
 });
 
 test("CI can leave changed UI gates to the explicit cached browser workflow", () => {
@@ -127,7 +130,10 @@ test("CI can leave changed UI gates to the explicit cached browser workflow", ()
     },
   });
 
-  assert.deepEqual(plan.commands.map((entry) => entry.label), ["npm run lint"]);
+  assert.deepEqual(
+    plan.commands.map((entry) => entry.label),
+    ["npm run lint"],
+  );
 });
 
 test("keeps provider-backed checks manual and accepts the tooling wrapper", () => {
@@ -169,7 +175,10 @@ test("never reuses receipts for publish, live manual checks, or live commands", 
   );
   // The full lane runs a live production audit whose advisories can change
   // even when diff, lockfile and Node stay identical, so it stays fresh.
-  assert.equal(shouldUseReceipt(buildVerificationPlan({ mode: "full" })), false);
+  assert.equal(
+    shouldUseReceipt(buildVerificationPlan({ mode: "full" })),
+    false,
+  );
   // A lane without live commands can reuse a valid receipt.
   assert.equal(
     shouldUseReceipt({

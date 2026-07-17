@@ -42,4 +42,3 @@ export function normalizePricingRule(input: {
     roundingMode: normalizePriceRoundingMode(input.roundingMode),
   };
 }
-

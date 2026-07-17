@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildCollectionCoverageReport } from "./syncbay-collection-coverage-report.ts";
 
 const genericHandles = ["negozio-online", "non-disponibili"];
@@ -22,9 +21,10 @@ test("flags available products that only belong to generic collections", () => {
   });
 
   assert.equal(report.summary.availableOnlyGeneric, 1);
-  assert.deepEqual(report.availableOnlyGeneric.map((row) => row.handle), [
-    "syncbay-ebay-1",
-  ]);
+  assert.deepEqual(
+    report.availableOnlyGeneric.map((row) => row.handle),
+    ["syncbay-ebay-1"],
+  );
 });
 
 test("flags unavailable products that remain in specific collections", () => {

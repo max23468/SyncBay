@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as syncbayBrand from "./syncbay-brand.ts";
 
 const {
@@ -35,21 +34,24 @@ test("adds SyncBay metadata for browser tabs and previews", () => {
     meta.some(
       (entry) =>
         "name" in entry &&
-        entry.name === "application-name" && entry.content === "SyncBay",
+        entry.name === "application-name" &&
+        entry.content === "SyncBay",
     ),
   );
   assert(
     meta.some(
       (entry) =>
         "property" in entry &&
-        entry.property === "og:site_name" && entry.content === "SyncBay",
+        entry.property === "og:site_name" &&
+        entry.content === "SyncBay",
     ),
   );
   assert(
     meta.some(
       (entry) =>
         "name" in entry &&
-        entry.name === "description" && entry.content === SYNCBAY_TAGLINE,
+        entry.name === "description" &&
+        entry.content === SYNCBAY_TAGLINE,
     ),
   );
 });

@@ -1,12 +1,10 @@
 import {
   calculateShopifyPricing,
   type PriceRoundingMode,
-// @ts-expect-error Node --experimental-strip-types resolves this import.
 } from "./syncbay-pricing-rules.ts";
 import {
   selectShopifyVariantForSync,
   type ShopifyVariantSelectionCandidate,
-// @ts-expect-error Node --experimental-strip-types resolves this import.
 } from "./syncbay-shopify-variant-selection.ts";
 
 type PriceConflictValue = {
@@ -44,7 +42,11 @@ export function getAlignedPriceConflictRepair(input: {
   });
   const price = formatShopifyMoney(pricing.priceAmount);
 
-  if (!price || pricing.priceAmount === null || input.ebayPriceAmount === null) {
+  if (
+    !price ||
+    pricing.priceAmount === null ||
+    input.ebayPriceAmount === null
+  ) {
     return null;
   }
 
@@ -94,10 +96,7 @@ export function buildPriceConflictValue(input: {
 
 export function selectPriceConflictRepairVariant<
   Variant extends ShopifyVariantSelectionCandidate,
->(input: {
-  preferredVariantGid?: string | null;
-  variants?: Variant[] | null;
-}) {
+>(input: { preferredVariantGid?: string | null; variants?: Variant[] | null }) {
   return selectShopifyVariantForSync(input);
 }
 

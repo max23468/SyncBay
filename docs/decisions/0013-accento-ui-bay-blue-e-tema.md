@@ -38,22 +38,22 @@ eBay/Shopify come sistema semantico. AGENTS va aggiornato di conseguenza.
   - **info = blu eBay `#0064D2`**;
   - **warning = giallo eBay `#F5AF02`**;
   - **error = rosso eBay `#E53238`**.
-  Ogni ruolo ha tre forme: hue di marca (bordi/icone/accenti), **tinta tenue**
-  per gli sfondi e una **versione scura per il testo** (`-text`), perché gli hue
-  di marca da soli non hanno contrasto sufficiente come testo su bianco.
+    Ogni ruolo ha tre forme: hue di marca (bordi/icone/accenti), **tinta tenue**
+    per gli sfondi e una **versione scura per il testo** (`-text`), perché gli hue
+    di marca da soli non hanno contrasto sufficiente come testo su bianco.
 - **Brand primario = blu eBay `#0064D2`**, **secondario = verde Shopify
   `#95BF47`**.
 - **Accento UI = Bay Blue `#0064D2`** (con `#0a4a94` per gli stati forti): link,
   stati attivi, nodo/hub del battito, sparkline, focus e bottoni primari del
   design layer. **Blu = info E blu = primario coincidono** per scelta: si
-  distinguono per *trattamento*, non per tinta — il primario/azione usa il blu
+  distinguono per _trattamento_, non per tinta — il primario/azione usa il blu
   **pieno**, l'informativo usa la **tinta tenue** + testo blu scuro. Le
   superfici restano neutre; i colori di marca vivono su accenti, icone, badge e
   bordi, non come campiture diffuse o banner che ricreino il logo eBay.
 - **Tema: solo chiaro, ma theme-ready.** Niente dark mode spedito, niente
   interruttore: SyncBay segue l'admin (chiaro). I colori del design layer sono
   espressi come **variabili semantiche** (`--syncbay-success/-warning/-critical/
-  -info` con `-text`/`-tint`, `--syncbay-accent` ecc.) così un eventuale dark
+-info` con `-text`/`-tint`, `--syncbay-accent` ecc.) così un eventuale dark
   mode futuro è un cambio di un blocco di variabili, non una riscrittura.
 
 Questa decisione **sostituisce** la palette direzionale semantica di `BRAND.md`

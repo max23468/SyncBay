@@ -32,9 +32,7 @@ export default function App() {
     navigation.state === "loading" &&
     navigation.formMethod == null &&
     navigation.location?.pathname.startsWith("/app") === true;
-  const pendingCopy = getRoutePendingCopy(
-    navigation.location?.pathname,
-  );
+  const pendingCopy = getRoutePendingCopy(navigation.location?.pathname);
 
   useEffect(() => {
     if (isRoutePending) {

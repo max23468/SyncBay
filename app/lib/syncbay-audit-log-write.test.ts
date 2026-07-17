@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "./syncbay-audit-log-write.ts";
 
 const AUDIT_LOG_SERVICE_FILES = [
@@ -30,9 +29,7 @@ test("does not let AuditLog.create return full rows in runtime services", () => 
       const afterCreateCall = source.slice(index + createCall.length);
 
       if (
-        !/^\s*select:\s*SYNCBAY_AUDIT_LOG_CREATE_SELECT\b/.test(
-          afterCreateCall,
-        )
+        !/^\s*select:\s*SYNCBAY_AUDIT_LOG_CREATE_SELECT\b/.test(afterCreateCall)
       ) {
         missingSelects.push(`${filePath}:${lineNumberAt(source, index)}`);
       }

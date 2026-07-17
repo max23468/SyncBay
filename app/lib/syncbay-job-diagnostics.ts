@@ -29,8 +29,7 @@ export interface SyncJobDiagnostic {
 
 const RETRYABLE_STATUSES = new Set(["FAILED", "RETRYING"]);
 const EBAY_TRADING_RATE_LIMITED = "EBAY_TRADING_RATE_LIMITED";
-const SYNCBAY_INCREMENTAL_ENQUEUE_FAILED =
-  "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED";
+const SYNCBAY_INCREMENTAL_ENQUEUE_FAILED = "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED";
 const EBAY_TRADING_USAGE_LIMIT_PATTERNS = [
   /superato il limite di utilizzo/i,
   /exceeded the usage limit/i,
@@ -88,10 +87,7 @@ export function getManualRetryState(
   };
 }
 
-function isEbayCooldownActive(
-  job: SyncJobDiagnosticInput,
-  now = new Date(),
-) {
+function isEbayCooldownActive(job: SyncJobDiagnosticInput, now = new Date()) {
   if (getTime(job.runAfter) <= now.getTime()) {
     return false;
   }

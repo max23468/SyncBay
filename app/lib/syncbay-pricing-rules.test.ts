@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { calculateShopifyPricing, normalizePricingRuleFormInput, shouldWriteShopifyPricing } from "./syncbay-pricing-rules.ts";
+import {
+  calculateShopifyPricing,
+  normalizePricingRuleFormInput,
+  shouldWriteShopifyPricing,
+} from "./syncbay-pricing-rules.ts";
 
 test("applies an integer percent discount and keeps eBay price as compare-at price", () => {
   const pricing = calculateShopifyPricing({

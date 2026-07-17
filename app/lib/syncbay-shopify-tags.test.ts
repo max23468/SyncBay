@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildShopifyTagSearchQuery, buildSyncBayProductLookupQueries, buildSyncBayShopifyImportTags } from "./syncbay-shopify-tags.ts";
+import {
+  buildShopifyTagSearchQuery,
+  buildSyncBayProductLookupQueries,
+  buildSyncBayShopifyImportTags,
+} from "./syncbay-shopify-tags.ts";
 
 test("imports Shopify products with only the generic eBay store tag", () => {
   assert.deepEqual(buildSyncBayShopifyImportTags(), ["Negozio eBay"]);

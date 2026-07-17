@@ -10,12 +10,12 @@ export default function About() {
   return (
     <AppProvider embedded={false}>
       <s-page heading="Informazioni su SyncBay">
-        <s-badge slot="accessory" tone="info">1.0 privata</s-badge>
+        <s-badge slot="accessory" tone="info">
+          1.0 privata
+        </s-badge>
         <s-section heading="SyncBay">
           <s-stack gap="base">
-            <SyncBayBrandPanel
-              detail="SyncBay nasce per negozianti italiani che vogliono trasformare un negozio eBay.it in un catalogo Shopify ordinato."
-            />
+            <SyncBayBrandPanel detail="SyncBay nasce per negozianti italiani che vogliono trasformare un negozio eBay.it in un catalogo Shopify ordinato." />
             <s-text>
               SyncBay è una Shopify app in distribuzione privata pensata per
               collegare un account eBay.it a Shopify e mantenere il catalogo

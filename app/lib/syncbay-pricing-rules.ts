@@ -100,9 +100,7 @@ export function calculateShopifyPricing(input: {
   };
 }
 
-export function shouldWriteShopifyPricing(
-  input: SyncBayPricingWriteCandidate,
-) {
+export function shouldWriteShopifyPricing(input: SyncBayPricingWriteCandidate) {
   if (!input.previous) return true;
 
   const previousPriceCents = normalizeMoneyComparisonCents(

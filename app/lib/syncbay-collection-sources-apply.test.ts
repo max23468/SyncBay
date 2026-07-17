@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildSourcesUpdate } from "./syncbay-collection-sources-apply.ts";
 
 const bancoteSource = {
@@ -32,7 +31,11 @@ test("updates the product type condition in place and leaves matching inventory 
       appliedDisjunctively: false,
       rules: [
         { column: "TYPE", relation: "CONTAINS", condition: "Banconote" },
-        { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+        {
+          column: "VARIANT_INVENTORY",
+          relation: "GREATER_THAN",
+          condition: "0",
+        },
       ],
     },
   });
@@ -45,7 +48,13 @@ test("updates the product type condition in place and leaves matching inventory 
         conditionsToUpdate: [
           {
             id: "gid://shopify/CollectionSourceInclusionConditionProductType/1",
-            condition: { productType: { matchType: "ALL", relation: "CONTAINS", values: ["Banconote"] } },
+            condition: {
+              productType: {
+                matchType: "ALL",
+                relation: "CONTAINS",
+                values: ["Banconote"],
+              },
+            },
           },
         ],
       },
@@ -78,8 +87,16 @@ test("changes EQUALS to CONTAINS on the existing product type condition", () => 
     proposedRuleSet: {
       appliedDisjunctively: false,
       rules: [
-        { column: "TYPE", relation: "CONTAINS", condition: "Monete in euro:Italia" },
-        { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+        {
+          column: "TYPE",
+          relation: "CONTAINS",
+          condition: "Monete in euro:Italia",
+        },
+        {
+          column: "VARIANT_INVENTORY",
+          relation: "GREATER_THAN",
+          condition: "0",
+        },
       ],
     },
   });
@@ -87,7 +104,13 @@ test("changes EQUALS to CONTAINS on the existing product type condition", () => 
   assert.equal(
     entry.condition.inclusion.conditionsToUpdate?.[0]?.condition &&
       JSON.stringify(entry.condition.inclusion.conditionsToUpdate[0].condition),
-    JSON.stringify({ productType: { matchType: "ALL", relation: "CONTAINS", values: ["Monete in euro:Italia"] } }),
+    JSON.stringify({
+      productType: {
+        matchType: "ALL",
+        relation: "CONTAINS",
+        values: ["Monete in euro:Italia"],
+      },
+    }),
   );
   assert.equal(entry.condition.inclusion.conditionsToCreate, undefined);
 });
@@ -111,8 +134,16 @@ test("creates an inventory condition when the collection lacks one", () => {
     proposedRuleSet: {
       appliedDisjunctively: false,
       rules: [
-        { column: "TYPE", relation: "CONTAINS", condition: "Cataloghi e accessori" },
-        { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+        {
+          column: "TYPE",
+          relation: "CONTAINS",
+          condition: "Cataloghi e accessori",
+        },
+        {
+          column: "VARIANT_INVENTORY",
+          relation: "GREATER_THAN",
+          condition: "0",
+        },
       ],
     },
   });
@@ -144,7 +175,11 @@ test("builds a title-OR condition with ANY matchType and inventory guard under A
         { column: "TITLE", relation: "CONTAINS", condition: "capsul" },
         { column: "TITLE", relation: "CONTAINS", condition: "masterphil" },
         { column: "TITLE", relation: "CONTAINS", condition: "raccoglitore" },
-        { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+        {
+          column: "VARIANT_INVENTORY",
+          relation: "GREATER_THAN",
+          condition: "0",
+        },
       ],
     },
   });

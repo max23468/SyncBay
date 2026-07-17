@@ -28,8 +28,7 @@ export interface ProductFacetBackfillReportRowInput {
   shopifyProductGid: string | null;
 }
 
-interface ProductFacetBackfillReportRow
-  extends ProductFacetBackfillReportRowInput {
+interface ProductFacetBackfillReportRow extends ProductFacetBackfillReportRowInput {
   conflicts: ShopifyProductFacetMetafield[];
   missingMetafields: ShopifyProductFacetMetafield[];
   status: ProductFacetBackfillStatus;
@@ -107,25 +106,25 @@ export function buildProductFacetApplyPlan(
 ): ProductFacetApplyPlan {
   return {
     rows: report.rows.flatMap((row) => {
-        if (
-          row.status !== "applicable" ||
-          !row.shopifyProductGid ||
-          row.missingMetafields.length === 0
-        ) {
-          return [];
-        }
+      if (
+        row.status !== "applicable" ||
+        !row.shopifyProductGid ||
+        row.missingMetafields.length === 0
+      ) {
+        return [];
+      }
 
-        return [
-          {
-            ebayItemId: row.ebayItemId,
-            metafields: row.missingMetafields.map((metafield) => ({
-              ...metafield,
-              ownerId: row.shopifyProductGid!,
-            })),
-            shopifyProductGid: row.shopifyProductGid,
-          },
-        ];
-      }),
+      return [
+        {
+          ebayItemId: row.ebayItemId,
+          metafields: row.missingMetafields.map((metafield) => ({
+            ...metafield,
+            ownerId: row.shopifyProductGid!,
+          })),
+          shopifyProductGid: row.shopifyProductGid,
+        },
+      ];
+    }),
     skipped: {
       alreadyCorrect: report.summary.alreadyCorrect,
       conflictsManual: report.summary.conflictsManual,
@@ -254,7 +253,8 @@ function getProposedFacets(rows: ProductFacetBackfillReportRow[]) {
 
   return [...counts.values()].sort((left, right) => {
     if (right.count !== left.count) return right.count - left.count;
-    if (left.label !== right.label) return left.label.localeCompare(right.label);
+    if (left.label !== right.label)
+      return left.label.localeCompare(right.label);
 
     return left.value.localeCompare(right.value);
   });

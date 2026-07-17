@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as jobDiagnostics from "./syncbay-job-diagnostics.ts";
 
 const { getManualRetryState, getSyncJobDiagnostic } = jobDiagnostics;

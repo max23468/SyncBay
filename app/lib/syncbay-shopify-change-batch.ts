@@ -32,7 +32,8 @@ export function buildShopifyChangeBatch(
       duplicateJobIds.push(candidate.id);
       continue;
     }
-    if (newestByResource.size < maxItems) newestByResource.set(resource, candidate);
+    if (newestByResource.size < maxItems)
+      newestByResource.set(resource, candidate);
   }
 
   return { duplicateJobIds, jobs: [...newestByResource.values()] };

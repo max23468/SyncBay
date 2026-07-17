@@ -46,33 +46,31 @@ if (!harness || !root) {
 
 const config = pageConfig[harness.page];
 const data = getUiFixture(harness.page, harness.state);
-const childRoutes = Object.entries(pageConfig).map(
-  ([page, pageRoute]) => ({
-    action: async () => {
+const childRoutes = Object.entries(pageConfig).map(([page, pageRoute]) => ({
+  action: async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
+    return {
+      intent: "saveSyncTarget",
+      message: "Intervallo salvato nella fixture isolata.",
+      status: "saved",
+      syncTargetSeconds: 300,
+    };
+  },
+  Component: pageRoute.Component,
+  id: page,
+  loader: async () => {
+    if (window.__SYNCBAY_UI_HYDRATED__) {
       await new Promise((resolve) => window.setTimeout(resolve, 80));
-      return {
-        intent: "saveSyncTarget",
-        message: "Intervallo salvato nella fixture isolata.",
-        status: "saved",
-        syncTargetSeconds: 300,
-      };
-    },
-    Component: pageRoute.Component,
-    id: page,
-    loader: async () => {
-      if (window.__SYNCBAY_UI_HYDRATED__) {
-        await new Promise((resolve) => window.setTimeout(resolve, 80));
-      }
-      return getUiFixture(
-        page as UiFixturePage,
-        page === harness.page ? harness.state : "healthy",
-      );
-    },
-    ...(page === "panoramica"
-      ? { index: true }
-      : { path: pageRoute.path.replace("/app/", "") }),
-  }),
-);
+    }
+    return getUiFixture(
+      page as UiFixturePage,
+      page === harness.page ? harness.state : "healthy",
+    );
+  },
+  ...(page === "panoramica"
+    ? { index: true }
+    : { path: pageRoute.path.replace("/app/", "") }),
+}));
 const router = createMemoryRouter(
   [
     {

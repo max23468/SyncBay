@@ -16,13 +16,17 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const args = parseArgs(process.argv.slice(2));
 
 await main().catch((error) => {
-  console.error(`Diagnostica servizi Supabase non riuscita: ${formatError(error)}`);
+  console.error(
+    `Diagnostica servizi Supabase non riuscita: ${formatError(error)}`,
+  );
   process.exit(1);
 });
 
 async function main() {
   const projectRef =
-    args.projectRef ?? process.env.SUPABASE_PROJECT_REF ?? readLinkedProjectRef();
+    args.projectRef ??
+    process.env.SUPABASE_PROJECT_REF ??
+    readLinkedProjectRef();
 
   if (!projectRef) {
     throw new Error(
@@ -31,7 +35,9 @@ async function main() {
   }
 
   const supabaseUrl = normalizeSupabaseUrl(
-    args.supabaseUrl ?? process.env.SUPABASE_URL ?? `https://${projectRef}.supabase.co`,
+    args.supabaseUrl ??
+      process.env.SUPABASE_URL ??
+      `https://${projectRef}.supabase.co`,
   );
   // Separa subito etichetta e valore: `resolvedFrom` e' solo provenienza e
   // finisce nel report stampato, `apiKeyValue` resta confinato negli header.
@@ -164,10 +170,10 @@ function parseApiKeyRows(stdout) {
   const parsed = JSON.parse(stdout.slice(jsonStart));
   const rows = Array.isArray(parsed)
     ? parsed
-    : parsed.api_keys ??
+    : (parsed.api_keys ??
       parsed.keys ??
       Object.values(parsed).find((value) => Array.isArray(value)) ??
-      [];
+      []);
 
   if (!Array.isArray(rows)) return [];
 

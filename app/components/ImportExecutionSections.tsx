@@ -92,7 +92,8 @@ export function DraftImportSection({
         </s-paragraph>
       ) : draftStatus === "blocked" || draftStatus === "failed" ? (
         <s-paragraph>
-          Import Shopify non completato: {draftMessage ?? "requisiti incompleti"}.
+          Import Shopify non completato:{" "}
+          {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : takeoverStatus === "blocked" ? (
         <s-paragraph>
@@ -167,7 +168,9 @@ export function DraftImportSection({
             type="submit"
             variant="primary"
             disabled={
-              isSaving || takeoverBlocked || wizard.draftImport.blockers.length > 0
+              isSaving ||
+              takeoverBlocked ||
+              wizard.draftImport.blockers.length > 0
             }
           >
             {isApplyingTakeover
@@ -212,8 +215,7 @@ export function AfterImportSection({
     <>
       <s-text color="subdued">
         Una volta avviato l&apos;import puoi controllare i prodotti collegati
-        nel Catalogo e completare eventuali canali o default dalle
-        Impostazioni.
+        nel Catalogo e completare eventuali canali o default dalle Impostazioni.
       </s-text>
       <s-stack direction="inline" gap="small-200">
         <s-button href="/app/catalog" variant="primary">

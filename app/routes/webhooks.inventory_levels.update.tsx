@@ -1,7 +1,10 @@
 import type { ActionFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
-import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
+import {
+  getSyncBayRequestId,
+  logSyncBayRuntimeEvent,
+} from "../lib/syncbay-runtime-log";
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
@@ -22,11 +25,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       webhookId,
     });
   } catch (error) {
-    logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "error", requestId, route: "webhooks.inventory-levels.update", durationMs: Math.round(performance.now() - startedAt), outcome: "failed" });
+    logSyncBayRuntimeEvent({
+      event: "shopify-webhook",
+      level: "error",
+      requestId,
+      route: "webhooks.inventory-levels.update",
+      durationMs: Math.round(performance.now() - startedAt),
+      outcome: "failed",
+    });
     throw error;
   }
 
-  logSyncBayRuntimeEvent({ event: "shopify-webhook", level: "info", requestId, route: "webhooks.inventory-levels.update", durationMs: Math.round(performance.now() - startedAt), outcome: "accepted" });
+  logSyncBayRuntimeEvent({
+    event: "shopify-webhook",
+    level: "info",
+    requestId,
+    route: "webhooks.inventory-levels.update",
+    durationMs: Math.round(performance.now() - startedAt),
+    outcome: "accepted",
+  });
 
   return new Response();
 };

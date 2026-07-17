@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildShopifyProductUpdateFieldsFromDraft } from "./syncbay-shopify-product-update-fields.ts";
 
 test("includes Shopify taxonomy category and product type when updating a reused product", () => {

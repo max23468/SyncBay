@@ -30,7 +30,9 @@ export function buildPricingRuleSyncPlan(input: {
 export function isPricingOnlySyncJobPayload(payload: unknown) {
   const object = getJsonObject(payload);
 
-  return object?.pricingOnly === true || object?.source === "pricing_rule_update";
+  return (
+    object?.pricingOnly === true || object?.source === "pricing_rule_update"
+  );
 }
 
 function getPricingRuleSyncSkippedReason(input: {

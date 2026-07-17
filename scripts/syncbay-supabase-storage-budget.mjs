@@ -13,13 +13,19 @@ select
 from storage.objects;
 `;
 
-const { stdout } = await promisify(execFile)("npx", ["supabase", "db", "query", "--linked", "--output", "json", sql], {
-  cwd: getSupabaseCliCwd(),
-  env: await getSupabaseCliEnv(),
-  maxBuffer: 1024 * 1024,
-  timeout: 45_000,
-});
-const start = Math.min(...[stdout.indexOf("{"), stdout.indexOf("[")].filter((value) => value >= 0));
+const { stdout } = await promisify(execFile)(
+  "npx",
+  ["supabase", "db", "query", "--linked", "--output", "json", sql],
+  {
+    cwd: getSupabaseCliCwd(),
+    env: await getSupabaseCliEnv(),
+    maxBuffer: 1024 * 1024,
+    timeout: 45_000,
+  },
+);
+const start = Math.min(
+  ...[stdout.indexOf("{"), stdout.indexOf("[")].filter((value) => value >= 0),
+);
 const parsed = JSON.parse(stdout.slice(start));
 const row = (parsed.rows ?? parsed)?.[0] ?? {};
 const observation = buildSupabaseStorageObservation({

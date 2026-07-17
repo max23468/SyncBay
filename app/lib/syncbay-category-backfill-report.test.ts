@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildCategoryApplyPlan, buildCategoryBackfillReport } from "./syncbay-category-backfill-report.ts";
+import {
+  buildCategoryApplyPlan,
+  buildCategoryBackfillReport,
+} from "./syncbay-category-backfill-report.ts";
 
 const rareCoinsProposal = {
   applied: false,

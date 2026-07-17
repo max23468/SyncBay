@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { resolveShopifyCategoryProposal } from "./syncbay-shopify-category-mapping.ts";
 
 test("maps historic coin listings to collectible coins with high confidence", () => {
@@ -110,8 +109,10 @@ test("keeps commemorative details in productType without using a narrow Shopify 
 test("maps French pre-euro coins away from Italian product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete europee pre euro:Francia",
-      title: "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete europee pre euro:Francia",
+      title:
+        "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
     }).productType,
     "Monete europee pre euro:Francia",
   );
@@ -120,7 +121,8 @@ test("maps French pre-euro coins away from Italian product type", () => {
 test("maps Regno d'Italia lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
       title: "NL* VEIII 1 CENTESIMO 1905 VARIANTE 5 SPOSTATO NC QFDC",
     }).productType,
     "Monete italiane in lire:Regno",
@@ -130,8 +132,10 @@ test("maps Regno d'Italia lire to collection-grade product type", () => {
 test("maps Repubblica lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
-      title: "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
+      title:
+        "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
     }).productType,
     "Monete italiane in lire:Repubblica",
   );
@@ -236,8 +240,7 @@ test("derives category confidence from the text source that matched", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName: "Collezionismo altro",
-      title:
-        "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43",
+      title: "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43",
     }),
     {
       applied: false,
@@ -289,8 +292,7 @@ test("maps music records to records and LPs without assuming vinyl", () => {
 test("maps Fabbri music volumes to records and LPs by maintainer decision", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
-      title:
-        "NL* FABBRI EDITORE I GRANDI MUSICISTI Volume X BACH E BEETHOVEN",
+      title: "NL* FABBRI EDITORE I GRANDI MUSICISTI Volume X BACH E BEETHOVEN",
     }),
     {
       applied: false,

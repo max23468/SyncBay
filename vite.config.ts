@@ -32,9 +32,7 @@ const serverOnlyResourceRouteChunks = new Set([
 const logger = createLogger();
 const viteWarn = logger.warn;
 logger.warn = (message, options) => {
-  const emptyChunkMatch = message.match(
-    /Generated an empty chunk: "([^"]+)"/,
-  );
+  const emptyChunkMatch = message.match(/Generated an empty chunk: "([^"]+)"/);
   if (
     emptyChunkMatch &&
     serverOnlyResourceRouteChunks.has(emptyChunkMatch[1])
@@ -76,9 +74,7 @@ export default defineConfig({
       allow: ["app", "node_modules"],
     },
   },
-  plugins: [
-    reactRouter(),
-  ],
+  plugins: [reactRouter()],
   build: {
     assetsInlineLimit: 0,
     target: ["chrome87", "edge88", "es2020", "firefox78", "safari14.1"],

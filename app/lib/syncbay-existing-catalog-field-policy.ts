@@ -26,12 +26,7 @@ export type ShopifyMediaPolicyNode = {
 };
 
 type JsonValue =
-  | JsonValue[]
-  | { [key: string]: JsonValue }
-  | boolean
-  | null
-  | number
-  | string;
+  JsonValue[] | { [key: string]: JsonValue } | boolean | null | number | string;
 type JsonObject = { [key: string]: JsonValue };
 
 const SYNCBAY_SHOPIFY_SOURCE_TAG = "Negozio eBay";
@@ -51,7 +46,9 @@ export function buildExistingCatalogFieldPolicy(input: {
   const currentTags = input.currentTags ?? [];
   const tagsToRemove = currentTags.filter((tag) => exactRemovals.has(tag));
   const preservedTags = currentTags.filter((tag) => !exactRemovals.has(tag));
-  const sourceTagAlreadyPresent = currentTags.includes(SYNCBAY_SHOPIFY_SOURCE_TAG);
+  const sourceTagAlreadyPresent = currentTags.includes(
+    SYNCBAY_SHOPIFY_SOURCE_TAG,
+  );
 
   return {
     handle: {

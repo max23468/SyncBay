@@ -170,10 +170,13 @@ export async function loadExistingShopifyProductsForMatching(
   const skuHints = options.skuHints ?? [];
 
   if (options.preferTargetedSkuHints) {
-    const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
-      existingProducts: [],
-      skuHints,
-    });
+    const targetedProducts = await loadTargetedShopifyProductsForMatching(
+      admin,
+      {
+        existingProducts: [],
+        skuHints,
+      },
+    );
     const fallbackLimit = normalizeFallbackScanLimit(
       options.fallbackScanLimit,
       limit,
@@ -214,7 +217,10 @@ function applyScannedImageCountsToTargeted(
   for (const product of scannedProducts) {
     const current = imageCountByProduct.get(product.productGid) ?? 0;
     if ((product.shopifyImageCount ?? 0) > current) {
-      imageCountByProduct.set(product.productGid, product.shopifyImageCount ?? 0);
+      imageCountByProduct.set(
+        product.productGid,
+        product.shopifyImageCount ?? 0,
+      );
     }
   }
 
@@ -334,13 +340,26 @@ async function fetchTargetedProductsPage(
   });
 
   if (!response.ok) {
-    logSyncBayRuntimeEvent({ event: "shopify-existing-products-lookup", level: "warn", outcome: `http_${response.status}`, requestId: null, route: "shopify-existing-products" });
+    logSyncBayRuntimeEvent({
+      event: "shopify-existing-products-lookup",
+      level: "warn",
+      outcome: `http_${response.status}`,
+      requestId: null,
+      route: "shopify-existing-products",
+    });
     return getEmptyTargetedProductsPage();
   }
 
   const json = (await response.json()) as ShopifyExistingVariantMatchResponse;
   if (json.errors?.length) {
-    logSyncBayRuntimeEvent({ event: "shopify-existing-products-lookup", level: "warn", failedCount: json.errors.length, outcome: "graphql_errors", requestId: null, route: "shopify-existing-products" });
+    logSyncBayRuntimeEvent({
+      event: "shopify-existing-products-lookup",
+      level: "warn",
+      failedCount: json.errors.length,
+      outcome: "graphql_errors",
+      requestId: null,
+      route: "shopify-existing-products",
+    });
     return getEmptyTargetedProductsPage();
   }
 
@@ -380,9 +399,8 @@ function toMatchCandidates(
 
 function countShopifyImageMedia(product: ExistingProductNode) {
   return (
-    product.media?.nodes?.filter(
-      (media) => media?.mediaContentType === "IMAGE",
-    ).length ?? 0
+    product.media?.nodes?.filter((media) => media?.mediaContentType === "IMAGE")
+      .length ?? 0
   );
 }
 
@@ -443,10 +461,7 @@ function normalizeLimit(value: number | undefined) {
 function normalizeFallbackScanLimit(value: number | undefined, limit: number) {
   if (!Number.isInteger(value)) return limit;
 
-  return Math.min(
-    Math.max(value ?? limit, 0),
-    DEFAULT_EXISTING_PRODUCT_LIMIT,
-  );
+  return Math.min(Math.max(value ?? limit, 0), DEFAULT_EXISTING_PRODUCT_LIMIT);
 }
 
 function dedupeProductsByCandidateKey(products: ShopifyMatchCandidate[]) {

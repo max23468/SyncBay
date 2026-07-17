@@ -104,10 +104,8 @@ export function buildCategoryApplyPlan(
     rows: report.rows.flatMap((row) => {
       const included =
         row.status === "applicable" ||
-        (options.forceCategoryConflicts &&
-          row.status === "conflict_manual") ||
-        (options.includeCategoryConflicts &&
-          isKnownLegacyMapperConflict(row));
+        (options.forceCategoryConflicts && row.status === "conflict_manual") ||
+        (options.includeCategoryConflicts && isKnownLegacyMapperConflict(row));
       if (!included) return [];
 
       const mapped = {
@@ -131,12 +129,12 @@ export function buildCategoryApplyPlan(
       conflictsManual: options.forceCategoryConflicts
         ? 0
         : options.includeCategoryConflicts
-        ? report.rows.filter(
-            (row) =>
-              row.status === "conflict_manual" &&
-              !isKnownLegacyMapperConflict(row),
-          ).length
-        : report.summary.conflictsManual,
+          ? report.rows.filter(
+              (row) =>
+                row.status === "conflict_manual" &&
+                !isKnownLegacyMapperConflict(row),
+            ).length
+          : report.summary.conflictsManual,
       ebayLookupFailed: report.summary.ebayLookupFailed,
       missingShopifyProduct: report.summary.missingShopifyProduct,
       uncertain: report.summary.uncertain,

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { hasEffectiveShopifyScope } from "./syncbay-shopify-scopes.ts";
 
 test("treats Shopify write scopes as satisfying matching read scopes", () => {

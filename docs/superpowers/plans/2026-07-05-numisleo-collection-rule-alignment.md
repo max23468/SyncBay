@@ -246,9 +246,10 @@ test("flags available products that only belong to generic collections", () => {
   });
 
   assert.equal(report.summary.availableOnlyGeneric, 1);
-  assert.deepEqual(report.availableOnlyGeneric.map((row) => row.handle), [
-    "syncbay-ebay-1",
-  ]);
+  assert.deepEqual(
+    report.availableOnlyGeneric.map((row) => row.handle),
+    ["syncbay-ebay-1"],
+  );
 });
 
 test("flags unavailable products that remain in specific collections", () => {
@@ -376,7 +377,9 @@ export function buildCollectionCoverageReport(input: {
   function toReportRow(
     product: CollectionCoverageProduct,
   ): CollectionCoverageReportRow {
-    const collections = product.collections.map((collection) => collection.title);
+    const collections = product.collections.map(
+      (collection) => collection.title,
+    );
     const specificCollections = product.collections
       .filter((collection) => !genericHandles.has(collection.handle))
       .map((collection) => collection.title);
@@ -478,7 +481,11 @@ test("adds inventory guard only to conjunctive specific automatic collections", 
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "TYPE", relation: "CONTAINS", condition: "Cataloghi e accessori" },
+            {
+              column: "TYPE",
+              relation: "CONTAINS",
+              condition: "Cataloghi e accessori",
+            },
           ],
         },
         title: "Cataloghi accessori",
@@ -492,7 +499,11 @@ test("adds inventory guard only to conjunctive specific automatic collections", 
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [
-      { column: "TYPE", relation: "CONTAINS", condition: "Cataloghi e accessori" },
+      {
+        column: "TYPE",
+        relation: "CONTAINS",
+        condition: "Cataloghi e accessori",
+      },
       { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
     ],
   });
@@ -515,7 +526,11 @@ test("does not propose changes for generic collections", () => {
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+            {
+              column: "VARIANT_INVENTORY",
+              relation: "GREATER_THAN",
+              condition: "0",
+            },
           ],
         },
         title: "Negozio Online",
@@ -544,8 +559,16 @@ test("uses product type rules from explicit collection intent", () => {
         ruleSet: {
           appliedDisjunctively: false,
           rules: [
-            { column: "TYPE", relation: "CONTAINS", condition: "Monete e banconote:Banconote" },
-            { column: "VARIANT_INVENTORY", relation: "GREATER_THAN", condition: "0" },
+            {
+              column: "TYPE",
+              relation: "CONTAINS",
+              condition: "Monete e banconote:Banconote",
+            },
+            {
+              column: "VARIANT_INVENTORY",
+              relation: "GREATER_THAN",
+              condition: "0",
+            },
           ],
         },
         title: "Banconote",
@@ -554,7 +577,10 @@ test("uses product type rules from explicit collection intent", () => {
   });
 
   assert.equal(review.proposals.length, 1);
-  assert.equal(review.proposals[0]?.reason, "configured_product_type_alignment");
+  assert.equal(
+    review.proposals[0]?.reason,
+    "configured_product_type_alignment",
+  );
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [
@@ -611,18 +637,14 @@ export interface CollectionRuleProposal {
   currentRuleSet: ShopifyCollectionRuleSet | null;
   handle: string;
   proposedRuleSet: ShopifyCollectionRuleSet;
-  reason:
-    | "configured_product_type_alignment"
-    | "missing_inventory_guard";
+  reason: "configured_product_type_alignment" | "missing_inventory_guard";
   title: string;
 }
 
 export interface CollectionRuleWarning {
   handle: string;
   message: string;
-  reason:
-    | "unsafe_disjunctive_title_rules"
-    | "missing_collection_intent";
+  reason: "unsafe_disjunctive_title_rules" | "missing_collection_intent";
   title: string;
 }
 
@@ -679,21 +701,29 @@ function buildProposedRuleSet(
   collection: ShopifyCollectionForRuleProposal,
   intent: CollectionRuleIntent,
 ):
-  | { reason: CollectionRuleProposal["reason"]; ruleSet: ShopifyCollectionRuleSet }
+  | {
+      reason: CollectionRuleProposal["reason"];
+      ruleSet: ShopifyCollectionRuleSet;
+    }
   | { warning: CollectionRuleWarning }
   | null {
-  const productTypeRules = (intent.productTypeContains ?? []).map((condition) => ({
-    column: "TYPE",
-    condition,
-    relation: "CONTAINS",
-  }));
+  const productTypeRules = (intent.productTypeContains ?? []).map(
+    (condition) => ({
+      column: "TYPE",
+      condition,
+      relation: "CONTAINS",
+    }),
+  );
 
   if (productTypeRules.length > 0) {
     return {
       reason: "configured_product_type_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [...productTypeRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
+        rules: [
+          ...productTypeRules,
+          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
+        ],
       },
     };
   }
@@ -702,7 +732,8 @@ function buildProposedRuleSet(
     return {
       warning: {
         handle: collection.handle,
-        message: "Regola titolo OR non modificata automaticamente: aggiungere inventario la trasformerebbe in AND. Decidere un productType affidabile o usare modello Shopify sources se serve mantenere gruppi OR.",
+        message:
+          "Regola titolo OR non modificata automaticamente: aggiungere inventario la trasformerebbe in AND. Decidere un productType affidabile o usare modello Shopify sources se serve mantenere gruppi OR.",
         reason: "unsafe_disjunctive_title_rules",
         title: collection.title,
       },
@@ -729,14 +760,12 @@ function buildProposedRuleSet(
 function isUnsafeDisjunctiveRuleSet(ruleSet: ShopifyCollectionRuleSet | null) {
   return Boolean(
     ruleSet?.appliedDisjunctively &&
-      ruleSet.rules.filter((rule) => !isInventoryRule(rule)).length > 1,
+    ruleSet.rules.filter((rule) => !isInventoryRule(rule)).length > 1,
   );
 }
 
 function hasInventoryRule(ruleSet: ShopifyCollectionRuleSet) {
-  return ruleSet.rules.some(
-    (rule) => isInventoryRule(rule),
-  );
+  return ruleSet.rules.some((rule) => isInventoryRule(rule));
 }
 
 function isInventoryRule(rule: ShopifyCollectionRule) {
@@ -752,7 +781,10 @@ function areRuleSetsEqual(
   right: ShopifyCollectionRuleSet,
 ) {
   if (!left) return false;
-  return JSON.stringify(normalizeRuleSet(left)) === JSON.stringify(normalizeRuleSet(right));
+  return (
+    JSON.stringify(normalizeRuleSet(left)) ===
+    JSON.stringify(normalizeRuleSet(right))
+  );
 }
 
 function normalizeRuleSet(ruleSet: ShopifyCollectionRuleSet) {
@@ -811,7 +843,7 @@ Use a fallback-only input such as:
 resolveShopifyCategoryProposal({
   ebayPrimaryCategoryName: "Monete e banconote:Monete",
   title: "Moneta commemorativa Expo 2015 FDC",
-})
+});
 ```
 
 Expected: the existing test still asserts `productType: "Monete commemorative"`
@@ -827,8 +859,10 @@ Append these tests to `app/lib/syncbay-shopify-category-mapping.test.ts`:
 test("maps French pre-euro coins away from Italian product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete europee pre euro:Francia",
-      title: "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete europee pre euro:Francia",
+      title:
+        "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
     }).productType,
     "Monete europee pre euro:Francia",
   );
@@ -837,7 +871,8 @@ test("maps French pre-euro coins away from Italian product type", () => {
 test("maps Regno d'Italia lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
       title: "NL* VEIII 1 CENTESIMO 1905 VARIANTE 5 SPOSTATO NC QFDC",
     }).productType,
     "Monete italiane in lire:Regno",
@@ -847,8 +882,10 @@ test("maps Regno d'Italia lire to collection-grade product type", () => {
 test("maps Repubblica lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
-      title: "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
+      ebayPrimaryCategoryName:
+        "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
+      title:
+        "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
     }).productType,
     "Monete italiane in lire:Repubblica",
   );
@@ -1036,8 +1073,18 @@ import { parseCollectionIntents } from "./syncbay-collection-intents.ts";
 test("parses valid collection intents", () => {
   const intents = parseCollectionIntents({
     collectionIntents: [
-      { generic: true, handle: "negozio-online", requirePositiveInventory: true, title: "Negozio Online" },
-      { handle: "banconote", productTypeContains: ["Banconote"], requirePositiveInventory: true, title: "Banconote" },
+      {
+        generic: true,
+        handle: "negozio-online",
+        requirePositiveInventory: true,
+        title: "Negozio Online",
+      },
+      {
+        handle: "banconote",
+        productTypeContains: ["Banconote"],
+        requirePositiveInventory: true,
+        title: "Banconote",
+      },
     ],
   });
 
@@ -1050,8 +1097,16 @@ test("rejects duplicated handles", () => {
     () =>
       parseCollectionIntents({
         collectionIntents: [
-          { handle: "banconote", requirePositiveInventory: true, title: "Banconote" },
-          { handle: "banconote", requirePositiveInventory: true, title: "Banconote duplicate" },
+          {
+            handle: "banconote",
+            requirePositiveInventory: true,
+            title: "Banconote",
+          },
+          {
+            handle: "banconote",
+            requirePositiveInventory: true,
+            title: "Banconote duplicate",
+          },
         ],
       }),
     /duplicato/i,
@@ -1096,36 +1151,58 @@ export interface CollectionRuleIntent {
   title: string;
 }
 
-export function loadCollectionIntents(filePath: string): CollectionRuleIntent[] {
+export function loadCollectionIntents(
+  filePath: string,
+): CollectionRuleIntent[] {
   return parseCollectionIntents(JSON.parse(fs.readFileSync(filePath, "utf8")));
 }
 
 export function parseCollectionIntents(value: unknown): CollectionRuleIntent[] {
-  if (!value || typeof value !== "object" || !Array.isArray((value as { collectionIntents?: unknown }).collectionIntents)) {
-    throw new Error("File intenti non valido: atteso { collectionIntents: [...] }.");
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !Array.isArray((value as { collectionIntents?: unknown }).collectionIntents)
+  ) {
+    throw new Error(
+      "File intenti non valido: atteso { collectionIntents: [...] }.",
+    );
   }
 
   const handles = new Set<string>();
-  return (value as { collectionIntents: unknown[] }).collectionIntents.map((raw) => {
-    const intent = raw as Partial<CollectionRuleIntent>;
-    if (!intent.handle || !intent.title || typeof intent.requirePositiveInventory !== "boolean") {
-      throw new Error("Intento collezione non valido: handle, title e requirePositiveInventory sono obbligatori.");
-    }
-    if (handles.has(intent.handle)) {
-      throw new Error(`Handle collezione duplicato: ${intent.handle}`);
-    }
-    handles.add(intent.handle);
-    if (!intent.generic && (!Array.isArray(intent.productTypeContains) || intent.productTypeContains.length === 0)) {
-      throw new Error(`Intento ${intent.handle} senza productTypeContains: non proporre regole specifiche senza selettore affidabile.`);
-    }
-    return {
-      generic: Boolean(intent.generic),
-      handle: intent.handle,
-      productTypeContains: intent.productTypeContains,
-      requirePositiveInventory: intent.requirePositiveInventory,
-      title: intent.title,
-    };
-  });
+  return (value as { collectionIntents: unknown[] }).collectionIntents.map(
+    (raw) => {
+      const intent = raw as Partial<CollectionRuleIntent>;
+      if (
+        !intent.handle ||
+        !intent.title ||
+        typeof intent.requirePositiveInventory !== "boolean"
+      ) {
+        throw new Error(
+          "Intento collezione non valido: handle, title e requirePositiveInventory sono obbligatori.",
+        );
+      }
+      if (handles.has(intent.handle)) {
+        throw new Error(`Handle collezione duplicato: ${intent.handle}`);
+      }
+      handles.add(intent.handle);
+      if (
+        !intent.generic &&
+        (!Array.isArray(intent.productTypeContains) ||
+          intent.productTypeContains.length === 0)
+      ) {
+        throw new Error(
+          `Intento ${intent.handle} senza productTypeContains: non proporre regole specifiche senza selettore affidabile.`,
+        );
+      }
+      return {
+        generic: Boolean(intent.generic),
+        handle: intent.handle,
+        productTypeContains: intent.productTypeContains,
+        requirePositiveInventory: intent.requirePositiveInventory,
+        title: intent.title,
+      };
+    },
+  );
 }
 ```
 
@@ -1185,7 +1262,10 @@ import { loadCollectionIntents } from "../app/lib/syncbay-collection-intents.ts"
 import { buildCollectionRuleReview } from "../app/lib/syncbay-collection-rule-proposals.ts";
 
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
-const DEFAULT_GENERIC_COLLECTION_HANDLES = ["negozio-online", "non-disponibili"];
+const DEFAULT_GENERIC_COLLECTION_HANDLES = [
+  "negozio-online",
+  "non-disponibili",
+];
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -1207,17 +1287,24 @@ if (!args.apply && args.confirmApply) {
 }
 
 if (args.apply && !args.intentFile) {
-  throw new Error("Apply collezioni bloccato: serve --intent-file con matrice revisionata.");
+  throw new Error(
+    "Apply collezioni bloccato: serve --intent-file con matrice revisionata.",
+  );
 }
 
-const collectionIntents = args.intentFile ? loadCollectionIntents(args.intentFile) : [];
-const genericCollectionHandles =
-  collectionIntents.filter((intent) => intent.generic).map((intent) => intent.handle);
+const collectionIntents = args.intentFile
+  ? loadCollectionIntents(args.intentFile)
+  : [];
+const genericCollectionHandles = collectionIntents
+  .filter((intent) => intent.generic)
+  .map((intent) => intent.handle);
 const collections = await loadCollections(args.shop);
 const products = await loadProducts(args.shop, args.limitProducts);
 const coverage = buildCollectionCoverageReport({
   genericCollectionHandles:
-    genericCollectionHandles.length > 0 ? genericCollectionHandles : DEFAULT_GENERIC_COLLECTION_HANDLES,
+    genericCollectionHandles.length > 0
+      ? genericCollectionHandles
+      : DEFAULT_GENERIC_COLLECTION_HANDLES,
   products,
 });
 const review = buildCollectionRuleReview({
@@ -1270,7 +1357,9 @@ async function loadCollections(shop) {
   const data = executeShopifyQuery(shop, query, {});
   const nodes = data.collections?.nodes ?? [];
   if (data.collections?.pageInfo?.hasNextPage) {
-    throw new Error("Doctor collezioni bloccato: più di 100 collezioni; aggiungere paginazione prima di procedere.");
+    throw new Error(
+      "Doctor collezioni bloccato: più di 100 collezioni; aggiungere paginazione prima di procedere.",
+    );
   }
   return nodes.map((collection) => ({
     handle: collection.handle,
@@ -1299,14 +1388,16 @@ async function loadProducts(shop, limitProducts) {
   let after = null;
   while (true) {
     const data = executeShopifyQuery(shop, query, { after });
-    products.push(...((data.products?.nodes ?? []).map((product) => ({
-      collections: product.collections?.nodes ?? [],
-      handle: product.handle,
-      id: product.id,
-      productType: product.productType ?? null,
-      title: product.title,
-      totalInventory: Number(product.totalInventory ?? 0),
-    }))));
+    products.push(
+      ...(data.products?.nodes ?? []).map((product) => ({
+        collections: product.collections?.nodes ?? [],
+        handle: product.handle,
+        id: product.id,
+        productType: product.productType ?? null,
+        title: product.title,
+        totalInventory: Number(product.totalInventory ?? 0),
+      })),
+    );
     if (limitProducts && products.length >= limitProducts) {
       return products.slice(0, limitProducts);
     }
@@ -1317,16 +1408,28 @@ async function loadProducts(shop, limitProducts) {
 }
 
 function executeShopifyQuery(shop, query, variables) {
-  const output = execFileSync("shopify", [
-    "store", "execute",
-    "--store", shop,
-    "--version", SHOPIFY_ADMIN_API_VERSION,
-    "--json",
-    "--query", query,
-    "--variables", JSON.stringify(variables),
-  ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const output = execFileSync(
+    "shopify",
+    [
+      "store",
+      "execute",
+      "--store",
+      shop,
+      "--version",
+      SHOPIFY_ADMIN_API_VERSION,
+      "--json",
+      "--query",
+      query,
+      "--variables",
+      JSON.stringify(variables),
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
   const start = output.indexOf("{");
-  if (start < 0) throw new Error(`Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`);
+  if (start < 0)
+    throw new Error(
+      `Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`,
+    );
   const parsed = JSON.parse(output.slice(start));
   if (parsed.errors?.length) throw new Error(JSON.stringify(parsed.errors));
   return parsed;
@@ -1342,20 +1445,29 @@ async function applyProposals(shop, proposals) {
         userErrors { field message }
       }
     }`;
-    const output = execFileSync("shopify", [
-      "store", "execute",
-      "--store", shop,
-      "--version", SHOPIFY_ADMIN_API_VERSION,
-      "--json",
-      "--allow-mutations",
-      "--query", mutation,
-      "--variables", JSON.stringify({
-        input: {
-          id: proposal.collectionId,
-          ruleSet: proposal.proposedRuleSet,
-        },
-      }),
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const output = execFileSync(
+      "shopify",
+      [
+        "store",
+        "execute",
+        "--store",
+        shop,
+        "--version",
+        SHOPIFY_ADMIN_API_VERSION,
+        "--json",
+        "--allow-mutations",
+        "--query",
+        mutation,
+        "--variables",
+        JSON.stringify({
+          input: {
+            id: proposal.collectionId,
+            ruleSet: proposal.proposedRuleSet,
+          },
+        }),
+      ],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
     const parsed = JSON.parse(output.slice(output.indexOf("{")));
     const payload = parsed.collectionUpdate ?? parsed.data?.collectionUpdate;
     const userErrors = payload?.userErrors ?? [];
@@ -1403,7 +1515,9 @@ function assertCollectionUpdateSupportsLegacyRuleSet(shop) {
   const hasCollectionUpdateInputArg = data.mutationType?.mutationType?.fields
     ?.find((field) => field.name === "collectionUpdate")
     ?.args?.some((arg) => arg.name === "input");
-  const hasRuleSetField = data.collectionInput?.inputFields?.some((field) => field.name === "ruleSet");
+  const hasRuleSetField = data.collectionInput?.inputFields?.some(
+    (field) => field.name === "ruleSet",
+  );
   if (!hasCollectionUpdateInputArg || !hasRuleSetField) {
     throw new Error(
       "collectionUpdate legacy input/ruleSet non disponibile: aggiornare l'apply al modello Shopify collection/sources prima di scrivere su Shopify.",
@@ -1415,21 +1529,31 @@ function printHumanReport(output) {
   console.log(`Shop: ${output.shopDomain}`);
   console.log(`Prodotti analizzati: ${output.productsAnalyzed}`);
   console.log(`Collezioni analizzate: ${output.collectionsAnalyzed}`);
-  console.log(`Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`);
-  console.log(`Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`);
+  console.log(
+    `Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`,
+  );
+  console.log(
+    `Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`,
+  );
   console.log(`Proposte regole: ${output.proposals.length}`);
   console.log(`Warning regole: ${output.warnings.length}`);
   for (const row of output.coverage.availableOnlyGeneric.slice(0, 20)) {
-    console.log(`- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`);
+    console.log(
+      `- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`,
+    );
   }
   for (const row of output.coverage.unavailableInSpecific.slice(0, 20)) {
-    console.log(`- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`);
+    console.log(
+      `- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`,
+    );
   }
   for (const proposal of output.proposals) {
     console.log(`- proposta: ${proposal.title} | ${proposal.reason}`);
   }
   for (const warning of output.warnings) {
-    console.log(`- warning: ${warning.title} | ${warning.reason} | ${warning.message}`);
+    console.log(
+      `- warning: ${warning.title} | ${warning.reason} | ${warning.message}`,
+    );
   }
 }
 
@@ -1444,7 +1568,8 @@ function parseArgs(argv) {
     else if (arg === "--confirm-apply") parsed.confirmApply = true;
     else if (arg === "--intent-file") parsed.intentFile = argv[++index];
     else if (arg === "--write-plan") parsed.writePlan = argv[++index];
-    else if (arg === "--limit-products") parsed.limitProducts = Number(argv[++index]);
+    else if (arg === "--limit-products")
+      parsed.limitProducts = Number(argv[++index]);
     else throw new Error(`Argomento non riconosciuto: ${arg}`);
   }
   return parsed;

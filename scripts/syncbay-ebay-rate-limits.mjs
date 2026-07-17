@@ -92,7 +92,9 @@ select jsonb_build_object(
   }
 
   if (!payload?.connection) {
-    throw new Error(`Connessione eBay ${marketplaceId} non trovata per ${shopDomain}.`);
+    throw new Error(
+      `Connessione eBay ${marketplaceId} non trovata per ${shopDomain}.`,
+    );
   }
 
   return payload;
@@ -103,20 +105,27 @@ async function getApplicationAccessToken(mode) {
   const clientSecret = process.env.EBAY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error("EBAY_CLIENT_ID e EBAY_CLIENT_SECRET sono necessari per leggere i limiti applicativi eBay.");
+    throw new Error(
+      "EBAY_CLIENT_ID e EBAY_CLIENT_SECRET sono necessari per leggere i limiti applicativi eBay.",
+    );
   }
 
-  const response = await fetch(`${getOauthBaseUrl(mode)}/identity/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+  const response = await fetch(
+    `${getOauthBaseUrl(mode)}/identity/v1/oauth2/token`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        scope:
+          process.env.EBAY_ANALYTICS_RATE_LIMIT_SCOPE ??
+          DEFAULT_ANALYTICS_SCOPE,
+      }),
     },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      scope: process.env.EBAY_ANALYTICS_RATE_LIMIT_SCOPE ?? DEFAULT_ANALYTICS_SCOPE,
-    }),
-  });
+  );
   const body = await response.json().catch(() => ({}));
 
   if (!response.ok || typeof body.access_token !== "string") {
@@ -185,7 +194,9 @@ function selectRules(resources, includeAll) {
     "ReviseInventoryStatus",
   ].map((name) => name.toLowerCase());
   const selected = resources.filter((resource) =>
-    relevantNames.some((name) => resource.resourceName.toLowerCase().includes(name)),
+    relevantNames.some((name) =>
+      resource.resourceName.toLowerCase().includes(name),
+    ),
   );
 
   return selected.length > 0 ? selected : resources.slice(0, 20);
@@ -193,12 +204,10 @@ function selectRules(resources, includeAll) {
 
 function mapRateLimitResources(body, source) {
   return normalizeArray(body.rateLimits).flatMap((rateLimit) =>
-    normalizeArray(rateLimit.resources).map((resource) =>
-      ({
-        ...mapRateLimitResource(rateLimit, resource),
-        source,
-      }),
-    ),
+    normalizeArray(rateLimit.resources).map((resource) => ({
+      ...mapRateLimitResource(rateLimit, resource),
+      source,
+    })),
   );
 }
 
@@ -253,7 +262,9 @@ function printTextSummary(summary) {
   );
 
   if (summary.applicationRateLimitError) {
-    console.log(`Limiti applicativi non letti: ${summary.applicationRateLimitError}`);
+    console.log(
+      `Limiti applicativi non letti: ${summary.applicationRateLimitError}`,
+    );
   }
 
   if (summary.latestIncrementalFailure) {
@@ -271,7 +282,9 @@ function printTextSummary(summary) {
 
   for (const rule of summary.rules) {
     console.log(`- ${rule.resourceName} (${rule.source})`);
-    console.log(`  api: ${rule.apiContext ?? "n/d"}/${rule.apiName ?? "n/d"} ${rule.apiVersion ?? ""}`.trim());
+    console.log(
+      `  api: ${rule.apiContext ?? "n/d"}/${rule.apiName ?? "n/d"} ${rule.apiVersion ?? ""}`.trim(),
+    );
     for (const rate of rule.rates) {
       console.log(
         `  finestra ${rate.timeWindow ?? "n/d"}s: usate ${rate.count ?? "n/d"}, limite ${rate.limit ?? "n/d"}, residue ${rate.remaining ?? "n/d"}, reset ${rate.reset ?? "n/d"}`,
@@ -295,7 +308,9 @@ async function main() {
   const state = await getShopState(args.shop, args.marketplaceId);
 
   if (state.connection.status !== "CONNECTED") {
-    throw new Error(`Connessione eBay non CONNECTED: ${state.connection.status}`);
+    throw new Error(
+      `Connessione eBay non CONNECTED: ${state.connection.status}`,
+    );
   }
 
   const { accessToken, refreshed } = await getAccessToken(state.connection);

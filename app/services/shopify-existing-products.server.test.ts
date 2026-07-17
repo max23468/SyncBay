@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as shopifyExistingProducts from "./shopify-existing-products.server.ts";
 
 const { loadExistingShopifyProductsForMatching } = shopifyExistingProducts;
@@ -9,7 +8,10 @@ const { loadExistingShopifyProductsForMatching } = shopifyExistingProducts;
 test("loads existing Shopify products across pages up to the requested limit", async () => {
   const calls: Array<Record<string, unknown> | undefined> = [];
   const admin = {
-    async graphql(_query: string, options?: { variables?: Record<string, unknown> }) {
+    async graphql(
+      _query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
       calls.push(options?.variables);
       const pageIndex = calls.length;
 
@@ -21,7 +23,13 @@ test("loads existing Shopify products across pages up to the requested limit", a
                 ? [
                     makeProductNode("1", {
                       handle: "moneta-1001",
-                      metafields: [{ key: "ebay_item_id", namespace: "syncbay", value: "1001" }],
+                      metafields: [
+                        {
+                          key: "ebay_item_id",
+                          namespace: "syncbay",
+                          value: "1001",
+                        },
+                      ],
                       sku: "COIN-1001",
                       tags: ["EBAY-1001"],
                       title: " Moneta argento ",
@@ -52,10 +60,15 @@ test("loads existing Shopify products across pages up to the requested limit", a
     },
   };
 
-  const products = await loadExistingShopifyProductsForMatching(admin, { limit: 3 });
+  const products = await loadExistingShopifyProductsForMatching(admin, {
+    limit: 3,
+  });
 
   assert.equal(calls.length, 2);
-  assert.deepEqual(calls.map((variables) => variables?.after ?? null), [null, "cursor-1"]);
+  assert.deepEqual(
+    calls.map((variables) => variables?.after ?? null),
+    [null, "cursor-1"],
+  );
   assert.deepEqual(
     products.map((product) => product.productGid),
     [
@@ -112,8 +125,14 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
     limit: 2,
   });
 
-  assert.deepEqual(calls.map((variables) => variables?.first), [2]);
-  assert.deepEqual(calls.map((variables) => variables?.variantFirst), [10]);
+  assert.deepEqual(
+    calls.map((variables) => variables?.first),
+    [2],
+  );
+  assert.deepEqual(
+    calls.map((variables) => variables?.variantFirst),
+    [10],
+  );
   assert.deepEqual(
     products.map((product) => product.productGid),
     [
@@ -286,7 +305,8 @@ test("counts only Shopify image media for takeover matching", async () => {
 });
 
 test("loads targeted Shopify variants by SKU hints outside the product scan window", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
+    [];
   const admin = {
     async graphql(
       query: string,
@@ -361,7 +381,8 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
 });
 
 test("can prefer targeted SKU hints before a bounded fallback product scan", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
+    [];
   const admin = {
     async graphql(
       query: string,
@@ -482,9 +503,7 @@ test("preserves scanned image counts on targeted matches for the same product", 
     skuHints: ["COIN-TARGETED"],
   });
 
-  const targeted = products.find(
-    (product) => product.sku === "COIN-TARGETED",
-  );
+  const targeted = products.find((product) => product.sku === "COIN-TARGETED");
   // Il prodotto è anche nello scan con 2 immagini: il candidato mirato eredita
   // il conteggio reale invece di restare a 0 e declassare la riga a review.
   assert.equal(targeted?.shopifyImageCount, 2);

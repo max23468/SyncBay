@@ -89,15 +89,14 @@ export function formatCliError(error) {
 export function getSupabaseCliCwd(
   env = process.env,
   fallbackCwd = process.cwd(),
-  {
-    exists = existsSync,
-    runGitWorktreeList = defaultRunGitWorktreeList,
-  } = {},
+  { exists = existsSync, runGitWorktreeList = defaultRunGitWorktreeList } = {},
 ) {
   if (env.SYNCBAY_SUPABASE_CWD) return env.SYNCBAY_SUPABASE_CWD;
   if (hasSupabaseProjectRef(fallbackCwd, exists)) return fallbackCwd;
 
-  return findLinkedSupabaseWorktree({ exists, runGitWorktreeList }) ?? fallbackCwd;
+  return (
+    findLinkedSupabaseWorktree({ exists, runGitWorktreeList }) ?? fallbackCwd
+  );
 }
 
 async function buildSupabaseCliEnv() {

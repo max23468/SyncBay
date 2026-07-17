@@ -83,27 +83,27 @@ messaggio per messaggio con questi file archivio.
 
 Questi sono i sei concept finali da considerare reference operativo.
 
-| Pagina | Concept finale | Motivo |
-| --- | --- | --- |
-| Panoramica | `docs/assets/ui-concepts/2026-06-03/01-panoramica.png` | Corretto dopo il pass che aveva introdotto export: niente export, prossima azione chiara, usa `Quantità da verificare`. |
-| Catalogo | `docs/assets/ui-concepts/2026-06-03/02-catalogo.png` | Rigenerato nel thread ponte: niente viola, niente frecce o segnali di sync catalogo bidirezionale. |
-| Conflitti | `docs/assets/ui-concepts/2026-06-03/03-conflitti.png` | Mantiene le tre azioni decisionali corrette e diagnostica secondaria. |
-| Importazione | `docs/assets/ui-concepts/2026-06-03/04-importazione.png` | Stepper e anteprima coerenti, default `Bozza`/`Attivo` e canali visibili come riepilogo. |
-| Attività | `docs/assets/ui-concepts/2026-06-03/05-attivita.png` | Timeline prima, diagnostica dopo. In implementazione rimuovere o ridimensionare eventuali azioni larghe tipo `Sincronizza tutto`. |
-| Impostazioni | `docs/assets/ui-concepts/2026-06-03/06-impostazioni.png` | Rigenerato nel thread ponte: i quattro box sono uno sotto l'altro, non in una riga. |
+| Pagina       | Concept finale                                           | Motivo                                                                                                                            |
+| ------------ | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Panoramica   | `docs/assets/ui-concepts/2026-06-03/01-panoramica.png`   | Corretto dopo il pass che aveva introdotto export: niente export, prossima azione chiara, usa `Quantità da verificare`.           |
+| Catalogo     | `docs/assets/ui-concepts/2026-06-03/02-catalogo.png`     | Rigenerato nel thread ponte: niente viola, niente frecce o segnali di sync catalogo bidirezionale.                                |
+| Conflitti    | `docs/assets/ui-concepts/2026-06-03/03-conflitti.png`    | Mantiene le tre azioni decisionali corrette e diagnostica secondaria.                                                             |
+| Importazione | `docs/assets/ui-concepts/2026-06-03/04-importazione.png` | Stepper e anteprima coerenti, default `Bozza`/`Attivo` e canali visibili come riepilogo.                                          |
+| Attività     | `docs/assets/ui-concepts/2026-06-03/05-attivita.png`     | Timeline prima, diagnostica dopo. In implementazione rimuovere o ridimensionare eventuali azioni larghe tipo `Sincronizza tutto`. |
+| Impostazioni | `docs/assets/ui-concepts/2026-06-03/06-impostazioni.png` | Rigenerato nel thread ponte: i quattro box sono uno sotto l'altro, non in una riga.                                               |
 
 ## Revisione post-publish 2026-06-05
 
 Route production verificate dentro Shopify Admin:
 
-| Pagina | URL embedded | Esito |
-| --- | --- | --- |
-| Panoramica | `/app` | Struttura corretta, metriche reali e prossima azione visibile. La review aveva rilevato `Ricollega eBay` tra le azioni consigliate anche con account già collegato; corretto in `0.23.6`. |
-| Catalogo | `/app/catalog` | Table-first, thumbnail visibili, filtri separati, una sola colonna `Stato`, paginazione reale. Nessun export o segnale bidirezionale. |
-| Conflitti | `/app/conflicts` | Default su conflitti aperti, azioni `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`, descrizioni leggibili e paginazione reale. |
-| Importazione | `/app/import-preview` | Step progressivi, collegamento eBay nel punto corretto, default/canali riassunti, anteprima paginata e azione di import preservata. |
-| Attività | `/app/activity` | Timeline e controlli rapidi presenti. La review aveva rilevato il filtro cliente `Audit` al posto di `Conflitti` e conflitti recenti non abbastanza visibili nella timeline; corretto in `0.23.6`. |
-| Impostazioni | `/app/settings` | Quattro box verticali confermati: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Nessun quinto box `Account`. |
+| Pagina       | URL embedded          | Esito                                                                                                                                                                                              |
+| ------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Panoramica   | `/app`                | Struttura corretta, metriche reali e prossima azione visibile. La review aveva rilevato `Ricollega eBay` tra le azioni consigliate anche con account già collegato; corretto in `0.23.6`.          |
+| Catalogo     | `/app/catalog`        | Table-first, thumbnail visibili, filtri separati, una sola colonna `Stato`, paginazione reale. Nessun export o segnale bidirezionale.                                                              |
+| Conflitti    | `/app/conflicts`      | Default su conflitti aperti, azioni `Usa valore eBay`, `Mantieni Shopify`, `Ignora campo`, descrizioni leggibili e paginazione reale.                                                              |
+| Importazione | `/app/import-preview` | Step progressivi, collegamento eBay nel punto corretto, default/canali riassunti, anteprima paginata e azione di import preservata.                                                                |
+| Attività     | `/app/activity`       | Timeline e controlli rapidi presenti. La review aveva rilevato il filtro cliente `Audit` al posto di `Conflitti` e conflitti recenti non abbastanza visibili nella timeline; corretto in `0.23.6`. |
+| Impostazioni | `/app/settings`       | Quattro box verticali confermati: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Nessun quinto box `Account`.                                                                |
 
 Copertura dei cinque rilievi della review production precedente:
 
@@ -139,7 +139,7 @@ Deviazioni intenzionali dai PNG:
   reali dell'ambiente collegato durante quella verifica;
 - il logo dei concept non è fonte di verità quando Image Gen lo reinterpreta;
 - Panoramica può mostrare conflitti reali invece di uno stato `Tutto sotto
-  controllo`;
+controllo`;
 - Catalogo non implementa ricerca/salvataggio viste del concept, fuori dal
   perimetro MVP corrente;
 - Conflitti non usa un pannello helper laterale permanente: le decisioni
@@ -160,13 +160,13 @@ Questo pass non sostituisce i concept del 2026-06-03: fissa lo stato effettivo
 dopo il cleanup runtime e separa le superfici già ricontrollate da quelle fuori
 scope.
 
-| Superficie | Stato |
-| --- | --- |
-| `Panoramica` | Ricontrollata live come riferimento di coerenza. Nessuna modifica runtime nel cleanup `0.33.6`. |
-| `Catalogo` | Riallineati badge accessorio, spaziatura filtri e fallback thumbnail senza immagine. |
-| `Conflitti` | Confermata IA con KPI `Aperti`, `Sicuri`, `Da rivedere`, `Da decidere`, `Totale`; fallback thumbnail coerente. |
-| `Importazione` | Riallineati spaziatura filtri e copia primaria sullo scope `write_locations`. |
-| `Attività` | Diagnostica tecnica spostata dietro disclosure, filtri distanziati e timeline più leggibile. |
+| Superficie     | Stato                                                                                                                                                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Panoramica`   | Ricontrollata live come riferimento di coerenza. Nessuna modifica runtime nel cleanup `0.33.6`.                                                                                                                                            |
+| `Catalogo`     | Riallineati badge accessorio, spaziatura filtri e fallback thumbnail senza immagine.                                                                                                                                                       |
+| `Conflitti`    | Confermata IA con KPI `Aperti`, `Sicuri`, `Da rivedere`, `Da decidere`, `Totale`; fallback thumbnail coerente.                                                                                                                             |
+| `Importazione` | Riallineati spaziatura filtri e copia primaria sullo scope `write_locations`.                                                                                                                                                              |
+| `Attività`     | Diagnostica tecnica spostata dietro disclosure, filtri distanziati e timeline più leggibile.                                                                                                                                               |
 | `Impostazioni` | Riallineata con quattro schede operative: `Sync catalogo`, `Import prodotti`, `Canali di vendita`, `Avanzate`. Sync e Avanzate restano a tutta larghezza; Import e Canali possono affiancarsi su desktop e collassano su viewport stretto. |
 
 Il renderer locale di preview ora copre le sei superfici in scope con fixture
@@ -175,14 +175,14 @@ Admin embedded.
 
 ### Matrice temi coperti
 
-| Tema redesign | Copertura |
-| --- | --- |
-| Navigazione embedded e IA a sei voci | Tutte le pagine. |
-| Design layer con icone, tile e badge di stato | Panoramica, Catalogo, Conflitti, Attività e Impostazioni; Importazione usa lo stepper dello stesso layer. |
-| Dettagli tecnici secondari, non dominanti | Importazione, Attività e Impostazioni dietro disclosure; Catalogo e Conflitti restano focalizzate su tabella/decisioni. |
-| Ritmo di spaziatura filtri e controlli | Catalogo, Conflitti, Importazione e Attività; Impostazioni usa form verticali distanziati dentro le schede. |
-| Responsive stretto | Tile, timeline, stepper e schede Impostazioni collassano senza forzare larghezza extra. |
-| Sorgente eBay -> Shopify senza ambiguità bidirezionale | Tutte le pagine; Impostazioni ribadisce che solo gli ordini Shopify aggiornano la disponibilità eBay. |
+| Tema redesign                                          | Copertura                                                                                                               |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Navigazione embedded e IA a sei voci                   | Tutte le pagine.                                                                                                        |
+| Design layer con icone, tile e badge di stato          | Panoramica, Catalogo, Conflitti, Attività e Impostazioni; Importazione usa lo stepper dello stesso layer.               |
+| Dettagli tecnici secondari, non dominanti              | Importazione, Attività e Impostazioni dietro disclosure; Catalogo e Conflitti restano focalizzate su tabella/decisioni. |
+| Ritmo di spaziatura filtri e controlli                 | Catalogo, Conflitti, Importazione e Attività; Impostazioni usa form verticali distanziati dentro le schede.             |
+| Responsive stretto                                     | Tile, timeline, stepper e schede Impostazioni collassano senza forzare larghezza extra.                                 |
+| Sorgente eBay -> Shopify senza ambiguità bidirezionale | Tutte le pagine; Impostazioni ribadisce che solo gli ordini Shopify aggiornano la disponibilità eBay.                   |
 
 ## Readiness screenshot e microcopy 2026-06-05
 

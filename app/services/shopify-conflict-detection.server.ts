@@ -41,7 +41,10 @@ interface ShopifyConflictBatchVariant {
   price?: string | null;
   inventoryItem?: {
     inventoryLevel?: {
-      quantities?: Array<{ name?: string | null; quantity?: number | null }> | null;
+      quantities?: Array<{
+        name?: string | null;
+        quantity?: number | null;
+      }> | null;
     } | null;
   } | null;
 }
@@ -66,7 +69,12 @@ export interface ConflictProductTarget {
 export interface ConflictDetectionPersistence {
   jobId: string;
   mappingId: string | null;
-  outcome: "conflict_opened" | "conflict_resolved" | "mapping_not_found" | "noop" | "failed";
+  outcome:
+    | "conflict_opened"
+    | "conflict_resolved"
+    | "mapping_not_found"
+    | "noop"
+    | "failed";
   fields: string[];
   errorCode?: string;
   shopId?: string;
@@ -74,7 +82,9 @@ export interface ConflictDetectionPersistence {
 }
 
 export interface ShopifyConflictDetectionPorts {
-  loadMappings(jobs: ShopifyChangeBatchJob[]): Promise<Map<string, ConflictMapping>>;
+  loadMappings(
+    jobs: ShopifyChangeBatchJob[],
+  ): Promise<Map<string, ConflictMapping>>;
   loadBaselines(mappingIds: string[]): Promise<Map<string, ConflictBaseline[]>>;
   loadProducts(input: {
     targets: ConflictProductTarget[];
@@ -110,19 +120,31 @@ export async function detectShopifyChangesBatch(
         : null;
     const mapping = key ? mappings.get(key) : null;
     if (!mapping) {
-      results.push({ jobId: job.id, mappingId: null, outcome: "mapping_not_found", fields: [] });
+      results.push({
+        jobId: job.id,
+        mappingId: null,
+        outcome: "mapping_not_found",
+        fields: [],
+      });
       continue;
     }
     if (mapping.status !== "ACTIVE" || !mapping.shopifyProductGid) {
-      results.push({ jobId: job.id, mappingId: mapping.id, outcome: "noop", fields: [] });
+      results.push({
+        jobId: job.id,
+        mappingId: mapping.id,
+        outcome: "noop",
+        fields: [],
+      });
       continue;
     }
     mappingByJob.set(job.id, mapping);
   }
 
-  const activeMappings = [...new Map(
-    [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
-  ).values()];
+  const activeMappings = [
+    ...new Map(
+      [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
+    ).values(),
+  ];
   const mappingIds = activeMappings.map(({ id }) => id);
   const baselinesBeforeShopify = await ports.loadBaselines(mappingIds);
   // Un target per mapping (non per prodotto): due mapping su varianti diverse
@@ -131,44 +153,54 @@ export async function detectShopifyChangesBatch(
   // mappingId così le varianti sorelle non si sovrascrivono a vicenda.
   const targets = activeMappings.flatMap((mapping) =>
     mapping.shopifyProductGid
-      ? [{
-          mappingId: mapping.id,
-          productGid: mapping.shopifyProductGid,
-          variantGid: mapping.shopifyVariantGid,
-        }]
+      ? [
+          {
+            mappingId: mapping.id,
+            productGid: mapping.shopifyProductGid,
+            variantGid: mapping.shopifyVariantGid,
+          },
+        ]
       : [],
   );
-  const products = targets.length > 0
-    ? await ports.loadProducts({
-        targets,
-        shopDomain: input.shopDomain,
-        defaultLocationGid: input.defaultLocationGid ?? null,
-      })
-    : new Map<string, ShopifyConflictProduct>();
+  const products =
+    targets.length > 0
+      ? await ports.loadProducts({
+          targets,
+          shopDomain: input.shopDomain,
+          defaultLocationGid: input.defaultLocationGid ?? null,
+        })
+      : new Map<string, ShopifyConflictProduct>();
   let providerReadCount = targets.length > 0 ? 1 : 0;
   const baselines = await ports.loadBaselines(mappingIds);
-  const advancedMappingIds = new Set(mappingIds.filter((mappingId) =>
-    baselineSignature(baselinesBeforeShopify.get(mappingId)) !==
-    baselineSignature(baselines.get(mappingId)),
-  ));
+  const advancedMappingIds = new Set(
+    mappingIds.filter(
+      (mappingId) =>
+        baselineSignature(baselinesBeforeShopify.get(mappingId)) !==
+        baselineSignature(baselines.get(mappingId)),
+    ),
+  );
   const unstableMappingIds = new Set<string>();
 
   if (advancedMappingIds.size > 0) {
-    const retryTargets = targets.filter(({ mappingId }) => advancedMappingIds.has(mappingId));
+    const retryTargets = targets.filter(({ mappingId }) =>
+      advancedMappingIds.has(mappingId),
+    );
     const retryProducts = await ports.loadProducts({
       targets: retryTargets,
       shopDomain: input.shopDomain,
       defaultLocationGid: input.defaultLocationGid ?? null,
     });
     providerReadCount += 1;
-    for (const [mappingId, product] of retryProducts) products.set(mappingId, product);
+    for (const [mappingId, product] of retryProducts)
+      products.set(mappingId, product);
 
     const retryBaselines = await ports.loadBaselines([...advancedMappingIds]);
     for (const mappingId of advancedMappingIds) {
       if (
         baselineSignature(baselines.get(mappingId)) !==
         baselineSignature(retryBaselines.get(mappingId))
-      ) unstableMappingIds.add(mappingId);
+      )
+        unstableMappingIds.add(mappingId);
       baselines.set(mappingId, retryBaselines.get(mappingId) ?? []);
     }
   }
@@ -237,7 +269,15 @@ function getConflictValues(
     baselines.flatMap((baseline) =>
       baseline.serializedValue === live[baseline.field]
         ? []
-        : [[baseline.field, { baseline: baseline.serializedValue, shopify: live[baseline.field] }]],
+        : [
+            [
+              baseline.field,
+              {
+                baseline: baseline.serializedValue,
+                shopify: live[baseline.field],
+              },
+            ],
+          ],
     ),
   );
 }
@@ -280,8 +320,12 @@ function getVariantAvailableAtLocation(
 export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDetectionPorts {
   return {
     async loadMappings(jobs) {
-      const productGids = jobs.flatMap(({ productGid }) => productGid ? [productGid] : []);
-      const inventoryGids = jobs.flatMap(({ inventoryItemGid }) => inventoryItemGid ? [inventoryItemGid] : []);
+      const productGids = jobs.flatMap(({ productGid }) =>
+        productGid ? [productGid] : [],
+      );
+      const inventoryGids = jobs.flatMap(({ inventoryItemGid }) =>
+        inventoryItemGid ? [inventoryItemGid] : [],
+      );
       const rows = await prisma.productMapping.findMany({
         where: {
           shopId: jobs[0]?.shopId,
@@ -293,8 +337,10 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       });
       const map = new Map<string, ConflictMapping>();
       for (const row of rows) {
-        if (row.shopifyProductGid) map.set(`product:${row.shopifyProductGid}`, row);
-        if (row.shopifyInventoryItemGid) map.set(`inventory:${row.shopifyInventoryItemGid}`, row);
+        if (row.shopifyProductGid)
+          map.set(`product:${row.shopifyProductGid}`, row);
+        if (row.shopifyInventoryItemGid)
+          map.set(`inventory:${row.shopifyInventoryItemGid}`, row);
       }
       return map;
     },
@@ -307,7 +353,11 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         const current: ConflictBaseline[] = [];
         const add = (field: ConflictBaseline["field"], value: unknown) => {
           if (value == null) return;
-          current.push({ mappingId: baseline.mappingId, field, serializedValue: String(value) });
+          current.push({
+            mappingId: baseline.mappingId,
+            field,
+            serializedValue: String(value),
+          });
         };
         add("title", baseline.title);
         add("description", baseline.descriptionHash);
@@ -320,14 +370,22 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
 
       const snapshots = await prisma.productSnapshot.findMany({
         orderBy: { capturedAt: "desc" },
-        where: { mappingId: { in: mappingIds }, source: ProductSnapshotSource.SYNCBAY },
+        where: {
+          mappingId: { in: mappingIds },
+          source: ProductSnapshotSource.SYNCBAY,
+        },
       });
       for (const snapshot of snapshots) {
         if (!snapshot.mappingId) continue;
         const current = result.get(snapshot.mappingId) ?? [];
         const add = (field: ConflictBaseline["field"], value: unknown) => {
-          if (value == null || current.some((entry) => entry.field === field)) return;
-          current.push({ mappingId: snapshot.mappingId!, field, serializedValue: String(value) });
+          if (value == null || current.some((entry) => entry.field === field))
+            return;
+          current.push({
+            mappingId: snapshot.mappingId!,
+            field,
+            serializedValue: String(value),
+          });
         };
         add("title", snapshot.title);
         add("description", snapshot.descriptionHash);
@@ -343,8 +401,9 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       const admin = await getShopifyAdminGraphqlClient(shopDomain);
       // Budget di lettura provider sui prodotti distinti; i mapping oltre il cap
       // restano fuori dalla mappa e vengono ritentati come SHOPIFY_PRODUCT_NOT_FOUND.
-      const cappedProductGids = [...new Set(targets.map((target) => target.productGid))]
-        .slice(0, 25);
+      const cappedProductGids = [
+        ...new Set(targets.map((target) => target.productGid)),
+      ].slice(0, 25);
       const includedProducts = new Set(cappedProductGids);
       const cappedTargets = targets.filter((target) =>
         includedProducts.has(target.productGid),
@@ -352,9 +411,13 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       // I nodi ProductVariant portano la variante di ciascun mapping: li
       // richiediamo nella stessa `nodes(ids:)` dei prodotti, un solo read copre
       // entrambi.
-      const variantGids = [...new Set(
-        cappedTargets.flatMap((target) => target.variantGid ? [target.variantGid] : []),
-      )];
+      const variantGids = [
+        ...new Set(
+          cappedTargets.flatMap((target) =>
+            target.variantGid ? [target.variantGid] : [],
+          ),
+        ),
+      ];
       const ids = [...cappedProductGids, ...variantGids];
       const response = await admin.graphql(
         buildConflictBatchQuery(defaultLocationGid),
@@ -364,7 +427,7 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
             : { ids },
         },
       );
-      const body = await response.json() as {
+      const body = (await response.json()) as {
         data?: { nodes?: ShopifyConflictBatchNode[] };
       };
       const nodes = body.data?.nodes ?? [];
@@ -390,11 +453,12 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         if (!productNode) continue;
         const firstVariant = productNode.variants?.nodes?.[0] ?? null;
         const variant =
-          (target.variantGid ? variantByGid.get(target.variantGid) : null) ?? firstVariant;
+          (target.variantGid ? variantByGid.get(target.variantGid) : null) ??
+          firstVariant;
         const locationQuantity = getVariantAvailableAtLocation(variant);
         const quantity = hasManagedLocation
           ? locationQuantity
-          : locationQuantity ?? variant?.inventoryQuantity ?? null;
+          : (locationQuantity ?? variant?.inventoryQuantity ?? null);
         result.set(target.mappingId, {
           productGid: target.productGid,
           title: productNode.title ?? "",
@@ -402,20 +466,25 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
           status: productNode.status ?? "",
           priceAmount: variant?.price ?? null,
           quantity,
-          imageCount: productNode.media?.nodes?.filter(
-            (media) => media.mediaContentType === "IMAGE",
-          ).length ?? 0,
+          imageCount:
+            productNode.media?.nodes?.filter(
+              (media) => media.mediaContentType === "IMAGE",
+            ).length ?? 0,
         });
       }
       return result;
     },
     async persist(results) {
       for (const result of results) {
-        if (!result.mappingId || !result.shopId || result.outcome === "failed") continue;
+        if (!result.mappingId || !result.shopId || result.outcome === "failed")
+          continue;
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- letture conflitti per mapping, in serie per contenere le connessioni concorrenti sul pooler.
         const open = await prisma.syncConflict.findMany({
           select: { field: true, id: true },
-          where: { mappingId: result.mappingId, status: SyncConflictStatus.OPEN },
+          where: {
+            mappingId: result.mappingId,
+            status: SyncConflictStatus.OPEN,
+          },
         });
         for (const field of result.fields) {
           const values = result.values?.[field];
@@ -427,8 +496,20 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
             shopifyValue: values?.shopify ?? Prisma.JsonNull,
           };
           // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
-          if (existing) await prisma.syncConflict.update({ data, where: { id: existing.id } });
-          else await prisma.syncConflict.create({ data: { ...data, field, mappingId: result.mappingId, shopId: result.shopId } });
+          if (existing)
+            await prisma.syncConflict.update({
+              data,
+              where: { id: existing.id },
+            });
+          else
+            await prisma.syncConflict.create({
+              data: {
+                ...data,
+                field,
+                mappingId: result.mappingId,
+                shopId: result.shopId,
+              },
+            });
         }
         const alignedFields = getAlignedOpenConflictFields({
           detectedConflictFields: result.fields,
@@ -436,8 +517,15 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         });
         if (alignedFields.length > 0) {
           await prisma.syncConflict.updateMany({
-            data: { resolvedAt: new Date(), status: SyncConflictStatus.RESOLVED },
-            where: { field: { in: alignedFields }, mappingId: result.mappingId, status: SyncConflictStatus.OPEN },
+            data: {
+              resolvedAt: new Date(),
+              status: SyncConflictStatus.RESOLVED,
+            },
+            where: {
+              field: { in: alignedFields },
+              mappingId: result.mappingId,
+              status: SyncConflictStatus.OPEN,
+            },
           });
         }
       }

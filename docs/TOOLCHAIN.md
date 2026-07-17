@@ -30,19 +30,19 @@ forzare installazioni o downgrade dentro la repo.
 
 ## Stack applicativo
 
-| Area                        | Tool                                  |
-| --------------------------- | ------------------------------------- |
-| Shopify app                 | Shopify CLI `4.4.0`                   |
-| Shopify Admin/Webhook API   | `2026-07`                             |
-| Frontend/backend app        | React Router, React, TypeScript, Vite |
-| Hosting previsto            | Vercel                                |
-| Database                    | Supabase Postgres                     |
+| Area                        | Tool                                    |
+| --------------------------- | --------------------------------------- |
+| Shopify app                 | Shopify CLI `4.4.0`                     |
+| Shopify Admin/Webhook API   | `2026-07`                               |
+| Frontend/backend app        | React Router, React, TypeScript, Vite   |
+| Hosting previsto            | Vercel                                  |
+| Database                    | Supabase Postgres                       |
 | ORM                         | Prisma `7.8.0` con `@prisma/adapter-pg` |
-| Queue e scheduler previsti  | Supabase Queues e Supabase Cron       |
-| Storage immagini temporaneo | Supabase Storage privato              |
-| Osservabilità baseline      | Vercel Web Analytics e Speed Insights |
-| Quality React               | React Doctor                          |
-| Codice morto                | Knip                                  |
+| Queue e scheduler previsti  | Supabase Queues e Supabase Cron         |
+| Storage immagini temporaneo | Supabase Storage privato                |
+| Osservabilità baseline      | Vercel Web Analytics e Speed Insights   |
+| Quality React               | React Doctor                            |
+| Codice morto                | Knip                                    |
 
 ## Aggiornamenti automatici
 
@@ -91,63 +91,64 @@ cancellati.
 
 ## Comandi locali
 
-| Scopo                         | Comando                                                                                     |
-| ----------------------------- | ------------------------------------------------------------------------------------------- |
-| Installazione                 | `npm install`                                                                               |
-| Sviluppo Shopify              | `npm run dev`                                                                               |
-| Typecheck                     | `npm run typecheck`                                                                         |
-| Lint                          | `npm run lint`                                                                              |
-| Build                         | `npm run build`                                                                             |
-| Smoke UI                      | `npm run smoke:ui`                                                                          |
-| Render UI fixture isolato     | `npm run ui:check`                                                                          |
-| Browser UI fixture isolato    | `npm run ui:browser-check`                                                                  |
-| Misura performance loader     | `npm run perf:loaders -- --since 10m`                                                       |
-| Screenshot UI Admin live      | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                           |
-| Test librerie pure            | `npm run test:lib`                                                                          |
-| Test servizi server           | `npm run test:services`                                                                     |
-| Test runtime completo         | `npm run test:runtime`                                                                      |
-| Coverage moduli puri          | `npm run coverage:lib`                                                                      |
-| Audit produzione              | `npm run audit:prod`                                                                        |
-| Generazione Prisma            | `npm run prisma:generate`                                                                   |
-| Validazione Prisma            | `npm run prisma:validate`                                                                   |
-| Advisor Supabase              | `npm run db:verify`                                                                         |
-| Servizi HTTP Supabase         | `npm run supabase:services`                                                                 |
-| Doctor locale                 | `npm run doctor:local`                                                                      |
-| Creazione worktree            | `npm run worktree:create -- --branch codex/<tema> [--base origin/main] [--dry-run]`         |
-| Ripresa setup worktree        | `npm run worktree:prepare`                                                                  |
-| Self-review pre-PR            | `npm run review:pre-pr -- --base origin/main`                                               |
-| Preflight pubblicazione       | `npm run publish:preflight -- --remote`                                                     |
-| Pubblicazione completa PR     | `npm run publish:complete [-- --pr <numero>]`                                               |
-| Verifica automatica del diff  | `npm run verify:changed -- --base origin/main`                                              |
-| Verifica runtime completa     | `npm run verify:full [-- --force]`                                                          |
-| Verifica pubblicazione        | `npm run verify:publish -- --remote`                                                        |
-| Diagnostica job import        | `npm run jobs:status -- --shop <shop.myshopify.com>`                                   |
-| Budget egress Supabase        | `npm run egress:budget -- --budget-gb 5`                                                    |
-| Budget storage database       | `npm run db:storage-budget`                                                                 |
-| Budget Supabase Storage       | `npm run storage:budget`                                                                    |
-| Budget provider aggregato     | `npm run provider:budget`                                                                   |
-| Budget bundle                  | `npm run bundle:budget`                                                                     |
-| Verifica documentazione       | `npm run docs:check`                                                                        |
-| Maintenance storia prodotto  | `npm run history:maintain -- --dry-run`                                                     |
-| Archivio job storici          | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`           |
-| Doctor conflitti/stale        | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                              |
-| Limiti eBay Trading           | `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`                              |
-| Readiness ordini pagati       | `npm run orders:paid-readiness -- --shop <shop.myshopify.com>`                         |
-| Verifica campione import      | `npm run import:verify -- --shop <shop.myshopify.com> --sample 10`                     |
-| Report pulizia descrizioni    | `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com> --sample 20`       |
-| Ripristino stock eBay         | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write` |
-| Orfani categoria negozio      | `npm run ebay:store-category-orphans -- --shop <shop.myshopify.com> [--limit N]`       |
-| Dry-run categorie             | `npm run categories:backfill -- --shop <shop.myshopify.com> [--limit N]`               |
-| Backfill descrizioni pulite   | `npm run descriptions:backfill-cleanup -- --shop <shop.myshopify.com> [--limit N]`     |
-| Dry-run faccette storefront   | `npm run facets:backfill -- --shop <shop.myshopify.com> [--limit N]`                   |
-| Doctor collezioni             | `npm run collections:doctor -- --shop <shop.myshopify.com> [--intent-file f.json] [--json] [--limit-products N]` |
-| Diagnostica immagini Catalogo | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`             |
-| Test guardia stock eBay       | `npm run test:stock-guard`                                                                  |
-| Test script e workflow        | `npm run test:tooling`                                                                      |
-| React Doctor latest           | `npm run quality:react-doctor`                                                              |
-| Codice morto ed export inutili | `npm run quality:knip`                                                                     |
-| Release dry-run               | `npm run release:dry-run`                                                                   |
-| Release locale                | `npm run release`                                                                           |
+| Scopo                          | Comando                                                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Installazione                  | `npm install`                                                                                                    |
+| Sviluppo Shopify               | `npm run dev`                                                                                                    |
+| Typecheck                      | `npm run typecheck`                                                                                              |
+| Lint                           | `npm run lint`                                                                                                   |
+| Formattazione Prettier         | `npm run format` (applica) / `npm run format:check` (verifica)                                                   |
+| Build                          | `npm run build`                                                                                                  |
+| Smoke UI                       | `npm run smoke:ui`                                                                                               |
+| Render UI fixture isolato      | `npm run ui:check`                                                                                               |
+| Browser UI fixture isolato     | `npm run ui:browser-check`                                                                                       |
+| Misura performance loader      | `npm run perf:loaders -- --since 10m`                                                                            |
+| Screenshot UI Admin live       | `npm run ui:shot-live -- [VoceNav] [nome-output]`                                                                |
+| Test librerie pure             | `npm run test:lib`                                                                                               |
+| Test servizi server            | `npm run test:services`                                                                                          |
+| Test runtime completo          | `npm run test:runtime`                                                                                           |
+| Coverage moduli puri           | `npm run coverage:lib`                                                                                           |
+| Audit produzione               | `npm run audit:prod`                                                                                             |
+| Generazione Prisma             | `npm run prisma:generate`                                                                                        |
+| Validazione Prisma             | `npm run prisma:validate`                                                                                        |
+| Advisor Supabase               | `npm run db:verify`                                                                                              |
+| Servizi HTTP Supabase          | `npm run supabase:services`                                                                                      |
+| Doctor locale                  | `npm run doctor:local`                                                                                           |
+| Creazione worktree             | `npm run worktree:create -- --branch codex/<tema> [--base origin/main] [--dry-run]`                              |
+| Ripresa setup worktree         | `npm run worktree:prepare`                                                                                       |
+| Self-review pre-PR             | `npm run review:pre-pr -- --base origin/main`                                                                    |
+| Preflight pubblicazione        | `npm run publish:preflight -- --remote`                                                                          |
+| Pubblicazione completa PR      | `npm run publish:complete [-- --pr <numero>]`                                                                    |
+| Verifica automatica del diff   | `npm run verify:changed -- --base origin/main`                                                                   |
+| Verifica runtime completa      | `npm run verify:full [-- --force]`                                                                               |
+| Verifica pubblicazione         | `npm run verify:publish -- --remote`                                                                             |
+| Diagnostica job import         | `npm run jobs:status -- --shop <shop.myshopify.com>`                                                             |
+| Budget egress Supabase         | `npm run egress:budget -- --budget-gb 5`                                                                         |
+| Budget storage database        | `npm run db:storage-budget`                                                                                      |
+| Budget Supabase Storage        | `npm run storage:budget`                                                                                         |
+| Budget provider aggregato      | `npm run provider:budget`                                                                                        |
+| Budget bundle                  | `npm run bundle:budget`                                                                                          |
+| Verifica documentazione        | `npm run docs:check`                                                                                             |
+| Maintenance storia prodotto    | `npm run history:maintain -- --dry-run`                                                                          |
+| Archivio job storici           | `npm run jobs:archive-stale-failures -- --shop <shop.myshopify.com> --apply`                                     |
+| Doctor conflitti/stale         | `npm run conflicts:doctor -- --shop <shop.myshopify.com>`                                                        |
+| Limiti eBay Trading            | `npm run ebay:rate-limits -- --shop <shop.myshopify.com>`                                                        |
+| Readiness ordini pagati        | `npm run orders:paid-readiness -- --shop <shop.myshopify.com>`                                                   |
+| Verifica campione import       | `npm run import:verify -- --shop <shop.myshopify.com> --sample 10`                                               |
+| Report pulizia descrizioni     | `npm run descriptions:cleanup-report -- --shop <shop.myshopify.com> --sample 20`                                 |
+| Ripristino stock eBay          | `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write`                      |
+| Orfani categoria negozio       | `npm run ebay:store-category-orphans -- --shop <shop.myshopify.com> [--limit N]`                                 |
+| Dry-run categorie              | `npm run categories:backfill -- --shop <shop.myshopify.com> [--limit N]`                                         |
+| Backfill descrizioni pulite    | `npm run descriptions:backfill-cleanup -- --shop <shop.myshopify.com> [--limit N]`                               |
+| Dry-run faccette storefront    | `npm run facets:backfill -- --shop <shop.myshopify.com> [--limit N]`                                             |
+| Doctor collezioni              | `npm run collections:doctor -- --shop <shop.myshopify.com> [--intent-file f.json] [--json] [--limit-products N]` |
+| Diagnostica immagini Catalogo  | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`                                       |
+| Test guardia stock eBay        | `npm run test:stock-guard`                                                                                       |
+| Test script e workflow         | `npm run test:tooling`                                                                                           |
+| React Doctor latest            | `npm run quality:react-doctor`                                                                                   |
+| Codice morto ed export inutili | `npm run quality:knip`                                                                                           |
+| Release dry-run                | `npm run release:dry-run`                                                                                        |
+| Release locale                 | `npm run release`                                                                                                |
 
 Per prerequisiti, guardie e modalità apply dei comandi operativi usa la guida
 [`guides/comandi-manutenzione.md`](guides/comandi-manutenzione.md). Aprila solo
@@ -195,20 +196,20 @@ lasciata ispezionabile e il setup si riprende al suo interno con
 
 ## Verifiche per tipo di modifica
 
-| Tipo modifica                                                       | Verifiche proporzionate                                                                                                                                |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Docs-only                                                           | Review contenuto e `npm run verify:changed -- --base origin/main`                                                                                      |
-| Pre-PR non banale                                                   | `npm run review:pre-pr -- --base origin/main`, chiusura dei punti emersi, poi `npm run verify:changed -- --base origin/main`                           |
-| Runtime TypeScript/UI ordinario                                     | `npm run verify:changed -- --base origin/main`; aggiungere verifica browser quando cambia il comportamento visibile                                    |
-| Moduli `app/services`, runtime condiviso o CI                        | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                                                       |
-| Moduli puri `app/lib`                                               | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                                                  |
-| Pubblicazione/merge PR                                              | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry                            |
-| Qualità React dopo release major/minor o cambi UI/React trasversali | `npm run quality:react-doctor`, che risolve esplicitamente `react-doctor@latest`                                                                         |
-| Refactor che rimuovono consumatori, ritiri di funzionalità o consolidamenti | `npm run quality:knip`, che rileva file ed export rimasti senza consumatori                                                                     |
-| Flussi UI principali                                                | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                                                   |
-| Prisma/database                                                     | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                                                 |
-| Guardia stock eBay, valuta o dry-run                                | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                                                   |
-| Versioning/changelog runtime                                        | `npm run release:dry-run`                                                                                                                              |
+| Tipo modifica                                                               | Verifiche proporzionate                                                                                                      |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Docs-only                                                                   | Review contenuto e `npm run verify:changed -- --base origin/main`                                                            |
+| Pre-PR non banale                                                           | `npm run review:pre-pr -- --base origin/main`, chiusura dei punti emersi, poi `npm run verify:changed -- --base origin/main` |
+| Runtime TypeScript/UI ordinario                                             | `npm run verify:changed -- --base origin/main`; aggiungere verifica browser quando cambia il comportamento visibile          |
+| Moduli `app/services`, runtime condiviso o CI                               | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                             |
+| Moduli puri `app/lib`                                                       | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                       |
+| Pubblicazione/merge PR                                                      | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry  |
+| Qualità React dopo release major/minor o cambi UI/React trasversali         | `npm run quality:react-doctor`, che risolve esplicitamente `react-doctor@latest`                                             |
+| Refactor che rimuovono consumatori, ritiri di funzionalità o consolidamenti | `npm run quality:knip`, che rileva file ed export rimasti senza consumatori                                                  |
+| Flussi UI principali                                                        | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                         |
+| Prisma/database                                                             | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                        |
+| Guardia stock eBay, valuta o dry-run                                        | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                         |
+| Versioning/changelog runtime                                                | `npm run release:dry-run`                                                                                                    |
 
 La CI PR mantiene un unico job conclusivo: per diff docs-only esegue soltanto
 `git diff --check`; per gli altri diff esegue `verify:changed -- --no-receipt`

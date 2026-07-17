@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as uiState from "./syncbay-ui-state.ts";
 
 const {
@@ -33,19 +32,35 @@ const {
 } = uiState;
 
 test("separates successful job outcome from catalog catch-up and runner waiting", () => {
-  assert.deepEqual(getOperationalUiState({ activeJobs: 0, catalogStatus: "due", nextDueAt: "2026-07-13T12:00:00Z" }), {
-    catalogHealth: "catching_up",
-    catalogLabel: "In allineamento",
-    runnerActivity: "waiting",
-    runnerLabel: "In attesa del prossimo controllo",
-    runnerTone: "success",
-  });
+  assert.deepEqual(
+    getOperationalUiState({
+      activeJobs: 0,
+      catalogStatus: "due",
+      nextDueAt: "2026-07-13T12:00:00Z",
+    }),
+    {
+      catalogHealth: "catching_up",
+      catalogLabel: "In allineamento",
+      runnerActivity: "waiting",
+      runnerLabel: "In attesa del prossimo controllo",
+      runnerTone: "success",
+    },
+  );
 });
 
 test("uses neutral unavailable copy and explicit metric units", () => {
-  assert.deepEqual(getNeutralUnavailableMetric(), { label: "Dato non disponibile", tone: "info" });
-  assert.equal(formatSyncMetric(0, "prodotti", "sincronizzati nelle ultime 24 ore"), "0 prodotti sincronizzati nelle ultime 24 ore");
-  assert.equal(formatSyncMetric(2_000, "run", "negli ultimi 7 giorni"), "2.000 run negli ultimi 7 giorni");
+  assert.deepEqual(getNeutralUnavailableMetric(), {
+    label: "Dato non disponibile",
+    tone: "info",
+  });
+  assert.equal(
+    formatSyncMetric(0, "prodotti", "sincronizzati nelle ultime 24 ore"),
+    "0 prodotti sincronizzati nelle ultime 24 ore",
+  );
+  assert.equal(
+    formatSyncMetric(2_000, "run", "negli ultimi 7 giorni"),
+    "2.000 run negli ultimi 7 giorni",
+  );
 });
 
 test("builds eBay OAuth start href with the current shop context", () => {

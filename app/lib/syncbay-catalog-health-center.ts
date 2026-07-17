@@ -1,4 +1,5 @@
-export type CatalogHealthCenterTone = "critical" | "info" | "success" | "warning";
+export type CatalogHealthCenterTone =
+  "critical" | "info" | "success" | "warning";
 
 export interface CatalogHealthCause {
   code:
@@ -40,7 +41,8 @@ export function buildCatalogHealthCenter(input: {
   });
   pushCause(causes, input.needsCheckCount, {
     code: "needs_check",
-    detail: "Alcuni mapping richiedono una verifica prima di considerarli allineati.",
+    detail:
+      "Alcuni mapping richiedono una verifica prima di considerarli allineati.",
     label: "Righe da verificare",
     tone: "warning",
   });

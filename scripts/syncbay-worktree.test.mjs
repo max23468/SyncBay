@@ -28,10 +28,7 @@ test("plans one deterministic worktree path from the primary checkout", () => {
     repoRoot,
   });
 
-  assert.equal(
-    plan.target,
-    path.join(repoRoot, ".worktrees", "catalog-speed"),
-  );
+  assert.equal(plan.target, path.join(repoRoot, ".worktrees", "catalog-speed"));
   assert.deepEqual(plan.createCommand, {
     args: [
       "worktree",

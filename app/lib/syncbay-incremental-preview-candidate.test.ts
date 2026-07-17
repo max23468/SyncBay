@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { deserializeIncrementalPreviewCandidate, serializeIncrementalPreviewCandidate } from "./syncbay-incremental-preview-candidate.ts";
+import {
+  deserializeIncrementalPreviewCandidate,
+  serializeIncrementalPreviewCandidate,
+} from "./syncbay-incremental-preview-candidate.ts";
 
 test("round-trips store category fields through the SYNC_INCREMENTAL job payload", () => {
   const candidate = {
@@ -58,8 +60,5 @@ test("normalizes missing store category fields to null without dropping the item
 test("rejects payloads without a stable itemId", () => {
   assert.equal(deserializeIncrementalPreviewCandidate(null), null);
   assert.equal(deserializeIncrementalPreviewCandidate({}), null);
-  assert.equal(
-    deserializeIncrementalPreviewCandidate({ itemId: 12345 }),
-    null,
-  );
+  assert.equal(deserializeIncrementalPreviewCandidate({ itemId: 12345 }), null);
 });

@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildDescriptionCleanupReportRow, summarizeDescriptionCleanupReport } from "./syncbay-description-cleanup.ts";
+import {
+  buildDescriptionCleanupReportRow,
+  summarizeDescriptionCleanupReport,
+} from "./syncbay-description-cleanup.ts";
 
 test("builds a dry-run row with cleanup metrics and safe excerpts", () => {
   const row = buildDescriptionCleanupReportRow({
@@ -28,7 +30,7 @@ test("l'estratto di testo non fa doppio unescape delle entita' escapate", () => 
   });
 
   // `&amp;quot;` deve restare `&quot;`, non collassare in `"`.
-  assert.equal(row.cleanedTextExcerpt, 'a &quot;b&quot; &amp; c');
+  assert.equal(row.cleanedTextExcerpt, "a &quot;b&quot; &amp; c");
 });
 
 test("summarizes dry-run cleanup rows", () => {

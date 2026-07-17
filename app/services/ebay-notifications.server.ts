@@ -172,21 +172,25 @@ async function getEbayApplicationAccessToken() {
     },
     method: "POST",
   });
-  const json = (await response.json()) as Partial<EbayApplicationTokenResponse> & {
-    error?: string;
-    error_description?: string;
-  };
+  const json =
+    (await response.json()) as Partial<EbayApplicationTokenResponse> & {
+      error?: string;
+      error_description?: string;
+    };
 
   if (!response.ok || !json.access_token) {
     throw new Error(
-      json.error_description ?? json.error ?? "Application token eBay non ottenuto.",
+      json.error_description ??
+        json.error ??
+        "Application token eBay non ottenuto.",
     );
   }
 
   cachedApplicationToken = {
     accessToken: json.access_token,
     expiresAt:
-      Date.now() + Math.max((json.expires_in ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
+      Date.now() +
+      Math.max((json.expires_in ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
   };
 
   return cachedApplicationToken.accessToken;

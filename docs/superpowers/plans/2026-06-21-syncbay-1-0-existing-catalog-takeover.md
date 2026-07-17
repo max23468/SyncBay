@@ -22,17 +22,17 @@ post-1.0.
 #330, #331, #332, #333, #335, #339 e #340, audit locale ignorato in
 `audits/numisleo.myshopify.com/20260621-2239/`.
 
-| Task | Stato | Evidenza | Limite esplicito |
-| --- | --- | --- | --- |
-| Task 0 | Completato | Audit read-only con report, riconciliazione, classificazione eccezioni, audit contenuti e freeze plan in `audits/numisleo.myshopify.com/20260621-2239/`; cartella audit ignorata dal repo via PR #301. | Chiuso come audit/read-only, non come apply o go-live reale. |
-| Task 1 | Completato | Modalità `new_products` / `existing_catalog`, normalizzazione e blocco import draft in `app/lib/syncbay-import-catalog-mode.ts` e `app/routes/app.import-preview.tsx`; PR #324/#325. | Nessuna scrittura catalogo introdotta in questo task. |
-| Task 2 | Completato | Reason code stabili, segnali forti, handle/tag/metafield e blocco auto-link su varianti troncate in `app/lib/syncbay-product-matching.ts`; PR #324/#333. | Titolo simile resta solo segnale da rivedere. |
-| Task 3 | Completato | Report `applicabile`, `da_rivedere`, `bloccante`, `gia_collegato` e apply plan puro in `app/lib/syncbay-existing-catalog-takeover.ts`; PR #324. | L'apply resta bloccato se il report contiene righe bloccanti. |
-| Task 4 | Completato | Loader Shopify paginato fino al limite MVP, normalizzazione prodotti e rilevazione varianti troncate in `app/services/shopify-existing-products.server.ts`; PR #330. | Il limite resta 2.000 prodotti per shop. |
-| Task 5 | Completato | Preview Trading API completa solo su richiesta live, report UI e disabilitazione creazione prodotti in modalità existing in `app/services/ebay-trading-preview.server.ts`, `app/services/syncbay.server.ts` e `app/routes/app.import-preview.tsx`; PR #329/#330. | Il tab non chiama eBay/Shopify per migliaia di prodotti all'apertura. |
+| Task   | Stato      | Evidenza                                                                                                                                                                                                                                                                                                                                                   | Limite esplicito                                                                                 |
+| ------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Task 0 | Completato | Audit read-only con report, riconciliazione, classificazione eccezioni, audit contenuti e freeze plan in `audits/numisleo.myshopify.com/20260621-2239/`; cartella audit ignorata dal repo via PR #301.                                                                                                                                                     | Chiuso come audit/read-only, non come apply o go-live reale.                                     |
+| Task 1 | Completato | Modalità `new_products` / `existing_catalog`, normalizzazione e blocco import draft in `app/lib/syncbay-import-catalog-mode.ts` e `app/routes/app.import-preview.tsx`; PR #324/#325.                                                                                                                                                                       | Nessuna scrittura catalogo introdotta in questo task.                                            |
+| Task 2 | Completato | Reason code stabili, segnali forti, handle/tag/metafield e blocco auto-link su varianti troncate in `app/lib/syncbay-product-matching.ts`; PR #324/#333.                                                                                                                                                                                                   | Titolo simile resta solo segnale da rivedere.                                                    |
+| Task 3 | Completato | Report `applicabile`, `da_rivedere`, `bloccante`, `gia_collegato` e apply plan puro in `app/lib/syncbay-existing-catalog-takeover.ts`; PR #324.                                                                                                                                                                                                            | L'apply resta bloccato se il report contiene righe bloccanti.                                    |
+| Task 4 | Completato | Loader Shopify paginato fino al limite MVP, normalizzazione prodotti e rilevazione varianti troncate in `app/services/shopify-existing-products.server.ts`; PR #330.                                                                                                                                                                                       | Il limite resta 2.000 prodotti per shop.                                                         |
+| Task 5 | Completato | Preview Trading API completa solo su richiesta live, report UI e disabilitazione creazione prodotti in modalità existing in `app/services/ebay-trading-preview.server.ts`, `app/services/syncbay.server.ts` e `app/routes/app.import-preview.tsx`; PR #329/#330.                                                                                           | Il tab non chiama eBay/Shopify per migliaia di prodotti all'apertura.                            |
 | Task 6 | Completato | Apply con conferma digitata obbligatoria `COLLEGA` verificata dall'action prima del claim, claim mapping/metafield prima del job, payload `reuseOnly` e runner allineato in `app/routes/app.import-preview.tsx`, `app/services/syncbay.server.ts`, `app/services/shopify-draft-import.server.ts` e `app/services/sync-job-runner.server.ts`; PR #331/#332. | Se il prodotto Shopify esistente non viene riusato, la riga fallisce invece di creare duplicati. |
-| Task 7 | Completato | Policy campi generica con handle preservato, tag legacy su allowlist, immagini preservate quando Shopify ne ha già, e filtro media image-only in `app/lib/syncbay-existing-catalog-field-policy.ts` e import worker; PR #335. | Non cambia handle e non sostituisce immagini in massa. |
-| Task 8 | Completato | Privacy, termini minimi, mini kit clienti selezionati e release locale `0.50.0`; PR #340. | Chiuso come readiness legale/prodotto, non come installazione o onboarding Numisleo. |
+| Task 7 | Completato | Policy campi generica con handle preservato, tag legacy su allowlist, immagini preservate quando Shopify ne ha già, e filtro media image-only in `app/lib/syncbay-existing-catalog-field-policy.ts` e import worker; PR #335.                                                                                                                              | Non cambia handle e non sostituisce immagini in massa.                                           |
+| Task 8 | Completato | Privacy, termini minimi, mini kit clienti selezionati e release locale `0.50.0`; PR #340.                                                                                                                                                                                                                                                                  | Chiuso come readiness legale/prodotto, non come installazione o onboarding Numisleo.             |
 
 **Verifiche fresche della revisione:** `npm run typecheck`, `npm run lint`,
 `npm run build`, `npm run test:lib`, `npm run quality:react-doctor`,
@@ -125,6 +125,7 @@ Doctor e Vercel production verdi.
 ## Task 0: Audit Completo Store Target
 
 **Files:**
+
 - No repo file for raw evidence: salvare output, screenshot e JSON in una
   cartella fuori repo o ignorata, per esempio
   `/Users/Matteo/SyncBay-audit/$SHOP_DOMAIN/$YYYYMMDD-HHMM/`.
@@ -233,24 +234,34 @@ Doctor e Vercel production verdi.
   # Store Takeover Audit
 
   ## Scope
+
   - Shop:
   - Date:
   - Auditor:
   - Read-only sources:
 
   ## Executive Summary
+
   - Go / No-go:
   - Blockers:
   - Review exceptions:
 
   ## Storefront
+
   ## Shopify Admin
+
   ## Legacy Sync App
+
   ## eBay Catalog
+
   ## Mapping Signals
+
   ## Field Policies
+
   ## Freeze Plan
+
   ## Apply Preconditions
+
   ## Manual Verification Checklist
   ```
 
@@ -273,6 +284,7 @@ Doctor e Vercel production verdi.
 ## Task 1: Modalità Catalogo Nel Tab Importazione
 
 **Files:**
+
 - Create: `app/lib/syncbay-import-catalog-mode.ts`
 - Test: `app/lib/syncbay-import-catalog-mode.test.ts`
 - Modify: `app/routes/app.import-preview.tsx`
@@ -429,6 +441,7 @@ Doctor e Vercel production verdi.
 ## Task 2: Matching Con Reason Code E Segnali Forti
 
 **Files:**
+
 - Modify: `app/lib/syncbay-product-matching.ts`
 - Modify: `app/lib/syncbay-product-matching.test.ts`
 
@@ -563,7 +576,9 @@ Doctor e Vercel production verdi.
     reasonCodes.push("handle_item_id");
     reasons.push("ItemID eBay trovato nell'handle Shopify");
   }
-  if ((product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))) {
+  if (
+    (product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))
+  ) {
     score += 80;
     reasonCodes.push("tag_item_id");
     reasons.push("ItemID eBay trovato nei tag Shopify");
@@ -617,6 +632,7 @@ Doctor e Vercel production verdi.
 ## Task 3: Report Dry-Run Catalogo Esistente
 
 **Files:**
+
 - Create: `app/lib/syncbay-existing-catalog-takeover.ts`
 - Test: `app/lib/syncbay-existing-catalog-takeover.test.ts`
 - Modify: `app/services/import-preview.server.ts`
@@ -724,16 +740,11 @@ Doctor e Vercel production verdi.
 - [x] **Step 2: implementare tipi e regole pure**
 
   ```ts
-  import type {
-    ExistingProductMatchSuggestion,
-  } from "./syncbay-product-matching";
+  import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching";
   import type { ImportPreviewItem } from "../services/import-preview.server";
 
   export type ExistingCatalogTakeoverStatus =
-    | "applicabile"
-    | "bloccante"
-    | "da_rivedere"
-    | "gia_collegato";
+    "applicabile" | "bloccante" | "da_rivedere" | "gia_collegato";
 
   export type ExistingCatalogTakeoverReason =
     | "categoria_incerta"
@@ -765,9 +776,13 @@ Doctor e Vercel production verdi.
     const issueCodes = new Set(item.issues.map((issue) => issue.code));
     return [
       issueCodes.has("invalid_price") ? "prezzo_ebay_non_valido" : null,
-      issueCodes.has("invalid_quantity") ? "disponibilita_ebay_non_valida" : null,
+      issueCodes.has("invalid_quantity")
+        ? "disponibilita_ebay_non_valida"
+        : null,
       issueCodes.has("complex_variants") ? "varianti_non_supportate" : null,
-    ].filter((reason): reason is ExistingCatalogTakeoverReason => Boolean(reason));
+    ].filter((reason): reason is ExistingCatalogTakeoverReason =>
+      Boolean(reason),
+    );
   }
 
   function getBestAutoLinkableMatch(matches: ExistingProductMatchSuggestion[]) {
@@ -809,6 +824,7 @@ Doctor e Vercel production verdi.
 ## Task 4: Lettura Shopify Esistente Fino A 2.000 Prodotti
 
 **Files:**
+
 - Create: `app/services/shopify-existing-products.server.ts`
 - Test: `app/lib/syncbay-product-matching.test.ts`
 - Modify: `app/services/syncbay.server.ts`
@@ -923,7 +939,9 @@ Doctor e Vercel production verdi.
     } | null;
   }
 
-  function toMatchCandidates(product: ExistingProductNode): ShopifyMatchCandidate[] {
+  function toMatchCandidates(
+    product: ExistingProductNode,
+  ): ShopifyMatchCandidate[] {
     const variants = product.variants?.nodes?.length
       ? product.variants.nodes
       : [null];
@@ -972,6 +990,7 @@ Doctor e Vercel production verdi.
 ## Task 5: Collegare Report Al Loader E Alla UI
 
 **Files:**
+
 - Modify: `app/services/ebay-trading-preview.server.ts`
 - Modify: `app/services/syncbay.server.ts`
 - Modify: `app/routes/app.import-preview.tsx`
@@ -1066,7 +1085,6 @@ Doctor e Vercel production verdi.
           shopDomain: shop.shopDomain,
         })
       : null;
-
   ```
 
   Nel return finale esistente aggiungere `catalogMode` e
@@ -1104,10 +1122,26 @@ Doctor e Vercel production verdi.
     return (
       <s-section heading="Collega catalogo esistente">
         <s-grid gridTemplateColumns="repeat(4, minmax(0, 1fr))" gap="base">
-          <MetricTile icon="check-circle" label="Applicabili" value={String(report.summary.applicable)} />
-          <MetricTile icon="alert-triangle" label="Da rivedere" value={String(report.summary.review)} />
-          <MetricTile icon="alert-circle" label="Bloccanti" value={String(report.summary.blocked)} />
-          <MetricTile icon="link" label="Già collegati" value={String(report.summary.alreadyLinked)} />
+          <MetricTile
+            icon="check-circle"
+            label="Applicabili"
+            value={String(report.summary.applicable)}
+          />
+          <MetricTile
+            icon="alert-triangle"
+            label="Da rivedere"
+            value={String(report.summary.review)}
+          />
+          <MetricTile
+            icon="alert-circle"
+            label="Bloccanti"
+            value={String(report.summary.blocked)}
+          />
+          <MetricTile
+            icon="link"
+            label="Già collegati"
+            value={String(report.summary.alreadyLinked)}
+          />
         </s-grid>
         <s-text color="subdued">
           SyncBay collega solo righe con segnali forti. I casi incerti restano
@@ -1150,6 +1184,7 @@ Doctor e Vercel production verdi.
 ## Task 6: Apply Takeover In Modalità Reuse-Only
 
 **Files:**
+
 - Modify: `app/services/shopify-draft-import.server.ts`
 - Modify: `app/services/syncbay.server.ts`
 - Modify: `app/services/sync-job-runner.server.ts`
@@ -1230,7 +1265,10 @@ Doctor e Vercel production verdi.
   `getStringFromPayload`:
 
   ```ts
-  function getBooleanFromPayload(payload: Prisma.JsonValue | null, key: string) {
+  function getBooleanFromPayload(
+    payload: Prisma.JsonValue | null,
+    key: string,
+  ) {
     const value = getJsonObject(payload)?.[key];
     return typeof value === "boolean" ? value : false;
   }
@@ -1260,7 +1298,11 @@ Doctor e Vercel production verdi.
     <input type="hidden" name="intent" value="applyExistingCatalogTakeover" />
     <input type="hidden" name="confirmation" value="COLLEGA" />
     <s-button
-      disabled={isSaving || report.summary.applicable === 0 || report.summary.blocked > 0}
+      disabled={
+        isSaving ||
+        report.summary.applicable === 0 ||
+        report.summary.blocked > 0
+      }
       loading={isApplyingTakeover}
       type="submit"
       variant="primary"
@@ -1313,6 +1355,7 @@ Doctor e Vercel production verdi.
 ## Task 7: Policy Tag, URL, Immagini E Collezioni
 
 **Files:**
+
 - Create: `app/lib/syncbay-existing-catalog-field-policy.ts`
 - Test: `app/lib/syncbay-existing-catalog-field-policy.test.ts`
 - Modify: `app/lib/syncbay-existing-catalog-takeover.ts`
@@ -1323,9 +1366,7 @@ Doctor e Vercel production verdi.
   ```ts
   import assert from "node:assert/strict";
   import test from "node:test";
-  import {
-    buildExistingCatalogFieldPolicy,
-  } from "./syncbay-existing-catalog-field-policy.ts";
+  import { buildExistingCatalogFieldPolicy } from "./syncbay-existing-catalog-field-policy.ts";
 
   test("preserves product handles by default", () => {
     const policy = buildExistingCatalogFieldPolicy({
@@ -1442,6 +1483,7 @@ Doctor e Vercel production verdi.
 ## Task 8: Readiness Legale E Mini Kit 1.0
 
 **Files:**
+
 - Modify: `app/routes/privacy.tsx`
 - Create: `app/routes/terms.tsx`
 - Modify: `docs/guides/onboarding-e-import.md`
@@ -1488,7 +1530,7 @@ Doctor e Vercel production verdi.
 - [x] **Step 3: aggiungere mini kit alla guida onboarding esistente**
 
   In `docs/guides/onboarding-e-import.md`, aggiungere una sezione `Mini kit
-  clienti selezionati 1.0` con:
+clienti selezionati 1.0` con:
 
   - promessa prodotto;
   - requisiti prima dell'installazione;
@@ -1522,6 +1564,7 @@ Doctor e Vercel production verdi.
 ## Task 9: Release Privata 1.0 Completa Prima Di Numisleo
 
 **Files:**
+
 - Modify: `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
 - Modify: `docs/guides/onboarding-e-import.md`
 - Modify: `README.md`
@@ -1531,7 +1574,7 @@ Doctor e Vercel production verdi.
 - [ ] **Step 1: aggiornare runbook con boundary release 1.0 e azioni UI reali**
 
   Inserire nella guida e nell'ADR 0020 una sezione `Release privata 1.0 prima
-  dell'onboarding` che renda esplicita questa sequenza, senza introdurre
+dell'onboarding` che renda esplicita questa sequenza, senza introdurre
   logiche hardcoded nell'app:
 
   1. SyncBay deve arrivare a `1.0.0` prima di essere installata su Numisleo;
@@ -1602,7 +1645,7 @@ Doctor e Vercel production verdi.
   - `https://syncbay.vercel.app/terms`.
 
   Verificare inoltre che il form pubblico di accesso esponga il campo `Dominio
-  shop` e che il deployment production sia quello candidato a `1.0.0`.
+shop` e che il deployment production sia quello candidato a `1.0.0`.
 
   Expected:
 
@@ -1631,7 +1674,7 @@ Doctor e Vercel production verdi.
   - il tag previsto nello step successivo è `v1.0.0`, allineato alla versione
     generata dal comando release;
   - il secondo `release:dry-run` riporta `Categoria: non versionato. Nessuna
-    release SemVer da preparare.`;
+release SemVer da preparare.`;
   - nessuna installazione Numisleo eseguita.
 
 - [ ] **Step 6: publish, deploy, tag e GitHub Release 1.0.0**
@@ -1684,6 +1727,7 @@ sufficiente come gate. Apply reale, coda pricing `-8%`, coda
 go-live restano responsabilità di Task 11.
 
 **Files:**
+
 - No repo file for raw evidence: salvare output, screenshot e JSON in una
   cartella fuori repo o ignorata, per esempio
   `/Users/Matteo/SyncBay-audit/numisleo.myshopify.com/$YYYYMMDD-HHMM/`.
@@ -1902,6 +1946,7 @@ aggregato Shopify incoerente/lagging rispetto alle superfici operative, da
 monitorare ma non bloccante per Task 11.
 
 **Files:**
+
 - No repo file for raw evidence: report apply, screenshot, log e JSON restano
   fuori repo o in cartelle ignorate.
 - Modify only if documentation changes: `docs/guides/onboarding-e-import.md`
@@ -2043,42 +2088,42 @@ Questa sezione verifica che le decisioni raccolte nel grill siano presenti nel
 piano implementativo, senza trasformarle in logiche hardcoded per un singolo
 store.
 
-| Decisione raccolta | Copertura nel piano |
-| --- | --- |
-| 1.0 come custom app privata, App Store pubblico in 2.0 | `Non Obiettivi 1.0`, Task 8 |
-| Target eBay.it-only, cataloghi di numismatica/collezionismo con prodotti singoli | `Target 1.0`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0` |
-| Capacità generica, non Numisleo-specifica | `Architecture`, `Non Obiettivi 1.0`, Task 1 |
-| Audit completo del primo store reale, inclusi frontend, backend Shopify e vecchia app di sync | Task 0 |
-| 1.0 completa prima di installare su Numisleo; problemi Numisleo come 1.0.1+ | Task 9, Task 10 |
-| L'altra app verrà disattivata, anche prima se migliora il takeover | `Rischi E Mitigazioni`, Task 10, gate audit/dry-run/freeze |
-| Audit sola lettura, dry-run, export segnali legacy e freeze prima dell'apply | Task 6, Task 10, Task 11, `Rischi E Mitigazioni` |
-| Tutti i prodotti entro limite MVP, non un campione | `Target 1.0`; Task 4 carica fino a 2.000 prodotti; Task 5 costruisce il dry-run da tutti gli ItemID Trading API; Task 6 pianifica righe applicabili |
-| Match automatico solo con segnali forti | Task 2, Task 3, `Definition Of Done` |
-| Casi incerti come eccezioni da rivedere | Task 3, UI Task 5 |
-| Se eBay ha dato assente/vuoto/non affidabile, non svuotare Shopify | Task 3, `Rischi E Mitigazioni` |
-| Prezzo e disponibilità riallineati a eBay quando validi | Task 6, `Gate Onboarding Numisleo Post-1.0` |
-| Stato e pubblicazioni seguono impostazioni SyncBay | Task 6 passa `importProductStatus` e riusa policy pubblicazioni esistente |
-| Stock Shopify -> eBay da `orders/paid`, non `orders/create` | `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; nessun task modifica il webhook |
-| Scrittura eBay rapida ma via runner/job esistente, non dentro webhook sincrono | `Architecture`, `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0` |
-| Descrizioni/template da sistemare | Task 3 include descrizione nel report; Task 6 riusa update descrizione; Task 7 policy campi |
-| Immagini non sostituite in massa | Task 7, `Rischi E Mitigazioni` |
-| Categorie, `productType`, metafield e faccette applicabili dopo preview | Task 3, Task 6, Task 7 |
-| SEO title/description gestiti, handle preservato di default | Task 3 pianifica `sync_seo`; Task 7 preserva handle |
-| Se cambia handle serve redirect | `Definition Of Done`; prima implementazione non cambia handle automaticamente |
-| Tag Shopify ripulibili, ma solo legacy/allowlist | Task 7 |
-| Regole collection esistenti preservate | Task 7, `Rischi E Mitigazioni` |
-| Location Shopify unica esistente | `Non Obiettivi 1.0`, Task 6 usa `defaultLocationGid` |
-| Varianti non supportate nel target, inattese come anomalie | `Non Obiettivi 1.0`, Task 3 blocca `complex_variants` |
-| Listing eBay inattivi restano Shopify esauriti, non cancellati/archiviati | `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; invariant ADR 0011 da non modificare |
-| Installazione privata SyncBay su Numisleo necessaria prima del dry-run reale | Task 10 |
-| Dry-run reale su Numisleo prima dell'apply | Task 10 |
-| Apply reale solo dopo conferma operatore e freeze | Task 11 |
-| Sync automatico dopo riallineamento, target 300 secondi | `Gate Onboarding Numisleo Post-1.0`, Task 11 |
-| Go-live bloccato da conflitti critici su mapping/prezzo/disponibilità | `Gate Onboarding Numisleo Post-1.0`, Task 5 |
-| Recovery manuale, non rollback self-service 1.0 | `Non Obiettivi 1.0`, Task 6 snapshot/report |
-| Privacy generale, termini minimi e mini kit clienti selezionati | Task 8 |
-| Verifica finale catalogo manuale | `Gate Onboarding Numisleo Post-1.0`, Task 11 |
-| Integrare il minimo nel tab Importazione/prima configurazione senza gonfiare SyncBay | `Architecture`, Task 1, sequenza PR 1-3 prima delle scritture |
+| Decisione raccolta                                                                            | Copertura nel piano                                                                                                                                 |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0 come custom app privata, App Store pubblico in 2.0                                        | `Non Obiettivi 1.0`, Task 8                                                                                                                         |
+| Target eBay.it-only, cataloghi di numismatica/collezionismo con prodotti singoli              | `Target 1.0`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`                                                                               |
+| Capacità generica, non Numisleo-specifica                                                     | `Architecture`, `Non Obiettivi 1.0`, Task 1                                                                                                         |
+| Audit completo del primo store reale, inclusi frontend, backend Shopify e vecchia app di sync | Task 0                                                                                                                                              |
+| 1.0 completa prima di installare su Numisleo; problemi Numisleo come 1.0.1+                   | Task 9, Task 10                                                                                                                                     |
+| L'altra app verrà disattivata, anche prima se migliora il takeover                            | `Rischi E Mitigazioni`, Task 10, gate audit/dry-run/freeze                                                                                          |
+| Audit sola lettura, dry-run, export segnali legacy e freeze prima dell'apply                  | Task 6, Task 10, Task 11, `Rischi E Mitigazioni`                                                                                                    |
+| Tutti i prodotti entro limite MVP, non un campione                                            | `Target 1.0`; Task 4 carica fino a 2.000 prodotti; Task 5 costruisce il dry-run da tutti gli ItemID Trading API; Task 6 pianifica righe applicabili |
+| Match automatico solo con segnali forti                                                       | Task 2, Task 3, `Definition Of Done`                                                                                                                |
+| Casi incerti come eccezioni da rivedere                                                       | Task 3, UI Task 5                                                                                                                                   |
+| Se eBay ha dato assente/vuoto/non affidabile, non svuotare Shopify                            | Task 3, `Rischi E Mitigazioni`                                                                                                                      |
+| Prezzo e disponibilità riallineati a eBay quando validi                                       | Task 6, `Gate Onboarding Numisleo Post-1.0`                                                                                                         |
+| Stato e pubblicazioni seguono impostazioni SyncBay                                            | Task 6 passa `importProductStatus` e riusa policy pubblicazioni esistente                                                                           |
+| Stock Shopify -> eBay da `orders/paid`, non `orders/create`                                   | `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; nessun task modifica il webhook                                      |
+| Scrittura eBay rapida ma via runner/job esistente, non dentro webhook sincrono                | `Architecture`, `Definition Of Done`, `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`                                                       |
+| Descrizioni/template da sistemare                                                             | Task 3 include descrizione nel report; Task 6 riusa update descrizione; Task 7 policy campi                                                         |
+| Immagini non sostituite in massa                                                              | Task 7, `Rischi E Mitigazioni`                                                                                                                      |
+| Categorie, `productType`, metafield e faccette applicabili dopo preview                       | Task 3, Task 6, Task 7                                                                                                                              |
+| SEO title/description gestiti, handle preservato di default                                   | Task 3 pianifica `sync_seo`; Task 7 preserva handle                                                                                                 |
+| Se cambia handle serve redirect                                                               | `Definition Of Done`; prima implementazione non cambia handle automaticamente                                                                       |
+| Tag Shopify ripulibili, ma solo legacy/allowlist                                              | Task 7                                                                                                                                              |
+| Regole collection esistenti preservate                                                        | Task 7, `Rischi E Mitigazioni`                                                                                                                      |
+| Location Shopify unica esistente                                                              | `Non Obiettivi 1.0`, Task 6 usa `defaultLocationGid`                                                                                                |
+| Varianti non supportate nel target, inattese come anomalie                                    | `Non Obiettivi 1.0`, Task 3 blocca `complex_variants`                                                                                               |
+| Listing eBay inattivi restano Shopify esauriti, non cancellati/archiviati                     | `Gate Release 1.0`, `Gate Onboarding Numisleo Post-1.0`; invariant ADR 0011 da non modificare                                                       |
+| Installazione privata SyncBay su Numisleo necessaria prima del dry-run reale                  | Task 10                                                                                                                                             |
+| Dry-run reale su Numisleo prima dell'apply                                                    | Task 10                                                                                                                                             |
+| Apply reale solo dopo conferma operatore e freeze                                             | Task 11                                                                                                                                             |
+| Sync automatico dopo riallineamento, target 300 secondi                                       | `Gate Onboarding Numisleo Post-1.0`, Task 11                                                                                                        |
+| Go-live bloccato da conflitti critici su mapping/prezzo/disponibilità                         | `Gate Onboarding Numisleo Post-1.0`, Task 5                                                                                                         |
+| Recovery manuale, non rollback self-service 1.0                                               | `Non Obiettivi 1.0`, Task 6 snapshot/report                                                                                                         |
+| Privacy generale, termini minimi e mini kit clienti selezionati                               | Task 8                                                                                                                                              |
+| Verifica finale catalogo manuale                                                              | `Gate Onboarding Numisleo Post-1.0`, Task 11                                                                                                        |
+| Integrare il minimo nel tab Importazione/prima configurazione senza gonfiare SyncBay          | `Architecture`, Task 1, sequenza PR 1-3 prima delle scritture                                                                                       |
 
 ## Rischi E Mitigazioni
 

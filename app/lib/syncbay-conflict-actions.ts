@@ -2,10 +2,7 @@ import type { SyncConflictResolution } from "@prisma/client";
 
 export type ConflictResolution = SyncConflictResolution;
 
-export type ConflictDecisionMode =
-  | "batch_safe"
-  | "guarded"
-  | "manual_only";
+export type ConflictDecisionMode = "batch_safe" | "guarded" | "manual_only";
 
 export interface ConflictResolutionSafety {
   detail: string;

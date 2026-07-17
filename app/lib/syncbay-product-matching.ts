@@ -67,9 +67,10 @@ export function buildExistingProductMatchSuggestions(input: {
   limit?: number;
   shopifyProducts: ShopifyMatchCandidate[];
 }): ExistingProductMatchSuggestion[] {
-  const limit = Number.isInteger(input.limit) && (input.limit ?? 0) > 0
-    ? (input.limit as number)
-    : 5;
+  const limit =
+    Number.isInteger(input.limit) && (input.limit ?? 0) > 0
+      ? (input.limit as number)
+      : 5;
 
   const bestByProduct = new Map<string, ExistingProductMatchSuggestion>();
 
@@ -200,14 +201,20 @@ function getSyncBayItemId(
   )?.value;
 }
 
-function sameToken(first: string | null | undefined, second: string | null | undefined) {
+function sameToken(
+  first: string | null | undefined,
+  second: string | null | undefined,
+) {
   const a = normalizeToken(first);
   const b = normalizeToken(second);
 
   return Boolean(a && b && a === b);
 }
 
-function containsToken(value: string | null | undefined, token: string | null | undefined) {
+function containsToken(
+  value: string | null | undefined,
+  token: string | null | undefined,
+) {
   const normalizedToken = normalizeToken(token);
 
   if (!normalizedToken) return false;

@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as productMatching from "./syncbay-product-matching.ts";
 
-const {
-  buildExistingProductMatchSuggestions,
-  getMatchSuggestionSummary,
-} = productMatching;
+const { buildExistingProductMatchSuggestions, getMatchSuggestionSummary } =
+  productMatching;
 
 test("suggests exact sku matches before title matches", () => {
   const suggestions = buildExistingProductMatchSuggestions({
@@ -203,10 +200,12 @@ test("does not auto link product-level matches when variant candidates are trunc
   ]);
 });
 
-
 test("formats match suggestion summaries without implying automatic linking", () => {
   assert.equal(
-    getMatchSuggestionSummary({ confidence: "high", reasons: ["SKU identico"] }),
+    getMatchSuggestionSummary({
+      confidence: "high",
+      reasons: ["SKU identico"],
+    }),
     "Possibile collegamento: confidenza alta, SKU identico. Conferma manuale richiesta.",
   );
 });

@@ -20,7 +20,14 @@ const generatedClientPath = resolve(
 );
 const prismaClientPaths = [
   resolve(projectRoot, "node_modules", ".prisma", "client"),
-  resolve(projectRoot, "node_modules", "@prisma", "client", ".prisma", "client"),
+  resolve(
+    projectRoot,
+    "node_modules",
+    "@prisma",
+    "client",
+    ".prisma",
+    "client",
+  ),
 ];
 
 if (!existsSync(generatedClientPath)) {
@@ -55,7 +62,11 @@ function linkGeneratedClient(linkPath) {
     }
   }
 
-  symlinkSync(relative(dirname(linkPath), generatedClientPath), linkPath, "dir");
+  symlinkSync(
+    relative(dirname(linkPath), generatedClientPath),
+    linkPath,
+    "dir",
+  );
 }
 
 function removeLegacyEntrypointFiles(linkPath) {

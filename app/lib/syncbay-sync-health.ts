@@ -1,9 +1,5 @@
 export type CatalogSyncHealthStatus =
-  | "disabled"
-  | "due"
-  | "fresh"
-  | "overdue"
-  | "running";
+  "disabled" | "due" | "fresh" | "overdue" | "running";
 
 const DEFAULT_OVERDUE_GRACE_SECONDS = 300;
 
@@ -69,7 +65,8 @@ export function getCatalogSyncHealth(input: {
 
 function normalizeOverdueGraceSeconds(value: number | undefined) {
   if (value === undefined) return DEFAULT_OVERDUE_GRACE_SECONDS;
-  if (!Number.isFinite(value) || value < 0) return DEFAULT_OVERDUE_GRACE_SECONDS;
+  if (!Number.isFinite(value) || value < 0)
+    return DEFAULT_OVERDUE_GRACE_SECONDS;
 
   return Math.trunc(value);
 }

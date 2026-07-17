@@ -10,7 +10,10 @@ import { buildSourcesUpdate } from "../app/lib/syncbay-collection-sources-apply.
 import { conditionsSourceToRuleSet } from "../app/lib/syncbay-collection-sources-read.ts";
 
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
-const DEFAULT_GENERIC_COLLECTION_HANDLES = ["negozio-online", "non-disponibili"];
+const DEFAULT_GENERIC_COLLECTION_HANDLES = [
+  "negozio-online",
+  "non-disponibili",
+];
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -32,17 +35,24 @@ if (!args.apply && args.confirmApply) {
 }
 
 if (args.apply && !args.intentFile) {
-  throw new Error("Apply collezioni bloccato: serve --intent-file con matrice revisionata.");
+  throw new Error(
+    "Apply collezioni bloccato: serve --intent-file con matrice revisionata.",
+  );
 }
 
-const collectionIntents = args.intentFile ? loadCollectionIntents(args.intentFile) : [];
-const genericCollectionHandles =
-  collectionIntents.filter((intent) => intent.generic).map((intent) => intent.handle);
+const collectionIntents = args.intentFile
+  ? loadCollectionIntents(args.intentFile)
+  : [];
+const genericCollectionHandles = collectionIntents
+  .filter((intent) => intent.generic)
+  .map((intent) => intent.handle);
 const collections = await loadCollections(args.shop);
 const products = await loadProducts(args.shop, args.limitProducts);
 const coverage = buildCollectionCoverageReport({
   genericCollectionHandles:
-    genericCollectionHandles.length > 0 ? genericCollectionHandles : DEFAULT_GENERIC_COLLECTION_HANDLES,
+    genericCollectionHandles.length > 0
+      ? genericCollectionHandles
+      : DEFAULT_GENERIC_COLLECTION_HANDLES,
   products,
 });
 const review = buildCollectionRuleReview({
@@ -108,7 +118,9 @@ async function loadCollections(shop) {
   const data = executeShopifyQuery(shop, query, {});
   const nodes = data.collections?.nodes ?? [];
   if (data.collections?.pageInfo?.hasNextPage) {
-    throw new Error("Doctor collezioni bloccato: più di 100 collezioni; aggiungere paginazione prima di procedere.");
+    throw new Error(
+      "Doctor collezioni bloccato: più di 100 collezioni; aggiungere paginazione prima di procedere.",
+    );
   }
   return nodes.map((collection) => {
     const conditionsSource = (collection.sources ?? []).find(
@@ -142,14 +154,16 @@ async function loadProducts(shop, limitProducts) {
   let after = null;
   while (true) {
     const data = executeShopifyQuery(shop, query, { after });
-    products.push(...((data.products?.nodes ?? []).map((product) => ({
-      collections: product.collections?.nodes ?? [],
-      handle: product.handle,
-      id: product.id,
-      productType: product.productType ?? null,
-      title: product.title,
-      totalInventory: Number(product.totalInventory ?? 0),
-    }))));
+    products.push(
+      ...(data.products?.nodes ?? []).map((product) => ({
+        collections: product.collections?.nodes ?? [],
+        handle: product.handle,
+        id: product.id,
+        productType: product.productType ?? null,
+        title: product.title,
+        totalInventory: Number(product.totalInventory ?? 0),
+      })),
+    );
     if (limitProducts && products.length >= limitProducts) {
       return products.slice(0, limitProducts);
     }
@@ -160,16 +174,28 @@ async function loadProducts(shop, limitProducts) {
 }
 
 function executeShopifyQuery(shop, query, variables) {
-  const output = execFileSync("shopify", [
-    "store", "execute",
-    "--store", shop,
-    "--version", SHOPIFY_ADMIN_API_VERSION,
-    "--json",
-    "--query", query,
-    "--variables", JSON.stringify(variables),
-  ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const output = execFileSync(
+    "shopify",
+    [
+      "store",
+      "execute",
+      "--store",
+      shop,
+      "--version",
+      SHOPIFY_ADMIN_API_VERSION,
+      "--json",
+      "--query",
+      query,
+      "--variables",
+      JSON.stringify(variables),
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
   const start = output.indexOf("{");
-  if (start < 0) throw new Error(`Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`);
+  if (start < 0)
+    throw new Error(
+      `Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`,
+    );
   const parsed = JSON.parse(output.slice(start));
   if (parsed.errors?.length) throw new Error(JSON.stringify(parsed.errors));
   return parsed;
@@ -178,7 +204,11 @@ function executeShopifyQuery(shop, query, variables) {
 async function applyProposals(shop, proposals) {
   assertCollectionUpdateSupportsSourcesModel(shop);
   for (const proposal of proposals) {
-    const currentSource = loadConditionsSource(shop, proposal.collectionId, proposal.title);
+    const currentSource = loadConditionsSource(
+      shop,
+      proposal.collectionId,
+      proposal.title,
+    );
     const sourcesUpdate = buildSourcesUpdate({
       currentSource,
       proposedRuleSet: proposal.proposedRuleSet,
@@ -189,20 +219,29 @@ async function applyProposals(shop, proposals) {
         userErrors { field message }
       }
     }`;
-    const output = execFileSync("shopify", [
-      "store", "execute",
-      "--store", shop,
-      "--version", SHOPIFY_ADMIN_API_VERSION,
-      "--json",
-      "--allow-mutations",
-      "--query", mutation,
-      "--variables", JSON.stringify({
-        collection: {
-          id: proposal.collectionId,
-          sourcesToUpdate: [sourcesUpdate],
-        },
-      }),
-    ], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+    const output = execFileSync(
+      "shopify",
+      [
+        "store",
+        "execute",
+        "--store",
+        shop,
+        "--version",
+        SHOPIFY_ADMIN_API_VERSION,
+        "--json",
+        "--allow-mutations",
+        "--query",
+        mutation,
+        "--variables",
+        JSON.stringify({
+          collection: {
+            id: proposal.collectionId,
+            sourcesToUpdate: [sourcesUpdate],
+          },
+        }),
+      ],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
     const parsed = JSON.parse(output.slice(output.indexOf("{")));
     const payload = parsed.collectionUpdate ?? parsed.data?.collectionUpdate;
     const userErrors = payload?.userErrors ?? [];
@@ -262,9 +301,10 @@ function assertCollectionUpdateSupportsSourcesModel(shop) {
     }
   }`;
   const data = executeShopifyQuery(shop, query, {});
-  const hasCollectionUpdateCollectionArg = data.mutationType?.mutationType?.fields
-    ?.find((field) => field.name === "collectionUpdate")
-    ?.args?.some((arg) => arg.name === "collection");
+  const hasCollectionUpdateCollectionArg =
+    data.mutationType?.mutationType?.fields
+      ?.find((field) => field.name === "collectionUpdate")
+      ?.args?.some((arg) => arg.name === "collection");
   const hasSourcesToUpdate = data.collectionUpdateInput?.inputFields?.some(
     (field) => field.name === "sourcesToUpdate",
   );
@@ -279,21 +319,31 @@ function printHumanReport(output) {
   console.log(`Shop: ${output.shopDomain}`);
   console.log(`Prodotti analizzati: ${output.productsAnalyzed}`);
   console.log(`Collezioni analizzate: ${output.collectionsAnalyzed}`);
-  console.log(`Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`);
-  console.log(`Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`);
+  console.log(
+    `Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`,
+  );
+  console.log(
+    `Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`,
+  );
   console.log(`Proposte regole: ${output.proposals.length}`);
   console.log(`Warning regole: ${output.warnings.length}`);
   for (const row of output.coverage.availableOnlyGeneric.slice(0, 20)) {
-    console.log(`- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`);
+    console.log(
+      `- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`,
+    );
   }
   for (const row of output.coverage.unavailableInSpecific.slice(0, 20)) {
-    console.log(`- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`);
+    console.log(
+      `- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`,
+    );
   }
   for (const proposal of output.proposals) {
     console.log(`- proposta: ${proposal.title} | ${proposal.reason}`);
   }
   for (const warning of output.warnings) {
-    console.log(`- warning: ${warning.title} | ${warning.reason} | ${warning.message}`);
+    console.log(
+      `- warning: ${warning.title} | ${warning.reason} | ${warning.message}`,
+    );
   }
 }
 

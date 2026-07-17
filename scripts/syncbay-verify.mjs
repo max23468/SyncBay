@@ -76,10 +76,7 @@ export function buildVerificationPlan({
   }
 
   const suggestions = unique(review?.suggestedChecks ?? []);
-  if (
-    suggestions.length === 1 &&
-    suggestions[0] === "git diff --check"
-  ) {
+  if (suggestions.length === 1 && suggestions[0] === "git diff --check") {
     return {
       commands: [
         {
@@ -176,12 +173,7 @@ function runCli(args) {
     const publishCommands = [
       npmCommand("doctor:local"),
       {
-        args: [
-          "run",
-          "publish:preflight",
-          "--",
-          ...args.passthrough,
-        ],
+        args: ["run", "publish:preflight", "--", ...args.passthrough],
         command: "npm",
         label: `npm run publish:preflight${args.passthrough.length > 0 ? ` -- ${args.passthrough.join(" ")}` : ""}`,
       },
@@ -213,7 +205,11 @@ function printAndRun(plan, args) {
     ? buildReceiptContext({ base: args.base, plan })
     : null;
 
-  if (!args.force && receipt && readValidReceipt(receipt.path, receipt.fingerprint)) {
+  if (
+    !args.force &&
+    receipt &&
+    readValidReceipt(receipt.path, receipt.fingerprint)
+  ) {
     const cached = {
       fingerprint: receipt.fingerprint,
       lane: plan.lane,
@@ -336,7 +332,13 @@ function buildReceiptContext({ base, plan }) {
     commands: plan.commands.map((entry) => entry.label),
     lockfile: readText("package-lock.json") ?? "",
     nodeVersion: process.versions.node,
-    stagedDiff: runGit(["diff", "--cached", "--binary", "--no-ext-diff", "HEAD"]),
+    stagedDiff: runGit([
+      "diff",
+      "--cached",
+      "--binary",
+      "--no-ext-diff",
+      "HEAD",
+    ]),
     status,
     untracked,
     worktreeDiff: runGit(["diff", "--binary", "--no-ext-diff", "HEAD"]),

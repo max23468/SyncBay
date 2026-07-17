@@ -34,8 +34,9 @@
   --syncbay-accent: #0064d2;
   --syncbay-accent-strong: #0a4a94;
   --syncbay-accent-tint: #e7f0fb;
-  --syncbay-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --syncbay-font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Disclosure tecnici nativi: unica eccezione CSS preesistente. */
@@ -292,8 +293,7 @@
     var(--syncbay-tint-info) 64%,
     var(--syncbay-paper)
   );
-  box-shadow: 0 4px 12px
-    color-mix(in srgb, var(--syncbay-info) 8%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--syncbay-info) 8%, transparent);
   color: var(--syncbay-ink);
   font-family: var(--syncbay-font-sans);
 }

@@ -48,7 +48,9 @@ test("does not create an empty snapshot batch", async () => {
     {
       async transaction(run) {
         await run({
-          async createSnapshots() { createCalls += 1; },
+          async createSnapshots() {
+            createCalls += 1;
+          },
           async upsertBaseline() {},
         });
       },

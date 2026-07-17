@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { buildSnapshotPricingSourcesByItemId } from "./syncbay-pricing-source.ts";
 
 test("uses newer SyncBay pricing baselines before stale eBay snapshots", () => {

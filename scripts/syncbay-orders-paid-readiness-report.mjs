@@ -24,7 +24,8 @@ export function buildReadinessReport(
   const checkedAt = parseDateOrNull(payload.checkedAt) ?? new Date();
   const sessionIsLegacy = hasSession && !sessionExpiresAt;
   const sessionExpired =
-    Boolean(sessionExpiresAt) && sessionExpiresAt.getTime() <= checkedAt.getTime();
+    Boolean(sessionExpiresAt) &&
+    sessionExpiresAt.getTime() <= checkedAt.getTime();
   const refreshTokenExpired =
     Boolean(refreshTokenExpiresAt) &&
     refreshTokenExpiresAt.getTime() <= checkedAt.getTime();
@@ -72,7 +73,9 @@ export function buildReadinessReport(
       ? ["Access token Shopify offline assente."]
       : []),
     ...(sessionIsLegacy
-      ? ["Sessione Shopify offline legacy senza scadenza: riaprire l'app per migrare ai token a scadenza."]
+      ? [
+          "Sessione Shopify offline legacy senza scadenza: riaprire l'app per migrare ai token a scadenza.",
+        ]
       : []),
     ...(hasSession && !hasRefreshToken
       ? ["Refresh token Shopify offline assente."]
@@ -101,13 +104,17 @@ export function buildReadinessReport(
       ? [`Ci sono ${activeSyncJobs} job SYNC_INCREMENTAL attivi.`]
       : []),
     ...(eligibleCandidateCount === 0
-      ? ["Nessun mapping attivo con variante Shopify, snapshot EUR e quantità positiva."]
+      ? [
+          "Nessun mapping attivo con variante Shopify, snapshot EUR e quantità positiva.",
+        ]
       : []),
   ];
   const adminOrderCreateBlockers = [
     ...webhookRuntimeBlockers,
     ...(!hasScope(scopes, ADMIN_ORDER_CREATE_SCOPE)
-      ? [`Scope Shopify mancante per test Admin orderCreate: ${ADMIN_ORDER_CREATE_SCOPE}.`]
+      ? [
+          `Scope Shopify mancante per test Admin orderCreate: ${ADMIN_ORDER_CREATE_SCOPE}.`,
+        ]
       : []),
     ...ebayTradingCooldownBlockers,
   ];
@@ -147,7 +154,10 @@ export function buildReadinessReport(
       isLegacy: sessionIsLegacy,
       isOnline: Boolean(payload.session?.isOnline),
       refreshTokenExpires: payload.session?.refreshTokenExpires ?? null,
-      scopeMissingForAdminOrderCreate: !hasScope(scopes, ADMIN_ORDER_CREATE_SCOPE),
+      scopeMissingForAdminOrderCreate: !hasScope(
+        scopes,
+        ADMIN_ORDER_CREATE_SCOPE,
+      ),
       scopeMissingForWebhook: !hasScope(scopes, REQUIRED_WEBHOOK_SCOPE),
       scopes,
       tokenExpired: sessionExpired,

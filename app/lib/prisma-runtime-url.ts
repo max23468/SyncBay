@@ -32,10 +32,7 @@ export function buildPrismaRuntimeDatabaseUrl(databaseUrl?: string) {
     }
 
     if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set(
-        "connection_limit",
-        DEFAULT_PRISMA_CONNECTION_LIMIT,
-      );
+      url.searchParams.set("connection_limit", DEFAULT_PRISMA_CONNECTION_LIMIT);
     }
     if (!url.searchParams.has("pool_timeout")) {
       url.searchParams.set("pool_timeout", DEFAULT_PRISMA_POOL_TIMEOUT);

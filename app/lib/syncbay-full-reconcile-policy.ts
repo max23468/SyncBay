@@ -1,8 +1,5 @@
 export type FullReconcilePolicyStatus =
-  | "due_soon"
-  | "fresh"
-  | "missing"
-  | "overdue";
+  "due_soon" | "fresh" | "missing" | "overdue";
 
 export function getFullReconcilePolicyState(input: {
   intervalHours: number;

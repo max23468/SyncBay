@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getEbayTradingRateLimitCooldownSeconds, getNextEbayTradingRateLimitRetryAt, isEbayTradingUsageLimitError } from "./syncbay-ebay-rate-limit.ts";
+import {
+  getEbayTradingRateLimitCooldownSeconds,
+  getNextEbayTradingRateLimitRetryAt,
+  isEbayTradingUsageLimitError,
+} from "./syncbay-ebay-rate-limit.ts";
 
 test("detects localized eBay Trading usage limit errors", () => {
   assert.equal(

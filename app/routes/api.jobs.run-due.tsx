@@ -21,7 +21,14 @@ export const action = async ({ request, url }: ActionFunctionArgs) => {
       limit: Number.isInteger(limit) ? limit : undefined,
     });
   } catch (error) {
-    logSyncBayRuntimeEvent({ event: "syncbay-runner-completed", level: "error", requestId, route: "api.jobs.run-due", elapsedMs: Math.round(performance.now() - startedAt), outcome: "failed" });
+    logSyncBayRuntimeEvent({
+      event: "syncbay-runner-completed",
+      level: "error",
+      requestId,
+      route: "api.jobs.run-due",
+      elapsedMs: Math.round(performance.now() - startedAt),
+      outcome: "failed",
+    });
     throw error;
   }
 

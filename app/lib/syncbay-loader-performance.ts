@@ -1,13 +1,10 @@
-// @ts-expect-error Node strip-types needs the extension in direct lib tests.
-import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "./syncbay-runtime-log.ts";
+import {
+  getSyncBayRequestId,
+  logSyncBayRuntimeEvent,
+} from "./syncbay-runtime-log.ts";
 
 export type SyncBayLoaderRoute =
-  | "activity"
-  | "catalog"
-  | "conflicts"
-  | "import"
-  | "overview"
-  | "settings";
+  "activity" | "catalog" | "conflicts" | "import" | "overview" | "settings";
 
 export type SyncBayLoaderPerformanceMetric = {
   durationMs: number;
@@ -83,9 +80,16 @@ export function logSyncBayLoaderPerformance(input: {
   logSyncBayRuntimeEvent({
     event: "syncbay-loader-performance",
     level,
-    outcome: ratio > 1 ? "payload_budget_exceeded" : ratio >= 0.8 ? "payload_budget_warning" : "ok",
+    outcome:
+      ratio > 1
+        ? "payload_budget_exceeded"
+        : ratio >= 0.8
+          ? "payload_budget_warning"
+          : "ok",
     payloadBytes,
-    requestId: input.requestId ?? (input.request ? getSyncBayRequestId(input.request) : null),
+    requestId:
+      input.requestId ??
+      (input.request ? getSyncBayRequestId(input.request) : null),
     route: input.route,
     durationMs: totalMs,
   });
@@ -93,11 +97,16 @@ export function logSyncBayLoaderPerformance(input: {
   return { budget, level, payloadBytes, totalMs };
 }
 
-export function assertSyncBayLoaderPayloadBudget(route: SyncBayLoaderRoute, payload: unknown) {
+export function assertSyncBayLoaderPayloadBudget(
+  route: SyncBayLoaderRoute,
+  payload: unknown,
+) {
   const payloadBytes = getJsonPayloadBytes(payload);
   const budget = SYNCBAY_LOADER_PAYLOAD_BUDGETS[route];
   if (payloadBytes !== null && payloadBytes > budget) {
-    throw new Error(`Payload ${route} oltre budget: ${payloadBytes}/${budget} byte.`);
+    throw new Error(
+      `Payload ${route} oltre budget: ${payloadBytes}/${budget} byte.`,
+    );
   }
   return payloadBytes;
 }

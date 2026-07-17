@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { shouldUseMappedShopifyVariant } from "./syncbay-sold-out-variant.ts";
 
 test("uses the mapped Shopify variant when the mapping stores one", () => {

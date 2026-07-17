@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { normalizeProductPublicationMode, parseProductPublicationGids, resolveProductPublicationIds, resolveStoredSelectedProductPublicationIds, serializeProductPublicationGids } from "./syncbay-product-publication-settings.ts";
+import {
+  normalizeProductPublicationMode,
+  parseProductPublicationGids,
+  resolveProductPublicationIds,
+  resolveStoredSelectedProductPublicationIds,
+  serializeProductPublicationGids,
+} from "./syncbay-product-publication-settings.ts";
 
 test("normalizes unknown publication modes to all channels", () => {
   assert.equal(normalizeProductPublicationMode("ALL"), "ALL");

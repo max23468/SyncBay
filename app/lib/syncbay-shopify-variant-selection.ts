@@ -12,10 +12,7 @@ export interface ShopifyVariantSelectionProduct<
 
 export function selectShopifyVariantForSync<
   Variant extends ShopifyVariantSelectionCandidate,
->(input: {
-  preferredVariantGid?: string | null;
-  variants?: Variant[] | null;
-}) {
+>(input: { preferredVariantGid?: string | null; variants?: Variant[] | null }) {
   const variants = input.variants ?? [];
   const preferredVariantGid = input.preferredVariantGid?.trim() ?? "";
 
@@ -30,10 +27,7 @@ export function selectShopifyVariantForSync<
 
 export function mergePreferredShopifyVariantForSync<
   Variant extends ShopifyVariantSelectionCandidate,
->(input: {
-  preferredVariant?: Variant | null;
-  variants?: Variant[] | null;
-}) {
+>(input: { preferredVariant?: Variant | null; variants?: Variant[] | null }) {
   const variants = input.variants ?? [];
   const preferredVariant = input.preferredVariant ?? null;
 

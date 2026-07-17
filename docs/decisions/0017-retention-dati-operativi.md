@@ -26,20 +26,20 @@ Vincoli:
 
 La retention operativa del pilota viene fissata così:
 
-| Famiglia dati | Retention | Motivo |
-| --- | ---: | --- |
-| Audit webhook Shopify ricevuti | 14 giorni | Tracce ad alta frequenza già coperte da job e audit di esito; utili per diagnosi recente ma non come storico lungo. |
-| Audit notifiche account deletion ricevute | 30 giorni | Eco ad alto volume delle notifiche eBay; la prova di trattamento resta nelle richieste account deletion dedicate. |
-| Audit job riusciti | 45 giorni | Eventi di esito positivo dei job, allineati alla finestra dei job riusciti. |
-| Audit log operativi | 180 giorni | Tracciabilità azioni, retry, connessioni e diagnosi negoziante. |
-| Job sync/import riusciti | 45 giorni | Esiti positivi recenti per diagnostica, con baseline conservate in snapshot e audit sintetici. |
-| Job sync/import | 90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito. |
-| Baseline prodotto corrente | Durata del mapping | Stato durevole usato da conflitti e viste correnti; non dipende dalla storia evento. |
-| Snapshot prodotto evento | 30 giorni | Diagnostica e timeline recente ad alta densità. |
-| Checkpoint prodotto settimanale | 180 giorni | Rollback storico compatto, solo quando completo e diverso dal checkpoint precedente. |
-| State OAuth temporanei | 7 giorni | Anti-CSRF e debugging breve del flusso OAuth senza conservare stato vecchio. |
-| Richieste eBay account deletion senza match | 7 giorni | Notifiche eBay non collegate ad alcuno shop del pilota, utili solo per deduplica e diagnostica breve. |
-| Richieste eBay account deletion | 365 giorni | Idempotenza, compliance e prova di gestione richiesta senza payload raw. |
+| Famiglia dati                               |          Retention | Motivo                                                                                                              |
+| ------------------------------------------- | -----------------: | ------------------------------------------------------------------------------------------------------------------- |
+| Audit webhook Shopify ricevuti              |          14 giorni | Tracce ad alta frequenza già coperte da job e audit di esito; utili per diagnosi recente ma non come storico lungo. |
+| Audit notifiche account deletion ricevute   |          30 giorni | Eco ad alto volume delle notifiche eBay; la prova di trattamento resta nelle richieste account deletion dedicate.   |
+| Audit job riusciti                          |          45 giorni | Eventi di esito positivo dei job, allineati alla finestra dei job riusciti.                                         |
+| Audit log operativi                         |         180 giorni | Tracciabilità azioni, retry, connessioni e diagnosi negoziante.                                                     |
+| Job sync/import riusciti                    |          45 giorni | Esiti positivi recenti per diagnostica, con baseline conservate in snapshot e audit sintetici.                      |
+| Job sync/import                             |          90 giorni | Diagnostica recente, code, retry e affidabilità senza storico indefinito.                                           |
+| Baseline prodotto corrente                  | Durata del mapping | Stato durevole usato da conflitti e viste correnti; non dipende dalla storia evento.                                |
+| Snapshot prodotto evento                    |          30 giorni | Diagnostica e timeline recente ad alta densità.                                                                     |
+| Checkpoint prodotto settimanale             |         180 giorni | Rollback storico compatto, solo quando completo e diverso dal checkpoint precedente.                                |
+| State OAuth temporanei                      |           7 giorni | Anti-CSRF e debugging breve del flusso OAuth senza conservare stato vecchio.                                        |
+| Richieste eBay account deletion senza match |           7 giorni | Notifiche eBay non collegate ad alcuno shop del pilota, utili solo per deduplica e diagnostica breve.               |
+| Richieste eBay account deletion             |         365 giorni | Idempotenza, compliance e prova di gestione richiesta senza payload raw.                                            |
 
 Queste finestre sono il riferimento per UI, documentazione, cleanup operativo e
 future automazioni. Il cleanup automatico è stato implementato e attivato in

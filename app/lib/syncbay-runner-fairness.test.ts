@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildRunnerLanePlan, shouldClaimRunnerJob } from "./syncbay-runner-fairness.ts";
+import {
+  buildRunnerLanePlan,
+  shouldClaimRunnerJob,
+} from "./syncbay-runner-fairness.ts";
 
 const emptyDue = {
   UPDATE_EBAY_STOCK: 0,

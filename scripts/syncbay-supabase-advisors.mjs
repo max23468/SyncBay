@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-import {
-  getSupabaseCliCwd,
-  getSupabaseCliEnv,
-} from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
 
 const VALID_TYPES = new Set(["security", "performance"]);
 

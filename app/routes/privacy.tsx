@@ -10,12 +10,12 @@ export default function Privacy() {
   return (
     <AppProvider embedded={false}>
       <s-page heading="Informativa privacy SyncBay">
-        <s-badge slot="accessory" tone="info">1.0 privata</s-badge>
+        <s-badge slot="accessory" tone="info">
+          1.0 privata
+        </s-badge>
         <s-section heading="SyncBay">
           <s-stack gap="base">
-            <SyncBayBrandPanel
-              detail="I dati trattati servono a collegare eBay.it a Shopify, allineare il catalogo e mostrare diagnostica operativa."
-            />
+            <SyncBayBrandPanel detail="I dati trattati servono a collegare eBay.it a Shopify, allineare il catalogo e mostrare diagnostica operativa." />
             <s-text>
               SyncBay 1.0 è una custom app privata per clienti selezionati. Non
               è ancora pubblicata nello Shopify App Store e non è una soluzione
@@ -36,11 +36,24 @@ export default function Privacy() {
               impostazioni operative dello shop.
             </s-text>
             <s-unordered-list>
-              <s-list-item>dati shop Shopify e dati account eBay collegati;</s-list-item>
-              <s-list-item>dati catalogo eBay e Shopify necessari a import, takeover e sync;</s-list-item>
-              <s-list-item>token eBay trattati lato server e cifrati a riposo quando persistiti da SyncBay;</s-list-item>
-              <s-list-item>log, job, audit, mapping, snapshot prodotto e conflitti Shopify;</s-list-item>
-              <s-list-item>ordini Shopify pagati limitati ai dati necessari per aggiornare la disponibilità su eBay.</s-list-item>
+              <s-list-item>
+                dati shop Shopify e dati account eBay collegati;
+              </s-list-item>
+              <s-list-item>
+                dati catalogo eBay e Shopify necessari a import, takeover e
+                sync;
+              </s-list-item>
+              <s-list-item>
+                token eBay trattati lato server e cifrati a riposo quando
+                persistiti da SyncBay;
+              </s-list-item>
+              <s-list-item>
+                log, job, audit, mapping, snapshot prodotto e conflitti Shopify;
+              </s-list-item>
+              <s-list-item>
+                ordini Shopify pagati limitati ai dati necessari per aggiornare
+                la disponibilità su eBay.
+              </s-list-item>
             </s-unordered-list>
           </s-stack>
         </s-section>
@@ -60,10 +73,9 @@ export default function Privacy() {
           <s-stack gap="base">
             <s-text>
               Token e segreti non vengono salvati nel repository. I token eBay
-              persistiti da SyncBay sono trattati lato server e cifrati a
-              riposo dal runtime applicativo. Le sessioni Shopify restano nel
-              database server-side della custom app e sono accessibili solo al
-              runtime.
+              persistiti da SyncBay sono trattati lato server e cifrati a riposo
+              dal runtime applicativo. Le sessioni Shopify restano nel database
+              server-side della custom app e sono accessibili solo al runtime.
             </s-text>
             <s-text>
               Le tabelle operative con token, job, audit, mapping e dati shop
@@ -77,9 +89,9 @@ export default function Privacy() {
           <s-text>
             La retention operativa segue le decisioni tecniche ADR 0017 e ADR
             0018: job, audit, snapshot, stati OAuth temporanei e notifiche
-            account deletion hanno finestre diverse in base allo scopo
-            operativo e di compliance. Queste finestre verranno rivalutate prima
-            di una futura pubblicazione App Store.
+            account deletion hanno finestre diverse in base allo scopo operativo
+            e di compliance. Queste finestre verranno rivalutate prima di una
+            futura pubblicazione App Store.
           </s-text>
         </s-section>
 

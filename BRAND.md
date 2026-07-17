@@ -131,12 +131,12 @@ Registro:
 
 Esempi:
 
-| Situazione | Buono | Evitare |
-| --- | --- | --- |
-| Sincronizzazione completata | 128 prodotti aggiornati. | Tutto perfetto! |
-| Errore immagine | Questa immagine non è scaricabile da eBay. Puoi riprovare o continuare senza importarla. | Oops, qualcosa è andato storto. |
-| Conflitto | Il prezzo è stato modificato su Shopify dopo l'ultima sincronizzazione. Scegli quale valore mantenere. | Abbiamo trovato un problema. |
-| Disponibilità critica | Non siamo riusciti ad aggiornare la quantità sul marketplace. Il prodotto resta in modalità prudente. | Errore grave di sistema. |
+| Situazione                  | Buono                                                                                                  | Evitare                         |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| Sincronizzazione completata | 128 prodotti aggiornati.                                                                               | Tutto perfetto!                 |
+| Errore immagine             | Questa immagine non è scaricabile da eBay. Puoi riprovare o continuare senza importarla.               | Oops, qualcosa è andato storto. |
+| Conflitto                   | Il prezzo è stato modificato su Shopify dopo l'ultima sincronizzazione. Scegli quale valore mantenere. | Abbiamo trovato un problema.    |
+| Disponibilità critica       | Non siamo riusciti ad aggiornare la quantità sul marketplace. Il prodotto resta in modalità prudente.  | Errore grave di sistema.        |
 
 ## Messaggi chiave
 
@@ -193,14 +193,14 @@ Esempi:
 
 ### Palette logo definitiva
 
-| Ruolo | Nome | Valore |
-| --- | --- | --- |
-| Ponte e `Bay` | Bay Blue | `#0064D2` |
-| `Sync` | Sync Green | `#95BF47` |
+| Ruolo             | Nome           | Valore    |
+| ----------------- | -------------- | --------- |
+| Ponte e `Bay`     | Bay Blue       | `#0064D2` |
+| `Sync`            | Sync Green     | `#95BF47` |
 | Stanghetta gialla | Listing Yellow | `#F5AF02` |
-| Stanghetta rossa | Listing Red | `#E53238` |
-| Testo secondario | Slate | `#51615F` |
-| Sfondo | White | `#FFFFFF` |
+| Stanghetta rossa  | Listing Red    | `#E53238` |
+| Testo secondario  | Slate          | `#51615F` |
+| Sfondo            | White          | `#FFFFFF` |
 
 Regole:
 
@@ -221,18 +221,18 @@ di Shopify sostituisce il verde di eBay. Brand primario = blu eBay, secondario =
 verde Shopify. Ogni ruolo semantico ha hue di marca (bordi/icone/accenti), tinta
 tenue (sfondi) e versione scura per il testo.
 
-| Ruolo | Nome | Hue | Testo | Tinta |
-| --- | --- | --- | --- | --- |
-| Fondo app | Cloud | `#F6F8F7` | — | — |
-| Superficie | Paper | `#FFFFFF` | — | — |
-| Testo primario | Ink | `#15202B` | — | — |
-| Testo secondario | Slate | `#51615F` | — | — |
-| Bordo | Mist | `#D8E0DD` | — | — |
-| Primario / Accento / Info | Bay Blue (eBay) | `#0064D2` | `#0A4A94` | `#E7F0FB` |
-| Secondario / Successo | Verde Shopify | `#95BF47` | `#466A1A` | `#EEF6E1` |
-| Warning | Giallo eBay | `#F5AF02` | `#7A5200` | `#FDF3D6` |
-| Errore / Conflitto | Rosso eBay | `#E53238` | `#A31D22` | `#FCE9EA` |
-| Legacy (no ruolo) | Harbor / Current | `#0F5E6E` / `#1A8F7A` | — | — |
+| Ruolo                     | Nome             | Hue                   | Testo     | Tinta     |
+| ------------------------- | ---------------- | --------------------- | --------- | --------- |
+| Fondo app                 | Cloud            | `#F6F8F7`             | —         | —         |
+| Superficie                | Paper            | `#FFFFFF`             | —         | —         |
+| Testo primario            | Ink              | `#15202B`             | —         | —         |
+| Testo secondario          | Slate            | `#51615F`             | —         | —         |
+| Bordo                     | Mist             | `#D8E0DD`             | —         | —         |
+| Primario / Accento / Info | Bay Blue (eBay)  | `#0064D2`             | `#0A4A94` | `#E7F0FB` |
+| Secondario / Successo     | Verde Shopify    | `#95BF47`             | `#466A1A` | `#EEF6E1` |
+| Warning                   | Giallo eBay      | `#F5AF02`             | `#7A5200` | `#FDF3D6` |
+| Errore / Conflitto        | Rosso eBay       | `#E53238`             | `#A31D22` | `#FCE9EA` |
+| Legacy (no ruolo)         | Harbor / Current | `#0F5E6E` / `#1A8F7A` | —         | —         |
 
 Regole:
 

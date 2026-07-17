@@ -1,16 +1,10 @@
 export type SyncBayProductFacetKey =
-  | "categoria"
-  | "area_stato"
-  | "materiale"
-  | "conservazione"
-  | "perizia";
+  "categoria" | "area_stato" | "materiale" | "conservazione" | "perizia";
 
 export type SyncBayProductFacetConfidence = "high" | "medium" | "low";
 
 export type SyncBayProductFacetSource =
-  | "title_rule"
-  | "category_hint"
-  | "ebay_specific";
+  "title_rule" | "category_hint" | "ebay_specific";
 
 export interface EbayItemSpecific {
   name: string;
@@ -43,16 +37,14 @@ export interface SyncBayProductFacetInput {
 }
 
 const FACET_NAMESPACE = "syncbay_facets";
-const FACET_TYPES: Record<
-  SyncBayProductFacetKey,
-  SyncBayProductFacet["type"]
-> = {
-  area_stato: "single_line_text_field",
-  categoria: "single_line_text_field",
-  conservazione: "list.single_line_text_field",
-  materiale: "list.single_line_text_field",
-  perizia: "single_line_text_field",
-};
+const FACET_TYPES: Record<SyncBayProductFacetKey, SyncBayProductFacet["type"]> =
+  {
+    area_stato: "single_line_text_field",
+    categoria: "single_line_text_field",
+    conservazione: "list.single_line_text_field",
+    materiale: "list.single_line_text_field",
+    perizia: "single_line_text_field",
+  };
 
 const FACETS = [
   {
@@ -188,15 +180,13 @@ function getFacetInference(
   key: SyncBayProductFacetKey,
   input: SyncBayProductFacetInput,
   aliases: readonly string[],
-):
-  | {
-      confidence: SyncBayProductFacetConfidence;
-      evidence: string[];
-      ruleId: string;
-      source: SyncBayProductFacetSource;
-      values: string[];
-    }
-  | null {
+): {
+  confidence: SyncBayProductFacetConfidence;
+  evidence: string[];
+  ruleId: string;
+  source: SyncBayProductFacetSource;
+  values: string[];
+} | null {
   if (key === "categoria") {
     const storefrontCategory = getStorefrontCategoryValue(
       input.storeCategoryName,
@@ -344,13 +334,7 @@ function getTitleCategoryValues(title: string) {
     return ["Monete in euro"];
   }
   if (
-    hasAnyToken(normalized, [
-      "lira",
-      "lire",
-      "centesimo",
-      "centesimi",
-      "cent",
-    ])
+    hasAnyToken(normalized, ["lira", "lire", "centesimo", "centesimi", "cent"])
   ) {
     return ["Monete italiane in lire"];
   }
@@ -422,7 +406,8 @@ function getTitleAreaValues(title: string) {
     return ["Vaticano"];
   }
   if (hasAnyPhrase(normalized, ["san marino"])) return ["San Marino"];
-  if (hasAnyPhrase(normalized, ["germania", "deutschland"])) return ["Germania"];
+  if (hasAnyPhrase(normalized, ["germania", "deutschland"]))
+    return ["Germania"];
   if (
     hasAnyPhrase(normalized, ["regno unito", "u k"]) ||
     hasAnyToken(normalized, ["uk"])
@@ -485,7 +470,9 @@ function getTitleConservationValues(title: string) {
     .replace(/\bQ[\s.]*SPL\b/g, "QSPL")
     .replace(/\bQ[\s.]*BB\b/g, "QBB");
   const matches = Array.from(
-    normalized.matchAll(/(^|[^A-Z0-9])(QFDC|FDC|QSPL|SPL|QBB|BB|MB|PROOF)(?=$|[^A-Z0-9])/g),
+    normalized.matchAll(
+      /(^|[^A-Z0-9])(QFDC|FDC|QSPL|SPL|QBB|BB|MB|PROOF)(?=$|[^A-Z0-9])/g,
+    ),
   );
 
   return dedupe(

@@ -129,7 +129,9 @@ function printReport(report) {
     `Campione: ${report.summary.sampledCount}; cambiati: ${report.summary.changedCount}; ` +
       `rimozione media: ${report.summary.averageRemovedPercent}%; massima: ${report.summary.maxRemovedPercent}%.`,
   );
-  console.log(`Segnali template trovati: ${report.summary.templateSignalCount}`);
+  console.log(
+    `Segnali template trovati: ${report.summary.templateSignalCount}`,
+  );
   console.log("");
 
   for (const row of report.rows) {

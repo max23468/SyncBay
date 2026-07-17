@@ -1,10 +1,5 @@
 export type ImportPreviewWindowFilter =
-  | "all"
-  | "error"
-  | "imported"
-  | "importing"
-  | "ready"
-  | "reimport";
+  "all" | "error" | "imported" | "importing" | "ready" | "reimport";
 
 type WindowablePreviewItem = {
   itemId: string;

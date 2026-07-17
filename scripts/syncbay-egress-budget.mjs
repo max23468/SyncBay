@@ -6,10 +6,7 @@ import {
   getEgressBudgetReadRows,
   isEgressReadStatementQuery,
 } from "../app/lib/syncbay-egress-budget.ts";
-import {
-  formatCliError,
-  querySupabaseJson,
-} from "./supabase-cli-env.mjs";
+import { formatCliError, querySupabaseJson } from "./supabase-cli-env.mjs";
 
 const { values: rawArgs } = parseArgs({
   options: {
@@ -136,18 +133,23 @@ function buildDiagnostics(rawDiagnostics) {
       avgRowsPerCall: totalCalls > 0 ? round3(totalRows / totalCalls) : 0,
       observedAt: rawDiagnostics.observedAt,
       productSnapshotPayloadReads: {
-        avgRowsPerCall: payloadReadCalls > 0 ? round3(payloadReadRows / payloadReadCalls) : 0,
+        avgRowsPerCall:
+          payloadReadCalls > 0 ? round3(payloadReadRows / payloadReadCalls) : 0,
         calls: payloadReadCalls,
         rows: payloadReadRows,
-        statementCount: normalizeCount(rawDiagnostics.payloadReadStatementCount),
+        statementCount: normalizeCount(
+          rawDiagnostics.payloadReadStatementCount,
+        ),
       },
       productSnapshotPayloadStatements: {
-        avgRowsPerCall: payloadCalls > 0 ? round3(payloadRows / payloadCalls) : 0,
+        avgRowsPerCall:
+          payloadCalls > 0 ? round3(payloadRows / payloadCalls) : 0,
         calls: payloadCalls,
         rows: payloadRows,
         statementCount: normalizeCount(rawDiagnostics.payloadStatementCount),
       },
-      selectAvgRowsPerCall: selectCalls > 0 ? round3(selectRows / selectCalls) : 0,
+      selectAvgRowsPerCall:
+        selectCalls > 0 ? round3(selectRows / selectCalls) : 0,
       selectCalls,
       selectRows,
       selectStatementCount: normalizeCount(rawDiagnostics.selectStatementCount),
@@ -197,7 +199,10 @@ function normalizeTopQueries(rows) {
       avgRowsPerCall: calls > 0 ? round3(resultRows / calls) : 0,
       calls,
       queryId: String(row.queryId ?? ""),
-      queryPreview: normalizeSqlWhitespace(row.queryPreview ?? "").slice(0, 240),
+      queryPreview: normalizeSqlWhitespace(row.queryPreview ?? "").slice(
+        0,
+        240,
+      ),
       rows: resultRows,
     };
   });
@@ -256,7 +261,8 @@ function hasProductSnapshotPayload(row) {
 
 function printSummary({ budget, diagnostics }) {
   const payloadReadStats = diagnostics.productSnapshotPayloadReads ?? {};
-  const payloadStatementStats = diagnostics.productSnapshotPayloadStatements ?? {};
+  const payloadStatementStats =
+    diagnostics.productSnapshotPayloadStatements ?? {};
 
   console.log("SyncBay egress budget");
   console.log(`- stats_reset: ${diagnostics.statsReset}`);

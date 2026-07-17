@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { shouldWriteShopifyWebhookAuditLog } from "./syncbay-webhook-audit.ts";
 
 test("writes one audit entry when a webhook creates a new job", () => {

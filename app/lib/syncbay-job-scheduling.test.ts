@@ -1,16 +1,39 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEbayItemJobSplitIdempotencyKey, buildEbayItemJobSplitPayloads, buildSellerEventsNoopMarker, getCatalogReconcileJobIdsToCancelBeforeNewRun, getDuplicateShopifyChangeJobIdsToCancel, getShopifyChangeJobResourceKeys, getSupersededCatalogReconcileJobIds, isFacetOnlyIncrementalJobPayload, isRegularIncrementalJobPayload, isSchedulableSyncJob, normalizeRunDueLimit, prioritizeIncrementalJobsByFacetMode, shouldCancelSyncJobAfterShopUninstall, shouldSkipRecentShopifyProductChangeJob } from "./syncbay-job-scheduling.ts";
+import {
+  buildEbayItemJobSplitIdempotencyKey,
+  buildEbayItemJobSplitPayloads,
+  buildSellerEventsNoopMarker,
+  getCatalogReconcileJobIdsToCancelBeforeNewRun,
+  getDuplicateShopifyChangeJobIdsToCancel,
+  getShopifyChangeJobResourceKeys,
+  getSupersededCatalogReconcileJobIds,
+  isFacetOnlyIncrementalJobPayload,
+  isRegularIncrementalJobPayload,
+  isSchedulableSyncJob,
+  normalizeRunDueLimit,
+  prioritizeIncrementalJobsByFacetMode,
+  shouldCancelSyncJobAfterShopUninstall,
+  shouldSkipRecentShopifyProductChangeJob,
+} from "./syncbay-job-scheduling.ts";
 
 test("cancels every prior reconcile job before creating a fresh run", () => {
   assert.deepEqual(
     getCatalogReconcileJobIdsToCancelBeforeNewRun({
       jobs: [
-        { id: "old-a", payload: { runId: "run-old", source: "catalog_reconcile" } },
-        { id: "newest-a", payload: { runId: "run-newest", source: "catalog_reconcile" } },
-        { id: "seller-events", payload: { runId: "delta", source: "seller_events_delta" } },
+        {
+          id: "old-a",
+          payload: { runId: "run-old", source: "catalog_reconcile" },
+        },
+        {
+          id: "newest-a",
+          payload: { runId: "run-newest", source: "catalog_reconcile" },
+        },
+        {
+          id: "seller-events",
+          payload: { runId: "delta", source: "seller_events_delta" },
+        },
       ],
     }),
     ["old-a", "newest-a"],
@@ -20,10 +43,38 @@ test("cancels every prior reconcile job before creating a fresh run", () => {
 test("supersedes catalog reconcile jobs from earlier runs, keeping the newest", () => {
   const ids = getSupersededCatalogReconcileJobIds({
     jobs: [
-      { createdAt: new Date("2026-07-11T15:25:10.000Z"), id: "old-1a", payload: { runId: "incremental:shop-1:2026-07-11T15:25:00.000Z", source: "catalog_reconcile" } },
-      { createdAt: new Date("2026-07-11T15:35:10.000Z"), id: "old-2a", payload: { runId: "incremental:shop-1:2026-07-11T15:35:00.000Z", source: "catalog_reconcile" } },
-      { createdAt: new Date("2026-07-11T19:15:10.000Z"), id: "keep-a", payload: { runId: "incremental:shop-1:2026-07-11T19:15:00.000Z", source: "catalog_reconcile" } },
-      { createdAt: new Date("2026-07-11T19:15:10.500Z"), id: "keep-b", payload: { runId: "incremental:shop-1:2026-07-11T19:15:00.000Z", source: "catalog_reconcile" } },
+      {
+        createdAt: new Date("2026-07-11T15:25:10.000Z"),
+        id: "old-1a",
+        payload: {
+          runId: "incremental:shop-1:2026-07-11T15:25:00.000Z",
+          source: "catalog_reconcile",
+        },
+      },
+      {
+        createdAt: new Date("2026-07-11T15:35:10.000Z"),
+        id: "old-2a",
+        payload: {
+          runId: "incremental:shop-1:2026-07-11T15:35:00.000Z",
+          source: "catalog_reconcile",
+        },
+      },
+      {
+        createdAt: new Date("2026-07-11T19:15:10.000Z"),
+        id: "keep-a",
+        payload: {
+          runId: "incremental:shop-1:2026-07-11T19:15:00.000Z",
+          source: "catalog_reconcile",
+        },
+      },
+      {
+        createdAt: new Date("2026-07-11T19:15:10.500Z"),
+        id: "keep-b",
+        payload: {
+          runId: "incremental:shop-1:2026-07-11T19:15:00.000Z",
+          source: "catalog_reconcile",
+        },
+      },
     ],
   });
 
@@ -34,8 +85,22 @@ test("keeps a single reconcile run untouched", () => {
   assert.deepEqual(
     getSupersededCatalogReconcileJobIds({
       jobs: [
-        { createdAt: new Date("2026-07-11T19:15:10.000Z"), id: "a", payload: { runId: "incremental:shop-1:2026-07-11T19:15:00.000Z", source: "catalog_reconcile" } },
-        { createdAt: new Date("2026-07-11T19:15:10.400Z"), id: "b", payload: { runId: "incremental:shop-1:2026-07-11T19:15:00.000Z", source: "catalog_reconcile" } },
+        {
+          createdAt: new Date("2026-07-11T19:15:10.000Z"),
+          id: "a",
+          payload: {
+            runId: "incremental:shop-1:2026-07-11T19:15:00.000Z",
+            source: "catalog_reconcile",
+          },
+        },
+        {
+          createdAt: new Date("2026-07-11T19:15:10.400Z"),
+          id: "b",
+          payload: {
+            runId: "incremental:shop-1:2026-07-11T19:15:00.000Z",
+            source: "catalog_reconcile",
+          },
+        },
       ],
     }),
     [],
@@ -46,9 +111,24 @@ test("never supersedes non-reconcile jobs or reconcile jobs without a runId", ()
   assert.deepEqual(
     getSupersededCatalogReconcileJobIds({
       jobs: [
-        { createdAt: new Date("2026-07-11T19:15:10.000Z"), id: "seller-events", payload: { runId: "seller-events:shop-1:x", source: "seller_events_delta" } },
-        { createdAt: new Date("2026-07-11T19:15:10.000Z"), id: "no-run-id", payload: { source: "catalog_reconcile" } },
-        { createdAt: new Date("2026-07-11T19:15:10.000Z"), id: "no-payload", payload: null },
+        {
+          createdAt: new Date("2026-07-11T19:15:10.000Z"),
+          id: "seller-events",
+          payload: {
+            runId: "seller-events:shop-1:x",
+            source: "seller_events_delta",
+          },
+        },
+        {
+          createdAt: new Date("2026-07-11T19:15:10.000Z"),
+          id: "no-run-id",
+          payload: { source: "catalog_reconcile" },
+        },
+        {
+          createdAt: new Date("2026-07-11T19:15:10.000Z"),
+          id: "no-payload",
+          payload: null,
+        },
       ],
     }),
     [],
@@ -183,10 +263,16 @@ test("treats every non-facet incremental source as regular work", () => {
   }
 
   assert.equal(
-    isRegularIncrementalJobPayload({ facetOnly: true, source: "facet_backfill" }),
+    isRegularIncrementalJobPayload({
+      facetOnly: true,
+      source: "facet_backfill",
+    }),
     false,
   );
-  assert.equal(isRegularIncrementalJobPayload({ source: "facet_backfill" }), false);
+  assert.equal(
+    isRegularIncrementalJobPayload({ source: "facet_backfill" }),
+    false,
+  );
 });
 
 test("prioritizes regular incremental jobs before facet-only jobs", () => {

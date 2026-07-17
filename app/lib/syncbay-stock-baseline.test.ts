@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { selectLatestStockBaselineSnapshot } from "./syncbay-stock-baseline.ts";
 
 test("selects the latest snapshot that carries stock quantity and currency", () => {

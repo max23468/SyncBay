@@ -9,14 +9,25 @@ const VERCEL_SPEED_INSIGHTS_LIMIT = 10_000;
 const SPEED_INSIGHTS_METRICS = ["cls", "fcp", "inp", "lcp", "ttfb"];
 const REPOSITORY_VERCEL_PLAN = "hobby";
 
-export async function observeVercel({ cwd = process.cwd(), env = process.env, execute = executeCommand } = {}) {
+export async function observeVercel({
+  cwd = process.cwd(),
+  env = process.env,
+  execute = executeCommand,
+} = {}) {
   const link = await readVercelLink(cwd);
-  const teamsResult = await execute("vercel", ["api", "/v2/teams", "--raw"], { cwd, env });
+  const teamsResult = await execute("vercel", ["api", "/v2/teams", "--raw"], {
+    cwd,
+    env,
+  });
   const teams = teamsResult.ok ? parseJson(teamsResult.stdout) : null;
   const team = selectVercelTeam(teams, link?.orgId);
   const { plan, planObservation } = resolveVercelPlan(env.VERCEL_PLAN);
   const scope = team?.slug;
-  const project = link?.projectName ?? link?.projectId ?? env.VERCEL_PROJECT_ID?.trim() ?? undefined;
+  const project =
+    link?.projectName ??
+    link?.projectId ??
+    env.VERCEL_PROJECT_ID?.trim() ??
+    undefined;
   const speedWindowDays = plan === "hobby" ? 7 : 30;
 
   if (!scope) {
@@ -25,16 +36,33 @@ export async function observeVercel({ cwd = process.cwd(), env = process.env, ex
       planObservation,
       usage: { status: "unavailable", action: "authenticate_vercel_cli" },
       analytics: { status: "unavailable", action: "authenticate_vercel_cli" },
-      speedInsights: { status: "unavailable", action: "authenticate_vercel_cli" },
-      fastDataTransfer: { status: "unavailable", action: "authenticate_vercel_cli" },
-      runtimeMetrics: { status: "unavailable", action: "authenticate_vercel_cli" },
+      speedInsights: {
+        status: "unavailable",
+        action: "authenticate_vercel_cli",
+      },
+      fastDataTransfer: {
+        status: "unavailable",
+        action: "authenticate_vercel_cli",
+      },
+      runtimeMetrics: {
+        status: "unavailable",
+        action: "authenticate_vercel_cli",
+      },
     };
   }
 
   const common = ["--scope", scope, "--format", "json"];
   const analyticsPromise = execute(
     "vercel",
-    ["metrics", "vercel.analytics_pageview.count", "--all", "--since", "30d", "--prod", ...common],
+    [
+      "metrics",
+      "vercel.analytics_pageview.count",
+      "--all",
+      "--since",
+      "30d",
+      "--prod",
+      ...common,
+    ],
     { cwd, env },
   );
   const speedPromises = SPEED_INSIGHTS_METRICS.map((metric) =>
@@ -54,17 +82,43 @@ export async function observeVercel({ cwd = process.cwd(), env = process.env, ex
   );
   const transferPromise = execute(
     "vercel",
-    ["metrics", "vercel.request.fdt_out_bytes", "--all", "--since", "30d", "--prod", ...common],
+    [
+      "metrics",
+      "vercel.request.fdt_out_bytes",
+      "--all",
+      "--since",
+      "30d",
+      "--prod",
+      ...common,
+    ],
     { cwd, env },
   );
   const runtimePromise = execute(
     "vercel",
-    ["metrics", "vercel.function_invocation.count", "--all", "--since", "30d", "--prod", ...common],
+    [
+      "metrics",
+      "vercel.function_invocation.count",
+      "--all",
+      "--since",
+      "30d",
+      "--prod",
+      ...common,
+    ],
     { cwd, env },
   );
-  const usagePromise = execute("vercel", ["usage", "--format", "json", "--scope", scope], { cwd, env });
+  const usagePromise = execute(
+    "vercel",
+    ["usage", "--format", "json", "--scope", scope],
+    { cwd, env },
+  );
 
-  const [analyticsResult, speedResults, transferResult, runtimeResult, usageResult] = await Promise.all([
+  const [
+    analyticsResult,
+    speedResults,
+    transferResult,
+    runtimeResult,
+    usageResult,
+  ] = await Promise.all([
     analyticsPromise,
     Promise.all(speedPromises),
     transferPromise,
@@ -89,11 +143,25 @@ export async function observeVercel({ cwd = process.cwd(), env = process.env, ex
     }),
     fastDataTransfer: buildLockedMetricObservation(transferResult, {
       action: "verify_vercel_usage_dashboard",
-      quota: plan === "hobby" ? { value: 1_000_000_000_000, unit: "bytes", label: "1 TB per 30 giorni" } : undefined,
+      quota:
+        plan === "hobby"
+          ? {
+              value: 1_000_000_000_000,
+              unit: "bytes",
+              label: "1 TB per 30 giorni",
+            }
+          : undefined,
     }),
     runtimeMetrics: buildLockedMetricObservation(runtimeResult, {
       action: "verify_vercel_usage_dashboard",
-      quota: plan === "hobby" ? { value: 1_000_000, unit: "invocations", label: "1.000.000 per 30 giorni" } : undefined,
+      quota:
+        plan === "hobby"
+          ? {
+              value: 1_000_000,
+              unit: "invocations",
+              label: "1.000.000 per 30 giorni",
+            }
+          : undefined,
     }),
   };
 }
@@ -103,7 +171,11 @@ export function resolveVercelPlan(rawValue) {
   if (declaredPlan) {
     return {
       plan: declaredPlan,
-      planObservation: { status: "declared", value: declaredPlan, source: "VERCEL_PLAN" },
+      planObservation: {
+        status: "declared",
+        value: declaredPlan,
+        source: "VERCEL_PLAN",
+      },
     };
   }
   return {
@@ -117,11 +189,26 @@ export function resolveVercelPlan(rawValue) {
   };
 }
 
-export function buildSupabaseStorageObservation({ bytes, objectCount, quotaBytes = 1_000_000_000 }) {
-  const normalizedBytes = Number.isFinite(Number(bytes)) && Number(bytes) > 0 ? Number(bytes) : 0;
-  const normalizedObjects = Number.isFinite(Number(objectCount)) && Number(objectCount) > 0 ? Math.trunc(Number(objectCount)) : 0;
+export function buildSupabaseStorageObservation({
+  bytes,
+  objectCount,
+  quotaBytes = 1_000_000_000,
+}) {
+  const normalizedBytes =
+    Number.isFinite(Number(bytes)) && Number(bytes) > 0 ? Number(bytes) : 0;
+  const normalizedObjects =
+    Number.isFinite(Number(objectCount)) && Number(objectCount) > 0
+      ? Math.trunc(Number(objectCount))
+      : 0;
   const utilization = quotaBytes > 0 ? normalizedBytes / quotaBytes : 0;
-  const status = utilization >= 0.95 ? "blocked" : utilization >= 0.85 ? "urgent" : utilization >= 0.7 ? "warning" : "ok";
+  const status =
+    utilization >= 0.95
+      ? "blocked"
+      : utilization >= 0.85
+        ? "urgent"
+        : utilization >= 0.7
+          ? "warning"
+          : "ok";
   return {
     status,
     source: "storage.objects",
@@ -135,7 +222,11 @@ export function buildSupabaseStorageObservation({ bytes, objectCount, quotaBytes
 }
 
 export function selectVercelTeam(payload, orgId) {
-  const teams = Array.isArray(payload?.teams) ? payload.teams : Array.isArray(payload) ? payload : [];
+  const teams = Array.isArray(payload?.teams)
+    ? payload.teams
+    : Array.isArray(payload)
+      ? payload
+      : [];
   if (orgId) return teams.find((team) => team.id === orgId) ?? null;
   return teams.length === 1 ? teams[0] : null;
 }
@@ -146,7 +237,11 @@ export function metricTotal(payload) {
     (total, summary) =>
       total +
       Object.entries(summary ?? {}).reduce(
-        (rowTotal, [key, value]) => rowTotal + (key.endsWith("_sum") && Number.isFinite(Number(value)) ? Number(value) : 0),
+        (rowTotal, [key, value]) =>
+          rowTotal +
+          (key.endsWith("_sum") && Number.isFinite(Number(value))
+            ? Number(value)
+            : 0),
         0,
       ),
     0,
@@ -154,9 +249,15 @@ export function metricTotal(payload) {
 }
 
 export function buildMetricObservation(result, { limit, scope, windowDays }) {
-  if (!result.ok) return classifyMetricFailure(result, "verify_vercel_dashboard");
+  if (!result.ok)
+    return classifyMetricFailure(result, "verify_vercel_dashboard");
   const payload = parseJson(result.stdout);
-  if (!payload) return { status: "unavailable", reason: "invalid_cli_json", action: "verify_vercel_dashboard" };
+  if (!payload)
+    return {
+      status: "unavailable",
+      reason: "invalid_cli_json",
+      action: "verify_vercel_dashboard",
+    };
   const value = metricTotal(payload);
   return {
     status: "observed",
@@ -170,11 +271,21 @@ export function buildMetricObservation(result, { limit, scope, windowDays }) {
   };
 }
 
-export function buildSpeedInsightsObservation(results, { limit, partial, projectScoped, windowDays }) {
-  const observations = results.map((result) => buildMetricObservation(result, { limit, scope: "project", windowDays }));
-  const failure = observations.find((observation) => observation.status !== "observed");
+export function buildSpeedInsightsObservation(
+  results,
+  { limit, partial, projectScoped, windowDays },
+) {
+  const observations = results.map((result) =>
+    buildMetricObservation(result, { limit, scope: "project", windowDays }),
+  );
+  const failure = observations.find(
+    (observation) => observation.status !== "observed",
+  );
   if (failure) return failure;
-  const value = observations.reduce((total, observation) => total + observation.value, 0);
+  const value = observations.reduce(
+    (total, observation) => total + observation.value,
+    0,
+  );
   return {
     status: partial ? "partial" : "observed",
     ...(partial ? { reason: "hobby_retention_7d" } : {}),
@@ -197,8 +308,17 @@ export function buildVercelUsageObservation(result, plan) {
   if (result.ok) {
     const payload = parseJson(result.stdout);
     return payload
-      ? { status: "observed", source: "vercel_usage", period: payload.period ?? null, totals: payload.totals ?? payload.grandTotal ?? null }
-      : { status: "unavailable", reason: "invalid_cli_json", action: "verify_vercel_usage_dashboard" };
+      ? {
+          status: "observed",
+          source: "vercel_usage",
+          period: payload.period ?? null,
+          totals: payload.totals ?? payload.grandTotal ?? null,
+        }
+      : {
+          status: "unavailable",
+          reason: "invalid_cli_json",
+          action: "verify_vercel_usage_dashboard",
+        };
   }
   const error = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
   if (/costs not found|\b404\b/i.test(error) && plan === "hobby") {
@@ -208,7 +328,11 @@ export function buildVercelUsageObservation(result, plan) {
       action: "use_observed_metrics_and_vercel_usage_dashboard",
     };
   }
-  return { status: "unavailable", reason: safeFailureReason(error), action: "verify_vercel_usage_dashboard" };
+  return {
+    status: "unavailable",
+    reason: safeFailureReason(error),
+    action: "verify_vercel_usage_dashboard",
+  };
 }
 
 export function buildLockedMetricObservation(result, { action, quota } = {}) {
@@ -233,17 +357,33 @@ export function buildLockedMetricObservation(result, { action, quota } = {}) {
   }
   const error = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
   if (/observability plus|payment_required/i.test(error)) {
-    return { status: "provider_locked", reason: "observability_plus_required", action, ...(quota ? { quota } : {}) };
+    return {
+      status: "provider_locked",
+      reason: "observability_plus_required",
+      action,
+      ...(quota ? { quota } : {}),
+    };
   }
-  return { status: "unavailable", reason: safeFailureReason(error), action, ...(quota ? { quota } : {}) };
+  return {
+    status: "unavailable",
+    reason: safeFailureReason(error),
+    action,
+    ...(quota ? { quota } : {}),
+  };
 }
 
 async function readVercelLink(cwd) {
   const candidates = [path.join(cwd, ".vercel", "project.json")];
-  const gitResult = await executeCommand("git", ["rev-parse", "--git-common-dir"], { cwd, env: process.env });
+  const gitResult = await executeCommand(
+    "git",
+    ["rev-parse", "--git-common-dir"],
+    { cwd, env: process.env },
+  );
   if (gitResult.ok) {
     const commonDir = path.resolve(cwd, gitResult.stdout.trim());
-    candidates.push(path.join(path.dirname(commonDir), ".vercel", "project.json"));
+    candidates.push(
+      path.join(path.dirname(commonDir), ".vercel", "project.json"),
+    );
   }
   for (const candidate of [...new Set(candidates)]) {
     try {
@@ -277,7 +417,11 @@ async function executeCommand(command, args, { cwd, env }) {
 function classifyMetricFailure(result, action) {
   const error = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
   if (/observability plus|payment_required/i.test(error)) {
-    return { status: "provider_locked", reason: "observability_plus_required", action };
+    return {
+      status: "provider_locked",
+      reason: "observability_plus_required",
+      action,
+    };
   }
   if (/latest 7 days|hobby plan/i.test(error)) {
     return { status: "partial", reason: "hobby_retention_limit", action };
@@ -286,8 +430,12 @@ function classifyMetricFailure(result, action) {
 }
 
 function normalizeDeclaredPlan(value) {
-  const normalized = String(value ?? "").trim().toLowerCase();
-  return normalized && !["auto", "unknown"].includes(normalized) ? normalized : null;
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return normalized && !["auto", "unknown"].includes(normalized)
+    ? normalized
+    : null;
 }
 
 function parseJson(value) {
@@ -312,7 +460,8 @@ function classifyUtilization(value, limit) {
 
 function safeFailureReason(value) {
   if (/not found|enoent/i.test(value)) return "cli_not_installed";
-  if (/unauthorized|login|authentication/i.test(value)) return "authentication_required";
+  if (/unauthorized|login|authentication/i.test(value))
+    return "authentication_required";
   if (/timeout/i.test(value)) return "timeout";
   return "cli_query_failed";
 }

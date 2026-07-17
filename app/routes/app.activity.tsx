@@ -53,12 +53,7 @@ type Activity = Awaited<ReturnType<typeof getActivityState>>;
 type ActivityConflict = Activity["conflicts"]["recent"][number];
 type ActivityJob = Activity["sync"]["lastJobs"][number];
 type ActivityFilter =
-  | "all"
-  | "conflicts"
-  | "errors"
-  | "import"
-  | "stock"
-  | "sync";
+  "all" | "conflicts" | "errors" | "import" | "stock" | "sync";
 type ActivityRow = {
   category: TimelineCategoryKind | "AUDIT";
   conflict?: ActivityConflict;
@@ -164,10 +159,9 @@ export default function ActivityRoute() {
     nextDueAt: activity.sync.catalogHealth.nextDueAt,
   });
 
-  useActionToast(
-    { data: actionData, state: navigation.state },
-    (data) => ({ message: data.message }),
-  );
+  useActionToast({ data: actionData, state: navigation.state }, (data) => ({
+    message: data.message,
+  }));
 
   return (
     <s-page heading="Attività" inlineSize="large">
@@ -181,39 +175,39 @@ export default function ActivityRoute() {
           e note. Gli errori restano leggibili e, dove si può, riprovabili.
         </s-text>
         <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
-        >
-          <MetricTile
-            detail="Aggiornamenti non ancora completati."
-            icon="refresh"
-            label="In coda"
-            tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
-            value={formatNumber(activity.sync.pendingJobs)}
-          />
-          <MetricTile
-            detail="Errori letti negli ultimi aggiornamenti."
-            icon="alert-triangle"
-            label="Errori recenti"
-            tone={failedJobs > 0 ? "critical" : "neutral"}
-            value={formatNumber(failedJobs)}
-          />
-          <MetricTile
-            detail="Note operative registrate."
-            icon="clock"
-            label="Eventi"
-            tone="neutral"
-            value={formatNumber(activity.audit.length)}
-          />
-          <MetricTile
-            detail={getCatalogHealthDetail(activity)}
-            icon="product"
-            label="Catalogo"
-            tone={getCatalogHealthTone(activity)}
-            value={getCatalogHealthLabel(activity)}
-          />
-        </s-grid>
+          <s-grid
+            gap="base"
+            gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
+          >
+            <MetricTile
+              detail="Aggiornamenti non ancora completati."
+              icon="refresh"
+              label="In coda"
+              tone={activity.sync.pendingJobs > 0 ? "info" : "neutral"}
+              value={formatNumber(activity.sync.pendingJobs)}
+            />
+            <MetricTile
+              detail="Errori letti negli ultimi aggiornamenti."
+              icon="alert-triangle"
+              label="Errori recenti"
+              tone={failedJobs > 0 ? "critical" : "neutral"}
+              value={formatNumber(failedJobs)}
+            />
+            <MetricTile
+              detail="Note operative registrate."
+              icon="clock"
+              label="Eventi"
+              tone="neutral"
+              value={formatNumber(activity.audit.length)}
+            />
+            <MetricTile
+              detail={getCatalogHealthDetail(activity)}
+              icon="product"
+              label="Catalogo"
+              tone={getCatalogHealthTone(activity)}
+              value={getCatalogHealthLabel(activity)}
+            />
+          </s-grid>
         </div>
 
         <s-section heading="Timeline">
@@ -271,9 +265,7 @@ export default function ActivityRoute() {
             />
             <StatusRow
               detail={`${activity.conflicts.openCount} decisioni aperte nella coda conflitti.`}
-              label={
-                activity.conflicts.openCount > 0 ? "Da gestire" : "Pulito"
-              }
+              label={activity.conflicts.openCount > 0 ? "Da gestire" : "Pulito"}
               icon="alert-triangle"
               tone={activity.conflicts.openCount > 0 ? "warning" : "success"}
               title="Conflitti Shopify"
@@ -311,7 +303,12 @@ function CatalogHealthCenterDetails({ activity }: { activity: Activity }) {
         tone={getCatalogHealthCenterTone(activity)}
         title="Centro salute catalogo"
       />
-      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
+      <s-box
+        border="base"
+        borderColor="base"
+        borderRadius="base"
+        padding="base"
+      >
         <s-stack gap="small-200">
           <s-text type="strong">Cause rilevate</s-text>
           {center.causes.map((cause) => (
@@ -347,16 +344,14 @@ function ActivityTimelineRow({
             {row.meta} · {formatDateTime(row.timestamp)}
           </s-text>
           {row.job && diagnostic ? (
-            <ActivityTechnicalDetails
-              diagnostic={diagnostic}
-              job={row.job}
-            />
+            <ActivityTechnicalDetails diagnostic={diagnostic} job={row.job} />
           ) : null}
           {row.type === "audit" && (row.groupedCount ?? 1) > 1 ? (
             <details className="syncbay-row-details">
               <summary>Dettagli raggruppamento</summary>
               <s-text color="subdued">
-                {row.groupedCount} note identiche dello stesso tipo registrate nello stesso minuto.
+                {row.groupedCount} note identiche dello stesso tipo registrate
+                nello stesso minuto.
               </s-text>
             </details>
           ) : null}
@@ -396,7 +391,11 @@ function getActivityIcon(row: ActivityRow): SyncBayIcon {
 function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
   return (
     <div className="syncbay-activity-filter-nav">
-      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
+      <s-stack
+        direction="inline"
+        gap="small-200"
+        accessibilityRole="navigation"
+      >
         {ACTIVITY_FILTERS.map((filter) => (
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}
@@ -433,16 +432,27 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       type: "job" as const,
     };
   });
-  const auditGroups = new Map<string, { count: number; event: Activity["audit"][number] }>();
+  const auditGroups = new Map<
+    string,
+    { count: number; event: Activity["audit"][number] }
+  >();
   for (const event of activity.audit) {
     const minute = event.createdAt.slice(0, 16);
     const key = `${event.type}:${minute}:${event.message}`;
     const existing = auditGroups.get(key);
-    auditGroups.set(key, existing ? { count: existing.count + 1, event: existing.event } : { count: 1, event });
+    auditGroups.set(
+      key,
+      existing
+        ? { count: existing.count + 1, event: existing.event }
+        : { count: 1, event },
+    );
   }
   const auditRows = [...auditGroups.values()].map(({ count, event }) => ({
     category: "AUDIT" as const,
-    detail: count > 1 ? `${event.message} (${count} eventi raggruppati)` : event.message,
+    detail:
+      count > 1
+        ? `${event.message} (${count} eventi raggruppati)`
+        : event.message,
     groupedCount: count,
     id: `audit-${event.type}-${event.createdAt}`,
     meta: "Sistema",
@@ -467,7 +477,8 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
 
   return [...jobRows, ...conflictRows, ...auditRows].sort(
     (first, second) =>
-      new Date(second.timestamp).getTime() - new Date(first.timestamp).getTime(),
+      new Date(second.timestamp).getTime() -
+      new Date(first.timestamp).getTime(),
   );
 }
 
@@ -519,7 +530,9 @@ function getTimelineCategoryFromJobType(type: string): TimelineCategoryKind {
 
 function getActivityJobTitle(job: ActivityJob) {
   const payload =
-    job.payload && typeof job.payload === "object" && !Array.isArray(job.payload)
+    job.payload &&
+    typeof job.payload === "object" &&
+    !Array.isArray(job.payload)
       ? (job.payload as Record<string, unknown>)
       : null;
 
@@ -539,11 +552,13 @@ function getJobDetail(
 ) {
   const pieces = [diagnostic.impact, diagnostic.nextAction];
 
-  return `${pieces.flatMap((piece) => {
-    const fragment = formatSentenceFragment(piece);
+  return `${pieces
+    .flatMap((piece) => {
+      const fragment = formatSentenceFragment(piece);
 
-    return fragment ? [fragment] : [];
-  }).join(". ")}.`;
+      return fragment ? [fragment] : [];
+    })
+    .join(". ")}.`;
 }
 
 /**

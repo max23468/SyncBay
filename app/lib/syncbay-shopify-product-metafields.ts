@@ -69,7 +69,8 @@ export function getSyncBayCategorySourceFromMetafields(
         normalizeMetafieldText(metafield.value),
       ])
       .filter(
-        (entry): entry is [string, string] => Boolean(entry[0]) && Boolean(entry[1]),
+        (entry): entry is [string, string] =>
+          Boolean(entry[0]) && Boolean(entry[1]),
       ),
   );
   const source = {

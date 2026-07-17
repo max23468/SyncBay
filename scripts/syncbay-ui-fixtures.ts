@@ -271,7 +271,8 @@ export function getDashboardFixture() {
           {
             code: "open_conflicts",
             count: 1,
-            detail: "Decisioni Shopify aperte bloccano l'allineamento automatico.",
+            detail:
+              "Decisioni Shopify aperte bloccano l'allineamento automatico.",
             label: "Conflitti aperti",
             tone: "warning",
           },
@@ -361,8 +362,18 @@ export function getImportPreviewFixture() {
         descriptionWasChanged: false,
         imageCount: 3,
         qualityChecklist: [
-          { code: "sku_present", label: "SKU presente", severity: "info", status: "pass" },
-          { code: "price_invalid", label: "Prezzo valido", severity: "info", status: "pass" },
+          {
+            code: "sku_present",
+            label: "SKU presente",
+            severity: "info",
+            status: "pass",
+          },
+          {
+            code: "price_invalid",
+            label: "Prezzo valido",
+            severity: "info",
+            status: "pass",
+          },
         ],
         qualitySummary: "2 controlli ok",
         sku: "SYNC-TAZZA-001",
@@ -393,15 +404,31 @@ export function getImportPreviewFixture() {
         descriptionCleanedLength: 120,
         descriptionCleanedTextExcerpt: "Radio vintage da collezione.",
         descriptionOriginalLength: 180,
-        descriptionOriginalTextExcerpt: "Radio vintage da collezione con template negozio.",
+        descriptionOriginalTextExcerpt:
+          "Radio vintage da collezione con template negozio.",
         descriptionRemovedPercent: 33,
         descriptionTemplateSignalCount: 1,
         descriptionWasChanged: true,
         imageCount: 1,
         qualityChecklist: [
-          { code: "sku_present", label: "SKU presente", severity: "info", status: "pass" },
-          { code: "images_missing", label: "Immagini presenti", severity: "info", status: "pass" },
-          { code: "description_cleaned", label: "Descrizione ripulita", severity: "info", status: "pass" },
+          {
+            code: "sku_present",
+            label: "SKU presente",
+            severity: "info",
+            status: "pass",
+          },
+          {
+            code: "images_missing",
+            label: "Immagini presenti",
+            severity: "info",
+            status: "pass",
+          },
+          {
+            code: "description_cleaned",
+            label: "Descrizione ripulita",
+            severity: "info",
+            status: "pass",
+          },
         ],
         qualitySummary: "3 controlli ok",
         sku: "SYNC-RADIO-005",
@@ -428,8 +455,18 @@ export function getImportPreviewFixture() {
         descriptionWasChanged: false,
         imageCount: 0,
         qualityChecklist: [
-          { code: "sku_missing", label: "SKU mancante", severity: "critical", status: "fail" },
-          { code: "images_missing", label: "Immagini mancanti", severity: "warning", status: "warning" },
+          {
+            code: "sku_missing",
+            label: "SKU mancante",
+            severity: "critical",
+            status: "fail",
+          },
+          {
+            code: "images_missing",
+            label: "Immagini mancanti",
+            severity: "warning",
+            status: "warning",
+          },
         ],
         qualitySummary: "1 blocchi, 1 avvisi",
         sku: null,
@@ -482,14 +519,21 @@ export function getImportPreviewFixture() {
           rows: [
             {
               fieldPolicy: {
-                handle: { currentHandle: "set-tazze", operation: "preserve", redirectRequired: false },
+                handle: {
+                  currentHandle: "set-tazze",
+                  operation: "preserve",
+                  redirectRequired: false,
+                },
                 images: { operation: "preserve" },
-                tags: { add: ["Negozio eBay"], preserve: ["Ceramica"], remove: [] },
+                tags: {
+                  add: ["Negozio eBay"],
+                  preserve: ["Ceramica"],
+                  remove: [],
+                },
               },
               itemId: "123456789001",
-              matchSuggestion:
-                items[0]
-                  .matchSuggestions[0] as ExistingProductMatchSuggestion,
+              matchSuggestion: items[0]
+                .matchSuggestions[0] as ExistingProductMatchSuggestion,
               plannedOperations: [
                 "claim_mapping",
                 "sync_title",
@@ -510,7 +554,11 @@ export function getImportPreviewFixture() {
             },
             {
               fieldPolicy: {
-                handle: { currentHandle: "radio-vintage", operation: "preserve", redirectRequired: false },
+                handle: {
+                  currentHandle: "radio-vintage",
+                  operation: "preserve",
+                  redirectRequired: false,
+                },
                 images: { operation: "preserve" },
                 tags: { add: ["Negozio eBay"], preserve: [], remove: [] },
               },
@@ -525,7 +573,11 @@ export function getImportPreviewFixture() {
             },
             {
               fieldPolicy: {
-                handle: { currentHandle: null, operation: "preserve", redirectRequired: false },
+                handle: {
+                  currentHandle: null,
+                  operation: "preserve",
+                  redirectRequired: false,
+                },
                 images: { operation: "sync_from_ebay_if_available" },
                 tags: { add: ["Negozio eBay"], preserve: [], remove: [] },
               },
@@ -557,7 +609,8 @@ export function getImportPreviewFixture() {
         },
       },
       previewSource: {
-        coverageNote: "Fixture sintetica con stato collegato e dati sanitizzati.",
+        coverageNote:
+          "Fixture sintetica con stato collegato e dati sanitizzati.",
         errorMessage: null,
         readCount: items.length,
         source: "trading_api",
@@ -779,7 +832,8 @@ export function getUiFixtureScenario(
       actionHref: "/app/activity?filter=errors",
       actionLabel: "Controlla attività",
       ariaBusy: false,
-      detail: "Alcuni dati non sono aggiornati. Controlla il dettaglio operativo.",
+      detail:
+        "Alcuni dati non sono aggiornati. Controlla il dettaglio operativo.",
       role: "status" as const,
       title: "Aggiornamento parziale",
     };
@@ -789,7 +843,8 @@ export function getUiFixtureScenario(
       actionHref: `/${page}`,
       actionLabel: "Riprova",
       ariaBusy: false,
-      detail: "La sezione non è stata caricata. Riprova senza modificare i dati.",
+      detail:
+        "La sezione non è stata caricata. Riprova senza modificare i dati.",
       role: "alert" as const,
       title: "Caricamento non riuscito",
     };
@@ -809,7 +864,8 @@ export function getUiFixtureScenario(
       actionHref: "/app/activity",
       actionLabel: "Segui attività",
       ariaBusy: true,
-      detail: "I batch sono in preparazione. Lo stato si aggiornerà automaticamente.",
+      detail:
+        "I batch sono in preparazione. Lo stato si aggiornerà automaticamente.",
       role: "status" as const,
       title: "Importazione in corso",
     };

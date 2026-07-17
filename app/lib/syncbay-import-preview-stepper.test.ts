@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { isLiveImportPreviewStepComplete } from "./syncbay-import-preview-stepper.ts";
 
 test("completes the preview step only after a live eBay preview", () => {

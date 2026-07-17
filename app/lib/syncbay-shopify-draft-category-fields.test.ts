@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildShopifyDraftCategoryFields, type ShopifyDraftCategoryFields } from "./syncbay-shopify-draft-category-fields.ts";
+import {
+  buildShopifyDraftCategoryFields,
+  type ShopifyDraftCategoryFields,
+} from "./syncbay-shopify-draft-category-fields.ts";
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
 
 function buildProposal(

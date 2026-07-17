@@ -2,10 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 
-import {
-  getUiFixture,
-  getUiFixtureStates,
-} from "./syncbay-ui-fixtures.ts";
+import { getUiFixture, getUiFixtureStates } from "./syncbay-ui-fixtures.ts";
 import { buildIsolatedUiEnv } from "./syncbay-ui-isolation.mjs";
 import { assertSyncBayLoaderPayloadBudget } from "../app/lib/syncbay-loader-performance.ts";
 

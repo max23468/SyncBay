@@ -12,14 +12,14 @@
 
 Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9vJP8B3s4ods`, regione `fra1`.
 
-| Priorità | Route | Totale | Stage dominante |
-| --- | --- | ---: | --- |
-| 1 | Importazione | 5339.7 ms | `import.ebay.preview` 4105.6 ms |
-| 2 | Panoramica | 2440.4 ms | `dashboard.db.mainTransaction` 1244.7 ms |
-| 3 | Attività | 1862.3 ms | `dashboard.db.mainTransaction` 1133.6 ms |
-| 4 | Catalogo | 1133.4 ms | `catalog.db.summaryCounts` 511.9 ms |
-| 5 | Conflitti | 829.0 ms | `conflicts.db.summaryTransaction` 276.1 ms |
-| 6 | Impostazioni | 815.6 ms | `settings.db.stateTransaction` 282.8 ms |
+| Priorità | Route        |    Totale | Stage dominante                            |
+| -------- | ------------ | --------: | ------------------------------------------ |
+| 1        | Importazione | 5339.7 ms | `import.ebay.preview` 4105.6 ms            |
+| 2        | Panoramica   | 2440.4 ms | `dashboard.db.mainTransaction` 1244.7 ms   |
+| 3        | Attività     | 1862.3 ms | `dashboard.db.mainTransaction` 1133.6 ms   |
+| 4        | Catalogo     | 1133.4 ms | `catalog.db.summaryCounts` 511.9 ms        |
+| 5        | Conflitti    |  829.0 ms | `conflicts.db.summaryTransaction` 276.1 ms |
+| 6        | Impostazioni |  815.6 ms | `settings.db.stateTransaction` 282.8 ms    |
 
 ## Definition of Done
 
@@ -45,6 +45,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Portare l'apertura di Importazione sotto 1500 ms. La preview live eBay può restare lenta, ma deve diventare refresh esplicito o caricamento successivo, non costo obbligatorio della navigazione.
 
 **Files:**
+
 - Modify: `app/routes/app.import-preview.tsx`
 - Modify: `app/services/syncbay.server.ts`
 - Modify: `app/services/import-preview.server.ts`
@@ -57,7 +58,9 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
   ```ts
   export type ImportPreviewLoadMode = "deferred" | "live";
 
-  export function normalizeImportPreviewLoadMode(value: FormDataEntryValue | string | null | undefined): ImportPreviewLoadMode {
+  export function normalizeImportPreviewLoadMode(
+    value: FormDataEntryValue | string | null | undefined,
+  ): ImportPreviewLoadMode {
     return value === "live" ? "live" : "deferred";
   }
   ```
@@ -92,7 +95,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
     admin?: ShopifyAdminGraphqlClient,
     trace?: SyncBayLoaderPerformanceTrace,
     options: { previewLoadMode?: "deferred" | "live" } = {},
-  )
+  );
   ```
 
   Regola:
@@ -104,13 +107,13 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
   In `app/routes/app.import-preview.tsx`, il loader usa:
 
   ```ts
-  getImportWizardState(session, admin, trace, { previewLoadMode: "deferred" })
+  getImportWizardState(session, admin, trace, { previewLoadMode: "deferred" });
   ```
 
   L'action che avvia import o refresh live deve usare:
 
   ```ts
-  getImportWizardState(session, admin, undefined, { previewLoadMode: "live" })
+  getImportWizardState(session, admin, undefined, { previewLoadMode: "live" });
   ```
 
 - [ ] **Step 5: mantenere esplicita la UI**
@@ -142,6 +145,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Panoramica e Attività non devono pagare entrambe il dashboard completo. Target: Panoramica sotto 1200 ms, Attività sotto 1000 ms.
 
 **Files:**
+
 - Modify: `app/routes/app._index.tsx`
 - Modify: `app/routes/app.activity.tsx`
 - Modify: `app/services/syncbay.server.ts`
@@ -220,6 +224,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Portare Catalogo sotto 900 ms stabile, senza sacrificare completezza dei conteggi.
 
 **Files:**
+
 - Modify: `app/services/syncbay.server.ts`
 - Test: test esistenti su catalog filters/pagination/summary
 
@@ -247,6 +252,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Portare entrambe sotto 700 ms se il costo è basso; non farle precedere i colli maggiori.
 
 **Files:**
+
 - Modify: `app/routes/app.conflicts.tsx`
 - Modify: `app/routes/app.settings.tsx`
 - Modify: `app/services/syncbay.server.ts`
@@ -268,6 +274,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Anche quando il server impiega 1-2 secondi, Safari deve dare feedback immediato e coerente.
 
 **Files:**
+
 - Modify: `app/routes/app.tsx`
 - Modify: `app/styles/syncbay-embedded.css`
 - Test: `npm run smoke:ui`
@@ -292,6 +299,7 @@ Misura del 2026-06-21 su `syncbay.vercel.app`, deployment `dpl_6aaQnmWez2sDBJAU9
 **Obiettivo:** Evitare regressioni future sulle 6 pagine.
 
 **Files:**
+
 - Create: `scripts/measure-loader-performance.mjs`
 - Modify: `package.json`
 - Modify: `docs/TOOLCHAIN.md`

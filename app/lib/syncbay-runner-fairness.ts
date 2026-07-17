@@ -46,10 +46,7 @@ export function buildRunnerLanePlan(input: {
   return plan;
 }
 
-export function shouldClaimRunnerJob(input: {
-  deadlineAt?: Date;
-  now: Date;
-}) {
+export function shouldClaimRunnerJob(input: { deadlineAt?: Date; now: Date }) {
   if (!input.deadlineAt) return true;
 
   return (

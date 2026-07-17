@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { loadShopifyProductPublications, syncShopifyProductPublications } from "./syncbay-product-publication.ts";
+import {
+  loadShopifyProductPublications,
+  syncShopifyProductPublications,
+} from "./syncbay-product-publication.ts";
 
 function jsonResponse(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {
@@ -16,7 +18,10 @@ test("publishes active products to every Shopify publication", async () => {
   const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
     [];
   const admin = {
-    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
+    async graphql(
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
       calls.push({ query, variables: options?.variables });
 
       if (query.includes("query SyncBayProductPublications")) {
@@ -117,7 +122,10 @@ test("reuses preloaded publication ids without querying publications", async () 
   const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
     [];
   const admin = {
-    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
+    async graphql(
+      query: string,
+      options?: { variables?: Record<string, unknown> },
+    ) {
       calls.push({ query, variables: options?.variables });
 
       return jsonResponse({
@@ -264,7 +272,6 @@ test("falls back to publication names when catalog titles are missing", async ()
     },
   ]);
 });
-
 
 test("can explicitly skip sales channel publication", async () => {
   let graphqlCalls = 0;

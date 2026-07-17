@@ -329,7 +329,9 @@ function formatMs(value) {
 }
 
 function formatNumber(value) {
-  return Number.isFinite(value) ? new Intl.NumberFormat("it-IT").format(value) : "-";
+  return Number.isFinite(value)
+    ? new Intl.NumberFormat("it-IT").format(value)
+    : "-";
 }
 
 function printHelp() {

@@ -1,8 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { getExpectedMarketplaceCurrency, isEbayStockDryRunEnabled, isEbayStockRealWriteAllowed, isPositiveShopifyOrderQuantity, selectEbayTradingInventorySku, selectShopifyOrderCurrency, shouldDryRunEbayStockLine, validateEbayStockCurrency, validateEbayStockOrderCurrency } from "./syncbay-stock-guard.ts";
+import {
+  getExpectedMarketplaceCurrency,
+  isEbayStockDryRunEnabled,
+  isEbayStockRealWriteAllowed,
+  isPositiveShopifyOrderQuantity,
+  selectEbayTradingInventorySku,
+  selectShopifyOrderCurrency,
+  shouldDryRunEbayStockLine,
+  validateEbayStockCurrency,
+  validateEbayStockOrderCurrency,
+} from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
   assert.equal(getExpectedMarketplaceCurrency("EBAY_IT"), "EUR");
@@ -95,7 +104,8 @@ test("keeps stock writes in dry-run unless a line is explicitly allowlisted", ()
 test("matches stock real-write allowlist tokens narrowly", () => {
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist: "ebay:168148953253 fixture-shop.myshopify.com:variant:48298582016222",
+      allowlist:
+        "ebay:168148953253 fixture-shop.myshopify.com:variant:48298582016222",
       ebayItemId: "168148953253",
       shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
@@ -104,7 +114,8 @@ test("matches stock real-write allowlist tokens narrowly", () => {
   );
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist: "168148953254 fixture-shop.myshopify.com:variant:48298582016223",
+      allowlist:
+        "168148953254 fixture-shop.myshopify.com:variant:48298582016223",
       ebayItemId: "168148953253",
       shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",

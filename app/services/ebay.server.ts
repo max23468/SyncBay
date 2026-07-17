@@ -45,7 +45,9 @@ const EBAY_IDENTITY_URLS = {
 
 const OAUTH_STATE_TTL_MINUTES = 15;
 
-export async function createEbayAuthorizationRedirect(session: ShopifySessionLike) {
+export async function createEbayAuthorizationRedirect(
+  session: ShopifySessionLike,
+) {
   const readiness = getEbayRuntimeReadiness();
   if (!readiness.ready) {
     return {
@@ -110,7 +112,9 @@ export async function completeEbayAuthorization({
   const refreshTokenExpiresAt = token.refresh_token_expires_in
     ? secondsFromNow(token.refresh_token_expires_in)
     : null;
-  const tokenExpiresAt = token.expires_in ? secondsFromNow(token.expires_in) : null;
+  const tokenExpiresAt = token.expires_in
+    ? secondsFromNow(token.expires_in)
+    : null;
   const scopes = token.scope ?? getEbayScopes().join(" ");
 
   await prisma.$transaction([
@@ -124,7 +128,9 @@ export async function completeEbayAuthorization({
       create: {
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
+        encryptedRefreshToken: token.refresh_token
+          ? encryptSecret(token.refresh_token)
+          : null,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         marketplaceId: getEbayMarketplaceId(),
@@ -137,7 +143,9 @@ export async function completeEbayAuthorization({
       update: {
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
+        encryptedRefreshToken: token.refresh_token
+          ? encryptSecret(token.refresh_token)
+          : undefined,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         refreshTokenExpiresAt: refreshTokenExpiresAt ?? undefined,
@@ -189,7 +197,9 @@ async function fetchEbayUser(accessToken: string) {
   };
 
   if (!response.ok || !json.userId) {
-    throw new Error("Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.");
+    throw new Error(
+      "Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.",
+    );
   }
 
   return {
@@ -218,7 +228,9 @@ async function exchangeAuthorizationCode(code: string) {
   };
 
   if (!response.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? "Token OAuth eBay non ottenuto.");
+    throw new Error(
+      json.error_description ?? json.error ?? "Token OAuth eBay non ottenuto.",
+    );
   }
 
   return json as EbayTokenResponse;
@@ -241,12 +253,10 @@ function getEbayMarketplaceId() {
 }
 
 function getEbayScopes() {
-  return (process.env.EBAY_SCOPES ?? "")
-    .split(/\s+/)
-    .flatMap((scope) => {
-      const trimmedScope = scope.trim();
-      return trimmedScope ? [trimmedScope] : [];
-    });
+  return (process.env.EBAY_SCOPES ?? "").split(/\s+/).flatMap((scope) => {
+    const trimmedScope = scope.trim();
+    return trimmedScope ? [trimmedScope] : [];
+  });
 }
 
 function minutesFromNow(minutes: number) {

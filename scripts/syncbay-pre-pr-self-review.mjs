@@ -106,8 +106,7 @@ const AREA_DEFINITIONS = [
   {
     id: "runtime",
     label: "Runtime applicativo",
-    match: (path) =>
-      /^app\/(lib|services|routes)\//.test(path),
+    match: (path) => /^app\/(lib|services|routes)\//.test(path),
     questions: [
       "Il path server-side è protetto direttamente, anche se la UI invia input inattesi?",
       "Error handling, retry, idempotenza e logging evitano falsi successi e leak di dati?",
@@ -149,9 +148,13 @@ const AREA_DEFINITIONS = [
     label: "Documentazione",
     match: (path) =>
       /^docs\//.test(path) ||
-      ["README.md", "BRAND.md", "SECURITY.md", "AGENTS.md", "CHANGELOG.md"].includes(
-        path,
-      ),
+      [
+        "README.md",
+        "BRAND.md",
+        "SECURITY.md",
+        "AGENTS.md",
+        "CHANGELOG.md",
+      ].includes(path),
     questions: [
       "La documentazione descrive stato reale e limiti, senza promettere funzionalità non implementate?",
       "La modifica introduce una decisione operativa stabile e aggiorna il documento canonico giusto senza duplicati?",
@@ -218,14 +221,15 @@ export function buildPrePrSelfReview({
         ),
     );
   const detectedRiskLevel = getHighestRisk(detectedDefinitions);
-  const riskLevel = files.length === 0
-    ? "basso"
-    : docsOnly
+  const riskLevel =
+    files.length === 0
       ? "basso"
-      : unmatchedFiles.length > 0 &&
-          RISK_ORDER[detectedRiskLevel] < RISK_ORDER.medio
-        ? "medio"
-        : detectedRiskLevel;
+      : docsOnly
+        ? "basso"
+        : unmatchedFiles.length > 0 &&
+            RISK_ORDER[detectedRiskLevel] < RISK_ORDER.medio
+          ? "medio"
+          : detectedRiskLevel;
   const suggestedChecks = docsOnly
     ? ["git diff --check"]
     : unique([

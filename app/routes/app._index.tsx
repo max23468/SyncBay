@@ -166,7 +166,10 @@ export default function Index() {
   });
   const recentActivity = getRecentActivity(dashboard);
   const contextualActions = getContextualActions(dashboard, importIncomplete);
-  const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
+  const minutes = Math.max(
+    1,
+    Math.round(dashboard.shop.syncTargetSeconds / 60),
+  );
   const reliability = dashboard.metrics.reliability;
   const syncPulse = getSyncPulse(dashboard.sync.healthDigest);
   const newMappings = dashboard.metrics.trends.newMappings24h;
@@ -186,207 +189,212 @@ export default function Index() {
           />
         ) : null}
         {firstRun ? null : (
-        <>
-        {providerNotice ? (
-          <StatusHero
-            actionHref={providerNotice.primaryActionHref}
-            actionLabel={providerNotice.primaryActionLabel}
-            body={providerNotice.body}
-            eyebrow={providerNotice.eyebrow}
-            icon={providerNotice.kind === "lag" ? "clock" : "alert-circle"}
-            title={providerNotice.title}
-            tone={providerNotice.tone}
-          />
-        ) : null}
-
-        {showBlocker ? (
-          <StatusHero
-            actionHref={nextAction.primaryActionHref}
-            actionLabel={nextAction.primaryActionLabel}
-            actionTarget={nextAction.primaryActionTarget}
-            body={nextAction.body}
-            icon={getHeroIcon(nextAction.kind)}
-            title={nextAction.title}
-            tone={nextAction.tone}
-          />
-        ) : null}
-
-        <RiskLens
-          actions={
-            riskCount > 0 ? (
-              <s-button href="/app/catalog" variant="primary">
-                Rivedi
-              </s-button>
-            ) : undefined
-          }
-          body={getRiskBody(riskCount)}
-          title={getRiskTitle(riskCount)}
-          tone={riskCount === 0 ? "success" : "warning"}
-        />
-
-        <s-box
-          border="base"
-          borderColor="base"
-          borderRadius="base"
-          padding="base"
-        >
-          <s-stack gap="base">
-            <s-stack
-              direction="inline"
-              gap="base"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <s-heading>Da eBay a Shopify</s-heading>
-              <s-text color="subdued">{getPulseStatus(dashboard, working)}</s-text>
-            </s-stack>
-            <SyncPulse
-              appliedLabel={getAppliedLabel(dashboard, working)}
-              marketplaceLabel={`eBay ${formatMarketplaceLabel(
-                dashboard.ebay.marketplaceId,
-              )}`}
-              readLabel={getReadLabel(dashboard)}
-              working={working}
-            />
-          </s-stack>
-        </s-box>
-
-        <div className="syncbay-balanced-box-grid">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
-          >
-            <MetricTile
-              detail="Seguiti e allineati a eBay."
-              icon="link"
-              label="Prodotti collegati"
-              tone="info"
-              trend={
-                newMappings > 0
-                  ? {
-                      label: `${formatNumber(newMappings)} ${
-                        newMappings === 1 ? "nuovo" : "nuovi"
-                      } da ieri`,
-                      tone: "up",
-                    }
-                  : undefined
-              }
-              value={formatNumber(dashboard.imports.mappingCount)}
-            />
-            <MetricTile
-              detail={
-                dashboard.conflicts.openCount > 0
-                  ? "Scegli quale valore mantenere."
-                  : "Niente da rivedere."
-              }
-              icon="alert-triangle"
-              label="Conflitti aperti"
-              tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
-              trend={
-                newConflicts > 0
-                  ? {
-                      label: `${formatNumber(newConflicts)} ${
-                        newConflicts === 1 ? "nuovo" : "nuovi"
-                      } da ieri`,
-                      tone: "watch",
-                    }
-                  : undefined
-              }
-              value={formatNumber(dashboard.conflicts.openCount)}
-            />
-            <MetricTile
-              detail={
-                dashboard.sync.catalogHealth.nextDueAt
-                  ? `Prossimo ${formatDateTime(
-                      dashboard.sync.catalogHealth.nextDueAt,
-                    )}.`
-                  : "In attesa del primo controllo."
-              }
-              icon="clock"
-              label="Controllo automatico"
-              tone="neutral"
-              value={`ogni ${minutes} min`}
-            />
-          </s-grid>
-          <div className="syncbay-health-pulse">
-            <s-badge tone={syncPulse.tone}>{syncPulse.label}</s-badge>
-            <s-text color="subdued">{syncPulse.detail}</s-text>
-          </div>
-          <div className="syncbay-reliability">
-            <s-text color="subdued">
-              {reliability.totalJobs > 0
-                ? `${
-                    reliability.totalJobs === DASHBOARD_RELIABILITY_JOB_LIMIT
-                      ? `Ultimi ${formatNumber(
-                          DASHBOARD_RELIABILITY_JOB_LIMIT,
-                        )} job in ${reliability.windowDays} giorni`
-                      : `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
-                          reliability.totalJobs,
-                          "job",
-                          "",
-                        )}`
-                  } · ${reliability.successRate}% ${
-                    reliability.totalJobs === 1 ? "riuscito" : "riusciti"
-                  }.`
-                : "Nessun job eseguito negli ultimi 7 giorni."}
-            </s-text>
-            {reliability.totalJobs > 0 ? (
-              <Sparkline
-                ariaLabel="Andamento job eseguiti negli ultimi 7 giorni"
-                values={reliability.daily}
+          <>
+            {providerNotice ? (
+              <StatusHero
+                actionHref={providerNotice.primaryActionHref}
+                actionLabel={providerNotice.primaryActionLabel}
+                body={providerNotice.body}
+                eyebrow={providerNotice.eyebrow}
+                icon={providerNotice.kind === "lag" ? "clock" : "alert-circle"}
+                title={providerNotice.title}
+                tone={providerNotice.tone}
               />
             ) : null}
-          </div>
-        </div>
 
-        <div className="syncbay-balanced-box-grid">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-          >
-          <s-section heading="Cosa fare adesso">
-            <div className="syncbay-action-list">
-              {contextualActions.map((action) => (
-                <ActionRow
-                  description={action.description}
-                  href={action.href}
-                  icon={action.icon}
-                  key={action.label}
-                  label={action.label}
-                  target={action.target}
-                  tone={action.tone}
+            {showBlocker ? (
+              <StatusHero
+                actionHref={nextAction.primaryActionHref}
+                actionLabel={nextAction.primaryActionLabel}
+                actionTarget={nextAction.primaryActionTarget}
+                body={nextAction.body}
+                icon={getHeroIcon(nextAction.kind)}
+                title={nextAction.title}
+                tone={nextAction.tone}
+              />
+            ) : null}
+
+            <RiskLens
+              actions={
+                riskCount > 0 ? (
+                  <s-button href="/app/catalog" variant="primary">
+                    Rivedi
+                  </s-button>
+                ) : undefined
+              }
+              body={getRiskBody(riskCount)}
+              title={getRiskTitle(riskCount)}
+              tone={riskCount === 0 ? "success" : "warning"}
+            />
+
+            <s-box
+              border="base"
+              borderColor="base"
+              borderRadius="base"
+              padding="base"
+            >
+              <s-stack gap="base">
+                <s-stack
+                  direction="inline"
+                  gap="base"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <s-heading>Da eBay a Shopify</s-heading>
+                  <s-text color="subdued">
+                    {getPulseStatus(dashboard, working)}
+                  </s-text>
+                </s-stack>
+                <SyncPulse
+                  appliedLabel={getAppliedLabel(dashboard, working)}
+                  marketplaceLabel={`eBay ${formatMarketplaceLabel(
+                    dashboard.ebay.marketplaceId,
+                  )}`}
+                  readLabel={getReadLabel(dashboard)}
+                  working={working}
                 />
-              ))}
-            </div>
-          </s-section>
+              </s-stack>
+            </s-box>
 
-          <s-section heading="Attività recente">
-            {recentActivity.length > 0 ? (
-              <ol className="syncbay-timeline">
-                {recentActivity.map((activity, index) => (
-                  <TimelineEvent
-                    icon={getActivityIcon(activity.tone)}
-                    isLast={index === recentActivity.length - 1}
-                    key={activity.id}
-                    tone={activity.tone}
-                  >
-                    <s-stack gap="small-200">
-                      <s-text type="strong">{activity.title}</s-text>
-                      <s-text color="subdued">{activity.detail}</s-text>
-                    </s-stack>
-                  </TimelineEvent>
-                ))}
-              </ol>
-            ) : (
-              <s-text color="subdued">
-                Ancora nessuna attività. Appena SyncBay importa o aggiorna il
-                catalogo, gli eventi compaiono qui.
-              </s-text>
-            )}
-          </s-section>
-          </s-grid>
-        </div>
-        </>
+            <div className="syncbay-balanced-box-grid">
+              <s-grid
+                gap="base"
+                gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
+              >
+                <MetricTile
+                  detail="Seguiti e allineati a eBay."
+                  icon="link"
+                  label="Prodotti collegati"
+                  tone="info"
+                  trend={
+                    newMappings > 0
+                      ? {
+                          label: `${formatNumber(newMappings)} ${
+                            newMappings === 1 ? "nuovo" : "nuovi"
+                          } da ieri`,
+                          tone: "up",
+                        }
+                      : undefined
+                  }
+                  value={formatNumber(dashboard.imports.mappingCount)}
+                />
+                <MetricTile
+                  detail={
+                    dashboard.conflicts.openCount > 0
+                      ? "Scegli quale valore mantenere."
+                      : "Niente da rivedere."
+                  }
+                  icon="alert-triangle"
+                  label="Conflitti aperti"
+                  tone={
+                    dashboard.conflicts.openCount > 0 ? "warning" : "neutral"
+                  }
+                  trend={
+                    newConflicts > 0
+                      ? {
+                          label: `${formatNumber(newConflicts)} ${
+                            newConflicts === 1 ? "nuovo" : "nuovi"
+                          } da ieri`,
+                          tone: "watch",
+                        }
+                      : undefined
+                  }
+                  value={formatNumber(dashboard.conflicts.openCount)}
+                />
+                <MetricTile
+                  detail={
+                    dashboard.sync.catalogHealth.nextDueAt
+                      ? `Prossimo ${formatDateTime(
+                          dashboard.sync.catalogHealth.nextDueAt,
+                        )}.`
+                      : "In attesa del primo controllo."
+                  }
+                  icon="clock"
+                  label="Controllo automatico"
+                  tone="neutral"
+                  value={`ogni ${minutes} min`}
+                />
+              </s-grid>
+              <div className="syncbay-health-pulse">
+                <s-badge tone={syncPulse.tone}>{syncPulse.label}</s-badge>
+                <s-text color="subdued">{syncPulse.detail}</s-text>
+              </div>
+              <div className="syncbay-reliability">
+                <s-text color="subdued">
+                  {reliability.totalJobs > 0
+                    ? `${
+                        reliability.totalJobs ===
+                        DASHBOARD_RELIABILITY_JOB_LIMIT
+                          ? `Ultimi ${formatNumber(
+                              DASHBOARD_RELIABILITY_JOB_LIMIT,
+                            )} job in ${reliability.windowDays} giorni`
+                          : `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
+                              reliability.totalJobs,
+                              "job",
+                              "",
+                            )}`
+                      } · ${reliability.successRate}% ${
+                        reliability.totalJobs === 1 ? "riuscito" : "riusciti"
+                      }.`
+                    : "Nessun job eseguito negli ultimi 7 giorni."}
+                </s-text>
+                {reliability.totalJobs > 0 ? (
+                  <Sparkline
+                    ariaLabel="Andamento job eseguiti negli ultimi 7 giorni"
+                    values={reliability.daily}
+                  />
+                ) : null}
+              </div>
+            </div>
+
+            <div className="syncbay-balanced-box-grid">
+              <s-grid
+                gap="base"
+                gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+              >
+                <s-section heading="Cosa fare adesso">
+                  <div className="syncbay-action-list">
+                    {contextualActions.map((action) => (
+                      <ActionRow
+                        description={action.description}
+                        href={action.href}
+                        icon={action.icon}
+                        key={action.label}
+                        label={action.label}
+                        target={action.target}
+                        tone={action.tone}
+                      />
+                    ))}
+                  </div>
+                </s-section>
+
+                <s-section heading="Attività recente">
+                  {recentActivity.length > 0 ? (
+                    <ol className="syncbay-timeline">
+                      {recentActivity.map((activity, index) => (
+                        <TimelineEvent
+                          icon={getActivityIcon(activity.tone)}
+                          isLast={index === recentActivity.length - 1}
+                          key={activity.id}
+                          tone={activity.tone}
+                        >
+                          <s-stack gap="small-200">
+                            <s-text type="strong">{activity.title}</s-text>
+                            <s-text color="subdued">{activity.detail}</s-text>
+                          </s-stack>
+                        </TimelineEvent>
+                      ))}
+                    </ol>
+                  ) : (
+                    <s-text color="subdued">
+                      Ancora nessuna attività. Appena SyncBay importa o aggiorna
+                      il catalogo, gli eventi compaiono qui.
+                    </s-text>
+                  )}
+                </s-section>
+              </s-grid>
+            </div>
+          </>
         )}
       </s-stack>
     </s-page>
@@ -743,7 +751,9 @@ function getContextualActions(
     description: "Porta in Shopify le inserzioni trovate su eBay.",
     href: "/app/import-preview",
     icon: "import",
-    label: importIncomplete ? "Completa l'importazione" : "Importa nuove inserzioni",
+    label: importIncomplete
+      ? "Completa l'importazione"
+      : "Importa nuove inserzioni",
     tone: "neutral",
   });
 

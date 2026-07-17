@@ -40,9 +40,7 @@ export interface CollectionRuleProposal {
 export interface CollectionRuleWarning {
   handle: string;
   message: string;
-  reason:
-    | "unsafe_disjunctive_title_rules"
-    | "missing_collection_intent";
+  reason: "unsafe_disjunctive_title_rules" | "missing_collection_intent";
   title: string;
 }
 
@@ -99,21 +97,29 @@ function buildProposedRuleSet(
   collection: ShopifyCollectionForRuleProposal,
   intent: CollectionRuleIntent,
 ):
-  | { reason: CollectionRuleProposal["reason"]; ruleSet: ShopifyCollectionRuleSet }
+  | {
+      reason: CollectionRuleProposal["reason"];
+      ruleSet: ShopifyCollectionRuleSet;
+    }
   | { warning: CollectionRuleWarning }
   | null {
-  const productTypeRules = (intent.productTypeContains ?? []).map((condition) => ({
-    column: "TYPE",
-    condition,
-    relation: "CONTAINS",
-  }));
+  const productTypeRules = (intent.productTypeContains ?? []).map(
+    (condition) => ({
+      column: "TYPE",
+      condition,
+      relation: "CONTAINS",
+    }),
+  );
 
   if (productTypeRules.length > 0) {
     return {
       reason: "configured_product_type_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [...productTypeRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
+        rules: [
+          ...productTypeRules,
+          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
+        ],
       },
     };
   }
@@ -132,7 +138,10 @@ function buildProposedRuleSet(
       reason: "configured_title_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [...titleRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
+        rules: [
+          ...titleRules,
+          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
+        ],
       },
     };
   }
@@ -141,7 +150,8 @@ function buildProposedRuleSet(
     return {
       warning: {
         handle: collection.handle,
-        message: "Regola titolo OR non modificata automaticamente: aggiungere inventario la trasformerebbe in AND. Decidere un productType affidabile o usare modello Shopify sources se serve mantenere gruppi OR.",
+        message:
+          "Regola titolo OR non modificata automaticamente: aggiungere inventario la trasformerebbe in AND. Decidere un productType affidabile o usare modello Shopify sources se serve mantenere gruppi OR.",
         reason: "unsafe_disjunctive_title_rules",
         title: collection.title,
       },
@@ -168,14 +178,12 @@ function buildProposedRuleSet(
 function isUnsafeDisjunctiveRuleSet(ruleSet: ShopifyCollectionRuleSet | null) {
   return Boolean(
     ruleSet?.appliedDisjunctively &&
-      ruleSet.rules.filter((rule) => !isInventoryRule(rule)).length > 1,
+    ruleSet.rules.filter((rule) => !isInventoryRule(rule)).length > 1,
   );
 }
 
 function hasInventoryRule(ruleSet: ShopifyCollectionRuleSet) {
-  return ruleSet.rules.some(
-    (rule) => isInventoryRule(rule),
-  );
+  return ruleSet.rules.some((rule) => isInventoryRule(rule));
 }
 
 function isInventoryRule(rule: ShopifyCollectionRule) {
@@ -191,7 +199,10 @@ function areRuleSetsEqual(
   right: ShopifyCollectionRuleSet,
 ) {
   if (!left) return false;
-  return JSON.stringify(normalizeRuleSet(left)) === JSON.stringify(normalizeRuleSet(right));
+  return (
+    JSON.stringify(normalizeRuleSet(left)) ===
+    JSON.stringify(normalizeRuleSet(right))
+  );
 }
 
 function normalizeRuleSet(ruleSet: ShopifyCollectionRuleSet) {

@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as backfillModule from "./syncbay-description-backfill.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as cleanupModule from "./syncbay-description-cleanup.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as descriptionHashModule from "./syncbay-description-hash.ts";
 
 const {
@@ -113,7 +110,10 @@ test("skips products changed manually since the latest SyncBay description basel
   });
 
   assert.equal(row.status, "conflict_skipped");
-  assert.equal(row.reason, "shopify_description_changed_since_last_syncbay_baseline");
+  assert.equal(
+    row.reason,
+    "shopify_description_changed_since_last_syncbay_baseline",
+  );
 });
 
 test("skips cleared Shopify descriptions as manual edits since the latest SyncBay baseline", () => {
@@ -131,7 +131,10 @@ test("skips cleared Shopify descriptions as manual edits since the latest SyncBa
   });
 
   assert.equal(row.status, "conflict_skipped");
-  assert.equal(row.reason, "shopify_description_changed_since_last_syncbay_baseline");
+  assert.equal(
+    row.reason,
+    "shopify_description_changed_since_last_syncbay_baseline",
+  );
 });
 
 test("summarizes rows and builds an apply plan only from applicable rows", () => {
@@ -203,7 +206,10 @@ test("serializes an apply file with only applicable rows and full cleaned html",
   assert.equal(applyFile.shopDomain, "fixture-shop.myshopify.com");
   assert.equal(applyFile.rows.length, 1);
   assert.equal(applyFile.rows[0]?.ebayItemId, "1010");
-  assert.equal(applyFile.rows[0]?.cleanedDescriptionHtml, "<p>Bella moneta.</p>");
+  assert.equal(
+    applyFile.rows[0]?.cleanedDescriptionHtml,
+    "<p>Bella moneta.</p>",
+  );
   assert.equal(
     applyFile.rows[0]?.currentShopifyDescriptionHash,
     hashNullableText("<p>Vecchia</p>"),

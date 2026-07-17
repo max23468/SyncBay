@@ -1,8 +1,5 @@
 export type SyncBayEgressBudgetStatus =
-  | "near_budget"
-  | "over_budget"
-  | "unestimated"
-  | "within_budget";
+  "near_budget" | "over_budget" | "unestimated" | "within_budget";
 
 export interface SyncBayEgressBudgetReport {
   budgetUsageRatio: number | null;
@@ -46,7 +43,8 @@ export function buildEgressBudgetReport(
   const windowMinutes = normalizePositiveNumber(input.windowMinutes, 1);
   const monthlyBudgetMbRaw = monthlyBudgetGb * 1_000;
   const dailyBudgetMbRaw = monthlyBudgetMbRaw / DAYS_PER_BUDGET_MONTH;
-  const windowBudgetMbRaw = (dailyBudgetMbRaw / MINUTES_PER_DAY) * windowMinutes;
+  const windowBudgetMbRaw =
+    (dailyBudgetMbRaw / MINUTES_PER_DAY) * windowMinutes;
   const monthlyBudgetMb = round2(monthlyBudgetMbRaw);
   const dailyBudgetMb = round2(dailyBudgetMbRaw);
   const windowBudgetMb = round2(windowBudgetMbRaw);
@@ -98,7 +96,9 @@ export function buildEgressBudgetReport(
   };
 }
 
-export function getEgressBudgetReadRows(input: SyncBayEgressBudgetReadRowsInput) {
+export function getEgressBudgetReadRows(
+  input: SyncBayEgressBudgetReadRowsInput,
+) {
   const selectRows = normalizeOptionalNonNegativeInteger(input.selectRows);
 
   if (selectRows !== null) return selectRows;
@@ -110,7 +110,10 @@ export function isEgressReadStatementQuery(query: string) {
   const sql = query.trim();
   const firstKeyword = readKeyword(sql, 0);
 
-  if (firstKeyword?.keyword === "select" || firstKeyword?.keyword === "values") {
+  if (
+    firstKeyword?.keyword === "select" ||
+    firstKeyword?.keyword === "values"
+  ) {
     return true;
   }
   if (firstKeyword?.keyword !== "with") return false;
@@ -128,7 +131,10 @@ function classifyBudgetUsageRatio(
   return "within_budget";
 }
 
-function normalizePositiveNumber(value: number | null | undefined, fallback: number) {
+function normalizePositiveNumber(
+  value: number | null | undefined,
+  fallback: number,
+) {
   return typeof value === "number" && Number.isFinite(value) && value > 0
     ? value
     : fallback;

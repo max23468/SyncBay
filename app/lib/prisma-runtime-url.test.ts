@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildPrismaRuntimeDatabaseUrl, buildPrismaRuntimePoolConfig } from "./prisma-runtime-url.ts";
+import {
+  buildPrismaRuntimeDatabaseUrl,
+  buildPrismaRuntimePoolConfig,
+} from "./prisma-runtime-url.ts";
 
 test("adds a conservative Prisma connection limit for serverless runtime", () => {
   const url = buildPrismaRuntimeDatabaseUrl(
@@ -44,7 +46,8 @@ test("does not change non-Supabase sslmode=require TLS semantics unless opted in
   );
 
   assert.deepEqual(config, {
-    connectionString: "postgresql://user:pass@example.com/postgres?sslmode=require",
+    connectionString:
+      "postgresql://user:pass@example.com/postgres?sslmode=require",
     max: 1,
     connectionTimeoutMillis: 10000,
   });
@@ -73,7 +76,8 @@ test("translates Prisma URL pool parameters to pg adapter pool config", () => {
   );
 
   assert.deepEqual(config, {
-    connectionString: "postgresql://user:pass@example.com/postgres?sslmode=require",
+    connectionString:
+      "postgresql://user:pass@example.com/postgres?sslmode=require",
     max: 2,
     connectionTimeoutMillis: 5000,
   });
@@ -90,8 +94,5 @@ test("uses conservative pg adapter pool defaults without a database URL", () => 
 test("leaves empty or non-url values untouched", () => {
   assert.equal(buildPrismaRuntimeDatabaseUrl(undefined), undefined);
   assert.equal(buildPrismaRuntimeDatabaseUrl(""), "");
-  assert.equal(
-    buildPrismaRuntimeDatabaseUrl("postgresql://"),
-    "postgresql://",
-  );
+  assert.equal(buildPrismaRuntimeDatabaseUrl("postgresql://"), "postgresql://");
 });

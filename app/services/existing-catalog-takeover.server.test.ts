@@ -103,8 +103,7 @@ test("does not write rows that remain da_rivedere", async () => {
 test("serializes the field policy in the reuse-only import payload", async () => {
   const writes: string[] = [];
   let batchInput:
-    | Parameters<typeof buildCatalogImportBatchPayload>[0]
-    | undefined;
+    Parameters<typeof buildCatalogImportBatchPayload>[0] | undefined;
   const item = makePreviewItem({
     matchSuggestions: [
       {
@@ -214,9 +213,7 @@ test("records the pre-claim snapshot before metafields and mappings", async () =
     source: "existing_catalog_takeover_pre_claim",
     tags: ["Tag manuale", "Collezione privata"],
     variantGid: row.variantGid,
-    variants: [
-      { id: row.variantGid, price: "12.50", sku: row.sku },
-    ],
+    variants: [{ id: row.variantGid, price: "12.50", sku: row.sku }],
   });
 });
 
@@ -287,7 +284,7 @@ function makeWizard(items: ImportPreviewItem[]) {
       totalAvailable: items.length,
     },
   } as unknown as Awaited<
-    ReturnType<typeof import("./syncbay.server")["getImportWizardState"]>
+    ReturnType<(typeof import("./syncbay.server"))["getImportWizardState"]>
   >;
 }
 
@@ -373,7 +370,9 @@ function makeAutoMatch(): ExistingProductMatchSuggestion {
   };
 }
 
-function makeApplyRow(item: ImportPreviewItem): ExistingCatalogTakeoverApplyRow {
+function makeApplyRow(
+  item: ImportPreviewItem,
+): ExistingCatalogTakeoverApplyRow {
   return {
     fieldPolicy: {
       handle: {

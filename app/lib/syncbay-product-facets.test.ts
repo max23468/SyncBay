@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as productFacets from "./syncbay-product-facets.ts";
 
 const {
@@ -350,10 +349,10 @@ test("serializes product facets as Shopify metafields without audit labels", () 
     ]),
     [
       {
-          key: "materiale",
-          namespace: "syncbay_facets",
-          type: "list.single_line_text_field",
-          value: JSON.stringify(["Argento"]),
+        key: "materiale",
+        namespace: "syncbay_facets",
+        type: "list.single_line_text_field",
+        value: JSON.stringify(["Argento"]),
       },
     ],
   );

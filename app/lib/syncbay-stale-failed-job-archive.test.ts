@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { isSupersededFailedIncrementalSyncJob } from "./syncbay-stale-failed-job-archive.ts";
 
 const now = new Date("2026-06-12T12:00:00.000Z");

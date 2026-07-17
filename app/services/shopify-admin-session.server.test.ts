@@ -22,9 +22,15 @@ function row(accessToken: string, refreshToken: string) {
 test("refreshes outside persistence and then uses compare-and-swap", async () => {
   const events: string[] = [];
   const result = await getUsableOfflineShopifySessionWithPorts({
-    compareAndSwap: async () => { events.push("compare-and-swap"); return true; },
+    compareAndSwap: async () => {
+      events.push("compare-and-swap");
+      return true;
+    },
     now: () => new Date("2026-07-11T10:00:00Z"),
-    readSession: async () => { events.push("read-session"); return row("old", "refresh"); },
+    readSession: async () => {
+      events.push("read-session");
+      return row("old", "refresh");
+    },
     refresh: async () => {
       events.push("refresh-http");
       return {
@@ -36,7 +42,11 @@ test("refreshes outside persistence and then uses compare-and-swap", async () =>
     },
   });
 
-  assert.deepEqual(events, ["read-session", "refresh-http", "compare-and-swap"]);
+  assert.deepEqual(events, [
+    "read-session",
+    "refresh-http",
+    "compare-and-swap",
+  ]);
   assert.equal(result.accessToken, "new");
 });
 

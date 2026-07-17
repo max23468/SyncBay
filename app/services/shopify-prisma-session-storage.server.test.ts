@@ -3,7 +3,6 @@ import test from "node:test";
 
 import { Session as ShopifySession } from "@shopify/shopify-api";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { PrismaSessionStorage } from "./shopify-prisma-session-storage.server.ts";
 import { encryptSecret } from "./crypto.server";
 

@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { getEbayStorefrontMetadata } from "./syncbay-ebay-storefront.ts";
 
 test("extracts assigned eBay store category id and name", () => {
@@ -25,15 +24,15 @@ test("trims whitespace around eBay-supplied storefront values", () => {
 });
 
 test("treats default eBay placeholder ids as no store category", () => {
-  assert.deepEqual(
-    getEbayStorefrontMetadata({ StoreCategoryID: "0" }),
-    { storeCategoryId: null, storeCategoryName: null },
-  );
+  assert.deepEqual(getEbayStorefrontMetadata({ StoreCategoryID: "0" }), {
+    storeCategoryId: null,
+    storeCategoryName: null,
+  });
 
-  assert.deepEqual(
-    getEbayStorefrontMetadata({ StoreCategoryID: "-999" }),
-    { storeCategoryId: null, storeCategoryName: null },
-  );
+  assert.deepEqual(getEbayStorefrontMetadata({ StoreCategoryID: "-999" }), {
+    storeCategoryId: null,
+    storeCategoryName: null,
+  });
 
   assert.deepEqual(
     getEbayStorefrontMetadata({

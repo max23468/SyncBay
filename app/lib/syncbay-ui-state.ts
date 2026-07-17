@@ -3,7 +3,8 @@ import type { ConflictResolution } from "./syncbay-conflict-actions";
 type Tone = "critical" | "warning" | "info" | "success";
 
 export type SyncBayJobOutcome = "succeeded" | "failed" | "retrying";
-export type SyncBayCatalogHealth = "aligned" | "catching_up" | "delayed" | "error" | "disabled";
+export type SyncBayCatalogHealth =
+  "aligned" | "catching_up" | "delayed" | "error" | "disabled";
 export type SyncBayRunnerActivity = "running" | "waiting" | "stopped";
 
 export function getSyncJobOutcome(status: string): SyncBayJobOutcome | null {
@@ -19,22 +20,43 @@ export function getOperationalUiState(input: {
   nextDueAt?: string | null;
 }) {
   const catalogHealth: SyncBayCatalogHealth =
-    input.catalogStatus === "fresh" ? "aligned" :
-    input.catalogStatus === "running" || input.catalogStatus === "due" ? "catching_up" :
-    input.catalogStatus === "overdue" ? "delayed" :
-    input.catalogStatus === "disabled" ? "disabled" : "error";
-  const runnerActivity: SyncBayRunnerActivity = input.activeJobs > 0
-    ? "running"
-    : input.nextDueAt
-      ? "waiting"
-      : "stopped";
+    input.catalogStatus === "fresh"
+      ? "aligned"
+      : input.catalogStatus === "running" || input.catalogStatus === "due"
+        ? "catching_up"
+        : input.catalogStatus === "overdue"
+          ? "delayed"
+          : input.catalogStatus === "disabled"
+            ? "disabled"
+            : "error";
+  const runnerActivity: SyncBayRunnerActivity =
+    input.activeJobs > 0 ? "running" : input.nextDueAt ? "waiting" : "stopped";
 
   return {
     catalogHealth,
-    catalogLabel: catalogHealth === "aligned" ? "Aggiornato" : catalogHealth === "catching_up" ? "In allineamento" : catalogHealth === "delayed" ? "In ritardo" : catalogHealth === "disabled" ? "Non attivo" : "Da controllare",
+    catalogLabel:
+      catalogHealth === "aligned"
+        ? "Aggiornato"
+        : catalogHealth === "catching_up"
+          ? "In allineamento"
+          : catalogHealth === "delayed"
+            ? "In ritardo"
+            : catalogHealth === "disabled"
+              ? "Non attivo"
+              : "Da controllare",
     runnerActivity,
-    runnerLabel: runnerActivity === "running" ? "In corso" : runnerActivity === "waiting" ? "In attesa del prossimo controllo" : "Fermo",
-    runnerTone: runnerActivity === "stopped" ? "info" : runnerActivity === "waiting" ? "success" : "info",
+    runnerLabel:
+      runnerActivity === "running"
+        ? "In corso"
+        : runnerActivity === "waiting"
+          ? "In attesa del prossimo controllo"
+          : "Fermo",
+    runnerTone:
+      runnerActivity === "stopped"
+        ? "info"
+        : runnerActivity === "waiting"
+          ? "success"
+          : "info",
   } as const;
 }
 
@@ -42,7 +64,11 @@ export function getNeutralUnavailableMetric() {
   return { label: "Dato non disponibile", tone: "info" as const };
 }
 
-export function formatSyncMetric(value: number, unit: "job" | "prodotti" | "run", period: string) {
+export function formatSyncMetric(
+  value: number,
+  unit: "job" | "prodotti" | "run",
+  period: string,
+) {
   return `${formatInteger(value)} ${unit} ${period}`.trim();
 }
 
@@ -132,10 +158,7 @@ export type CatalogStatusKind =
   | "archived";
 
 export type CatalogAvailabilityKind =
-  | "aligned"
-  | "blocked"
-  | "needs_check"
-  | "unknown";
+  "aligned" | "blocked" | "needs_check" | "unknown";
 
 export interface CatalogRowStatusInput {
   lastErrorCode?: string | null;
@@ -422,10 +445,9 @@ export function getProviderHealthNotice(
     const lagLabel = formatLagLabel(input.lagSeconds ?? 0);
 
     return {
-      body:
-        `L'allineamento con eBay non si è aggiornato dopo il normale margine del controllo automatico${
-          lagLabel ? ` (${lagLabel})` : ""
-        }. Controlla le attività se il ritardo continua o ci sono job bloccati.`,
+      body: `L'allineamento con eBay non si è aggiornato dopo il normale margine del controllo automatico${
+        lagLabel ? ` (${lagLabel})` : ""
+      }. Controlla le attività se il ritardo continua o ci sono job bloccati.`,
       eyebrow: PROVIDER_HEALTH_EYEBROW,
       kind: "lag",
       primaryActionHref: "/app/activity",
@@ -466,7 +488,9 @@ function formatLagLabel(lagSeconds: number) {
   if (seconds < 3600) {
     const minutes = Math.max(1, Math.round(seconds / 60));
 
-    return minutes === 1 ? "1 minuto di ritardo" : `${minutes} minuti di ritardo`;
+    return minutes === 1
+      ? "1 minuto di ritardo"
+      : `${minutes} minuti di ritardo`;
   }
 
   const hours = Math.round(seconds / 3600);

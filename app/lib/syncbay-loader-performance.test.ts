@@ -5,7 +5,6 @@ import {
   createSyncBayLoaderPerformanceTrace,
   assertSyncBayLoaderPayloadBudget,
   logSyncBayLoaderPerformance,
-  // @ts-expect-error node --experimental-strip-types resolves TypeScript test imports with extensions.
 } from "./syncbay-loader-performance.ts";
 
 test("records measured loader performance stages", async () => {
@@ -62,9 +61,14 @@ test("logs redacted loader performance without payload contents", () => {
 });
 
 test("enforces route-specific payload budgets", () => {
-  assert.doesNotThrow(() => assertSyncBayLoaderPayloadBudget("overview", { value: "ok" }));
+  assert.doesNotThrow(() =>
+    assertSyncBayLoaderPayloadBudget("overview", { value: "ok" }),
+  );
   assert.throws(
-    () => assertSyncBayLoaderPayloadBudget("overview", { value: "x".repeat(132 * 1024) }),
+    () =>
+      assertSyncBayLoaderPayloadBudget("overview", {
+        value: "x".repeat(132 * 1024),
+      }),
     /oltre budget/,
   );
 });

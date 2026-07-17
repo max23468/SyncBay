@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as qualityChecklist from "./syncbay-quality-checklist.ts";
 
-const {
-  buildImportQualityChecklist,
-  getQualityChecklistSummary,
-} = qualityChecklist;
+const { buildImportQualityChecklist, getQualityChecklistSummary } =
+  qualityChecklist;
 
 test("builds a transparent checklist for risky import rows", () => {
   const checklist = buildImportQualityChecklist({

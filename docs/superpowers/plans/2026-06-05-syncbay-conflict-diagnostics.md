@@ -11,6 +11,7 @@
 ### Task 1: Conflict Action Classification
 
 **Files:**
+
 - Create: `app/lib/syncbay-conflict-actions.ts`
 - Create: `app/lib/syncbay-conflict-actions.test.ts`
 - Modify: `app/services/syncbay.server.ts`
@@ -44,6 +45,7 @@ Show decision mode, safe batch counts and concise action guidance in `app/routes
 ### Task 2: Job Retry Diagnostics
 
 **Files:**
+
 - Create: `app/lib/syncbay-job-diagnostics.ts`
 - Create: `app/lib/syncbay-job-diagnostics.test.ts`
 - Modify: `app/services/syncbay.server.ts`
@@ -76,6 +78,7 @@ Show impact, next action and technical reference in timeline rows. Block manual 
 ### Task 3: Product Screenshot And Microcopy Readiness
 
 **Files:**
+
 - Modify: `BRAND.md`
 - Modify: `docs/guides/ui-concepts-handoff.md`
 - Modify: `scripts/smoke-ui.mjs`
@@ -91,6 +94,7 @@ Ensure `scripts/smoke-ui.mjs` checks the new safety and diagnostic copy markers.
 ### Task 4: Verification, Release And Publish
 
 **Files:**
+
 - Modify: `CHANGELOG.md`
 - Modify: `app/lib/version.ts`
 

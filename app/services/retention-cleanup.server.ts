@@ -76,7 +76,14 @@ export async function runRetentionCleanup(
   }
 
   if (enabled && totalDeleted > 0) {
-    logSyncBayRuntimeEvent({ event: "retention-cleanup", level: "info", outcome: "deleted", processedCount: totalDeleted, requestId: null, route: "retention-cleanup" });
+    logSyncBayRuntimeEvent({
+      event: "retention-cleanup",
+      level: "info",
+      outcome: "deleted",
+      processedCount: totalDeleted,
+      requestId: null,
+      route: "retention-cleanup",
+    });
   }
 
   return { areas, enabled, totalDeleted };

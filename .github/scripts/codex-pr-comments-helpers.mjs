@@ -8,7 +8,10 @@ export function getCodexPrScanMode(input) {
   if (input.codeFullScan) return "full-history";
 
   if (!input.eventName) return "broad";
-  if (input.eventName === "schedule" || input.eventName === "workflow_dispatch") {
+  if (
+    input.eventName === "schedule" ||
+    input.eventName === "workflow_dispatch"
+  ) {
     return "broad";
   }
   if (

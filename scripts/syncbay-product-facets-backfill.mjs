@@ -96,7 +96,10 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
+  const shopifyAccessToken = await getShopifyAccessToken(
+    state.shopifySession,
+    shopDomain,
+  );
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
@@ -169,7 +172,8 @@ async function buildReportRow(input) {
       });
       source = {
         ebayPrimaryCategoryName:
-          getPrimaryCategoryName(item) ?? snapshotSource.ebayPrimaryCategoryName,
+          getPrimaryCategoryName(item) ??
+          snapshotSource.ebayPrimaryCategoryName,
         itemSpecifics: parseEbayTradingItemSpecifics(item.ItemSpecifics),
         storeCategoryName:
           getStorefrontCategoryName(item) ?? snapshotSource.storeCategoryName,
@@ -211,7 +215,11 @@ function getSnapshotFacetSource(mapping) {
 function getCurrentFacetMetafields(product) {
   return (product?.metafields?.nodes ?? []).flatMap((metafield) => {
     if (metafield?.namespace !== FACET_NAMESPACE) return [];
-    if (!metafield.key || !metafield.type || typeof metafield.value !== "string") {
+    if (
+      !metafield.key ||
+      !metafield.type ||
+      typeof metafield.value !== "string"
+    ) {
       return [];
     }
 
@@ -390,7 +398,10 @@ async function applyFacetRow(input) {
     return {
       ebayItemId: input.row.ebayItemId,
       error: userErrors
-        .map((error) => `${error.field?.join(".") ?? "metafields"}: ${error.message}`)
+        .map(
+          (error) =>
+            `${error.field?.join(".") ?? "metafields"}: ${error.message}`,
+        )
         .join("; "),
       ok: false,
       shopifyProductGid: input.row.shopifyProductGid,
@@ -490,7 +501,9 @@ function printApplySummary(apply) {
   console.log(
     `- senza prodotto Shopify saltati: ${apply.skipped.missingShopifyProduct}`,
   );
-  console.log(`- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`);
+  console.log(
+    `- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`,
+  );
 
   if (apply.failures?.length > 0) {
     console.log("");
@@ -515,7 +528,9 @@ function printSample(report, label, status) {
     const facets = row.proposedFacets
       .map((facet) => `${facet.label}=${facet.value}`)
       .join(" · ");
-    const reason = row.lookupFailureReason ? ` · ${row.lookupFailureReason}` : "";
+    const reason = row.lookupFailureReason
+      ? ` · ${row.lookupFailureReason}`
+      : "";
     console.log(
       `- ItemID ${row.ebayItemId}: ${facets || "nessuna faccetta"}${reason}`,
     );

@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as retention from "./syncbay-retention-cleanup.ts";
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import { SYNCBAY_RETENTION_POLICIES } from "./syncbay-retention-policy.ts";
 
 const {

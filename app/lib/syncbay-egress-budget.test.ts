@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
-import { buildEgressBudgetReport, getEgressBudgetReadRows, isEgressReadStatementQuery } from "./syncbay-egress-budget.ts";
+import {
+  buildEgressBudgetReport,
+  getEgressBudgetReadRows,
+  isEgressReadStatementQuery,
+} from "./syncbay-egress-budget.ts";
 
 test("computes the 5 GB monthly egress budget without inventing byte data", () => {
   const report = buildEgressBudgetReport({

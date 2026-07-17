@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-// @ts-expect-error Node --experimental-strip-types resolves this test import.
 import * as descriptionRules from "./syncbay-description-rules.ts";
 
 const {
@@ -13,11 +12,10 @@ const {
 } = descriptionRules;
 
 test("accepts only supported description rule modes", () => {
-  assert.deepEqual([...DESCRIPTION_RULE_MODES], [
-    "CLEAN_HTML",
-    "FULL_HTML",
-    "TEXT_ONLY",
-  ]);
+  assert.deepEqual(
+    [...DESCRIPTION_RULE_MODES],
+    ["CLEAN_HTML", "FULL_HTML", "TEXT_ONLY"],
+  );
   assert.equal(normalizeDescriptionRuleMode("CLEAN_HTML"), "CLEAN_HTML");
   assert.equal(normalizeDescriptionRuleMode(" full_html "), "FULL_HTML");
   assert.equal(normalizeDescriptionRuleMode("text_only"), "TEXT_ONLY");
@@ -90,8 +88,7 @@ test("text-only rimuove il blocco style anche con falsi tag di chiusura", () => 
 test("text-only non lascia che falsi tag di apertura mangino il testo", () => {
   const textOnly = applyDescriptionRuleToHtml({
     cleanedHtml: null,
-    html:
-      "<p>Intro</p><scripture>Salmo</scripture><p>Tieni</p><script>alert(1)</script><p>Fine</p>",
+    html: "<p>Intro</p><scripture>Salmo</scripture><p>Tieni</p><script>alert(1)</script><p>Fine</p>",
     mode: "TEXT_ONLY",
   });
 
