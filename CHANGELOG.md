@@ -8,6 +8,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- `publish:complete` legge ora i file di una PR tramite l'API paginata
+  (`gh api repos/{owner}/{repo}/pulls/<n>/files --paginate --jq '.[].filename'`)
+  invece di `gh pr diff --name-only`, che andava in HTTP 406 oltre i 300 file
+  e interrompeva la pubblicazione delle PR grandi (riproducibile sulla #484).
 - Introdotto Prettier (`3.9.5`, pinnato in `devDependencies`) come formatter
   unico del repository: `npm run format` applica, `npm run format:check`
   verifica. Configurazione default (`.prettierrc` vuota), `.prettierignore`

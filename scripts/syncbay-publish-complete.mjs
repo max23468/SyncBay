@@ -128,7 +128,15 @@ async function runCompletePublish(args) {
 
   const changedPaths = (
     pr.number
-      ? runGh(["pr", "diff", String(pr.number), "--name-only"])
+      ? // `gh pr diff --name-only` va in HTTP 406 oltre i 300 file: l'API paginata
+        // dei file della PR non ha quel tetto (`{owner}/{repo}` risolti da gh).
+        runGh([
+          "api",
+          `repos/{owner}/{repo}/pulls/${pr.number}/files`,
+          "--paginate",
+          "--jq",
+          ".[].filename",
+        ])
       : runGit(["diff", "--name-only", "origin/main...HEAD"])
   )
     .split(/\r?\n/)
