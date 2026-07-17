@@ -518,6 +518,25 @@ async function verifyNavigationFocus(browser, origin) {
   }
 }
 
+function inspectSubmissionFocus(page) {
+  return page.evaluate(() => {
+    const found = [];
+    const content = document.querySelector("[data-syncbay-route-content]");
+    if (document.activeElement !== document.querySelector("s-button[type=submit]")) {
+      found.push(
+        `focus uscito dal bottone di submit (${document.activeElement?.tagName.toLowerCase() ?? "nessuno"})`,
+      );
+    }
+    if (content?.getAttribute("aria-busy") !== "false") {
+      found.push("submit segnalato come navigazione (aria-busy)");
+    }
+    if (!content?.querySelector("form")) {
+      found.push("contenuto della rotta sostituito durante il submit");
+    }
+    return found;
+  });
+}
+
 async function verifySubmissionFocus(browser, origin) {
   const context = await browser.newContext({ viewport: { width: 1024, height: 900 } });
   const page = await context.newPage();
@@ -531,15 +550,27 @@ async function verifySubmissionFocus(browser, origin) {
       () => document.querySelector("#syncbay-ui-root")?.dataset.hydrated === "true",
     );
     await page.getByRole("button", { name: "Salva intervallo", exact: true }).click();
-    await page.waitForFunction(
-      () => document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "true",
-    );
+    // Un submit non e' una navigazione: la pagina resta al suo posto con lo
+    // stato "Salvataggio..." e il focus non si muove dal bottone. Lo scheletro
+    // di rotta e aria-busy restano riservati alle navigazioni GET.
+    await page
+      .waitForFunction(
+        () =>
+          document.querySelector("s-button[type=submit]")?.textContent?.trim() ===
+          "Salvataggio...",
+      )
+      .catch(() => {
+        throw new Error(
+          'focus submit: lo stato "Salvataggio..." non e\' mai comparso, il submit sostituisce ancora la rotta con lo scheletro.',
+        );
+      });
+    const duringSubmit = await inspectSubmissionFocus(page);
     await page.waitForFunction(
       () =>
-        document.activeElement ===
-          document.querySelector("[data-syncbay-route-content]") &&
-        document.querySelector("[data-syncbay-route-content]")?.getAttribute("aria-busy") === "false",
+        document.querySelector("s-button[type=submit]")?.textContent?.trim() ===
+        "Salva intervallo",
     );
+    problems.push(...duringSubmit, ...(await inspectSubmissionFocus(page)));
     if (problems.length > 0) {
       throw new Error(`focus submit: ${problems.join("; ")}`);
     }
