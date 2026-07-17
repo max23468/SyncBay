@@ -13,6 +13,11 @@ type MissingPrismaProductPublicationMode = Exclude<
   (typeof PRODUCT_PUBLICATION_MODES)[number]
 >;
 type AssertNoMissingProductPublicationMode<T extends never> = T;
+/**
+ * Asserzione di compile-time: fallisce se Prisma aggiunge un valore non coperto
+ * da PRODUCT_PUBLICATION_MODES. Nessuno la importa: va tenuta, non è codice morto.
+ * @knipignore
+ */
 export type ProductPublicationModesCoverPrisma =
   AssertNoMissingProductPublicationMode<MissingPrismaProductPublicationMode>;
 

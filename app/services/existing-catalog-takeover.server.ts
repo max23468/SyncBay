@@ -35,7 +35,6 @@ import {
 export {
   getExistingCatalogTakeoverPreview,
   type ExistingCatalogPreviewInput,
-  type ExistingCatalogTakeoverPreview,
 } from "./existing-catalog-takeover-preview.server";
 
 const TAKEOVER_METAFIELDS_SET_BATCH_SIZE = 20;

@@ -8,6 +8,23 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Integrato Knip come controllo advisory di file ed export senza consumatori:
+  `npm run quality:knip`, risolto via `npx` come React Doctor e quindi senza
+  nuove dipendenze. Resta manuale e fuori dai gate: il suo report riguarda
+  l'intero grafo e non il diff, quindi in CI per-PR ripeterebbe gli stessi
+  finding su ogni PR non correlata. `knip.json` dichiara come entry i file
+  raggiunti solo via stringa, ignora i binari di sistema e usa
+  `ignoreExportsUsedInFile` per tenere il report sul codice davvero morto.
+  `docs/TOOLCHAIN.md` ne registra il trigger: refactor che rimuovono
+  consumatori, ritiri e consolidamenti.
+- I tipi `*CoverPrisma` di `syncbay-pricing-rules`, `syncbay-description-rules`
+  e `syncbay-product-publication-settings` dichiarano ora perché esistono e
+  sono marcati `@knipignore`: sono asserzioni di compile-time sulla copertura
+  degli enum Prisma, senza importatori per costruzione, e l'analisi statica li
+  segnalava come codice morto.
+- Rimosso il tipo `ExistingCatalogTakeoverPreview` e la sua ri-esportazione dal
+  barrel del takeover: nessun modulo lo importava, i consumatori usano solo
+  `getExistingCatalogTakeoverPreview`. Nessun impatto osservabile.
 - La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.

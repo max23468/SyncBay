@@ -13,6 +13,11 @@ type MissingPrismaDescriptionRuleMode = Exclude<
   (typeof DESCRIPTION_RULE_MODES)[number]
 >;
 type AssertNoMissingDescriptionRuleMode<T extends never> = T;
+/**
+ * Asserzione di compile-time: fallisce se Prisma aggiunge un valore non coperto
+ * da DESCRIPTION_RULE_MODES. Nessuno la importa: va tenuta, non è codice morto.
+ * @knipignore
+ */
 export type DescriptionRuleModesCoverPrisma =
   AssertNoMissingDescriptionRuleMode<MissingPrismaDescriptionRuleMode>;
 

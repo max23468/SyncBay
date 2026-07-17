@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/vite.ui-render.config.ts",
+    "scripts/syncbay-ui-app-provider-stub.tsx",
+    "scripts/syncbay-ui-browser-client.tsx",
+    "scripts/syncbay-ui-polaris-stub.js"
+  ],
+  "ignoreBinaries": ["psql", "security", "vercel"],
+  "ignoreExportsUsedInFile": true,
+  "tags": ["-knipignore"]
+}

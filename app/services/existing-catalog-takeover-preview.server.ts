@@ -73,7 +73,3 @@ export async function getExistingCatalogTakeoverPreview(
     };
   }
 }
-
-export type ExistingCatalogTakeoverPreview = Awaited<
-  ReturnType<typeof getExistingCatalogTakeoverPreview>
->;
