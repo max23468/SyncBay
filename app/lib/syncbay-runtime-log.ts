@@ -5,6 +5,7 @@ export type RuntimeLogEvent = {
   level: "info" | "warn" | "error";
   requestId: string | null;
   route: string;
+  shopDomain?: string;
   durationMs?: number;
   payloadBytes?: number | null;
   outcome?: string;
@@ -49,6 +50,7 @@ export function logSyncBayRuntimeEvent(
     level: event.level,
     requestId: event.requestId,
     route: event.route,
+    ...(event.shopDomain === undefined ? {} : { shopDomain: event.shopDomain }),
     ...(event.durationMs === undefined ? {} : { durationMs: event.durationMs }),
     ...(event.payloadBytes === undefined ? {} : { payloadBytes: event.payloadBytes }),
     ...(event.outcome === undefined ? {} : { outcome: event.outcome }),

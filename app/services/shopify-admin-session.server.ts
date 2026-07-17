@@ -1,4 +1,5 @@
 import prisma from "../db.server";
+import { logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 import {
   createShopifyAdminGraphqlClient,
   getOfflineShopifySessionId,
@@ -15,6 +16,27 @@ export async function getShopifyAdminGraphqlClient(shopDomain: string) {
   });
 }
 
+// I refresh token Shopify sono rotanti: due refresh concorrenti con lo stesso
+// token ne bruciano uno. Dentro la stessa istanza (Fluid Compute serve più
+// richieste in parallelo) i chiamanti concorrenti condividono la stessa
+// promise invece di gareggiare; tra istanze diverse resta il compare-and-swap.
+const inFlightOfflineSessions = new Map<string, Promise<unknown>>();
+
+export function dedupeInFlight<T>(
+  map: Map<string, Promise<unknown>>,
+  key: string,
+  create: () => Promise<T>,
+): Promise<T> {
+  const existing = map.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const promise = create().finally(() => {
+    map.delete(key);
+  });
+  map.set(key, promise);
+  return promise;
+}
+
 async function getUsableOfflineShopifySession(shopDomain: string) {
   const sessionId = getOfflineShopifySessionId(shopDomain);
   const select = {
@@ -24,21 +46,36 @@ async function getUsableOfflineShopifySession(shopDomain: string) {
     refreshTokenExpires: true,
     scope: true,
   } as const;
-  return getUsableOfflineShopifySessionWithPorts({
-    now: () => new Date(),
-    readSession: () => prisma.session.findUnique({ select, where: { id: sessionId } }),
-    refresh: (refreshToken) => refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
-    compareAndSwap: (oldAccessToken, refreshed, scope) => prisma.session.updateMany({
-      data: {
-        accessToken: encryptSecret(refreshed.accessToken),
-        expires: refreshed.expiresAt,
-        refreshToken: encryptSecret(refreshed.refreshToken),
-        refreshTokenExpires: refreshed.refreshTokenExpiresAt,
-        scope: refreshed.scope ?? scope,
-      },
-      where: { id: sessionId, accessToken: oldAccessToken },
-    }).then(({ count }) => count === 1),
-  });
+  return dedupeInFlight(inFlightOfflineSessions, sessionId, () =>
+    getUsableOfflineShopifySessionWithPorts({
+      now: () => new Date(),
+      readSession: () => prisma.session.findUnique({ select, where: { id: sessionId } }),
+      refresh: (refreshToken) => refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
+      compareAndSwap: (oldAccessToken, refreshed, scope) => prisma.session.updateMany({
+        data: {
+          accessToken: encryptSecret(refreshed.accessToken),
+          expires: refreshed.expiresAt,
+          refreshToken: encryptSecret(refreshed.refreshToken),
+          refreshTokenExpires: refreshed.refreshTokenExpiresAt,
+          scope: refreshed.scope ?? scope,
+        },
+        where: { id: sessionId, accessToken: oldAccessToken },
+      }).then(({ count }) => count === 1),
+      log: (event) =>
+        logSyncBayRuntimeEvent(
+          {
+            event: "shopify-offline-session-refresh",
+            requestId: null,
+            route: "shopify-admin-session",
+            shopDomain,
+            ...event,
+          },
+          // Eventi rari e decisivi per la diagnosi auth: la campionatura 5%
+          // dei log info in produzione li perderebbe, quindi va disattivata.
+          { random: () => 0 },
+        ),
+    }),
+  );
 }
 
 type PersistedOfflineSession = {
@@ -57,11 +94,24 @@ type RefreshedOfflineSession = {
   scope?: string;
 };
 
+type OfflineSessionRefreshLog = (event: {
+  level: "info" | "warn" | "error";
+  outcome: string;
+  durationMs?: number;
+}) => void;
+
+// Attese tra le riletture quando il refresh fallisce: il vincitore della
+// rotazione potrebbe non aver ancora persistito il token nuovo quando il
+// nostro 401 arriva. La prima rilettura è immediata, le successive attendono.
+const REFRESH_RECOVERY_DELAYS_MS = [0, 500, 1500];
+
 export async function getUsableOfflineShopifySessionWithPorts(input: {
   compareAndSwap: (oldAccessToken: string, refreshed: RefreshedOfflineSession, scope: string | null) => Promise<boolean>;
+  log?: OfflineSessionRefreshLog;
   now: () => Date;
   readSession: () => Promise<PersistedOfflineSession | null>;
   refresh: (refreshToken: string) => Promise<RefreshedOfflineSession>;
+  sleep?: (ms: number) => Promise<void>;
 }) {
   const persisted = await input.readSession();
 
@@ -94,6 +144,10 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     );
   }
 
+  const log: OfflineSessionRefreshLog = input.log ?? (() => {});
+  const sleep = input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const refreshStartedAt = Date.now();
+
   let refreshed: RefreshedOfflineSession;
   try {
     refreshed = await input.refresh(session.refreshToken);
@@ -101,12 +155,26 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     // Race sullo stesso shop: un altro runner può aver già ruotato/consumato
     // questo refresh token nella stessa finestra, facendo fallire il nostro
     // refresh prima del percorso compare-and-swap perdente. Se la sessione
-    // persistita è cambiata sotto di noi, riusa quella vincente appena scritta
-    // invece di far fallire il job; altrimenti il refresh è davvero rotto.
-    const winner = await input.readSession();
-    if (winner?.accessToken && winner.accessToken !== persisted.accessToken) {
-      return decryptPersistedSession(winner);
+    // persistita è cambiata sotto di noi, riusa quella vincente invece di far
+    // fallire il job; le riletture attendono il vincitore che potrebbe non
+    // aver ancora scritto. Altrimenti il refresh è davvero rotto.
+    for (const delayMs of REFRESH_RECOVERY_DELAYS_MS) {
+      if (delayMs > 0) await sleep(delayMs);
+      const winner = await input.readSession();
+      if (winner?.accessToken && winner.accessToken !== persisted.accessToken) {
+        log({
+          durationMs: Date.now() - refreshStartedAt,
+          level: "warn",
+          outcome: "refresh-fallito-riusata-sessione-vincente",
+        });
+        return decryptPersistedSession(winner);
+      }
     }
+    log({
+      durationMs: Date.now() - refreshStartedAt,
+      level: "error",
+      outcome: `refresh-fallito-${describeRefreshFailure(error)}`,
+    });
     throw error;
   }
 
@@ -117,6 +185,11 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
   );
 
   if (claimed) {
+    log({
+      durationMs: Date.now() - refreshStartedAt,
+      level: "info",
+      outcome: "refresh-riuscito-e-persistito",
+    });
     return {
       accessToken: refreshed.accessToken,
       expires: refreshed.expiresAt,
@@ -128,9 +201,24 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
 
   const winner = await input.readSession();
   if (!winner?.accessToken) {
+    log({
+      durationMs: Date.now() - refreshStartedAt,
+      level: "error",
+      outcome: "cas-perso-sessione-rimossa",
+    });
     throw new Error("Sessione offline Shopify rimossa durante l'aggiornamento.");
   }
+  log({
+    durationMs: Date.now() - refreshStartedAt,
+    level: "warn",
+    outcome: "cas-perso-riusata-sessione-vincente",
+  });
   return decryptPersistedSession(winner);
+}
+
+function describeRefreshFailure(error: unknown) {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? `http-${status}` : "senza-status";
 }
 
 function decryptPersistedSession<T extends { accessToken: string; refreshToken: string | null }>(session: T) {
@@ -187,9 +275,11 @@ async function refreshOfflineShopifyAccessToken(input: {
     | null;
 
   if (!response.ok || !json?.access_token || !json.refresh_token) {
-    throw new Error(
+    const error = new Error(
       `Refresh token Shopify offline non riuscito (HTTP ${response.status}).`,
-    );
+    ) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   const now = Date.now();

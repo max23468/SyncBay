@@ -74,6 +74,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   rotta rimosso dai submit in 1.0.75, quindi il gate falliva in timeout su
   `main` pulito. La UI non aveva regressioni.
 
+## [1.0.76] — 2026-07-17
+
+### Correzioni
+
+- Il rinnovo del token offline Shopify è più robusto contro la rotazione
+  concorrente dei refresh token, causa delle finestre di errori 401 e webhook
+  500 dell'11 e del 17 luglio. Tre interventi: i chiamanti concorrenti nella
+  stessa istanza condividono lo stesso rinnovo invece di gareggiare e bruciare
+  il token a vicenda; quando il rinnovo fallisce, il perdente rilegge la
+  sessione fino a tre volte in circa due secondi per agganciare il token del
+  vincitore che non aveva ancora finito di scrivere; ogni esito del percorso
+  (rinnovo riuscito, sessione vincente riusata, fallimento con status HTTP) è
+  ora tracciato nei log runtime strutturati con dominio dello shop e durata,
+  così una eventuale prossima finestra di 401 diventa diagnosticabile dai log
+  invece che ricostruita a posteriori.
+
 ## [1.0.75] — 2026-07-16
 
 ### Correzioni
@@ -3866,6 +3882,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.76]: #1076--2026-07-17
 [1.0.75]: #1075--2026-07-16
 [1.0.74]: #1074--2026-07-16
 [1.0.73]: #1073--2026-07-16
