@@ -8,6 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Introdotto Prettier (`3.9.5`, pinnato in `devDependencies`) come formatter
+  unico del repository: `npm run format` applica, `npm run format:check`
+  verifica. Configurazione default (`.prettierrc` vuota), `.prettierignore`
+  dello scaffold esteso con lockfile, patch e output locali. L'intero repo è
+  stato riformattato in un commit dedicato solo-formatting; lo SHA squash su
+  `main` va registrato in `.git-blame-ignore-revs` (PR di follow-up) per non
+  inquinare il blame. ESLint non ha regole di formato in conflitto, quindi
+  `eslint-config-prettier` non è necessario.
 - Integrato Knip come controllo advisory di file ed export senza consumatori:
   `npm run quality:knip`, risolto via `npx` come React Doctor e quindi senza
   nuove dipendenze. Resta manuale e fuori dai gate: il suo report riguarda
@@ -1398,7 +1406,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   CI completa, deploy stabile e App Store ancora da decidere.
 - Documentazione: definito il perimetro SyncBay 1.0 come custom app privata per
   pochi clienti selezionati e introdotto il piano generico `Collega catalogo
-  esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
+esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
   implementativo versionato per il takeover di cataloghi Shopify esistenti.
 
 ## [0.45.0] — 2026-06-21
@@ -1863,7 +1871,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Il mapping categorie usa `Collectible Coins` come categoria Shopify neutra per
   le monete e sposta distinzioni come italiane, commemorative o bullion nel
   `productType`, evitando categorie troppo strette o fuorvianti come `Rare
-  Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
+Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
   contesti numismatici.
 - `npm run categories:backfill` supporta il repair esplicito dei conflitti
   generati dal vecchio mapper con
@@ -2114,7 +2122,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Correzioni
 
 - L'import Shopify applica ai prodotti creati solo il tag generico `Negozio
-  eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
+eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
   per evitare duplicati.
 
 ## [0.36.0] — 2026-06-14
@@ -2788,7 +2796,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Correzioni
 
 - La pagina Conflitti classifica le decisioni aperte tra `Batch sicuri`, `Da
-  rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
+rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - La pagina Attività mostra impatto, prossima azione e riferimento tecnico dei
   job, bloccando il retry manuale quando eBay ha imposto un cooldown.
 - La diagnostica retry riconosce anche i cooldown eBay registrati come
@@ -3080,7 +3088,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   `RETRYING` oltre la finestra stale, evitando residui non schedulabili nella
   coda import.
 - Il client Admin GraphQL offline riconosce anche `extensions.code:
-  "THROTTLED"` come segnale di throttling Shopify e applica il backoff.
+"THROTTLED"` come segnale di throttling Shopify e applica il backoff.
 
 ## [0.22.7] — 2026-06-03
 

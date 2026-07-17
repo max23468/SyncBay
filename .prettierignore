@@ -1,7 +1,11 @@
 package.json
+package-lock.json
 .shadowenv.d
 .vscode
 node_modules
 prisma
 public
 .shopify
+patches
+audits
+preview/shots
