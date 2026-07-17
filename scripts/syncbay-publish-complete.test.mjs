@@ -182,7 +182,7 @@ test("fetches origin before tagging the fresh merge commit and hints at retry", 
 
   assert.match(
     source,
-    /if \(tagPlan\.createTag\) \{[^}]*runInherited\("git", \["fetch", "origin", "main"\]\);[^}]*runInherited\("git", \["tag"/,
+    /if \(tagPlan\.createTag\) \{[^}]*runInherited\("git", \["fetch", "origin", "main"\]\);[^}]*runInherited\("git", \[\s*"tag"/,
   );
   assert.match(source, /ripeti la pubblicazione, il flusso è idempotente/);
 });

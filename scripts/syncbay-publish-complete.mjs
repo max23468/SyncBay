@@ -234,14 +234,26 @@ async function runCompletePublish(args) {
     });
 
     if (tagPlan.createTag) {
-      runInherited("git", [
-        "tag",
-        "-a",
-        plan.tag,
-        mergeSha,
-        "-m",
-        `SyncBay ${currentVersion}`,
-      ]);
+      // Il merge commit lo crea GitHub: senza fetch puo' non esistere ancora in
+      // locale e `git tag` fallirebbe con "fatal: tipo oggetto errato".
+      runInherited("git", ["fetch", "origin", "main"]);
+      try {
+        runInherited("git", [
+          "tag",
+          "-a",
+          plan.tag,
+          mergeSha,
+          "-m",
+          `SyncBay ${currentVersion}`,
+        ]);
+      } catch (error) {
+        throw new Error(
+          `${error instanceof Error ? error.message : String(error)} ` +
+            `Il merge ${mergeSha.slice(0, 12)} potrebbe non essere ancora raggiungibile da origin/main: ` +
+            `attendi qualche secondo e ripeti la pubblicazione, il flusso è idempotente.`,
+          { cause: error },
+        );
+      }
     }
     if (tagPlan.pushTag) {
       runInherited("git", ["push", "origin", plan.tag]);
