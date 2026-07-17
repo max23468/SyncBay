@@ -7,6 +7,9 @@ import {
   runCatalogImportJobLifecycle,
   type CatalogImportExecutionResult,
 } from "../lib/syncbay-catalog-import-execution";
+import { hashNullableText } from "../lib/syncbay-description-hash";
+import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import { isDraftProductUnchangedSinceLastEbaySnapshot } from "./shopify-draft-import.server";
 
 function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
   const executedJobIds: string[] = [];
@@ -130,4 +133,115 @@ test("the real catalog executor cannot create or finalize an internal job", () =
     /prisma\.syncJob\.(?:create|update|upsert)/,
   );
   assert.doesNotMatch(importSource, /startDraftImportJob|finishDraftImportJob/);
+});
+
+type UnchangedCheckInput = Parameters<
+  typeof isDraftProductUnchangedSinceLastEbaySnapshot
+>[0];
+
+function createSyntheticDraftProduct(overrides?: { quantity?: number }) {
+  const normalized = {
+    categoryProposal: null,
+    currency: "EUR",
+    descriptionHtml: "<p>Moneta sintetica di test</p>",
+    descriptionMode: "ebay",
+    ebayPrimaryCategoryId: "11116",
+    ebayPrimaryCategoryName: "Monete",
+    ebayPrimaryCategoryPath: "Monete e banconote > Monete",
+    imageCount: 2,
+    imageUrls: ["https://img.example/1.jpg", "https://img.example/2.jpg"],
+    priceAmount: 8,
+    productFacets: [],
+    quantity: overrides?.quantity ?? 2,
+    sku: "EBAY-000000000001",
+    skuGenerated: true,
+    storeCategoryId: null,
+    storeCategoryName: null,
+    title: "Moneta sintetica 2 Lire",
+  };
+
+  return {
+    previewItem: {
+      issues: [],
+      itemId: "000000000001",
+      normalized,
+      status: "ready",
+    },
+    source: { ebayItemId: "000000000001" },
+  } as unknown as UnchangedCheckInput["draftProduct"];
+}
+
+// Riga snapshot come la restituirebbe Prisma dopo la persistenza dell'import:
+// payload JSON già serializzato e priceAmount in forma decimale-stringa.
+function createStoredEbaySnapshotRow() {
+  const draftProduct = createSyntheticDraftProduct();
+  const item = (
+    draftProduct as { previewItem: { normalized: Record<string, unknown> } }
+  ).previewItem;
+
+  return {
+    currency: "EUR",
+    descriptionHash: hashNullableText("<p>Moneta sintetica di test</p>"),
+    ebayItemId: "000000000001",
+    imageCount: 2,
+    payload: JSON.parse(
+      JSON.stringify(
+        buildEbayProductSnapshotPayload({
+          categoryProposal: null,
+          descriptionMode: "ebay",
+          ebayPrimaryCategoryId: "11116",
+          ebayPrimaryCategoryName: "Monete",
+          ebayPrimaryCategoryPath: "Monete e banconote > Monete",
+          imageUrls: item.normalized.imageUrls as string[],
+          issueCodes: [],
+          productFacets: [],
+          skuGenerated: true,
+          status: "ready",
+          storeCategoryId: null,
+          storeCategoryName: null,
+        }),
+      ),
+    ),
+    priceAmount: "8.00",
+    productStatus: null,
+    quantity: 2,
+    shopifyProductGid: null,
+    shopifyVariantGid: null,
+    sku: "EBAY-000000000001",
+    source: "EBAY",
+    title: "Moneta sintetica 2 Lire",
+  };
+}
+
+test("un draft identico all'ultimo snapshot EBAY viene riconosciuto invariato", () => {
+  assert.equal(
+    isDraftProductUnchangedSinceLastEbaySnapshot({
+      draftProduct: createSyntheticDraftProduct(),
+      previousEbaySnapshot: createStoredEbaySnapshotRow(),
+      shopId: "shop-1",
+    }),
+    true,
+  );
+});
+
+test("una quantità eBay diversa impedisce lo skip del sync", () => {
+  assert.equal(
+    isDraftProductUnchangedSinceLastEbaySnapshot({
+      draftProduct: createSyntheticDraftProduct({ quantity: 1 }),
+      previousEbaySnapshot: createStoredEbaySnapshotRow(),
+      shopId: "shop-1",
+    }),
+    false,
+  );
+});
+
+test("senza snapshot EBAY precedente il sync non viene mai saltato", () => {
+  assert.equal(
+    isDraftProductUnchangedSinceLastEbaySnapshot({
+      draftProduct: createSyntheticDraftProduct(),
+      previousEbaySnapshot: null,
+      shopId: "shop-1",
+    }),
+    false,
+  );
 });
