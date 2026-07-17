@@ -164,6 +164,21 @@ test("treats the GitHub Release, not the pushed tag, as the release signal", () 
   assert.match(source, /refs\/tags\/\$\{plan\.tag\}\^\{\}/);
 });
 
+// Il merge commit lo crea GitHub: senza fetch il tag fallisce con
+// "fatal: tipo oggetto errato" e l'errore deve suggerire il retry idempotente.
+test("fetches origin before tagging the fresh merge commit and hints at retry", () => {
+  const source = fs.readFileSync(
+    new URL("./syncbay-publish-complete.mjs", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /if \(tagPlan\.createTag\) \{[^}]*runInherited\("git", \["fetch", "origin", "main"\]\);[^}]*runInherited\("git", \["tag"/,
+  );
+  assert.match(source, /ripeti la pubblicazione, il flusso è idempotente/);
+});
+
 test("merges through the remote repository and can resume an existing merge", () => {
   const source = fs.readFileSync(
     new URL("./syncbay-publish-complete.mjs", import.meta.url),
