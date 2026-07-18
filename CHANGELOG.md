@@ -8,42 +8,30 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
-- Completata la migrazione a Vitest anche per i 23 test tooling
-  (`scripts/*.test.mjs` e `.github/scripts/*.test.mjs`, 125 test): `node --test`
-  non è più usato da nessuna corsia e Vitest resta l'unico runner del
-  repository. `test:tooling` diventa `vitest run scripts/`, un filtro che
-  copre entrambe le cartelle. `testTimeout` sale a 60s perché questi test
-  lanciano subprocess per fixture: il più lento impiega circa 15 secondi contro
-  il default Vitest di 5, e due test da 2-3 secondi sarebbero diventati flaky
-  su un runner CI carico; `node --test` non applicava alcun timeout.
-- Migrati i test `app/lib` e `app/services` da `node --test`/`tsx --test` a
-  Vitest (`4.1.10`, pinnato con `@vitest/coverage-v8`): un'unica
-  `vitest.config.ts` raccoglie `app/**/*.test.ts` e `coverage:lib` usa la
-  coverage v8 mantenendo le soglie `>=75%` linee e `>=65%` branch. I 116 file
-  di test passano da `node:test` a `import { test } from "vitest"` mantenendo
-  `node:assert/strict`. Gli script `test:lib`, `test:services:raw`,
-  `coverage:lib` e `test:stock-guard` conservano i nomi, quindi le corsie di
-  `verify:changed`/`verify:full`, il baseline worktree e la self-review
-  restano invariati. I test tooling `scripts/*.test.mjs` restano su
-  `node --test`. Cadono due vincoli documentati: i value-import cross-lib non
+- Vitest (`4.1.10`, pinnato con `@vitest/coverage-v8`) è l'unico runner di test
+  del repository: sostituisce `node --test` per `app/lib` e i test tooling, e
+  `tsx --test` per `app/services`. Un'unica `vitest.config.ts` raccoglie i 139
+  file di test (`app/**/*.test.ts`, `scripts/*.test.mjs`,
+  `.github/scripts/*.test.mjs`) e ogni corsia è un filtro di percorso; gli
+  script `test:lib`, `test:services:raw`, `coverage:lib`, `test:stock-guard` e
+  `test:tooling` conservano i nomi, quindi `verify:changed`/`verify:full`, il
+  baseline worktree e la self-review restano invariati. `coverage:lib` usa la
+  coverage v8 mantenendo le soglie `>=75%` linee e `>=65%` branch.
+  `testTimeout` è a 60s perché i test tooling lanciano subprocess per fixture
+  e il più lento impiega circa 15 secondi, mentre `node --test` non applicava
+  alcun timeout. Cadono due vincoli documentati: i value-import cross-lib non
   rompono più i test e l'auto-discovery elimina il gap dei glob per cui i test
   fuori pattern andavano lanciati a mano. `tsx` resta come runner di
   `ui:render`, `ui:check` e `history:maintain`.
-- Escluso `supabase/.temp` da Prettier: era gitignorato solo dal `.gitignore`
-  annidato in `supabase/`, che Prettier non legge, e su un checkout con
-  Supabase CLI linkata `format:check` usciva 1.
-- `publish:complete` legge ora i file di una PR tramite l'API paginata
-  (`gh api repos/{owner}/{repo}/pulls/<n>/files --paginate --jq '.[].filename'`)
-  invece di `gh pr diff --name-only`, che andava in HTTP 406 oltre i 300 file
-  e interrompeva la pubblicazione delle PR grandi (riproducibile sulla #484).
 - Introdotto Prettier (`3.9.5`, pinnato in `devDependencies`) come formatter
   unico del repository: `npm run format` applica, `npm run format:check`
   verifica. Configurazione default (`.prettierrc` vuota), `.prettierignore`
-  dello scaffold esteso con lockfile, patch e output locali. L'intero repo è
-  stato riformattato in un commit dedicato solo-formatting; lo SHA squash su
-  `main` (`013ea1f`) è registrato in `.git-blame-ignore-revs` per non
-  inquinare il blame. ESLint non ha regole di formato in conflitto, quindi
-  `eslint-config-prettier` non è necessario.
+  dello scaffold esteso con lockfile, patch, output locali e `supabase/.temp`,
+  che era gitignorato solo dal `.gitignore` annidato in `supabase/` e faceva
+  uscire 1 da `format:check`. L'intero repo è stato riformattato in un commit
+  dedicato solo-formatting; lo SHA squash su `main` (`013ea1f`) è registrato in
+  `.git-blame-ignore-revs` per non inquinare il blame. ESLint non ha regole di
+  formato in conflitto, quindi `eslint-config-prettier` non è necessario.
 - Integrato Knip come controllo advisory di file ed export senza consumatori:
   `npm run quality:knip`, risolto via `npx` come React Doctor e quindi senza
   nuove dipendenze. Resta manuale e fuori dai gate: il suo report riguarda
@@ -51,64 +39,30 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   finding su ogni PR non correlata. `knip.json` dichiara come entry i file
   raggiunti solo via stringa, ignora i binari di sistema e usa
   `ignoreExportsUsedInFile` per tenere il report sul codice davvero morto.
-  `docs/TOOLCHAIN.md` ne registra il trigger: refactor che rimuovono
-  consumatori, ritiri e consolidamenti.
-- I tipi `*CoverPrisma` di `syncbay-pricing-rules`, `syncbay-description-rules`
-  e `syncbay-product-publication-settings` dichiarano ora perché esistono e
-  sono marcati `@knipignore`: sono asserzioni di compile-time sulla copertura
-  degli enum Prisma, senza importatori per costruzione, e l'analisi statica li
-  segnalava come codice morto.
-- Rimosso il tipo `ExistingCatalogTakeoverPreview` e la sua ri-esportazione dal
-  barrel del takeover: nessun modulo lo importava, i consumatori usano solo
-  `getExistingCatalogTakeoverPreview`. Nessun impatto osservabile.
-- La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`
-  come route module React Router: gli export obbligatori `loader`, `headers` ed
-  `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
-- Aggiornate alle ultime patch in range le dipendenze `vite` (8.1.5),
-  `fast-xml-parser` (5.10.1) e `@eslint-react/eslint-plugin` (5.16.1). Cambia
-  solo `package-lock.json`: i range di `package.json` già le ammettevano e
-  nessun impatto è osservabile. I major disponibili restano fuori e richiedono
-  valutazione separata: React Router 8 tocca il routing dell'app embedded e
-  dipende da `@shopify/shopify-app-react-router`, TypeScript 7 è pinnato a
-  `~6.0.3`, e `@types/node` resta su 24 per coerenza con `engines`.
-- Rimosso il dead code dei metadati di presentazione delle policy retention:
-  `getRetentionPolicySummaryRows` non era consumata da nessuna rotta, e i campi
-  `scope` e `label` che alimentava non erano letti da alcun codice. Le policy
-  restano area più finestra; il motivo di ogni finestra vive nella tabella di
-  ADR 0017. Nessun impatto osservabile: il cleanup usa solo `area` e `cutoff`.
-- ADR 0018 e `docs/data-model.md` non ripetono più le finestre di retention:
-  rimandano alla tabella di ADR 0017, unica fonte canonica. La duplicazione
-  aveva già prodotto un disallineamento dopo il passaggio degli audit webhook
-  Shopify a 14 giorni in 1.0.68.
-- La guida ai comandi di manutenzione documenta come recuperare spazio dopo una
-  cancellazione massiva: `REINDEX TABLE CONCURRENTLY` sulle tabelle calde come
-  intervento occasionale guidato da `tableSizeBytes`, con `VACUUM FULL` fuori
-  dalla maintenance automatica.
+  I tipi `*CoverPrisma` di `syncbay-pricing-rules`, `syncbay-description-rules`
+  e `syncbay-product-publication-settings` sono marcati `@knipignore`: sono
+  asserzioni di compile-time sulla copertura degli enum Prisma, senza
+  importatori per costruzione. `docs/TOOLCHAIN.md` ne registra il trigger:
+  refactor che rimuovono consumatori, ritiri e consolidamenti.
+- `publish:complete` legge i file di una PR tramite l'API paginata
+  (`gh api repos/{owner}/{repo}/pulls/<n>/files --paginate --jq '.[].filename'`)
+  invece di `gh pr diff --name-only`, che andava in HTTP 406 oltre i 300 file
+  e interrompeva la pubblicazione delle PR grandi (riproducibile sulla #484).
 - `publish:complete` considera pubblicata una release solo in presenza della
   GitHub Release, non del solo tag: un tentativo interrotto fra il push del tag
-  e la creazione della Release ora viene completato invece che saltato, e i
-  passi di tag e push sono idempotenti sui retry.
+  e la creazione della Release viene completato invece che saltato, e i passi
+  di tag e push sono idempotenti sui retry. Un tag già presente, in locale o su
+  origin, viene riusato solo se punta al commit di merge appena completato,
+  così un tag rimasto da un tentativo precedente non porta la GitHub Release
+  sul commit sbagliato; il confronto legge il commit del tag remoto dalla riga
+  dereferenziata di `ls-remote`, quindi vale anche per i tag annotati.
 - Rinominato in `resolvedFrom` il campo `apiKeySource` del report
   `supabase:services`: contiene solo l'etichetta di provenienza della chiave,
   mai il valore, e il nome neutro evita che l'analisi statica lo tratti come
   segreto. Cambia la chiave corrispondente nell'output `--json`.
-- `npm run release` porta nella nuova versione solo le sezioni versionate e
-  lascia le voci `Non versionato` sotto `[Non rilasciato]`: un blocco misto non
-  è più un errore e le note operative non entrano in una versione a cui non
-  appartengono.
-- `npm run release` si ferma quando `[Non rilasciato]` contiene testo prima
-  della prima sezione `###`: prima quel testo non apparteneva ad alcuna
-  categoria e spariva in silenzio dal changelog durante il rilascio.
-- `publish:complete` riusa un tag già presente, in locale o su origin, solo se
-  punta al commit di merge appena completato: un tag rimasto da un tentativo
-  precedente non porta più la GitHub Release sul commit sbagliato. Il confronto
-  legge il commit del tag remoto dalla riga dereferenziata di `ls-remote`, così
-  vale anche per i tag annotati.
-- `ui:browser-check` verifica il submit per quello che è: la rotta resta al suo
-  posto con lo stato "Salvataggio...", il focus non lascia il bottone e
-  `aria-busy` resta `false`. Il controllo attendeva ancora lo scheletro di
-  rotta rimosso dai submit in 1.0.75, quindi il gate falliva in timeout su
-  `main` pulito. La UI non aveva regressioni.
+- La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`
+  come route module React Router: gli export obbligatori `loader`, `headers` ed
+  `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
 ## [1.0.76] — 2026-07-17
 
