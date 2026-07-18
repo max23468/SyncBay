@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { hasSyncBayProductFacetBaselineChanged } from "./syncbay-product-facet-baseline.ts";
 import type { SyncBayProductFacet } from "./syncbay-product-facets";

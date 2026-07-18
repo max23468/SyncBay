@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import type { EbayConnection } from "@prisma/client";
 
 import * as ebayTradingPreview from "./ebay-trading-preview.server.ts";

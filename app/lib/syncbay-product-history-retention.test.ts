@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import * as retention from "./syncbay-product-history-retention.ts";
 

@@ -186,10 +186,10 @@ aggiorna solo il token eBay cifrato se scaduto. La riparazione stabile vive nel
 runner: quando il delta eBay è vuoto, SyncBay pianifica job `SYNC_INCREMENTAL`
 con source `catalog_image_repair` per mapping attivi senza thumbnail, limitati
 da `SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT`.
-`npm run test:services` usa `tsx 4.23.0` esclusivamente come runner TypeScript
-dei test `app/services/*.server.test.ts`; `pretest:services` rigenera prima il
-client Prisma. `npm run test:runtime` esegue in sequenza test puri e test server
-ed è il gate usato dalla CI. `npm run coverage:lib` continua a usare il test
-runner nativo di Node e limita la coverage ai moduli puri `app/lib` già
-isolabili dal runtime live; la soglia SyncBay corrente è `>=75%` linee e
-`>=65%` branch su quel perimetro.
+`npm run test:services` esegue Vitest (`vitest run app/services`) sui test
+`app/services/*.server.test.ts`; `pretest:services` rigenera prima il client
+Prisma. `npm run test:runtime` esegue in sequenza test puri e test server ed è
+il gate usato dalla CI. `npm run coverage:lib` usa la coverage v8 di Vitest
+(`vitest run app/lib --coverage`) e limita la misura ai moduli puri `app/lib`
+già isolabili dal runtime live; la soglia SyncBay corrente è `>=75%` linee e
+`>=65%` branch su quel perimetro, dichiarata in `vitest.config.ts`.

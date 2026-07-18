@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import * as retention from "./syncbay-retention-cleanup.ts";
 import { SYNCBAY_RETENTION_POLICIES } from "./syncbay-retention-policy.ts";
