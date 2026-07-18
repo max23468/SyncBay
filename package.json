@@ -40,7 +40,7 @@
     "coverage:lib": "vitest run app/lib --coverage",
     "audit:prod": "node scripts/syncbay-audit-prod.mjs",
     "test:stock-guard": "vitest run app/lib/syncbay-stock-guard.test.ts",
-    "test:tooling": "node --test scripts/*.test.mjs .github/scripts/*.test.mjs",
+    "test:tooling": "vitest run scripts/",
     "shopify": "shopify",
     "prisma": "prisma",
     "vite": "vite",

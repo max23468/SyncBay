@@ -163,12 +163,18 @@ contratto proporzionato al rischio ed esegui `npm run test:runtime`.
 `npm run build` esegue `npm run prisma:generate` tramite `prebuild`, mantenendo
 il Prisma Client allineato allo schema anche nei deploy con cache installazione.
 
-I test `app/lib` e `app/services` girano su Vitest (`vitest run <percorso>`);
-un'unica `vitest.config.ts` raccoglie `app/**/*.test.ts`, mentre i test tooling
-`scripts/*.test.mjs` restano sul runner nativo `node --test`. L'auto-discovery
-di Vitest elimina il gap dei glob per cui i test fuori pattern andavano lanciati
-a mano, e la risoluzione TypeScript di Vitest rimuove il vincolo sui value-import
-cross-lib che rompeva il vecchio `node --test`.
+Vitest è l'unico runner di test del repository: un'unica `vitest.config.ts`
+raccoglie i test applicativi (`app/**/*.test.ts`) e quelli tooling
+(`scripts/*.test.mjs`, `.github/scripts/*.test.mjs`), e ogni corsia è un filtro
+di percorso (`vitest run app/lib`, `vitest run app/services`,
+`vitest run scripts/`). Non resta alcun test su `node --test` o `tsx --test`.
+L'auto-discovery elimina il gap dei glob per cui i test fuori pattern andavano
+lanciati a mano, e la risoluzione TypeScript di Vitest rimuove il vincolo sui
+value-import cross-lib che rompeva il vecchio `node --test`.
+
+`testTimeout` è alzato a 60s perché i test tooling lanciano subprocess per
+fixture: il più lento impiega circa 15 secondi, mentre `node --test` non
+applicava alcun timeout.
 
 I comandi standalone `build`, `typecheck` e `test:services` mantengono la
 generazione Prisma preventiva. `npm run verify:full` genera invece Prisma una
