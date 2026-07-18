@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Nuovo `npm run smoke:production`: verifica che il deployment Vercel Production
+  risponda davvero, non solo che il build sia concluso. `publish:complete` lo
+  esegue dopo `audit:prod` quando il diff tocca il runtime. Il deployment è
+  privato dietro Vercel SSO, quindi serve `VERCEL_AUTOMATION_BYPASS_SECRET`
+  (header `x-vercel-protection-bypass`); senza segreto il comando si ferma
+  invece di misurare la protezione e dichiarare un falso positivo.
 - `npm run release:dry-run` non classifica più come `non versionato` un blocco
   `[Non rilasciato]` che contiene anche sezioni versionate: l'analisi seguiva
   una precedenza diversa da quella del bump, quindi annunciava una categoria in

@@ -19,6 +19,7 @@
     "quality:react-doctor": "npx --yes react-doctor@latest --scope full --blocking error .",
     "quality:knip": "npx --yes knip@6",
     "perf:loaders": "node scripts/measure-loader-performance.mjs",
+    "smoke:production": "node scripts/syncbay-production-smoke.mjs",
     "smoke:ui": "node scripts/smoke-ui.mjs",
     "ui:render": "tsx scripts/syncbay-ui-render.mjs",
     "ui:check": "tsx scripts/syncbay-ui-check.mjs",
