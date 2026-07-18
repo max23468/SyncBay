@@ -12,8 +12,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   risponda davvero, non solo che il build sia concluso. `publish:complete` lo
   esegue dopo `audit:prod` quando il diff tocca il runtime. Il deployment è
   privato dietro Vercel SSO, quindi serve `VERCEL_AUTOMATION_BYPASS_SECRET`
-  (header `x-vercel-protection-bypass`); senza segreto il comando si ferma
-  invece di misurare la protezione e dichiarare un falso positivo.
+  (header `x-vercel-protection-bypass`); senza segreto il comando non misura
+  mai la protezione al posto dell'app: da solo esce in errore, dentro
+  `publish:complete` dichiara forte la verifica mancante senza interrompere una
+  pubblicazione già oltre merge, tag e release.
 - `npm run release:dry-run` non classifica più come `non versionato` un blocco
   `[Non rilasciato]` che contiene anche sezioni versionate: l'analisi seguiva
   una precedenza diversa da quella del bump, quindi annunciava una categoria in

@@ -93,13 +93,22 @@ async function runCli(args) {
 
   if (!secret) {
     // Senza segreto ogni rotta risponderebbe con il redirect SSO: uno smoke che
-    // "passa" cosi' sarebbe una falsa conferma, quindi si ferma.
-    throw new Error(
+    // "passa" cosi' sarebbe una falsa conferma, quindi non si esegue mai.
+    const message =
       "VERCEL_AUTOMATION_BYPASS_SECRET non impostata: senza bypass lo smoke " +
-        "misurerebbe la protezione Vercel e non l'app. Genera il segreto in " +
-        "Vercel (Project Settings > Deployment Protection > Protection Bypass " +
-        "for Automation) ed esportalo nell'ambiente.",
-    );
+      "misurerebbe la protezione Vercel e non l'app. Genera il segreto in " +
+      "Vercel (Project Settings > Deployment Protection > Protection Bypass " +
+      "for Automation) ed esportalo nell'ambiente.";
+
+    // In `publish:complete` lo smoke gira dopo merge, tag e release: li' un
+    // exit 1 lascerebbe una pubblicazione gia' irreversibile a meta'. Meglio
+    // dichiarare forte la verifica mancante e lasciare chiudere il flusso.
+    if (args.warnIfUnconfigured) {
+      console.warn(`SMOKE PRODUCTION NON ESEGUITO. ${message}`);
+      return;
+    }
+
+    throw new Error(message);
   }
 
   const { failures, ok } = await runProductionSmoke({ baseUrl, secret });
@@ -117,10 +126,16 @@ async function runCli(args) {
 function parseArgs(rawArgs) {
   const { values } = parseNodeArgs({
     args: rawArgs,
-    options: { "base-url": { type: "string" } },
+    options: {
+      "base-url": { type: "string" },
+      "warn-if-unconfigured": { type: "boolean" },
+    },
   });
 
-  return { baseUrl: values["base-url"] };
+  return {
+    baseUrl: values["base-url"],
+    warnIfUnconfigured: Boolean(values["warn-if-unconfigured"]),
+  };
 }
 
 if (import.meta.main) {
