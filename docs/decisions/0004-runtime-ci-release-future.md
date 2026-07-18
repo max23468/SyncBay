@@ -106,9 +106,16 @@ Non creare un workflow CI fittizio che passa senza validare prodotto reale.
 
 ## Dependabot
 
-Dependabot è attivo per GitHub Actions.
+Dependabot è attivo per GitHub Actions e npm.
 
 Poiché lo scaffold esiste, mantenere anche l'ecosistema package coerente col package manager scelto. Se lo stack resta npm, il blocco sarà `package-ecosystem: npm` su directory `/`, con PR settimanali e minor/patch raggruppate.
+
+Le PR Dependabot patch e minor possono entrare in auto-merge squash, senza
+auto-approvazione, ma solo attraverso i check obbligatori della ruleset di
+`main`. Major, conflitti, check falliti e PR modificate manualmente restano
+manuali. I major accoppiati o incompatibili con peer e runtime devono inoltre
+restare esclusi nella configurazione Dependabot finché non esiste una
+migrazione dedicata verificabile.
 
 ## Release locale e release futura
 

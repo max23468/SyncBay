@@ -723,6 +723,7 @@ function getCurrencyPriceFormat(currency: string) {
 
   if (cached) return cached;
 
+  // react-doctor-disable-next-line react-doctor/js-hoist-intl -- istanza creata una sola volta per valuta e conservata nella cache del modulo.
   const format = new Intl.NumberFormat("it-IT", {
     currency,
     style: "currency",
