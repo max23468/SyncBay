@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { findUnreleasedPreamble, splitUnreleasedBody } from "./release.mjs";
+import {
+  analyzeUnreleased,
+  findUnreleasedPreamble,
+  splitUnreleasedBody,
+} from "./release.mjs";
 
 const VERSIONED = `### Correzioni
 
@@ -23,6 +27,14 @@ test("un blocco solo non versionato non produce contenuto da rilasciare", () => 
 
   assert.equal(split.versioned, "");
   assert.equal(split.nonVersioned, NON_VERSIONED);
+});
+
+test("in un blocco misto l'analisi segue la sezione versionata", () => {
+  // Il dry-run stampava "non versionato" anche quando il bump era patch: la
+  // categoria non deve contraddire la release che verra' preparata.
+  assert.equal(analyzeUnreleased(`${VERSIONED}\n\n${NON_VERSIONED}`), "patch");
+  assert.equal(analyzeUnreleased(NON_VERSIONED), "non versionato");
+  assert.equal(analyzeUnreleased(VERSIONED), "patch");
 });
 
 test("un blocco solo versionato non trattiene nulla sotto [Non rilasciato]", () => {

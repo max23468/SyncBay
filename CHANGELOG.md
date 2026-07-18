@@ -8,6 +8,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- `npm run release:dry-run` non classifica più come `non versionato` un blocco
+  `[Non rilasciato]` che contiene anche sezioni versionate: l'analisi seguiva
+  una precedenza diversa da quella del bump, quindi annunciava una categoria in
+  contraddizione con la release che avrebbe preparato.
 - La CI PR esegue `verify:changed` su ogni corsia: la corsia docs-only si
   fermava a `git diff --check` e non installava le dipendenze, quindi
   `format:check` non veniva mai eseguito nel check richiesto.
