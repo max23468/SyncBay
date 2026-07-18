@@ -1,7 +1,4 @@
-export const SHOPIFY_ORDER_STOCK_ACTIONS = ["decrement", "restore"] as const;
-
-export type ShopifyOrderStockAction =
-  (typeof SHOPIFY_ORDER_STOCK_ACTIONS)[number];
+export type ShopifyOrderStockAction = "decrement" | "restore";
 
 export function getShopifyOrderStockAction(value: unknown) {
   return value === "restore" ? "restore" : "decrement";
