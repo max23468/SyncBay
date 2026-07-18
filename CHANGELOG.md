@@ -6,6 +6,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- I topic webhook Shopify in formato enum preservano gli underscore del nome
+  risorsa: `INVENTORY_LEVELS_UPDATE` viene ora instradato come
+  `inventory_levels/update`, così gli aggiornamenti inventario accodano il
+  controllo conflitti previsto invece di restare solo nell'audit.
+
 ### Non versionato
 
 - Ridotta la duplicazione nel runtime e negli script condividendo concorrenza,

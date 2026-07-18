@@ -89,7 +89,11 @@ import {
 import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-thumbnail";
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
-import { getShopifyWebhookJobPayload } from "../lib/syncbay-shopify-webhook";
+import {
+  getShopifyWebhookJobPayload,
+  normalizeShopifyWebhookTopic,
+  SHOPIFY_WEBHOOK_TOPICS,
+} from "../lib/syncbay-shopify-webhook";
 import { shouldWriteShopifyWebhookAuditLog } from "../lib/syncbay-webhook-audit";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
 import { getSyncEnablementBlockers } from "../lib/syncbay-sync-settings";
@@ -203,14 +207,6 @@ const REQUIRED_SHOPIFY_SCOPES = [
   "read_files",
   "write_files",
 ];
-const SHOPIFY_WEBHOOK_TOPICS = [
-  "app/uninstalled",
-  "app/scopes_update",
-  "orders/paid",
-  "products/update",
-  "inventory_levels/update",
-];
-
 export async function getOverviewState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
@@ -2864,10 +2860,6 @@ function getWebhookJobPayload(topic: string, payload: unknown) {
     topic,
     payload,
   ) satisfies Prisma.JsonObject;
-}
-
-function normalizeShopifyWebhookTopic(topic: string) {
-  return topic.toLowerCase().replaceAll("_", "/");
 }
 
 export function getEbayMarketplaceId() {

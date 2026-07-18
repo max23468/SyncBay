@@ -1,7 +1,25 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { getShopifyWebhookJobPayload } from "./syncbay-shopify-webhook.ts";
+import {
+  getShopifyWebhookJobPayload,
+  normalizeShopifyWebhookTopic,
+} from "./syncbay-shopify-webhook.ts";
+
+test("normalizes Shopify enum topics without changing resource underscores", () => {
+  assert.equal(
+    normalizeShopifyWebhookTopic("INVENTORY_LEVELS_UPDATE"),
+    "inventory_levels/update",
+  );
+  assert.equal(
+    normalizeShopifyWebhookTopic("APP_SCOPES_UPDATE"),
+    "app/scopes_update",
+  );
+  assert.equal(
+    normalizeShopifyWebhookTopic("products/update"),
+    "products/update",
+  );
+});
 
 test("returns an empty payload for unsupported Shopify webhook topics", () => {
   assert.deepEqual(getShopifyWebhookJobPayload("orders/create", {}), {});

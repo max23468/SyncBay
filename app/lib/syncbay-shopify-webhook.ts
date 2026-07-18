@@ -1,5 +1,24 @@
 import { selectShopifyOrderCurrency } from "./syncbay-stock-guard";
 
+export const SHOPIFY_WEBHOOK_TOPICS = [
+  "app/uninstalled",
+  "app/scopes_update",
+  "orders/paid",
+  "products/update",
+  "inventory_levels/update",
+] as const;
+
+export function normalizeShopifyWebhookTopic(topic: string) {
+  const normalized = topic.toLowerCase();
+
+  return (
+    SHOPIFY_WEBHOOK_TOPICS.find(
+      (candidate) =>
+        candidate === normalized || candidate.replace("/", "_") === normalized,
+    ) ?? normalized
+  );
+}
+
 export function getShopifyWebhookJobPayload(topic: string, payload: unknown) {
   if (topic === "orders/paid") {
     return {
