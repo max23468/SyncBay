@@ -316,7 +316,7 @@ function sectionHasContent(body) {
   });
 }
 
-function analyzeUnreleased(unreleasedBody) {
+export function analyzeUnreleased(unreleasedBody) {
   const sections = parseSections(unreleasedBody);
   const hasNonVersioned = sections.some(
     (section) => section.hasContent && nonVersionedSections.has(section.title),
@@ -331,10 +331,13 @@ function analyzeUnreleased(unreleasedBody) {
     (section) => section.hasContent && patchSections.has(section.title),
   );
 
-  if (hasNonVersioned) return "non versionato";
+  // Stessa precedenza di inferBump: in un blocco misto comanda la sezione
+  // versionata, perche' e' quella che viene rilasciata. "non versionato" vale
+  // solo quando non c'e' nulla da rilasciare.
   if (hasMajor) return "major";
   if (hasMinor) return "minor";
   if (hasPatch) return "patch";
+  if (hasNonVersioned) return "non versionato";
 
   return "patch";
 }
