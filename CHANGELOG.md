@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Nuovo `npm run smoke:production`: verifica che il deployment Vercel Production
+  risponda davvero, non solo che il build sia concluso. `publish:complete` lo
+  esegue dopo `audit:prod` quando il diff tocca il runtime. Il target è il
+  dominio canonico di `shopify.app.toml`, cioè l'endpoint che Shopify ed eBay
+  chiamano: l'alias di progetto `syncbay-<team>.vercel.app` è protetto da Vercel
+  SSO e un gate puntato lì passerebbe mentre il dominio reale è rotto.
 - `npm run release:dry-run` non classifica più come `non versionato` un blocco
   `[Non rilasciato]` che contiene anche sezioni versionate: l'analisi seguiva
   una precedenza diversa da quella del bump, quindi annunciava una categoria in

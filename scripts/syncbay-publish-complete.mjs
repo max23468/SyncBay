@@ -210,6 +210,8 @@ async function runCompletePublish(args) {
   if (plan.deploy) {
     await waitForProductionDeployment({ mergeSha, repository });
     runInherited("npm", ["run", "audit:prod"]);
+    // Lo status Vercel dice che il build e' finito, non che l'app risponde.
+    runInherited("npm", ["run", "smoke:production"]);
   } else {
     console.log(
       "Deploy Vercel non applicabile: il diff non modifica il runtime.",
