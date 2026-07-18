@@ -8,7 +8,10 @@ import {
   shouldUseReceipt,
 } from "./syncbay-verify.mjs";
 
-test("keeps docs-only changes on one lightweight check", () => {
+// La corsia docs resta leggera ma include il controllo di formattazione:
+// Prettier formatta anche Markdown, quindi un diff docs-only puo' introdurre
+// drift che nessun altro gate intercetterebbe.
+test("keeps docs-only changes on lightweight checks including formatting", () => {
   const plan = buildVerificationPlan({
     base: "origin/main",
     mode: "changed",
@@ -21,11 +24,37 @@ test("keeps docs-only changes on one lightweight check", () => {
   assert.equal(plan.lane, "docs");
   assert.deepEqual(plan.commands, [
     {
+      args: ["run", "format:check"],
+      command: "npm",
+      label: "npm run format:check",
+    },
+    {
       args: ["diff", "--check", "origin/main"],
       command: "git",
       label: "git diff --check origin/main",
     },
   ]);
+});
+
+test("runs the formatting check on every lane", () => {
+  const labelsFor = (plan) => plan.commands.map((entry) => entry.label);
+
+  assert.ok(
+    labelsFor(buildVerificationPlan({ mode: "full" })).includes(
+      "npm run format:check",
+    ),
+  );
+  assert.ok(
+    labelsFor(
+      buildVerificationPlan({
+        mode: "changed",
+        review: {
+          suggestedChecks: ["npm run lint"],
+          unmatchedFiles: [],
+        },
+      }),
+    ).includes("npm run format:check"),
+  );
 });
 
 test("falls back to the full lane when changed files are not classified", () => {
@@ -92,7 +121,12 @@ test("deduplicates changed checks and keeps live placeholders manual", () => {
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run prisma:generate", "npm run typecheck:raw", "npm run lint"],
+    [
+      "npm run format:check",
+      "npm run prisma:generate",
+      "npm run typecheck:raw",
+      "npm run lint",
+    ],
   );
   assert.deepEqual(plan.manualChecks, [
     "npm run conflicts:doctor -- --shop <shop.myshopify.com>",
@@ -111,7 +145,7 @@ test("CI can omit advisory gates already handled by parallel workflows", () => {
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run smoke:ui"],
+    ["npm run format:check", "npm run smoke:ui"],
   );
 });
 
@@ -132,7 +166,7 @@ test("CI can leave changed UI gates to the explicit cached browser workflow", ()
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run lint"],
+    ["npm run format:check", "npm run lint"],
   );
 });
 
@@ -152,6 +186,7 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
     [
+      "npm run format:check",
       "npm run prisma:generate",
       "npm run prisma:validate",
       "npm run test:tooling",

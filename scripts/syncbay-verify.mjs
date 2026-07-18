@@ -20,7 +20,13 @@ const UI_GATE_LABELS = new Set([
 ]);
 const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor"]);
 
+// La formattazione riguarda ogni tipo di file, quindi il controllo vale per
+// tutte le corsie, docs incluse. Costa circa 7 secondi ed e' il gate piu'
+// economico: sta per primo cosi' un problema banale fallisce subito.
+const FORMAT_CHECK_LABEL = "npm run format:check";
+
 const FULL_COMMANDS = [
+  npmCommand("format:check"),
   npmCommand("prisma:generate"),
   npmCommand("lint"),
   npmCommand("test:tooling"),
@@ -79,6 +85,7 @@ export function buildVerificationPlan({
   if (suggestions.length === 1 && suggestions[0] === "git diff --check") {
     return {
       commands: [
+        npmCommand("format:check"),
         {
           args: ["diff", "--check", base],
           command: "git",
@@ -298,6 +305,7 @@ function normalizeSuggestedChecks(suggestions, base) {
     ].includes(label),
   );
   if (needsPrisma) normalizedLabels.unshift("npm run prisma:generate");
+  normalizedLabels.unshift(FORMAT_CHECK_LABEL);
 
   return unique(normalizedLabels).map(commandFromLabel);
 }
