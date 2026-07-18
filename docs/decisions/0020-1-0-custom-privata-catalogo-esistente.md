@@ -1,5 +1,8 @@
 # ADR 0020 - SyncBay 1.0 custom privata e catalogo Shopify esistente
 
+> La scelta del trigger stock esclusivo `orders/paid` è sostituita dall'ADR
+> 0022; il resto di questa decisione rimane valido.
+
 - **Stato**: Accettato
 - **Data**: 2026-06-21
 - **Decisori**: maintainer, Codex
@@ -135,7 +138,7 @@ Il takeover di uno store reale segue questi passaggi:
 6. **Apply SyncBay**: applicare righe sicure e registrare snapshot/audit.
 7. **Verifica manuale**: controllo del maintainer/operatore su Shopify ed eBay.
 8. **Attivazione ordinaria**: sync automatico eBay -> Shopify a 300 secondi e
-   stock Shopify -> eBay da `orders/paid`.
+   stock Shopify -> eBay dal ciclo ordine definito nell'ADR 0022.
 9. **Monitoraggio iniziale**: controllare job, conflitti, rate-limit e ordini
    reali nella prima finestra operativa.
 
@@ -143,7 +146,7 @@ Il takeover di uno store reale segue questi passaggi:
 
 Per la 1.0 privata:
 
-- il trigger stock Shopify -> eBay resta `orders/paid`;
+- il trigger stock Shopify -> eBay segue l'ADR 0022;
 - dopo il takeover il sync automatico eBay -> Shopify parte subito;
 - l'intervallo target iniziale consigliato per il catalogo è 300 secondi;
 - listing eBay chiusi o inattivi restano prodotti Shopify esauriti, non

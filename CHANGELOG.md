@@ -77,6 +77,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.77] — 2026-07-18
+
+### Correzioni
+
+- Gli ordini Shopify proteggono subito la disponibilità eBay: `orders/create`
+  sottrae lo stock impegnato anche con pagamento in attesa, `orders/paid` resta
+  un recupero idempotente e `orders/cancelled` ripristina solo quantità
+  verificate live su entrambi i provider. Gli aggiornamenti generati dagli
+  ordini vengono riallineati alla baseline invece di restare falsi conflitti.
+- I topic webhook Shopify in formato enum preservano gli underscore del nome
+  risorsa: `INVENTORY_LEVELS_UPDATE` viene instradato correttamente come
+  `inventory_levels/update`.
+
 ## [1.0.76] — 2026-07-17
 
 ### Correzioni
@@ -3885,6 +3898,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.77]: #1077--2026-07-18
 [1.0.76]: #1076--2026-07-17
 [1.0.75]: #1075--2026-07-16
 [1.0.74]: #1074--2026-07-16

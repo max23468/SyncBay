@@ -16,7 +16,8 @@ Questo è l'handoff operativo corrente. Per orientarsi nella documentazione usa
   Impostazioni.
 - Flussi implementati: OAuth Shopify/eBay, import controllato e takeover,
   sincronizzazione incrementale, conflitti Shopify, diagnostica, retry e stock
-  eBay da ordini Shopify pagati.
+  eBay dal ciclo ordine Shopify (creazione immediata, pagamento idempotente,
+  annullamento prudente; ADR 0022).
 - Runtime asincrono: record `SyncJob` su Postgres drenati dal runner HTTP
   protetto tramite Supabase Cron; le primitive Supabase Queues sono
   predisposte ma non sostituiscono questo percorso applicativo corrente.

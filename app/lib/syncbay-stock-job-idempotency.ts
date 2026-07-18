@@ -4,6 +4,7 @@ type StockJobResult = {
 };
 
 export function hasProcessedStockLineInJobResults(input: {
+  action?: "decrement" | "restore";
   ebayItemId: string;
   includeDryRunPlans?: boolean;
   lineItemKey: string | null;
@@ -18,9 +19,16 @@ export function hasProcessedStockLineInJobResults(input: {
     ].some(
       (row) =>
         getStringField(row, "lineItemKey") === input.lineItemKey &&
-        getStringField(row, "ebayItemId") === input.ebayItemId,
+        getStringField(row, "ebayItemId") === input.ebayItemId &&
+        getStockAction(row) === (input.action ?? "decrement"),
     ),
   );
+}
+
+function getStockAction(record: Record<string, unknown>) {
+  return getStringField(record, "stockAction") === "restore"
+    ? "restore"
+    : "decrement";
 }
 
 function getStockResultRows(value: unknown) {

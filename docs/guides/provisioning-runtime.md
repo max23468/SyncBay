@@ -12,7 +12,7 @@ Lo scaffold Shopify CLI React Router esiste. Esiste un deployment Vercel
 production pronto. La pianificazione import può creare batch fino a 2.000
 listing attivi o fermarsi prima quando lo store collegato ne espone meno; sul
 precedente ambiente pilota l'import reale ha completato 958 listing. Il runner copre import,
-sync incrementale, update stock eBay da `orders/paid` nella custom app privata e
+sync incrementale, update stock eBay dal ciclo ordine Shopify nella custom app privata e
 rilevazione conflitti Shopify. Il primo cambio quantità reale eBay -> Shopify
 è stato verificato con rollback. Il runner stock Shopify -> eBay è stato
 verificato con payload ordine sintetico e con trigger reale `orders/paid` da
@@ -235,8 +235,9 @@ Scope Shopify richiesti dal runtime 1.0:
   pubblicare i prodotti attivi secondo la policy canali dello shop;
 - `read_files`, `write_files` per riallineare media prodotto e rimuovere media
   precedenti gestiti da SyncBay.
-- `read_orders` per ricevere `orders/paid` nella custom app privata e creare job
-  prioritari `UPDATE_EBAY_STOCK`.
+- `read_orders` per ricevere `orders/create`, `orders/paid` e
+  `orders/cancelled` nella custom app privata e creare job prioritari
+  `UPDATE_EBAY_STOCK`.
 - `write_orders` per creare una prova automatica controllata via Admin
   `orderCreate` sullo store pilota Numisleo; se manca dalla sessione offline, riaprire e
   autorizzare l'app Shopify dopo il deploy degli scope aggiornati.

@@ -124,8 +124,8 @@ quando Shopify non è più allineato all'ultimo valore scritto da SyncBay.
 - marketplace supportato: eBay.it;
 - distribuzione privata per uno o pochi clienti selezionati;
 - niente App Store pubblico, billing pubblico o support policy pubblica;
-- nessun exporter Shopify -> eBay, salvo aggiornamento disponibilità eBay da
-  ordini Shopify pagati;
+- nessun exporter Shopify -> eBay, salvo aggiornamento disponibilità eBay dal
+  ciclo ordine Shopify;
 - nessun rollback self-service prodotto-per-prodotto: recovery manuale tramite
   snapshot, report e strumenti interni;
 - cambio handle/URL non automatico: richiede riga esplicita e redirect.
@@ -162,7 +162,7 @@ evitare che SyncBay applichi un piano calcolato su dati già cambiati.
 - URL prodotto preservati o redirect presenti quando approvati;
 - collezioni automatiche ancora alimentate dai campi corretti;
 - sync automatico eBay -> Shopify attivo al target concordato;
-- job `orders/paid` -> eBay stock pronti e monitorati;
+- job ciclo ordine Shopify -> eBay stock pronti e monitorati;
 - conflitti critici assenti prima del go-live.
 
 ### Se SyncBay segnala eccezioni

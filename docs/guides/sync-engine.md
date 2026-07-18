@@ -39,17 +39,23 @@ Se Shopify cambia manualmente un campo controllato da eBay o SyncBay, aprire con
 
 Default:
 
-- trigger: ordine Shopify pagato;
+- trigger principale: ordine Shopify creato e inventario impegnato;
+- recupero: ordine pagato, idempotente sulla stessa riga;
+- ripristino: ordine annullato, solo se Shopify ha restituito la scorta;
 - update eBay prioritario tramite job `UPDATE_EBAY_STOCK`;
 - retry con backoff;
 - alert critico se fallisce;
 - stock buffer configurabile;
 - modalità prudente se lo stock non è affidabile.
 
-Nella custom app privata il webhook `orders/paid` salva solo riferimenti
-prodotto/variante e quantità, poi il runner usa Trading API
+Nella custom app privata i webhook `orders/create`, `orders/paid` e
+`orders/cancelled` salvano solo riferimenti prodotto/variante e quantità, poi
+il runner usa Trading API
 `ReviseInventoryStatus` con ItemID e SKU del mapping SyncBay per ridurre la
-disponibilità eBay.
+disponibilità eBay. `orders/paid` recupera un eventuale evento di creazione
+perso senza applicare due volte la stessa riga. L'annullamento rilegge prima le
+quantità live Shopify ed eBay e non ripristina oltre il livello precedente
+all'ordine né se Shopify non ha restituito inventario. Vedi ADR 0022.
 
 ## Sync incrementale
 
