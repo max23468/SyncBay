@@ -32,7 +32,7 @@ forzare installazioni o downgrade dentro la repo.
 
 | Area                        | Tool                                    |
 | --------------------------- | --------------------------------------- |
-| Shopify app                 | Shopify CLI `4.4.0`                     |
+| Shopify app                 | Shopify CLI `4.5.2`                     |
 | Shopify Admin/Webhook API   | `2026-07`                               |
 | Frontend/backend app        | React Router, React, TypeScript, Vite   |
 | Hosting previsto            | Vercel                                  |
@@ -47,7 +47,11 @@ forzare installazioni o downgrade dentro la repo.
 ## Aggiornamenti automatici
 
 Dependabot è abilitato per npm e GitHub Actions, ma i major accoppiati restano
-manuali quando la catena peer o il runtime non sono già compatibili. In
+manuali quando la catena peer o il runtime non sono già compatibili. Le PR
+Dependabot patch e minor vengono messe in auto-merge squash: GitHub le unisce
+solo dopo il superamento dei check obbligatori della ruleset di `main`. Una CI
+fallita, un conflitto, un major o una PR modificata manualmente richiedono
+intervento umano; non viene applicata alcuna auto-approvazione. In
 particolare React Router 8 non deve essere aperto come bump parziale: SyncBay
 usa il preset `@vercel/react-router` e la versione `1.3.1` dichiara peer su
 React Router 7. La migrazione a React Router 8 va quindi fatta in una branch

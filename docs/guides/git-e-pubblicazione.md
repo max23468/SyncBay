@@ -11,7 +11,8 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Branch predefinito: `main`.
 - Issue e PR template configurati in `.github/`.
 - Workflow `Codex PR comments` configurato per mantenere la issue `Codex feedback inbox`.
-- Dependabot configurato per GitHub Actions e npm.
+- Dependabot configurato per GitHub Actions e npm, con auto-merge squash delle
+  sole PR patch/minor dopo i check obbligatori di `main`.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, `Verifica proporzionata` e dal check

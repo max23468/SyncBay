@@ -75,6 +75,34 @@ test("PR title validation reruns cheaply for every title-related PR event", () =
   assert.doesNotMatch(source, /github\.event\.changes\.title/);
 });
 
+test("Dependabot auto-merges only patch and minor updates through branch gates", () => {
+  const source = readWorkflow("dependabot-automerge.yml");
+
+  assert.match(source, /pull_request:/);
+  assert.match(source, /dependabot\[bot\]/);
+  assert.match(source, /contents:\s*write/);
+  assert.match(source, /pull-requests:\s*write/);
+  assert.match(source, /dependabot\/fetch-metadata@[a-f0-9]{40}/);
+  assert.match(source, /version-update:semver-patch/);
+  assert.match(source, /version-update:semver-minor/);
+  assert.doesNotMatch(source, /version-update:semver-major/);
+  assert.match(source, /gh pr merge --auto --squash/);
+  assert.doesNotMatch(source, /actions\/checkout/);
+});
+
+test("CI workflows use the current Node and cache action majors", () => {
+  for (const name of [
+    "ci.yml",
+    "codex-pr-comments.yml",
+    "react-doctor.yml",
+    "ui-browser-check.yml",
+  ]) {
+    assert.match(readWorkflow(name), /actions\/setup-node@v7/);
+  }
+
+  assert.match(readWorkflow("ui-browser-check.yml"), /actions\/cache@v6/);
+});
+
 test("Codex inbox uses one daily refresh and ignores ordinary issues", () => {
   const source = readWorkflow("codex-pr-comments.yml");
 

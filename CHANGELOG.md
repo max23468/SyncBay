@@ -13,6 +13,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   serializzazione/prezzo già equivalenti. Il render SSR disattiva inoltre il
   WebSocket di Vite quando non serve, eliminando l'avviso non bloccante sul
   server senza alterare la verifica browser con hydration.
+- Aggiornati il plugin ESLint React a `5.17.1`, Shopify CLI a `4.5.2`,
+  `actions/setup-node` alla major 7 e `actions/cache` alla major 6. React Router
+  8, TypeScript 7 e i tipi Node 26 restano esclusi perché richiedono migrazioni
+  dedicate.
+- Dependabot mette ora in auto-merge squash gli aggiornamenti patch e minor di
+  npm e GitHub Actions; la ruleset di `main` continua a richiedere CI
+  proporzionata e titolo Conventional Commit. Major, conflitti, check falliti e
+  PR modificate manualmente restano soggetti a valutazione umana.
 - Vitest (`4.1.10`, pinnato con `@vitest/coverage-v8`) è l'unico runner di test
   del repository: sostituisce `node --test` per `app/lib` e i test tooling, e
   `tsx --test` per `app/services`. Un'unica `vitest.config.ts` raccoglie i 139

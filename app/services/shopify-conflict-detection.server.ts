@@ -495,13 +495,14 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
             lastSyncBayValue: values?.baseline ?? Prisma.JsonNull,
             shopifyValue: values?.shopify ?? Prisma.JsonNull,
           };
-          // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
           if (existing)
+            // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
             await prisma.syncConflict.update({
               data,
               where: { id: existing.id },
             });
           else
+            // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
             await prisma.syncConflict.create({
               data: {
                 ...data,
