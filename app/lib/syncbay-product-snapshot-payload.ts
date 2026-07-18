@@ -1,5 +1,6 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
-import { isSafeHttpUrl } from "./safe-http-url";
+// Estensione esplicita: gli script CLI importano questo modulo con Node ESM.
+import { isSafeHttpUrl } from "./safe-http-url.ts";
 import type {
   SyncBayProductFacet,
   SyncBayProductFacetKey,

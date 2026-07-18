@@ -8,6 +8,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- La CI PR esegue `verify:changed` su ogni corsia: la corsia docs-only si
+  fermava a `git diff --check` e non installava le dipendenze, quindi
+  `format:check` non veniva mai eseguito nel check richiesto.
+- L'auto-merge Dependabot passa a `pull_request_target`: sugli eventi
+  `pull_request` di Dependabot il `GITHUB_TOKEN` è read-only e non può abilitare
+  l'auto-merge. Il job non fa checkout e non esegue codice della PR.
+- `app/lib/syncbay-product-snapshot-payload.ts` importa `safe-http-url` con
+  estensione esplicita: senza, `npm run facets:backfill` falliva all'avvio
+  perché Node ESM richiede l'estensione negli import relativi.
 - `npm run format:check` entra in tutte le corsie di `verify:changed` e
   `verify:full`, docs inclusa: Prettier era introdotto ma il suo controllo non
   era eseguito da nessun gate né dalla CI, quindi la formattazione poteva
@@ -89,6 +98,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - La configurazione React Doctor `latest` tratta anche `app/routes/app.tsx`
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
+
+## [1.0.78] — 2026-07-18
+
+### Correzioni
+
+- Il dedupe dello stock eBay generato dagli ordini usa il marker durevole dello
+  snapshot invece della finestra dei job recenti: un ordine pagato molto dopo la
+  creazione non sottrae più due volte la stessa riga.
+- Un ordine annullato con più righe sullo stesso listing eBay torna alla
+  quantità precedente all'ordine. Il tetto di ripristino è ora quello
+  dell'ordine e non il pre-decremento della singola riga, che lasciava le righe
+  successive bloccate un'unità sotto.
 
 ## [1.0.77] — 2026-07-18
 
@@ -3911,6 +3932,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.78]: #1078--2026-07-18
 [1.0.77]: #1077--2026-07-18
 [1.0.76]: #1076--2026-07-17
 [1.0.75]: #1075--2026-07-16
