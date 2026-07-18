@@ -8,10 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Correzioni
 
+- Gli ordini Shopify proteggono subito la disponibilità eBay: `orders/create`
+  sottrae lo stock impegnato anche con pagamento in attesa, `orders/paid` resta
+  un recupero idempotente e `orders/cancelled` ripristina solo quantità
+  verificate live su entrambi i provider. Gli aggiornamenti generati dagli
+  ordini vengono riallineati alla baseline invece di restare falsi conflitti.
 - I topic webhook Shopify in formato enum preservano gli underscore del nome
-  risorsa: `INVENTORY_LEVELS_UPDATE` viene ora instradato come
-  `inventory_levels/update`, così gli aggiornamenti inventario accodano il
-  controllo conflitti previsto invece di restare solo nell'audit.
+  risorsa: `INVENTORY_LEVELS_UPDATE` viene instradato correttamente come
+  `inventory_levels/update`.
 
 ### Non versionato
 

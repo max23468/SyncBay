@@ -3,7 +3,9 @@ import { selectShopifyOrderCurrency } from "./syncbay-stock-guard";
 export const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",
   "app/scopes_update",
+  "orders/create",
   "orders/paid",
+  "orders/cancelled",
   "products/update",
   "inventory_levels/update",
 ] as const;
@@ -20,10 +22,11 @@ export function normalizeShopifyWebhookTopic(topic: string) {
 }
 
 export function getShopifyWebhookJobPayload(topic: string, payload: unknown) {
-  if (topic === "orders/paid") {
+  if (["orders/create", "orders/paid", "orders/cancelled"].includes(topic)) {
     return {
       orderCurrency: extractShopifyOrderCurrency(payload),
       lineItems: extractShopifyOrderLineItems(payload),
+      stockAction: topic === "orders/cancelled" ? "restore" : "decrement",
     };
   }
 
@@ -40,6 +43,9 @@ function extractShopifyOrderLineItems(payload: unknown) {
   if (!payload || typeof payload !== "object") return [];
 
   const record = payload as Record<string, unknown>;
+  const orderId =
+    getStringField(record, "admin_graphql_api_id") ??
+    getStringField(record, "id");
   const rawLineItems = Array.isArray(record.line_items)
     ? record.line_items
     : [];
@@ -59,7 +65,7 @@ function extractShopifyOrderLineItems(payload: unknown) {
       {
         lineItemKey:
           lineItemId ??
-          `${productId ?? "no-product"}:${variantId ?? "no-variant"}:${index}`,
+          `${orderId ?? "no-order"}:${productId ?? "no-product"}:${variantId ?? "no-variant"}:${index}`,
         quantity,
         shopifyProductGid: productId
           ? `gid://shopify/Product/${productId}`

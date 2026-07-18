@@ -132,7 +132,8 @@ Scope iniziali previsti:
 - `write_locations`
 - `read_publications`
 - `write_publications`
-- `read_orders` per il webhook `orders/paid`, da attivare solo dopo
+- `read_orders` per i webhook `orders/create`, `orders/paid` e
+  `orders/cancelled`, da attivare solo dopo
   approvazione Shopify protected customer data per la protezione disponibilità.
 - `write_orders` per la prova automatica controllata del trigger ordine pagato
   via Admin `orderCreate` sullo store pilota Numisleo, da mantenere solo se resta necessario
@@ -146,7 +147,8 @@ Webhook Shopify 1.0:
 
 - app uninstall, per cleanup e revoca token.
 - inventory level update come trigger iniziale non-customer-data per aggiornare disponibilità eBay.
-- order paid o order created come trigger futuro, dopo configurazione Shopify protected customer data.
+- order created come protezione stock immediata, order paid come fallback
+  idempotente e order cancelled come ripristino prudente (ADR 0022).
 - product update, per rilevare modifiche manuali e aprire conflitti.
 
 ### eBay

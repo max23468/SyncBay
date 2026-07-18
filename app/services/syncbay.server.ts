@@ -2847,7 +2847,8 @@ export function extractWebhookResourceId(payload: unknown) {
 }
 
 function getPlaceholderJobType(topic: string) {
-  if (topic === "orders/paid") return SyncJobType.UPDATE_EBAY_STOCK;
+  if (["orders/create", "orders/paid", "orders/cancelled"].includes(topic))
+    return SyncJobType.UPDATE_EBAY_STOCK;
   if (topic === "products/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
   if (topic === "inventory_levels/update")
     return SyncJobType.DETECT_SHOPIFY_CHANGES;

@@ -34,6 +34,9 @@ Usa un ADR quando una scelta:
 - `0019-cadenza-cron-runner.md`: cadenza Supabase Cron del runner ogni 2 minuti con target sync minimo a 120 s, sostituita da ADR 0021.
 - `0020-1-0-custom-privata-catalogo-esistente.md`: perimetro 1.0 custom privata e collegamento di cataloghi Shopify esistenti senza funzioni Numisleo-specifiche.
 - `0021-cadenza-cron-e-target-risparmio-egress.md`: cadenza Supabase Cron ogni 5 minuti e target sync configurabile 5-30 minuti in modalità risparmio egress.
+- `0022-stock-ebay-su-ciclo-ordine-shopify.md`: decremento eBay alla creazione
+  ordine, fallback idempotente al pagamento e ripristino prudente
+  all'annullamento.
 
 ## Convenzioni
 

@@ -29,8 +29,8 @@ Finché OAuth e account deletion non sono verificati su un nuovo runtime o ambie
 | Shopify CLI                | Collegata            | `shopify.app.toml` collegato all'app `SyncBay`.                                               |
 | App URL locale/provvisoria | Provider creato      | Vercel project `syncbay`; dev preview verificata via Shopify CLI.                             |
 | Redirect URL OAuth         | Definito per Shopify | `https://syncbay.vercel.app/auth/callback` nel manifest 1.0 privata.                          |
-| Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità da ordini pagati nella custom app privata. |
-| Webhook minimi             | Configurati          | Include `orders/paid`, `products/update` e `inventory_levels/update`.                         |
+| Scopes iniziali            | Definiti             | Include `read_orders` per protezione disponibilità dal ciclo ordine nella custom app privata. |
+| Webhook minimi             | Configurati          | Include ciclo ordine, `products/update` e `inventory_levels/update`.                          |
 
 ### App e URL
 
@@ -80,7 +80,8 @@ Da verificare durante l'evoluzione runtime:
 - mantenere `read_files` e `write_files` solo finché SyncBay riallinea media
   prodotto e rimuove media precedenti gestiti da SyncBay;
 - mantenere `write_locations` solo se SyncBay gestisce davvero rename o metadati della location dal runtime app;
-- `read_orders` serve per il webhook `orders/paid` nella custom app privata;
+- `read_orders` serve per `orders/create`, `orders/paid` e `orders/cancelled`
+  nella custom app privata;
 - `write_orders` serve solo per generare una prova automatica `orderCreate`
   via Admin API sullo store pilota Numisleo e richiede reautorizzazione dello store dopo il
   deploy della nuova configurazione scope;
@@ -96,15 +97,17 @@ Bozza minima:
 | ---------------------- | -------------------------------------------------------------------------------- |
 | App uninstall          | Fermare sync, revocare accessi, gestire cleanup.                                 |
 | Inventory level update | Trigger iniziale per rilevare variazioni quantità senza protected customer data. |
-| Order paid             | Ridurre disponibilità eBay dopo vendita Shopify nella custom app privata.        |
+| Order create           | Ridurre subito eBay quando Shopify impegna la disponibilità.                     |
+| Order paid             | Recuperare in modo idempotente un evento di creazione perso.                     |
+| Order cancelled        | Ripristinare solo stock effettivamente restituito e verificato.                  |
 | Product update         | Rilevare modifiche manuali Shopify e aprire conflitti.                           |
 | GDPR/compliance topics | Necessari prima di app pubblica e per gestione dati.                             |
 
 Default 1.0:
 
-- trigger stock principale: ordine pagato;
+- trigger stock principale: ordine creato;
+- fallback ordine pagato e ripristino prudente su annullamento (ADR 0022);
 - trigger variazione inventario: rilevare conflitti Shopify;
-- opzione futura/aggressiva: ordine creato;
 - app-specific subscriptions via configurazione Shopify CLI quando supportato;
 - fallback GraphQL Admin API se la subscription deve dipendere dallo shop.
 

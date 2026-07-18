@@ -109,3 +109,36 @@ test("does not match lines without a stable line item key", () => {
     false,
   );
 });
+
+test("does not dedupe a cancellation restore against its earlier decrement", () => {
+  const results = [
+    {
+      updated: [
+        {
+          ebayItemId: "168056372240",
+          lineItemKey: "line-1",
+          stockAction: "decrement",
+        },
+      ],
+    },
+  ];
+
+  assert.equal(
+    hasProcessedStockLineInJobResults({
+      action: "restore",
+      ebayItemId: "168056372240",
+      lineItemKey: "line-1",
+      results,
+    }),
+    false,
+  );
+  assert.equal(
+    hasProcessedStockLineInJobResults({
+      action: "decrement",
+      ebayItemId: "168056372240",
+      lineItemKey: "line-1",
+      results,
+    }),
+    true,
+  );
+});

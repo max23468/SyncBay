@@ -118,6 +118,10 @@ import {
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
+  getShopifyOrderStockAction,
+  getShopifyOrderStockTarget,
+} from "../lib/syncbay-order-stock";
+import {
   isEbayStockDryRunEnabled,
   isPositiveShopifyOrderQuantity,
   shouldDryRunEbayStockLine,
@@ -130,7 +134,10 @@ import {
   getEbayTradingCatalogImportPlan,
   getEbayTradingSellerEventsDelta,
 } from "./ebay-trading-preview.server";
-import { reviseEbayTradingInventoryQuantity } from "./ebay-trading-stock.server";
+import {
+  getEbayTradingAvailableQuantity,
+  reviseEbayTradingInventoryQuantity,
+} from "./ebay-trading-stock.server";
 import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
 import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 import {
@@ -2635,6 +2642,9 @@ async function updateShopifyVariantPricingOnly(
 
 async function runUpdateEbayStockJob(job: DueSyncJob) {
   const lineItems = getOrderLineItems(job.payload);
+  const stockAction = getShopifyOrderStockAction(
+    getJsonObject(job.payload)?.stockAction,
+  );
 
   if (lineItems.length === 0) {
     throw new Error("Job stock eBay senza righe ordine Shopify.");
@@ -2644,6 +2654,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const stockDryRun = isEbayStockDryRunEnabled(
     process.env.SYNCBAY_EBAY_STOCK_DRY_RUN,
   );
+  const shopDomain = job.shop.shopDomain;
   let accessToken: string | null = null;
   const planned: Prisma.JsonObject[] = [];
   const updated: Prisma.JsonObject[] = [];
@@ -2700,13 +2711,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     const lineDryRun = shouldDryRunEbayStockLine({
       allowlist: process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST,
       ebayItemId: mapping.ebayItemId,
-      shopDomain: job.shop.shopDomain,
+      shopDomain,
       shopifyVariantGid: mapping.shopifyVariantGid,
       stockDryRunEnabled: stockDryRun,
     });
 
     if (
       await hasCompletedStockUpdateForLine({
+        action: stockAction,
         ebayItemId: mapping.ebayItemId,
         includeDryRunPlans: lineDryRun,
         job,
@@ -2734,6 +2746,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     });
     const latestSnapshot =
       selectLatestStockBaselineSnapshot(latestStockSnapshots);
+    const reservationSnapshot =
+      stockAction === "restore"
+        ? await findOrderStockReservationSnapshot({
+            lineItemKey: lineItem.lineItemKey,
+            mappingId: mapping.id,
+            shopId: job.shopId,
+          })
+        : null;
     const latestSkuPolicySnapshot = await prisma.productSnapshot.findFirst({
       orderBy: { capturedAt: "desc" },
       where: {
@@ -2761,8 +2781,82 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
-    const previousQuantity = latestSnapshot?.quantity ?? 0;
-    const nextQuantity = Math.max(0, previousQuantity - lineItem.quantity);
+    const previousQuantity =
+      stockAction === "restore"
+        ? getJsonNumber(
+            getJsonObject(reservationSnapshot?.payload)?.previousQuantity,
+          )
+        : (latestSnapshot?.quantity ?? 0);
+
+    if (stockAction === "restore" && previousQuantity === null) {
+      skipped.push({
+        ebayItemId: mapping.ebayItemId,
+        lineItemKey: lineItem.lineItemKey,
+        quantity: lineItem.quantity,
+        reason: "order_decrement_not_found",
+        stockAction,
+      });
+      continue;
+    }
+
+    let ebayAvailableQuantity: number | null = null;
+    let shopifyAvailableQuantity: number | null = null;
+    if (stockAction === "restore") {
+      accessToken ??= (await getUsableEbayAccessToken(connection)).accessToken;
+      if (!accessToken) {
+        throw new Error("Token eBay non disponibile per verificare lo stock.");
+      }
+      ebayAvailableQuantity = await getEbayTradingAvailableQuantity({
+        accessToken,
+        connection,
+        itemId: mapping.ebayItemId,
+        sku: mapping.sku,
+        skuGenerated: getSnapshotSkuGenerated(latestSkuPolicySnapshot?.payload),
+      });
+      shopifyAvailableQuantity = await getLiveShopifyQuantityForMapping({
+        defaultLocationGid: job.shop.defaultLocationGid,
+        shopDomain,
+        shopifyProductGid: mapping.shopifyProductGid,
+        shopifyVariantGid: mapping.shopifyVariantGid,
+      });
+    }
+    const nextQuantity = getShopifyOrderStockTarget({
+      action: stockAction,
+      ebayAvailableQuantity,
+      orderQuantity: lineItem.quantity,
+      previousQuantity: previousQuantity ?? 0,
+      shopifyAvailableQuantity,
+    });
+
+    if (nextQuantity === null) {
+      skipped.push({
+        ebayAvailableQuantity,
+        ebayItemId: mapping.ebayItemId,
+        lineItemKey: lineItem.lineItemKey,
+        quantity: lineItem.quantity,
+        reason: "restore_quantity_not_verifiable",
+        shopifyAvailableQuantity,
+        stockAction,
+      });
+      continue;
+    }
+
+    if (
+      stockAction === "restore" &&
+      ebayAvailableQuantity !== null &&
+      nextQuantity <= ebayAvailableQuantity
+    ) {
+      skipped.push({
+        ebayAvailableQuantity,
+        ebayItemId: mapping.ebayItemId,
+        lineItemKey: lineItem.lineItemKey,
+        quantity: lineItem.quantity,
+        reason: "no_stock_returned_by_shopify",
+        shopifyAvailableQuantity,
+        stockAction,
+      });
+      continue;
+    }
 
     if (lineDryRun) {
       planned.push({
@@ -2774,6 +2868,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         orderedQuantity: lineItem.quantity,
         previousQuantity,
         reason: "stock_dry_run_enabled",
+        stockAction,
       });
       continue;
     }
@@ -2805,9 +2900,14 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       mappingId: mapping.id,
       payload: {
         ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
-        previousQuantity,
+        previousQuantity:
+          stockAction === "restore" ? ebayAvailableQuantity : previousQuantity,
         orderLineItemKey: lineItem.lineItemKey,
-        reason: "shopify_order_paid",
+        ...(stockAction === "restore"
+          ? { orderPreviousQuantity: previousQuantity }
+          : {}),
+        reason: getShopifyOrderStockReason(job.payload, stockAction),
+        stockAction,
         syncJobId: job.id,
         updatedEbayFromShopifyOrder: true,
       } satisfies Prisma.JsonObject,
@@ -2834,7 +2934,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         mappingId: mapping.id,
         mappingStatus: mapping.status,
         nextQuantity,
-        shopDomain: job.shop.shopDomain,
+        shopDomain,
         shopId: job.shopId,
         shopifyProductGid: mapping.shopifyProductGid,
         shopifyVariantGid: mapping.shopifyVariantGid,
@@ -2860,6 +2960,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         : "stock_dry_run_disabled",
       resolvedQuantityConflictCleanupError,
       resolvedQuantityConflicts,
+      stockAction,
     });
   }
 
@@ -3994,6 +4095,7 @@ async function findProductMappingForOrderLine(
 }
 
 async function hasCompletedStockUpdateForLine(input: {
+  action: "decrement" | "restore";
   ebayItemId: string;
   includeDryRunPlans: boolean;
   job: DueSyncJob;
@@ -4043,6 +4145,7 @@ async function hasCompletedStockUpdateForLine(input: {
   });
 
   return hasProcessedStockLineInJobResults({
+    action: input.action,
     ebayItemId: input.ebayItemId,
     includeDryRunPlans: input.includeDryRunPlans,
     lineItemKey: input.lineItem.lineItemKey,
@@ -4052,6 +4155,79 @@ async function hasCompletedStockUpdateForLine(input: {
       return result ? [result] : [];
     }),
   });
+}
+
+async function findOrderStockReservationSnapshot(input: {
+  lineItemKey: string | null;
+  mappingId: string;
+  shopId: string;
+}) {
+  if (!input.lineItemKey) return null;
+
+  return prisma.productSnapshot.findFirst({
+    orderBy: { capturedAt: "desc" },
+    where: {
+      AND: [
+        {
+          payload: {
+            path: ["orderLineItemKey"],
+            equals: input.lineItemKey,
+          },
+        },
+        {
+          payload: {
+            path: ["updatedEbayFromShopifyOrder"],
+            equals: true,
+          },
+        },
+        {
+          OR: [
+            { payload: { path: ["stockAction"], equals: "decrement" } },
+            { payload: { path: ["reason"], equals: "shopify_order_created" } },
+            { payload: { path: ["reason"], equals: "shopify_order_paid" } },
+          ],
+        },
+      ],
+      mappingId: input.mappingId,
+      shopId: input.shopId,
+      source: ProductSnapshotSource.SYNCBAY,
+    },
+  });
+}
+
+function getShopifyOrderStockReason(
+  payload: Prisma.JsonValue | null,
+  action: "decrement" | "restore",
+) {
+  if (action === "restore") return "shopify_order_cancelled";
+  return getStringFromPayload(payload, "topic") === "orders/create"
+    ? "shopify_order_created"
+    : "shopify_order_paid";
+}
+
+async function getLiveShopifyQuantityForMapping(input: {
+  defaultLocationGid: string | null;
+  shopDomain: string;
+  shopifyProductGid: string | null;
+  shopifyVariantGid: string | null;
+}) {
+  if (!input.shopifyProductGid) return null;
+
+  const admin = await getShopifyAdminGraphqlClient(input.shopDomain);
+  const product = await getShopifyProductForConflict(
+    admin,
+    input.shopifyProductGid,
+    input.defaultLocationGid,
+    { preferredVariantGid: input.shopifyVariantGid },
+  );
+
+  return product
+    ? getLiveShopifyQuantityForConflict(
+        product,
+        Boolean(input.defaultLocationGid),
+        input.shopifyVariantGid,
+      )
+    : null;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
