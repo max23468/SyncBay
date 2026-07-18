@@ -163,6 +163,13 @@ contratto proporzionato al rischio ed esegui `npm run test:runtime`.
 `npm run build` esegue `npm run prisma:generate` tramite `prebuild`, mantenendo
 il Prisma Client allineato allo schema anche nei deploy con cache installazione.
 
+I test `app/lib` e `app/services` girano su Vitest (`vitest run <percorso>`);
+un'unica `vitest.config.ts` raccoglie `app/**/*.test.ts`, mentre i test tooling
+`scripts/*.test.mjs` restano sul runner nativo `node --test`. L'auto-discovery
+di Vitest elimina il gap dei glob per cui i test fuori pattern andavano lanciati
+a mano, e la risoluzione TypeScript di Vitest rimuove il vincolo sui value-import
+cross-lib che rompeva il vecchio `node --test`.
+
 I comandi standalone `build`, `typecheck` e `test:services` mantengono la
 generazione Prisma preventiva. `npm run verify:full` genera invece Prisma una
 sola volta e usa le varianti interne `*:raw`; esegue i test tooling, usa

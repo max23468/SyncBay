@@ -8,6 +8,22 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Migrati i test `app/lib` e `app/services` da `node --test`/`tsx --test` a
+  Vitest (`4.1.10`, pinnato con `@vitest/coverage-v8`): un'unica
+  `vitest.config.ts` raccoglie `app/**/*.test.ts` e `coverage:lib` usa la
+  coverage v8 mantenendo le soglie `>=75%` linee e `>=65%` branch. I 116 file
+  di test passano da `node:test` a `import { test } from "vitest"` mantenendo
+  `node:assert/strict`. Gli script `test:lib`, `test:services:raw`,
+  `coverage:lib` e `test:stock-guard` conservano i nomi, quindi le corsie di
+  `verify:changed`/`verify:full`, il baseline worktree e la self-review
+  restano invariati. I test tooling `scripts/*.test.mjs` restano su
+  `node --test`. Cadono due vincoli documentati: i value-import cross-lib non
+  rompono più i test e l'auto-discovery elimina il gap dei glob per cui i test
+  fuori pattern andavano lanciati a mano. `tsx` resta come runner di
+  `ui:render`, `ui:check` e `history:maintain`.
+- Escluso `supabase/.temp` da Prettier: era gitignorato solo dal `.gitignore`
+  annidato in `supabase/`, che Prettier non legge, e su un checkout con
+  Supabase CLI linkata `format:check` usciva 1.
 - `publish:complete` legge ora i file di una PR tramite l'API paginata
   (`gh api repos/{owner}/{repo}/pulls/<n>/files --paginate --jq '.[].filename'`)
   invece di `gh pr diff --name-only`, che andava in HTTP 406 oltre i 300 file

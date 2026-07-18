@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import * as backfillModule from "./syncbay-description-backfill.ts";
 import * as cleanupModule from "./syncbay-description-cleanup.ts";
