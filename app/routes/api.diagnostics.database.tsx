@@ -1,11 +1,11 @@
 import type { LoaderFunctionArgs } from "react-router";
 
 import { buildDatabaseRuntimeDiagnostics } from "../lib/syncbay-database-runtime-diagnostics";
-import { verifyInternalAppSecret } from "../lib/syncbay-internal-auth";
+import { requireInternalAppSecret } from "../lib/syncbay-internal-auth";
 import { buildPrismaRuntimeDatabaseUrl } from "../lib/prisma-runtime-url";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  requireInternalAppSecret(request);
+  requireInternalAppSecret(request, process.env.APP_SECRET);
 
   return Response.json({
     ok: true,
@@ -25,15 +25,3 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }),
   });
 };
-
-function requireInternalAppSecret(request: Request) {
-  const result = verifyInternalAppSecret({
-    authorization: request.headers.get("authorization"),
-    expectedSecret: process.env.APP_SECRET,
-    headerSecret: request.headers.get("x-syncbay-app-secret"),
-  });
-
-  if (!result.ok) {
-    throw new Response(result.message, { status: result.status });
-  }
-}

@@ -1,6 +1,7 @@
 import type { EbayConnection } from "@prisma/client";
 import { XMLParser } from "fast-xml-parser";
 
+import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import { getEbayStorefrontMetadata } from "../lib/syncbay-ebay-storefront";
 import { buildExistingCatalogPreviewMetadata } from "../lib/syncbay-existing-catalog-preview";
 import { parseEbayTradingItemSpecifics } from "../lib/syncbay-product-facets";
@@ -837,39 +838,11 @@ function normalizePositiveInteger(value: number) {
   return Number.isInteger(value) && value > 0 ? value : 1;
 }
 
-function escapeXml(value: string) {
+export function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&apos;");
-}
-
-async function mapWithConcurrency<Input, Output>(
-  items: Input[],
-  concurrency: number,
-  mapper: (item: Input, index: number) => Promise<Output>,
-) {
-  const results = new Array<Output>(items.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, items.length);
-
-  const runNext = (): Promise<void> => {
-    const currentIndex = nextIndex;
-    nextIndex += 1;
-
-    if (currentIndex >= items.length) {
-      return Promise.resolve();
-    }
-
-    return mapper(items[currentIndex], currentIndex).then((result) => {
-      results[currentIndex] = result;
-      return runNext();
-    });
-  };
-
-  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
-
-  return results;
 }

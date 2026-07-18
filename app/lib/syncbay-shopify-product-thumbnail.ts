@@ -1,3 +1,5 @@
+import { isSafeHttpUrl } from "./safe-http-url";
+
 export function getShopifyProductThumbnailUrl(value: unknown) {
   const product = getObject(value);
   const media = getObject(product?.media);
@@ -20,7 +22,7 @@ export function getShopifyProductThumbnailUrl(value: unknown) {
       getString(image?.url),
       getString(previewImage?.url),
     ]) {
-      if (candidate && isSafeImageUrl(candidate)) return candidate;
+      if (candidate && isSafeHttpUrl(candidate)) return candidate;
     }
   }
 
@@ -35,18 +37,4 @@ function getObject(value: unknown) {
 
 function getString(value: unknown) {
   return typeof value === "string" ? value : null;
-}
-
-function isSafeImageUrl(value: string) {
-  try {
-    const url = new URL(value);
-
-    return (
-      (url.protocol === "https:" || url.protocol === "http:") &&
-      !url.username &&
-      !url.password
-    );
-  } catch {
-    return false;
-  }
 }

@@ -16,6 +16,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { chunkArray } from "../lib/chunk-array";
 import { recordProductSnapshotsInTransaction } from "./product-history.server";
 import { mergeProductDisplayBaselineWithSnapshot } from "../lib/syncbay-product-baseline";
 import {
@@ -211,13 +212,6 @@ const SHOPIFY_WEBHOOK_TOPICS = [
 ];
 
 export async function getOverviewState(
-  session: ShopifySessionLike,
-  trace?: SyncBayLoaderPerformanceTrace,
-) {
-  return getDashboardState(session, trace);
-}
-
-async function getDashboardState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
@@ -3079,16 +3073,6 @@ function buildCatalogImportBatchIdempotencyKey(input: {
     .slice(0, 20);
 
   return `catalog-import-batch:${input.shopId}:${hash}`;
-}
-
-export function chunkArray<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-
-  return chunks;
 }
 
 function getSyncTargetSeconds() {

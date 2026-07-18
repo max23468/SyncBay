@@ -13,6 +13,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { chunkArray } from "../lib/chunk-array";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { parseExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
@@ -57,7 +58,10 @@ import {
 } from "../lib/syncbay-ebay-rate-limit";
 import { isPricingOnlySyncJobPayload } from "../lib/syncbay-pricing-rule-sync";
 import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
-import { getProductFacetBaselineFromSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import {
+  getProductFacetBaselineFromSnapshotPayload,
+  serializeProductFacet,
+} from "../lib/syncbay-product-snapshot-payload";
 import { buildSnapshotPricingSourcesByItemId } from "../lib/syncbay-pricing-source";
 import {
   buildPriceConflictValue,
@@ -129,13 +133,12 @@ import {
 import { reviseEbayTradingInventoryQuantity } from "./ebay-trading-stock.server";
 import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
 import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
-import type {
-  ImportPreviewListingCandidate,
-  ImportPreviewItem,
-  ImportPreviewResult,
-  ImportPreviewSummary,
+import {
+  buildImportPreview,
+  summarizePreviewItems,
+  type ImportPreviewListingCandidate,
+  type ImportPreviewResult,
 } from "./import-preview.server";
-import { buildImportPreview } from "./import-preview.server";
 import {
   executeShopifyCatalogImport,
   markShopifyProductSoldOut,
@@ -1351,18 +1354,6 @@ function getJobCompletionTime(
   return job ? (job.finishedAt ?? job.createdAt) : null;
 }
 
-function chunkArray<T>(items: T[], size: number) {
-  if (size <= 0) return [items];
-
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-
-  return chunks;
-}
-
 function dedupePreviewCandidates(candidates: ImportPreviewListingCandidate[]) {
   const candidatesById = new Map<string, ImportPreviewListingCandidate>();
 
@@ -2476,16 +2467,6 @@ function buildProductFacetBaselineSnapshotPayload(input: {
     productFacets: input.facetSync.baselineFacets.map(serializeProductFacet),
     syncJobId: input.jobId,
   } satisfies Prisma.JsonObject;
-}
-
-function serializeProductFacet(facet: SyncBayProductFacet) {
-  return {
-    key: facet.key,
-    label: facet.label,
-    namespace: facet.namespace,
-    type: facet.type,
-    value: facet.value,
-  };
 }
 
 function buildFacetOnlyWarnings(input: {
@@ -3873,24 +3854,6 @@ function filterPreviewResultByItemIds(
     ...previewResult,
     items,
     summary: summarizePreviewItems(items),
-  };
-}
-
-function summarizePreviewItems(
-  items: ImportPreviewItem[],
-): ImportPreviewSummary {
-  return {
-    errorCount: items.filter((item) => item.status === "error").length,
-    importableCount: items.filter((item) => item.status === "importable")
-      .length,
-    skippedCount: items.filter((item) => item.status === "skipped").length,
-    totalCount: items.length,
-    warningCount: items.reduce(
-      (total, item) =>
-        total +
-        item.issues.filter((issue) => issue.severity === "warning").length,
-      0,
-    ),
   };
 }
 

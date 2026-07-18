@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
-import { verifyInternalAppSecret } from "../lib/syncbay-internal-auth";
+import { requireInternalAppSecret } from "../lib/syncbay-internal-auth";
 import {
   buildShopifyAdminDiagnosticsProductQuery,
   normalizeShopifyAdminDiagnosticsProductInput,
@@ -8,7 +8,7 @@ import {
 import { getShopifyAdminGraphqlClient } from "../services/shopify-admin-session.server";
 
 export const loader = async ({ request, url }: LoaderFunctionArgs) => {
-  requireInternalAppSecret(request);
+  requireInternalAppSecret(request, process.env.APP_SECRET);
 
   const { shopDomain } = normalizeDiagnosticsProductInput(
     {
@@ -51,7 +51,7 @@ export const loader = async ({ request, url }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  requireInternalAppSecret(request);
+  requireInternalAppSecret(request, process.env.APP_SECRET);
 
   const payload = await request.json().catch(() => {
     throw new Response("JSON diagnostica Shopify non valido.", { status: 400 });
@@ -94,18 +94,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     shopDomain: input.shopDomain,
   });
 };
-
-function requireInternalAppSecret(request: Request) {
-  const result = verifyInternalAppSecret({
-    authorization: request.headers.get("authorization"),
-    expectedSecret: process.env.APP_SECRET,
-    headerSecret: request.headers.get("x-syncbay-app-secret"),
-  });
-
-  if (!result.ok) {
-    throw new Response(result.message, { status: result.status });
-  }
-}
 
 function getOptionalFallbackShopDomain() {
   return process.env.SHOPIFY_DEV_STORE?.trim() ?? "";

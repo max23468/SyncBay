@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import {
   getImportedProductsLabel,
   normalizeImportProductStatus,
@@ -42,6 +43,7 @@ import {
 import {
   buildEbayProductSnapshotPayload,
   getProductSnapshotThumbnailUrl,
+  serializeProductFacet,
 } from "../lib/syncbay-product-snapshot-payload";
 import { shouldCreateProductSnapshot } from "../lib/syncbay-product-snapshot-dedupe";
 import {
@@ -3404,16 +3406,6 @@ function shouldPersistProductFacetBaseline(
   );
 }
 
-function serializeProductFacet(facet: SyncBayProductFacet) {
-  return {
-    key: facet.key,
-    label: facet.label,
-    namespace: facet.namespace,
-    type: facet.type,
-    value: facet.value,
-  };
-}
-
 function buildSyncBayProductSnapshot(input: {
   draftProduct: ShopifyDraftProductInput;
   importProductStatus: ImportProductStatus;
@@ -3769,34 +3761,6 @@ function dedupeImageUrls(imageUrls: string[]) {
   return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
     Boolean,
   );
-}
-
-async function mapWithConcurrency<Input, Output>(
-  items: Input[],
-  concurrency: number,
-  mapper: (item: Input, index: number) => Promise<Output>,
-) {
-  const results = new Array<Output>(items.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, items.length);
-
-  const runNext = (): Promise<void> => {
-    const currentIndex = nextIndex;
-    nextIndex += 1;
-
-    if (currentIndex >= items.length) {
-      return Promise.resolve();
-    }
-
-    return mapper(items[currentIndex], currentIndex).then((result) => {
-      results[currentIndex] = result;
-      return runNext();
-    });
-  };
-
-  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
-
-  return results;
 }
 
 function getImportablePreviewItems(previewResult: ImportPreviewResult) {

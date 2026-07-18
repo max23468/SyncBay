@@ -1,3 +1,5 @@
+import { getPageWindow } from "./syncbay-pagination";
+
 export type ImportPreviewWindowFilter =
   "all" | "error" | "imported" | "importing" | "ready" | "reimport";
 
@@ -82,31 +84,4 @@ function filterPreviewItems<Item extends WindowablePreviewItem>(
   if (filter === "all") return items;
 
   return [];
-}
-
-function getPageWindow(input: {
-  page: number;
-  pageSize: number;
-  totalRows: number;
-}) {
-  const pageSize =
-    Number.isInteger(input.pageSize) && input.pageSize > 0
-      ? input.pageSize
-      : 25;
-  const totalRows = Math.max(0, input.totalRows);
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
-  const page = Math.min(Math.max(1, input.page), totalPages);
-  const offset = (page - 1) * pageSize;
-  const currentStart = totalRows === 0 ? 0 : offset + 1;
-  const currentEnd = Math.min(offset + pageSize, totalRows);
-
-  return {
-    currentEnd,
-    currentStart,
-    offset,
-    page,
-    pageSize,
-    totalPages,
-    totalRows,
-  };
 }

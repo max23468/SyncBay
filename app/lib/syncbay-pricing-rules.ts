@@ -176,7 +176,7 @@ function toMoneyCents(value: number | null) {
   return Math.round(value * 100);
 }
 
-function normalizeMoneyComparisonCents(
+export function normalizeMoneyComparisonCents(
   value: number | string | null | undefined,
 ) {
   if (value === null || value === undefined) return null;

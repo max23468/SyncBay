@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
+import { chunkArray } from "../lib/chunk-array";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { hashNullableText } from "../lib/syncbay-description-hash";
@@ -22,7 +23,6 @@ import { getDraftImportLimit } from "./shopify-draft-import.server";
 import {
   CATALOG_IMPORT_MAX_PRODUCTS,
   buildCatalogImportRunId,
-  chunkArray,
   ensureShopForSession,
   getCatalogImportBlockers,
   getEbayMarketplaceId,

@@ -3,6 +3,19 @@ import { timingSafeEqual } from "node:crypto";
 export type InternalAppSecretVerificationResult =
   { ok: true } | { ok: false; message: string; status: 401 | 503 };
 
+export function requireInternalAppSecret(
+  request: Request,
+  expectedSecret: string | undefined,
+) {
+  const result = verifyInternalAppSecret({
+    authorization: request.headers.get("authorization"),
+    expectedSecret,
+    headerSecret: request.headers.get("x-syncbay-app-secret"),
+  });
+
+  if (!result.ok) throw new Response(result.message, { status: result.status });
+}
+
 export function verifyInternalAppSecret(input: {
   authorization?: string | null;
   expectedSecret?: string | null;

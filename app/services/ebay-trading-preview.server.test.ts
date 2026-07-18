@@ -4,7 +4,11 @@ import type { EbayConnection } from "@prisma/client";
 
 import * as ebayTradingPreview from "./ebay-trading-preview.server.ts";
 
-const { getEbayTradingCatalogImportPreview } = ebayTradingPreview;
+const { escapeXml, getEbayTradingCatalogImportPreview } = ebayTradingPreview;
+
+test("escapes every XML metacharacter used in eBay requests", () => {
+  assert.equal(escapeXml(`A&B<C>D"E'F`), "A&amp;B&lt;C&gt;D&quot;E&apos;F");
+});
 
 test("builds existing catalog previews without fetching every item detail", async () => {
   const originalFetch = globalThis.fetch;

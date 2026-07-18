@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import { parseArgs as parseNodeArgs } from "node:util";
 
+import { mapWithConcurrency } from "../app/lib/map-with-concurrency.ts";
 import {
   buildDescriptionBackfillApplyFile,
   buildDescriptionBackfillApplyPlan,
@@ -716,25 +717,6 @@ async function getTradingSellerListPage(input) {
       }),
     })) ?? {}
   );
-}
-
-async function mapWithConcurrency(items, concurrency, mapper) {
-  const results = new Array(items.length);
-  let cursor = 0;
-
-  async function worker() {
-    while (cursor < items.length) {
-      const index = cursor;
-      cursor += 1;
-      results[index] = await mapper(items[index], index);
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, worker),
-  );
-
-  return results;
 }
 
 function printReport(report) {

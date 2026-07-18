@@ -1,4 +1,5 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
+import { isSafeHttpUrl } from "./safe-http-url";
 import type {
   SyncBayProductFacet,
   SyncBayProductFacetKey,
@@ -62,7 +63,7 @@ export function buildEbayProductSnapshotPayload(input: {
   };
 }
 
-function serializeProductFacet(
+export function serializeProductFacet(
   facet: SyncBayProductFacet,
 ): EbayProductSnapshotPayload {
   return {
@@ -95,7 +96,7 @@ export function getProductSnapshotThumbnailUrl(value: unknown) {
     ...getStringArray(payload?.imageUrls),
     ...getStringArray(mediaSync?.sourceImageUrls),
   ];
-  const firstImageUrl = imageUrls.find(isSafeImageUrl);
+  const firstImageUrl = imageUrls.find(isSafeHttpUrl);
   const directImageUrl = [
     payload?.imageUrl,
     payload?.thumbnailUrl,
@@ -103,7 +104,7 @@ export function getProductSnapshotThumbnailUrl(value: unknown) {
     payload?.GalleryURL,
   ]
     .map(getString)
-    .find((url): url is string => Boolean(url && isSafeImageUrl(url)));
+    .find((url): url is string => Boolean(url && isSafeHttpUrl(url)));
 
   return firstImageUrl ?? directImageUrl ?? null;
 }
@@ -134,7 +135,7 @@ export function getProductSnapshotThumbnailUrlByMappingIdFromRows(
     }
 
     const thumbnailUrl = getString(row.thumbnailUrl);
-    if (!thumbnailUrl || !isSafeImageUrl(thumbnailUrl)) continue;
+    if (!thumbnailUrl || !isSafeHttpUrl(thumbnailUrl)) continue;
 
     thumbnailUrlByMappingId.set(row.mappingId, thumbnailUrl);
   }
@@ -235,18 +236,4 @@ function getProductFacetType(
   }
 
   return null;
-}
-
-function isSafeImageUrl(value: string) {
-  try {
-    const url = new URL(value);
-
-    return (
-      (url.protocol === "https:" || url.protocol === "http:") &&
-      !url.username &&
-      !url.password
-    );
-  } catch {
-    return false;
-  }
 }
