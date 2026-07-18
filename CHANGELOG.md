@@ -8,6 +8,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- `npm run format:check` entra in tutte le corsie di `verify:changed` e
+  `verify:full`, docs inclusa: Prettier era introdotto ma il suo controllo non
+  era eseguito da nessun gate né dalla CI, quindi la formattazione poteva
+  divergere in silenzio. È il gate più economico (circa 7 secondi) ed è messo
+  per primo.
+- Reso deterministico `format:check` generalizzando `.prettierignore`. Prettier
+  legge solo la `.gitignore` di root e `.prettierignore`: non vede i
+  `.gitignore` annidati né `.git/info/exclude`, e i pattern che contengono uno
+  slash sono ancorati alla root. Le worktree degli agenti annidate nel repo
+  (`.claude/`) e i loro output generati facevano quindi uscire 1 da
+  `format:check` su `main` pulito. I pattern usano ora i prefissi `**` e
+  `.claude` è escluso: la stessa classe di problema aveva già prodotto il caso
+  puntuale `supabase/.temp`, risolto allora solo come sintomo.
 - Ridotta la duplicazione nel runtime e negli script condividendo concorrenza,
   suddivisione in blocchi, autenticazione interna, validazione URL e utility di
   serializzazione/prezzo già equivalenti. Il render SSR disattiva inoltre il

@@ -228,11 +228,20 @@ lasciata ispezionabile e il setup si riprende al suo interno con
 | Guardia stock eBay, valuta o dry-run                                        | `npm run test:stock-guard`; poi `npm run typecheck`, `npm run lint`, `npm run build`                                         |
 | Versioning/changelog runtime                                                | `npm run release:dry-run`                                                                                                    |
 
-La CI PR mantiene un unico job conclusivo: per diff docs-only esegue soltanto
-`git diff --check`; per gli altri diff esegue `verify:changed -- --no-receipt`
-e quindi soltanto test, typecheck, lint, build e smoke dedotti dalle superfici
-toccate. React Doctor resta nel workflow parallelo advisory e non viene
-duplicato nel check richiesto.
+La CI PR mantiene un unico job conclusivo: per diff docs-only esegue
+`npm run format:check` e `git diff --check`; per gli altri diff esegue
+`verify:changed -- --no-receipt` e quindi soltanto test, typecheck, lint, build
+e smoke dedotti dalle superfici toccate. React Doctor resta nel workflow
+parallelo advisory e non viene duplicato nel check richiesto.
+
+`npm run format:check` gira su ogni corsia, docs inclusa: Prettier formatta
+anche Markdown e JSON, quindi il drift può entrare da qualunque diff e nessun
+altro gate lo intercetterebbe. È il controllo più economico (circa 7 secondi)
+ed è messo per primo, così un problema banale fallisce subito. Perché resti
+deterministico, `.prettierignore` deve ripetere i percorsi che Git ignora per
+vie che Prettier non legge — `.gitignore` annidati e `.git/info/exclude` — e
+usare prefissi `**` per coprire le copie annidate del repo nelle worktree degli
+agenti.
 
 Render SSR e hydration Chromium non vengono più pagati a ogni push. Il workflow
 `UI browser check` parte manualmente o applicando la label `full-ui-check` alle

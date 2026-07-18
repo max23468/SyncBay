@@ -1,3 +1,8 @@
+# Prettier legge solo la .gitignore di root e questo file: non vede i
+# .gitignore annidati ne' .git/info/exclude. I percorsi ignorati per quelle vie
+# vanno quindi ripetuti qui, e i pattern che contengono uno slash sono ancorati
+# alla root, per cui servono i prefissi ** per coprire le copie annidate del
+# repo (worktree degli agenti).
 package.json
 package-lock.json
 .shadowenv.d
@@ -8,5 +13,8 @@ public
 .shopify
 patches
 audits
-preview/shots
-supabase/.temp
+# Worktree degli agenti annidate nel repo: contengono copie complete con il loro
+# output generato. .worktrees e' gia' nella .gitignore di root, .claude no.
+.claude
+**/preview/shots
+**/supabase/.temp
