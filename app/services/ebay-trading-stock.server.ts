@@ -1,7 +1,7 @@
 import type { EbayConnection } from "@prisma/client";
 
 import { selectEbayTradingInventorySku } from "../lib/syncbay-stock-guard";
-import { fetchTradingXml } from "./ebay-trading-preview.server";
+import { escapeXml, fetchTradingXml } from "./ebay-trading-preview.server";
 
 export async function reviseEbayTradingInventoryQuantity(input: {
   accessToken: string;
@@ -44,13 +44,4 @@ function buildReviseInventoryStatusRequest(input: {
     <Quantity>${Math.max(0, Math.floor(input.quantity))}</Quantity>
   </InventoryStatus>
 </ReviseInventoryStatusRequest>`;
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
 }

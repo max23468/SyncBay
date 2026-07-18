@@ -1,5 +1,6 @@
 import type { EbayConnection } from "@prisma/client";
 
+import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import {
   buildImportPreview,
   getEmptyImportPreview,
@@ -95,7 +96,7 @@ const INVENTORY_API_COVERAGE_NOTE =
 const TRADING_API_COVERAGE_NOTE =
   "Preview live da Trading API eBay: fallback in sola lettura per listing attivi My eBay/Seller Hub non visibili nella Inventory API.";
 
-async function getEbayInventoryImportPreview(
+export async function getEbayLiveImportPreview(
   connection: EbayConnection,
   options: { descriptionRuleMode?: DescriptionRuleMode; limit?: number } = {},
 ): Promise<EbayInventoryPreviewState> {
@@ -251,13 +252,6 @@ function getTradingCoverageNote(inventoryErrorMessage?: string | null) {
   }
 
   return `${TRADING_API_COVERAGE_NOTE} Inventory API non ha restituito prodotti importabili nella prima pagina.`;
-}
-
-export async function getEbayLiveImportPreview(
-  connection: EbayConnection,
-  options: { descriptionRuleMode?: DescriptionRuleMode; limit?: number } = {},
-) {
-  return getEbayInventoryImportPreview(connection, options);
 }
 
 async function fetchInventoryItems(input: {
@@ -445,34 +439,6 @@ function getPublicPreviewErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
 
   return "Lettura Inventory API eBay non riuscita.";
-}
-
-async function mapWithConcurrency<Input, Output>(
-  items: Input[],
-  concurrency: number,
-  mapper: (item: Input) => Promise<Output>,
-) {
-  const results = new Array<Output>(items.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(concurrency, items.length);
-
-  const runNext = (): Promise<void> => {
-    const currentIndex = nextIndex;
-    nextIndex += 1;
-
-    if (currentIndex >= items.length) {
-      return Promise.resolve();
-    }
-
-    return mapper(items[currentIndex]).then((result) => {
-      results[currentIndex] = result;
-      return runNext();
-    });
-  };
-
-  await Promise.all(Array.from({ length: workerCount }, () => runNext()));
-
-  return results;
 }
 
 function normalizeText(value: string | null | undefined) {

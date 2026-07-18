@@ -1,3 +1,5 @@
+import { selectShopifyOrderCurrency } from "./syncbay-stock-guard";
+
 export function getShopifyWebhookJobPayload(topic: string, payload: unknown) {
   if (topic === "orders/paid") {
     return {
@@ -65,26 +67,6 @@ function extractShopifyOrderCurrency(payload: unknown) {
     presentmentMoneyCurrency: getStringField(presentmentMoney, "currency_code"),
     shopMoneyCurrency: getStringField(shopMoney, "currency_code"),
   });
-}
-
-function selectShopifyOrderCurrency(input: {
-  currency?: string | null;
-  presentmentCurrency?: string | null;
-  presentmentMoneyCurrency?: string | null;
-  shopMoneyCurrency?: string | null;
-}) {
-  return (
-    normalizeCurrency(input.presentmentCurrency) ??
-    normalizeCurrency(input.presentmentMoneyCurrency) ??
-    normalizeCurrency(input.currency) ??
-    normalizeCurrency(input.shopMoneyCurrency)
-  );
-}
-
-function normalizeCurrency(value: string | null | undefined) {
-  const normalized = value?.trim().toUpperCase();
-
-  return normalized || null;
 }
 
 function extractShopifyInventoryItemGid(payload: unknown) {

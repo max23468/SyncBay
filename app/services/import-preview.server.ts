@@ -429,7 +429,7 @@ function getPreviewIssues(
   return issues;
 }
 
-function summarizePreviewItems(
+export function summarizePreviewItems(
   items: ImportPreviewItem[],
 ): ImportPreviewSummary {
   return {

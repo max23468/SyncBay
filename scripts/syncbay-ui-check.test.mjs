@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { test } from "vitest";
 
 import {
@@ -45,6 +46,45 @@ for (const page of ["panoramica", "importazione"]) {
     assert.equal(result.status, 0, result.stderr);
   });
 }
+
+test("SSR fixture does not start Vite WebSocket on the default port", async () => {
+  const portBlocker = createServer();
+  let ownsPort = false;
+  await new Promise((resolve, reject) => {
+    portBlocker.once("error", (error) => {
+      if (error.code === "EADDRINUSE") resolve();
+      else reject(error);
+    });
+    portBlocker.listen(24678, () => {
+      ownsPort = true;
+      resolve();
+    });
+  });
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "scripts/syncbay-ui-render.mjs",
+        "panoramica",
+        "--fixture",
+        "--check",
+      ],
+      { encoding: "utf8", env: buildIsolatedUiEnv(contaminatedEnv) },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(result.stderr, /WebSocket server error|EADDRINUSE/);
+  } finally {
+    if (ownsPort) {
+      await new Promise((resolve, reject) => {
+        portBlocker.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  }
+});
 
 test("isolated UI env excludes every provider and database sentinel", () => {
   const isolatedEnv = buildIsolatedUiEnv(contaminatedEnv);

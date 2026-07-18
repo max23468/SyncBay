@@ -1,5 +1,6 @@
 import {
   calculateShopifyPricing,
+  normalizeMoneyComparisonCents,
   type PriceRoundingMode,
 } from "./syncbay-pricing-rules.ts";
 import {
@@ -51,22 +52,25 @@ export function getAlignedPriceConflictRepair(input: {
   }
 
   const compareAtPrice = formatShopifyMoney(pricing.compareAtPriceAmount);
-  const expectedPriceCents = normalizeMoneyCents(price);
-  const expectedCompareAtPriceCents = normalizeMoneyCents(compareAtPrice);
+  const expectedPriceCents = normalizeMoneyComparisonCents(price);
+  const expectedCompareAtPriceCents =
+    normalizeMoneyComparisonCents(compareAtPrice);
   const shopifyValue = getPriceConflictValue(input.shopifyValue);
   const latestSyncBayValue = getPriceConflictValue(input.latestSyncBayValue);
 
   if (
-    normalizeMoneyCents(shopifyValue?.amount) !== expectedPriceCents ||
-    normalizeMoneyCents(shopifyValue?.compareAtPrice) !==
+    normalizeMoneyComparisonCents(shopifyValue?.amount) !==
+      expectedPriceCents ||
+    normalizeMoneyComparisonCents(shopifyValue?.compareAtPrice) !==
       expectedCompareAtPriceCents
   ) {
     return null;
   }
 
   if (
-    normalizeMoneyCents(latestSyncBayValue?.amount) === expectedPriceCents &&
-    normalizeMoneyCents(latestSyncBayValue?.compareAtPrice) ===
+    normalizeMoneyComparisonCents(latestSyncBayValue?.amount) ===
+      expectedPriceCents &&
+    normalizeMoneyComparisonCents(latestSyncBayValue?.compareAtPrice) ===
       expectedCompareAtPriceCents
   ) {
     return null;
@@ -143,17 +147,7 @@ function getMoneyValue(value: unknown) {
 }
 
 function formatShopifyMoney(value: number | string | null | undefined) {
-  const cents = normalizeMoneyCents(value);
+  const cents = normalizeMoneyComparisonCents(value);
 
   return cents === null ? null : (cents / 100).toFixed(2);
-}
-
-function normalizeMoneyCents(value: number | string | null | undefined) {
-  if (value === null || value === undefined) return null;
-
-  const amount = typeof value === "number" ? value : Number(value.trim());
-
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-
-  return Math.round(amount * 100);
 }

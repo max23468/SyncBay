@@ -11,6 +11,5 @@ export function getEmbeddedNoStoreHeaders(headers: HeadersInit = {}) {
   return noStoreHeaders;
 }
 
-export const embeddedNoStoreHeaders: HeadersFunction = (headersArgs) => {
-  return getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));
-};
+export const embeddedNoStoreHeaders: HeadersFunction = (headersArgs) =>
+  getEmbeddedNoStoreHeaders(boundary.headers(headersArgs));

@@ -513,12 +513,4 @@ function getCandidateKey(product: ShopifyMatchCandidate) {
   return `${product.productGid}:${product.variantGid ?? product.sku ?? ""}`;
 }
 
-function chunkArray<T>(values: T[], size: number) {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < values.length; index += size) {
-    chunks.push(values.slice(index, index + size));
-  }
-
-  return chunks;
-}
+import { chunkArray } from "../lib/chunk-array";

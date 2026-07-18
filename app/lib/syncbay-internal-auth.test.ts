@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { verifyInternalAppSecret } from "./syncbay-internal-auth.ts";
+import {
+  requireInternalAppSecret,
+  verifyInternalAppSecret,
+} from "./syncbay-internal-auth.ts";
 
 test("rejects internal requests when APP_SECRET is not configured", () => {
   assert.deepEqual(
@@ -65,5 +68,17 @@ test("rejects wrong or missing internal secrets with a generic error", () => {
       status: 401,
       message: "Non autorizzato.",
     },
+  );
+});
+
+test("enforces the shared internal request boundary", () => {
+  const request = new Request("https://syncbay.test/internal", {
+    headers: { authorization: "Bearer test-secret" },
+  });
+
+  assert.doesNotThrow(() => requireInternalAppSecret(request, "test-secret"));
+  assert.throws(
+    () => requireInternalAppSecret(request, "wrong-secret"),
+    (error) => error instanceof Response && error.status === 401,
   );
 });

@@ -180,7 +180,11 @@ const vite = await createServer({
   root,
   appType: "custom",
   configFile: join(root, "scripts/vite.ui-render.config.ts"),
-  server: { middlewareMode: true, hmr: false },
+  server: {
+    hmr: false,
+    middlewareMode: true,
+    ws: hydrateMode ? undefined : false,
+  },
   logLevel: "error",
 });
 

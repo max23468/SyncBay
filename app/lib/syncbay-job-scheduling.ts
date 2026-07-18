@@ -218,16 +218,6 @@ function normalizeMaxItems(maxItems: number) {
   return maxItems;
 }
 
-function chunkArray<T>(items: T[], size: number) {
-  const chunks: T[][] = [];
-
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
-  }
-
-  return chunks;
-}
-
 function getStringField(value: unknown, key: string) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
@@ -303,3 +293,4 @@ function sortJsonValue(value: unknown): unknown {
       .map(([key, field]) => [key, sortJsonValue(field)]),
   );
 }
+import { chunkArray } from "./chunk-array";
