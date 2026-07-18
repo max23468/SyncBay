@@ -15,8 +15,9 @@ test("CI classifies the diff and runs only targeted blocking gates", () => {
   assert.match(source, /fetch-depth:\s*0/);
   assert.match(source, /id:\s*lane/);
   assert.match(source, /syncbay-verify\.mjs classify/);
-  assert.match(source, /steps\.lane\.outputs\.lane == 'docs'/);
-  assert.match(source, /git diff --check/);
+  // I gate non devono essere condizionati alla corsia: altrimenti un diff
+  // docs-only salterebbe `format:check`, che nessun altro check intercetta.
+  assert.doesNotMatch(source, /steps\.lane\.outputs\.lane ==/);
   assert.match(
     source,
     /npm run verify:changed -- --base .* --no-receipt --without-advisory-gates --without-ui-gates/,
@@ -78,7 +79,8 @@ test("PR title validation reruns cheaply for every title-related PR event", () =
 test("Dependabot auto-merges only patch and minor updates through branch gates", () => {
   const source = readWorkflow("dependabot-automerge.yml");
 
-  assert.match(source, /pull_request:/);
+  // Serve l'evento scrivibile: su `pull_request` Dependabot ha token read-only.
+  assert.match(source, /pull_request_target:/);
   assert.match(source, /dependabot\[bot\]/);
   assert.match(source, /contents:\s*write/);
   assert.match(source, /pull-requests:\s*write/);

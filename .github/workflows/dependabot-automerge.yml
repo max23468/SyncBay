@@ -1,7 +1,10 @@
 name: Dependabot auto-merge
 
+# `pull_request_target` è necessario: sugli eventi `pull_request` di Dependabot
+# il GITHUB_TOKEN è read-only e non può abilitare l'auto-merge. Il job non fa
+# checkout né esegue codice della PR, quindi non espone il token elevato.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize]
     branches:
       - main

@@ -44,21 +44,17 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
           node scripts/syncbay-verify.mjs classify --base "$base" >> "$GITHUB_OUTPUT"
 
-      - name: Verifica documentazione
-        if: steps.lane.outputs.lane == 'docs'
-        run: git diff --check "${{ steps.lane.outputs.base }}"
-
       - name: Setup Node
-        if: steps.lane.outputs.lane == 'runtime'
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
 
       - name: Install dipendenze deterministico
-        if: steps.lane.outputs.lane == 'runtime'
         run: npm ci
 
+      # Nessun gate condizionato alla corsia qui: la corsia la sceglie
+      # `verify:changed`, che per i diff docs-only esegue `format:check` e
+      # `git diff --check`. La classificazione sopra resta per la diagnostica.
       - name: Verifica i gate pertinenti al diff
-        if: steps.lane.outputs.lane == 'runtime'
         run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --no-receipt --without-advisory-gates --without-ui-gates

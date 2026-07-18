@@ -2746,14 +2746,23 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     });
     const latestSnapshot =
       selectLatestStockBaselineSnapshot(latestStockSnapshots);
-    const reservationSnapshot =
+    // Tutte le righe dell'ordine sullo stesso mapping, non solo questa: il tetto
+    // di ripristino è la quantità eBay precedente all'ordine, altrimenti la
+    // seconda riga si fermerebbe al pre-decremento della prima.
+    const reservationSnapshots =
       stockAction === "restore"
-        ? await findOrderStockReservationSnapshot({
-            lineItemKey: lineItem.lineItemKey,
+        ? await findOrderStockReservationSnapshots({
+            lineItemKeys: lineItems.map((item) => item.lineItemKey),
             mappingId: mapping.id,
             shopId: job.shopId,
           })
-        : null;
+        : [];
+    const reservationSnapshot =
+      reservationSnapshots.find(
+        (snapshot) =>
+          getStringFromPayload(snapshot.payload, "orderLineItemKey") ===
+          lineItem.lineItemKey,
+      ) ?? null;
     const latestSkuPolicySnapshot = await prisma.productSnapshot.findFirst({
       orderBy: { capturedAt: "desc" },
       where: {
@@ -2781,11 +2790,23 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
+    const ownPreviousQuantity = getJsonNumber(
+      getJsonObject(reservationSnapshot?.payload)?.previousQuantity,
+    );
     const previousQuantity =
       stockAction === "restore"
-        ? getJsonNumber(
-            getJsonObject(reservationSnapshot?.payload)?.previousQuantity,
-          )
+        ? ownPreviousQuantity === null
+          ? null
+          : Math.max(
+              ownPreviousQuantity,
+              ...reservationSnapshots.flatMap((snapshot) => {
+                const quantity = getJsonNumber(
+                  getJsonObject(snapshot.payload)?.previousQuantity,
+                );
+
+                return quantity === null ? [] : [quantity];
+              }),
+            )
         : (latestSnapshot?.quantity ?? 0);
 
     if (stockAction === "restore" && previousQuantity === null) {
@@ -4106,11 +4127,12 @@ async function hasCompletedStockUpdateForLine(input: {
 }) {
   if (!input.lineItem.lineItemKey) return false;
 
+  // Marker durevole, non legato al job corrente: un ordine può essere pagato
+  // molto dopo la create e la finestra dei job recenti sotto non basta.
   const snapshot = await prisma.productSnapshot.findFirst({
     select: { id: true },
     where: {
       AND: [
-        { payload: { path: ["syncJobId"], equals: input.job.id } },
         {
           payload: {
             path: ["orderLineItemKey"],
@@ -4123,6 +4145,7 @@ async function hasCompletedStockUpdateForLine(input: {
             equals: true,
           },
         },
+        getOrderStockActionSnapshotFilter(input.action),
       ],
       mappingId: input.mappingId,
       shopId: input.job.shopId,
@@ -4157,22 +4180,49 @@ async function hasCompletedStockUpdateForLine(input: {
   });
 }
 
-async function findOrderStockReservationSnapshot(input: {
-  lineItemKey: string | null;
+// Gli snapshot storici precedono la chiave `stockAction`, quindi l'azione va
+// riconosciuta anche dal `reason`.
+function getOrderStockActionSnapshotFilter(action: "decrement" | "restore") {
+  return action === "restore"
+    ? {
+        OR: [
+          { payload: { path: ["stockAction"], equals: "restore" } },
+          {
+            payload: {
+              path: ["reason"],
+              equals: "shopify_order_cancelled",
+            },
+          },
+        ],
+      }
+    : {
+        OR: [
+          { payload: { path: ["stockAction"], equals: "decrement" } },
+          { payload: { path: ["reason"], equals: "shopify_order_created" } },
+          { payload: { path: ["reason"], equals: "shopify_order_paid" } },
+        ],
+      };
+}
+
+async function findOrderStockReservationSnapshots(input: {
+  lineItemKeys: (string | null)[];
   mappingId: string;
   shopId: string;
 }) {
-  if (!input.lineItemKey) return null;
+  const lineItemKeys = input.lineItemKeys.filter(
+    (lineItemKey): lineItemKey is string => Boolean(lineItemKey),
+  );
 
-  return prisma.productSnapshot.findFirst({
+  if (lineItemKeys.length === 0) return [];
+
+  return prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
     where: {
       AND: [
         {
-          payload: {
-            path: ["orderLineItemKey"],
-            equals: input.lineItemKey,
-          },
+          OR: lineItemKeys.map((lineItemKey) => ({
+            payload: { path: ["orderLineItemKey"], equals: lineItemKey },
+          })),
         },
         {
           payload: {
@@ -4180,13 +4230,7 @@ async function findOrderStockReservationSnapshot(input: {
             equals: true,
           },
         },
-        {
-          OR: [
-            { payload: { path: ["stockAction"], equals: "decrement" } },
-            { payload: { path: ["reason"], equals: "shopify_order_created" } },
-            { payload: { path: ["reason"], equals: "shopify_order_paid" } },
-          ],
-        },
+        getOrderStockActionSnapshotFilter("decrement"),
       ],
       mappingId: input.mappingId,
       shopId: input.shopId,

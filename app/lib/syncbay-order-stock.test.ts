@@ -58,6 +58,32 @@ test("restores only stock returned by Shopify and caps it at the pre-order level
   );
 });
 
+test("restores every line of a cancelled order up to the pre-order level", () => {
+  // Due righe da un pezzo sullo stesso mapping hanno decrementato 5 -> 4 -> 3.
+  // Il tetto è la quantità precedente all'ordine, non il pre-decremento della
+  // singola riga, altrimenti la seconda riga resterebbe bloccata a 4.
+  const orderPreviousQuantity = 5;
+  const firstLine = getShopifyOrderStockTarget({
+    action: "restore",
+    ebayAvailableQuantity: 3,
+    orderQuantity: 1,
+    previousQuantity: orderPreviousQuantity,
+    shopifyAvailableQuantity: 5,
+  });
+
+  assert.equal(firstLine, 4);
+  assert.equal(
+    getShopifyOrderStockTarget({
+      action: "restore",
+      ebayAvailableQuantity: firstLine,
+      orderQuantity: 1,
+      previousQuantity: orderPreviousQuantity,
+      shopifyAvailableQuantity: 5,
+    }),
+    5,
+  );
+});
+
 test("does not restore when either provider quantity cannot be verified", () => {
   assert.equal(
     getShopifyOrderStockTarget({
