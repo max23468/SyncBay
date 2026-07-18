@@ -211,14 +211,7 @@ async function runCompletePublish(args) {
     await waitForProductionDeployment({ mergeSha, repository });
     runInherited("npm", ["run", "audit:prod"]);
     // Lo status Vercel dice che il build e' finito, non che l'app risponde.
-    // `--warn-if-unconfigured`: qui siamo gia' oltre merge, tag e release, e
-    // un bypass mancante non deve interrompere una pubblicazione irreversibile.
-    runInherited("npm", [
-      "run",
-      "smoke:production",
-      "--",
-      "--warn-if-unconfigured",
-    ]);
+    runInherited("npm", ["run", "smoke:production"]);
   } else {
     console.log(
       "Deploy Vercel non applicabile: il diff non modifica il runtime.",

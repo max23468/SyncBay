@@ -1,24 +1,23 @@
 #!/usr/bin/env node
 
-// Smoke del deployment Vercel Production. Il deployment e' privato e protetto
-// da Vercel SSO: senza bypass una richiesta anonima riceve 302 verso
-// vercel.com/sso-api e lo smoke misurerebbe la protezione, non l'app.
+// Smoke del deployment Vercel Production.
 //
-// Il bypass usa l'header `x-vercel-protection-bypass` con il valore di
-// VERCEL_AUTOMATION_BYPASS_SECRET (Vercel: Project Settings > Deployment
-// Protection > Protection Bypass for Automation). Il segreto non viene mai
-// stampato.
+// Il target e' il dominio canonico dichiarato in `shopify.app.toml`
+// (`application_url` e `redirect_urls`): e' l'endpoint che Shopify ed eBay
+// chiamano davvero. L'alias di progetto `syncbay-<team>.vercel.app` e' invece
+// protetto da Vercel SSO e risponderebbe 302 verso la pagina di login, quindi
+// non e' un bersaglio valido per lo smoke.
 
 import { parseArgs as parseNodeArgs } from "node:util";
 
-const DEFAULT_BASE_URL = "https://syncbay-matteos-projects-9226d217.vercel.app";
+const DEFAULT_BASE_URL = "https://syncbay.vercel.app";
 const REQUEST_TIMEOUT_MS = 20_000;
 
 // `/app` e' embedded: a una richiesta anonima Shopify risponde con il proprio
 // boundary di autenticazione, non con la dashboard. Verificato 410 sia sul
 // deploy corrente sia sul precedente; accettiamo l'insieme degli stati di
 // boundary perche' la libreria Shopify puo' cambiarlo, mentre un 200 (rotta
-// esposta senza sessione) o un 5xx restano fallimenti veri.
+// embedded esposta senza sessione) o un 5xx restano fallimenti veri.
 const AUTH_BOUNDARY_STATUSES = [302, 401, 403, 410];
 
 export const PRODUCTION_SMOKE_CHECKS = [
@@ -46,10 +45,11 @@ export function formatSmokeResult(result) {
   return `${result.ok ? "ok" : "FALLITO"} ${result.label} (${result.path}) -> ${status}`;
 }
 
-export async function checkRoute({ baseUrl, check, secret }) {
+export async function checkRoute({ baseUrl, check }) {
   try {
     const response = await fetch(new URL(check.path, baseUrl), {
-      headers: secret ? { "x-vercel-protection-bypass": secret } : {},
+      // Senza `manual` un redirect verso una pagina di login o di errore
+      // verrebbe seguito e lo smoke leggerebbe 200 al posto dello stato reale.
       redirect: "manual",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -69,11 +69,11 @@ export async function checkRoute({ baseUrl, check, secret }) {
   }
 }
 
-export async function runProductionSmoke({ baseUrl, secret }) {
+export async function runProductionSmoke({ baseUrl }) {
   const results = [];
 
   for (const check of PRODUCTION_SMOKE_CHECKS) {
-    const result = await checkRoute({ baseUrl, check, secret });
+    const result = await checkRoute({ baseUrl, check });
     results.push(result);
     console.log(formatSmokeResult(result));
   }
@@ -84,34 +84,10 @@ export async function runProductionSmoke({ baseUrl, secret }) {
 async function runCli(args) {
   const baseUrl =
     args.baseUrl || process.env.SYNCBAY_SMOKE_BASE_URL || DEFAULT_BASE_URL;
-  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET?.trim();
 
   console.log(`Smoke production SyncBay: ${baseUrl}`);
-  console.log(
-    `Bypass protezione Vercel: ${secret ? "configurato" : "assente"}`,
-  );
 
-  if (!secret) {
-    // Senza segreto ogni rotta risponderebbe con il redirect SSO: uno smoke che
-    // "passa" cosi' sarebbe una falsa conferma, quindi non si esegue mai.
-    const message =
-      "VERCEL_AUTOMATION_BYPASS_SECRET non impostata: senza bypass lo smoke " +
-      "misurerebbe la protezione Vercel e non l'app. Genera il segreto in " +
-      "Vercel (Project Settings > Deployment Protection > Protection Bypass " +
-      "for Automation) ed esportalo nell'ambiente.";
-
-    // In `publish:complete` lo smoke gira dopo merge, tag e release: li' un
-    // exit 1 lascerebbe una pubblicazione gia' irreversibile a meta'. Meglio
-    // dichiarare forte la verifica mancante e lasciare chiudere il flusso.
-    if (args.warnIfUnconfigured) {
-      console.warn(`SMOKE PRODUCTION NON ESEGUITO. ${message}`);
-      return;
-    }
-
-    throw new Error(message);
-  }
-
-  const { failures, ok } = await runProductionSmoke({ baseUrl, secret });
+  const { failures, ok } = await runProductionSmoke({ baseUrl });
 
   if (!ok) {
     throw new Error(
@@ -126,16 +102,10 @@ async function runCli(args) {
 function parseArgs(rawArgs) {
   const { values } = parseNodeArgs({
     args: rawArgs,
-    options: {
-      "base-url": { type: "string" },
-      "warn-if-unconfigured": { type: "boolean" },
-    },
+    options: { "base-url": { type: "string" } },
   });
 
-  return {
-    baseUrl: values["base-url"],
-    warnIfUnconfigured: Boolean(values["warn-if-unconfigured"]),
-  };
+  return { baseUrl: values["base-url"] };
 }
 
 if (import.meta.main) {

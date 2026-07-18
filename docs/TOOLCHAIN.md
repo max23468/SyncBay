@@ -104,7 +104,7 @@ cancellati.
 | Formattazione Prettier         | `npm run format` (applica) / `npm run format:check` (verifica)                                                   |
 | Build                          | `npm run build`                                                                                                  |
 | Smoke UI                       | `npm run smoke:ui`                                                                                               |
-| Smoke deployment Production    | `npm run smoke:production` (richiede `VERCEL_AUTOMATION_BYPASS_SECRET`)                                          |
+| Smoke deployment Production    | `npm run smoke:production`                                                                                       |
 | Render UI fixture isolato      | `npm run ui:check`                                                                                               |
 | Browser UI fixture isolato     | `npm run ui:browser-check`                                                                                       |
 | Misura performance loader      | `npm run perf:loaders -- --since 10m`                                                                            |

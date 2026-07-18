@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 
 import {
@@ -17,6 +19,26 @@ function withStubbedFetch(handler, run) {
     globalThis.fetch = original;
   }
 }
+
+test("lo smoke punta al dominio canonico dichiarato a Shopify", () => {
+  // L'alias di progetto Vercel e' protetto da SSO: puntarlo li' farebbe passare
+  // il gate mentre il dominio che Shopify ed eBay chiamano davvero e' rotto.
+  const source = fs.readFileSync(
+    fileURLToPath(new URL("./syncbay-production-smoke.mjs", import.meta.url)),
+    "utf8",
+  );
+  const appToml = fs.readFileSync(
+    fileURLToPath(new URL("../shopify.app.toml", import.meta.url)),
+    "utf8",
+  );
+  const applicationUrl = appToml.match(/application_url = "([^"]+)"/)[1];
+
+  assert.match(
+    source,
+    new RegExp(`DEFAULT_BASE_URL = "${applicationUrl}"`),
+    `Il default dello smoke deve restare ${applicationUrl}.`,
+  );
+});
 
 test("la dashboard embedded accetta il boundary auth e rifiuta una rotta esposta", () => {
   const dashboard = PRODUCTION_SMOKE_CHECKS.find(
@@ -52,7 +74,7 @@ test("una sola rotta fuori contratto fa fallire lo smoke", () => {
   );
 });
 
-test("la richiesta porta il bypass e non segue i redirect", async () => {
+test("la richiesta non segue i redirect", async () => {
   let seen = null;
   const result = await withStubbedFetch(
     (url, options) => {
@@ -64,17 +86,12 @@ test("la richiesta porta il bypass e non segue i redirect", async () => {
       checkRoute({
         baseUrl: "https://esempio.vercel.app",
         check: { expected: [200], label: "landing", path: "/" },
-        secret: "segreto-di-test",
       }),
   );
 
   assert.equal(seen.url, "https://esempio.vercel.app/");
-  assert.equal(
-    seen.options.headers["x-vercel-protection-bypass"],
-    "segreto-di-test",
-  );
-  // Senza `manual` il redirect SSO verrebbe seguito e lo smoke leggerebbe 200
-  // dalla pagina di login Vercel invece dello stato reale della rotta.
+  // Senza `manual` un redirect verso login o errore verrebbe seguito e lo smoke
+  // leggerebbe 200 invece dello stato reale della rotta.
   assert.equal(seen.options.redirect, "manual");
   assert.equal(result.ok, true);
 });
@@ -86,7 +103,6 @@ test("uno stato fuori contratto viene riportato come fallimento", async () => {
       checkRoute({
         baseUrl: "https://esempio.vercel.app",
         check: { expected: [200], label: "landing", path: "/" },
-        secret: "segreto-di-test",
       }),
   );
 
