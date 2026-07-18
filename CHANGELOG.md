@@ -8,6 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Completata la migrazione a Vitest anche per i 23 test tooling
+  (`scripts/*.test.mjs` e `.github/scripts/*.test.mjs`, 125 test): `node --test`
+  non è più usato da nessuna corsia e Vitest resta l'unico runner del
+  repository. `test:tooling` diventa `vitest run scripts/`, un filtro che
+  copre entrambe le cartelle. `testTimeout` sale a 60s perché questi test
+  lanciano subprocess per fixture: il più lento impiega circa 15 secondi contro
+  il default Vitest di 5, e due test da 2-3 secondi sarebbero diventati flaky
+  su un runner CI carico; `node --test` non applicava alcun timeout.
 - Migrati i test `app/lib` e `app/services` da `node --test`/`tsx --test` a
   Vitest (`4.1.10`, pinnato con `@vitest/coverage-v8`): un'unica
   `vitest.config.ts` raccoglie `app/**/*.test.ts` e `coverage:lib` usa la

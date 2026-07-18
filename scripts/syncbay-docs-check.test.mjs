@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import test from "node:test";
+import { test } from "vitest";
 import { checkDocs } from "./syncbay-docs-check.mjs";
 
 test("docs check catches broken links and unknown npm scripts", () => {
