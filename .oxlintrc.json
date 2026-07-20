@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "react", "jsx-a11y", "typescript"],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "globals": {
+    "shopify": "readonly"
+  },
+  "categories": {
+    "correctness": "error"
+  },
+  "settings": {
+    "jsx-a11y": {
+      "components": {
+        "Form": "form"
+      }
+    }
+  },
+  "rules": {
+    "jsx-a11y/prefer-tag-over-role": "off"
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "build",
+    "public/build",
+    "prisma/generated",
+    "audits",
+    ".react-router",
+    ".shopify",
+    ".vercel",
+    ".worktrees"
+  ]
+}

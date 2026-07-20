@@ -9,7 +9,7 @@ import {
 } from "./syncbay-verify.mjs";
 
 // La corsia docs resta leggera ma include il controllo di formattazione:
-// Prettier formatta anche Markdown, quindi un diff docs-only puo' introdurre
+// oxfmt formatta anche Markdown, quindi un diff docs-only puo' introdurre
 // drift che nessun altro gate intercetterebbe.
 test("keeps docs-only changes on lightweight checks including formatting", () => {
   const plan = buildVerificationPlan({

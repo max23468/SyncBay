@@ -19,7 +19,7 @@ const NON_DEPLOY_ROOT_FILES = new Set([
   "README.md",
   "SECURITY.md",
   "doctor.config.json",
-  "eslint.config.mjs",
+  ".oxlintrc.json",
   "shopify.app.toml",
   "shopify.web.toml",
 ]);

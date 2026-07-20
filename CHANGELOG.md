@@ -8,6 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Migrata la toolchain di qualità da ESLint/Prettier a oxlint/oxfmt. `npm run
+  lint` usa oxlint (config `.oxlintrc.json`, plugin import/react/jsx-a11y/
+  typescript); `npm run format` e `format:check` usano oxfmt. Rimosse 11
+  devDependency ESLint/Prettier e `eslint.config.mjs`. Due cali di copertura
+  noti e accettati: oxlint non ha le regole `react-hooks`
+  (`rules-of-hooks`/`exhaustive-deps`) e oxfmt non formatta i `.json`. I nomi
+  degli script restano invariati, quindi `verify:changed`, `verify:full` e la CI
+  non cambiano interfaccia.
 - Nuovo `npm run smoke:production`: verifica che il deployment Vercel Production
   risponda davvero, non solo che il build sia concluso. `publish:complete` lo
   esegue dopo `audit:prod` quando il diff tocca il runtime. Il target è il

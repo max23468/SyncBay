@@ -50,7 +50,7 @@ test("React Doctor runs only for runtime and frontend paths", () => {
   assert.match(source, /paths:/);
   assert.match(source, /app\/\*\*\/\*\.tsx/);
   assert.match(source, /package-lock\.json/);
-  assert.match(source, /eslint\.config\.mjs/);
+  assert.match(source, /\.oxlintrc\.json/);
   assert.match(source, /version:\s*latest/);
   assert.doesNotMatch(source, /ready_for_review/);
   assert.doesNotMatch(source, /^\s*push:\s*$/m);

@@ -100,8 +100,8 @@ cancellati.
 | Installazione                  | `npm install`                                                                                                    |
 | Sviluppo Shopify               | `npm run dev`                                                                                                    |
 | Typecheck                      | `npm run typecheck`                                                                                              |
-| Lint                           | `npm run lint`                                                                                                   |
-| Formattazione Prettier         | `npm run format` (applica) / `npm run format:check` (verifica)                                                   |
+| Lint (oxlint)                  | `npm run lint`                                                                                                   |
+| Formattazione oxfmt            | `npm run format` (applica) / `npm run format:check` (verifica)                                                   |
 | Build                          | `npm run build`                                                                                                  |
 | Smoke UI                       | `npm run smoke:ui`                                                                                               |
 | Smoke deployment Production    | `npm run smoke:production`                                                                                       |
@@ -235,14 +235,14 @@ La CI PR mantiene un unico job conclusivo: per diff docs-only esegue
 e smoke dedotti dalle superfici toccate. React Doctor resta nel workflow
 parallelo advisory e non viene duplicato nel check richiesto.
 
-`npm run format:check` gira su ogni corsia, docs inclusa: Prettier formatta
-anche Markdown e JSON, quindi il drift può entrare da qualunque diff e nessun
-altro gate lo intercetterebbe. È il controllo più economico (circa 7 secondi)
-ed è messo per primo, così un problema banale fallisce subito. Perché resti
-deterministico, `.prettierignore` deve ripetere i percorsi che Git ignora per
-vie che Prettier non legge — `.gitignore` annidati e `.git/info/exclude` — e
-usare prefissi `**` per coprire le copie annidate del repo nelle worktree degli
-agenti.
+`npm run format:check` gira su ogni corsia, docs inclusa: oxfmt formatta anche
+Markdown, CSS e TOML oltre a JS/TS, quindi il drift può entrare da qualunque
+diff e nessun altro gate lo intercetterebbe. È il controllo più economico
+(oxfmt processa l'intero repo in ~1,3 secondi) ed è messo per primo, così un
+problema banale fallisce subito. oxfmt rispetta `.gitignore` nativamente, quindi
+non serve un file di ignore dedicato. Nota di copertura: oxfmt non formatta i
+`.json` (a differenza di Prettier); il drift di formattazione JSON non è più
+intercettato da questo gate.
 
 Render SSR e hydration Chromium non vengono più pagati a ogni push. Il workflow
 `UI browser check` parte manualmente o applicando la label `full-ui-check` alle
