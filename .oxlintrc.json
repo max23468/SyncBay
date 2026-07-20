@@ -20,7 +20,8 @@
     }
   },
   "rules": {
-    "jsx-a11y/prefer-tag-over-role": "off"
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn"
   },
   "ignorePatterns": [
     "node_modules",

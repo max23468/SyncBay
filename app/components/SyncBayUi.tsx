@@ -190,6 +190,7 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
       aria-label={ariaLabel}
       className="syncbay-reliability__spark"
       height={height}
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto, non convertibile in <img> senza perdere il theming CSS var */
       role="img"
       viewBox={`0 0 ${width} ${height}`}
       width={width}
@@ -602,6 +603,7 @@ export function EbayMark() {
     <svg
       aria-label="eBay"
       height="15"
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- logo SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto */
       role="img"
       viewBox="0 0 1000 400.75"
       width="37"
@@ -632,6 +634,7 @@ export function ShopifyMark() {
     <svg
       aria-label="Shopify"
       height="24"
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- logo SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto */
       role="img"
       viewBox="0 0 24 24"
       width="24"
