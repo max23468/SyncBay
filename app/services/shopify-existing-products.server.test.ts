@@ -8,10 +8,7 @@ const { loadExistingShopifyProductsForMatching } = shopifyExistingProducts;
 test("loads existing Shopify products across pages up to the requested limit", async () => {
   const calls: Array<Record<string, unknown> | undefined> = [];
   const admin = {
-    async graphql(
-      _query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(_query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push(options?.variables);
       const pageIndex = calls.length;
 
@@ -71,11 +68,7 @@ test("loads existing Shopify products across pages up to the requested limit", a
   );
   assert.deepEqual(
     products.map((product) => product.productGid),
-    [
-      "gid://shopify/Product/1",
-      "gid://shopify/Product/2",
-      "gid://shopify/Product/3",
-    ],
+    ["gid://shopify/Product/1", "gid://shopify/Product/2", "gid://shopify/Product/3"],
   );
   assert.equal(products[0]?.title, "Moneta argento");
   assert.equal(products[0]?.handle, "moneta-1001");
@@ -90,10 +83,7 @@ test("loads existing Shopify products across pages up to the requested limit", a
 test("counts the Shopify limit by product nodes instead of variant candidates", async () => {
   const calls: Array<Record<string, unknown> | undefined> = [];
   const admin = {
-    async graphql(
-      _query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(_query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push(options?.variables);
 
       return jsonResponse({
@@ -135,11 +125,7 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
   );
   assert.deepEqual(
     products.map((product) => product.productGid),
-    [
-      "gid://shopify/Product/1",
-      "gid://shopify/Product/1",
-      "gid://shopify/Product/2",
-    ],
+    ["gid://shopify/Product/1", "gid://shopify/Product/1", "gid://shopify/Product/2"],
   );
   assert.deepEqual(
     products.map((product) => product.sku),
@@ -150,10 +136,7 @@ test("counts the Shopify limit by product nodes instead of variant candidates", 
 test("allows existing catalog matching scans above the private eBay import cap", async () => {
   const calls: Array<Record<string, unknown> | undefined> = [];
   const admin = {
-    async graphql(
-      _query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(_query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push(options?.variables);
       const first = Number(options?.variables?.first ?? 0);
       const start = (calls.length - 1) * first;
@@ -191,10 +174,7 @@ test("allows existing catalog matching scans above the private eBay import cap",
 
 test("caps variant candidates per product before matching", async () => {
   const admin = {
-    async graphql(
-      _query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(_query: string, options?: { variables?: Record<string, unknown> }) {
       const variantLimit = Number(options?.variables?.variantFirst ?? 0);
 
       return jsonResponse({
@@ -305,13 +285,9 @@ test("counts only Shopify image media for takeover matching", async () => {
 });
 
 test("loads targeted Shopify variants by SKU hints outside the product scan window", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
-    [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
-    async graphql(
-      query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push({ query, variables: options?.variables });
 
       if (query.includes("productVariants")) {
@@ -381,13 +357,9 @@ test("loads targeted Shopify variants by SKU hints outside the product scan wind
 });
 
 test("can prefer targeted SKU hints before a bounded fallback product scan", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
-    [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
-    async graphql(
-      query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push({ query, variables: options?.variables });
 
       if (query.includes("productVariants")) {

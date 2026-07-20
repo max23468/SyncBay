@@ -12,7 +12,7 @@ on:
       - "react-router.config.ts"
       - "vite.config.ts"
       - "tsconfig.json"
-      - "eslint.config.mjs"
+      - ".oxlintrc.json"
       - ".github/workflows/react-doctor.yml"
   workflow_dispatch:
 

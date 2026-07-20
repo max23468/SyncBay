@@ -8,11 +8,7 @@ export interface ShopifyDraftCategoryFields {
 export function buildShopifyDraftCategoryFields(
   proposal?: ShopifyCategoryProposal | null,
 ): ShopifyDraftCategoryFields {
-  if (
-    !proposal ||
-    proposal.confidence === "low" ||
-    !proposal.shopifyCategoryGid
-  ) {
+  if (!proposal || proposal.confidence === "low" || !proposal.shopifyCategoryGid) {
     return {};
   }
 

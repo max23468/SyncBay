@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as databaseRuntimeDiagnostics from "./syncbay-database-runtime-diagnostics.ts";
 
-const { buildDatabaseRuntimeDiagnostics, classifyDatabaseUrl } =
-  databaseRuntimeDiagnostics;
+const { buildDatabaseRuntimeDiagnostics, classifyDatabaseUrl } = databaseRuntimeDiagnostics;
 
 test("classifies Supabase pooler URLs without exposing the host or credentials", () => {
   assert.deepEqual(
@@ -53,14 +52,8 @@ test("reports Prisma runtime defaults applied to DATABASE_URL", () => {
     connectionLimit: true,
     poolTimeout: true,
   });
-  assert.equal(
-    diagnostics.prismaRuntimeDatabaseUrl.prismaPoolParams.connectionLimit,
-    true,
-  );
-  assert.equal(
-    diagnostics.prismaRuntimeDatabaseUrl.prismaPoolParams.poolTimeout,
-    true,
-  );
+  assert.equal(diagnostics.prismaRuntimeDatabaseUrl.prismaPoolParams.connectionLimit, true);
+  assert.equal(diagnostics.prismaRuntimeDatabaseUrl.prismaPoolParams.poolTimeout, true);
 });
 
 test("does not treat missing or invalid values as configured URLs", () => {

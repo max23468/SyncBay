@@ -15,12 +15,7 @@ if (import.meta.main) {
   }
 }
 
-export function buildCreationPlan({
-  base = DEFAULT_BASE,
-  branch,
-  context,
-  repoRoot,
-}) {
+export function buildCreationPlan({ base = DEFAULT_BASE, branch, context, repoRoot }) {
   validateBranchName(branch);
   const target = deriveTargetPath(repoRoot, branch);
 
@@ -41,10 +36,7 @@ export function buildCreationPlan({
         : " Verificare o aggiornare esplicitamente il ref richiesto.";
     throw new Error(`La base ${base} non esiste.${recovery}`);
   }
-  if (
-    context.branchExists ||
-    context.registeredBranches.includes(`refs/heads/${branch}`)
-  ) {
+  if (context.branchExists || context.registeredBranches.includes(`refs/heads/${branch}`)) {
     throw new Error(
       `Il branch ${branch} esiste già. Ispezionalo invece di ricrearlo o scegli un nome diverso.`,
     );
@@ -138,9 +130,7 @@ function runCli(rawArgs) {
   if (args.command === "prepare") {
     const repository = inspectRepository(process.cwd());
     if (!repository.isLinkedWorktree || repository.isSubmodule) {
-      throw new Error(
-        "worktree:prepare va eseguito dentro una worktree collegata di SyncBay.",
-      );
+      throw new Error("worktree:prepare va eseguito dentro una worktree collegata di SyncBay.");
     }
     runCommandsSerially(getSetupCommands(), { cwd: repository.repoRoot });
     console.log(`\nWorktree pronta: ${repository.repoRoot}`);
@@ -175,15 +165,11 @@ function runCli(rawArgs) {
 
   console.log(`Creo ${plan.branch} da ${plan.base} in ${plan.target}.`);
   fs.mkdirSync(path.dirname(plan.target), { recursive: true });
-  const creation = spawnSync(
-    plan.createCommand.command,
-    plan.createCommand.args,
-    {
-      cwd: repository.repoRoot,
-      encoding: "utf8",
-      stdio: "inherit",
-    },
-  );
+  const creation = spawnSync(plan.createCommand.command, plan.createCommand.args, {
+    cwd: repository.repoRoot,
+    encoding: "utf8",
+    stdio: "inherit",
+  });
   if (creation.error) throw creation.error;
   if (creation.status !== 0) {
     throw new Error(
@@ -207,47 +193,26 @@ function runCli(rawArgs) {
 
 function inspectRepository(cwd) {
   const repoRoot = runGitText(["rev-parse", "--show-toplevel"], cwd);
-  const gitDir = runGitText(
-    ["rev-parse", "--path-format=absolute", "--git-dir"],
-    cwd,
-  );
-  const commonDir = runGitText(
-    ["rev-parse", "--path-format=absolute", "--git-common-dir"],
-    cwd,
-  );
-  const superproject = runGitText(
-    ["rev-parse", "--show-superproject-working-tree"],
-    cwd,
-    { allowEmpty: true },
-  );
+  const gitDir = runGitText(["rev-parse", "--path-format=absolute", "--git-dir"], cwd);
+  const commonDir = runGitText(["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd);
+  const superproject = runGitText(["rev-parse", "--show-superproject-working-tree"], cwd, {
+    allowEmpty: true,
+  });
 
   return {
     commonDir,
     gitDir,
-    isLinkedWorktree:
-      normalizeExistingPath(gitDir) !== normalizeExistingPath(commonDir),
+    isLinkedWorktree: normalizeExistingPath(gitDir) !== normalizeExistingPath(commonDir),
     isSubmodule: Boolean(superproject),
     repoRoot,
   };
 }
 
-function inspectCreationContext({
-  base,
-  branch,
-  isLinkedWorktree,
-  isSubmodule,
-  repoRoot,
-  target,
-}) {
-  const worktrees = parseWorktreeList(
-    runGitText(["worktree", "list", "--porcelain"], repoRoot),
-  );
+function inspectCreationContext({ base, branch, isLinkedWorktree, isSubmodule, repoRoot, target }) {
+  const worktrees = parseWorktreeList(runGitText(["worktree", "list", "--porcelain"], repoRoot));
 
   return {
-    baseExists: runGitStatus(
-      ["rev-parse", "--verify", "--quiet", `${base}^{commit}`],
-      repoRoot,
-    ),
+    baseExists: runGitStatus(["rev-parse", "--verify", "--quiet", `${base}^{commit}`], repoRoot),
     branchExists: runGitStatus(
       ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`],
       repoRoot,
@@ -257,10 +222,7 @@ function inspectCreationContext({
     registeredBranches: worktrees.branches,
     registeredPaths: worktrees.paths,
     targetExists: fs.existsSync(target),
-    targetIgnored: runGitStatus(
-      ["check-ignore", "--quiet", "--no-index", target],
-      repoRoot,
-    ),
+    targetIgnored: runGitStatus(["check-ignore", "--quiet", "--no-index", target], repoRoot),
   };
 }
 
@@ -270,8 +232,7 @@ function deriveTargetPath(repoRoot, branch) {
 }
 
 function validateBranchName(branch) {
-  const components =
-    typeof branch === "string" ? branch.slice("codex/".length).split("/") : [];
+  const components = typeof branch === "string" ? branch.slice("codex/".length).split("/") : [];
   if (
     typeof branch !== "string" ||
     !/^codex\/[a-z0-9][a-z0-9._/-]*$/i.test(branch) ||
@@ -296,8 +257,7 @@ function parseWorktreeList(source) {
   const paths = [];
   const branches = [];
   for (const line of source.split(/\r?\n/)) {
-    if (line.startsWith("worktree "))
-      paths.push(line.slice("worktree ".length));
+    if (line.startsWith("worktree ")) paths.push(line.slice("worktree ".length));
     if (line.startsWith("branch ")) branches.push(line.slice("branch ".length));
   }
   return { branches, paths };
@@ -324,8 +284,7 @@ function parseArgs(rawArgs) {
   for (let index = 1; index < rawArgs.length; index += 1) {
     const arg = rawArgs[index];
     if (arg === "--branch") parsed.branch = requireValue(rawArgs, ++index, arg);
-    else if (arg === "--base")
-      parsed.base = requireValue(rawArgs, ++index, arg);
+    else if (arg === "--base") parsed.base = requireValue(rawArgs, ++index, arg);
     else if (arg === "--dry-run") parsed.dryRun = true;
     else if (arg === "--json") parsed.json = true;
     else if (arg === "--help" || arg === "-h") parsed.help = true;

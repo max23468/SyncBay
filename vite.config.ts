@@ -7,15 +7,13 @@ import { createLogger, defineConfig, type UserConfig } from "vite";
 // so we can remove this workaround after the next major release.
 if (
   process.env.HOST &&
-  (!process.env.SHOPIFY_APP_URL ||
-    process.env.SHOPIFY_APP_URL === process.env.HOST)
+  (!process.env.SHOPIFY_APP_URL || process.env.SHOPIFY_APP_URL === process.env.HOST)
 ) {
   process.env.SHOPIFY_APP_URL = process.env.HOST;
   delete process.env.HOST;
 }
 
-const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost")
-  .hostname;
+const host = new URL(process.env.SHOPIFY_APP_URL || "http://localhost").hostname;
 
 const serverOnlyResourceRouteChunks = new Set([
   "auth._",
@@ -33,10 +31,7 @@ const logger = createLogger();
 const viteWarn = logger.warn;
 logger.warn = (message, options) => {
   const emptyChunkMatch = message.match(/Generated an empty chunk: "([^"]+)"/);
-  if (
-    emptyChunkMatch &&
-    serverOnlyResourceRouteChunks.has(emptyChunkMatch[1])
-  ) {
+  if (emptyChunkMatch && serverOnlyResourceRouteChunks.has(emptyChunkMatch[1])) {
     return;
   }
 

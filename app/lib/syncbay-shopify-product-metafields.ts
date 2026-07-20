@@ -45,18 +45,14 @@ export function buildSyncBayProductMetafields(
     input.quantity !== null && typeof input.quantity !== "undefined"
       ? buildMetafield("ebay_quantity", String(input.quantity))
       : null,
-    input.skuGenerated
-      ? buildMetafield("sku_policy", "generated_from_ebay_item_id")
-      : null,
+    input.skuGenerated ? buildMetafield("sku_policy", "generated_from_ebay_item_id") : null,
     buildMetafield("ebay_category_id", input.ebayPrimaryCategoryId),
     buildMetafield("ebay_category_name", input.ebayPrimaryCategoryName),
     buildMetafield("ebay_category_path", input.ebayPrimaryCategoryPath),
     buildMetafield("ebay_store_category_id", input.storeCategoryId),
     buildMetafield("ebay_store_category_name", input.storeCategoryName),
     buildMetafield("ebay_store_category_path", input.storeCategoryPath),
-  ].filter((metafield): metafield is SyncBayProductMetafield =>
-    Boolean(metafield),
-  );
+  ].filter((metafield): metafield is SyncBayProductMetafield => Boolean(metafield));
 }
 
 export function getSyncBayCategorySourceFromMetafields(
@@ -68,10 +64,7 @@ export function getSyncBayCategorySourceFromMetafields(
         normalizeMetafieldText(metafield.key),
         normalizeMetafieldText(metafield.value),
       ])
-      .filter(
-        (entry): entry is [string, string] =>
-          Boolean(entry[0]) && Boolean(entry[1]),
-      ),
+      .filter((entry): entry is [string, string] => Boolean(entry[0]) && Boolean(entry[1])),
   );
   const source = {
     ebayPrimaryCategoryId: values.get("ebay_category_id") ?? null,
@@ -85,10 +78,7 @@ export function getSyncBayCategorySourceFromMetafields(
   return Object.values(source).some(Boolean) ? source : null;
 }
 
-function buildMetafield(
-  key: string,
-  value?: string | null,
-): SyncBayProductMetafield | null {
+function buildMetafield(key: string, value?: string | null): SyncBayProductMetafield | null {
   const normalized = normalizeMetafieldText(value);
   if (!normalized) return null;
 

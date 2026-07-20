@@ -9,11 +9,7 @@ import Conflicts from "../app/routes/app.conflicts";
 import ImportPreview from "../app/routes/app.import-preview";
 import Overview from "../app/routes/app._index";
 import Settings from "../app/routes/app.settings";
-import {
-  getUiFixture,
-  type UiFixturePage,
-  type UiFixtureState,
-} from "./syncbay-ui-fixtures";
+import { getUiFixture, type UiFixturePage, type UiFixtureState } from "./syncbay-ui-fixtures";
 
 declare global {
   interface Window {
@@ -32,10 +28,7 @@ const pageConfig = {
   importazione: { Component: ImportPreview, path: "/app/import-preview" },
   impostazioni: { Component: Settings, path: "/app/settings" },
   panoramica: { Component: Overview, path: "/app" },
-} satisfies Record<
-  UiFixturePage,
-  { Component: React.ComponentType; path: string }
->;
+} satisfies Record<UiFixturePage, { Component: React.ComponentType; path: string }>;
 
 const harness = window.__SYNCBAY_UI_HARNESS__;
 const root = document.querySelector<HTMLElement>("#syncbay-ui-root");
@@ -62,14 +55,9 @@ const childRoutes = Object.entries(pageConfig).map(([page, pageRoute]) => ({
     if (window.__SYNCBAY_UI_HYDRATED__) {
       await new Promise((resolve) => window.setTimeout(resolve, 80));
     }
-    return getUiFixture(
-      page as UiFixturePage,
-      page === harness.page ? harness.state : "healthy",
-    );
+    return getUiFixture(page as UiFixturePage, page === harness.page ? harness.state : "healthy");
   },
-  ...(page === "panoramica"
-    ? { index: true }
-    : { path: pageRoute.path.replace("/app/", "") }),
+  ...(page === "panoramica" ? { index: true } : { path: pageRoute.path.replace("/app/", "") }),
 }));
 const router = createMemoryRouter(
   [
@@ -108,18 +96,9 @@ window.setTimeout(() => {
 }, 100);
 
 function upgradePolarisPreviewControls() {
-  const selectors = [
-    "s-button",
-    "s-link",
-    "s-text-field",
-    "s-select",
-    "s-checkbox",
-    "s-switch",
-  ];
+  const selectors = ["s-button", "s-link", "s-text-field", "s-select", "s-checkbox", "s-switch"];
 
-  for (const element of document.querySelectorAll<HTMLElement>(
-    selectors.join(","),
-  )) {
+  for (const element of document.querySelectorAll<HTMLElement>(selectors.join(","))) {
     const tagName = element.tagName.toLowerCase();
     const label =
       element.getAttribute("aria-label") ??

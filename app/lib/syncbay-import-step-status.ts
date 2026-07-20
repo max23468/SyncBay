@@ -1,8 +1,6 @@
 export type ImportStepStatus = "active" | "completed" | "pending";
 
-export function computeSequentialStepStatuses(
-  done: boolean[],
-): ImportStepStatus[] {
+export function computeSequentialStepStatuses(done: boolean[]): ImportStepStatus[] {
   let activeAssigned = false;
 
   return done.map((isDone) => {

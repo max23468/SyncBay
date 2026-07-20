@@ -28,9 +28,7 @@ if (import.meta.main) {
   ensureTokenEncryptionKey();
 
   await main().catch((error) => {
-    console.error(
-      `Diagnostica immagini Catalogo non riuscita: ${error.message}`,
-    );
+    console.error(`Diagnostica immagini Catalogo non riuscita: ${error.message}`);
     process.exit(1);
   });
 }
@@ -84,10 +82,8 @@ async function main() {
     ebayLiveCheck: {
       checked: ebayChecks.length,
       failed: ebayChecks.filter((row) => !row.ok).length,
-      withImages: ebayChecks.filter((row) => Number(row.imageCount ?? 0) > 0)
-        .length,
-      withoutImages: ebayChecks.filter((row) => row.ok && row.imageCount === 0)
-        .length,
+      withImages: ebayChecks.filter((row) => Number(row.imageCount ?? 0) > 0).length,
+      withoutImages: ebayChecks.filter((row) => row.ok && row.imageCount === 0).length,
       rows: ebayChecks,
     },
   };
@@ -362,7 +358,5 @@ function toText(value) {
   const record = asRecord(value);
   const text = record?.["#text"];
 
-  return typeof text === "string" || typeof text === "number"
-    ? String(text)
-    : "";
+  return typeof text === "string" || typeof text === "number" ? String(text) : "";
 }

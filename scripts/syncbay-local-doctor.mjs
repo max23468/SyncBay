@@ -31,11 +31,7 @@ if (import.meta.main) {
   }
 }
 
-export function buildReport({
-  args = {},
-  env = process.env,
-  root = process.cwd(),
-} = {}) {
+export function buildReport({ args = {}, env = process.env, root = process.cwd() } = {}) {
   const nodeVersion = process.versions.node;
   const npmVersion = runOptional("npm", ["--version"]);
   const nodePath = process.execPath;
@@ -59,13 +55,9 @@ export function buildReport({
   const warnings = [];
   const dependenciesInstalled = fs.existsSync(path.join(root, "node_modules"));
   const lockfileMismatches =
-    packageLock && installedLock
-      ? findTopLevelLockMismatches(packageLock, installedLock)
-      : [];
+    packageLock && installedLock ? findTopLevelLockMismatches(packageLock, installedLock) : [];
   const lockfileAligned =
-    dependenciesInstalled &&
-    Boolean(installedLock) &&
-    lockfileMismatches.length === 0;
+    dependenciesInstalled && Boolean(installedLock) && lockfileMismatches.length === 0;
   const prismaClient = inspectPrismaClient(root);
 
   if (!expectedNodeVersion) {
@@ -125,18 +117,12 @@ export function buildReport({
   }
 
   if (!prismaClient.generated) {
-    failures.push(
-      "Prisma Client non generato: eseguire npm run prisma:generate.",
-    );
+    failures.push("Prisma Client non generato: eseguire npm run prisma:generate.");
   } else if (!prismaClient.linked) {
-    failures.push(
-      "Link Prisma Client non allineato: eseguire npm run prisma:generate.",
-    );
+    failures.push("Link Prisma Client non allineato: eseguire npm run prisma:generate.");
   }
 
-  const missingEnv = requiredEnv
-    .filter((entry) => !entry.configured)
-    .map(formatEnvRequirement);
+  const missingEnv = requiredEnv.filter((entry) => !entry.configured).map(formatEnvRequirement);
 
   if (missingEnv.length > 0) {
     const message = `Variabili locali non configurate in env/.env: ${missingEnv.join(", ")}.`;
@@ -203,10 +189,7 @@ export function inspectPrismaClient(root) {
   try {
     const stat = fs.lstatSync(linkPath);
     if (stat.isSymbolicLink()) {
-      const resolvedTarget = path.resolve(
-        path.dirname(linkPath),
-        fs.readlinkSync(linkPath),
-      );
+      const resolvedTarget = path.resolve(path.dirname(linkPath), fs.readlinkSync(linkPath));
       linked = resolvedTarget === generatedDirectory;
     }
   } catch {

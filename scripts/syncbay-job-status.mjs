@@ -2,11 +2,7 @@
 
 import { parseArgs } from "node:util";
 import { buildImportRunScopeSql } from "./syncbay-import-run-scope.mjs";
-import {
-  formatCliError,
-  querySupabaseJson,
-  sqlString,
-} from "./supabase-cli-env.mjs";
+import { formatCliError, querySupabaseJson, sqlString } from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_RECENT_LIMIT = 12;
@@ -33,9 +29,7 @@ const shopDomain = resolveRequiredShopDomainOption({
 });
 const parsedLimit = Number.parseInt(args.limit ?? "", 10);
 const recentLimit =
-  Number.isInteger(parsedLimit) && parsedLimit > 0
-    ? parsedLimit
-    : DEFAULT_RECENT_LIMIT;
+  Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : DEFAULT_RECENT_LIMIT;
 const importRunScopeSql = buildImportRunScopeSql("j");
 
 const diagnosticsSql = `
@@ -186,12 +180,8 @@ function printSummary(payload) {
   console.log("Recenti:");
 
   for (const row of payload.recentRows ?? []) {
-    const batch = row.batchIndex
-      ? ` batch ${row.batchIndex}/${row.batchCount}`
-      : "";
-    const error = row.errorCode
-      ? `, ${row.errorCode}: ${row.errorMessage}`
-      : "";
+    const batch = row.batchIndex ? ` batch ${row.batchIndex}/${row.batchCount}` : "";
+    const error = row.errorCode ? `, ${row.errorCode}: ${row.errorMessage}` : "";
     const result =
       row.createdCount || row.reusedCount || row.failedCount || row.skippedCount
         ? `, creati ${row.createdCount ?? 0}, riusati ${row.reusedCount ?? 0}, falliti ${row.failedCount ?? 0}, saltati ${row.skippedCount ?? 0}`

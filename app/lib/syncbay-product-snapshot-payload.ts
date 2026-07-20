@@ -1,10 +1,7 @@
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
 // Estensione esplicita: gli script CLI importano questo modulo con Node ESM.
 import { isSafeHttpUrl } from "./safe-http-url.ts";
-import type {
-  SyncBayProductFacet,
-  SyncBayProductFacetKey,
-} from "./syncbay-product-facets";
+import type { SyncBayProductFacet, SyncBayProductFacetKey } from "./syncbay-product-facets";
 
 type SnapshotPayloadValue =
   | boolean
@@ -43,30 +40,22 @@ export function buildEbayProductSnapshotPayload(input: {
           productFacets: (input.productFacets ?? []).map(serializeProductFacet),
         }
       : {}),
-    ...(input.ebayPrimaryCategoryId
-      ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId }
-      : {}),
+    ...(input.ebayPrimaryCategoryId ? { ebayPrimaryCategoryId: input.ebayPrimaryCategoryId } : {}),
     ...(input.ebayPrimaryCategoryName
       ? { ebayPrimaryCategoryName: input.ebayPrimaryCategoryName }
       : {}),
     ...(input.ebayPrimaryCategoryPath
       ? { ebayPrimaryCategoryPath: input.ebayPrimaryCategoryPath }
       : {}),
-    ...(input.storeCategoryId
-      ? { storeCategoryId: input.storeCategoryId }
-      : {}),
-    ...(input.storeCategoryName
-      ? { storeCategoryName: input.storeCategoryName }
-      : {}),
+    ...(input.storeCategoryId ? { storeCategoryId: input.storeCategoryId } : {}),
+    ...(input.storeCategoryName ? { storeCategoryName: input.storeCategoryName } : {}),
     ...(input.categoryProposal
       ? { categoryProposal: serializeCategoryProposal(input.categoryProposal) }
       : {}),
   };
 }
 
-export function serializeProductFacet(
-  facet: SyncBayProductFacet,
-): EbayProductSnapshotPayload {
+export function serializeProductFacet(facet: SyncBayProductFacet): EbayProductSnapshotPayload {
   return {
     key: facet.key,
     label: facet.label,
@@ -76,9 +65,7 @@ export function serializeProductFacet(
   };
 }
 
-function serializeCategoryProposal(
-  proposal: ShopifyCategoryProposal,
-): EbayProductSnapshotPayload {
+function serializeCategoryProposal(proposal: ShopifyCategoryProposal): EbayProductSnapshotPayload {
   return {
     applied: proposal.applied,
     confidence: proposal.confidence,
@@ -144,9 +131,7 @@ export function getProductSnapshotThumbnailUrlByMappingIdFromRows(
   return thumbnailUrlByMappingId;
 }
 
-export function getProductFacetsFromSnapshotPayload(
-  value: unknown,
-): SyncBayProductFacet[] {
+export function getProductFacetsFromSnapshotPayload(value: unknown): SyncBayProductFacet[] {
   const payload = getObject(value);
   const facets = payload?.productFacets;
   if (!Array.isArray(facets)) return [];
@@ -159,13 +144,7 @@ export function getProductFacetsFromSnapshotPayload(
     const type = getProductFacetType(candidate?.type);
     const facetValue = getString(candidate?.value);
 
-    if (
-      !key ||
-      !label ||
-      namespace !== "syncbay_facets" ||
-      !type ||
-      !facetValue
-    ) {
+    if (!key || !label || namespace !== "syncbay_facets" || !type || !facetValue) {
       return [];
     }
 
@@ -191,9 +170,7 @@ export function getProductFacetBaselineFromSnapshotPayload(
 }
 
 function normalizeImageUrls(imageUrls: string[]) {
-  return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
-    Boolean,
-  );
+  return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(Boolean);
 }
 
 function getObject(value: unknown) {
@@ -226,13 +203,8 @@ function getProductFacetKey(value: unknown): SyncBayProductFacetKey | null {
   return null;
 }
 
-function getProductFacetType(
-  value: unknown,
-): SyncBayProductFacet["type"] | null {
-  if (
-    value === "single_line_text_field" ||
-    value === "list.single_line_text_field"
-  ) {
+function getProductFacetType(value: unknown): SyncBayProductFacet["type"] | null {
+  if (value === "single_line_text_field" || value === "list.single_line_text_field") {
     return value;
   }
 

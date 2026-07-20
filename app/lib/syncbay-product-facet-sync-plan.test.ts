@@ -82,9 +82,7 @@ test("does not overwrite Shopify values changed after the SyncBay baseline", () 
       value: JSON.stringify(["Argento"]),
     },
   ]);
-  assert.deepEqual(plan.skipped, [
-    { key: "materiale", reason: "manual_conflict" },
-  ]);
+  assert.deepEqual(plan.skipped, [{ key: "materiale", reason: "manual_conflict" }]);
 });
 
 test("deletes facets still aligned to SyncBay when evidence disappears", () => {
@@ -110,9 +108,7 @@ test("deletes facets still aligned to SyncBay when evidence disappears", () => {
       namespace: "syncbay_facets",
     },
   ]);
-  assert.deepEqual(plan.skipped, [
-    { key: "materiale", reason: "evidence_missing" },
-  ]);
+  assert.deepEqual(plan.skipped, [{ key: "materiale", reason: "evidence_missing" }]);
 });
 
 test("preserves facets by default when evidence is temporarily missing", () => {
@@ -133,7 +129,5 @@ test("preserves facets by default when evidence is temporarily missing", () => {
   assert.deepEqual(plan.conflicts, []);
   assert.deepEqual(plan.deletes, []);
   assert.deepEqual(plan.preserved, [materialeBronzo]);
-  assert.deepEqual(plan.skipped, [
-    { key: "materiale", reason: "evidence_missing" },
-  ]);
+  assert.deepEqual(plan.skipped, [{ key: "materiale", reason: "evidence_missing" }]);
 });

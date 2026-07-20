@@ -1,8 +1,7 @@
 import type { MetaDescriptor } from "react-router";
 
 export const SYNCBAY_APP_NAME = "SyncBay";
-export const SYNCBAY_TAGLINE =
-  "Dal tuo negozio eBay a Shopify, pronto a vendere.";
+export const SYNCBAY_TAGLINE = "Dal tuo negozio eBay a Shopify, pronto a vendere.";
 
 export const SYNCBAY_BRAND_ASSETS = {
   appleTouchIcon: "/apple-touch-icon.png",

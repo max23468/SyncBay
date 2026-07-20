@@ -21,9 +21,7 @@ type AssertNoMissingProductPublicationMode<T extends never> = T;
 export type ProductPublicationModesCoverPrisma =
   AssertNoMissingProductPublicationMode<MissingPrismaProductPublicationMode>;
 
-const PRODUCT_PUBLICATION_MODE_SET: ReadonlySet<string> = new Set(
-  PRODUCT_PUBLICATION_MODES,
-);
+const PRODUCT_PUBLICATION_MODE_SET: ReadonlySet<string> = new Set(PRODUCT_PUBLICATION_MODES);
 
 export function normalizeProductPublicationMode(
   value: string | null | undefined,
@@ -72,9 +70,7 @@ export function resolveProductPublicationIds(input: {
     };
   }
 
-  const availablePublicationIds = dedupePublicationIds(
-    input.availablePublicationIds,
-  );
+  const availablePublicationIds = dedupePublicationIds(input.availablePublicationIds);
 
   if (input.mode === "ALL") {
     return {
@@ -85,15 +81,12 @@ export function resolveProductPublicationIds(input: {
 
   const availableSet = new Set(availablePublicationIds);
   const selectedAvailableIds = dedupePublicationIds(
-    input.selectedPublicationIds.filter((publicationId) =>
-      availableSet.has(publicationId),
-    ),
+    input.selectedPublicationIds.filter((publicationId) => availableSet.has(publicationId)),
   );
 
   if (selectedAvailableIds.length === 0) {
     return {
-      errorMessage:
-        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      errorMessage: "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
       status: "failed",
     };
   }
@@ -119,8 +112,7 @@ export function resolveStoredSelectedProductPublicationIds(input: {
 
   if (publicationIds.length === 0) {
     return {
-      errorMessage:
-        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      errorMessage: "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
       status: "failed",
     };
   }

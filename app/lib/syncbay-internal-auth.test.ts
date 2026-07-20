@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  requireInternalAppSecret,
-  verifyInternalAppSecret,
-} from "./syncbay-internal-auth.ts";
+import { requireInternalAppSecret, verifyInternalAppSecret } from "./syncbay-internal-auth.ts";
 
 test("rejects internal requests when APP_SECRET is not configured", () => {
   assert.deepEqual(

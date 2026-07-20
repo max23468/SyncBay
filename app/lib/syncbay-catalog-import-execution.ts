@@ -70,9 +70,7 @@ export async function runCatalogImportJobLifecycle<
   ports: CatalogImportJobLifecyclePorts<TJob, TExecutionInput>;
 }): Promise<CatalogImportExecutionResult> {
   if (input.executionInput.jobId !== input.job.id) {
-    throw new Error(
-      "L'import catalogo deve usare l'ID del job esterno proprietario.",
-    );
+    throw new Error("L'import catalogo deve usare l'ID del job esterno proprietario.");
   }
 
   const result = await input.ports.execute(input.executionInput);

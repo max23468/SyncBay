@@ -1,6 +1,4 @@
-export function getRecoverableRunningSyncJobTypes<T extends string>(
-  runnableTypes: T[],
-) {
+export function getRecoverableRunningSyncJobTypes<T extends string>(runnableTypes: T[]) {
   return [...new Set(runnableTypes)];
 }
 

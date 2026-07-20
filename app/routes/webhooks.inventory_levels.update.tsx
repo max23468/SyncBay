@@ -1,10 +1,7 @@
 import type { ActionFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
-import {
-  getSyncBayRequestId,
-  logSyncBayRuntimeEvent,
-} from "../lib/syncbay-runtime-log";
+import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
@@ -14,8 +11,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const requestId = getSyncBayRequestId(request);
   const startedAt = performance.now();
   try {
-    const { payload, shop, topic, webhookId } =
-      await authenticate.webhook(request);
+    const { payload, shop, topic, webhookId } = await authenticate.webhook(request);
 
     await recordShopifyWebhookPlaceholder({
       payload,

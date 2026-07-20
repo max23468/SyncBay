@@ -29,10 +29,8 @@ const shopDomain = resolveRequiredShopDomainOption({
   env: process.env,
 });
 const sampleLimit = args.sample ?? DEFAULT_SAMPLE_LIMIT;
-const shopifySource =
-  args.shopifySource ?? process.env.SYNCBAY_SHOPIFY_VERIFY_SOURCE ?? "runtime";
-const runtimeUrl =
-  args.runtimeUrl ?? process.env.SYNCBAY_RUNTIME_URL ?? DEFAULT_RUNTIME_URL;
+const shopifySource = args.shopifySource ?? process.env.SYNCBAY_SHOPIFY_VERIFY_SOURCE ?? "runtime";
+const runtimeUrl = args.runtimeUrl ?? process.env.SYNCBAY_RUNTIME_URL ?? DEFAULT_RUNTIME_URL;
 const importRunScopeSql = buildImportRunScopeSql("j");
 
 await main().catch((error) => {
@@ -179,9 +177,7 @@ async function loadShopifyProducts(productGids, defaultLocationGid) {
   }
 
   if (shopifySource !== "cli") {
-    throw new Error(
-      `Sorgente Shopify non supportata: ${shopifySource}. Usa runtime oppure cli.`,
-    );
+    throw new Error(`Sorgente Shopify non supportata: ${shopifySource}. Usa runtime oppure cli.`);
   }
 
   return loadShopifyProductsFromCli(productGids, defaultLocationGid);
@@ -337,8 +333,7 @@ async function loadShopifyProductsFromCli(productGids, defaultLocationGid) {
 
 async function readInternalAppSecret() {
   const envSecret =
-    process.env.SYNCBAY_INTERNAL_APP_SECRET?.trim() ||
-    process.env.APP_SECRET?.trim();
+    process.env.SYNCBAY_INTERNAL_APP_SECRET?.trim() || process.env.APP_SECRET?.trim();
 
   if (envSecret) return envSecret;
   if (process.platform !== "darwin") return null;
@@ -365,16 +360,13 @@ function verifySampleRow(row, product, options = {}) {
     : (locationQuantity ?? variant?.inventoryQuantity ?? null);
   const mediaNodes = product?.media?.nodes ?? [];
   const readyImageCount = mediaNodes.filter(
-    (media) =>
-      media.mediaContentType === "IMAGE" && media.preview?.status === "READY",
+    (media) => media.mediaContentType === "IMAGE" && media.preview?.status === "READY",
   ).length;
   const expectedQuantity = normalizeNumber(row.expectedQuantity);
   const expectedPrice = normalizeMoney(row.expectedPrice);
   const actualPrice = normalizeMoney(variant?.price);
   const expectedImageCount = normalizeNumber(row.expectedImageCount);
-  const expectedProductStatus = normalizeProductStatus(
-    row.expectedProductStatus,
-  );
+  const expectedProductStatus = normalizeProductStatus(row.expectedProductStatus);
   const failures = [
     !product ? "prodotto Shopify non trovato" : null,
     product && product.status !== expectedProductStatus
@@ -387,10 +379,7 @@ function verifySampleRow(row, product, options = {}) {
     product.totalInventory !== expectedQuantity
       ? `totalInventory ${product.totalInventory}, atteso ${expectedQuantity}`
       : null,
-    variant &&
-    expectedQuantity !== null &&
-    options.hasManagedLocation &&
-    locationQuantity === null
+    variant && expectedQuantity !== null && options.hasManagedLocation && locationQuantity === null
       ? "location predefinita senza inventory level disponibile"
       : null,
     variant &&
@@ -399,18 +388,14 @@ function verifySampleRow(row, product, options = {}) {
     actualQuantity !== expectedQuantity
       ? `${locationQuantity === null ? "inventoryQuantity" : "locationQuantity"} ${actualQuantity ?? "assente"}, atteso ${expectedQuantity}`
       : null,
-    variant && !variant.inventoryItem?.tracked
-      ? "tracking inventario non attivo"
-      : null,
+    variant && !variant.inventoryItem?.tracked ? "tracking inventario non attivo" : null,
     expectedPrice !== null && actualPrice !== expectedPrice
       ? `prezzo ${actualPrice ?? "assente"}, atteso ${expectedPrice}`
       : null,
     row.sku && variant && variant.inventoryItem?.sku !== row.sku
       ? `SKU ${variant.inventoryItem?.sku ?? "assente"}, atteso ${row.sku}`
       : null,
-    expectedImageCount !== null &&
-    expectedImageCount > 0 &&
-    readyImageCount === 0
+    expectedImageCount !== null && expectedImageCount > 0 && readyImageCount === 0
       ? "nessuna immagine READY"
       : null,
   ].filter(Boolean);
@@ -444,10 +429,9 @@ function getActualQuantitySource(input) {
 }
 
 function getVariantLocationQuantity(variant) {
-  const availableQuantity =
-    variant?.inventoryItem?.inventoryLevel?.quantities?.find(
-      (quantity) => quantity.name === "available",
-    )?.quantity;
+  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities?.find(
+    (quantity) => quantity.name === "available",
+  )?.quantity;
 
   return typeof availableQuantity === "number" ? availableQuantity : null;
 }
@@ -464,9 +448,7 @@ function parseJsonObject(value) {
   try {
     const parsed = JSON.parse(value.slice(jsonStart));
 
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? parsed
-      : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -476,14 +458,11 @@ function printSummary(input) {
   console.log(`Shop: ${input.shopDomain}`);
   console.log(`Run: ${input.runId}`);
   console.log(`Shopify live: ${input.shopifySource}`);
-  console.log(
-    `Campione: ${input.checks.length} prodotti, ${input.failedCount} con problemi`,
-  );
+  console.log(`Campione: ${input.checks.length} prodotti, ${input.failedCount} con problemi`);
   console.log("");
 
   for (const check of input.checks) {
-    const failures =
-      check.failures.length > 0 ? ` - ${check.failures.join("; ")}` : "";
+    const failures = check.failures.length > 0 ? ` - ${check.failures.join("; ")}` : "";
 
     console.log(
       `- ${check.ebayItemId}: ${check.status}, prezzo ${check.actualPrice}, scorta ${check.actualQuantity}, immagini READY ${check.actualImageReadyCount}${failures}`,

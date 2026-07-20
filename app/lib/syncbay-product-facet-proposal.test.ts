@@ -6,8 +6,7 @@ import { buildSyncBayProductFacetProposalFromSnapshot } from "./syncbay-product-
 test("prefers normalized snapshot productFacets over raw category inference", () => {
   assert.deepEqual(
     buildSyncBayProductFacetProposalFromSnapshot({
-      ebayPrimaryCategoryName:
-        "Monete e banconote:Banconote altri continenti:Asia",
+      ebayPrimaryCategoryName: "Monete e banconote:Banconote altri continenti:Asia",
       payload: {
         productFacets: [
           {

@@ -32,9 +32,7 @@ export function hasExhaustedSyncJobAttempts(
   input: Pick<SyncJobQuarantineInput, "attempts" | "maxAttempts">,
 ) {
   const maxAttempts = normalizeMaxAttempts(input.maxAttempts);
-  const attempts = Number.isFinite(input.attempts)
-    ? Math.max(0, Math.trunc(input.attempts))
-    : 0;
+  const attempts = Number.isFinite(input.attempts) ? Math.max(0, Math.trunc(input.attempts)) : 0;
 
   return attempts >= maxAttempts;
 }
@@ -50,9 +48,7 @@ export function isSyncJobQuarantined(input: SyncJobQuarantineInput) {
  * Distingue i job conclusi (`settled`), quelli che la coda ritenterà ancora
  * (`retrying`) e quelli che richiedono un intervento (`actionable`).
  */
-export function classifySyncJobQuarantine(
-  input: SyncJobQuarantineInput,
-): SyncJobQuarantineState {
+export function classifySyncJobQuarantine(input: SyncJobQuarantineInput): SyncJobQuarantineState {
   const status = input.status?.trim().toUpperCase() ?? "";
 
   if (SETTLED_STATUSES.has(status)) return "settled";

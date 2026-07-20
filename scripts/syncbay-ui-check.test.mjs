@@ -4,10 +4,7 @@ import { readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { test } from "vitest";
 
-import {
-  getImportPreviewFixture,
-  getUiFixtureStates,
-} from "./syncbay-ui-fixtures.ts";
+import { getImportPreviewFixture, getUiFixtureStates } from "./syncbay-ui-fixtures.ts";
 import { buildIsolatedUiEnv } from "./syncbay-ui-isolation.mjs";
 import { UI_PAGES } from "./syncbay-ui-check.mjs";
 
@@ -25,20 +22,10 @@ for (const page of ["panoramica", "importazione"]) {
     const isolatedEnv = buildIsolatedUiEnv(contaminatedEnv);
     const result = spawnSync(
       process.execPath,
-      [
-        "--import",
-        "tsx",
-        "scripts/syncbay-ui-render.mjs",
-        page,
-        "--fixture",
-        "--check",
-      ],
+      ["--import", "tsx", "scripts/syncbay-ui-render.mjs", page, "--fixture", "--check"],
       { encoding: "utf8", env: isolatedEnv },
     );
-    assert.match(
-      result.stderr,
-      /env: fixture isolata; 0 variabili runtime caricate/,
-    );
+    assert.match(result.stderr, /env: fixture isolata; 0 variabili runtime caricate/);
     assert.doesNotMatch(
       `${result.stderr}\n${result.stdout}`,
       /EADDRNOTAVAIL|TOKEN_ENCRYPTION_KEY|DATABASE_URL|sentinel-/,
@@ -64,14 +51,7 @@ test("SSR fixture does not start Vite WebSocket on the default port", async () =
   try {
     const result = spawnSync(
       process.execPath,
-      [
-        "--import",
-        "tsx",
-        "scripts/syncbay-ui-render.mjs",
-        "panoramica",
-        "--fixture",
-        "--check",
-      ],
+      ["--import", "tsx", "scripts/syncbay-ui-render.mjs", "panoramica", "--fixture", "--check"],
       { encoding: "utf8", env: buildIsolatedUiEnv(contaminatedEnv) },
     );
 
@@ -98,8 +78,7 @@ test("isolated UI env excludes every provider and database sentinel", () => {
 });
 
 test("import fixture carries real field policies for every takeover row", () => {
-  const report =
-    getImportPreviewFixture().wizard.previewResult.existingCatalogTakeover;
+  const report = getImportPreviewFixture().wizard.previewResult.existingCatalogTakeover;
 
   assert.ok(report);
   assert.equal(report.rows.length, 3);
@@ -147,10 +126,6 @@ test("every healthy page fixture renders at least one balanced box grid", () => 
     assert.equal(result.status, 0, result.stderr);
     const outputPath = result.stdout.trim().split("\n").at(-1);
     assert.ok(outputPath);
-    assert.match(
-      readFileSync(outputPath, "utf8"),
-      /syncbay-balanced-box-grid/u,
-      page,
-    );
+    assert.match(readFileSync(outputPath, "utf8"), /syncbay-balanced-box-grid/u, page);
   }
 });

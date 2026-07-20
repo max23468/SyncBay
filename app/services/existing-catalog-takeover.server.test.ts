@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  EbayConnectionStatus,
-  type EbayConnection,
-  type Prisma,
-} from "@prisma/client";
+import { EbayConnectionStatus, type EbayConnection, type Prisma } from "@prisma/client";
 
 import type { ExistingCatalogTakeoverApplyRow } from "../lib/syncbay-existing-catalog-takeover";
 import type { ExistingProductMatchSuggestion } from "../lib/syncbay-product-matching";
@@ -15,10 +11,7 @@ import {
   getExistingCatalogTakeoverPreview,
   runExistingCatalogTakeoverStart,
 } from "./existing-catalog-takeover.server";
-import {
-  buildCatalogImportBatchPayload,
-  type ShopifyAdminGraphqlClient,
-} from "./syncbay.server";
+import { buildCatalogImportBatchPayload, type ShopifyAdminGraphqlClient } from "./syncbay.server";
 
 const admin: ShopifyAdminGraphqlClient = {
   graphql: async () => new Response(JSON.stringify({ data: {} })),
@@ -68,9 +61,7 @@ test("blocks apply when the dry-run contains blocking rows", async () => {
     matchSuggestions: [makeAutoMatch()],
     priceAmount: null,
   });
-  const result = await withDraftImportEnabled(() =>
-    runStartWithItems([item], writes),
-  );
+  const result = await withDraftImportEnabled(() => runStartWithItems([item], writes));
 
   assert.equal(result.status, "blocked");
   assert.match(result.blockers.join(" "), /righe bloccanti/);
@@ -91,9 +82,7 @@ test("does not write rows that remain da_rivedere", async () => {
       },
     ],
   });
-  const result = await withDraftImportEnabled(() =>
-    runStartWithItems([item], writes),
-  );
+  const result = await withDraftImportEnabled(() => runStartWithItems([item], writes));
 
   assert.equal(result.status, "blocked");
   assert.match(result.blockers.join(" "), /Nessuna riga applicabile/);
@@ -102,8 +91,7 @@ test("does not write rows that remain da_rivedere", async () => {
 
 test("serializes the field policy in the reuse-only import payload", async () => {
   const writes: string[] = [];
-  let batchInput:
-    Parameters<typeof buildCatalogImportBatchPayload>[0] | undefined;
+  let batchInput: Parameters<typeof buildCatalogImportBatchPayload>[0] | undefined;
   const item = makePreviewItem({
     matchSuggestions: [
       {
@@ -200,12 +188,7 @@ test("records the pre-claim snapshot before metafields and mappings", async () =
     },
   );
 
-  assert.deepEqual(order, [
-    "snapshot",
-    "snapshot-audit",
-    "metafields",
-    "mapping",
-  ]);
+  assert.deepEqual(order, ["snapshot", "snapshot-audit", "metafields", "mapping"]);
   assert.equal(snapshots.length, 1);
   assert.deepEqual(snapshots[0]?.payload, {
     handle: "handle-manuale",
@@ -222,9 +205,7 @@ async function runStartWithItems(
   writes: string[],
   options: {
     legacyTagsToRemove?: string[];
-    onBatch?: (
-      input: Parameters<typeof buildCatalogImportBatchPayload>[0],
-    ) => void;
+    onBatch?: (input: Parameters<typeof buildCatalogImportBatchPayload>[0]) => void;
   } = {},
 ) {
   return runExistingCatalogTakeoverStart(
@@ -283,9 +264,7 @@ function makeWizard(items: ImportPreviewItem[]) {
       readCount: items.length,
       totalAvailable: items.length,
     },
-  } as unknown as Awaited<
-    ReturnType<(typeof import("./syncbay.server"))["getImportWizardState"]>
-  >;
+  } as unknown as Awaited<ReturnType<(typeof import("./syncbay.server"))["getImportWizardState"]>>;
 }
 
 function makePreviewResult(items: ImportPreviewItem[]) {
@@ -294,8 +273,7 @@ function makePreviewResult(items: ImportPreviewItem[]) {
     mode: "live" as const,
     summary: {
       errorCount: items.filter((item) => item.status === "error").length,
-      importableCount: items.filter((item) => item.status === "importable")
-        .length,
+      importableCount: items.filter((item) => item.status === "importable").length,
       skippedCount: items.filter((item) => item.status === "skipped").length,
       totalCount: items.length,
       warningCount: 0,
@@ -370,9 +348,7 @@ function makeAutoMatch(): ExistingProductMatchSuggestion {
   };
 }
 
-function makeApplyRow(
-  item: ImportPreviewItem,
-): ExistingCatalogTakeoverApplyRow {
+function makeApplyRow(item: ImportPreviewItem): ExistingCatalogTakeoverApplyRow {
   return {
     fieldPolicy: {
       handle: {

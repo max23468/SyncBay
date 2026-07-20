@@ -1,7 +1,4 @@
-export function parsePositiveLimitOption(
-  value: string | undefined,
-  optionName = "--limit",
-) {
+export function parsePositiveLimitOption(value: string | undefined, optionName = "--limit") {
   if (value === undefined) {
     throw new Error(`${optionName} richiede un valore.`);
   }

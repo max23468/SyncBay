@@ -23,9 +23,7 @@ export type UiFixtureState = (typeof UI_FIXTURE_STATES)[number];
 const COMMON_FIXTURE_STATES = UI_FIXTURE_STATES.slice(0, 5);
 
 export function getUiFixtureStates(page: UiFixturePage): UiFixtureState[] {
-  return page === "importazione"
-    ? [...UI_FIXTURE_STATES]
-    : [...COMMON_FIXTURE_STATES];
+  return page === "importazione" ? [...UI_FIXTURE_STATES] : [...COMMON_FIXTURE_STATES];
 }
 
 export function getCatalogFixture() {
@@ -95,15 +93,7 @@ export function getCatalogFixture() {
   ];
 
   return {
-    filters: [
-      "all",
-      "linked",
-      "fresh",
-      "needs_check",
-      "conflicts",
-      "not_updated",
-      "archived",
-    ],
+    filters: ["all", "linked", "fresh", "needs_check", "conflicts", "not_updated", "archived"],
     pagination: {
       cappedAtMaxProducts: false,
       currentEnd: rows.length,
@@ -271,8 +261,7 @@ export function getDashboardFixture() {
           {
             code: "open_conflicts",
             count: 1,
-            detail:
-              "Decisioni Shopify aperte bloccano l'allineamento automatico.",
+            detail: "Decisioni Shopify aperte bloccano l'allineamento automatico.",
             label: "Conflitti aperti",
             tone: "warning",
           },
@@ -404,8 +393,7 @@ export function getImportPreviewFixture() {
         descriptionCleanedLength: 120,
         descriptionCleanedTextExcerpt: "Radio vintage da collezione.",
         descriptionOriginalLength: 180,
-        descriptionOriginalTextExcerpt:
-          "Radio vintage da collezione con template negozio.",
+        descriptionOriginalTextExcerpt: "Radio vintage da collezione con template negozio.",
         descriptionRemovedPercent: 33,
         descriptionTemplateSignalCount: 1,
         descriptionWasChanged: true,
@@ -532,8 +520,7 @@ export function getImportPreviewFixture() {
                 },
               },
               itemId: "123456789001",
-              matchSuggestion: items[0]
-                .matchSuggestions[0] as ExistingProductMatchSuggestion,
+              matchSuggestion: items[0].matchSuggestions[0] as ExistingProductMatchSuggestion,
               plannedOperations: [
                 "claim_mapping",
                 "sync_title",
@@ -609,8 +596,7 @@ export function getImportPreviewFixture() {
         },
       },
       previewSource: {
-        coverageNote:
-          "Fixture sintetica con stato collegato e dati sanitizzati.",
+        coverageNote: "Fixture sintetica con stato collegato e dati sanitizzati.",
         errorMessage: null,
         readCount: items.length,
         source: "trading_api",
@@ -779,15 +765,10 @@ export function getUiFixture(page: UiFixturePage, state: UiFixtureState) {
     const wizard = asRecord(fixture.wizard);
     const draftImport = asRecord(wizard.draftImport);
     const importPreview = asRecord(wizard.importPreview);
-    draftImport.blockers = [
-      "Seleziona una location Shopify prima di avviare l’importazione.",
-    ];
+    draftImport.blockers = ["Seleziona una location Shopify prima di avviare l’importazione."];
     draftImport.enabled = false;
-    draftImport.nextAction =
-      "Apri Impostazioni, seleziona la location e torna alla simulazione.";
-    importPreview.blockers = [
-      "La location Shopify predefinita non è ancora configurata.",
-    ];
+    draftImport.nextAction = "Apri Impostazioni, seleziona la location e torna alla simulazione.";
+    importPreview.blockers = ["La location Shopify predefinita non è ancora configurata."];
   }
 
   if (page === "importazione" && state === "in_progress") {
@@ -809,10 +790,7 @@ export function getUiFixture(page: UiFixturePage, state: UiFixtureState) {
   return fixture;
 }
 
-export function getUiFixtureScenario(
-  page: UiFixturePage,
-  state: UiFixtureState,
-) {
+export function getUiFixtureScenario(page: UiFixturePage, state: UiFixtureState) {
   if (!getUiFixtureStates(page).includes(state)) {
     throw new Error(`Scenario fixture ${state} non supportato per ${page}.`);
   }
@@ -832,8 +810,7 @@ export function getUiFixtureScenario(
       actionHref: "/app/activity?filter=errors",
       actionLabel: "Controlla attività",
       ariaBusy: false,
-      detail:
-        "Alcuni dati non sono aggiornati. Controlla il dettaglio operativo.",
+      detail: "Alcuni dati non sono aggiornati. Controlla il dettaglio operativo.",
       role: "status" as const,
       title: "Aggiornamento parziale",
     };
@@ -843,8 +820,7 @@ export function getUiFixtureScenario(
       actionHref: `/${page}`,
       actionLabel: "Riprova",
       ariaBusy: false,
-      detail:
-        "La sezione non è stata caricata. Riprova senza modificare i dati.",
+      detail: "La sezione non è stata caricata. Riprova senza modificare i dati.",
       role: "alert" as const,
       title: "Caricamento non riuscito",
     };
@@ -864,8 +840,7 @@ export function getUiFixtureScenario(
       actionHref: "/app/activity",
       actionLabel: "Segui attività",
       ariaBusy: true,
-      detail:
-        "I batch sono in preparazione. Lo stato si aggiornerà automaticamente.",
+      detail: "I batch sono in preparazione. Lo stato si aggiornerà automaticamente.",
       role: "status" as const,
       title: "Importazione in corso",
     };
@@ -884,10 +859,7 @@ export function getUiFixtureScenario(
   };
 }
 
-function applyErrorState(
-  page: UiFixturePage,
-  fixture: Record<string, unknown>,
-) {
+function applyErrorState(page: UiFixturePage, fixture: Record<string, unknown>) {
   if (page === "catalogo" && Array.isArray(fixture.rows) && fixture.rows[0]) {
     Object.assign(asRecord(fixture.rows[0]), {
       lastErrorCode: "SHOPIFY_READ_FAILED",
@@ -897,8 +869,7 @@ function applyErrorState(
   }
   if (page === "impostazioni") {
     const publications = asRecord(fixture.productPublications);
-    publications.errorMessage =
-      "Canali Shopify non leggibili. Riprova prima di salvare.";
+    publications.errorMessage = "Canali Shopify non leggibili. Riprova prima di salvare.";
   }
   if (page === "panoramica" || page === "attivita") {
     const sync = asRecord(fixture.sync);

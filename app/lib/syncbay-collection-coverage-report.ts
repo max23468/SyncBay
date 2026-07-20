@@ -40,9 +40,7 @@ export function buildCollectionCoverageReport(input: {
   const genericHandles = new Set(input.genericCollectionHandles);
   const rows = input.products.map(toReportRow);
   const availableRows = rows.filter((row) => row.totalInventory > 0);
-  const availableOnlyGeneric = availableRows.filter(
-    (row) => row.specificCollections.length === 0,
-  );
+  const availableOnlyGeneric = availableRows.filter((row) => row.specificCollections.length === 0);
   const unavailableInSpecific = rows.filter(
     (row) => row.totalInventory <= 0 && row.specificCollections.length > 0,
   );
@@ -58,12 +56,8 @@ export function buildCollectionCoverageReport(input: {
     unavailableInSpecific,
   };
 
-  function toReportRow(
-    product: CollectionCoverageProduct,
-  ): CollectionCoverageReportRow {
-    const collections = product.collections.map(
-      (collection) => collection.title,
-    );
+  function toReportRow(product: CollectionCoverageProduct): CollectionCoverageReportRow {
+    const collections = product.collections.map((collection) => collection.title);
     const specificCollections = product.collections.flatMap((collection) =>
       genericHandles.has(collection.handle) ? [] : [collection.title],
     );

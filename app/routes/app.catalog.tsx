@@ -1,12 +1,7 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, useLoaderData, useSearchParams } from "react-router";
 
-import {
-  EmptyState,
-  MetricTile,
-  PaginationNav,
-  ProductThumbnail,
-} from "../components/SyncBayUi";
+import { EmptyState, MetricTile, PaginationNav, ProductThumbnail } from "../components/SyncBayUi";
 import {
   type CatalogPageFilter,
   type CatalogSortDir,
@@ -18,18 +13,12 @@ import {
 } from "../lib/syncbay-catalog-page";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import { SYNCBAY_COPY } from "../lib/syncbay-copy";
-import {
-  formatItDateTime,
-  formatItNumber as formatNumber,
-} from "../lib/syncbay-datetime-format";
+import { formatItDateTime, formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import {
   createSyncBayLoaderPerformanceTrace,
   logSyncBayLoaderPerformance,
 } from "../lib/syncbay-loader-performance";
-import {
-  getCatalogAvailabilityLabel,
-  getCatalogStatusLabel,
-} from "../lib/syncbay-ui-state";
+import { getCatalogAvailabilityLabel, getCatalogStatusLabel } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
 import { getCatalogPageState } from "../services/syncbay.server";
@@ -84,17 +73,13 @@ export const meta: MetaFunction = () => getSyncBayMeta("Catalogo");
 
 export const loader = async ({ request, url }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
-  const { session } = await trace.measure("auth.admin", () =>
-    authenticate.admin(request),
-  );
+  const { session } = await trace.measure("auth.admin", () => authenticate.admin(request));
   const order = normalizeCatalogOrder(url.searchParams.get("order"));
   const filter = normalizeCatalogPageFilter(url.searchParams.get("filter"));
   const page = normalizeCatalogPage(url.searchParams.get("page"));
   const search = url.searchParams.get("q") ?? undefined;
-  const sort =
-    order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort"));
-  const sortDir =
-    order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir"));
+  const sort = order?.sort ?? normalizeCatalogSort(url.searchParams.get("sort"));
+  const sortDir = order?.sortDir ?? normalizeCatalogSortDir(url.searchParams.get("dir"));
 
   const catalog = await trace.measure("catalog.state", () =>
     getCatalogPageState(
@@ -133,10 +118,8 @@ export default function CatalogRoute() {
   const [searchParams] = useSearchParams();
   const activeOrder = normalizeCatalogOrder(searchParams.get("order"));
   const activeFilter = normalizeCatalogPageFilter(searchParams.get("filter"));
-  const activeSort =
-    activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
-  const activeSortDir =
-    activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
+  const activeSort = activeOrder?.sort ?? normalizeCatalogSort(searchParams.get("sort"));
+  const activeSortDir = activeOrder?.sortDir ?? normalizeCatalogSortDir(searchParams.get("dir"));
   const activeSearch = searchParams.get("q") ?? "";
   const rows = catalog.rows;
   const accessory = getCatalogAccessory(catalog);
@@ -148,10 +131,7 @@ export default function CatalogRoute() {
       </s-badge>
       <s-stack gap="large">
         <div className="syncbay-balanced-box-grid">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-          >
+          <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))">
             <MetricTile
               detail="Prodotti eBay collegati a Shopify."
               icon="product"
@@ -196,9 +176,7 @@ export default function CatalogRoute() {
                 <div className="syncbay-table-scroll syncbay-table-wrap">
                   <s-table>
                     <s-table-header-row>
-                      <s-table-header listSlot="kicker">
-                        Immagine
-                      </s-table-header>
+                      <s-table-header listSlot="kicker">Immagine</s-table-header>
                       <SortableHeader
                         activeFilter={activeFilter}
                         activeSearch={activeSearch}
@@ -208,9 +186,7 @@ export default function CatalogRoute() {
                         listSlot="primary"
                         sortKey="product"
                       />
-                      <s-table-header listSlot="inline">
-                        Collegamento
-                      </s-table-header>
+                      <s-table-header listSlot="inline">Collegamento</s-table-header>
                       <s-table-header format="numeric" listSlot="labeled">
                         Disponibilità
                       </s-table-header>
@@ -246,11 +222,7 @@ export default function CatalogRoute() {
                     </s-table-header-row>
                     <s-table-body>
                       {rows.map((row) => (
-                        <CatalogTableRow
-                          key={row.id}
-                          row={row}
-                          shopDomain={catalog.shop.domain}
-                        />
+                        <CatalogTableRow key={row.id} row={row} shopDomain={catalog.shop.domain} />
                       ))}
                     </s-table-body>
                   </s-table>
@@ -264,10 +236,7 @@ export default function CatalogRoute() {
                 />
               </s-stack>
             ) : (
-              <EmptyCatalogState
-                activeFilter={activeFilter}
-                activeSearch={activeSearch}
-              />
+              <EmptyCatalogState activeFilter={activeFilter} activeSearch={activeSearch} />
             )}
           </s-stack>
         </s-section>
@@ -278,17 +247,8 @@ export default function CatalogRoute() {
 
 export const headers = embeddedNoStoreHeaders;
 
-function CatalogTableRow({
-  row,
-  shopDomain,
-}: {
-  row: CatalogRow;
-  shopDomain: string;
-}) {
-  const shopifyProductUrl = getShopifyProductAdminUrl(
-    shopDomain,
-    row.shopifyProductGid,
-  );
+function CatalogTableRow({ row, shopDomain }: { row: CatalogRow; shopDomain: string }) {
+  const shopifyProductUrl = getShopifyProductAdminUrl(shopDomain, row.shopifyProductGid);
 
   return (
     <s-table-row>
@@ -321,9 +281,7 @@ function CatalogTableRow({
         <s-stack gap="small-200">
           <s-text>{getCatalogAvailabilityLabel(row.availability)}</s-text>
           <s-text color="subdued">
-            {row.quantity === null
-              ? "Quantità non letta"
-              : `${row.quantity} pz`}
+            {row.quantity === null ? "Quantità non letta" : `${row.quantity} pz`}
           </s-text>
         </s-stack>
       </s-table-cell>
@@ -331,19 +289,13 @@ function CatalogTableRow({
       <s-table-cell>
         <s-stack gap="small-200">
           <s-text>{formatDateTime(row.lastSyncedAt)}</s-text>
-          <s-text color="subdued">
-            Lettura eBay {formatDateTime(row.snapshotCapturedAt)}
-          </s-text>
+          <s-text color="subdued">Lettura eBay {formatDateTime(row.snapshotCapturedAt)}</s-text>
         </s-stack>
       </s-table-cell>
       <s-table-cell>
         <s-stack gap="small-200">
-          <s-badge tone={getStatusTone(row)}>
-            {getCatalogStatusLabel(row.status)}
-          </s-badge>
-          {row.lastErrorMessage ? (
-            <s-text color="subdued">{row.lastErrorMessage}</s-text>
-          ) : null}
+          <s-badge tone={getStatusTone(row)}>{getCatalogStatusLabel(row.status)}</s-badge>
+          {row.lastErrorMessage ? <s-text color="subdued">{row.lastErrorMessage}</s-text> : null}
         </s-stack>
       </s-table-cell>
       <s-table-cell>
@@ -356,10 +308,7 @@ function CatalogTableRow({
           {row.status === "mapping_error" ? (
             <s-button href="/app/activity?filter=errors">Vedi errori</s-button>
           ) : null}
-          <s-button
-            href={shopifyProductUrl ?? getEbayItemUrl(row.ebayItemId)}
-            target="_blank"
-          >
+          <s-button href={shopifyProductUrl ?? getEbayItemUrl(row.ebayItemId)} target="_blank">
             {shopifyProductUrl ? "Apri in Shopify" : "Apri su eBay"}
           </s-button>
         </s-stack>
@@ -388,9 +337,7 @@ function CatalogViewControls({
           {activeFilter !== "all" ? (
             <input name="filter" type="hidden" value={activeFilter} />
           ) : null}
-          {activeOrderValue ? (
-            <input name="order" type="hidden" value={activeOrderValue} />
-          ) : null}
+          {activeOrderValue ? <input name="order" type="hidden" value={activeOrderValue} /> : null}
           <s-stack direction="inline" gap="small-200" alignItems="end">
             <s-text-field
               value={activeSearch}
@@ -400,36 +347,18 @@ function CatalogViewControls({
             />
             <s-button type="submit">Cerca</s-button>
             {activeSearch ? (
-              <s-button
-                href={getCatalogHref(
-                  activeFilter,
-                  1,
-                  activeSort,
-                  activeSortDir,
-                  "",
-                )}
-              >
+              <s-button href={getCatalogHref(activeFilter, 1, activeSort, activeSortDir, "")}>
                 Azzera
               </s-button>
             ) : null}
           </s-stack>
         </Form>
-        <s-stack
-          direction="inline"
-          gap="small-200"
-          accessibilityRole="navigation"
-        >
+        <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
           {CATALOG_FILTERS.map((filter) => (
             <s-clickable-chip
               aria-current={activeFilter === filter.value ? "page" : undefined}
               color={activeFilter === filter.value ? "strong" : "base"}
-              href={getCatalogHref(
-                filter.value,
-                1,
-                activeSort,
-                activeSortDir,
-                activeSearch,
-              )}
+              href={getCatalogHref(filter.value, 1, activeSort, activeSortDir, activeSearch)}
               key={filter.value}
             >
               {filter.label}
@@ -440,17 +369,9 @@ function CatalogViewControls({
           <s-text color="subdued">Ordine</s-text>
           {CATALOG_ORDER_OPTIONS.map((order) => (
             <s-clickable-chip
-              aria-current={
-                activeOrderValue === order.value ? "page" : undefined
-              }
+              aria-current={activeOrderValue === order.value ? "page" : undefined}
               color={activeOrderValue === order.value ? "strong" : "base"}
-              href={getCatalogHref(
-                activeFilter,
-                1,
-                order.sort,
-                order.sortDir,
-                activeSearch,
-              )}
+              href={getCatalogHref(activeFilter, 1, order.sort, order.sortDir, activeSearch)}
               key={order.value || "default"}
             >
               {order.label}
@@ -485,13 +406,7 @@ function CatalogPagination({
   return (
     <PaginationNav
       getPageHref={(page) =>
-        getCatalogHref(
-          activeFilter,
-          page,
-          activeSort,
-          activeSortDir,
-          activeSearch,
-        )
+        getCatalogHref(activeFilter, page, activeSort, activeSortDir, activeSearch)
       }
       note={
         pagination.cappedAtMaxProducts
@@ -619,22 +534,16 @@ function SortableHeader({
 
   return (
     <s-table-header
-      aria-sort={
-        active ? (activeSortDir === "asc" ? "ascending" : "descending") : "none"
-      }
+      aria-sort={active ? (activeSortDir === "asc" ? "ascending" : "descending") : "none"}
       format={format}
       listSlot={listSlot}
     >
-      <s-clickable
-        href={getCatalogHref(activeFilter, 1, sortKey, targetDir, activeSearch)}
-      >
+      <s-clickable href={getCatalogHref(activeFilter, 1, sortKey, targetDir, activeSearch)}>
         <span className="syncbay-th-sort">
           {label}
           <span
             aria-hidden="true"
-            className={`syncbay-th-sort__arrow${
-              active ? " syncbay-th-sort__arrow--active" : ""
-            }`}
+            className={`syncbay-th-sort__arrow${active ? " syncbay-th-sort__arrow--active" : ""}`}
           >
             {indicator}
           </span>
@@ -674,14 +583,10 @@ function normalizeCatalogOrder(value: string | null | undefined) {
   return CATALOG_ORDER_OPTIONS.find((option) => option.value === value) ?? null;
 }
 
-function getCatalogOrderValue(
-  sort: CatalogSortKey | null,
-  sortDir: CatalogSortDir,
-) {
+function getCatalogOrderValue(sort: CatalogSortKey | null, sortDir: CatalogSortDir) {
   return (
-    CATALOG_ORDER_OPTIONS.find(
-      (option) => option.sort === sort && option.sortDir === sortDir,
-    )?.value ?? ""
+    CATALOG_ORDER_OPTIONS.find((option) => option.sort === sort && option.sortDir === sortDir)
+      ?.value ?? ""
   );
 }
 
@@ -697,10 +602,7 @@ function getEbayItemUrl(ebayItemId: string) {
   return `https://www.ebay.it/itm/${encodeURIComponent(ebayItemId)}`;
 }
 
-function getShopifyProductAdminUrl(
-  shopDomain: string,
-  shopifyProductGid: string | null,
-) {
+function getShopifyProductAdminUrl(shopDomain: string, shopifyProductGid: string | null) {
   const productId = shopifyProductGid?.split("/").at(-1);
 
   if (!productId) return null;
@@ -733,9 +635,7 @@ function getCurrencyPriceFormat(currency: string) {
   return format;
 }
 
-function formatPrice(
-  price: { amount: string; currency: string | null } | null,
-) {
+function formatPrice(price: { amount: string; currency: string | null } | null) {
   if (!price) return "Non letto";
 
   const amount = Number(price.amount);

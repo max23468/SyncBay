@@ -149,15 +149,11 @@ function getTime(value: string | Date) {
 }
 
 function formatDateTime(value: string | Date) {
-  return itDateTimeFormatter.format(
-    value instanceof Date ? value : new Date(value),
-  );
+  return itDateTimeFormatter.format(value instanceof Date ? value : new Date(value));
 }
 
 function isEbayTradingUsageLimitMessage(message: string) {
-  return EBAY_TRADING_USAGE_LIMIT_PATTERNS.some((pattern) =>
-    pattern.test(message),
-  );
+  return EBAY_TRADING_USAGE_LIMIT_PATTERNS.some((pattern) => pattern.test(message));
 }
 
 function isFacetOnlyJob(job: SyncJobDiagnosticInput) {

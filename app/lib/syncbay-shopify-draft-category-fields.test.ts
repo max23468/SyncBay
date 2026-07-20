@@ -7,9 +7,7 @@ import {
 } from "./syncbay-shopify-draft-category-fields.ts";
 import type { ShopifyCategoryProposal } from "./syncbay-shopify-category-mapping";
 
-function buildProposal(
-  input: Partial<ShopifyCategoryProposal>,
-): ShopifyCategoryProposal {
+function buildProposal(input: Partial<ShopifyCategoryProposal>): ShopifyCategoryProposal {
   return {
     applied: false,
     confidence: "high",

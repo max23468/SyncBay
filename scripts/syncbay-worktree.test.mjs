@@ -2,11 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "vitest";
 
-import {
-  buildCreationPlan,
-  getSetupCommands,
-  runCommandsSerially,
-} from "./syncbay-worktree.mjs";
+import { buildCreationPlan, getSetupCommands, runCommandsSerially } from "./syncbay-worktree.mjs";
 
 const READY_CONTEXT = {
   baseExists: true,
@@ -64,14 +60,8 @@ test("fails early on unsafe branch, ignore, base, branch and path state", () => 
   };
 
   assert.throws(() => buildCreationPlan(input), /codex\//i);
-  assert.throws(
-    () => buildCreationPlan({ ...input, branch: "codex/.hidden" }),
-    /ref sicuro/i,
-  );
-  assert.throws(
-    () => buildCreationPlan({ ...input, branch: "codex/trailing." }),
-    /ref sicuro/i,
-  );
+  assert.throws(() => buildCreationPlan({ ...input, branch: "codex/.hidden" }), /ref sicuro/i);
+  assert.throws(() => buildCreationPlan({ ...input, branch: "codex/trailing." }), /ref sicuro/i);
   assert.throws(
     () =>
       buildCreationPlan({
@@ -122,10 +112,7 @@ test("setup installs and verifies serially with one Prisma generation", () => {
     "npm run test:services:raw",
     "git status --short --untracked-files=all",
   ]);
-  assert.equal(
-    labels.filter((label) => label.includes("prisma:generate")).length,
-    1,
-  );
+  assert.equal(labels.filter((label) => label.includes("prisma:generate")).length, 1);
 });
 
 test("serial runner stops at the first setup failure", () => {

@@ -1,5 +1,4 @@
-export const SYNCBAY_CLEAN_DESCRIPTION_MODE =
-  "HTML pulito senza template e colori";
+export const SYNCBAY_CLEAN_DESCRIPTION_MODE = "HTML pulito senza template e colori";
 
 export interface DescriptionCleanupReportRow {
   cleanedLength: number;
@@ -40,14 +39,7 @@ const UNSAFE_BLOCK_TAGS = [
   "textarea",
 ];
 
-const TEMPLATE_BLOCK_TAGS = [
-  "aside",
-  "footer",
-  "header",
-  "nav",
-  "section",
-  "table",
-];
+const TEMPLATE_BLOCK_TAGS = ["aside", "footer", "header", "nav", "section", "table"];
 
 const ALLOWED_TAGS = new Set([
   "b",
@@ -139,9 +131,7 @@ const LEADING_TEMPLATE_PHRASES = [
   ),
 ];
 
-export function cleanEbayDescriptionHtml(
-  descriptionHtml: string | null | undefined,
-) {
+export function cleanEbayDescriptionHtml(descriptionHtml: string | null | undefined) {
   const original = normalizeInputDescription(descriptionHtml);
 
   if (!original) {
@@ -208,25 +198,14 @@ export function summarizeDescriptionCleanupReport(
   rows: DescriptionCleanupReportRow[],
 ): DescriptionCleanupReportSummary {
   const sampledCount = rows.length;
-  const totalRemovedPercent = rows.reduce(
-    (total, row) => total + row.removedPercent,
-    0,
-  );
+  const totalRemovedPercent = rows.reduce((total, row) => total + row.removedPercent, 0);
 
   return {
-    averageRemovedPercent: sampledCount
-      ? Math.round(totalRemovedPercent / sampledCount)
-      : 0,
+    averageRemovedPercent: sampledCount ? Math.round(totalRemovedPercent / sampledCount) : 0,
     changedCount: rows.filter((row) => row.wasChanged).length,
-    maxRemovedPercent: rows.reduce(
-      (max, row) => Math.max(max, row.removedPercent),
-      0,
-    ),
+    maxRemovedPercent: rows.reduce((max, row) => Math.max(max, row.removedPercent), 0),
     sampledCount,
-    templateSignalCount: rows.reduce(
-      (total, row) => total + row.templateSignalCount,
-      0,
-    ),
+    templateSignalCount: rows.reduce((total, row) => total + row.templateSignalCount, 0),
   };
 }
 
@@ -256,8 +235,7 @@ function removeUnmatchedTrailingParagraphClosers(html: string) {
 }
 
 function countTag(html: string, tagName: string) {
-  return Array.from(html.matchAll(new RegExp(`<${tagName}\\b[^>]*>`, "gi")))
-    .length;
+  return Array.from(html.matchAll(new RegExp(`<${tagName}\\b[^>]*>`, "gi"))).length;
 }
 
 function countClosingTag(html: string, tagName: string) {
@@ -298,10 +276,7 @@ function removeLeadingTemplateTextPrefix(html: string) {
     previous = current;
 
     for (const phrase of LEADING_TEMPLATE_PHRASES) {
-      const pattern = new RegExp(
-        `^${phrase.source}(?:\\s|&nbsp;|&#160;|[!.,:;\\-|])*`,
-        "i",
-      );
+      const pattern = new RegExp(`^${phrase.source}(?:\\s|&nbsp;|&#160;|[!.,:;\\-|])*`, "i");
       current = current.replace(pattern, "").trimStart();
     }
   }
@@ -313,10 +288,7 @@ function removeLeadingTemplateTextPrefix(html: string) {
 }
 
 function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function removeTemplateNavigationLists(html: string) {
@@ -334,8 +306,7 @@ function truncateTemplateTail(html: string) {
     const match = pattern.exec(text);
     if (match && match.index >= 0) markerIndices.push(match.index);
   }
-  const marker =
-    markerIndices.length > 0 ? Math.min(...markerIndices) : undefined;
+  const marker = markerIndices.length > 0 ? Math.min(...markerIndices) : undefined;
 
   if (marker === undefined || marker < 15) return html;
 
@@ -421,10 +392,7 @@ function removeComments(html: string) {
 
 function removeUnsafeBlocks(html: string) {
   return UNSAFE_BLOCK_TAGS.reduce((current, tagName) => {
-    const pairedTag = new RegExp(
-      `<${tagName}\\b[^>]*>[\\s\\S]*?<\\/${tagName}>`,
-      "gi",
-    );
+    const pairedTag = new RegExp(`<${tagName}\\b[^>]*>[\\s\\S]*?<\\/${tagName}>`, "gi");
     const standaloneTag = new RegExp(`<${tagName}\\b[^>]*\\/?>`, "gi");
 
     return current.replace(pairedTag, "").replace(standaloneTag, "");
@@ -439,14 +407,9 @@ function removeTemplateBlocks(html: string) {
 }
 
 function removeBlocksByTagName(html: string, tagName: string) {
-  const blockPattern = new RegExp(
-    `<${tagName}\\b[^>]*>[\\s\\S]*?<\\/${tagName}>`,
-    "gi",
-  );
+  const blockPattern = new RegExp(`<${tagName}\\b[^>]*>[\\s\\S]*?<\\/${tagName}>`, "gi");
 
-  return html.replace(blockPattern, (block) =>
-    shouldDropTemplateBlock(block) ? "" : block,
-  );
+  return html.replace(blockPattern, (block) => (shouldDropTemplateBlock(block) ? "" : block));
 }
 
 function shouldDropTemplateBlock(blockHtml: string) {
@@ -458,9 +421,7 @@ function shouldDropTemplateBlock(blockHtml: string) {
     return true;
   }
 
-  const matchedKeywords = TEMPLATE_KEYWORDS.filter((pattern) =>
-    pattern.test(text),
-  ).length;
+  const matchedKeywords = TEMPLATE_KEYWORDS.filter((pattern) => pattern.test(text)).length;
 
   return matchedKeywords >= 2 && text.length >= 40;
 }
@@ -538,24 +499,19 @@ function getSafeRawTextExcerpt(rawText: string, cleanedText: string) {
 }
 
 function countTemplateSignals(text: string) {
-  return TEMPLATE_SIGNAL_PATTERNS.filter((pattern) => pattern.test(text))
-    .length;
+  return TEMPLATE_SIGNAL_PATTERNS.filter((pattern) => pattern.test(text)).length;
 }
 
 function excerpt(text: string, maxLength = 220) {
   const normalized = text.replace(/\s+/g, " ").trim();
 
-  return normalized.length > maxLength
-    ? `${normalized.slice(0, maxLength)}...`
-    : normalized;
+  return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
 }
 
 function normalizeTitle(value: string | null | undefined, itemId: string) {
   const normalized = value?.trim();
 
-  return normalized && normalized.length > 0
-    ? normalized
-    : `Listing eBay ${itemId}`;
+  return normalized && normalized.length > 0 ? normalized : `Listing eBay ${itemId}`;
 }
 
 function removeEmptyFormattingTags(html: string) {
@@ -577,14 +533,9 @@ function formatLeadingFormattingFragments(html: string) {
 
   if (!prefix.trim()) return html;
 
-  const fragments = Array.from(
-    prefix.matchAll(/<(b|em|i|strong|u)>([\s\S]*?)<\/\1>/gi),
-  );
+  const fragments = Array.from(prefix.matchAll(/<(b|em|i|strong|u)>([\s\S]*?)<\/\1>/gi));
   const consumed = fragments.map((match) => match[0]).join("");
-  const prefixWithoutFragments = prefix.replace(
-    /<(b|em|i|strong|u)>[\s\S]*?<\/\1>/gi,
-    "",
-  );
+  const prefixWithoutFragments = prefix.replace(/<(b|em|i|strong|u)>[\s\S]*?<\/\1>/gi, "");
 
   if (prefixWithoutFragments.replace(/<br>|\s/gi, "").length > 0) {
     return html;

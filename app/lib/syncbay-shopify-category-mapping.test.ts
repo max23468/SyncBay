@@ -109,10 +109,8 @@ test("keeps commemorative details in productType without using a narrow Shopify 
 test("maps French pre-euro coins away from Italian product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName:
-        "Monete e banconote:Monete europee pre euro:Francia",
-      title:
-        "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
+      ebayPrimaryCategoryName: "Monete e banconote:Monete europee pre euro:Francia",
+      title: "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
     }).productType,
     "Monete europee pre euro:Francia",
   );
@@ -121,8 +119,7 @@ test("maps French pre-euro coins away from Italian product type", () => {
 test("maps Regno d'Italia lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName:
-        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
       title: "NL* VEIII 1 CENTESIMO 1905 VARIANTE 5 SPOSTATO NC QFDC",
     }).productType,
     "Monete italiane in lire:Regno",
@@ -134,8 +131,7 @@ test("maps Repubblica lire to collection-grade product type", () => {
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName:
         "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
-      title:
-        "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
+      title: "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
     }).productType,
     "Monete italiane in lire:Repubblica",
   );
@@ -221,8 +217,7 @@ test("combines FDC title abbreviations with stamp category context", () => {
 test("maps scale model cars to Shopify scale model cars", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
-      title:
-        "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43 come da foto",
+      title: "NL* MODELLINO FIAT 500 COMMERCIALE 1968 Olio Carli Scala 1:43 come da foto",
     }),
     {
       applied: false,
@@ -309,8 +304,7 @@ test("maps Fabbri music volumes to records and LPs by maintainer decision", () =
 test("maps typewriters to office typewriters", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
-      title:
-        "NL* Macchina da Scrivere ADLER MODELLO TIPPA OLANDA Custodia originale Top",
+      title: "NL* Macchina da Scrivere ADLER MODELLO TIPPA OLANDA Custodia originale Top",
     }),
     {
       applied: false,
@@ -327,8 +321,7 @@ test("maps typewriters to office typewriters", () => {
 test("maps paper catalog books to print books", () => {
   assert.deepEqual(
     resolveShopifyCategoryProposal({
-      title:
-        "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998",
+      title: "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998",
     }),
     {
       applied: false,
@@ -346,8 +339,7 @@ test("keeps phone card catalog books as print books even with collectible store 
   assert.deepEqual(
     resolveShopifyCategoryProposal({
       ebayStoreCategoryName: "Numismatica > Cataloghi",
-      title:
-        "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998 pari al n",
+      title: "NL* Libro CATALOGO CARTE TELEFONICHE Lotto 3 PEZZI ANNO 1996 1997 1998 pari al n",
     }),
     {
       applied: false,

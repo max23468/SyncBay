@@ -6,14 +6,9 @@ import path from "node:path";
 import { test } from "vitest";
 import { fileURLToPath } from "node:url";
 
-import {
-  findTopLevelLockMismatches,
-  inspectPrismaClient,
-} from "./syncbay-local-doctor.mjs";
+import { findTopLevelLockMismatches, inspectPrismaClient } from "./syncbay-local-doctor.mjs";
 
-const SCRIPT_PATH = fileURLToPath(
-  new URL("./syncbay-local-doctor.mjs", import.meta.url),
-);
+const SCRIPT_PATH = fileURLToPath(new URL("./syncbay-local-doctor.mjs", import.meta.url));
 
 test("finds missing or stale top-level packages against the root lockfile", () => {
   const rootLock = {
@@ -49,10 +44,7 @@ test("recognizes generated and correctly linked Prisma Client", () => {
   fs.mkdirSync(generatedDirectory, { recursive: true });
   fs.mkdirSync(linkDirectory, { recursive: true });
   fs.writeFileSync(path.join(generatedDirectory, "index.js"), "export {};\n");
-  fs.symlinkSync(
-    "../../../prisma/generated/client",
-    path.join(linkDirectory, "default"),
-  );
+  fs.symlinkSync("../../../prisma/generated/client", path.join(linkDirectory, "default"));
 
   assert.deepEqual(inspectPrismaClient(root), {
     generated: true,
@@ -66,15 +58,9 @@ test("reports missing worktree dependencies with exact repair commands", () => {
     encoding: "utf8",
   }).trim();
   fs.mkdirSync(path.join(root, "prisma"));
-  fs.writeFileSync(
-    path.join(root, ".node-version"),
-    `${process.versions.node}\n`,
-  );
+  fs.writeFileSync(path.join(root, ".node-version"), `${process.versions.node}\n`);
   fs.writeFileSync(path.join(root, ".npmrc"), "engine-strict=true\n");
-  fs.writeFileSync(
-    path.join(root, "prisma/schema.prisma"),
-    "generator client {}\n",
-  );
+  fs.writeFileSync(path.join(root, "prisma/schema.prisma"), "generator client {}\n");
   fs.writeFileSync(
     path.join(root, "package.json"),
     `${JSON.stringify(
@@ -102,11 +88,7 @@ test("reports missing worktree dependencies with exact repair commands", () => {
 
   assert.notEqual(result.status, 0);
   assert.ok(report.failures.some((failure) => failure.includes("npm install")));
-  assert.ok(
-    report.failures.some((failure) =>
-      failure.includes("npm run prisma:generate"),
-    ),
-  );
+  assert.ok(report.failures.some((failure) => failure.includes("npm run prisma:generate")));
   assert.equal(report.checks.dependenciesInstalled, false);
   assert.equal(report.checks.prismaClientGenerated, false);
 });

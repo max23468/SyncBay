@@ -74,8 +74,7 @@ export function selectEbayTradingInventorySku(input: {
 
   const fallbackSku = `EBAY-${input.itemId}`;
 
-  return input.skuGenerated === true &&
-    sku.toUpperCase() === fallbackSku.toUpperCase()
+  return input.skuGenerated === true && sku.toUpperCase() === fallbackSku.toUpperCase()
     ? null
     : sku;
 }

@@ -19,11 +19,7 @@ const patchSections = new Set([
   "sicurezza",
   "sotto il cofano",
 ]);
-const nonVersionedSections = new Set([
-  "non versionato",
-  "non rilasciabile",
-  "nessuna release",
-]);
+const nonVersionedSections = new Set(["non versionato", "non rilasciabile", "nessuna release"]);
 
 function parseArgs(argv) {
   let values;
@@ -93,9 +89,7 @@ function todayInRome() {
     year: "numeric",
   }).formatToParts(new Date());
 
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
 }
 
@@ -152,16 +146,11 @@ function extractUnreleased(changelog, options = {}) {
   const bodyStart = headerMatch.index + headerMatch[0].length;
   const afterHeader = changelog.slice(bodyStart);
   const nextHeaderIndex = afterHeader.search(/\n## \[[^\]]+\]/);
-  const rawBody =
-    nextHeaderIndex === -1
-      ? afterHeader
-      : afterHeader.slice(0, nextHeaderIndex);
+  const rawBody = nextHeaderIndex === -1 ? afterHeader : afterHeader.slice(0, nextHeaderIndex);
   const body = rawBody.trim();
 
   if (!body && !options.allowEmpty) {
-    fail(
-      "Il blocco [Non rilasciato] è vuoto. Aggiungi almeno una voce prima di rilasciare.",
-    );
+    fail("Il blocco [Non rilasciato] è vuoto. Aggiungi almeno una voce prima di rilasciare.");
   }
 
   return {
@@ -176,9 +165,7 @@ function inferBump(unreleasedBody) {
   const sections = validateSections(unreleasedBody);
   // Solo il testo versionato puo' guidare il bump: una nota non versionata che
   // cita "breaking change" non deve forzare un major.
-  const normalizedBody = normalize(
-    splitUnreleasedBody(unreleasedBody).versioned,
-  );
+  const normalizedBody = normalize(splitUnreleasedBody(unreleasedBody).versioned);
   const hasNonVersioned = sections.some(
     (section) => nonVersionedSections.has(section.title) && section.hasContent,
   );
@@ -196,27 +183,17 @@ function inferBump(unreleasedBody) {
   if (!hasVersioned && hasNonVersioned) return "none";
 
   if (
-    sections.some(
-      (section) => section.hasContent && majorSections.has(section.title),
-    ) ||
+    sections.some((section) => section.hasContent && majorSections.has(section.title)) ||
     /\bbreaking change\b/.test(normalizedBody)
   ) {
     return "major";
   }
 
-  if (
-    sections.some(
-      (section) => section.hasContent && minorSections.has(section.title),
-    )
-  ) {
+  if (sections.some((section) => section.hasContent && minorSections.has(section.title))) {
     return "minor";
   }
 
-  if (
-    sections.some(
-      (section) => section.hasContent && patchSections.has(section.title),
-    )
-  ) {
+  if (sections.some((section) => section.hasContent && patchSections.has(section.title))) {
     return "patch";
   }
 
@@ -247,9 +224,7 @@ function validateSections(unreleasedBody) {
     fail(
       `Sezioni changelog non riconosciute: ${unknownSections
         .map((section) => section.title)
-        .join(
-          ", ",
-        )}. Usa Novità, Correzioni, Sotto il cofano, Rimosso oppure Non versionato.`,
+        .join(", ")}. Usa Novità, Correzioni, Sotto il cofano, Rimosso oppure Non versionato.`,
     );
   }
 
@@ -261,10 +236,7 @@ function validateSections(unreleasedBody) {
 // perderebbe in silenzio. Lo isoliamo per poterlo rifiutare.
 export function findUnreleasedPreamble(unreleasedBody) {
   const firstHeading = unreleasedBody.search(/^###\s+.+$/m);
-  const preamble =
-    firstHeading === -1
-      ? unreleasedBody
-      : unreleasedBody.slice(0, firstHeading);
+  const preamble = firstHeading === -1 ? unreleasedBody : unreleasedBody.slice(0, firstHeading);
 
   return sectionHasContent(preamble) ? preamble.trim() : "";
 }
@@ -274,8 +246,7 @@ function parseSections(markdown) {
 
   return headings.map((heading, index) => {
     const bodyStart = heading.index + heading[0].length;
-    const bodyEnd =
-      index + 1 < headings.length ? headings[index + 1].index : markdown.length;
+    const bodyEnd = index + 1 < headings.length ? headings[index + 1].index : markdown.length;
     const body = markdown.slice(bodyStart, bodyEnd);
 
     return {
@@ -297,8 +268,7 @@ export function splitUnreleasedBody(unreleasedBody) {
 
   for (const section of sections) {
     if (!section.hasContent) continue;
-    if (nonVersionedSections.has(section.title))
-      nonVersioned.push(section.markdown);
+    if (nonVersionedSections.has(section.title)) nonVersioned.push(section.markdown);
     else versioned.push(section.markdown);
   }
 
@@ -367,9 +337,7 @@ function updateChangelog(changelog, release) {
   const { nonVersioned, versioned } = splitUnreleasedBody(unreleased.body);
 
   if (!versioned) {
-    fail(
-      "Il blocco [Non rilasciato] non contiene sezioni versionate da rilasciare.",
-    );
+    fail("Il blocco [Non rilasciato] non contiene sezioni versionate da rilasciare.");
   }
 
   // Le note non versionate restano sotto [Non rilasciato]: non appartengono a
@@ -394,10 +362,7 @@ function updateVersionFile(source, release) {
       /export const APP_VERSION = "[^"]+";/,
       `export const APP_VERSION = "${release.version}";`,
     )
-    .replace(
-      /export const BUILD_DATE = "[^"]+";/,
-      `export const BUILD_DATE = "${release.date}";`,
-    );
+    .replace(/export const BUILD_DATE = "[^"]+";/, `export const BUILD_DATE = "${release.date}";`);
 }
 
 function runReleaseCli() {
@@ -409,9 +374,7 @@ function runReleaseCli() {
   }
 
   if (options.bump && !validBumps.has(options.bump)) {
-    fail(
-      `--bump deve essere major, minor, patch o none. Ricevuto: ${options.bump}`,
-    );
+    fail(`--bump deve essere major, minor, patch o none. Ricevuto: ${options.bump}`);
   }
 
   if (options.bump === "none" && options.version) {
@@ -434,16 +397,13 @@ function runReleaseCli() {
   });
 
   if (!unreleased.body) {
-    console.log(
-      "Blocco [Non rilasciato] vuoto. Nessuna release SemVer da preparare.",
-    );
+    console.log("Blocco [Non rilasciato] vuoto. Nessuna release SemVer da preparare.");
     console.log("Nessun file aggiornato.");
     process.exit(0);
   }
 
   validateSections(unreleased.body);
-  const bump =
-    options.bump ?? (options.version ? null : inferBump(unreleased.body));
+  const bump = options.bump ?? (options.version ? null : inferBump(unreleased.body));
   const nextVersion = options.version ?? bumpVersion(current.version, bump);
   const releaseDate = options.date ?? todayInRome();
   const strategy = options.version ? "versione esplicita" : `bump ${bump}`;
@@ -453,9 +413,7 @@ function runReleaseCli() {
       fail("--bump none può essere usato solo con voci Non versionato.");
     }
 
-    console.log(
-      "Categoria: non versionato. Nessuna release SemVer da preparare.",
-    );
+    console.log("Categoria: non versionato. Nessuna release SemVer da preparare.");
     console.log("Nessun file aggiornato.");
     process.exit(0);
   }
@@ -480,9 +438,7 @@ function runReleaseCli() {
     console.log(`Dry-run release SyncBay ${nextVersion} (${releaseDate})`);
     console.log(`Versione corrente: ${current.version} (${current.buildDate})`);
     console.log(`Strategia: ${strategy}`);
-    console.log(
-      `Analisi blocco [Non rilasciato]: ${analyzeUnreleased(unreleased.body)}`,
-    );
+    console.log(`Analisi blocco [Non rilasciato]: ${analyzeUnreleased(unreleased.body)}`);
     if (kept) {
       console.log("Le voci Non versionato restano sotto [Non rilasciato].");
     }
@@ -495,9 +451,7 @@ function runReleaseCli() {
   writeFileSync(changelogPath, nextChangelog);
   writeFileSync(versionPath, nextVersionFile);
 
-  console.log(
-    `Release SyncBay ${nextVersion} preparata (${releaseDate}, ${strategy}).`,
-  );
+  console.log(`Release SyncBay ${nextVersion} preparata (${releaseDate}, ${strategy}).`);
   if (kept) {
     console.log("Le voci Non versionato restano sotto [Non rilasciato].");
   }

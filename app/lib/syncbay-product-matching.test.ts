@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as productMatching from "./syncbay-product-matching.ts";
 
-const { buildExistingProductMatchSuggestions, getMatchSuggestionSummary } =
-  productMatching;
+const { buildExistingProductMatchSuggestions, getMatchSuggestionSummary } = productMatching;
 
 test("suggests exact sku matches before title matches", () => {
   const suggestions = buildExistingProductMatchSuggestions({
@@ -194,10 +193,7 @@ test("does not auto link product-level matches when variant candidates are trunc
 
   assert.equal(suggestions[0]?.confidence, "high");
   assert.equal(suggestions[0]?.autoLinkable, false);
-  assert.deepEqual(suggestions[0]?.reasonCodes, [
-    "handle_item_id",
-    "title_very_similar",
-  ]);
+  assert.deepEqual(suggestions[0]?.reasonCodes, ["handle_item_id", "title_very_similar"]);
 });
 
 test("formats match suggestion summaries without implying automatic linking", () => {

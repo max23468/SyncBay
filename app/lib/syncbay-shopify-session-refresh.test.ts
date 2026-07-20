@@ -5,10 +5,7 @@ import { shouldRefreshOfflineShopifySession } from "./syncbay-shopify-session-re
 
 test("refreshes non-expiring offline Shopify sessions for Shopify 2027 readiness", () => {
   assert.equal(
-    shouldRefreshOfflineShopifySession(
-      null,
-      new Date("2026-06-03T10:00:00.000Z"),
-    ),
+    shouldRefreshOfflineShopifySession(null, new Date("2026-06-03T10:00:00.000Z")),
     true,
   );
 });

@@ -1,8 +1,4 @@
-import {
-  Prisma,
-  ProductSnapshotSource,
-  SyncConflictStatus,
-} from "@prisma/client";
+import { Prisma, ProductSnapshotSource, SyncConflictStatus } from "@prisma/client";
 
 import prisma from "../db.server";
 import { getAlignedOpenConflictFields } from "../lib/syncbay-conflict-detection";
@@ -69,12 +65,7 @@ export interface ConflictProductTarget {
 export interface ConflictDetectionPersistence {
   jobId: string;
   mappingId: string | null;
-  outcome:
-    | "conflict_opened"
-    | "conflict_resolved"
-    | "mapping_not_found"
-    | "noop"
-    | "failed";
+  outcome: "conflict_opened" | "conflict_resolved" | "mapping_not_found" | "noop" | "failed";
   fields: string[];
   errorCode?: string;
   shopId?: string;
@@ -82,9 +73,7 @@ export interface ConflictDetectionPersistence {
 }
 
 export interface ShopifyConflictDetectionPorts {
-  loadMappings(
-    jobs: ShopifyChangeBatchJob[],
-  ): Promise<Map<string, ConflictMapping>>;
+  loadMappings(jobs: ShopifyChangeBatchJob[]): Promise<Map<string, ConflictMapping>>;
   loadBaselines(mappingIds: string[]): Promise<Map<string, ConflictBaseline[]>>;
   loadProducts(input: {
     targets: ConflictProductTarget[];
@@ -141,9 +130,7 @@ export async function detectShopifyChangesBatch(
   }
 
   const activeMappings = [
-    ...new Map(
-      [...mappingByJob.values()].map((mapping) => [mapping.id, mapping]),
-    ).values(),
+    ...new Map([...mappingByJob.values()].map((mapping) => [mapping.id, mapping])).values(),
   ];
   const mappingIds = activeMappings.map(({ id }) => id);
   const baselinesBeforeShopify = await ports.loadBaselines(mappingIds);
@@ -182,17 +169,14 @@ export async function detectShopifyChangesBatch(
   const unstableMappingIds = new Set<string>();
 
   if (advancedMappingIds.size > 0) {
-    const retryTargets = targets.filter(({ mappingId }) =>
-      advancedMappingIds.has(mappingId),
-    );
+    const retryTargets = targets.filter(({ mappingId }) => advancedMappingIds.has(mappingId));
     const retryProducts = await ports.loadProducts({
       targets: retryTargets,
       shopDomain: input.shopDomain,
       defaultLocationGid: input.defaultLocationGid ?? null,
     });
     providerReadCount += 1;
-    for (const [mappingId, product] of retryProducts)
-      products.set(mappingId, product);
+    for (const [mappingId, product] of retryProducts) products.set(mappingId, product);
 
     const retryBaselines = await ports.loadBaselines([...advancedMappingIds]);
     for (const mappingId of advancedMappingIds) {
@@ -253,10 +237,7 @@ function baselineSignature(baselines: ConflictBaseline[] | undefined) {
     .join("\n");
 }
 
-function getConflictValues(
-  product: ShopifyConflictProduct,
-  baselines: ConflictBaseline[],
-) {
+function getConflictValues(product: ShopifyConflictProduct, baselines: ConflictBaseline[]) {
   const live: Record<ConflictBaseline["field"], string | null> = {
     title: product.title.trim(),
     description: hashNullableText(product.descriptionHtml),
@@ -307,9 +288,7 @@ function buildConflictBatchQuery(defaultLocationGid: string | null) {
     }`;
 }
 
-function getVariantAvailableAtLocation(
-  variant: ShopifyConflictBatchVariant | null | undefined,
-) {
+function getVariantAvailableAtLocation(variant: ShopifyConflictBatchVariant | null | undefined) {
   const available = variant?.inventoryItem?.inventoryLevel?.quantities?.find(
     (quantity) => quantity.name === "available",
   )?.quantity;
@@ -320,9 +299,7 @@ function getVariantAvailableAtLocation(
 export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDetectionPorts {
   return {
     async loadMappings(jobs) {
-      const productGids = jobs.flatMap(({ productGid }) =>
-        productGid ? [productGid] : [],
-      );
+      const productGids = jobs.flatMap(({ productGid }) => (productGid ? [productGid] : []));
       const inventoryGids = jobs.flatMap(({ inventoryItemGid }) =>
         inventoryItemGid ? [inventoryItemGid] : [],
       );
@@ -337,10 +314,8 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       });
       const map = new Map<string, ConflictMapping>();
       for (const row of rows) {
-        if (row.shopifyProductGid)
-          map.set(`product:${row.shopifyProductGid}`, row);
-        if (row.shopifyInventoryItemGid)
-          map.set(`inventory:${row.shopifyInventoryItemGid}`, row);
+        if (row.shopifyProductGid) map.set(`product:${row.shopifyProductGid}`, row);
+        if (row.shopifyInventoryItemGid) map.set(`inventory:${row.shopifyInventoryItemGid}`, row);
       }
       return map;
     },
@@ -379,8 +354,7 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         if (!snapshot.mappingId) continue;
         const current = result.get(snapshot.mappingId) ?? [];
         const add = (field: ConflictBaseline["field"], value: unknown) => {
-          if (value == null || current.some((entry) => entry.field === field))
-            return;
+          if (value == null || current.some((entry) => entry.field === field)) return;
           current.push({
             mappingId: snapshot.mappingId!,
             field,
@@ -401,32 +375,24 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
       const admin = await getShopifyAdminGraphqlClient(shopDomain);
       // Budget di lettura provider sui prodotti distinti; i mapping oltre il cap
       // restano fuori dalla mappa e vengono ritentati come SHOPIFY_PRODUCT_NOT_FOUND.
-      const cappedProductGids = [
-        ...new Set(targets.map((target) => target.productGid)),
-      ].slice(0, 25);
-      const includedProducts = new Set(cappedProductGids);
-      const cappedTargets = targets.filter((target) =>
-        includedProducts.has(target.productGid),
+      const cappedProductGids = [...new Set(targets.map((target) => target.productGid))].slice(
+        0,
+        25,
       );
+      const includedProducts = new Set(cappedProductGids);
+      const cappedTargets = targets.filter((target) => includedProducts.has(target.productGid));
       // I nodi ProductVariant portano la variante di ciascun mapping: li
       // richiediamo nella stessa `nodes(ids:)` dei prodotti, un solo read copre
       // entrambi.
       const variantGids = [
         ...new Set(
-          cappedTargets.flatMap((target) =>
-            target.variantGid ? [target.variantGid] : [],
-          ),
+          cappedTargets.flatMap((target) => (target.variantGid ? [target.variantGid] : [])),
         ),
       ];
       const ids = [...cappedProductGids, ...variantGids];
-      const response = await admin.graphql(
-        buildConflictBatchQuery(defaultLocationGid),
-        {
-          variables: defaultLocationGid
-            ? { ids, locationId: defaultLocationGid }
-            : { ids },
-        },
-      );
+      const response = await admin.graphql(buildConflictBatchQuery(defaultLocationGid), {
+        variables: defaultLocationGid ? { ids, locationId: defaultLocationGid } : { ids },
+      });
       const body = (await response.json()) as {
         data?: { nodes?: ShopifyConflictBatchNode[] };
       };
@@ -453,8 +419,7 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
         if (!productNode) continue;
         const firstVariant = productNode.variants?.nodes?.[0] ?? null;
         const variant =
-          (target.variantGid ? variantByGid.get(target.variantGid) : null) ??
-          firstVariant;
+          (target.variantGid ? variantByGid.get(target.variantGid) : null) ?? firstVariant;
         const locationQuantity = getVariantAvailableAtLocation(variant);
         const quantity = hasManagedLocation
           ? locationQuantity
@@ -467,17 +432,15 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
           priceAmount: variant?.price ?? null,
           quantity,
           imageCount:
-            productNode.media?.nodes?.filter(
-              (media) => media.mediaContentType === "IMAGE",
-            ).length ?? 0,
+            productNode.media?.nodes?.filter((media) => media.mediaContentType === "IMAGE")
+              .length ?? 0,
         });
       }
       return result;
     },
     async persist(results) {
       for (const result of results) {
-        if (!result.mappingId || !result.shopId || result.outcome === "failed")
-          continue;
+        if (!result.mappingId || !result.shopId || result.outcome === "failed") continue;
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- letture conflitti per mapping, in serie per contenere le connessioni concorrenti sul pooler.
         const open = await prisma.syncConflict.findMany({
           select: { field: true, id: true },

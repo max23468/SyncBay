@@ -27,10 +27,7 @@ test("CI classifies the diff and runs only targeted blocking gates", () => {
   // I run manuali (workflow_dispatch) devono avere una base valida: senza di
   // essa il verifier riceverebbe --base "" e fallirebbe prima di ogni check.
   assert.match(source, /base="origin\/main"/);
-  assert.doesNotMatch(
-    source,
-    /echo "lane=runtime" >> "\$GITHUB_OUTPUT"\s*\n\s*exit 0/,
-  );
+  assert.doesNotMatch(source, /echo "lane=runtime" >> "\$GITHUB_OUTPUT"\s*\n\s*exit 0/);
 });
 
 test("browser UI gates run only on explicit request or label", () => {
@@ -50,7 +47,7 @@ test("React Doctor runs only for runtime and frontend paths", () => {
   assert.match(source, /paths:/);
   assert.match(source, /app\/\*\*\/\*\.tsx/);
   assert.match(source, /package-lock\.json/);
-  assert.match(source, /eslint\.config\.mjs/);
+  assert.match(source, /\.oxlintrc\.json/);
   assert.match(source, /version:\s*latest/);
   assert.doesNotMatch(source, /ready_for_review/);
   assert.doesNotMatch(source, /^\s*push:\s*$/m);

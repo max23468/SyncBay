@@ -33,9 +33,7 @@ export function buildImportQualityChecklist(input: {
     input.sku
       ? {
           code: input.skuGenerated ? "sku_generated" : "sku_present",
-          label: input.skuGenerated
-            ? "SKU generato da ItemID eBay"
-            : "SKU presente",
+          label: input.skuGenerated ? "SKU generato da ItemID eBay" : "SKU presente",
           severity: input.skuGenerated ? "info" : "info",
           status: "pass",
         }
@@ -133,9 +131,7 @@ export function buildImportQualityChecklist(input: {
   return items;
 }
 
-export function getQualityChecklistSummary(
-  checklist: ImportQualityChecklistItem[],
-) {
+export function getQualityChecklistSummary(checklist: ImportQualityChecklistItem[]) {
   const failures = checklist.filter((item) => item.status === "fail").length;
   const warnings = checklist.filter((item) => item.status === "warning").length;
 

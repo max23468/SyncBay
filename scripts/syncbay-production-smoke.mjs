@@ -82,8 +82,7 @@ export async function runProductionSmoke({ baseUrl }) {
 }
 
 async function runCli(args) {
-  const baseUrl =
-    args.baseUrl || process.env.SYNCBAY_SMOKE_BASE_URL || DEFAULT_BASE_URL;
+  const baseUrl = args.baseUrl || process.env.SYNCBAY_SMOKE_BASE_URL || DEFAULT_BASE_URL;
 
   console.log(`Smoke production SyncBay: ${baseUrl}`);
 

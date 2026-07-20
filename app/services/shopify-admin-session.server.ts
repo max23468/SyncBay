@@ -49,10 +49,8 @@ async function getUsableOfflineShopifySession(shopDomain: string) {
   return dedupeInFlight(inFlightOfflineSessions, sessionId, () =>
     getUsableOfflineShopifySessionWithPorts({
       now: () => new Date(),
-      readSession: () =>
-        prisma.session.findUnique({ select, where: { id: sessionId } }),
-      refresh: (refreshToken) =>
-        refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
+      readSession: () => prisma.session.findUnique({ select, where: { id: sessionId } }),
+      refresh: (refreshToken) => refreshOfflineShopifyAccessToken({ refreshToken, shopDomain }),
       compareAndSwap: (oldAccessToken, refreshed, scope) =>
         prisma.session
           .updateMany({
@@ -125,9 +123,7 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
   const persisted = await input.readSession();
 
   if (!persisted?.accessToken) {
-    throw new Error(
-      "Sessione offline Shopify non disponibile per il runner automatico.",
-    );
+    throw new Error("Sessione offline Shopify non disponibile per il runner automatico.");
   }
 
   const session = decryptPersistedSession(persisted);
@@ -158,8 +154,7 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
 
   const log: OfflineSessionRefreshLog = input.log ?? (() => {});
   const sleep =
-    input.sleep ??
-    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    input.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const refreshStartedAt = Date.now();
 
   let refreshed: RefreshedOfflineSession;
@@ -192,11 +187,7 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     throw error;
   }
 
-  const claimed = await input.compareAndSwap(
-    persisted.accessToken,
-    refreshed,
-    session.scope,
-  );
+  const claimed = await input.compareAndSwap(persisted.accessToken, refreshed, session.scope);
 
   if (claimed) {
     log({
@@ -220,9 +211,7 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
       level: "error",
       outcome: "cas-perso-sessione-rimossa",
     });
-    throw new Error(
-      "Sessione offline Shopify rimossa durante l'aggiornamento.",
-    );
+    throw new Error("Sessione offline Shopify rimossa durante l'aggiornamento.");
   }
   log({
     durationMs: Date.now() - refreshStartedAt,
@@ -237,16 +226,14 @@ function describeRefreshFailure(error: unknown) {
   return typeof status === "number" ? `http-${status}` : "senza-status";
 }
 
-function decryptPersistedSession<
-  T extends { accessToken: string; refreshToken: string | null },
->(session: T) {
+function decryptPersistedSession<T extends { accessToken: string; refreshToken: string | null }>(
+  session: T,
+) {
   try {
     return {
       ...session,
       accessToken: decryptSecret(session.accessToken),
-      refreshToken: session.refreshToken
-        ? decryptSecret(session.refreshToken)
-        : null,
+      refreshToken: session.refreshToken ? decryptSecret(session.refreshToken) : null,
     };
   } catch {
     throw new Error(
@@ -263,27 +250,22 @@ async function refreshOfflineShopifyAccessToken(input: {
   const clientSecret = process.env.SHOPIFY_API_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error(
-      "Credenziali Shopify app mancanti: impossibile aggiornare il token offline.",
-    );
+    throw new Error("Credenziali Shopify app mancanti: impossibile aggiornare il token offline.");
   }
 
-  const response = await fetch(
-    `https://${input.shopDomain}/admin/oauth/access_token`,
-    {
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: "refresh_token",
-        refresh_token: input.refreshToken,
-      }),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      method: "POST",
+  const response = await fetch(`https://${input.shopDomain}/admin/oauth/access_token`, {
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: input.refreshToken,
+    }),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-  );
+    method: "POST",
+  });
   const json = (await response.json().catch(() => null)) as {
     access_token?: string;
     expires_in?: number;

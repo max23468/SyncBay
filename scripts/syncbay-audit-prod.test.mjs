@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  findUnexpectedAuditEntries,
-  readAuditVulnerabilities,
-} from "./syncbay-audit-prod.mjs";
+import { findUnexpectedAuditEntries, readAuditVulnerabilities } from "./syncbay-audit-prod.mjs";
 
 const knownPrisma7Audit = {
   "@hono/node-server": {
@@ -37,10 +34,7 @@ test("rejects additional advisories on allowlisted Prisma packages", () => {
     },
   };
 
-  assert.deepEqual(
-    findUnexpectedAuditEntries(vulnerabilities),
-    Object.entries(vulnerabilities),
-  );
+  assert.deepEqual(findUnexpectedAuditEntries(vulnerabilities), Object.entries(vulnerabilities));
 });
 
 test("rejects unrelated production vulnerabilities", () => {

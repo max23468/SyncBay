@@ -3,10 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "vitest";
 
 import { UI_PAGES } from "./syncbay-ui-check.mjs";
-import {
-  UI_BROWSER_SCENARIOS,
-  UI_BROWSER_VIEWPORTS,
-} from "./syncbay-ui-browser-check.mjs";
+import { UI_BROWSER_SCENARIOS, UI_BROWSER_VIEWPORTS } from "./syncbay-ui-browser-check.mjs";
 
 test("the browser gate covers every embedded surface", () => {
   assert.deepEqual(UI_PAGES, [
@@ -38,10 +35,7 @@ test("the browser gate includes failure and import lifecycle scenarios", () => {
 });
 
 test("the browser gate verifies focus restoration after navigation and submit", () => {
-  const source = readFileSync(
-    new URL("./syncbay-ui-browser-check.mjs", import.meta.url),
-    "utf8",
-  );
+  const source = readFileSync(new URL("./syncbay-ui-browser-check.mjs", import.meta.url), "utf8");
 
   assert.match(source, /verifyNavigationFocus/);
   assert.match(source, /verifySubmissionFocus/);

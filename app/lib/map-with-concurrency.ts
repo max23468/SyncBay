@@ -13,9 +13,7 @@ export async function mapWithConcurrency<Input, Output>(
     }
   }
 
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, worker),
-  );
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
 
   return results;
 }

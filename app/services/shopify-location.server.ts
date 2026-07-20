@@ -1,8 +1,5 @@
 interface ShopifyAdminGraphqlClient {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
 interface LocationEditResponse {
@@ -31,12 +28,8 @@ export function getLocationRenameReadiness(input: {
   selectedLocationName?: string | null;
 }) {
   const blockers = [
-    !input.hasDefaultLocation
-      ? "location Shopify predefinita non confermata"
-      : null,
-    !input.canWriteLocations
-      ? "scope write_locations non ancora concesso"
-      : null,
+    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+    !input.canWriteLocations ? "scope write_locations non ancora concesso" : null,
     !input.selectedLocationName ? "location selezionata non leggibile" : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
@@ -58,14 +51,10 @@ export async function renameShopifyLocation(input: {
 }) {
   const normalizedName = normalizeLocationName(input.name);
   const blockers = [
-    !input.canWriteLocations
-      ? "scope write_locations non ancora concesso"
-      : null,
+    !input.canWriteLocations ? "scope write_locations non ancora concesso" : null,
     !input.locationGid ? "location Shopify non selezionata" : null,
     !normalizedName ? "nome location mancante" : null,
-    normalizedName && normalizedName.length > 80
-      ? "nome location troppo lungo"
-      : null,
+    normalizedName && normalizedName.length > 80 ? "nome location troppo lungo" : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
   if (blockers.length > 0) {

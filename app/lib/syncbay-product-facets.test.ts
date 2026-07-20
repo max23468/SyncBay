@@ -122,8 +122,7 @@ test("extracts Numisleo conservation and perizia signals from the title", () => 
     buildSyncBayProductFacets({
       itemSpecifics: [{ name: "Paese di origine", values: ["Italia"] }],
       storeCategoryName: "Monete italiane in lire",
-      title:
-        "NL* ITALIA Repubblica 50 LIRE VULCANO 1958 RARA BB Perizia Filisina Massimo",
+      title: "NL* ITALIA Repubblica 50 LIRE VULCANO 1958 RARA BB Perizia Filisina Massimo",
     }),
     [
       {
@@ -163,8 +162,7 @@ test("extracts split conservation and material from coin titles without inferrin
     buildSyncBayProductFacets({
       itemSpecifics: [{ name: "Paese di origine", values: ["Italia"] }],
       storeCategoryName: "Monete italiane in lire",
-      title:
-        "NL* UMBERTO I COLONIA ERITREA Tallero 5 LIRE ARGENTO 1896 RR QSPL/SPL Filisina",
+      title: "NL* UMBERTO I COLONIA ERITREA Tallero 5 LIRE ARGENTO 1896 RR QSPL/SPL Filisina",
     }),
     [
       {
@@ -202,8 +200,7 @@ test("extracts split conservation and material from coin titles without inferrin
 test("uses title fallback for category, area and material when eBay structured fields are absent", () => {
   assert.deepEqual(
     buildSyncBayProductFacets({
-      title:
-        "NL* GERMANIA Medaglia Bronzo HELMUT KOHL ELEZIONI 1990 proof in oblo' protettivo",
+      title: "NL* GERMANIA Medaglia Bronzo HELMUT KOHL ELEZIONI 1990 proof in oblo' protettivo",
     }),
     [
       {
@@ -241,8 +238,7 @@ test("uses title fallback for category, area and material when eBay structured f
 test("normalizes nested eBay store categories to storefront category values", () => {
   assert.deepEqual(
     buildSyncBayProductFacets({
-      storeCategoryName:
-        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      storeCategoryName: "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
       title: "NL* VEIII 5 Lire ARGENTO AQUILOTTO 1928 BB/SPL Perizia",
     }).find((facet) => facet.key === "categoria")?.value,
     "Monete italiane in lire",

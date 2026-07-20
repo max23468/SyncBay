@@ -188,9 +188,7 @@ export class PrismaSessionStorage implements SessionStorage {
       }
     }
 
-    throw new Error(
-      "The table `session` does not exist in the current database",
-    );
+    throw new Error("The table `session` does not exist in the current database");
   }
 
   private sessionToRow(session: ShopifySession): SessionRowInput {
@@ -238,21 +236,13 @@ export class PrismaSessionStorage implements SessionStorage {
     pushOptional(sessionParams, "emailVerified", row.emailVerified);
     pushOptional(sessionParams, "expires", row.expires?.getTime());
     pushOptional(sessionParams, "scope", row.scope);
-    pushOptional(
-      sessionParams,
-      "accessToken",
-      decryptSessionSecret(row.accessToken),
-    );
+    pushOptional(sessionParams, "accessToken", decryptSessionSecret(row.accessToken));
     pushOptional(
       sessionParams,
       "refreshToken",
       row.refreshToken ? decryptSessionSecret(row.refreshToken) : null,
     );
-    pushOptional(
-      sessionParams,
-      "refreshTokenExpires",
-      row.refreshTokenExpires?.getTime(),
-    );
+    pushOptional(sessionParams, "refreshTokenExpires", row.refreshTokenExpires?.getTime());
 
     return ShopifySession.fromPropertyArray(sessionParams, true);
   }
@@ -295,10 +285,5 @@ function isRecordNotFoundError(error: unknown) {
 }
 
 function isPrismaErrorCode(error: unknown, code: string) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === code
-  );
+  return typeof error === "object" && error !== null && "code" in error && error.code === code;
 }

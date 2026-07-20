@@ -33,10 +33,7 @@ export function isCatalogReconcileScanComplete(input: {
     return input.itemIds.length > 0 && input.readCount < input.maxProducts;
   }
 
-  return (
-    input.totalAvailable <= input.maxProducts &&
-    input.readCount >= input.totalAvailable
-  );
+  return input.totalAvailable <= input.maxProducts && input.readCount >= input.totalAvailable;
 }
 
 function uniqueNonEmptyStrings(values: string[]) {

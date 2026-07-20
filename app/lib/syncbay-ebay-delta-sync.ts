@@ -20,14 +20,9 @@ export function isFullCatalogReconcileDue(input: {
 }) {
   if (!input.latestFullReconcileAt) return true;
 
-  const intervalSeconds = getEbayFullReconcileIntervalSeconds(
-    input.intervalSecondsValue,
-  );
+  const intervalSeconds = getEbayFullReconcileIntervalSeconds(input.intervalSecondsValue);
 
-  return (
-    input.latestFullReconcileAt.getTime() + intervalSeconds * 1000 <=
-    input.now.getTime()
-  );
+  return input.latestFullReconcileAt.getTime() + intervalSeconds * 1000 <= input.now.getTime();
 }
 
 export function getSellerEventsDeltaWindow(input: {
@@ -36,12 +31,9 @@ export function getSellerEventsDeltaWindow(input: {
 }) {
   if (!input.latestSuccessfulSyncAt) return null;
 
-  const modTimeTo = new Date(
-    input.now.getTime() - EBAY_SELLER_EVENTS_TO_BUFFER_SECONDS * 1000,
-  );
+  const modTimeTo = new Date(input.now.getTime() - EBAY_SELLER_EVENTS_TO_BUFFER_SECONDS * 1000);
   const modTimeFrom = new Date(
-    input.latestSuccessfulSyncAt.getTime() -
-      EBAY_SELLER_EVENTS_OVERLAP_SECONDS * 1000,
+    input.latestSuccessfulSyncAt.getTime() - EBAY_SELLER_EVENTS_OVERLAP_SECONDS * 1000,
   );
 
   if (modTimeTo <= modTimeFrom) return null;
@@ -63,28 +55,17 @@ export function getSellerEventsWatermarkAt(input: {
   latestSellerEventsModTimeToValue?: string | null;
 }) {
   const sellerEventsWatermark =
-    parseDate(input.latestSellerEventsModTimeToValue) ??
-    input.latestSellerEventsCompletedAt;
+    parseDate(input.latestSellerEventsModTimeToValue) ?? input.latestSellerEventsCompletedAt;
 
   return maxDate(sellerEventsWatermark, input.latestFullReconcileWatermarkAt);
 }
 
-export function shouldAdvanceSellerEventsRunWatermark(input: {
-  statuses: string[];
-}) {
-  return (
-    input.statuses.length > 0 &&
-    input.statuses.every((status) => status === "SUCCEEDED")
-  );
+export function shouldAdvanceSellerEventsRunWatermark(input: { statuses: string[] }) {
+  return input.statuses.length > 0 && input.statuses.every((status) => status === "SUCCEEDED");
 }
 
-export function shouldAdvanceCatalogReconcileRunWatermark(input: {
-  statuses: string[];
-}) {
-  return (
-    input.statuses.length > 0 &&
-    input.statuses.every((status) => status === "SUCCEEDED")
-  );
+export function shouldAdvanceCatalogReconcileRunWatermark(input: { statuses: string[] }) {
+  return input.statuses.length > 0 && input.statuses.every((status) => status === "SUCCEEDED");
 }
 
 function maxDate(first: Date | null, second: Date | null) {

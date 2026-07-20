@@ -15,9 +15,7 @@ export interface ConflictDecisionModeSummaryInput {
   field: string;
 }
 
-export function getConflictFieldDecisionMode(
-  field: string,
-): ConflictDecisionMode {
+export function getConflictFieldDecisionMode(field: string): ConflictDecisionMode {
   if (field === "description") return "batch_safe";
   if (field === "title" || field === "images") return "guarded";
 
@@ -45,9 +43,7 @@ export function getConflictDecisionModeDetail(
   return "Meglio decidere a mano: può toccare disponibilità, prezzo o pubblicazione del prodotto.";
 }
 
-export function getSafeBatchConflictResolutions(
-  field: string,
-): ConflictResolution[] {
+export function getSafeBatchConflictResolutions(field: string): ConflictResolution[] {
   if (field === "description") return ["KEEP_SHOPIFY"];
 
   return [];
@@ -63,8 +59,7 @@ export function getConflictResolutionSafety(
 ): ConflictResolutionSafety {
   if (getSafeBatchConflictResolutions(field).includes(resolution)) {
     return {
-      detail:
-        "Tiene la descrizione di Shopify come riferimento, senza toccare eBay.",
+      detail: "Tiene la descrizione di Shopify come riferimento, senza toccare eBay.",
       label: "Sicuro",
       mode: "batch_safe",
     };
@@ -72,8 +67,7 @@ export function getConflictResolutionSafety(
 
   if (resolution === "IGNORE_FIELD") {
     return {
-      detail:
-        "Salta questo conflitto per ora: non cambia nulla e lo ritrovi se ricompare.",
+      detail: "Salta questo conflitto per ora: non cambia nulla e lo ritrovi se ricompare.",
       label: "Da decidere",
       mode: "manual_only",
     };
@@ -91,16 +85,13 @@ export function getConflictResolutionSafety(
   }
 
   return {
-    detail:
-      "Scelta manuale: per questo campo non è una sistemazione sicura da applicare a tutti.",
+    detail: "Scelta manuale: per questo campo non è una sistemazione sicura da applicare a tutti.",
     label: "Da decidere",
     mode: "manual_only",
   };
 }
 
-export function summarizeConflictDecisionModes(
-  groups: ConflictDecisionModeSummaryInput[],
-) {
+export function summarizeConflictDecisionModes(groups: ConflictDecisionModeSummaryInput[]) {
   return groups.reduce(
     (summary, group) => {
       const mode = getConflictFieldDecisionMode(group.field);

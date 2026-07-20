@@ -81,9 +81,7 @@ await main().catch((error) => {
 
 async function main() {
   if (args.applyPlan && (!args.apply || !args.confirmApply)) {
-    throw new Error(
-      "--apply-plan richiede --apply --confirm-apply per scrivere su Shopify.",
-    );
+    throw new Error("--apply-plan richiede --apply --confirm-apply per scrivere su Shopify.");
   }
 
   if (args.apply && !args.confirmApply) {
@@ -123,15 +121,10 @@ async function main() {
       );
     }
 
-    const shopifyAccessToken = await getShopifyAccessToken(
-      state.shopifySession,
-      shopDomain,
-    );
+    const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
     const shopifyProducts = await loadShopifyProducts({
       accessToken: shopifyAccessToken,
-      productGids: applyFile.rows
-        .map((row) => row.shopifyProductGid)
-        .filter(Boolean),
+      productGids: applyFile.rows.map((row) => row.shopifyProductGid).filter(Boolean),
     });
     const guardedPlan = filterDescriptionBackfillApplyFileRows({
       currentMappingRows: new Map(
@@ -150,8 +143,7 @@ async function main() {
             row.shopifyProductGid,
             shopifyProducts.has(row.shopifyProductGid)
               ? hashNullableText(
-                  shopifyProducts.get(row.shopifyProductGid)?.descriptionHtml ??
-                    null,
+                  shopifyProducts.get(row.shopifyProductGid)?.descriptionHtml ?? null,
                 )
               : undefined,
           ]),
@@ -195,17 +187,12 @@ async function main() {
     throw new Error("Nessun mapping ACTIVE/OUT_OF_STOCK da analizzare.");
   }
 
-  const shopifyAccessToken = await getShopifyAccessToken(
-    state.shopifySession,
-    shopDomain,
-  );
+  const shopifyAccessToken = await getShopifyAccessToken(state.shopifySession, shopDomain);
   const shopifyProducts = await loadShopifyProducts({
     accessToken: shopifyAccessToken,
     productGids: mappings.map((row) => row.shopifyProductGid).filter(Boolean),
   });
-  const { accessToken: ebayAccessToken } = await getAccessToken(
-    state.connection,
-  );
+  const { accessToken: ebayAccessToken } = await getAccessToken(state.connection);
   const tradingItemCache =
     args.ebaySource === "seller-list"
       ? await loadTradingSellerListItemCache({
@@ -214,17 +201,14 @@ async function main() {
           itemIds: mappings.map((mapping) => mapping.ebayItemId),
         })
       : null;
-  const rows = await mapWithConcurrency(
-    mappings,
-    GET_ITEM_CONCURRENCY,
-    async (mapping) =>
-      buildReportRow({
-        accessToken: ebayAccessToken,
-        connection: state.connection,
-        mapping,
-        shopifyProduct: shopifyProducts.get(mapping.shopifyProductGid) ?? null,
-        tradingItemCache,
-      }),
+  const rows = await mapWithConcurrency(mappings, GET_ITEM_CONCURRENCY, async (mapping) =>
+    buildReportRow({
+      accessToken: ebayAccessToken,
+      connection: state.connection,
+      mapping,
+      shopifyProduct: shopifyProducts.get(mapping.shopifyProductGid) ?? null,
+      tradingItemCache,
+    }),
   );
   const report = buildDescriptionBackfillReport({
     rows,
@@ -277,24 +261,16 @@ async function main() {
 }
 
 async function buildReportRow(input) {
-  const openConflictFields = normalizeStringArray(
-    input.mapping.openConflictFields,
-  );
+  const openConflictFields = normalizeStringArray(input.mapping.openConflictFields);
   const baseInput = {
-    currentShopifyDescriptionHtml:
-      input.shopifyProduct?.descriptionHtml ?? null,
-    currentShopifyDescriptionHash: hashNullableText(
-      input.shopifyProduct?.descriptionHtml ?? null,
-    ),
+    currentShopifyDescriptionHtml: input.shopifyProduct?.descriptionHtml ?? null,
+    currentShopifyDescriptionHash: hashNullableText(input.shopifyProduct?.descriptionHtml ?? null),
     ebayItemId: input.mapping.ebayItemId,
     mappingId: input.mapping.mappingId,
     openConflictFields,
-    shopifyLookupFailed: Boolean(
-      input.mapping.shopifyProductGid && !input.shopifyProduct,
-    ),
+    shopifyLookupFailed: Boolean(input.mapping.shopifyProductGid && !input.shopifyProduct),
     shopifyProductGid: input.mapping.shopifyProductGid ?? null,
-    latestSyncBayDescriptionHash:
-      input.mapping.latestSyncBayDescriptionHash ?? null,
+    latestSyncBayDescriptionHash: input.mapping.latestSyncBayDescriptionHash ?? null,
     title: input.mapping.title ?? input.shopifyProduct?.title ?? null,
   };
 
@@ -323,9 +299,7 @@ async function buildReportRow(input) {
     return buildRowFromDescriptions({
       ...baseInput,
       ebayDescriptionHtml:
-        "descriptionHtml" in item
-          ? item.descriptionHtml
-          : getString(item, "Description"),
+        "descriptionHtml" in item ? item.descriptionHtml : getString(item, "Description"),
       title:
         ("title" in item ? item.title : getString(item, "Title")) ??
         input.mapping.title ??
@@ -478,9 +452,7 @@ async function loadShopifyProducts(input) {
     const payload = await response.json().catch(() => null);
 
     if (!response.ok || payload?.errors) {
-      throw new Error(
-        `Shopify Admin GraphQL non disponibile (HTTP ${response.status}).`,
-      );
+      throw new Error(`Shopify Admin GraphQL non disponibile (HTTP ${response.status}).`);
     }
 
     for (const product of payload?.data?.nodes ?? []) {
@@ -492,15 +464,12 @@ async function loadShopifyProducts(input) {
 }
 
 async function applyDescriptionPlan(input) {
-  const results = await mapWithConcurrency(
-    input.plan.rows,
-    APPLY_CONCURRENCY,
-    async (row) =>
-      applyDescriptionRow({
-        accessToken: input.accessToken,
-        row,
-        shopId: input.shopId,
-      }),
+  const results = await mapWithConcurrency(input.plan.rows, APPLY_CONCURRENCY, async (row) =>
+    applyDescriptionRow({
+      accessToken: input.accessToken,
+      row,
+      shopId: input.shopId,
+    }),
   );
   const failures = results.filter((result) => !result.ok);
 
@@ -550,9 +519,7 @@ async function applyDescriptionRow(input) {
     return {
       ebayItemId: input.row.ebayItemId,
       error: userErrors
-        .map(
-          (error) => `${error.field?.join(".") ?? "product"}: ${error.message}`,
-        )
+        .map((error) => `${error.field?.join(".") ?? "product"}: ${error.message}`)
         .join("; "),
       ok: false,
       shopifyProductGid: input.row.shopifyProductGid,
@@ -722,9 +689,7 @@ async function getTradingSellerListPage(input) {
 function printReport(report) {
   console.log(`Shop: ${report.shopDomain}`);
   console.log(`Marketplace: ${marketplaceId}`);
-  console.log(
-    `Mapping ACTIVE/OUT_OF_STOCK totali: ${report.activeMappingsTotal}`,
-  );
+  console.log(`Mapping ACTIVE/OUT_OF_STOCK totali: ${report.activeMappingsTotal}`);
   console.log(
     `Analizzati: ${report.analyzed}${report.partial ? " (parziale, usa senza --limit per la lista completa)" : ""}`,
   );
@@ -732,17 +697,11 @@ function printReport(report) {
   console.log(`Gia' corretti: ${report.summary.alreadyCorrect}`);
   console.log(`Cleaner invariato: ${report.summary.cleanerUnchanged}`);
   console.log(`Conflitti aperti saltati: ${report.summary.conflictSkipped}`);
-  console.log(
-    `Senza prodotto Shopify collegato: ${report.summary.missingShopifyProduct}`,
-  );
+  console.log(`Senza prodotto Shopify collegato: ${report.summary.missingShopifyProduct}`);
   console.log(`Lookup Shopify falliti: ${report.summary.shopifyLookupFailed}`);
   console.log(`Lookup eBay falliti: ${report.summary.ebayLookupFailed}`);
-  console.log(
-    `Descrizione eBay assente: ${report.summary.ebayDescriptionMissing}`,
-  );
-  console.log(
-    `Descrizione pulita vuota: ${report.summary.emptyCleanedDescription}`,
-  );
+  console.log(`Descrizione eBay assente: ${report.summary.ebayDescriptionMissing}`);
+  console.log(`Descrizione pulita vuota: ${report.summary.emptyCleanedDescription}`);
   console.log("");
 
   printSample(report, "Applicabili", "applicable");
@@ -754,9 +713,7 @@ function printReport(report) {
 function printApplySummary(apply) {
   console.log("Apply Shopify:");
   if (!apply.requested) {
-    console.log(
-      `- non eseguito; righe applicabili pianificate: ${apply.planned}`,
-    );
+    console.log(`- non eseguito; righe applicabili pianificate: ${apply.planned}`);
   } else {
     console.log("- richiesto con conferma esplicita");
     console.log(`- applicati: ${apply.applied}`);
@@ -766,15 +723,9 @@ function printApplySummary(apply) {
   console.log(`- gia' corretti saltati: ${apply.skipped.alreadyCorrect}`);
   console.log(`- cleaner invariato saltati: ${apply.skipped.cleanerUnchanged}`);
   console.log(`- conflitti aperti saltati: ${apply.skipped.conflictSkipped}`);
-  console.log(
-    `- senza prodotto Shopify saltati: ${apply.skipped.missingShopifyProduct}`,
-  );
-  console.log(
-    `- lookup Shopify falliti saltati: ${apply.skipped.shopifyLookupFailed}`,
-  );
-  console.log(
-    `- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`,
-  );
+  console.log(`- senza prodotto Shopify saltati: ${apply.skipped.missingShopifyProduct}`);
+  console.log(`- lookup Shopify falliti saltati: ${apply.skipped.shopifyLookupFailed}`);
+  console.log(`- lookup eBay falliti saltati: ${apply.skipped.ebayLookupFailed}`);
 
   if (apply.failures?.length > 0) {
     console.log("");
@@ -796,15 +747,9 @@ function printSample(report, label, status) {
   console.log(`${label} (campione):`);
   for (const row of rows) {
     const detail =
-      row.status === "applicable"
-        ? `${row.descriptionRemovedPercent}% rimosso`
-        : row.reason;
-    const lookup = row.ebayLookupFailureReason
-      ? ` · ${row.ebayLookupFailureReason}`
-      : "";
-    console.log(
-      `- ItemID ${row.ebayItemId}: ${row.title} · ${detail}${lookup}`,
-    );
+      row.status === "applicable" ? `${row.descriptionRemovedPercent}% rimosso` : row.reason;
+    const lookup = row.ebayLookupFailureReason ? ` · ${row.ebayLookupFailureReason}` : "";
+    console.log(`- ItemID ${row.ebayItemId}: ${row.title} · ${detail}${lookup}`);
     if (row.status === "applicable") {
       console.log(`  Pulita: ${row.cleanedTextExcerpt || "vuota"}`);
     }
@@ -867,9 +812,7 @@ function parseArgs(rawArgs) {
     help: values.help,
     json: values.json,
     limit:
-      values.limit === undefined
-        ? undefined
-        : parsePositiveLimitOption(values.limit, "--limit"),
+      values.limit === undefined ? undefined : parsePositiveLimitOption(values.limit, "--limit"),
     marketplace: values.marketplace,
     shop: values.shop,
     writeApplyPlan: values["write-apply-plan"],
@@ -899,9 +842,7 @@ eBay. Con --json non stampa HTML completo delle descrizioni.
 }
 
 function normalizeStringArray(value) {
-  return Array.isArray(value)
-    ? value.filter((item) => typeof item === "string")
-    : [];
+  return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 }
 
 function hasScope(scopeText, requiredScope) {
@@ -928,9 +869,7 @@ function getTradingItems(container) {
 }
 
 function getTotalPages(container) {
-  const total = Number(
-    getString(asRecord(container?.PaginationResult), "TotalNumberOfPages"),
-  );
+  const total = Number(getString(asRecord(container?.PaginationResult), "TotalNumberOfPages"));
 
   return Number.isInteger(total) && total > 0 ? total : null;
 }

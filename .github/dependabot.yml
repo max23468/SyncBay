@@ -63,10 +63,10 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - version-update:semver-major
-      - dependency-name: eslint
+      - dependency-name: oxlint
         update-types:
           - version-update:semver-major
-      - dependency-name: "@eslint/js"
+      - dependency-name: oxfmt
         update-types:
           - version-update:semver-major
 

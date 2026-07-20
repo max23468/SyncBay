@@ -114,11 +114,9 @@ export async function getEbayLiveImportPreview(
     }));
 
     if (inventoryResult.page && inventoryResult.page.candidates.length > 0) {
-      const inventoryPreview = buildImportPreview(
-        inventoryResult.page.candidates,
-        "live",
-        { descriptionRuleMode: options.descriptionRuleMode },
-      );
+      const inventoryPreview = buildImportPreview(inventoryResult.page.candidates, "live", {
+        descriptionRuleMode: options.descriptionRuleMode,
+      });
 
       if (inventoryPreview.summary.importableCount > 0) {
         return {
@@ -214,8 +212,7 @@ async function readInventoryPreview(input: {
       }),
   );
   const candidates = offerCandidates.filter(
-    (candidate): candidate is ImportPreviewListingCandidate =>
-      Boolean(candidate),
+    (candidate): candidate is ImportPreviewListingCandidate => Boolean(candidate),
   );
 
   return {
@@ -259,9 +256,7 @@ async function fetchInventoryItems(input: {
   connection: EbayConnection;
   limit: number;
 }) {
-  const url = new URL(
-    `${getInventoryBaseUrl(input.connection.environment)}/inventory_item`,
-  );
+  const url = new URL(`${getInventoryBaseUrl(input.connection.environment)}/inventory_item`);
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", "0");
 
@@ -294,11 +289,9 @@ async function getPublishedOfferCandidate(input: {
 
   return {
     currency:
-      getOfferCurrency(offer) ??
-      getExpectedMarketplaceCurrency(input.connection.marketplaceId),
+      getOfferCurrency(offer) ?? getExpectedMarketplaceCurrency(input.connection.marketplaceId),
     descriptionHtml:
-      normalizeText(offer.listingDescription) ??
-      normalizeText(input.item.product?.description),
+      normalizeText(offer.listingDescription) ?? normalizeText(input.item.product?.description),
     imageUrls: input.item.product?.imageUrls ?? [],
     itemId: offer.listing?.listingId ?? offer.offerId ?? sku,
     priceAmount: getOfferPrice(offer),
@@ -314,9 +307,7 @@ async function fetchPublishedOfferForSku(input: {
   connection: EbayConnection;
   sku: string;
 }) {
-  const url = new URL(
-    `${getInventoryBaseUrl(input.connection.environment)}/offer`,
-  );
+  const url = new URL(`${getInventoryBaseUrl(input.connection.environment)}/offer`);
   url.searchParams.set("sku", input.sku);
   url.searchParams.set("marketplace_id", input.connection.marketplaceId);
   url.searchParams.set("limit", "100");
@@ -346,9 +337,7 @@ async function fetchEbayJson<T>(input: {
   const json = (await response.json()) as T & EbayErrorResponse;
 
   if (!response.ok) {
-    throw new EbayInventoryPreviewError(
-      getEbayApiErrorMessage(json, response.status),
-    );
+    throw new EbayInventoryPreviewError(getEbayApiErrorMessage(json, response.status));
   }
 
   return json;
@@ -365,38 +354,31 @@ function isPublishedOffer(offer: EbayOffer) {
   const status = normalizeText(offer.listing?.listingStatus)?.toUpperCase();
 
   return Boolean(
-    offer.listing?.listingId &&
-    (!status || !["ENDED", "INACTIVE", "NOT_LISTED"].includes(status)),
+    offer.listing?.listingId && (!status || !["ENDED", "INACTIVE", "NOT_LISTED"].includes(status)),
   );
 }
 
 function getOfferPrice(offer: EbayOffer) {
   return parseMoneyValue(
-    offer.pricingSummary?.price?.value ??
-      offer.pricingSummary?.auctionStartPrice?.value,
+    offer.pricingSummary?.price?.value ?? offer.pricingSummary?.auctionStartPrice?.value,
   );
 }
 
 function getOfferCurrency(offer: EbayOffer) {
   return normalizeText(
-    offer.pricingSummary?.price?.currency ??
-      offer.pricingSummary?.auctionStartPrice?.currency,
+    offer.pricingSummary?.price?.currency ?? offer.pricingSummary?.auctionStartPrice?.currency,
   )?.toUpperCase();
 }
 
 function getOfferQuantity(offer: EbayOffer, item: EbayInventoryItem) {
   if (Number.isInteger(offer.availableQuantity)) return offer.availableQuantity;
 
-  const inventoryQuantity =
-    item.availability?.shipToLocationAvailability?.quantity;
+  const inventoryQuantity = item.availability?.shipToLocationAvailability?.quantity;
   return Number.isInteger(inventoryQuantity) ? inventoryQuantity : null;
 }
 
 function hasInventoryGroups(item: EbayInventoryItem) {
-  return (
-    (item.groupIds?.length ?? 0) > 0 ||
-    (item.inventoryItemGroupKeys?.length ?? 0) > 0
-  );
+  return (item.groupIds?.length ?? 0) > 0 || (item.inventoryItemGroupKeys?.length ?? 0) > 0;
 }
 
 function getInventoryBaseUrl(environment: string) {

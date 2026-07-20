@@ -28,9 +28,7 @@ test("does not let AuditLog.create return full rows in runtime services", () => 
     while (index >= 0) {
       const afterCreateCall = source.slice(index + createCall.length);
 
-      if (
-        !/^\s*select:\s*SYNCBAY_AUDIT_LOG_CREATE_SELECT\b/.test(afterCreateCall)
-      ) {
+      if (!/^\s*select:\s*SYNCBAY_AUDIT_LOG_CREATE_SELECT\b/.test(afterCreateCall)) {
         missingSelects.push(`${filePath}:${lineNumberAt(source, index)}`);
       }
 

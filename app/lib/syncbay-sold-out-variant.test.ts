@@ -13,12 +13,6 @@ test("uses the mapped Shopify variant when the mapping stores one", () => {
 });
 
 test("falls back to product lookup only when no mapped variant is stored", () => {
-  assert.equal(
-    shouldUseMappedShopifyVariant({ mappedVariantGid: null }),
-    false,
-  );
-  assert.equal(
-    shouldUseMappedShopifyVariant({ mappedVariantGid: "   " }),
-    false,
-  );
+  assert.equal(shouldUseMappedShopifyVariant({ mappedVariantGid: null }), false);
+  assert.equal(shouldUseMappedShopifyVariant({ mappedVariantGid: "   " }), false);
 });

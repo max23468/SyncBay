@@ -1,11 +1,7 @@
-export type ProductBaselineValue =
-  string | number | null | string[] | Record<string, string[]>;
+export type ProductBaselineValue = string | number | null | string[] | Record<string, string[]>;
 
 export type ProductBaselineState = Record<string, ProductBaselineValue>;
-export type ProductBaselinePatch = Record<
-  string,
-  ProductBaselineValue | undefined
->;
+export type ProductBaselinePatch = Record<string, ProductBaselineValue | undefined>;
 
 export function mergeProductBaseline<T extends ProductBaselineState>(
   current: T,
@@ -40,9 +36,10 @@ type ProductDisplayFallbackState = {
   title: unknown | null;
 };
 
-export function mergeProductDisplayBaselineWithSnapshot<
-  T extends ProductDisplayFallbackState,
->(baseline: T, snapshot: T | null | undefined): T {
+export function mergeProductDisplayBaselineWithSnapshot<T extends ProductDisplayFallbackState>(
+  baseline: T,
+  snapshot: T | null | undefined,
+): T {
   if (!snapshot) return baseline;
 
   const merged = { ...baseline };

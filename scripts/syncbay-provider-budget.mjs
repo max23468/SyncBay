@@ -33,9 +33,7 @@ const run = async (script, args = []) => {
 
 const database = await run("scripts/syncbay-db-storage-budget.mjs");
 const egress = await run("scripts/syncbay-egress-budget.mjs", ["--json"]);
-const supabaseFileStorage = await run(
-  "scripts/syncbay-supabase-storage-budget.mjs",
-);
+const supabaseFileStorage = await run("scripts/syncbay-supabase-storage-budget.mjs");
 const vercel = await observeVercel();
 const result = {
   database,

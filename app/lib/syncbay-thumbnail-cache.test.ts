@@ -19,30 +19,18 @@ test("returns fresh thumbnail cache hits and misses", () => {
 
   const result = readFreshThumbnailCacheEntries({
     cache,
-    keys: [
-      "gid://shopify/Product/1",
-      "gid://shopify/Product/2",
-      "gid://shopify/Product/3",
-    ],
+    keys: ["gid://shopify/Product/1", "gid://shopify/Product/2", "gid://shopify/Product/3"],
     nowMs: 1_000,
   });
 
-  assert.equal(
-    result.hits.get("gid://shopify/Product/1"),
-    "https://cdn.shopify.example/1.jpg",
-  );
-  assert.deepEqual(result.misses, [
-    "gid://shopify/Product/2",
-    "gid://shopify/Product/3",
-  ]);
+  assert.equal(result.hits.get("gid://shopify/Product/1"), "https://cdn.shopify.example/1.jpg");
+  assert.deepEqual(result.misses, ["gid://shopify/Product/2", "gid://shopify/Product/3"]);
   assert.equal(cache.has("gid://shopify/Product/2"), false);
 });
 
 test("caches misses so repeated page loads avoid immediate fallback queries", () => {
   const cache = new Map();
-  const values = new Map([
-    ["gid://shopify/Product/1", "https://cdn.shopify.example/1.jpg"],
-  ]);
+  const values = new Map([["gid://shopify/Product/1", "https://cdn.shopify.example/1.jpg"]]);
 
   writeThumbnailCacheEntries({
     cache,

@@ -271,9 +271,7 @@ test("flags unavailable products that remain in specific collections", () => {
   });
 
   assert.equal(report.summary.unavailableInSpecific, 1);
-  assert.deepEqual(report.unavailableInSpecific[0]?.specificCollections, [
-    "Accessori numismatici",
-  ]);
+  assert.deepEqual(report.unavailableInSpecific[0]?.specificCollections, ["Accessori numismatici"]);
 });
 
 test("keeps available products in specific collections out of problem lists", () => {
@@ -356,9 +354,7 @@ export function buildCollectionCoverageReport(input: {
   const genericHandles = new Set(input.genericCollectionHandles);
   const rows = input.products.map(toReportRow);
   const availableRows = rows.filter((row) => row.totalInventory > 0);
-  const availableOnlyGeneric = availableRows.filter(
-    (row) => row.specificCollections.length === 0,
-  );
+  const availableOnlyGeneric = availableRows.filter((row) => row.specificCollections.length === 0);
   const unavailableInSpecific = rows.filter(
     (row) => row.totalInventory <= 0 && row.specificCollections.length > 0,
   );
@@ -374,12 +370,8 @@ export function buildCollectionCoverageReport(input: {
     unavailableInSpecific,
   };
 
-  function toReportRow(
-    product: CollectionCoverageProduct,
-  ): CollectionCoverageReportRow {
-    const collections = product.collections.map(
-      (collection) => collection.title,
-    );
+  function toReportRow(product: CollectionCoverageProduct): CollectionCoverageReportRow {
+    const collections = product.collections.map((collection) => collection.title);
     const specificCollections = product.collections
       .filter((collection) => !genericHandles.has(collection.handle))
       .map((collection) => collection.title);
@@ -577,10 +569,7 @@ test("uses product type rules from explicit collection intent", () => {
   });
 
   assert.equal(review.proposals.length, 1);
-  assert.equal(
-    review.proposals[0]?.reason,
-    "configured_product_type_alignment",
-  );
+  assert.equal(review.proposals[0]?.reason, "configured_product_type_alignment");
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [
@@ -663,9 +652,7 @@ export function buildCollectionRuleReview(input: {
   collectionIntents: CollectionRuleIntent[];
   collections: ShopifyCollectionForRuleProposal[];
 }): CollectionRuleReview {
-  const intentByHandle = new Map(
-    input.collectionIntents.map((intent) => [intent.handle, intent]),
-  );
+  const intentByHandle = new Map(input.collectionIntents.map((intent) => [intent.handle, intent]));
   const proposals: CollectionRuleProposal[] = [];
   const warnings: CollectionRuleWarning[] = [];
 
@@ -707,23 +694,18 @@ function buildProposedRuleSet(
     }
   | { warning: CollectionRuleWarning }
   | null {
-  const productTypeRules = (intent.productTypeContains ?? []).map(
-    (condition) => ({
-      column: "TYPE",
-      condition,
-      relation: "CONTAINS",
-    }),
-  );
+  const productTypeRules = (intent.productTypeContains ?? []).map((condition) => ({
+    column: "TYPE",
+    condition,
+    relation: "CONTAINS",
+  }));
 
   if (productTypeRules.length > 0) {
     return {
       reason: "configured_product_type_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [
-          ...productTypeRules,
-          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
-        ],
+        rules: [...productTypeRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
       },
     };
   }
@@ -776,15 +758,9 @@ function isInventoryRule(rule: ShopifyCollectionRule) {
   );
 }
 
-function areRuleSetsEqual(
-  left: ShopifyCollectionRuleSet | null,
-  right: ShopifyCollectionRuleSet,
-) {
+function areRuleSetsEqual(left: ShopifyCollectionRuleSet | null, right: ShopifyCollectionRuleSet) {
   if (!left) return false;
-  return (
-    JSON.stringify(normalizeRuleSet(left)) ===
-    JSON.stringify(normalizeRuleSet(right))
-  );
+  return JSON.stringify(normalizeRuleSet(left)) === JSON.stringify(normalizeRuleSet(right));
 }
 
 function normalizeRuleSet(ruleSet: ShopifyCollectionRuleSet) {
@@ -859,10 +835,8 @@ Append these tests to `app/lib/syncbay-shopify-category-mapping.test.ts`:
 test("maps French pre-euro coins away from Italian product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName:
-        "Monete e banconote:Monete europee pre euro:Francia",
-      title:
-        "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
+      ebayPrimaryCategoryName: "Monete e banconote:Monete europee pre euro:Francia",
+      title: "NL* FRANCIA REPUBBLICA NAPOLEONE I Imperatore 1 Franc ARGENTO AN 13 A",
     }).productType,
     "Monete europee pre euro:Francia",
   );
@@ -871,8 +845,7 @@ test("maps French pre-euro coins away from Italian product type", () => {
 test("maps Regno d'Italia lire to collection-grade product type", () => {
   assert.equal(
     resolveShopifyCategoryProposal({
-      ebayPrimaryCategoryName:
-        "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
+      ebayPrimaryCategoryName: "Monete e banconote:Monete italiane in lire:Regno:Dal 1901 al 1945",
       title: "NL* VEIII 1 CENTESIMO 1905 VARIANTE 5 SPOSTATO NC QFDC",
     }).productType,
     "Monete italiane in lire:Regno",
@@ -884,8 +857,7 @@ test("maps Repubblica lire to collection-grade product type", () => {
     resolveShopifyCategoryProposal({
       ebayPrimaryCategoryName:
         "Monete e banconote:Monete italiane in lire:Repubblica:Dal 1981 al 2001",
-      title:
-        "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
+      title: "NL* ITALIA Divisionale 1993 GOLDONI 11 V con 500 Lire ARGENTO FDC",
     }).productType,
     "Monete italiane in lire:Repubblica",
   );
@@ -973,14 +945,10 @@ const collectionGradeCoinType = getCollectionGradeCoinProductType({
   titleText,
 });
 
-const commemorativeCoinsSignal = findMatchingSignal(
-  signals,
-  matchesCommemorativeCoins,
-);
+const commemorativeCoinsSignal = findMatchingSignal(signals, matchesCommemorativeCoins);
 const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
 const coinsSignal = findMatchingSignal(signals, matchesCoins);
-const collectionGradeCoinSignal =
-  rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
+const collectionGradeCoinSignal = rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
 
 if (collectionGradeCoinType && collectionGradeCoinSignal) {
   return buildProposal({
@@ -1117,9 +1085,7 @@ test("rejects intents without a safe selector", () => {
   assert.throws(
     () =>
       parseCollectionIntents({
-        collectionIntents: [
-          { handle: "regno", requirePositiveInventory: true, title: "Regno" },
-        ],
+        collectionIntents: [{ handle: "regno", requirePositiveInventory: true, title: "Regno" }],
       }),
     /productTypeContains/i,
   );
@@ -1151,9 +1117,7 @@ export interface CollectionRuleIntent {
   title: string;
 }
 
-export function loadCollectionIntents(
-  filePath: string,
-): CollectionRuleIntent[] {
+export function loadCollectionIntents(filePath: string): CollectionRuleIntent[] {
   return parseCollectionIntents(JSON.parse(fs.readFileSync(filePath, "utf8")));
 }
 
@@ -1163,46 +1127,37 @@ export function parseCollectionIntents(value: unknown): CollectionRuleIntent[] {
     typeof value !== "object" ||
     !Array.isArray((value as { collectionIntents?: unknown }).collectionIntents)
   ) {
-    throw new Error(
-      "File intenti non valido: atteso { collectionIntents: [...] }.",
-    );
+    throw new Error("File intenti non valido: atteso { collectionIntents: [...] }.");
   }
 
   const handles = new Set<string>();
-  return (value as { collectionIntents: unknown[] }).collectionIntents.map(
-    (raw) => {
-      const intent = raw as Partial<CollectionRuleIntent>;
-      if (
-        !intent.handle ||
-        !intent.title ||
-        typeof intent.requirePositiveInventory !== "boolean"
-      ) {
-        throw new Error(
-          "Intento collezione non valido: handle, title e requirePositiveInventory sono obbligatori.",
-        );
-      }
-      if (handles.has(intent.handle)) {
-        throw new Error(`Handle collezione duplicato: ${intent.handle}`);
-      }
-      handles.add(intent.handle);
-      if (
-        !intent.generic &&
-        (!Array.isArray(intent.productTypeContains) ||
-          intent.productTypeContains.length === 0)
-      ) {
-        throw new Error(
-          `Intento ${intent.handle} senza productTypeContains: non proporre regole specifiche senza selettore affidabile.`,
-        );
-      }
-      return {
-        generic: Boolean(intent.generic),
-        handle: intent.handle,
-        productTypeContains: intent.productTypeContains,
-        requirePositiveInventory: intent.requirePositiveInventory,
-        title: intent.title,
-      };
-    },
-  );
+  return (value as { collectionIntents: unknown[] }).collectionIntents.map((raw) => {
+    const intent = raw as Partial<CollectionRuleIntent>;
+    if (!intent.handle || !intent.title || typeof intent.requirePositiveInventory !== "boolean") {
+      throw new Error(
+        "Intento collezione non valido: handle, title e requirePositiveInventory sono obbligatori.",
+      );
+    }
+    if (handles.has(intent.handle)) {
+      throw new Error(`Handle collezione duplicato: ${intent.handle}`);
+    }
+    handles.add(intent.handle);
+    if (
+      !intent.generic &&
+      (!Array.isArray(intent.productTypeContains) || intent.productTypeContains.length === 0)
+    ) {
+      throw new Error(
+        `Intento ${intent.handle} senza productTypeContains: non proporre regole specifiche senza selettore affidabile.`,
+      );
+    }
+    return {
+      generic: Boolean(intent.generic),
+      handle: intent.handle,
+      productTypeContains: intent.productTypeContains,
+      requirePositiveInventory: intent.requirePositiveInventory,
+      title: intent.title,
+    };
+  });
 }
 ```
 
@@ -1262,10 +1217,7 @@ import { loadCollectionIntents } from "../app/lib/syncbay-collection-intents.ts"
 import { buildCollectionRuleReview } from "../app/lib/syncbay-collection-rule-proposals.ts";
 
 const SHOPIFY_ADMIN_API_VERSION = "2026-07";
-const DEFAULT_GENERIC_COLLECTION_HANDLES = [
-  "negozio-online",
-  "non-disponibili",
-];
+const DEFAULT_GENERIC_COLLECTION_HANDLES = ["negozio-online", "non-disponibili"];
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -1287,14 +1239,10 @@ if (!args.apply && args.confirmApply) {
 }
 
 if (args.apply && !args.intentFile) {
-  throw new Error(
-    "Apply collezioni bloccato: serve --intent-file con matrice revisionata.",
-  );
+  throw new Error("Apply collezioni bloccato: serve --intent-file con matrice revisionata.");
 }
 
-const collectionIntents = args.intentFile
-  ? loadCollectionIntents(args.intentFile)
-  : [];
+const collectionIntents = args.intentFile ? loadCollectionIntents(args.intentFile) : [];
 const genericCollectionHandles = collectionIntents
   .filter((intent) => intent.generic)
   .map((intent) => intent.handle);
@@ -1426,10 +1374,7 @@ function executeShopifyQuery(shop, query, variables) {
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
   );
   const start = output.indexOf("{");
-  if (start < 0)
-    throw new Error(
-      `Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`,
-    );
+  if (start < 0) throw new Error(`Shopify CLI non ha restituito JSON: ${output.slice(0, 200)}`);
   const parsed = JSON.parse(output.slice(start));
   if (parsed.errors?.length) throw new Error(JSON.stringify(parsed.errors));
   return parsed;
@@ -1492,9 +1437,7 @@ async function waitForShopifyCollectionUpdateJob(shop, job, title) {
     if (data.job?.done) return;
   }
 
-  throw new Error(
-    `collectionUpdate non completata per ${title}: job ${job.id}`,
-  );
+  throw new Error(`collectionUpdate non completata per ${title}: job ${job.id}`);
 }
 
 function assertCollectionUpdateSupportsLegacyRuleSet(shop) {
@@ -1529,31 +1472,21 @@ function printHumanReport(output) {
   console.log(`Shop: ${output.shopDomain}`);
   console.log(`Prodotti analizzati: ${output.productsAnalyzed}`);
   console.log(`Collezioni analizzate: ${output.collectionsAnalyzed}`);
-  console.log(
-    `Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`,
-  );
-  console.log(
-    `Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`,
-  );
+  console.log(`Disponibili solo in generiche: ${output.coverage.summary.availableOnlyGeneric}`);
+  console.log(`Esauriti in specifiche: ${output.coverage.summary.unavailableInSpecific}`);
   console.log(`Proposte regole: ${output.proposals.length}`);
   console.log(`Warning regole: ${output.warnings.length}`);
   for (const row of output.coverage.availableOnlyGeneric.slice(0, 20)) {
-    console.log(
-      `- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`,
-    );
+    console.log(`- scoperto: ${row.handle} | ${row.productType ?? "(tipo vuoto)"} | ${row.title}`);
   }
   for (const row of output.coverage.unavailableInSpecific.slice(0, 20)) {
-    console.log(
-      `- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`,
-    );
+    console.log(`- esaurito in specifica: ${row.handle} | ${row.specificCollections.join(", ")}`);
   }
   for (const proposal of output.proposals) {
     console.log(`- proposta: ${proposal.title} | ${proposal.reason}`);
   }
   for (const warning of output.warnings) {
-    console.log(
-      `- warning: ${warning.title} | ${warning.reason} | ${warning.message}`,
-    );
+    console.log(`- warning: ${warning.title} | ${warning.reason} | ${warning.message}`);
   }
 }
 
@@ -1568,8 +1501,7 @@ function parseArgs(argv) {
     else if (arg === "--confirm-apply") parsed.confirmApply = true;
     else if (arg === "--intent-file") parsed.intentFile = argv[++index];
     else if (arg === "--write-plan") parsed.writePlan = argv[++index];
-    else if (arg === "--limit-products")
-      parsed.limitProducts = Number(argv[++index]);
+    else if (arg === "--limit-products") parsed.limitProducts = Number(argv[++index]);
     else throw new Error(`Argomento non riconosciuto: ${arg}`);
   }
   return parsed;

@@ -129,10 +129,7 @@ export function createVerificationFingerprint(input) {
     worktreeDiff: input.worktreeDiff,
   };
 
-  return crypto
-    .createHash("sha256")
-    .update(JSON.stringify(stableInput))
-    .digest("hex");
+  return crypto.createHash("sha256").update(JSON.stringify(stableInput)).digest("hex");
 }
 
 export function runVerificationPlan(plan, options = {}) {
@@ -212,11 +209,7 @@ function printAndRun(plan, args) {
     ? buildReceiptContext({ base: args.base, plan })
     : null;
 
-  if (
-    !args.force &&
-    receipt &&
-    readValidReceipt(receipt.path, receipt.fingerprint)
-  ) {
+  if (!args.force && receipt && readValidReceipt(receipt.path, receipt.fingerprint)) {
     const cached = {
       fingerprint: receipt.fingerprint,
       lane: plan.lane,
@@ -291,9 +284,7 @@ function normalizeSuggestedChecks(suggestions, base) {
 
   let normalizedLabels = unique(labels);
   if (normalizedLabels.includes("npm run coverage:lib")) {
-    normalizedLabels = normalizedLabels.filter(
-      (label) => label !== "npm run test:lib",
-    );
+    normalizedLabels = normalizedLabels.filter((label) => label !== "npm run test:lib");
   }
 
   const needsPrisma = normalizedLabels.some((label) =>
@@ -340,13 +331,7 @@ function buildReceiptContext({ base, plan }) {
     commands: plan.commands.map((entry) => entry.label),
     lockfile: readText("package-lock.json") ?? "",
     nodeVersion: process.versions.node,
-    stagedDiff: runGit([
-      "diff",
-      "--cached",
-      "--binary",
-      "--no-ext-diff",
-      "HEAD",
-    ]),
+    stagedDiff: runGit(["diff", "--cached", "--binary", "--no-ext-diff", "HEAD"]),
     status,
     untracked,
     worktreeDiff: runGit(["diff", "--binary", "--no-ext-diff", "HEAD"]),
@@ -413,18 +398,14 @@ function parseArgs(rawArgs) {
     }
     if (arg === "--without-ui-gates") {
       if (!["changed", "full"].includes(parsed.mode)) {
-        throw new Error(
-          "--without-ui-gates è supportato solo con verify:changed o verify:full.",
-        );
+        throw new Error("--without-ui-gates è supportato solo con verify:changed o verify:full.");
       }
       parsed.excludeUiGates = true;
       continue;
     }
     if (arg === "--without-advisory-gates") {
       if (parsed.mode !== "changed") {
-        throw new Error(
-          "--without-advisory-gates è supportato solo con verify:changed.",
-        );
+        throw new Error("--without-advisory-gates è supportato solo con verify:changed.");
       }
       parsed.excludeAdvisoryGates = true;
       continue;
@@ -480,9 +461,7 @@ function runGit(args) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.status !== 0) {
-    throw new Error(
-      result.stderr.trim() || `git ${args.join(" ")} non riuscito.`,
-    );
+    throw new Error(result.stderr.trim() || `git ${args.join(" ")} non riuscito.`);
   }
   return result.stdout.trimEnd();
 }

@@ -91,9 +91,7 @@ export interface ExistingCatalogTakeoverStartInput {
 
 type TakeoverWizard = Awaited<ReturnType<typeof getImportWizardState>>;
 type TakeoverShop = Awaited<ReturnType<typeof ensureShopForSession>>;
-type CatalogBatchResult = Awaited<
-  ReturnType<typeof upsertCatalogImportBatchJob>
->;
+type CatalogBatchResult = Awaited<ReturnType<typeof upsertCatalogImportBatchJob>>;
 
 interface ExistingCatalogTakeoverStartPorts {
   applyClaims: typeof applyExistingCatalogTakeoverClaims;
@@ -103,15 +101,10 @@ interface ExistingCatalogTakeoverStartPorts {
   getDraftLimit: () => number;
   loadWizard: () => Promise<TakeoverWizard>;
   now: () => Date;
-  writeAudit: (input: {
-    details: Prisma.JsonObject;
-    shopId: string;
-  }) => Promise<void>;
+  writeAudit: (input: { details: Prisma.JsonObject; shopId: string }) => Promise<void>;
 }
 
-export async function startExistingCatalogTakeoverJobs(
-  input: ExistingCatalogTakeoverStartInput,
-) {
+export async function startExistingCatalogTakeoverJobs(input: ExistingCatalogTakeoverStartInput) {
   const shop = await ensureShopForSession(input.session);
   const connection = await prisma.ebayConnection.findUnique({
     where: {
@@ -152,8 +145,7 @@ export async function startExistingCatalogTakeoverJobs(
           select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
           data: {
             details,
-            message:
-              "Takeover catalogo esistente pianificato in batch reuse-only.",
+            message: "Takeover catalogo esistente pianificato in batch reuse-only.",
             shopId,
             type: AuditEventType.SYNC_JOB_CREATED,
           },
@@ -248,13 +240,9 @@ export async function runExistingCatalogTakeoverStart(
   }
 
   const draftLimit = ports.getDraftLimit();
-  const importProductStatus = normalizeImportProductStatus(
-    input.shop.defaultProductStatus,
-  );
+  const importProductStatus = normalizeImportProductStatus(input.shop.defaultProductStatus);
   const batches = chunkArray(applyPlan.ebayItemIds, draftLimit);
-  const applyRowsByItemId = new Map(
-    applyPlan.rows.map((row) => [row.itemId, row]),
-  );
+  const applyRowsByItemId = new Map(applyPlan.rows.map((row) => [row.itemId, row]));
   const now = ports.now();
   const catalogImportRunId = ports.createRunId({
     now,
@@ -309,8 +297,7 @@ export async function runExistingCatalogTakeoverStart(
     totalAvailable: wizard.previewSource.totalAvailable,
     truncatedAtMaxProducts:
       wizard.previewSource.totalAvailable !== null
-        ? wizard.previewSource.totalAvailable >
-          wizard.previewResult.items.length
+        ? wizard.previewSource.totalAvailable > wizard.previewResult.items.length
         : wizard.previewResult.items.length >= CATALOG_IMPORT_MAX_PRODUCTS,
   } satisfies Prisma.JsonObject;
 
@@ -323,10 +310,7 @@ export async function applyExistingCatalogTakeoverClaims(
   input: {
     admin: ShopifyAdminGraphqlClient;
     now: Date;
-    previewItemsByItemId: Map<
-      string,
-      TakeoverWizard["previewResult"]["items"][number]
-    >;
+    previewItemsByItemId: Map<string, TakeoverWizard["previewResult"]["items"][number]>;
     rows: ExistingCatalogTakeoverApplyRow[];
     shopId: string;
   },
@@ -334,9 +318,7 @@ export async function applyExistingCatalogTakeoverClaims(
 ) {
   const productGids = [...new Set(input.rows.map((row) => row.productGid))];
   const productsById = await ports.loadProducts(input.admin, productGids);
-  const missingProductGids = productGids.filter(
-    (productGid) => !productsById.has(productGid),
-  );
+  const missingProductGids = productGids.filter((productGid) => !productsById.has(productGid));
 
   if (missingProductGids.length > 0) {
     throw new Error(
@@ -374,23 +356,16 @@ export async function applyExistingCatalogTakeoverClaims(
 
 interface ExistingCatalogTakeoverClaimPorts {
   loadProducts: typeof loadExistingCatalogTakeoverProducts;
-  recordSnapshots: (
-    snapshots: Prisma.ProductSnapshotCreateManyInput[],
-  ) => Promise<void>;
+  recordSnapshots: (snapshots: Prisma.ProductSnapshotCreateManyInput[]) => Promise<void>;
   upsertMappings: typeof upsertExistingCatalogTakeoverMappings;
   writeMetafields: typeof applyExistingCatalogTakeoverMetafields;
-  writeSnapshotAudit: (input: {
-    claimedRows: number;
-    shopId: string;
-  }) => Promise<void>;
+  writeSnapshotAudit: (input: { claimedRows: number; shopId: string }) => Promise<void>;
 }
 
 const defaultClaimPorts: ExistingCatalogTakeoverClaimPorts = {
   loadProducts: loadExistingCatalogTakeoverProducts,
   recordSnapshots: async (snapshots) => {
-    await prisma.$transaction((tx) =>
-      recordProductSnapshotsInTransaction(tx, snapshots),
-    );
+    await prisma.$transaction((tx) => recordProductSnapshotsInTransaction(tx, snapshots));
   },
   upsertMappings: upsertExistingCatalogTakeoverMappings,
   writeMetafields: applyExistingCatalogTakeoverMetafields,
@@ -399,8 +374,7 @@ const defaultClaimPorts: ExistingCatalogTakeoverClaimPorts = {
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: { claimedRows, source: "existing_catalog_takeover" },
-        message:
-          "Snapshot Shopify pre-claim registrato per takeover catalogo esistente.",
+        message: "Snapshot Shopify pre-claim registrato per takeover catalogo esistente.",
         shopId,
         type: AuditEventType.SYNC_JOB_CREATED,
       },
@@ -409,10 +383,7 @@ const defaultClaimPorts: ExistingCatalogTakeoverClaimPorts = {
 };
 
 async function upsertExistingCatalogTakeoverMappings(input: {
-  previewItemsByItemId: Map<
-    string,
-    TakeoverWizard["previewResult"]["items"][number]
-  >;
+  previewItemsByItemId: Map<string, TakeoverWizard["previewResult"]["items"][number]>;
   rows: ExistingCatalogTakeoverApplyRow[];
   shopId: string;
 }) {
@@ -485,8 +456,7 @@ async function loadExistingCatalogTakeoverProducts(
       }`,
       { variables: { ids } },
     );
-    const json =
-      (await response.json()) as ExistingCatalogTakeoverProductsResponse;
+    const json = (await response.json()) as ExistingCatalogTakeoverProductsResponse;
 
     if (!response.ok) {
       throw new Error(
@@ -543,20 +513,13 @@ function getExistingCatalogTakeoverVariant(
   row: ExistingCatalogTakeoverApplyRow,
 ) {
   const variants = product.variants?.nodes ?? [];
-  return (
-    variants.find((variant) => variant.id === row.variantGid) ??
-    variants[0] ??
-    null
-  );
+  return variants.find((variant) => variant.id === row.variantGid) ?? variants[0] ?? null;
 }
 
 async function applyExistingCatalogTakeoverMetafields(
   admin: ShopifyAdminGraphqlClient,
   input: {
-    previewItemsByItemId: Map<
-      string,
-      TakeoverWizard["previewResult"]["items"][number]
-    >;
+    previewItemsByItemId: Map<string, TakeoverWizard["previewResult"]["items"][number]>;
     rows: ExistingCatalogTakeoverApplyRow[];
   },
 ) {
@@ -569,10 +532,7 @@ async function applyExistingCatalogTakeoverMetafields(
     }));
   });
 
-  for (const metafieldBatch of chunkArray(
-    metafields,
-    TAKEOVER_METAFIELDS_SET_BATCH_SIZE,
-  )) {
+  for (const metafieldBatch of chunkArray(metafields, TAKEOVER_METAFIELDS_SET_BATCH_SIZE)) {
     // react-doctor-disable-next-line react-doctor/async-await-in-loop -- mutation Shopify Admin GraphQL rate-limited: in serie per rispettare i limiti di costo del provider.
     const response = await admin.graphql(
       `#graphql
@@ -597,9 +557,7 @@ async function applyExistingCatalogTakeoverMetafields(
       throw new Error(
         userErrors
           .map((error) =>
-            error.field?.length
-              ? `${error.field.join(".")}: ${error.message}`
-              : error.message,
+            error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
           )
           .join("; "),
       );

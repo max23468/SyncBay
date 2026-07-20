@@ -2,9 +2,7 @@ export const CONFLICT_PAGE_SIZE = 25;
 
 export type ConflictFilter = "all" | "open" | "resolved";
 
-export function normalizeConflictFilter(
-  value: string | null | undefined,
-): ConflictFilter {
+export function normalizeConflictFilter(value: string | null | undefined): ConflictFilter {
   if (value === "all" || value === "resolved") return value;
 
   return "open";

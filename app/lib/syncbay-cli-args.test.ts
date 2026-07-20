@@ -16,8 +16,5 @@ test("rejects invalid --limit values instead of silently ignoring them", () => {
     () => parsePositiveLimitOption("abc", "--limit"),
     /--limit deve essere un intero positivo/,
   );
-  assert.throws(
-    () => parsePositiveLimitOption(undefined, "--limit"),
-    /--limit richiede un valore/,
-  );
+  assert.throws(() => parsePositiveLimitOption(undefined, "--limit"), /--limit richiede un valore/);
 });

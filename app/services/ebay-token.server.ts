@@ -2,10 +2,7 @@ import { EbayConnectionStatus, type EbayConnection } from "@prisma/client";
 
 import prisma from "../db.server";
 import { decryptSecret, encryptSecret } from "./crypto.server";
-import {
-  getEbayBasicAuthHeader,
-  getEbayTokenUrl,
-} from "./ebay-environment.server";
+import { getEbayBasicAuthHeader, getEbayTokenUrl } from "./ebay-environment.server";
 
 interface EbayTokenResponse {
   access_token?: string;
@@ -43,8 +40,7 @@ export async function getUsableEbayAccessToken(connection: EbayConnection) {
 function hasUsableAccessToken(connection: EbayConnection) {
   return Boolean(
     connection.tokenExpiresAt &&
-    connection.tokenExpiresAt.getTime() >
-      Date.now() + ACCESS_TOKEN_REFRESH_SKEW_MS,
+    connection.tokenExpiresAt.getTime() > Date.now() + ACCESS_TOKEN_REFRESH_SKEW_MS,
   );
 }
 
@@ -88,9 +84,7 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
 
   const shouldMarkReconnect =
     !response.ok &&
-    (response.status === 401 ||
-      response.status === 403 ||
-      isAuthTokenError(json.error));
+    (response.status === 401 || response.status === 403 || isAuthTokenError(json.error));
 
   if (!response.ok || !json.access_token) {
     if (shouldMarkReconnect) {
@@ -98,15 +92,11 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
     }
 
     throw new EbayTokenError(
-      json.error_description ??
-        json.error ??
-        "Refresh token eBay non riuscito.",
+      json.error_description ?? json.error ?? "Refresh token eBay non riuscito.",
     );
   }
 
-  const tokenExpiresAt = secondsFromNow(
-    json.expires_in ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
-  );
+  const tokenExpiresAt = secondsFromNow(json.expires_in ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS);
   await prisma.ebayConnection.update({
     data: {
       encryptedAccessToken: encryptSecret(json.access_token),
@@ -135,12 +125,9 @@ async function markReconnectRequired(connectionId: string) {
 function isAuthTokenError(error?: string) {
   if (!error) return false;
 
-  return [
-    "invalid_grant",
-    "invalid_request",
-    "invalid_client",
-    "unauthorized_client",
-  ].includes(error.toLowerCase());
+  return ["invalid_grant", "invalid_request", "invalid_client", "unauthorized_client"].includes(
+    error.toLowerCase(),
+  );
 }
 
 function secondsFromNow(seconds: number) {

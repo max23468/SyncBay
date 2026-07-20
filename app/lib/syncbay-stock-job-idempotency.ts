@@ -26,9 +26,7 @@ export function hasProcessedStockLineInJobResults(input: {
 }
 
 function getStockAction(record: Record<string, unknown>) {
-  return getStringField(record, "stockAction") === "restore"
-    ? "restore"
-    : "decrement";
+  return getStringField(record, "stockAction") === "restore" ? "restore" : "decrement";
 }
 
 function getStockResultRows(value: unknown) {

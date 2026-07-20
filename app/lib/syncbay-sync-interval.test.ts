@@ -3,16 +3,12 @@ import { test } from "vitest";
 
 import * as syncInterval from "./syncbay-sync-interval.ts";
 
-const { SYNC_TARGET_OPTIONS, getSyncTargetLabel, normalizeSyncTargetSeconds } =
-  syncInterval;
+const { SYNC_TARGET_OPTIONS, getSyncTargetLabel, normalizeSyncTargetSeconds } = syncInterval;
 
 test("accepts only the allowed sync target values", () => {
   for (const option of SYNC_TARGET_OPTIONS) {
     assert.equal(normalizeSyncTargetSeconds(option.value), option.value);
-    assert.equal(
-      normalizeSyncTargetSeconds(String(option.value)),
-      option.value,
-    );
+    assert.equal(normalizeSyncTargetSeconds(String(option.value)), option.value);
   }
 });
 

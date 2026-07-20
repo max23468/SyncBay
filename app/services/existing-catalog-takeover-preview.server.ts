@@ -12,9 +12,7 @@ export interface ExistingCatalogPreviewInput {
 }
 
 interface ExistingCatalogPreviewPorts {
-  getAccessToken: (
-    connection: EbayConnection,
-  ) => Promise<{ accessToken: string }>;
+  getAccessToken: (connection: EbayConnection) => Promise<{ accessToken: string }>;
   getPreview: typeof getEbayTradingCatalogImportPreview;
 }
 

@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as qualityChecklist from "./syncbay-quality-checklist.ts";
 
-const { buildImportQualityChecklist, getQualityChecklistSummary } =
-  qualityChecklist;
+const { buildImportQualityChecklist, getQualityChecklistSummary } = qualityChecklist;
 
 test("builds a transparent checklist for risky import rows", () => {
   const checklist = buildImportQualityChecklist({

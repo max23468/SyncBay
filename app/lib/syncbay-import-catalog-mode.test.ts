@@ -22,10 +22,7 @@ test("accepts existing catalog takeover mode", () => {
 
 test("formats labels in Italian", () => {
   assert.equal(getImportCatalogModeLabel("new_products"), "Nuovi prodotti");
-  assert.equal(
-    getImportCatalogModeLabel("existing_catalog"),
-    "Collega catalogo esistente",
-  );
+  assert.equal(getImportCatalogModeLabel("existing_catalog"), "Collega catalogo esistente");
 });
 
 test("blocks normal draft import in existing catalog mode", () => {

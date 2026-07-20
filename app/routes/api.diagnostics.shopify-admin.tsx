@@ -99,17 +99,12 @@ function getOptionalFallbackShopDomain() {
   return process.env.SHOPIFY_DEV_STORE?.trim() ?? "";
 }
 
-function normalizeDiagnosticsProductInput(
-  payload: unknown,
-  input: { fallbackShopDomain: string },
-) {
+function normalizeDiagnosticsProductInput(payload: unknown, input: { fallbackShopDomain: string }) {
   try {
     return normalizeShopifyAdminDiagnosticsProductInput(payload, input);
   } catch (error) {
     throw new Response(
-      error instanceof Error
-        ? error.message
-        : "Payload diagnostica Shopify non valido.",
+      error instanceof Error ? error.message : "Payload diagnostica Shopify non valido.",
       { status: 400 },
     );
   }

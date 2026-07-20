@@ -2,13 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 
-const NON_DEPLOY_PREFIXES = [
-  ".github/",
-  ".mex/",
-  "docs/",
-  "preview/",
-  "supabase/",
-];
+const NON_DEPLOY_PREFIXES = [".github/", ".mex/", "docs/", "preview/", "supabase/"];
 
 const NON_DEPLOY_ROOT_FILES = new Set([
   ".env.example",
@@ -19,7 +13,7 @@ const NON_DEPLOY_ROOT_FILES = new Set([
   "README.md",
   "SECURITY.md",
   "doctor.config.json",
-  "eslint.config.mjs",
+  ".oxlintrc.json",
   "shopify.app.toml",
   "shopify.web.toml",
 ]);
@@ -37,8 +31,7 @@ export function isDeployRelevantPath(path) {
   if (DEPLOY_SCRIPTS.has(path)) return true;
   if (path.startsWith("scripts/")) return false;
   if (NON_DEPLOY_ROOT_FILES.has(path)) return false;
-  if (NON_DEPLOY_PREFIXES.some((prefix) => path.startsWith(prefix)))
-    return false;
+  if (NON_DEPLOY_PREFIXES.some((prefix) => path.startsWith(prefix))) return false;
   return true;
 }
 
@@ -70,7 +63,5 @@ if (import.meta.main) {
     process.exit(1);
   }
 
-  console.log(
-    `Vercel build saltato: ${paths.join(", ")} non modifica il runtime distribuito.`,
-  );
+  console.log(`Vercel build saltato: ${paths.join(", ")} non modifica il runtime distribuito.`);
 }

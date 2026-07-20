@@ -1,5 +1,4 @@
-export const STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS =
-  24 * 60 * 60 * 1000;
+export const STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export const STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES = [
   "SYNCBAY_INCREMENTAL_BLOCKED",
@@ -20,15 +19,12 @@ export function isSupersededFailedIncrementalSyncJob(input: {
   if (!isStaleFailedIncrementalSyncErrorCode(input.errorCode)) return false;
 
   const updatedAt = getTime(input.updatedAt);
-  const latestSuccessAt = getNullableTime(
-    input.latestSuccessfulIncrementalSyncAt,
-  );
+  const latestSuccessAt = getNullableTime(input.latestSuccessfulIncrementalSyncAt);
 
   if (latestSuccessAt === null || updatedAt === null) return false;
   if (latestSuccessAt <= updatedAt) return false;
 
-  const archiveAfterMs =
-    input.archiveAfterMs ?? STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS;
+  const archiveAfterMs = input.archiveAfterMs ?? STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS;
 
   if (!Number.isFinite(archiveAfterMs) || archiveAfterMs <= 0) {
     return false;
@@ -50,8 +46,7 @@ function getNullableTime(value?: Date | string | null) {
 }
 
 function getTime(value: Date | string) {
-  const time =
-    value instanceof Date ? value.getTime() : new Date(value).getTime();
+  const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
 
   return Number.isFinite(time) ? time : null;
 }

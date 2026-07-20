@@ -70,8 +70,7 @@ export function sanitizeErrorText(value) {
 }
 
 export function formatCliError(error) {
-  const stderr =
-    typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
+  const stderr = typeof error?.stderr === "string" ? sanitizeErrorText(error.stderr) : "";
   const message = sanitizeErrorText(error?.message ?? String(error));
   const useful = stderr || message;
 
@@ -94,9 +93,7 @@ export function getSupabaseCliCwd(
   if (env.SYNCBAY_SUPABASE_CWD) return env.SYNCBAY_SUPABASE_CWD;
   if (hasSupabaseProjectRef(fallbackCwd, exists)) return fallbackCwd;
 
-  return (
-    findLinkedSupabaseWorktree({ exists, runGitWorktreeList }) ?? fallbackCwd
-  );
+  return findLinkedSupabaseWorktree({ exists, runGitWorktreeList }) ?? fallbackCwd;
 }
 
 async function buildSupabaseCliEnv() {

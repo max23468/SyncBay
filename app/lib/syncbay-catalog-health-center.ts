@@ -1,5 +1,4 @@
-export type CatalogHealthCenterTone =
-  "critical" | "info" | "success" | "warning";
+export type CatalogHealthCenterTone = "critical" | "info" | "success" | "warning";
 
 export interface CatalogHealthCause {
   code:
@@ -41,8 +40,7 @@ export function buildCatalogHealthCenter(input: {
   });
   pushCause(causes, input.needsCheckCount, {
     code: "needs_check",
-    detail:
-      "Alcuni mapping richiedono una verifica prima di considerarli allineati.",
+    detail: "Alcuni mapping richiedono una verifica prima di considerarli allineati.",
     label: "Righe da verificare",
     tone: "warning",
   });
@@ -60,8 +58,7 @@ export function buildCatalogHealthCenter(input: {
   });
   pushCause(causes, input.erroredMappingCount, {
     code: "errored_mappings",
-    detail:
-      "Alcuni prodotti collegati sono in errore e non si allineano: vanno recuperati.",
+    detail: "Alcuni prodotti collegati sono in errore e non si allineano: vanno recuperati.",
     label: "Prodotti in errore",
     tone: "critical",
   });
@@ -78,9 +75,7 @@ export function buildCatalogHealthCenter(input: {
     tone: "info",
   });
 
-  const status: CatalogHealthCenterTone = causes.some(
-    (cause) => cause.tone === "critical",
-  )
+  const status: CatalogHealthCenterTone = causes.some((cause) => cause.tone === "critical")
     ? "critical"
     : causes.some((cause) => cause.tone === "warning")
       ? "warning"
@@ -98,14 +93,10 @@ export function buildCatalogHealthCenter(input: {
   };
 }
 
-export function getCatalogHealthCenterSummary(health: {
-  causes: CatalogHealthCause[];
-}) {
+export function getCatalogHealthCenterSummary(health: { causes: CatalogHealthCause[] }) {
   if (health.causes.length === 0) return "Catalogo allineato";
 
-  return health.causes
-    .map((cause) => `${cause.count} ${cause.label.toLowerCase()}`)
-    .join("; ");
+  return health.causes.map((cause) => `${cause.count} ${cause.label.toLowerCase()}`).join("; ");
 }
 
 function pushCause(

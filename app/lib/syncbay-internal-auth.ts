@@ -1,12 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 
 export type InternalAppSecretVerificationResult =
-  { ok: true } | { ok: false; message: string; status: 401 | 503 };
+  | { ok: true }
+  | { ok: false; message: string; status: 401 | 503 };
 
-export function requireInternalAppSecret(
-  request: Request,
-  expectedSecret: string | undefined,
-) {
+export function requireInternalAppSecret(request: Request, expectedSecret: string | undefined) {
   const result = verifyInternalAppSecret({
     authorization: request.headers.get("authorization"),
     expectedSecret,
@@ -31,11 +29,8 @@ export function verifyInternalAppSecret(input: {
     };
   }
 
-  const authorizationSecret = input.authorization
-    ?.match(/^Bearer\s+(.+)$/i)?.[1]
-    ?.trim();
-  const providedSecret =
-    authorizationSecret || input.headerSecret?.trim() || "";
+  const authorizationSecret = input.authorization?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  const providedSecret = authorizationSecret || input.headerSecret?.trim() || "";
 
   if (secureEqual(providedSecret, expectedSecret)) {
     return { ok: true };
@@ -52,8 +47,5 @@ function secureEqual(left: string, right: string) {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
 
-  return (
-    leftBuffer.length === rightBuffer.length &&
-    timingSafeEqual(leftBuffer, rightBuffer)
-  );
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }

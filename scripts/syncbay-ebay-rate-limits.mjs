@@ -3,11 +3,7 @@
 import { parseArgs as parseNodeArgs } from "node:util";
 
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
-import {
-  ensureTokenEncryptionKey,
-  getAccessToken,
-  loadDotEnv,
-} from "./syncbay-ebay-cli.mjs";
+import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
@@ -35,15 +31,11 @@ function parseArgs(argv) {
 }
 
 function getOauthBaseUrl(mode) {
-  return mode === "SANDBOX"
-    ? "https://api.sandbox.ebay.com"
-    : DEFAULT_OAUTH_BASE_URL;
+  return mode === "SANDBOX" ? "https://api.sandbox.ebay.com" : DEFAULT_OAUTH_BASE_URL;
 }
 
 function getAnalyticsBaseUrl(mode) {
-  return mode === "SANDBOX"
-    ? "https://api.sandbox.ebay.com"
-    : DEFAULT_ANALYTICS_BASE_URL;
+  return mode === "SANDBOX" ? "https://api.sandbox.ebay.com" : DEFAULT_ANALYTICS_BASE_URL;
 }
 
 async function getShopState(shopDomain, marketplaceId) {
@@ -92,9 +84,7 @@ select jsonb_build_object(
   }
 
   if (!payload?.connection) {
-    throw new Error(
-      `Connessione eBay ${marketplaceId} non trovata per ${shopDomain}.`,
-    );
+    throw new Error(`Connessione eBay ${marketplaceId} non trovata per ${shopDomain}.`);
   }
 
   return payload;
@@ -110,22 +100,17 @@ async function getApplicationAccessToken(mode) {
     );
   }
 
-  const response = await fetch(
-    `${getOauthBaseUrl(mode)}/identity/v1/oauth2/token`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        scope:
-          process.env.EBAY_ANALYTICS_RATE_LIMIT_SCOPE ??
-          DEFAULT_ANALYTICS_SCOPE,
-      }),
+  const response = await fetch(`${getOauthBaseUrl(mode)}/identity/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-  );
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      scope: process.env.EBAY_ANALYTICS_RATE_LIMIT_SCOPE ?? DEFAULT_ANALYTICS_SCOPE,
+    }),
+  });
   const body = await response.json().catch(() => ({}));
 
   if (!response.ok || typeof body.access_token !== "string") {
@@ -194,9 +179,7 @@ function selectRules(resources, includeAll) {
     "ReviseInventoryStatus",
   ].map((name) => name.toLowerCase());
   const selected = resources.filter((resource) =>
-    relevantNames.some((name) =>
-      resource.resourceName.toLowerCase().includes(name),
-    ),
+    relevantNames.some((name) => resource.resourceName.toLowerCase().includes(name)),
   );
 
   return selected.length > 0 ? selected : resources.slice(0, 20);
@@ -244,8 +227,7 @@ function buildSummary({
           finishedAt: latestIncrementalFailure.finishedAt,
           rateLimitCooldownSeconds:
             latestIncrementalFailure.result?.rateLimitCooldownSeconds ?? null,
-          retryScheduledAt:
-            latestIncrementalFailure.result?.retryScheduledAt ?? null,
+          retryScheduledAt: latestIncrementalFailure.result?.retryScheduledAt ?? null,
           error: latestIncrementalFailure.errorMessage ?? null,
         }
       : null,
@@ -262,9 +244,7 @@ function printTextSummary(summary) {
   );
 
   if (summary.applicationRateLimitError) {
-    console.log(
-      `Limiti applicativi non letti: ${summary.applicationRateLimitError}`,
-    );
+    console.log(`Limiti applicativi non letti: ${summary.applicationRateLimitError}`);
   }
 
   if (summary.latestIncrementalFailure) {
@@ -308,9 +288,7 @@ async function main() {
   const state = await getShopState(args.shop, args.marketplaceId);
 
   if (state.connection.status !== "CONNECTED") {
-    throw new Error(
-      `Connessione eBay non CONNECTED: ${state.connection.status}`,
-    );
+    throw new Error(`Connessione eBay non CONNECTED: ${state.connection.status}`);
   }
 
   const { accessToken, refreshed } = await getAccessToken(state.connection);
@@ -323,9 +301,7 @@ async function main() {
   let applicationError = null;
 
   try {
-    const applicationAccessToken = await getApplicationAccessToken(
-      state.connection.environment,
-    );
+    const applicationAccessToken = await getApplicationAccessToken(state.connection.environment);
     applicationBody = await analyticsRateLimitCall({
       accessToken: applicationAccessToken,
       mode: state.connection.environment,

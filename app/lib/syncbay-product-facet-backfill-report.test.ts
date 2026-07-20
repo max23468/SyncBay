@@ -122,10 +122,7 @@ test("keeps missing Shopify products and failed lookups out of applicable change
     ["missing_shopify_product", "ebay_lookup_failed"],
   );
   assert.equal(report.summary.applicable, 0);
-  assert.equal(
-    report.rows[1]?.lookupFailureReason,
-    "Limite Trading API raggiunto.",
-  );
+  assert.equal(report.rows[1]?.lookupFailureReason, "Limite Trading API raggiunto.");
 });
 
 test("builds an apply plan only for missing approved facet metafields", () => {

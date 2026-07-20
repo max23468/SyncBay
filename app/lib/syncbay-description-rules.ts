@@ -21,9 +21,7 @@ type AssertNoMissingDescriptionRuleMode<T extends never> = T;
 export type DescriptionRuleModesCoverPrisma =
   AssertNoMissingDescriptionRuleMode<MissingPrismaDescriptionRuleMode>;
 
-const DESCRIPTION_RULE_MODE_SET: ReadonlySet<string> = new Set(
-  DESCRIPTION_RULE_MODES,
-);
+const DESCRIPTION_RULE_MODE_SET: ReadonlySet<string> = new Set(DESCRIPTION_RULE_MODES);
 
 export interface SyncBayDescriptionRule {
   mode: DescriptionRuleMode;
@@ -38,22 +36,16 @@ export function normalizeDescriptionRuleMode(
 ): DescriptionRuleMode {
   const normalized = value?.trim().toUpperCase();
 
-  return isDescriptionRuleMode(normalized)
-    ? normalized
-    : DEFAULT_DESCRIPTION_RULE.mode;
+  return isDescriptionRuleMode(normalized) ? normalized : DEFAULT_DESCRIPTION_RULE.mode;
 }
 
-export function normalizeDescriptionRule(input: {
-  mode?: string | null;
-}): SyncBayDescriptionRule {
+export function normalizeDescriptionRule(input: { mode?: string | null }): SyncBayDescriptionRule {
   return { mode: normalizeDescriptionRuleMode(input.mode) };
 }
 
 export function normalizeDescriptionRuleFormInput(input: {
   mode: string | null | undefined;
-}):
-  | { mode: DescriptionRuleMode; status: "valid" }
-  | { message: string; status: "invalid" } {
+}): { mode: DescriptionRuleMode; status: "valid" } | { message: string; status: "invalid" } {
   const normalized = input.mode?.trim().toUpperCase();
 
   if (isDescriptionRuleMode(normalized)) {
@@ -67,9 +59,7 @@ export function normalizeDescriptionRuleFormInput(input: {
   };
 }
 
-function isDescriptionRuleMode(
-  value: string | null | undefined,
-): value is DescriptionRuleMode {
+function isDescriptionRuleMode(value: string | null | undefined): value is DescriptionRuleMode {
   return typeof value === "string" && DESCRIPTION_RULE_MODE_SET.has(value);
 }
 
@@ -151,17 +141,11 @@ function decodeBasicHtmlEntities(value: string) {
     .replace(/&amp;/giu, "&");
 }
 
-function getRemovedPercent(
-  originalHtml: string | null,
-  selectedHtml: string | null,
-) {
+function getRemovedPercent(originalHtml: string | null, selectedHtml: string | null) {
   const originalLength = originalHtml?.length ?? 0;
   const selectedLength = selectedHtml?.length ?? 0;
 
   return originalLength
-    ? Math.max(
-        0,
-        Math.round(((originalLength - selectedLength) / originalLength) * 100),
-      )
+    ? Math.max(0, Math.round(((originalLength - selectedLength) / originalLength) * 100))
     : 0;
 }

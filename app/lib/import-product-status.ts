@@ -10,9 +10,7 @@ export function normalizeImportProductStatus(
   return value === "DRAFT" ? "DRAFT" : DEFAULT_IMPORT_PRODUCT_STATUS;
 }
 
-export function getImportProductStatusLabelCapitalized(
-  status: ImportProductStatus,
-) {
+export function getImportProductStatusLabelCapitalized(status: ImportProductStatus) {
   return status === "DRAFT" ? "Bozza" : "Pubblicato";
 }
 

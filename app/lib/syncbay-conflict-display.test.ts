@@ -6,14 +6,8 @@ import * as conflictDisplay from "./syncbay-conflict-display.ts";
 const { formatConflictValueForDisplay } = conflictDisplay;
 
 test("formats ordinary conflict values for decisions", () => {
-  assert.equal(
-    formatConflictValueForDisplay({ field: "quantity", value: 3 }),
-    "3",
-  );
-  assert.equal(
-    formatConflictValueForDisplay({ field: "images", value: 2 }),
-    "2 immagini",
-  );
+  assert.equal(formatConflictValueForDisplay({ field: "quantity", value: 3 }), "3");
+  assert.equal(formatConflictValueForDisplay({ field: "images", value: 2 }), "2 immagini");
   assert.equal(
     formatConflictValueForDisplay({ field: "title", value: "Titolo Shopify" }),
     "Titolo Shopify",

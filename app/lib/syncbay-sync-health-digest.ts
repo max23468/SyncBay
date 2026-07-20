@@ -50,23 +50,15 @@ export interface SyncHealthDigest {
 
 const DEFAULT_WINDOW_HOURS = 24;
 
-export function buildSyncHealthDigest(
-  input: SyncHealthDigestInput,
-): SyncHealthDigest {
+export function buildSyncHealthDigest(input: SyncHealthDigestInput): SyncHealthDigest {
   const windowHours = normalizeWindowHours(input.windowHours);
-  const windowStart = new Date(
-    input.now.getTime() - windowHours * 60 * 60 * 1000,
-  );
+  const windowStart = new Date(input.now.getTime() - windowHours * 60 * 60 * 1000);
   const conflictsOpen = Math.max(0, Math.trunc(input.conflictsOpen) || 0);
   const quarantinedCount = Math.max(0, Math.trunc(input.quarantinedCount) || 0);
 
   const windowJobs = input.jobs.filter((job) => job.createdAt >= windowStart);
-  const syncedCount = windowJobs.filter(
-    (job) => job.status?.toUpperCase() === "SUCCEEDED",
-  ).length;
-  const failedCount = windowJobs.filter(
-    (job) => job.status?.toUpperCase() === "FAILED",
-  ).length;
+  const syncedCount = windowJobs.filter((job) => job.status?.toUpperCase() === "SUCCEEDED").length;
+  const failedCount = windowJobs.filter((job) => job.status?.toUpperCase() === "FAILED").length;
 
   const lagBreached = input.healthStatus === "overdue";
   const lagSeconds =

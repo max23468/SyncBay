@@ -12,9 +12,7 @@ export function formatItDateTime(
 ) {
   if (!value) return fallback;
 
-  return itDateTimeFormatter.format(
-    value instanceof Date ? value : new Date(value),
-  );
+  return itDateTimeFormatter.format(value instanceof Date ? value : new Date(value));
 }
 
 export function formatItNumber(value: number) {

@@ -54,8 +54,7 @@ test("stores and loads Shopify sessions through the Prisma session table", async
         }) => {
           rows.set(where.id, rows.has(where.id) ? update : create);
         },
-        findUnique: async ({ where }: { where: { id: string } }) =>
-          rows.get(where.id) ?? null,
+        findUnique: async ({ where }: { where: { id: string } }) => rows.get(where.id) ?? null,
         delete: async ({ where }: { where: { id: string } }) => {
           rows.delete(where.id);
         },
@@ -124,10 +123,7 @@ test("rejects plaintext legacy session tokens after the compatible rollout", asy
     { connectionRetries: 1, connectionRetryIntervalMs: 0 },
   );
 
-  await assert.rejects(
-    storage.loadSession(row.id),
-    /Sessione Shopify non cifrata o non valida/,
-  );
+  await assert.rejects(storage.loadSession(row.id), /Sessione Shopify non cifrata o non valida/);
 });
 
 test("loads tokenless OAuth state sessions without throwing", async () => {
@@ -147,8 +143,7 @@ test("loads tokenless OAuth state sessions without throwing", async () => {
         }) => {
           rows.set(where.id, rows.has(where.id) ? update : create);
         },
-        findUnique: async ({ where }: { where: { id: string } }) =>
-          rows.get(where.id) ?? null,
+        findUnique: async ({ where }: { where: { id: string } }) => rows.get(where.id) ?? null,
         delete: async () => {},
         deleteMany: async () => {},
         findMany: async () => [],
@@ -245,9 +240,7 @@ test("returns every persisted session for a shop", async () => {
     { connectionRetries: 1, connectionRetryIntervalMs: 0 },
   );
 
-  const sessions = await storage.findSessionsByShop(
-    "many-sessions.myshopify.com",
-  );
+  const sessions = await storage.findSessionsByShop("many-sessions.myshopify.com");
 
   assert.equal(sessions.length, 30);
   assert.equal(sessions.at(0)?.id, "session-1");

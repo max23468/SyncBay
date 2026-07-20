@@ -4,12 +4,8 @@ import { test } from "vitest";
 import * as retention from "./syncbay-retention-cleanup.ts";
 import { SYNCBAY_RETENTION_POLICIES } from "./syncbay-retention-policy.ts";
 
-const {
-  buildRetentionCleanupPlan,
-  getRetentionCutoff,
-  isExpiredAtCutoff,
-  selectExpiredRecords,
-} = retention;
+const { buildRetentionCleanupPlan, getRetentionCutoff, isExpiredAtCutoff, selectExpiredRecords } =
+  retention;
 
 const now = new Date("2026-06-20T00:00:00.000Z");
 
@@ -44,9 +40,7 @@ test("builds a plan covering every retention policy", () => {
   assert.equal(webhookAudit?.retentionDays, 14);
   assert.equal(webhookAudit?.cutoff.toISOString(), "2026-06-06T00:00:00.000Z");
 
-  const syncJobs = plan.find(
-    (target: { area: string }) => target.area === "sync_jobs",
-  );
+  const syncJobs = plan.find((target: { area: string }) => target.area === "sync_jobs");
   assert.equal(syncJobs?.retentionDays, 90);
   assert.equal(syncJobs?.cutoff.toISOString(), "2026-03-22T00:00:00.000Z");
 });
@@ -97,18 +91,9 @@ test("preserves durable facet backfill markers from short succeeded-job retentio
 test("classifies records as expired at or before the cutoff", () => {
   const cutoff = getRetentionCutoff(7, now);
 
-  assert.equal(
-    isExpiredAtCutoff(new Date("2026-06-12T00:00:00.000Z"), cutoff),
-    true,
-  );
-  assert.equal(
-    isExpiredAtCutoff(new Date("2026-06-13T00:00:00.000Z"), cutoff),
-    true,
-  );
-  assert.equal(
-    isExpiredAtCutoff(new Date("2026-06-19T00:00:00.000Z"), cutoff),
-    false,
-  );
+  assert.equal(isExpiredAtCutoff(new Date("2026-06-12T00:00:00.000Z"), cutoff), true);
+  assert.equal(isExpiredAtCutoff(new Date("2026-06-13T00:00:00.000Z"), cutoff), true);
+  assert.equal(isExpiredAtCutoff(new Date("2026-06-19T00:00:00.000Z"), cutoff), false);
   assert.equal(isExpiredAtCutoff(null, cutoff), false);
 });
 

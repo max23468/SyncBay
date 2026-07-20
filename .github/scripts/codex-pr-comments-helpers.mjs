@@ -8,16 +8,12 @@ export function getCodexPrScanMode(input) {
   if (input.codeFullScan) return "full-history";
 
   if (!input.eventName) return "broad";
-  if (
-    input.eventName === "schedule" ||
-    input.eventName === "workflow_dispatch"
-  ) {
+  if (input.eventName === "schedule" || input.eventName === "workflow_dispatch") {
     return "broad";
   }
   if (
     input.eventName === "issue_comment" &&
-    input.eventPayload?.issue?.title ===
-      (input.inboxIssueTitle ?? "Codex feedback inbox")
+    input.eventPayload?.issue?.title === (input.inboxIssueTitle ?? "Codex feedback inbox")
   ) {
     return "broad";
   }
@@ -39,9 +35,5 @@ export function parsePositiveInteger(value, fallback) {
 }
 
 export function shouldPatchInboxIssue(input) {
-  return !(
-    input.body === input.nextBody &&
-    input.state === "open" &&
-    input.isLabeledInboxIssue
-  );
+  return !(input.body === input.nextBody && input.state === "open" && input.isLabeledInboxIssue);
 }

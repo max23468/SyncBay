@@ -19,9 +19,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       databaseDirectUrl: process.env.DATABASE_DIRECT_URL,
       postgresPrismaUrl: process.env.POSTGRES_PRISMA_URL,
       postgresUrlNonPooling: process.env.POSTGRES_URL_NON_POOLING,
-      prismaRuntimeDatabaseUrl: buildPrismaRuntimeDatabaseUrl(
-        process.env.DATABASE_URL,
-      ),
+      prismaRuntimeDatabaseUrl: buildPrismaRuntimeDatabaseUrl(process.env.DATABASE_URL),
     }),
   });
 };

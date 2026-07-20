@@ -23,9 +23,7 @@ export function measureBundleBudget(root = process.cwd(), budgets = BUDGETS) {
   const clientDirectory = path.join(root, "build/client");
   const serverDirectory = path.join(root, "build/server");
   if (!fs.existsSync(clientDirectory) || !fs.existsSync(serverDirectory)) {
-    throw new Error(
-      "Artefatti build mancanti: eseguire npm run build prima del budget bundle.",
-    );
+    throw new Error("Artefatti build mancanti: eseguire npm run build prima del budget bundle.");
   }
   const client = walk(clientDirectory);
   const server = walk(serverDirectory);
@@ -34,29 +32,21 @@ export function measureBundleBudget(root = process.cwd(), budgets = BUDGETS) {
   const css = client.filter((file) => /syncbay-embedded.*\.css$/u.test(file));
   const serverJs = server.filter((file) => /\.js$/u.test(file));
   if (js.length === 0 || css.length === 0 || serverJs.length === 0) {
-    throw new Error(
-      "Artefatti build incompleti: bundle client, CSS o server non trovato.",
-    );
+    throw new Error("Artefatti build incompleti: bundle client, CSS o server non trovato.");
   }
-  const routes = js.filter((file) =>
-    /(?:^|[/.-])app(?:[._-]|$)/u.test(path.relative(root, file)),
-  );
+  const routes = js.filter((file) => /(?:^|[/.-])app(?:[._-]|$)/u.test(path.relative(root, file)));
   const values = {
     clientTotal: js.reduce((sum, file) => sum + gzip(file), 0),
     css: css.reduce((sum, file) => sum + gzip(file), 0),
     route: Math.max(0, ...routes.map(gzip)),
     server: serverJs.reduce((sum, file) => sum + gzip(file), 0),
   };
-  const exceeded = Object.entries(values).filter(
-    ([key, value]) => value > budgets[key],
-  );
+  const exceeded = Object.entries(values).filter(([key, value]) => value > budgets[key]);
   return { budgets, exceeded, values };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const rootArg =
-    process.argv.find((arg) => arg.startsWith("--root="))?.slice(7) ??
-    process.cwd();
+  const rootArg = process.argv.find((arg) => arg.startsWith("--root="))?.slice(7) ?? process.cwd();
   const result = measureBundleBudget(rootArg);
   console.log(JSON.stringify(result));
   if (result.exceeded.length > 0) process.exitCode = 2;

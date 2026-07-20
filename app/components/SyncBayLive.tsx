@@ -22,11 +22,7 @@ type LiveSyncProps = {
   working: boolean;
 };
 
-export function LiveSync({
-  intervalMs = 15000,
-  nextRevalidateAt,
-  working,
-}: LiveSyncProps) {
+export function LiveSync({ intervalMs = 15000, nextRevalidateAt, working }: LiveSyncProps) {
   const revalidator = useRevalidator();
   const revalidateRef = useRef(revalidator.revalidate);
   const wasWorkingRef = useRef(working);

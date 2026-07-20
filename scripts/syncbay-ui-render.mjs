@@ -38,11 +38,7 @@ import {
   getUiFixtureStates,
 } from "./syncbay-ui-fixtures.ts";
 import { scrubRuntimeEnv } from "./syncbay-ui-isolation.mjs";
-import {
-  createStaticHandler,
-  createStaticRouter,
-  StaticRouterProvider,
-} from "react-router";
+import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "react-router";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -50,8 +46,7 @@ const fixtureMode = args.includes("--fixture");
 const checkMode = args.includes("--check");
 const hydrateMode = args.includes("--hydrate");
 const page = args.find((arg) => !arg.startsWith("--")) || "panoramica";
-const fixtureState =
-  args.find((arg) => arg.startsWith("--state="))?.slice(8) || "healthy";
+const fixtureState = args.find((arg) => arg.startsWith("--state="))?.slice(8) || "healthy";
 
 // --- 1. Carica env di runtime (distribuzione privata) --------------------- //
 function loadEnvFile(path) {
@@ -165,9 +160,7 @@ const PAGES = {
 
 const pageConfig = PAGES[page];
 if (!pageConfig) {
-  console.error(
-    `Pagina non supportata: ${page}. Disponibili: ${Object.keys(PAGES).join(", ")}`,
-  );
+  console.error(`Pagina non supportata: ${page}. Disponibili: ${Object.keys(PAGES).join(", ")}`);
   process.exit(1);
 }
 if (!getUiFixtureStates(page).includes(fixtureState)) {
@@ -191,9 +184,7 @@ const vite = await createServer({
 let cachedServices;
 async function loadServices() {
   if (!cachedServices) {
-    cachedServices = await vite.ssrLoadModule(
-      "/app/services/syncbay.server.ts",
-    );
+    cachedServices = await vite.ssrLoadModule("/app/services/syncbay.server.ts");
   }
   return cachedServices;
 }
@@ -216,14 +207,8 @@ async function loadSession() {
 
 try {
   // --- 3. Dati: fixture veloce o loader reale ----------------------------- //
-  const session = fixtureMode
-    ? { shop: "syncbay-preview.myshopify.com" }
-    : await loadSession();
-  console.error(
-    fixtureMode
-      ? `fixture: shop ${session.shop}`
-      : `sessione: shop ${session.shop}`,
-  );
+  const session = fixtureMode ? { shop: "syncbay-preview.myshopify.com" } : await loadSession();
+  console.error(fixtureMode ? `fixture: shop ${session.shop}` : `sessione: shop ${session.shop}`);
   const routeMod = await vite.ssrLoadModule(pageConfig.module);
   const shellMod = await vite.ssrLoadModule("/app/routes/app.tsx");
   if (!fixtureMode && !pageConfig.loader) {
@@ -234,20 +219,14 @@ try {
   const data = fixtureMode
     ? getUiFixture(page, fixtureState)
     : await pageConfig.loader(routeMod, session);
-  console.error(
-    fixtureMode
-      ? "dati: fixture sintetica caricata"
-      : "dati: loader reale eseguito",
-  );
+  console.error(fixtureMode ? "dati: fixture sintetica caricata" : "dati: loader reale eseguito");
 
   // --- 4. SSR del componente di route reale ------------------------------ //
   const childRoute = {
     Component: routeMod.default,
     id: page,
     loader: () => data,
-    ...(page === "panoramica"
-      ? { index: true }
-      : { path: pageConfig.path.replace("/app/", "") }),
+    ...(page === "panoramica" ? { index: true } : { path: pageConfig.path.replace("/app/", "") }),
   };
   const routes = [
     {
@@ -259,13 +238,9 @@ try {
     },
   ];
   const handler = createStaticHandler(routes);
-  const context = await handler.query(
-    new Request(`http://localhost${pageConfig.path}`),
-  );
+  const context = await handler.query(new Request(`http://localhost${pageConfig.path}`));
   if (context instanceof Response) {
-    throw new Error(
-      `Route ha restituito una Response (status ${context.status}).`,
-    );
+    throw new Error(`Route ha restituito una Response (status ${context.status}).`);
   }
   const router = createStaticRouter(handler.dataRoutes, context);
   let markup = renderToString(
@@ -284,9 +259,8 @@ try {
         /<s-thumbnail([^>]*)src="([^"]*)"([^>]*)><\/s-thumbnail>/gi,
         '<img class="preview-thumbnail" src="$2" alt="" />',
       )
-      .replace(
-        /<s-select([^>]*)>([\s\S]*?)<\/s-select>/gi,
-        (_match, attrs, body) => renderPreviewSelect(attrs, body),
+      .replace(/<s-select([^>]*)>([\s\S]*?)<\/s-select>/gi, (_match, attrs, body) =>
+        renderPreviewSelect(attrs, body),
       )
       .replace(
         /gridtemplatecolumns="([^"]*)"/gi,
@@ -299,20 +273,10 @@ try {
   }
 
   // --- 5. HTML con chrome simulata + design layer reale ------------------ //
-  const stubCss = readFileSync(
-    join(root, "preview/polaris-preview.css"),
-    "utf8",
-  );
-  const realCss = readFileSync(
-    join(root, "app/styles/syncbay-embedded.css"),
-    "utf8",
-  );
-  const scenario = fixtureMode
-    ? getUiFixtureScenario(page, fixtureState)
-    : null;
-  const scenarioMarkup = scenario
-    ? renderFixtureScenario(scenario, fixtureState)
-    : "";
+  const stubCss = readFileSync(join(root, "preview/polaris-preview.css"), "utf8");
+  const realCss = readFileSync(join(root, "app/styles/syncbay-embedded.css"), "utf8");
+  const scenario = fixtureMode ? getUiFixtureScenario(page, fixtureState) : null;
+  const scenarioMarkup = scenario ? renderFixtureScenario(scenario, fixtureState) : "";
   const hydrationScripts = hydrateMode
     ? `<script>window.__SYNCBAY_UI_HARNESS__=${serializeForHtml({ page, state: fixtureState })};</script>
 <script src="/scripts/syncbay-ui-polaris-stub.js"></script>
@@ -356,18 +320,14 @@ ${hydrationScripts}
     console.error(`ok html: ${outPath}`);
 
     // --- 6. Screenshot headless desktop + stretto --------------------------- //
-    const CHROME =
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+    const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
     if (!hydrateMode && existsSync(CHROME)) {
       const shots = [
         { height: 1600, label: "desktop", width: 1280 },
         { height: 1800, label: "narrow", width: 400 },
       ];
       for (const shot of shots) {
-        const png = join(
-          root,
-          `preview/shots/${page}-${suffix}-${shot.label}.png`,
-        );
+        const png = join(root, `preview/shots/${page}-${suffix}-${shot.label}.png`);
         execFileSync(
           CHROME,
           [
@@ -409,14 +369,13 @@ function serializeForHtml(value) {
 function renderPreviewSelect(attrs, body) {
   const label = getAttribute(attrs, "label") ?? "";
   const value = getAttribute(attrs, "value") ?? "";
-  const optionLabels = [
-    ...body.matchAll(/<s-option([^>]*)>([\s\S]*?)<\/s-option>/gi),
-  ].map((match) => ({
-    label: stripTags(match[2]).trim(),
-    value: getAttribute(match[1], "value") ?? "",
-  }));
-  const selectedLabel =
-    optionLabels.find((option) => option.value === value)?.label || value;
+  const optionLabels = [...body.matchAll(/<s-option([^>]*)>([\s\S]*?)<\/s-option>/gi)].map(
+    (match) => ({
+      label: stripTags(match[2]).trim(),
+      value: getAttribute(match[1], "value") ?? "",
+    }),
+  );
+  const selectedLabel = optionLabels.find((option) => option.value === value)?.label || value;
 
   return `<span class="preview-select"><span class="preview-select__label">${escapeHtml(label)}</span><span class="preview-select__value">${escapeHtml(selectedLabel)}</span></span>`;
 }

@@ -12,10 +12,7 @@ const {
 } = descriptionRules;
 
 test("accepts only supported description rule modes", () => {
-  assert.deepEqual(
-    [...DESCRIPTION_RULE_MODES],
-    ["CLEAN_HTML", "FULL_HTML", "TEXT_ONLY"],
-  );
+  assert.deepEqual([...DESCRIPTION_RULE_MODES], ["CLEAN_HTML", "FULL_HTML", "TEXT_ONLY"]);
   assert.equal(normalizeDescriptionRuleMode("CLEAN_HTML"), "CLEAN_HTML");
   assert.equal(normalizeDescriptionRuleMode(" full_html "), "FULL_HTML");
   assert.equal(normalizeDescriptionRuleMode("text_only"), "TEXT_ONLY");

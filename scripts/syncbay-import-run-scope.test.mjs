@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  buildImportRunScopeSql,
-  getImportRunScopeId,
-} from "./syncbay-import-run-scope.mjs";
+import { buildImportRunScopeSql, getImportRunScopeId } from "./syncbay-import-run-scope.mjs";
 
 test("falls back to import job id when catalogImportRunId is null", () => {
   assert.equal(

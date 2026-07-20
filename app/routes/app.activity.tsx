@@ -1,15 +1,5 @@
-import type {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "react-router";
-import {
-  Form,
-  useActionData,
-  useLoaderData,
-  useNavigation,
-  useSearchParams,
-} from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Form, useActionData, useLoaderData, useNavigation, useSearchParams } from "react-router";
 
 import {
   EmptyState,
@@ -43,17 +33,13 @@ import {
   getOperationalUiState,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
-import {
-  getActivityState,
-  requestSyncJobRetry,
-} from "../services/syncbay.server";
+import { getActivityState, requestSyncJobRetry } from "../services/syncbay.server";
 import { authenticate } from "../shopify.server";
 
 type Activity = Awaited<ReturnType<typeof getActivityState>>;
 type ActivityConflict = Activity["conflicts"]["recent"][number];
 type ActivityJob = Activity["sync"]["lastJobs"][number];
-type ActivityFilter =
-  "all" | "conflicts" | "errors" | "import" | "stock" | "sync";
+type ActivityFilter = "all" | "conflicts" | "errors" | "import" | "stock" | "sync";
 type ActivityRow = {
   category: TimelineCategoryKind | "AUDIT";
   conflict?: ActivityConflict;
@@ -87,12 +73,8 @@ export const meta: MetaFunction = () => getSyncBayMeta("Attività");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
-  const { session } = await trace.measure("auth.admin", () =>
-    authenticate.admin(request),
-  );
-  const activity = await trace.measure("activity.state", () =>
-    getActivityState(session, trace),
-  );
+  const { session } = await trace.measure("auth.admin", () => authenticate.admin(request));
+  const activity = await trace.measure("activity.state", () => getActivityState(session, trace));
 
   logSyncBayLoaderPerformance({
     request,
@@ -141,9 +123,7 @@ export default function ActivityRoute() {
   const activeFilter = getActivityFilter(searchParams.get("filter"));
   const rows = filterActivityRows(buildActivityRows(activity), activeFilter);
   const isSaving = navigation.state !== "idle";
-  const failedJobs = activity.sync.lastJobs.filter(
-    (job) => job.status === "FAILED",
-  ).length;
+  const failedJobs = activity.sync.lastJobs.filter((job) => job.status === "FAILED").length;
   const working =
     activity.sync.pendingJobs > 0 ||
     activity.sync.catalogHealth.activeIncrementalJobCount > 0 ||
@@ -171,14 +151,11 @@ export default function ActivityRoute() {
       <s-stack gap="large">
         <LiveSync working={working} />
         <s-text color="subdued">
-          Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti, errori
-          e note. Gli errori restano leggibili e, dove si può, riprovabili.
+          Tutto quello che SyncBay ha fatto e sta facendo: aggiornamenti, errori e note. Gli errori
+          restano leggibili e, dove si può, riprovabili.
         </s-text>
         <div className="syncbay-balanced-box-grid">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
-          >
+          <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
             <MetricTile
               detail="Aggiornamenti non ancora completati."
               icon="refresh"
@@ -303,12 +280,7 @@ function CatalogHealthCenterDetails({ activity }: { activity: Activity }) {
         tone={getCatalogHealthCenterTone(activity)}
         title="Centro salute catalogo"
       />
-      <s-box
-        border="base"
-        borderColor="base"
-        borderRadius="base"
-        padding="base"
-      >
+      <s-box border="base" borderColor="base" borderRadius="base" padding="base">
         <s-stack gap="small-200">
           <s-text type="strong">Cause rilevate</s-text>
           {center.causes.map((cause) => (
@@ -350,8 +322,7 @@ function ActivityTimelineRow({
             <details className="syncbay-row-details">
               <summary>Dettagli raggruppamento</summary>
               <s-text color="subdued">
-                {row.groupedCount} note identiche dello stesso tipo registrate
-                nello stesso minuto.
+                {row.groupedCount} note identiche dello stesso tipo registrate nello stesso minuto.
               </s-text>
             </details>
           ) : null}
@@ -391,20 +362,12 @@ function getActivityIcon(row: ActivityRow): SyncBayIcon {
 function ActivityFilterNav({ activeFilter }: { activeFilter: ActivityFilter }) {
   return (
     <div className="syncbay-activity-filter-nav">
-      <s-stack
-        direction="inline"
-        gap="small-200"
-        accessibilityRole="navigation"
-      >
+      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
         {ACTIVITY_FILTERS.map((filter) => (
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}
             color={activeFilter === filter.value ? "strong" : "base"}
-            href={
-              filter.value === "all"
-                ? "/app/activity"
-                : `/app/activity?filter=${filter.value}`
-            }
+            href={filter.value === "all" ? "/app/activity" : `/app/activity?filter=${filter.value}`}
             key={filter.value}
           >
             {filter.label}
@@ -432,27 +395,19 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
       type: "job" as const,
     };
   });
-  const auditGroups = new Map<
-    string,
-    { count: number; event: Activity["audit"][number] }
-  >();
+  const auditGroups = new Map<string, { count: number; event: Activity["audit"][number] }>();
   for (const event of activity.audit) {
     const minute = event.createdAt.slice(0, 16);
     const key = `${event.type}:${minute}:${event.message}`;
     const existing = auditGroups.get(key);
     auditGroups.set(
       key,
-      existing
-        ? { count: existing.count + 1, event: existing.event }
-        : { count: 1, event },
+      existing ? { count: existing.count + 1, event: existing.event } : { count: 1, event },
     );
   }
   const auditRows = [...auditGroups.values()].map(({ count, event }) => ({
     category: "AUDIT" as const,
-    detail:
-      count > 1
-        ? `${event.message} (${count} eventi raggruppati)`
-        : event.message,
+    detail: count > 1 ? `${event.message} (${count} eventi raggruppati)` : event.message,
     groupedCount: count,
     id: `audit-${event.type}-${event.createdAt}`,
     meta: "Sistema",
@@ -476,9 +431,7 @@ function buildActivityRows(activity: Activity): ActivityRow[] {
   }));
 
   return [...jobRows, ...conflictRows, ...auditRows].sort(
-    (first, second) =>
-      new Date(second.timestamp).getTime() -
-      new Date(first.timestamp).getTime(),
+    (first, second) => new Date(second.timestamp).getTime() - new Date(first.timestamp).getTime(),
   );
 }
 
@@ -530,9 +483,7 @@ function getTimelineCategoryFromJobType(type: string): TimelineCategoryKind {
 
 function getActivityJobTitle(job: ActivityJob) {
   const payload =
-    job.payload &&
-    typeof job.payload === "object" &&
-    !Array.isArray(job.payload)
+    job.payload && typeof job.payload === "object" && !Array.isArray(job.payload)
       ? (job.payload as Record<string, unknown>)
       : null;
 
@@ -546,10 +497,7 @@ function getActivityJobTitle(job: ActivityJob) {
   return getJobTitle(job.type);
 }
 
-function getJobDetail(
-  job: ActivityJob,
-  diagnostic: ReturnType<typeof getSyncJobDiagnostic>,
-) {
+function getJobDetail(job: ActivityJob, diagnostic: ReturnType<typeof getSyncJobDiagnostic>) {
   const pieces = [diagnostic.impact, diagnostic.nextAction];
 
   return `${pieces
@@ -605,16 +553,10 @@ function ActivityTechnicalDetails({
           Tentativi: {job.attempts}/{job.maxAttempts}
         </s-list-item>
         <s-list-item>Coda: {getJobQueueLabel(job)}</s-list-item>
-        <s-list-item>
-          Prossima esecuzione: {formatDateTime(job.runAfter)}
-        </s-list-item>
+        <s-list-item>Prossima esecuzione: {formatDateTime(job.runAfter)}</s-list-item>
         <s-list-item>Retry: {diagnostic.retry.reason}</s-list-item>
-        {diagnostic.rateLimit ? (
-          <s-list-item>{diagnostic.rateLimit.summary}</s-list-item>
-        ) : null}
-        {job.errorMessage ? (
-          <s-list-item>Errore: {job.errorMessage}</s-list-item>
-        ) : null}
+        {diagnostic.rateLimit ? <s-list-item>{diagnostic.rateLimit.summary}</s-list-item> : null}
+        {job.errorMessage ? <s-list-item>Errore: {job.errorMessage}</s-list-item> : null}
       </s-unordered-list>
     </details>
   );

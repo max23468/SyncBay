@@ -32,10 +32,7 @@ test("round-trips store category fields through the SYNC_INCREMENTAL job payload
     { name: "Materiale", values: ["Argento"] },
     { name: "Conservazione", values: ["FDC"] },
   ]);
-  assert.equal(
-    serialized.storeCategoryName,
-    "Italia Regno - Vittorio Emanuele III",
-  );
+  assert.equal(serialized.storeCategoryName, "Italia Regno - Vittorio Emanuele III");
 
   const deserialized = deserializeIncrementalPreviewCandidate(serialized);
 

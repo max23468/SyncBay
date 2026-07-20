@@ -12,28 +12,14 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const generatedClientPath = resolve(
-  projectRoot,
-  "prisma",
-  "generated",
-  "client",
-);
+const generatedClientPath = resolve(projectRoot, "prisma", "generated", "client");
 const prismaClientPaths = [
   resolve(projectRoot, "node_modules", ".prisma", "client"),
-  resolve(
-    projectRoot,
-    "node_modules",
-    "@prisma",
-    "client",
-    ".prisma",
-    "client",
-  ),
+  resolve(projectRoot, "node_modules", "@prisma", "client", ".prisma", "client"),
 ];
 
 if (!existsSync(generatedClientPath)) {
-  console.warn(
-    "Prisma client generato non trovato. Esegui `prisma generate` prima del link.",
-  );
+  console.warn("Prisma client generato non trovato. Esegui `prisma generate` prima del link.");
   process.exit(0);
 }
 
@@ -62,11 +48,7 @@ function linkGeneratedClient(linkPath) {
     }
   }
 
-  symlinkSync(
-    relative(dirname(linkPath), generatedClientPath),
-    linkPath,
-    "dir",
-  );
+  symlinkSync(relative(dirname(linkPath), generatedClientPath), linkPath, "dir");
 }
 
 function removeLegacyEntrypointFiles(linkPath) {

@@ -22,17 +22,11 @@ const materiale: SyncBayProductFacet = {
 
 test("compares facet baselines independent of facet order", () => {
   assert.equal(
-    hasSyncBayProductFacetBaselineChanged(
-      [categoria, materiale],
-      [materiale, categoria],
-    ),
+    hasSyncBayProductFacetBaselineChanged([categoria, materiale], [materiale, categoria]),
     false,
   );
 });
 
 test("detects baseline changes when the writer-owned set changes", () => {
-  assert.equal(
-    hasSyncBayProductFacetBaselineChanged([categoria, materiale], [categoria]),
-    true,
-  );
+  assert.equal(hasSyncBayProductFacetBaselineChanged([categoria, materiale], [categoria]), true);
 });

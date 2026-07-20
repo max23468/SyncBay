@@ -14,8 +14,7 @@ export function summarizeReliability(
 ) {
   const totalJobs = jobs.length;
   const succeededJobs = jobs.filter((job) => job.status === "SUCCEEDED").length;
-  const successRate =
-    totalJobs > 0 ? Math.round((succeededJobs / totalJobs) * 100) : 100;
+  const successRate = totalJobs > 0 ? Math.round((succeededJobs / totalJobs) * 100) : 100;
   const daily: number[] = [];
 
   for (let offset = windowDays - 1; offset >= 0; offset -= 1) {
@@ -25,10 +24,7 @@ export function summarizeReliability(
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
-    daily.push(
-      jobs.filter((job) => job.createdAt >= dayStart && job.createdAt < dayEnd)
-        .length,
-    );
+    daily.push(jobs.filter((job) => job.createdAt >= dayStart && job.createdAt < dayEnd).length);
   }
 
   return { daily, succeededJobs, successRate, totalJobs, windowDays };

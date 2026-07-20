@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  getShopifyOrderStockAction,
-  getShopifyOrderStockTarget,
-} from "./syncbay-order-stock.ts";
+import { getShopifyOrderStockAction, getShopifyOrderStockTarget } from "./syncbay-order-stock.ts";
 
 test("decrements eBay as soon as Shopify commits an order", () => {
   assert.equal(

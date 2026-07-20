@@ -6,17 +6,13 @@ import * as retentionPolicy from "./syncbay-retention-policy.ts";
 const { SYNCBAY_RETENTION_POLICIES } = retentionPolicy;
 
 function getRetentionDays(area: string) {
-  return SYNCBAY_RETENTION_POLICIES.find(
-    (policy: { area: string }) => policy.area === area,
-  )?.retentionDays;
+  return SYNCBAY_RETENTION_POLICIES.find((policy: { area: string }) => policy.area === area)
+    ?.retentionDays;
 }
 
 test("defines conservative private retention windows", () => {
   assert.deepEqual(
-    SYNCBAY_RETENTION_POLICIES.map((policy) => [
-      policy.area,
-      policy.retentionDays,
-    ]),
+    SYNCBAY_RETENTION_POLICIES.map((policy) => [policy.area, policy.retentionDays]),
     [
       ["shopify_webhook_audit_logs", 14],
       ["account_deletion_audit_logs", 30],

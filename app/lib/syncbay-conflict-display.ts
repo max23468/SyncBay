@@ -62,15 +62,11 @@ function isDescriptionHash(value: Prisma.JsonValue) {
 function truncateDisplayValue(value: string) {
   const trimmedValue = value.trim();
 
-  return trimmedValue.length > 96
-    ? `${trimmedValue.slice(0, 93).trimEnd()}...`
-    : trimmedValue;
+  return trimmedValue.length > 96 ? `${trimmedValue.slice(0, 93).trimEnd()}...` : trimmedValue;
 }
 
 function getJsonObject(value: Prisma.JsonValue | undefined) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
 }
 
 function getJsonString(value: unknown) {

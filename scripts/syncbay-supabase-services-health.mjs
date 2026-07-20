@@ -16,17 +16,12 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const args = parseArgs(process.argv.slice(2));
 
 await main().catch((error) => {
-  console.error(
-    `Diagnostica servizi Supabase non riuscita: ${formatError(error)}`,
-  );
+  console.error(`Diagnostica servizi Supabase non riuscita: ${formatError(error)}`);
   process.exit(1);
 });
 
 async function main() {
-  const projectRef =
-    args.projectRef ??
-    process.env.SUPABASE_PROJECT_REF ??
-    readLinkedProjectRef();
+  const projectRef = args.projectRef ?? process.env.SUPABASE_PROJECT_REF ?? readLinkedProjectRef();
 
   if (!projectRef) {
     throw new Error(
@@ -35,14 +30,11 @@ async function main() {
   }
 
   const supabaseUrl = normalizeSupabaseUrl(
-    args.supabaseUrl ??
-      process.env.SUPABASE_URL ??
-      `https://${projectRef}.supabase.co`,
+    args.supabaseUrl ?? process.env.SUPABASE_URL ?? `https://${projectRef}.supabase.co`,
   );
   // Separa subito etichetta e valore: `resolvedFrom` e' solo provenienza e
   // finisce nel report stampato, `apiKeyValue` resta confinato negli header.
-  const { source: resolvedFrom, value: apiKeyValue } =
-    await resolveSupabaseApiKey(projectRef);
+  const { source: resolvedFrom, value: apiKeyValue } = await resolveSupabaseApiKey(projectRef);
   const headers = buildSupabaseServiceHeaders(apiKeyValue);
   const checks = await Promise.all(
     SUPABASE_HTTP_SERVICE_CHECKS.map((check) =>
@@ -120,15 +112,7 @@ async function resolveSupabaseApiKey(projectRef) {
 
   const { stdout } = await execFileAsync(
     "npx",
-    [
-      "supabase",
-      "projects",
-      "api-keys",
-      "--project-ref",
-      projectRef,
-      "--output",
-      "json",
-    ],
+    ["supabase", "projects", "api-keys", "--project-ref", projectRef, "--output", "json"],
     {
       env: {
         ...process.env,
@@ -140,8 +124,7 @@ async function resolveSupabaseApiKey(projectRef) {
   );
   const keyRows = parseApiKeyRows(stdout);
   const apiKeyRow =
-    keyRows.find((row) => row.name === "anon") ??
-    keyRows.find((row) => row.type === "publishable");
+    keyRows.find((row) => row.name === "anon") ?? keyRows.find((row) => row.type === "publishable");
   const value = apiKeyRow?.api_key?.trim();
 
   if (!value) {
@@ -152,10 +135,7 @@ async function resolveSupabaseApiKey(projectRef) {
 
   // Etichetta costante: non interpolare dati grezzi dallo stdout della CLI nel
   // report stampato, cosi' nessun output del provider finisce nei log.
-  const source =
-    apiKeyRow.name === "anon"
-      ? "supabase-cli:anon"
-      : "supabase-cli:publishable";
+  const source = apiKeyRow.name === "anon" ? "supabase-cli:anon" : "supabase-cli:publishable";
 
   return { source, value };
 }
@@ -216,9 +196,7 @@ function printReport(report) {
 
   for (const service of report.services) {
     const reason = service.reason ? `, ${service.reason}` : "";
-    console.log(
-      `- ${service.label}: ${service.status} (HTTP ${service.statusCode}${reason})`,
-    );
+    console.log(`- ${service.label}: ${service.status} (HTTP ${service.statusCode}${reason})`);
 
     if (service.message) {
       console.log(`  ${service.message}`);
@@ -258,9 +236,7 @@ restrizioni provider, per esempio 402 exceed_egress_quota.`);
     projectRef: values["project-ref"],
     supabaseUrl: values["supabase-url"],
     timeoutMs:
-      values["timeout-ms"] === undefined
-        ? undefined
-        : parsePositiveInteger(values["timeout-ms"]),
+      values["timeout-ms"] === undefined ? undefined : parsePositiveInteger(values["timeout-ms"]),
   };
 }
 

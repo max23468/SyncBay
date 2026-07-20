@@ -14,10 +14,7 @@ export interface ShopifyAdminRetryPolicy {
 }
 
 export type SyncBayShopifyAdminGraphqlClient = {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 };
 
 export function getOfflineShopifySessionId(shopDomain: string) {
@@ -37,18 +34,9 @@ export function createShopifyAdminGraphqlClient(input: {
   const sleepImplementation = input.sleep ?? sleep;
   const endpoint = `https://${input.shopDomain}/admin/api/${SHOPIFY_ADMIN_API_VERSION}/graphql.json`;
   const policy: ShopifyAdminRetryPolicy = {
-    maxAttempts: normalizePositiveInteger(
-      input.policy?.maxAttempts,
-      DEFAULT_MAX_GRAPHQL_ATTEMPTS,
-    ),
-    maxElapsedMs: normalizePositiveInteger(
-      input.policy?.maxElapsedMs,
-      DEFAULT_MAX_ELAPSED_MS,
-    ),
-    retryDelayMs: normalizePositiveInteger(
-      input.policy?.retryDelayMs,
-      DEFAULT_RETRY_DELAY_MS,
-    ),
+    maxAttempts: normalizePositiveInteger(input.policy?.maxAttempts, DEFAULT_MAX_GRAPHQL_ATTEMPTS),
+    maxElapsedMs: normalizePositiveInteger(input.policy?.maxElapsedMs, DEFAULT_MAX_ELAPSED_MS),
+    retryDelayMs: normalizePositiveInteger(input.policy?.retryDelayMs, DEFAULT_RETRY_DELAY_MS),
     throttleRetryDelayMs: normalizePositiveInteger(
       input.policy?.throttleRetryDelayMs,
       DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -61,15 +49,11 @@ export function createShopifyAdminGraphqlClient(input: {
       const startedAt = now();
 
       for (let attempt = 1; attempt <= policy.maxAttempts; attempt += 1) {
-        lastResponse = await fetchShopifyGraphql(
-          fetchImplementation,
-          endpoint,
-          {
-            accessToken: input.accessToken,
-            query,
-            variables: options?.variables ?? {},
-          },
-        );
+        lastResponse = await fetchShopifyGraphql(fetchImplementation, endpoint, {
+          accessToken: input.accessToken,
+          query,
+          variables: options?.variables ?? {},
+        });
 
         const retryReason = getRetryReason(lastResponse);
 
@@ -77,12 +61,7 @@ export function createShopifyAdminGraphqlClient(input: {
           return toJsonResponse(lastResponse);
         }
 
-        const retryDelay = getRetryDelayMs(
-          retryReason,
-          attempt,
-          policy,
-          lastResponse.json,
-        );
+        const retryDelay = getRetryDelayMs(retryReason, attempt, policy, lastResponse.json);
         if (now() - startedAt + retryDelay >= policy.maxElapsedMs) {
           return toJsonResponse(lastResponse);
         }
@@ -182,10 +161,7 @@ function getRetryDelayMs(
   input: { retryDelayMs: number; throttleRetryDelayMs: number },
   json: Record<string, unknown> | null,
 ) {
-  const base =
-    retryReason === "throttled"
-      ? input.throttleRetryDelayMs
-      : input.retryDelayMs;
+  const base = retryReason === "throttled" ? input.throttleRetryDelayMs : input.retryDelayMs;
 
   return Math.max(base * attempt, getThrottleCostDelayMs(json));
 }
@@ -194,9 +170,7 @@ function getThrottleCostDelayMs(json: Record<string, unknown> | null) {
   const extensions = json?.extensions;
   if (!extensions || typeof extensions !== "object") return 0;
   const cost =
-    "cost" in extensions &&
-    extensions.cost &&
-    typeof extensions.cost === "object"
+    "cost" in extensions && extensions.cost && typeof extensions.cost === "object"
       ? extensions.cost
       : null;
   const throttle =
@@ -206,14 +180,10 @@ function getThrottleCostDelayMs(json: Record<string, unknown> | null) {
     typeof cost.throttleStatus === "object"
       ? cost.throttleStatus
       : null;
-  const requested =
-    cost && "requestedQueryCost" in cost ? Number(cost.requestedQueryCost) : 0;
+  const requested = cost && "requestedQueryCost" in cost ? Number(cost.requestedQueryCost) : 0;
   const available =
-    throttle && "currentlyAvailable" in throttle
-      ? Number(throttle.currentlyAvailable)
-      : 0;
-  const restoreRate =
-    throttle && "restoreRate" in throttle ? Number(throttle.restoreRate) : 0;
+    throttle && "currentlyAvailable" in throttle ? Number(throttle.currentlyAvailable) : 0;
+  const restoreRate = throttle && "restoreRate" in throttle ? Number(throttle.restoreRate) : 0;
   if (restoreRate <= 0 || requested <= available) return 0;
   return Math.ceil(((requested - available) / restoreRate) * 1000);
 }
@@ -224,18 +194,12 @@ function hasGraphqlThrottleSignal(json: Record<string, unknown> | null) {
   return errors.some((error) => {
     if (!error || typeof error !== "object") return false;
 
-    const message =
-      "message" in error ? String(error.message).toLowerCase() : "";
+    const message = "message" in error ? String(error.message).toLowerCase() : "";
     const extensions =
-      "extensions" in error &&
-      error.extensions &&
-      typeof error.extensions === "object"
+      "extensions" in error && error.extensions && typeof error.extensions === "object"
         ? error.extensions
         : null;
-    const code =
-      extensions && "code" in extensions
-        ? String(extensions.code).toUpperCase()
-        : "";
+    const code = extensions && "code" in extensions ? String(extensions.code).toUpperCase() : "";
 
     return code === "THROTTLED" || message.includes("throttled");
   });
@@ -245,16 +209,12 @@ function parseJsonObject(text: string) {
   try {
     const parsed = JSON.parse(text);
 
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? parsed
-      : null;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
 function normalizePositiveInteger(value: number | undefined, fallback: number) {
-  return Number.isInteger(value) && Number(value) > 0
-    ? Number(value)
-    : fallback;
+  return Number.isInteger(value) && Number(value) > 0 ? Number(value) : fallback;
 }

@@ -12,10 +12,7 @@ export type EbayItemJobPayload = Record<string, unknown> & {
   ebayItemIds?: unknown;
 };
 
-export function isSchedulableSyncJob(input: {
-  idempotencyKey?: string | null;
-  payload: unknown;
-}) {
+export function isSchedulableSyncJob(input: { idempotencyKey?: string | null; payload: unknown }) {
   return Boolean(input);
 }
 
@@ -42,9 +39,7 @@ export function isRegularIncrementalJobPayload(payload: unknown) {
   return !isFacetOnlyIncrementalJobPayload(payload);
 }
 
-export function prioritizeIncrementalJobsByFacetMode<
-  T extends { payload: unknown },
->(jobs: T[]) {
+export function prioritizeIncrementalJobsByFacetMode<T extends { payload: unknown }>(jobs: T[]) {
   const regularJobs: T[] = [];
   const facetOnlyJobs: T[] = [];
 
@@ -169,10 +164,7 @@ export function buildEbayItemJobSplitIdempotencyKey(input: {
     getStringField(input.payload, "catalogImportRunId") ??
     getStringField(input.payload, "runId") ??
     stableStringify(input.payload);
-  const hash = createHash("sha256")
-    .update(runIdentity)
-    .digest("hex")
-    .slice(0, 20);
+  const hash = createHash("sha256").update(runIdentity).digest("hex").slice(0, 20);
 
   return `split:${input.parentJobId}:${hash}:${input.splitIndex}`;
 }
@@ -185,9 +177,7 @@ export function buildSellerEventsNoopMarker(input: {
   modTimeTo: string;
 }) {
   const imageRepairJobCount = Math.max(
-    Number.isInteger(input.imageRepairJobCount)
-      ? Number(input.imageRepairJobCount)
-      : 0,
+    Number.isInteger(input.imageRepairJobCount) ? Number(input.imageRepairJobCount) : 0,
     0,
   );
   const payload = {
@@ -234,10 +224,7 @@ function getBooleanField(value: unknown, key: string) {
   return typeof field === "boolean" ? field : null;
 }
 
-function getShopifyChangeJobDedupeKey(input: {
-  payload: unknown;
-  shopId: string;
-}) {
+function getShopifyChangeJobDedupeKey(input: { payload: unknown; shopId: string }) {
   const topic = getStringField(input.payload, "topic");
   const resourceId = getShopifyChangeJobResourceKey(input.payload);
 

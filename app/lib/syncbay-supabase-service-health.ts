@@ -8,7 +8,11 @@ export type SupabaseHttpServiceCheck = {
 };
 
 export type SupabaseHttpServiceStatus =
-  "healthy" | "restricted" | "missing_api_key" | "unauthorized" | "unhealthy";
+  | "healthy"
+  | "restricted"
+  | "missing_api_key"
+  | "unauthorized"
+  | "unhealthy";
 
 export type SupabaseHttpServiceDiagnosis = {
   message: string | null;
@@ -50,11 +54,7 @@ export function classifySupabaseServiceResponse(input: {
   const rlsDeniedReason = getSupabaseRlsDeniedReason(input.bodyText);
   const restrictionReason = getSupabaseRestrictionReason(input.bodyText);
 
-  if (
-    input.allowRlsDenied &&
-    (input.status === 401 || input.status === 403) &&
-    rlsDeniedReason
-  ) {
+  if (input.allowRlsDenied && (input.status === 401 || input.status === 403) && rlsDeniedReason) {
     return {
       message,
       reason: rlsDeniedReason,

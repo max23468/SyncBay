@@ -100,19 +100,11 @@ export function buildDescriptionBackfillRow(
   };
 
   if (!baseRow.shopifyProductGid) {
-    return withStatus(
-      baseRow,
-      "missing_shopify_product",
-      "shopify_product_not_mapped",
-    );
+    return withStatus(baseRow, "missing_shopify_product", "shopify_product_not_mapped");
   }
 
   if (input.shopifyLookupFailed) {
-    return withStatus(
-      baseRow,
-      "shopify_lookup_failed",
-      "shopify_product_not_loaded",
-    );
+    return withStatus(baseRow, "shopify_lookup_failed", "shopify_product_not_loaded");
   }
 
   if (baseRow.openConflictFields.length > 0) {
@@ -120,43 +112,23 @@ export function buildDescriptionBackfillRow(
   }
 
   if (input.ebayLookupFailed) {
-    return withStatus(
-      baseRow,
-      "ebay_lookup_failed",
-      "ebay_description_lookup_failed",
-    );
+    return withStatus(baseRow, "ebay_lookup_failed", "ebay_description_lookup_failed");
   }
 
   if (!input.ebayDescriptionHtml?.trim()) {
-    return withStatus(
-      baseRow,
-      "ebay_description_missing",
-      "ebay_description_missing",
-    );
+    return withStatus(baseRow, "ebay_description_missing", "ebay_description_missing");
   }
 
   if (!input.cleanedDescriptionHtml) {
-    return withStatus(
-      baseRow,
-      "empty_cleaned_description",
-      "cleaner_removed_entire_description",
-    );
+    return withStatus(baseRow, "empty_cleaned_description", "cleaner_removed_entire_description");
   }
 
   if (!input.descriptionWasChanged) {
-    return withStatus(
-      baseRow,
-      "cleaner_unchanged",
-      "cleaner_did_not_change_description",
-    );
+    return withStatus(baseRow, "cleaner_unchanged", "cleaner_did_not_change_description");
   }
 
   if (input.cleanedDescriptionHash === input.currentShopifyDescriptionHash) {
-    return withStatus(
-      baseRow,
-      "already_correct",
-      "shopify_description_matches_cleaned_ebay",
-    );
+    return withStatus(baseRow, "already_correct", "shopify_description_matches_cleaned_ebay");
   }
 
   if (
@@ -184,15 +156,11 @@ export function buildDescriptionBackfillReport(input: {
   };
 }
 
-export function buildDescriptionBackfillApplyPlan(
-  report: DescriptionBackfillReport,
-) {
+export function buildDescriptionBackfillApplyPlan(report: DescriptionBackfillReport) {
   const rows = report.rows.filter(
     (row) => row.status === "applicable" && row.cleanedDescriptionHtml,
   );
-  const skipped = summarizeRows(
-    report.rows.filter((row) => row.status !== "applicable"),
-  );
+  const skipped = summarizeRows(report.rows.filter((row) => row.status !== "applicable"));
 
   return { rows, skipped };
 }
@@ -225,9 +193,7 @@ export function filterDescriptionBackfillApplyFileRows(input: {
 
   for (const row of input.file.rows) {
     const currentMapping = input.currentMappingRows?.get(row.mappingId);
-    const currentConflictFields = normalizeConflictFields(
-      currentMapping?.openConflictFields,
-    );
+    const currentConflictFields = normalizeConflictFields(currentMapping?.openConflictFields);
 
     if (input.currentMappingRows && !currentMapping) {
       skippedRows.push({
@@ -248,10 +214,7 @@ export function filterDescriptionBackfillApplyFileRows(input: {
       continue;
     }
 
-    if (
-      currentMapping &&
-      currentMapping.shopifyProductGid !== row.shopifyProductGid
-    ) {
+    if (currentMapping && currentMapping.shopifyProductGid !== row.shopifyProductGid) {
       skippedRows.push({
         ...row,
         reason: "shopify_product_mapping_changed_since_apply_file",
@@ -276,10 +239,7 @@ export function filterDescriptionBackfillApplyFileRows(input: {
         currentHash === undefined
           ? "shopify_product_not_loaded"
           : "shopify_description_changed_since_apply_file",
-      status:
-        currentHash === undefined
-          ? "shopify_lookup_failed"
-          : "conflict_skipped",
+      status: currentHash === undefined ? "shopify_lookup_failed" : "conflict_skipped",
     });
   }
 
@@ -356,7 +316,5 @@ function getSummaryKey(
 }
 
 function normalizeConflictFields(fields: string[] | undefined) {
-  return [...new Set((fields ?? []).map((field) => field.trim()))].filter(
-    Boolean,
-  );
+  return [...new Set((fields ?? []).map((field) => field.trim()))].filter(Boolean);
 }

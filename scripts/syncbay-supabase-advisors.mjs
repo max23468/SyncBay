@@ -29,9 +29,7 @@ export function parseAdvisorType(rawArgs) {
   const advisorType = rawArgs[0];
 
   if (!VALID_TYPES.has(advisorType)) {
-    throw new Error(
-      "Uso: node scripts/syncbay-supabase-advisors.mjs security|performance",
-    );
+    throw new Error("Uso: node scripts/syncbay-supabase-advisors.mjs security|performance");
   }
 
   return advisorType;

@@ -9,7 +9,7 @@ import {
 } from "./syncbay-verify.mjs";
 
 // La corsia docs resta leggera ma include il controllo di formattazione:
-// Prettier formatta anche Markdown, quindi un diff docs-only puo' introdurre
+// oxfmt formatta anche Markdown, quindi un diff docs-only puo' introdurre
 // drift che nessun altro gate intercetterebbe.
 test("keeps docs-only changes on lightweight checks including formatting", () => {
   const plan = buildVerificationPlan({
@@ -39,11 +39,7 @@ test("keeps docs-only changes on lightweight checks including formatting", () =>
 test("runs the formatting check on every lane", () => {
   const labelsFor = (plan) => plan.commands.map((entry) => entry.label);
 
-  assert.ok(
-    labelsFor(buildVerificationPlan({ mode: "full" })).includes(
-      "npm run format:check",
-    ),
-  );
+  assert.ok(labelsFor(buildVerificationPlan({ mode: "full" })).includes("npm run format:check"));
   assert.ok(
     labelsFor(
       buildVerificationPlan({
@@ -68,8 +64,7 @@ test("falls back to the full lane when changed files are not classified", () => 
 
   assert.equal(plan.lane, "full");
   assert.equal(
-    plan.commands.filter((entry) => entry.label === "npm run prisma:generate")
-      .length,
+    plan.commands.filter((entry) => entry.label === "npm run prisma:generate").length,
     1,
   );
 });
@@ -85,21 +80,13 @@ test("can leave UI gates to separate CI steps without weakening local full verif
     complete.commands
       .map((entry) => entry.label)
       .filter((label) =>
-        [
-          "npm run smoke:ui",
-          "npm run ui:check",
-          "npm run ui:browser-check",
-        ].includes(label),
+        ["npm run smoke:ui", "npm run ui:check", "npm run ui:browser-check"].includes(label),
       ),
     ["npm run smoke:ui", "npm run ui:check", "npm run ui:browser-check"],
   );
   assert.equal(
     ciCore.commands.some((entry) =>
-      [
-        "npm run smoke:ui",
-        "npm run ui:check",
-        "npm run ui:browser-check",
-      ].includes(entry.label),
+      ["npm run smoke:ui", "npm run ui:check", "npm run ui:browser-check"].includes(entry.label),
     ),
     false,
   );
@@ -121,16 +108,9 @@ test("deduplicates changed checks and keeps live placeholders manual", () => {
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    [
-      "npm run format:check",
-      "npm run prisma:generate",
-      "npm run typecheck:raw",
-      "npm run lint",
-    ],
+    ["npm run format:check", "npm run prisma:generate", "npm run typecheck:raw", "npm run lint"],
   );
-  assert.deepEqual(plan.manualChecks, [
-    "npm run conflicts:doctor -- --shop <shop.myshopify.com>",
-  ]);
+  assert.deepEqual(plan.manualChecks, ["npm run conflicts:doctor -- --shop <shop.myshopify.com>"]);
 });
 
 test("CI can omit advisory gates already handled by parallel workflows", () => {
@@ -174,11 +154,7 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
   const plan = buildVerificationPlan({
     mode: "changed",
     review: {
-      suggestedChecks: [
-        "npm run prisma:validate",
-        "npm run db:verify",
-        "npm run test:tooling",
-      ],
+      suggestedChecks: ["npm run prisma:validate", "npm run db:verify", "npm run test:tooling"],
       unmatchedFiles: [],
     },
   });
@@ -196,10 +172,7 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
 });
 
 test("never reuses receipts for publish, live manual checks, or live commands", () => {
-  assert.equal(
-    shouldUseReceipt({ lane: "publish", manualChecks: [], mode: "publish" }),
-    false,
-  );
+  assert.equal(shouldUseReceipt({ lane: "publish", manualChecks: [], mode: "publish" }), false);
   assert.equal(
     shouldUseReceipt({
       lane: "standard",
@@ -210,16 +183,11 @@ test("never reuses receipts for publish, live manual checks, or live commands", 
   );
   // The full lane runs a live production audit whose advisories can change
   // even when diff, lockfile and Node stay identical, so it stays fresh.
-  assert.equal(
-    shouldUseReceipt(buildVerificationPlan({ mode: "full" })),
-    false,
-  );
+  assert.equal(shouldUseReceipt(buildVerificationPlan({ mode: "full" })), false);
   // A lane without live commands can reuse a valid receipt.
   assert.equal(
     shouldUseReceipt({
-      commands: [
-        { args: ["run", "lint"], command: "npm", label: "npm run lint" },
-      ],
+      commands: [{ args: ["run", "lint"], command: "npm", label: "npm run lint" }],
       lane: "standard",
       manualChecks: [],
       mode: "changed",
@@ -267,10 +235,7 @@ test("full verification generates Prisma once and does not repeat lib tests", ()
   const plan = buildVerificationPlan({ mode: "full" });
   const labels = plan.commands.map((entry) => entry.label);
 
-  assert.equal(
-    labels.filter((label) => label === "npm run prisma:generate").length,
-    1,
-  );
+  assert.equal(labels.filter((label) => label === "npm run prisma:generate").length, 1);
   assert.equal(labels.includes("npm run test:lib"), false);
   assert.equal(labels.includes("npm run coverage:lib"), true);
   assert.equal(labels.includes("npm run test:services:raw"), true);
@@ -279,9 +244,7 @@ test("full verification generates Prisma once and does not repeat lib tests", ()
   assert.equal(labels.includes("npm run build:raw"), true);
   assert.equal(labels.includes("npm run audit:prod"), true);
 
-  const audit = plan.commands.find(
-    (entry) => entry.label === "npm run audit:prod",
-  );
+  const audit = plan.commands.find((entry) => entry.label === "npm run audit:prod");
   assert.equal(audit.live, true);
 });
 
@@ -306,9 +269,6 @@ test("verification fingerprints change with diff lockfile runtime or commands", 
     { commands: ["npm run build"] },
     { untracked: [{ content: "new", path: "new-file.ts" }] },
   ]) {
-    assert.notEqual(
-      createVerificationFingerprint({ ...baseline, ...changed }),
-      fingerprint,
-    );
+    assert.notEqual(createVerificationFingerprint({ ...baseline, ...changed }), fingerprint);
   }
 });

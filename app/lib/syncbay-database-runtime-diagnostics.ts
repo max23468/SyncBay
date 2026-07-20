@@ -40,9 +40,7 @@ export function buildDatabaseRuntimeDiagnostics(input: {
   prismaRuntimeDatabaseUrl?: string;
 }): DatabaseRuntimeDiagnostics {
   const databaseUrl = classifyDatabaseUrl(input.databaseUrl);
-  const prismaRuntimeDatabaseUrl = classifyDatabaseUrl(
-    input.prismaRuntimeDatabaseUrl,
-  );
+  const prismaRuntimeDatabaseUrl = classifyDatabaseUrl(input.prismaRuntimeDatabaseUrl);
 
   return {
     databaseUrl,
@@ -61,9 +59,7 @@ export function buildDatabaseRuntimeDiagnostics(input: {
   };
 }
 
-export function classifyDatabaseUrl(
-  rawUrl: string | undefined,
-): DatabaseUrlDiagnostics {
+export function classifyDatabaseUrl(rawUrl: string | undefined): DatabaseUrlDiagnostics {
   if (!rawUrl) return emptyDatabaseUrlDiagnostics(false);
 
   try {

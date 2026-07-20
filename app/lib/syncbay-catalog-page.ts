@@ -24,15 +24,10 @@ const CATALOG_SORT_KEYS = [
 export type CatalogSortKey = (typeof CATALOG_SORT_KEYS)[number];
 export type CatalogSortDir = "asc" | "desc";
 
-const CATALOG_PAGE_FILTER_SET: ReadonlySet<string> = new Set(
-  CATALOG_PAGE_FILTERS,
-);
+const CATALOG_PAGE_FILTER_SET: ReadonlySet<string> = new Set(CATALOG_PAGE_FILTERS);
 const CATALOG_SORT_KEY_SET: ReadonlySet<string> = new Set(CATALOG_SORT_KEYS);
 
-export function isCatalogRowNeedingCheck(input: {
-  availability: string;
-  status: string;
-}) {
+export function isCatalogRowNeedingCheck(input: { availability: string; status: string }) {
   if (input.status === "mapping_error" || input.status === "stale_sync") {
     return true;
   }
@@ -59,41 +54,28 @@ export function catalogRowMatchesSearch(
   );
 }
 
-export function normalizeCatalogSort(
-  value: string | null | undefined,
-): CatalogSortKey | null {
+export function normalizeCatalogSort(value: string | null | undefined): CatalogSortKey | null {
   return isCatalogSortKey(value) ? value : null;
 }
 
-export function normalizeCatalogSortDir(
-  value: string | null | undefined,
-): CatalogSortDir {
+export function normalizeCatalogSortDir(value: string | null | undefined): CatalogSortDir {
   return value === "desc" ? "desc" : "asc";
 }
 
-export function normalizeCatalogPageFilter(
-  value: string | null | undefined,
-): CatalogPageFilter {
+export function normalizeCatalogPageFilter(value: string | null | undefined): CatalogPageFilter {
   return isCatalogPageFilter(value) ? value : "all";
 }
 
-function isCatalogSortKey(
-  value: string | null | undefined,
-): value is CatalogSortKey {
+function isCatalogSortKey(value: string | null | undefined): value is CatalogSortKey {
   return typeof value === "string" && CATALOG_SORT_KEY_SET.has(value);
 }
 
-function isCatalogPageFilter(
-  value: string | null | undefined,
-): value is CatalogPageFilter {
+function isCatalogPageFilter(value: string | null | undefined): value is CatalogPageFilter {
   return typeof value === "string" && CATALOG_PAGE_FILTER_SET.has(value);
 }
 
-export function normalizeCatalogPage(
-  value: string | number | null | undefined,
-) {
-  const page =
-    typeof value === "number" ? value : Number.parseInt(value ?? "", 10);
+export function normalizeCatalogPage(value: string | number | null | undefined) {
+  const page = typeof value === "number" ? value : Number.parseInt(value ?? "", 10);
 
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
@@ -141,9 +123,7 @@ export function getCatalogQueryPlan(input: {
   totalRows: number;
 }) {
   if (
-    ["all", "linked", "conflicts", "not_updated", "archived"].includes(
-      input.filter,
-    ) &&
+    ["all", "linked", "conflicts", "not_updated", "archived"].includes(input.filter) &&
     !input.search?.trim() &&
     !input.sort
   ) {

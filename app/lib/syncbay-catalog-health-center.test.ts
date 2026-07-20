@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as catalogHealthCenter from "./syncbay-catalog-health-center.ts";
 
-const { buildCatalogHealthCenter, getCatalogHealthCenterSummary } =
-  catalogHealthCenter;
+const { buildCatalogHealthCenter, getCatalogHealthCenterSummary } = catalogHealthCenter;
 
 test("breaks catalog health into concrete operational causes", () => {
   const health = buildCatalogHealthCenter({

@@ -1,6 +1,9 @@
 type ShopifyCategoryProposalConfidence = "high" | "medium" | "low";
 type ShopifyCategoryProposalSource =
-  "ebay_primary_category" | "ebay_store_category" | "title" | "fallback";
+  | "ebay_primary_category"
+  | "ebay_store_category"
+  | "title"
+  | "fallback";
 
 export interface ShopifyCategoryProposalInput {
   ebayPrimaryCategoryName?: string | null;
@@ -170,14 +173,10 @@ export function resolveShopifyCategoryProposal(
     titleText,
   });
 
-  const commemorativeCoinsSignal = findMatchingSignal(
-    signals,
-    matchesCommemorativeCoins,
-  );
+  const commemorativeCoinsSignal = findMatchingSignal(signals, matchesCommemorativeCoins);
   const rareCoinsSignal = findMatchingSignal(signals, matchesRareCoins);
   const coinsSignal = findMatchingSignal(signals, matchesCoins);
-  const collectionGradeCoinSignal =
-    rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
+  const collectionGradeCoinSignal = rareCoinsSignal ?? coinsSignal ?? commemorativeCoinsSignal;
 
   if (collectionGradeCoinType && collectionGradeCoinSignal) {
     return buildProposal({
@@ -225,10 +224,7 @@ export function resolveShopifyCategoryProposal(
     });
   }
 
-  const scaleModelCarsSignal = findMatchingSignal(
-    signals,
-    matchesScaleModelCars,
-  );
+  const scaleModelCarsSignal = findMatchingSignal(signals, matchesScaleModelCars);
   if (scaleModelCarsSignal) {
     return buildProposal({
       category: SHOPIFY_TAXONOMY_CATEGORIES.scaleModelsCars,
@@ -296,11 +292,7 @@ function buildProposal(input: {
   };
 }
 
-function getProposalSignals(input: {
-  primaryText: string;
-  storeText: string;
-  titleText: string;
-}) {
+function getProposalSignals(input: { primaryText: string; storeText: string; titleText: string }) {
   return [
     {
       confidence: "high",
@@ -355,15 +347,11 @@ function findMedalsSignal(
   return null;
 }
 
-function findFirstDayCoversSignal(
-  signals: ReturnType<typeof getProposalSignals>,
-) {
+function findFirstDayCoversSignal(signals: ReturnType<typeof getProposalSignals>) {
   const explicitSignal = findMatchingSignal(signals, matchesFirstDayCovers);
   if (explicitSignal) return explicitSignal;
 
-  const fdcSignal = findMatchingSignal(signals, (value) =>
-    hasToken(value, "fdc"),
-  );
+  const fdcSignal = findMatchingSignal(signals, (value) => hasToken(value, "fdc"));
   const stampsSignal = findMatchingSignal(signals, matchesStamps);
 
   return fdcSignal && stampsSignal ? fdcSignal : null;
@@ -386,11 +374,7 @@ function matchesFirstDayCovers(value: string) {
 }
 
 function matchesStampSheets(value: string) {
-  return hasAny(value, [
-    "fogli francobolli",
-    "foglio francobolli",
-    "stamp sheets",
-  ]);
+  return hasAny(value, ["fogli francobolli", "foglio francobolli", "stamp sheets"]);
 }
 
 function matchesStamps(value: string) {
@@ -540,9 +524,7 @@ function matchesMusicRecords(value: string) {
     "smetana",
   ]);
 
-  const hasMaintainerConfirmedSeries = hasAny(value, [
-    "fabbri editore i grandi musicisti",
-  ]);
+  const hasMaintainerConfirmedSeries = hasAny(value, ["fabbri editore i grandi musicisti"]);
 
   return (hasRecordSignal && hasMusicSignal) || hasMaintainerConfirmedSeries;
 }

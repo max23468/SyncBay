@@ -12,9 +12,7 @@ export interface EbayStorefrontMetadata {
   storeCategoryName: string | null;
 }
 
-export function getEbayStorefrontMetadata(
-  storefront: unknown,
-): EbayStorefrontMetadata {
+export function getEbayStorefrontMetadata(storefront: unknown): EbayStorefrontMetadata {
   const record = getObject(storefront);
 
   if (!record) {
@@ -22,8 +20,7 @@ export function getEbayStorefrontMetadata(
   }
 
   const rawId = getStringField(record, "StoreCategoryID");
-  const normalizedId =
-    rawId && rawId !== "0" && rawId !== "-999" ? rawId : null;
+  const normalizedId = rawId && rawId !== "0" && rawId !== "-999" ? rawId : null;
   const name = getStringField(record, "StoreCategoryName");
 
   return {

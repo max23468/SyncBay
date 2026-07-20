@@ -32,9 +32,7 @@ export function getCompletedCatalogVerificationJobWhere(
   };
 }
 
-export function getCompletedIncrementalWorkJobWhere(
-  shopId: string,
-): PrismaTypes.SyncJobWhereInput {
+export function getCompletedIncrementalWorkJobWhere(shopId: string): PrismaTypes.SyncJobWhereInput {
   // Esclude i job marker di solo avanzamento watermark (payload/result
   // watermarkAdvanced === true): non sono lavoro reale e non devono contare come
   // ultimo run. NOT su una lista nega l'unione delle condizioni, quindi tiene i

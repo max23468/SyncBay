@@ -58,11 +58,7 @@ test("parses a title-based intent", () => {
     ],
   });
 
-  assert.deepEqual(intents[0]?.titleContains, [
-    "capsul",
-    "masterphil",
-    "raccoglitore",
-  ]);
+  assert.deepEqual(intents[0]?.titleContains, ["capsul", "masterphil", "raccoglitore"]);
 });
 
 test("rejects intents that mix product type and title selectors", () => {
@@ -87,9 +83,7 @@ test("rejects intents without a safe selector", () => {
   assert.throws(
     () =>
       parseCollectionIntents({
-        collectionIntents: [
-          { handle: "regno", requirePositiveInventory: true, title: "Regno" },
-        ],
+        collectionIntents: [{ handle: "regno", requirePositiveInventory: true, title: "Regno" }],
       }),
     /productTypeContains/i,
   );

@@ -26,10 +26,7 @@ test("throws when TOKEN_ENCRYPTION_KEY is only whitespace", () => {
   const previous = process.env.TOKEN_ENCRYPTION_KEY;
   try {
     process.env.TOKEN_ENCRYPTION_KEY = "   ";
-    assert.throws(
-      () => encryptSecret("x"),
-      /TOKEN_ENCRYPTION_KEY non configurata/,
-    );
+    assert.throws(() => encryptSecret("x"), /TOKEN_ENCRYPTION_KEY non configurata/);
   } finally {
     process.env.TOKEN_ENCRYPTION_KEY = previous;
   }

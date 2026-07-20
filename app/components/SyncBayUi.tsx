@@ -16,8 +16,7 @@ import type { ReactNode } from "react";
 import { formatItNumber as formatNumber } from "../lib/syncbay-datetime-format";
 import type { ImportStepStatus } from "../lib/syncbay-import-step-status";
 
-export type SyncBayTone =
-  "neutral" | "info" | "success" | "warning" | "critical";
+export type SyncBayTone = "neutral" | "info" | "success" | "warning" | "critical";
 
 // Sottoinsieme dell'icon set Polaris effettivamente usato nelle sei superfici.
 export type SyncBayIcon =
@@ -76,9 +75,7 @@ export function MetricTile({
           trend.tone === "neutral" ? (
             <s-text color="subdued">{trend.label}</s-text>
           ) : (
-            <span
-              className={`syncbay-tile__trend syncbay-tile__trend--${trend.tone}`}
-            >
+            <span className={`syncbay-tile__trend syncbay-tile__trend--${trend.tone}`}>
               {trend.label}
             </span>
           )
@@ -101,12 +98,7 @@ type SyncPulseProps = {
  * a riposo l'hub diventa una spunta e il flusso è statico. I conteggi sono
  * etichette derivate dai dati reali. Vedi ADR 0010.
  */
-export function SyncPulse({
-  appliedLabel,
-  marketplaceLabel,
-  readLabel,
-  working,
-}: SyncPulseProps) {
+export function SyncPulse({ appliedLabel, marketplaceLabel, readLabel, working }: SyncPulseProps) {
   return (
     <figure
       aria-label={`Flusso di sincronizzazione da ${marketplaceLabel} a Shopify, ${
@@ -179,10 +171,7 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
   const max = Math.max(1, ...values);
   const count = values.length;
   const point = (value: number, index: number) => {
-    const x =
-      count <= 1
-        ? width - pad
-        : (index / (count - 1)) * (width - pad * 2) + pad;
+    const x = count <= 1 ? width - pad : (index / (count - 1)) * (width - pad * 2) + pad;
     const y = height - pad - (value / max) * (height - pad * 2);
 
     return { x, y };
@@ -201,17 +190,13 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
       aria-label={ariaLabel}
       className="syncbay-reliability__spark"
       height={height}
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto, non convertibile in <img> senza perdere il theming CSS var */
       role="img"
       viewBox={`0 0 ${width} ${height}`}
       width={width}
     >
       {count > 1 ? (
-        <polyline
-          fill="none"
-          points={points}
-          stroke="var(--syncbay-accent)"
-          strokeWidth="2"
-        />
+        <polyline fill="none" points={points} stroke="var(--syncbay-accent)" strokeWidth="2" />
       ) : (
         <line
           stroke="var(--syncbay-mist)"
@@ -222,9 +207,7 @@ export function Sparkline({ ariaLabel, values }: SparklineProps) {
           y2={height / 2}
         />
       )}
-      {last ? (
-        <circle cx={last.x} cy={last.y} fill="var(--syncbay-accent)" r="3" />
-      ) : null}
+      {last ? <circle cx={last.x} cy={last.y} fill="var(--syncbay-accent)" r="3" /> : null}
     </svg>
   );
 }
@@ -248,19 +231,13 @@ export function RiskLens({ actions, body, title, tone }: RiskLensProps) {
   return (
     <div className={`syncbay-risk ${clear ? "syncbay-risk--clear" : ""}`}>
       <span className="syncbay-risk__icon">
-        <s-icon
-          type={clear ? "check-circle" : "alert-triangle"}
-          tone={tone}
-          size="base"
-        />
+        <s-icon type={clear ? "check-circle" : "alert-triangle"} tone={tone} size="base" />
       </span>
       <span className="syncbay-risk__body">
         <s-heading>{title}</s-heading>
         <s-text color="subdued">{body}</s-text>
       </span>
-      {actions ? (
-        <span className="syncbay-risk__actions">{actions}</span>
-      ) : null}
+      {actions ? <span className="syncbay-risk__actions">{actions}</span> : null}
     </div>
   );
 }
@@ -280,27 +257,14 @@ type StepProps = {
  * Tappa di uno stepper verticale (Importazione). Nodo numerato, o spuntato se
  * completato, con connettore verso la tappa successiva. Vedi ADR 0010.
  */
-export function Step({
-  children,
-  index,
-  isLast = false,
-  status,
-  statusLabel,
-  title,
-}: StepProps) {
+export function Step({ children, index, isLast = false, status, statusLabel, title }: StepProps) {
   const tone: SyncBayTone =
-    status === "completed"
-      ? "success"
-      : status === "active"
-        ? "info"
-        : "neutral";
+    status === "completed" ? "success" : status === "active" ? "info" : "neutral";
 
   return (
     <li className={`syncbay-step syncbay-step--${status}`}>
       <span className="syncbay-step__rail">
-        <span className="syncbay-step__node">
-          {status === "completed" ? "✓" : index}
-        </span>
+        <span className="syncbay-step__node">{status === "completed" ? "✓" : index}</span>
         {isLast ? null : <span className="syncbay-step__line" />}
       </span>
       <div className="syncbay-step__panel">
@@ -325,12 +289,7 @@ type TimelineEventProps = {
  * Evento di una timeline operativa (Attività). Nodo con icona colorata per
  * esito e connettore verso l'evento successivo. Vedi ADR 0010.
  */
-export function TimelineEvent({
-  children,
-  icon,
-  isLast = false,
-  tone,
-}: TimelineEventProps) {
+export function TimelineEvent({ children, icon, isLast = false, tone }: TimelineEventProps) {
   return (
     <li className={`syncbay-event syncbay-event--${tone}`}>
       <span className="syncbay-event__rail">
@@ -475,21 +434,10 @@ type StatusRowProps = {
  * dettaglio e badge di esito, con icona opzionale. Consolida le tre copie
  * hand-rolled per superficie. Vedi ADR 0010.
  */
-export function StatusRow({
-  detail,
-  icon,
-  label,
-  title,
-  tone,
-}: StatusRowProps) {
+export function StatusRow({ detail, icon, label, title, tone }: StatusRowProps) {
   return (
     <s-box border="base" borderColor="base" borderRadius="base" padding="base">
-      <s-stack
-        direction="inline"
-        gap="base"
-        justifyContent="space-between"
-        alignItems="center"
-      >
+      <s-stack direction="inline" gap="base" justifyContent="space-between" alignItems="center">
         <s-stack direction="inline" gap="base" alignItems="center">
           {icon ? (
             <span className="syncbay-tile__icon">
@@ -553,12 +501,7 @@ type PaginationNavProps = {
  * risultati mostrati, nota opzionale (es. limite 1.0) e controlli
  * Precedente/Successiva come link.
  */
-export function PaginationNav({
-  getPageHref,
-  note,
-  pagination,
-  summary,
-}: PaginationNavProps) {
+export function PaginationNav({ getPageHref, note, pagination, summary }: PaginationNavProps) {
   if (pagination.totalRows === 0) return null;
 
   return (
@@ -567,18 +510,13 @@ export function PaginationNav({
       {note ? <s-text color="subdued">{note}</s-text> : null}
       <s-stack direction="inline" gap="small-200">
         {pagination.hasPreviousPage && pagination.previousPage ? (
-          <s-button href={getPageHref(pagination.previousPage)}>
-            Precedente
-          </s-button>
+          <s-button href={getPageHref(pagination.previousPage)}>Precedente</s-button>
         ) : null}
         <s-text color="subdued">
-          Pagina {formatNumber(pagination.page)} di{" "}
-          {formatNumber(pagination.totalPages)}
+          Pagina {formatNumber(pagination.page)} di {formatNumber(pagination.totalPages)}
         </s-text>
         {pagination.hasNextPage && pagination.nextPage ? (
-          <s-button href={getPageHref(pagination.nextPage)}>
-            Successiva
-          </s-button>
+          <s-button href={getPageHref(pagination.nextPage)}>Successiva</s-button>
         ) : null}
       </s-stack>
     </s-stack>
@@ -665,6 +603,7 @@ export function EbayMark() {
     <svg
       aria-label="eBay"
       height="15"
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- logo SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto */
       role="img"
       viewBox="0 0 1000 400.75"
       width="37"
@@ -695,6 +634,7 @@ export function ShopifyMark() {
     <svg
       aria-label="Shopify"
       height="24"
+      /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- logo SVG inline etichettato: role="img"+aria-label è il pattern accessibile corretto */
       role="img"
       viewBox="0 0 24 24"
       width="24"

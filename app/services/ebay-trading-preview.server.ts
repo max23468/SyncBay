@@ -7,10 +7,7 @@ import { buildExistingCatalogPreviewMetadata } from "../lib/syncbay-existing-cat
 import { parseEbayTradingItemSpecifics } from "../lib/syncbay-product-facets";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
-import {
-  buildImportPreview,
-  type ImportPreviewListingCandidate,
-} from "./import-preview.server";
+import { buildImportPreview, type ImportPreviewListingCandidate } from "./import-preview.server";
 
 interface EbayTradingPreviewInput {
   accessToken: string;
@@ -18,10 +15,7 @@ interface EbayTradingPreviewInput {
   limit: number;
 }
 
-type EbayTradingRequestContext = Pick<
-  EbayTradingPreviewInput,
-  "accessToken" | "connection"
->;
+type EbayTradingRequestContext = Pick<EbayTradingPreviewInput, "accessToken" | "connection">;
 
 export interface EbayTradingPreviewPage {
   candidates: ImportPreviewListingCandidate[];
@@ -96,10 +90,7 @@ export async function getEbayTradingImportPreview(
     GET_ITEM_LOOKUP_CONCURRENCY,
     async (item, index) => {
       if (index >= GET_ITEM_DETAIL_LOOKUP_LIMIT) {
-        const listCandidate = mapTradingItemToCandidate(
-          item,
-          input.connection.marketplaceId,
-        );
+        const listCandidate = mapTradingItemToCandidate(item, input.connection.marketplaceId);
         return listCandidate ? withFallbackSku(listCandidate) : null;
       }
 
@@ -108,9 +99,8 @@ export async function getEbayTradingImportPreview(
   );
 
   return {
-    candidates: candidates.filter(
-      (candidate): candidate is ImportPreviewListingCandidate =>
-        Boolean(candidate),
+    candidates: candidates.filter((candidate): candidate is ImportPreviewListingCandidate =>
+      Boolean(candidate),
     ),
     readCount: items.length,
     totalAvailable: getTotalEntries(activeList),
@@ -149,10 +139,7 @@ async function getEbayTradingCatalogPreviewCandidates(input: {
   maxProducts: number;
 }) {
   const maxProducts = normalizePositiveInteger(input.maxProducts);
-  const entriesPerPage = Math.min(
-    maxProducts,
-    TRADING_API_MAX_ENTRIES_PER_PAGE,
-  );
+  const entriesPerPage = Math.min(maxProducts, TRADING_API_MAX_ENTRIES_PER_PAGE);
   const candidates: ImportPreviewListingCandidate[] = [];
   const seenItemIds = new Set<string>();
   let pageNumber = 1;
@@ -201,17 +188,13 @@ async function getEbayTradingCatalogPreviewCandidates(input: {
           return getEnrichedTradingCandidate(input, item);
         }
 
-        const listCandidate = mapTradingItemToCandidate(
-          item,
-          input.connection.marketplaceId,
-        );
+        const listCandidate = mapTradingItemToCandidate(item, input.connection.marketplaceId);
         return listCandidate ? withFallbackSku(listCandidate) : null;
       },
     );
     candidates.push(
-      ...pageCandidates.filter(
-        (candidate): candidate is ImportPreviewListingCandidate =>
-          Boolean(candidate),
+      ...pageCandidates.filter((candidate): candidate is ImportPreviewListingCandidate =>
+        Boolean(candidate),
       ),
     );
 
@@ -236,10 +219,7 @@ export async function getEbayTradingCatalogImportPlan(input: {
   maxProducts: number;
 }): Promise<EbayTradingCatalogImportPlan> {
   const maxProducts = normalizePositiveInteger(input.maxProducts);
-  const entriesPerPage = Math.min(
-    maxProducts,
-    TRADING_API_MAX_ENTRIES_PER_PAGE,
-  );
+  const entriesPerPage = Math.min(maxProducts, TRADING_API_MAX_ENTRIES_PER_PAGE);
   const itemIds: string[] = [];
   const seenItemIds = new Set<string>();
   let pageNumber = 1;
@@ -311,17 +291,13 @@ export async function getEbayTradingCandidatesByItemIds(input: {
       const detailItem = await getTradingItemDetail(input, itemId);
       if (!detailItem) return null;
 
-      const candidate = mapTradingItemToCandidate(
-        detailItem,
-        input.connection.marketplaceId,
-      );
+      const candidate = mapTradingItemToCandidate(detailItem, input.connection.marketplaceId);
       return candidate ? withFallbackSku(candidate) : null;
     },
   );
 
-  return candidates.filter(
-    (candidate): candidate is ImportPreviewListingCandidate =>
-      Boolean(candidate),
+  return candidates.filter((candidate): candidate is ImportPreviewListingCandidate =>
+    Boolean(candidate),
   );
 }
 
@@ -355,10 +331,7 @@ export async function getEbayTradingSellerEventsDelta(input: {
       continue;
     }
 
-    const candidate = mapTradingItemToCandidate(
-      item,
-      input.connection.marketplaceId,
-    );
+    const candidate = mapTradingItemToCandidate(item, input.connection.marketplaceId);
     if (candidate) candidates.push(withFallbackSku(candidate));
   }
 
@@ -383,10 +356,7 @@ async function getEnrichedTradingCandidate(
   input: EbayTradingRequestContext,
   item: XmlRecord,
 ): Promise<ImportPreviewListingCandidate | null> {
-  const listCandidate = mapTradingItemToCandidate(
-    item,
-    input.connection.marketplaceId,
-  );
+  const listCandidate = mapTradingItemToCandidate(item, input.connection.marketplaceId);
   if (!listCandidate) return null;
 
   const detailItem = await getTradingItemDetail(input, listCandidate.itemId);
@@ -401,18 +371,13 @@ async function getEnrichedTradingCandidate(
       getTradingCurrency(detailItem, detailVariations) ??
       listCandidate.currency ??
       getExpectedMarketplaceCurrency(input.connection.marketplaceId),
-    descriptionHtml:
-      getString(detailItem, "Description") ?? listCandidate.descriptionHtml,
+    descriptionHtml: getString(detailItem, "Description") ?? listCandidate.descriptionHtml,
     imageUrls: getTradingImageUrls(detailItem, listCandidate.imageUrls),
     itemId: listCandidate.itemId,
     itemSpecifics: parseEbayTradingItemSpecifics(detailItem.ItemSpecifics),
-    priceAmount:
-      getTradingPrice(detailItem, detailVariations) ??
-      listCandidate.priceAmount,
+    priceAmount: getTradingPrice(detailItem, detailVariations) ?? listCandidate.priceAmount,
     ebayPrimaryCategoryId:
-      detailPrimaryCategory.ebayPrimaryCategoryId ??
-      listCandidate.ebayPrimaryCategoryId ??
-      null,
+      detailPrimaryCategory.ebayPrimaryCategoryId ?? listCandidate.ebayPrimaryCategoryId ?? null,
     ebayPrimaryCategoryName:
       detailPrimaryCategory.ebayPrimaryCategoryName ??
       listCandidate.ebayPrimaryCategoryName ??
@@ -421,28 +386,17 @@ async function getEnrichedTradingCandidate(
       detailPrimaryCategory.ebayPrimaryCategoryPath ??
       listCandidate.ebayPrimaryCategoryPath ??
       null,
-    quantity:
-      getTradingQuantity(detailItem, detailVariations) ??
-      listCandidate.quantity,
+    quantity: getTradingQuantity(detailItem, detailVariations) ?? listCandidate.quantity,
     sku: getTradingSku(detailItem, detailVariations) ?? listCandidate.sku,
-    storeCategoryId:
-      detailStorefront.storeCategoryId ?? listCandidate.storeCategoryId ?? null,
+    storeCategoryId: detailStorefront.storeCategoryId ?? listCandidate.storeCategoryId ?? null,
     storeCategoryName:
-      detailStorefront.storeCategoryName ??
-      listCandidate.storeCategoryName ??
-      null,
+      detailStorefront.storeCategoryName ?? listCandidate.storeCategoryName ?? null,
     title: getString(detailItem, "Title") ?? listCandidate.title,
-    variantCount: Math.max(
-      detailVariations.length,
-      listCandidate.variantCount ?? 1,
-    ),
+    variantCount: Math.max(detailVariations.length, listCandidate.variantCount ?? 1),
   });
 }
 
-async function getTradingItemDetail(
-  input: EbayTradingRequestContext,
-  itemId: string,
-) {
+async function getTradingItemDetail(input: EbayTradingRequestContext, itemId: string) {
   const requestXml = buildGetItemRequest(itemId);
 
   return fetchTradingXml({
@@ -457,28 +411,21 @@ async function getTradingItemDetail(
 
 export async function fetchTradingXml(input: {
   accessToken: string;
-  callName:
-    | "GetItem"
-    | "GetMyeBaySelling"
-    | "GetSellerEvents"
-    | "ReviseInventoryStatus";
+  callName: "GetItem" | "GetMyeBaySelling" | "GetSellerEvents" | "ReviseInventoryStatus";
   connection: EbayConnection;
   requestXml: string;
 }) {
-  const response = await fetch(
-    getTradingBaseUrl(input.connection.environment),
-    {
-      body: input.requestXml,
-      headers: {
-        "Content-Type": "text/xml; charset=utf-8",
-        "X-EBAY-API-CALL-NAME": input.callName,
-        "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-        "X-EBAY-API-IAF-TOKEN": input.accessToken,
-        "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-      },
-      method: "POST",
+  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
+    body: input.requestXml,
+    headers: {
+      "Content-Type": "text/xml; charset=utf-8",
+      "X-EBAY-API-CALL-NAME": input.callName,
+      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
+      "X-EBAY-API-IAF-TOKEN": input.accessToken,
+      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
     },
-  );
+    method: "POST",
+  });
   const responseText = await response.text();
 
   if (!response.ok) {
@@ -504,10 +451,7 @@ export async function fetchTradingXml(input: {
   return body;
 }
 
-function buildGetMyeBaySellingRequest(input: {
-  entriesPerPage: number;
-  pageNumber: number;
-}) {
+function buildGetMyeBaySellingRequest(input: { entriesPerPage: number; pageNumber: number }) {
   return `<?xml version="1.0" encoding="utf-8"?>
 <GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
   <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
@@ -537,10 +481,7 @@ function buildGetItemRequest(itemId: string) {
 </GetItemRequest>`;
 }
 
-function buildGetSellerEventsRequest(input: {
-  modTimeFrom: Date;
-  modTimeTo: Date;
-}) {
+function buildGetSellerEventsRequest(input: { modTimeFrom: Date; modTimeTo: Date }) {
   return `<?xml version="1.0" encoding="utf-8"?>
 <GetSellerEventsRequest xmlns="urn:ebay:apis:eBLBaseComponents">
   <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
@@ -565,17 +506,10 @@ function getTradingItems(container: XmlRecord | null) {
 
 function isInactiveTradingItem(item: XmlRecord) {
   const status =
-    getString(asRecord(item.SellingStatus), "ListingStatus") ??
-    getString(item, "ListingStatus");
+    getString(asRecord(item.SellingStatus), "ListingStatus") ?? getString(item, "ListingStatus");
   if (!status) return false;
 
-  return [
-    "Completed",
-    "Ended",
-    "EndedWithSales",
-    "EndedWithoutSales",
-    "Inactive",
-  ].includes(status);
+  return ["Completed", "Ended", "EndedWithSales", "EndedWithoutSales", "Inactive"].includes(status);
 }
 
 function mapTradingItemToCandidate(
@@ -590,9 +524,7 @@ function mapTradingItemToCandidate(
   const primaryCategory = getTradingPrimaryCategoryMetadata(item);
 
   return {
-    currency:
-      getTradingCurrency(item, variations) ??
-      getExpectedMarketplaceCurrency(marketplaceId),
+    currency: getTradingCurrency(item, variations) ?? getExpectedMarketplaceCurrency(marketplaceId),
     descriptionHtml: getString(item, "Description"),
     ebayPrimaryCategoryId: primaryCategory.ebayPrimaryCategoryId,
     ebayPrimaryCategoryName: primaryCategory.ebayPrimaryCategoryName,
@@ -642,9 +574,7 @@ function getTradingSku(item: XmlRecord, variations: XmlRecord[]) {
   );
 }
 
-function withFallbackSku(
-  candidate: ImportPreviewListingCandidate,
-): ImportPreviewListingCandidate {
+function withFallbackSku(candidate: ImportPreviewListingCandidate): ImportPreviewListingCandidate {
   if (normalizeText(candidate.sku)) {
     return {
       ...candidate,
@@ -727,10 +657,7 @@ function getAvailableQuantity(record: XmlRecord) {
   const quantity = getInteger(record, "Quantity");
   if (typeof quantity !== "number") return null;
 
-  const quantitySold = getInteger(
-    asRecord(record.SellingStatus),
-    "QuantitySold",
-  );
+  const quantitySold = getInteger(asRecord(record.SellingStatus), "QuantitySold");
   return Math.max(quantity - (quantitySold ?? 0), 0);
 }
 
@@ -766,9 +693,7 @@ function getTradingApiErrorMessage(body: XmlRecord) {
 }
 
 function getTradingBaseUrl(environment: string) {
-  return environment === "production"
-    ? EBAY_TRADING_URLS.production
-    : EBAY_TRADING_URLS.sandbox;
+  return environment === "production" ? EBAY_TRADING_URLS.production : EBAY_TRADING_URLS.sandbox;
 }
 
 function getTradingSiteId(marketplaceId: string) {
@@ -785,9 +710,7 @@ function getMoneyValue(value: unknown) {
 
 function getMoneyCurrency(value: unknown) {
   const record = asRecord(value);
-  const currency = record
-    ? normalizeText(toText(record["@_currencyID"]))
-    : null;
+  const currency = record ? normalizeText(toText(record["@_currencyID"])) : null;
 
   return currency?.toUpperCase() ?? null;
 }
@@ -817,9 +740,7 @@ function toText(value: unknown): string | null {
 }
 
 function asRecord(value: unknown): XmlRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as XmlRecord)
-    : null;
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as XmlRecord) : null;
 }
 
 function asArray(value: unknown) {

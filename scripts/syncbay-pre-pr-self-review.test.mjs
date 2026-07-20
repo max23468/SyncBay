@@ -9,9 +9,7 @@ import {
   parseShortStatus,
 } from "./syncbay-pre-pr-self-review.mjs";
 
-const SCRIPT_PATH = fileURLToPath(
-  new URL("./syncbay-pre-pr-self-review.mjs", import.meta.url),
-);
+const SCRIPT_PATH = fileURLToPath(new URL("./syncbay-pre-pr-self-review.mjs", import.meta.url));
 const REPO_ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 test("builds SyncBay-specific review prompts for existing catalog runtime diffs", () => {
@@ -38,16 +36,8 @@ test("builds SyncBay-specific review prompts for existing catalog runtime diffs"
   assert.ok(review.detectedAreas.includes("shopify"));
   assert.ok(review.suggestedChecks.includes("npm run test:lib"));
   assert.ok(review.suggestedChecks.includes("npm run typecheck"));
-  assert.ok(
-    review.reviewQuestions.some((question) =>
-      question.includes("duplicati Shopify"),
-    ),
-  );
-  assert.ok(
-    review.reviewQuestions.some((question) =>
-      question.includes("guardrail server-side"),
-    ),
-  );
+  assert.ok(review.reviewQuestions.some((question) => question.includes("duplicati Shopify")));
+  assert.ok(review.reviewQuestions.some((question) => question.includes("guardrail server-side")));
 });
 
 test("keeps docs-only diffs on the lightweight verification lane", () => {
@@ -64,9 +54,7 @@ test("keeps docs-only diffs on the lightweight verification lane", () => {
   assert.deepEqual(review.suggestedChecks, ["git diff --check"]);
   assert.ok(review.detectedAreas.includes("documentazione"));
   assert.ok(
-    review.reviewQuestions.some((question) =>
-      question.includes("decisione operativa stabile"),
-    ),
+    review.reviewQuestions.some((question) => question.includes("decisione operativa stabile")),
   );
 });
 
@@ -84,23 +72,15 @@ test("does not classify docs plus unknown files as docs-only", () => {
   assert.ok(review.suggestedChecks.includes("npm run typecheck"));
   assert.ok(review.suggestedChecks.includes("npm run lint"));
   assert.ok(review.suggestedChecks.includes("npm run build"));
-  assert.ok(
-    review.warnings.some((warning) =>
-      warning.includes("File non classificati"),
-    ),
-  );
+  assert.ok(review.warnings.some((warning) => warning.includes("File non classificati")));
 });
 
 test("fails the CLI when the requested base ref is missing", () => {
   const missingBase = "refs/heads/syncbay-missing-base-for-test";
-  const result = spawnSync(
-    process.execPath,
-    [SCRIPT_PATH, "--base", missingBase, "--json"],
-    {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-    },
-  );
+  const result = spawnSync(process.execPath, [SCRIPT_PATH, "--base", missingBase, "--json"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+  });
 
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /git diff .* non riuscito/);

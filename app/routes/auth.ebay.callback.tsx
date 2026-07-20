@@ -10,8 +10,7 @@ export const loader = async ({ url }: LoaderFunctionArgs) => {
       {
         error,
         message:
-          url.searchParams.get("error_description") ??
-          "Connessione eBay rifiutata o interrotta.",
+          url.searchParams.get("error_description") ?? "Connessione eBay rifiutata o interrotta.",
         status: "rejected",
       },
       { status: 400 },
