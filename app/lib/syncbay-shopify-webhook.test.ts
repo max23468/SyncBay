@@ -7,18 +7,9 @@ import {
 } from "./syncbay-shopify-webhook.ts";
 
 test("normalizes Shopify enum topics without changing resource underscores", () => {
-  assert.equal(
-    normalizeShopifyWebhookTopic("INVENTORY_LEVELS_UPDATE"),
-    "inventory_levels/update",
-  );
-  assert.equal(
-    normalizeShopifyWebhookTopic("APP_SCOPES_UPDATE"),
-    "app/scopes_update",
-  );
-  assert.equal(
-    normalizeShopifyWebhookTopic("products/update"),
-    "products/update",
-  );
+  assert.equal(normalizeShopifyWebhookTopic("INVENTORY_LEVELS_UPDATE"), "inventory_levels/update");
+  assert.equal(normalizeShopifyWebhookTopic("APP_SCOPES_UPDATE"), "app/scopes_update");
+  assert.equal(normalizeShopifyWebhookTopic("products/update"), "products/update");
 });
 
 test("returns an empty payload for unsupported Shopify webhook topics", () => {
@@ -162,14 +153,8 @@ test("decrements on order creation and restores conservatively on cancellation",
     line_items: [{ id: 123, product_id: 10, quantity: 1, variant_id: 20 }],
   };
 
-  assert.equal(
-    getShopifyWebhookJobPayload("orders/create", payload).stockAction,
-    "decrement",
-  );
-  assert.equal(
-    getShopifyWebhookJobPayload("orders/cancelled", payload).stockAction,
-    "restore",
-  );
+  assert.equal(getShopifyWebhookJobPayload("orders/create", payload).stockAction, "decrement");
+  assert.equal(getShopifyWebhookJobPayload("orders/cancelled", payload).stockAction, "restore");
 });
 
 test("extracts inventory item gid for inventory level webhooks", () => {

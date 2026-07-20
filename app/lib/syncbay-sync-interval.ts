@@ -16,15 +16,11 @@ export const SYNC_TARGET_OPTIONS = [
 
 export function normalizeSyncTargetSeconds(value: unknown): number | null {
   const parsed =
-    typeof value === "number"
-      ? value
-      : Number.parseInt(String(value ?? "").trim(), 10);
+    typeof value === "number" ? value : Number.parseInt(String(value ?? "").trim(), 10);
 
   if (!Number.isInteger(parsed)) return null;
 
-  return SYNC_TARGET_OPTIONS.some((option) => option.value === parsed)
-    ? parsed
-    : null;
+  return SYNC_TARGET_OPTIONS.some((option) => option.value === parsed) ? parsed : null;
 }
 
 export function getSyncTargetLabel(seconds: number): string {

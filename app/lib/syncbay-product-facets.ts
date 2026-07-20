@@ -1,10 +1,13 @@
 export type SyncBayProductFacetKey =
-  "categoria" | "area_stato" | "materiale" | "conservazione" | "perizia";
+  | "categoria"
+  | "area_stato"
+  | "materiale"
+  | "conservazione"
+  | "perizia";
 
 export type SyncBayProductFacetConfidence = "high" | "medium" | "low";
 
-export type SyncBayProductFacetSource =
-  "title_rule" | "category_hint" | "ebay_specific";
+export type SyncBayProductFacetSource = "title_rule" | "category_hint" | "ebay_specific";
 
 export interface EbayItemSpecific {
   name: string;
@@ -37,14 +40,13 @@ export interface SyncBayProductFacetInput {
 }
 
 const FACET_NAMESPACE = "syncbay_facets";
-const FACET_TYPES: Record<SyncBayProductFacetKey, SyncBayProductFacet["type"]> =
-  {
-    area_stato: "single_line_text_field",
-    categoria: "single_line_text_field",
-    conservazione: "list.single_line_text_field",
-    materiale: "list.single_line_text_field",
-    perizia: "single_line_text_field",
-  };
+const FACET_TYPES: Record<SyncBayProductFacetKey, SyncBayProductFacet["type"]> = {
+  area_stato: "single_line_text_field",
+  categoria: "single_line_text_field",
+  conservazione: "list.single_line_text_field",
+  materiale: "list.single_line_text_field",
+  perizia: "single_line_text_field",
+};
 
 const FACETS = [
   {
@@ -72,31 +74,18 @@ const FACETS = [
     label: "Materiale",
   },
   {
-    aliases: [
-      "conservazione",
-      "grado",
-      "grado di conservazione",
-      "stato di conservazione",
-    ],
+    aliases: ["conservazione", "grado", "grado di conservazione", "stato di conservazione"],
     key: "conservazione",
     label: "Conservazione",
   },
   {
-    aliases: [
-      "perizia",
-      "certificazione",
-      "certificato",
-      "autenticazione",
-      "grading",
-    ],
+    aliases: ["perizia", "certificazione", "certificato", "autenticazione", "grading"],
     key: "perizia",
     label: "Perizia",
   },
 ] as const;
 
-export function buildSyncBayProductFacets(
-  input: SyncBayProductFacetInput,
-): SyncBayProductFacet[] {
+export function buildSyncBayProductFacets(input: SyncBayProductFacetInput): SyncBayProductFacet[] {
   return buildSyncBayProductFacetInferences(input).flatMap((inference) =>
     inference.confidence === "high"
       ? [
@@ -120,9 +109,7 @@ export function buildSyncBayProductFacetInferences(
     if (!inference) return [];
 
     const normalizedValues =
-      facet.key === "perizia"
-        ? normalizePeriziaValues(inference.values)
-        : inference.values;
+      facet.key === "perizia" ? normalizePeriziaValues(inference.values) : inference.values;
     const productFacet = buildFacet({
       key: facet.key,
       label: facet.label,
@@ -153,9 +140,7 @@ export function buildShopifyProductFacetMetafields(
   }));
 }
 
-export function parseEbayTradingItemSpecifics(
-  value: unknown,
-): EbayItemSpecific[] {
+export function parseEbayTradingItemSpecifics(value: unknown): EbayItemSpecific[] {
   const record = getObject(value);
   const entries = asArray(record?.NameValueList);
 
@@ -188,9 +173,7 @@ function getFacetInference(
   values: string[];
 } | null {
   if (key === "categoria") {
-    const storefrontCategory = getStorefrontCategoryValue(
-      input.storeCategoryName,
-    );
+    const storefrontCategory = getStorefrontCategoryValue(input.storeCategoryName);
     if (storefrontCategory) {
       return {
         confidence: "high",
@@ -214,9 +197,7 @@ function getFacetInference(
   }
 
   if (key === "categoria") {
-    const marketplaceCategory = getStorefrontCategoryValue(
-      input.ebayPrimaryCategoryName,
-    );
+    const marketplaceCategory = getStorefrontCategoryValue(input.ebayPrimaryCategoryName);
     if (marketplaceCategory) {
       return {
         confidence: "medium",
@@ -242,10 +223,7 @@ function getFacetInference(
   return null;
 }
 
-function getSpecificValues(
-  itemSpecifics: EbayItemSpecific[],
-  aliases: readonly string[],
-) {
+function getSpecificValues(itemSpecifics: EbayItemSpecific[], aliases: readonly string[]) {
   const normalizedAliases = new Set(aliases.map(normalizeLookupKey));
 
   return itemSpecifics.flatMap((specific) => {
@@ -278,10 +256,7 @@ function buildFacet(input: {
   };
 }
 
-function getTitleFacetValues(
-  key: SyncBayProductFacetKey,
-  title?: string | null,
-) {
+function getTitleFacetValues(key: SyncBayProductFacetKey, title?: string | null) {
   if (!title) return [];
 
   if (key === "categoria") return getTitleCategoryValues(title);
@@ -333,9 +308,7 @@ function getTitleCategoryValues(title: string) {
   if (hasAnyToken(normalized, ["euro"])) {
     return ["Monete in euro"];
   }
-  if (
-    hasAnyToken(normalized, ["lira", "lire", "centesimo", "centesimi", "cent"])
-  ) {
+  if (hasAnyToken(normalized, ["lira", "lire", "centesimo", "centesimi", "cent"])) {
     return ["Monete italiane in lire"];
   }
   if (hasAnyToken(normalized, ["moneta", "monete", "lire", "euro"])) {
@@ -406,28 +379,15 @@ function getTitleAreaValues(title: string) {
     return ["Vaticano"];
   }
   if (hasAnyPhrase(normalized, ["san marino"])) return ["San Marino"];
-  if (hasAnyPhrase(normalized, ["germania", "deutschland"]))
-    return ["Germania"];
-  if (
-    hasAnyPhrase(normalized, ["regno unito", "u k"]) ||
-    hasAnyToken(normalized, ["uk"])
-  ) {
+  if (hasAnyPhrase(normalized, ["germania", "deutschland"])) return ["Germania"];
+  if (hasAnyPhrase(normalized, ["regno unito", "u k"]) || hasAnyToken(normalized, ["uk"])) {
     return ["Regno Unito"];
   }
   if (hasAnyPhrase(normalized, ["francia"])) return ["Francia"];
-  if (
-    hasAnyPhrase(normalized, ["stati uniti", "u s a"]) ||
-    hasAnyToken(normalized, ["usa"])
-  ) {
+  if (hasAnyPhrase(normalized, ["stati uniti", "u s a"]) || hasAnyToken(normalized, ["usa"])) {
     return ["Stati Uniti"];
   }
-  if (
-    hasAnyPhrase(normalized, [
-      "italia repubblica",
-      "repubblica italiana",
-      "repubblica",
-    ])
-  ) {
+  if (hasAnyPhrase(normalized, ["italia repubblica", "repubblica italiana", "repubblica"])) {
     return ["Italia - Repubblica"];
   }
   if (
@@ -459,9 +419,7 @@ function getTitleMaterialValues(title: string) {
     ["Nichel", /\bNICHEL\b/],
   ] as const;
 
-  return materials.flatMap(([value, pattern]) =>
-    pattern.test(normalized) ? [value] : [],
-  );
+  return materials.flatMap(([value, pattern]) => (pattern.test(normalized) ? [value] : []));
 }
 
 function getTitleConservationValues(title: string) {
@@ -470,9 +428,7 @@ function getTitleConservationValues(title: string) {
     .replace(/\bQ[\s.]*SPL\b/g, "QSPL")
     .replace(/\bQ[\s.]*BB\b/g, "QBB");
   const matches = Array.from(
-    normalized.matchAll(
-      /(^|[^A-Z0-9])(QFDC|FDC|QSPL|SPL|QBB|BB|MB|PROOF)(?=$|[^A-Z0-9])/g,
-    ),
+    normalized.matchAll(/(^|[^A-Z0-9])(QFDC|FDC|QSPL|SPL|QBB|BB|MB|PROOF)(?=$|[^A-Z0-9])/g),
   );
 
   return dedupe(
@@ -599,11 +555,7 @@ function isNonEmptyString(value: string | null): value is string {
 }
 
 function asArray(value: unknown) {
-  return Array.isArray(value)
-    ? value
-    : typeof value === "undefined"
-      ? []
-      : [value];
+  return Array.isArray(value) ? value : typeof value === "undefined" ? [] : [value];
 }
 
 function getObject(value: unknown) {

@@ -27,9 +27,7 @@ export function buildPublishPlan({
   releaseAlreadyPublished = false,
 }) {
   const versionChanged =
-    Boolean(currentVersion) &&
-    Boolean(mainVersion) &&
-    currentVersion !== mainVersion;
+    Boolean(currentVersion) && Boolean(mainVersion) && currentVersion !== mainVersion;
   // Su una PR aperta la differenza di versione rispetto a origin/main indica
   // che serve la release. Quando si riprende una PR già mergeata, origin/main
   // contiene già il bump: la versione coincide, quindi ci si basa sul fatto che
@@ -37,9 +35,7 @@ export function buildPublishPlan({
   return {
     deploy: shouldBuildVercel(changedPaths),
     release:
-      Boolean(currentVersion) &&
-      !releaseAlreadyPublished &&
-      (mergedResume ? true : versionChanged),
+      Boolean(currentVersion) && !releaseAlreadyPublished && (mergedResume ? true : versionChanged),
     tag: currentVersion ? `v${currentVersion}` : null,
   };
 }
@@ -71,12 +67,7 @@ export function parseRemoteTagSha(lsRemoteOutput) {
 // verrebbe usato com'e' e porterebbe la Release sul commit sbagliato. Il tag
 // remoto e' quello che vince sulla Release, quindi va confrontato anche quando
 // in locale non c'e' nulla.
-export function planTagPublication({
-  localTagSha,
-  remoteTagSha,
-  mergeSha,
-  tag,
-}) {
+export function planTagPublication({ localTagSha, remoteTagSha, mergeSha, tag }) {
   if (remoteTagSha && remoteTagSha !== mergeSha) {
     throw new Error(
       `Il tag ${tag} esiste già su origin sul commit ${remoteTagSha.slice(0, 12)}, diverso dal merge ${mergeSha.slice(0, 12)}. ` +
@@ -141,12 +132,8 @@ async function runCompletePublish(args) {
   )
     .split(/\r?\n/)
     .filter(Boolean);
-  const currentVersion = readVersionFromSource(
-    fs.readFileSync("app/lib/version.ts", "utf8"),
-  );
-  const mainVersion = readVersionFromSource(
-    runGit(["show", "origin/main:app/lib/version.ts"]),
-  );
+  const currentVersion = readVersionFromSource(fs.readFileSync("app/lib/version.ts", "utf8"));
+  const mainVersion = readVersionFromSource(runGit(["show", "origin/main:app/lib/version.ts"]));
   const candidateTag = currentVersion ? `v${currentVersion}` : null;
   // Il segnale di release completata e' la GitHub Release, non il tag: un tentativo
   // interrotto fra `git push origin <tag>` e `gh release create` lascia il tag su
@@ -165,14 +152,7 @@ async function runCompletePublish(args) {
     mergedResume: pr.state === "MERGED",
     releaseAlreadyPublished,
   });
-  const repository = runGh([
-    "repo",
-    "view",
-    "--json",
-    "nameWithOwner",
-    "--jq",
-    ".nameWithOwner",
-  ]);
+  const repository = runGh(["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]);
 
   console.log(
     `Pubblicazione completa${pr.number ? ` PR #${pr.number}` : " (dry-run locale)"}: deploy ${plan.deploy ? "sì" : "no"}, release ${plan.release ? plan.tag : "no"}.`,
@@ -213,20 +193,15 @@ async function runCompletePublish(args) {
     // Lo status Vercel dice che il build e' finito, non che l'app risponde.
     runInherited("npm", ["run", "smoke:production"]);
   } else {
-    console.log(
-      "Deploy Vercel non applicabile: il diff non modifica il runtime.",
-    );
+    console.log("Deploy Vercel non applicabile: il diff non modifica il runtime.");
   }
 
   if (plan.release) {
     // Ogni passo e' idempotente: un retry dopo un tag gia' creato o gia' spinto
     // deve arrivare comunque a pubblicare la GitHub Release mancante.
-    const localTagSha = runGit(
-      ["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`],
-      {
-        allowFailure: true,
-      },
-    );
+    const localTagSha = runGit(["rev-parse", "--verify", "--quiet", `${plan.tag}^{commit}`], {
+      allowFailure: true,
+    });
     const remoteTagSha = parseRemoteTagSha(
       runGit([
         "ls-remote",
@@ -248,14 +223,7 @@ async function runCompletePublish(args) {
       // locale e `git tag` fallirebbe con "fatal: tipo oggetto errato".
       runInherited("git", ["fetch", "origin", "main"]);
       try {
-        runInherited("git", [
-          "tag",
-          "-a",
-          plan.tag,
-          mergeSha,
-          "-m",
-          `SyncBay ${currentVersion}`,
-        ]);
+        runInherited("git", ["tag", "-a", plan.tag, mergeSha, "-m", `SyncBay ${currentVersion}`]);
       } catch (error) {
         throw new Error(
           `${error instanceof Error ? error.message : String(error)} ` +
@@ -285,9 +253,7 @@ async function runCompletePublish(args) {
   }
 
   console.log(`Pubblicazione completata su ${mergeSha.slice(0, 12)}.`);
-  console.log(
-    "Resta solo il cleanup della worktree locale dal checkout principale.",
-  );
+  console.log("Resta solo il cleanup della worktree locale dal checkout principale.");
   return { ...plan, mergeSha };
 }
 
@@ -299,14 +265,10 @@ async function waitForProductionDeployment({ mergeSha, repository }) {
     const combinedStatus = JSON.parse(
       runGh(["api", `repos/${repository}/commits/${mergeSha}/status`]) || "{}",
     );
-    const vercelStatus = combinedStatus.statuses?.find(
-      (status) => status.context === "Vercel",
-    );
+    const vercelStatus = combinedStatus.statuses?.find((status) => status.context === "Vercel");
     if (vercelStatus?.state === "success") return;
     if (["error", "failure"].includes(vercelStatus?.state)) {
-      throw new Error(
-        `Deployment Production concluso con stato ${vercelStatus.state}.`,
-      );
+      throw new Error(`Deployment Production concluso con stato ${vercelStatus.state}.`);
     }
     await sleep(POLL_MS);
   }
@@ -368,9 +330,7 @@ function runCapture(command, args, { allowFailure = false } = {}) {
   const result = spawnSync(command, args, { encoding: "utf8" });
   if (result.status !== 0) {
     if (allowFailure) return "";
-    throw new Error(
-      result.stderr.trim() || `${command} ${args.join(" ")} non riuscito.`,
-    );
+    throw new Error(result.stderr.trim() || `${command} ${args.join(" ")} non riuscito.`);
   }
   return result.stdout.trim();
 }

@@ -71,15 +71,10 @@ export function calculateShopifyPricing(input: {
     };
   }
 
-  const discountedCents = Math.max(
-    1,
-    Math.round((originalCents * (100 - discountPercent)) / 100),
-  );
+  const discountedCents = Math.max(1, Math.round((originalCents * (100 - discountPercent)) / 100));
   const wholeEuroCents = Math.floor(discountedCents / 100) * 100;
   const roundedCents =
-    roundingMode === "WHOLE_EURO" && wholeEuroCents >= 100
-      ? wholeEuroCents
-      : discountedCents;
+    roundingMode === "WHOLE_EURO" && wholeEuroCents >= 100 ? wholeEuroCents : discountedCents;
 
   if (roundedCents >= originalCents) {
     return {
@@ -103,9 +98,7 @@ export function calculateShopifyPricing(input: {
 export function shouldWriteShopifyPricing(input: SyncBayPricingWriteCandidate) {
   if (!input.previous) return true;
 
-  const previousPriceCents = normalizeMoneyComparisonCents(
-    input.previous.priceAmount,
-  );
+  const previousPriceCents = normalizeMoneyComparisonCents(input.previous.priceAmount);
   const nextPriceCents = normalizeMoneyComparisonCents(input.next.price);
 
   if (previousPriceCents === null || nextPriceCents === null) return true;
@@ -146,9 +139,7 @@ export function normalizePricingRuleFormInput(input: {
   };
 }
 
-export function normalizePriceRoundingMode(
-  value: string | null | undefined,
-): PriceRoundingMode {
+export function normalizePriceRoundingMode(value: string | null | undefined): PriceRoundingMode {
   return value === "WHOLE_EURO" ? "WHOLE_EURO" : "CENTS";
 }
 
@@ -176,9 +167,7 @@ function toMoneyCents(value: number | null) {
   return Math.round(value * 100);
 }
 
-export function normalizeMoneyComparisonCents(
-  value: number | string | null | undefined,
-) {
+export function normalizeMoneyComparisonCents(value: number | string | null | undefined) {
   if (value === null || value === undefined) return null;
 
   const amount = typeof value === "number" ? value : Number(value.trim());

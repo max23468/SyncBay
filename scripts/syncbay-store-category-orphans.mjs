@@ -51,41 +51,37 @@ async function main() {
   }
 
   const { accessToken } = await getAccessToken(state.connection);
-  const results = await mapWithConcurrency(
-    mappings,
-    GET_ITEM_CONCURRENCY,
-    async (mapping) => {
-      try {
-        const item = await getTradingItem({
-          accessToken,
-          connection: state.connection,
-          itemId: mapping.ebayItemId,
-        });
-        const storefront = getStorefrontCategory(asRecord(item?.Storefront));
+  const results = await mapWithConcurrency(mappings, GET_ITEM_CONCURRENCY, async (mapping) => {
+    try {
+      const item = await getTradingItem({
+        accessToken,
+        connection: state.connection,
+        itemId: mapping.ebayItemId,
+      });
+      const storefront = getStorefrontCategory(asRecord(item?.Storefront));
 
-        return {
-          ebayItemId: mapping.ebayItemId,
-          sku: mapping.sku ?? null,
-          shopifyProductGid: mapping.shopifyProductGid ?? null,
-          title: getString(item, "Title"),
-          storeCategoryId: storefront.storeCategoryId,
-          storeCategoryName: storefront.storeCategoryName,
-          ok: true,
-        };
-      } catch (error) {
-        return {
-          ebayItemId: mapping.ebayItemId,
-          sku: mapping.sku ?? null,
-          shopifyProductGid: mapping.shopifyProductGid ?? null,
-          title: null,
-          storeCategoryId: null,
-          storeCategoryName: null,
-          ok: false,
-          errorMessage: error.message,
-        };
-      }
-    },
-  );
+      return {
+        ebayItemId: mapping.ebayItemId,
+        sku: mapping.sku ?? null,
+        shopifyProductGid: mapping.shopifyProductGid ?? null,
+        title: getString(item, "Title"),
+        storeCategoryId: storefront.storeCategoryId,
+        storeCategoryName: storefront.storeCategoryName,
+        ok: true,
+      };
+    } catch (error) {
+      return {
+        ebayItemId: mapping.ebayItemId,
+        sku: mapping.sku ?? null,
+        shopifyProductGid: mapping.shopifyProductGid ?? null,
+        title: null,
+        storeCategoryId: null,
+        storeCategoryName: null,
+        ok: false,
+        errorMessage: error.message,
+      };
+    }
+  });
 
   const checked = results.filter((row) => row.ok);
   const failed = results.filter((row) => !row.ok);
@@ -153,8 +149,7 @@ function getStorefrontCategory(storefront) {
   if (!record) return { storeCategoryId: null, storeCategoryName: null };
 
   const rawId = getString(record, "StoreCategoryID");
-  const normalizedId =
-    rawId && rawId !== "0" && rawId !== "-999" ? rawId : null;
+  const normalizedId = rawId && rawId !== "0" && rawId !== "-999" ? rawId : null;
   const name = getString(record, "StoreCategoryName");
 
   return {
@@ -184,9 +179,7 @@ function printReport(report) {
     }
     console.log("");
   } else {
-    console.log(
-      "Nessun listing attivo senza categoria del negozio nel campione.",
-    );
+    console.log("Nessun listing attivo senza categoria del negozio nel campione.");
     console.log("");
   }
 

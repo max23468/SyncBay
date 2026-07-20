@@ -26,14 +26,9 @@ export function normalizeShopifyAdminDiagnosticsProductInput(
   }
 
   return {
-    defaultLocationGid: normalizeNullableLocationGid(
-      objectPayload.defaultLocationGid,
-    ),
+    defaultLocationGid: normalizeNullableLocationGid(objectPayload.defaultLocationGid),
     productGids,
-    shopDomain: normalizeShopDomain(
-      objectPayload.shopDomain,
-      input.fallbackShopDomain,
-    ),
+    shopDomain: normalizeShopDomain(objectPayload.shopDomain, input.fallbackShopDomain),
   };
 }
 
@@ -169,9 +164,7 @@ function normalizeNullableLocationGid(value: unknown) {
 
 function normalizeShopDomain(value: unknown, fallbackShopDomain: string) {
   const shopDomain =
-    typeof value === "string" && value.trim()
-      ? value.trim()
-      : fallbackShopDomain.trim();
+    typeof value === "string" && value.trim() ? value.trim() : fallbackShopDomain.trim();
 
   if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i.test(shopDomain)) {
     throw new Error("Dominio shop Shopify non valido.");

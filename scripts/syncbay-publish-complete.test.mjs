@@ -141,10 +141,7 @@ test("reports no remote tag when ls-remote returns nothing", () => {
 });
 
 test("reads the canonical application version", () => {
-  assert.equal(
-    readVersionFromSource('export const APP_VERSION = "1.2.3";'),
-    "1.2.3",
-  );
+  assert.equal(readVersionFromSource('export const APP_VERSION = "1.2.3";'), "1.2.3");
 });
 
 test("treats the GitHub Release, not the pushed tag, as the release signal", () => {

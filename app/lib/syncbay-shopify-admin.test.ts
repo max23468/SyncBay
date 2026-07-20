@@ -20,23 +20,17 @@ test("creates an Admin GraphQL client backed by the offline access token", async
     fetch: async (input, init) => {
       calls.push({ input, init });
 
-      return new Response(
-        JSON.stringify({ data: { shop: { name: "SyncBay" } } }),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
+      return new Response(JSON.stringify({ data: { shop: { name: "SyncBay" } } }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
     },
     shopDomain: "fixture-shop.myshopify.com",
   });
 
-  const response = await client.graphql(
-    "query Test($id: ID!) { node(id: $id) { id } }",
-    {
-      variables: { id: "gid://shopify/Product/1" },
-    },
-  );
+  const response = await client.graphql("query Test($id: ID!) { node(id: $id) { id } }", {
+    variables: { id: "gid://shopify/Product/1" },
+  });
 
   assert.equal(response.ok, true);
   assert.equal(
@@ -45,9 +39,7 @@ test("creates an Admin GraphQL client backed by the offline access token", async
   );
   assert.equal(calls[0]?.init?.method, "POST");
   assert.equal(
-    (calls[0]?.init?.headers as Record<string, string>)?.[
-      "X-Shopify-Access-Token"
-    ],
+    (calls[0]?.init?.headers as Record<string, string>)?.["X-Shopify-Access-Token"],
     "shpat_test",
   );
   assert.deepEqual(JSON.parse(String(calls[0]?.init?.body)), {
@@ -64,13 +56,10 @@ test("retries throttled Admin GraphQL responses", async () => {
       callCount += 1;
 
       if (callCount === 1) {
-        return new Response(
-          JSON.stringify({ errors: [{ message: "Throttled" }] }),
-          {
-            headers: { "Content-Type": "application/json" },
-            status: 200,
-          },
-        );
+        return new Response(JSON.stringify({ errors: [{ message: "Throttled" }] }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
       }
 
       return new Response(JSON.stringify({ data: { ok: true } }), {
@@ -196,9 +185,7 @@ test("uses Shopify throttle status and GraphQL cost in one retry decision", asyn
         JSON.stringify(
           calls === 1
             ? {
-                errors: [
-                  { extensions: { code: "THROTTLED" }, message: "Throttled" },
-                ],
+                errors: [{ extensions: { code: "THROTTLED" }, message: "Throttled" }],
                 extensions: {
                   cost: {
                     requestedQueryCost: 100,

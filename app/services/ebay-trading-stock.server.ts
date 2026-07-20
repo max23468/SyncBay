@@ -54,15 +54,12 @@ export function getEbayTradingAvailableQuantityFromItem(
 
   const variations = asArray(asRecord(item.Variations)?.Variation)
     .map(asRecord)
-    .filter((variation): variation is Record<string, unknown> =>
-      Boolean(variation),
-    );
+    .filter((variation): variation is Record<string, unknown> => Boolean(variation));
   if (variations.length > 0) {
     const normalizedSku = sku?.trim().toLowerCase() ?? "";
     const selected = normalizedSku
       ? variations.filter(
-          (variation) =>
-            getText(variation.SKU)?.trim().toLowerCase() === normalizedSku,
+          (variation) => getText(variation.SKU)?.trim().toLowerCase() === normalizedSku,
         )
       : variations;
     const quantities = selected.flatMap((variation) => {

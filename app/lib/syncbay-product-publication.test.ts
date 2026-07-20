@@ -15,23 +15,16 @@ function jsonResponse(body: unknown, init?: ResponseInit) {
 }
 
 test("publishes active products to every Shopify publication", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
-    [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
-    async graphql(
-      query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push({ query, variables: options?.variables });
 
       if (query.includes("query SyncBayProductPublications")) {
         return jsonResponse({
           data: {
             publications: {
-              nodes: [
-                { id: "gid://shopify/Publication/1" },
-                { id: "gid://shopify/Publication/2" },
-              ],
+              nodes: [{ id: "gid://shopify/Publication/1" }, { id: "gid://shopify/Publication/2" }],
               pageInfo: { endCursor: null, hasNextPage: false },
             },
           },
@@ -119,13 +112,9 @@ test("reports Shopify publication user errors as a failed sync", async () => {
 });
 
 test("reuses preloaded publication ids without querying publications", async () => {
-  const calls: Array<{ query: string; variables?: Record<string, unknown> }> =
-    [];
+  const calls: Array<{ query: string; variables?: Record<string, unknown> }> = [];
   const admin = {
-    async graphql(
-      query: string,
-      options?: { variables?: Record<string, unknown> },
-    ) {
+    async graphql(query: string, options?: { variables?: Record<string, unknown> }) {
       calls.push({ query, variables: options?.variables });
 
       return jsonResponse({
@@ -195,8 +184,7 @@ test("prefers publication names over technical catalog titles", async () => {
             nodes: [
               {
                 catalog: {
-                  title:
-                    "Channel Catalog 56084758573 1b6391b6-26de-4e9d-8e05-470aee25b648",
+                  title: "Channel Catalog 56084758573 1b6391b6-26de-4e9d-8e05-470aee25b648",
                 },
                 id: "gid://shopify/Publication/56084758573",
                 name: "Negozio online",

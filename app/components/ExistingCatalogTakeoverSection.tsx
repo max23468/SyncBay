@@ -11,9 +11,7 @@ interface ExistingCatalogTakeoverSectionProps {
 // che le label si impilano in verticale.
 const TAKEOVER_GRID_COLUMNS = "repeat(auto-fit, minmax(170px, 1fr))";
 
-export function ExistingCatalogTakeoverSection({
-  report,
-}: ExistingCatalogTakeoverSectionProps) {
+export function ExistingCatalogTakeoverSection({ report }: ExistingCatalogTakeoverSectionProps) {
   return (
     <s-section heading="Collega catalogo esistente">
       <s-stack gap="base">
@@ -50,12 +48,12 @@ export function ExistingCatalogTakeoverSection({
           </s-grid>
         </div>
         <s-text color="subdued">
-          SyncBay collega solo righe con segnali forti. I casi incerti restano
-          da rivedere e non vengono scritti dalla simulazione.
+          SyncBay collega solo righe con segnali forti. I casi incerti restano da rivedere e non
+          vengono scritti dalla simulazione.
         </s-text>
         <s-text color="subdued">
-          Le collezioni automatiche non vengono modificate: SyncBay aggiorna
-          solo i campi prodotto usati dalle regole esistenti.
+          Le collezioni automatiche non vengono modificate: SyncBay aggiorna solo i campi prodotto
+          usati dalle regole esistenti.
         </s-text>
       </s-stack>
     </s-section>

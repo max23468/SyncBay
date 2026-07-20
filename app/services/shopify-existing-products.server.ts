@@ -5,10 +5,7 @@ import type {
 import { logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 
 interface ShopifyAdminGraphqlClient {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
 interface ShopifyExistingProductMatchResponse {
@@ -170,21 +167,13 @@ export async function loadExistingShopifyProductsForMatching(
   const skuHints = options.skuHints ?? [];
 
   if (options.preferTargetedSkuHints) {
-    const targetedProducts = await loadTargetedShopifyProductsForMatching(
-      admin,
-      {
-        existingProducts: [],
-        skuHints,
-      },
-    );
-    const fallbackLimit = normalizeFallbackScanLimit(
-      options.fallbackScanLimit,
-      limit,
-    );
+    const targetedProducts = await loadTargetedShopifyProductsForMatching(admin, {
+      existingProducts: [],
+      skuHints,
+    });
+    const fallbackLimit = normalizeFallbackScanLimit(options.fallbackScanLimit, limit);
     const fallbackProducts =
-      fallbackLimit > 0
-        ? await loadExistingShopifyProductScan(admin, fallbackLimit)
-        : [];
+      fallbackLimit > 0 ? await loadExistingShopifyProductScan(admin, fallbackLimit) : [];
 
     // I candidati mirati non idratano i media (`shopifyImageCount: 0`). Quando
     // lo stesso prodotto è anche nello scan di fallback, preserviamo il conteggio
@@ -203,10 +192,7 @@ export async function loadExistingShopifyProductsForMatching(
     skuHints,
   });
 
-  return [
-    ...products,
-    ...applyScannedImageCountsToTargeted(targetedProducts, products),
-  ];
+  return [...products, ...applyScannedImageCountsToTargeted(targetedProducts, products)];
 }
 
 function applyScannedImageCountsToTargeted(
@@ -217,10 +203,7 @@ function applyScannedImageCountsToTargeted(
   for (const product of scannedProducts) {
     const current = imageCountByProduct.get(product.productGid) ?? 0;
     if ((product.shopifyImageCount ?? 0) > current) {
-      imageCountByProduct.set(
-        product.productGid,
-        product.shopifyImageCount ?? 0,
-      );
+      imageCountByProduct.set(product.productGid, product.shopifyImageCount ?? 0);
     }
   }
 
@@ -269,9 +252,7 @@ async function loadTargetedShopifyProductsForMatching(
       return normalized ? [normalized] : [];
     }),
   );
-  const skuHints = getUniqueSkuHints(input.skuHints).filter(
-    (sku) => !existingSkus.has(sku),
-  );
+  const skuHints = getUniqueSkuHints(input.skuHints).filter((sku) => !existingSkus.has(sku));
   const targetedProducts: ShopifyMatchCandidate[] = [];
 
   for (const batch of chunkArray(skuHints, SHOPIFY_TARGETED_SKU_BATCH_SIZE)) {
@@ -373,14 +354,10 @@ async function fetchTargetedProductsPage(
   };
 }
 
-function toMatchCandidates(
-  product: ExistingProductNode,
-): ShopifyMatchCandidate[] {
+function toMatchCandidates(product: ExistingProductNode): ShopifyMatchCandidate[] {
   if (!product.id) return [];
 
-  const variants = product.variants?.nodes?.length
-    ? product.variants.nodes
-    : [null];
+  const variants = product.variants?.nodes?.length ? product.variants.nodes : [null];
   const variantsTruncated = Boolean(product.variants?.pageInfo?.hasNextPage);
 
   return variants.map((variant) => ({
@@ -398,15 +375,10 @@ function toMatchCandidates(
 }
 
 function countShopifyImageMedia(product: ExistingProductNode) {
-  return (
-    product.media?.nodes?.filter((media) => media?.mediaContentType === "IMAGE")
-      .length ?? 0
-  );
+  return product.media?.nodes?.filter((media) => media?.mediaContentType === "IMAGE").length ?? 0;
 }
 
-function toVariantMatchCandidate(
-  variant: ExistingVariantNode,
-): ShopifyMatchCandidate[] {
+function toVariantMatchCandidate(variant: ExistingVariantNode): ShopifyMatchCandidate[] {
   const product = variant.product;
   if (!product?.id) return [];
 
@@ -486,11 +458,7 @@ function normalizeNullableString(value: string | null | undefined) {
 
 function getUniqueSkuHints(values: string[]) {
   return Array.from(
-    new Set(
-      values
-        .map(normalizeSkuHint)
-        .filter((value): value is string => Boolean(value)),
-    ),
+    new Set(values.map(normalizeSkuHint).filter((value): value is string => Boolean(value))),
   );
 }
 

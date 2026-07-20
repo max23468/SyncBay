@@ -21,8 +21,5 @@ test("keeps lookup compatibility with legacy SyncBay import tags", () => {
 });
 
 test("quotes Shopify tag queries with escaped search values", () => {
-  assert.equal(
-    buildShopifyTagSearchQuery('Negozio "eBay"'),
-    'tag:"Negozio \\"eBay\\""',
-  );
+  assert.equal(buildShopifyTagSearchQuery('Negozio "eBay"'), 'tag:"Negozio \\"eBay\\""');
 });

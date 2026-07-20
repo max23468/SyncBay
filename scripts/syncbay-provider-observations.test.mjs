@@ -21,10 +21,7 @@ const metricResult = (value) => ({
 test("selects the linked Vercel team without relying on undocumented billing fields", () => {
   const team = selectVercelTeam(
     {
-      teams: [
-        { id: "team_other" },
-        { id: "team_syncbay", billing: { plan: "hobby" } },
-      ],
+      teams: [{ id: "team_other" }, { id: "team_syncbay", billing: { plan: "hobby" } }],
     },
     "team_syncbay",
   );
@@ -82,13 +79,7 @@ test("reports observed analytics against the team quota", () => {
 
 test("keeps Speed Insights explicitly partial on Hobby retention", () => {
   const observation = buildSpeedInsightsObservation(
-    [
-      metricResult(1),
-      metricResult(2),
-      metricResult(0),
-      metricResult(2),
-      metricResult(2),
-    ],
+    [metricResult(1), metricResult(2), metricResult(0), metricResult(2), metricResult(2)],
     { limit: 10_000, partial: true, projectScoped: true, windowDays: 7 },
   );
   assert.equal(observation.status, "partial");
@@ -132,23 +123,19 @@ test("classifies missing Hobby costs as not applicable instead of unknown", () =
 
 test("classifies live Supabase Storage bytes against the Free quota", () => {
   assert.equal(
-    buildSupabaseStorageObservation({ bytes: 699_999_999, objectCount: 4 })
-      .status,
+    buildSupabaseStorageObservation({ bytes: 699_999_999, objectCount: 4 }).status,
     "ok",
   );
   assert.equal(
-    buildSupabaseStorageObservation({ bytes: 700_000_000, objectCount: 4 })
-      .status,
+    buildSupabaseStorageObservation({ bytes: 700_000_000, objectCount: 4 }).status,
     "warning",
   );
   assert.equal(
-    buildSupabaseStorageObservation({ bytes: 850_000_000, objectCount: 4 })
-      .status,
+    buildSupabaseStorageObservation({ bytes: 850_000_000, objectCount: 4 }).status,
     "urgent",
   );
   assert.equal(
-    buildSupabaseStorageObservation({ bytes: 950_000_000, objectCount: 4 })
-      .status,
+    buildSupabaseStorageObservation({ bytes: 950_000_000, objectCount: 4 }).status,
     "blocked",
   );
 });

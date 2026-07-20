@@ -1,8 +1,4 @@
-import type {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 
 import {
@@ -20,11 +16,7 @@ import {
   type SyncBayTone,
 } from "../components/SyncBayUi";
 import { LiveSync } from "../components/SyncBayLive";
-import {
-  getSyncBayMeta,
-  SYNCBAY_BRAND_ASSETS,
-  SYNCBAY_TAGLINE,
-} from "../lib/syncbay-brand";
+import { getSyncBayMeta, SYNCBAY_BRAND_ASSETS, SYNCBAY_TAGLINE } from "../lib/syncbay-brand";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
 import {
   formatItDateTime as formatDateTime,
@@ -67,12 +59,8 @@ export const meta: MetaFunction = () => getSyncBayMeta("Panoramica");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
-  const { session } = await trace.measure("auth.admin", () =>
-    authenticate.admin(request),
-  );
-  const dashboard = await trace.measure("overview.state", () =>
-    getOverviewState(session, trace),
-  );
+  const { session } = await trace.measure("auth.admin", () => authenticate.admin(request));
+  const dashboard = await trace.measure("overview.state", () => getOverviewState(session, trace));
 
   logSyncBayLoaderPerformance({
     request,
@@ -134,8 +122,7 @@ export default function Index() {
   const settingsMissing = getSettingsMissing(dashboard);
   const importIncomplete = getImportIncomplete(dashboard);
   const overviewSyncInput = {
-    activeIncrementalJobCount:
-      dashboard.sync.catalogHealth.activeIncrementalJobCount,
+    activeIncrementalJobCount: dashboard.sync.catalogHealth.activeIncrementalJobCount,
     catalogHealthStatus: dashboard.sync.catalogHealth.status,
     catalogOverdueAt: dashboard.sync.catalogHealth.overdueAt,
     lastJobs: dashboard.sync.lastJobs,
@@ -166,10 +153,7 @@ export default function Index() {
   });
   const recentActivity = getRecentActivity(dashboard);
   const contextualActions = getContextualActions(dashboard, importIncomplete);
-  const minutes = Math.max(
-    1,
-    Math.round(dashboard.shop.syncTargetSeconds / 60),
-  );
+  const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
   const reliability = dashboard.metrics.reliability;
   const syncPulse = getSyncPulse(dashboard.sync.healthDigest);
   const newMappings = dashboard.metrics.trends.newMappings24h;
@@ -183,10 +167,7 @@ export default function Index() {
       <s-stack gap="large">
         <LiveSync nextRevalidateAt={nextRevalidateAt} working={working} />
         {firstRun ? (
-          <FirstRunOnboarding
-            ebayOauthHref={ebayOauthHref}
-            steps={onboardingSteps}
-          />
+          <FirstRunOnboarding ebayOauthHref={ebayOauthHref} steps={onboardingSteps} />
         ) : null}
         {firstRun ? null : (
           <>
@@ -227,12 +208,7 @@ export default function Index() {
               tone={riskCount === 0 ? "success" : "warning"}
             />
 
-            <s-box
-              border="base"
-              borderColor="base"
-              borderRadius="base"
-              padding="base"
-            >
+            <s-box border="base" borderColor="base" borderRadius="base" padding="base">
               <s-stack gap="base">
                 <s-stack
                   direction="inline"
@@ -241,15 +217,11 @@ export default function Index() {
                   alignItems="center"
                 >
                   <s-heading>Da eBay a Shopify</s-heading>
-                  <s-text color="subdued">
-                    {getPulseStatus(dashboard, working)}
-                  </s-text>
+                  <s-text color="subdued">{getPulseStatus(dashboard, working)}</s-text>
                 </s-stack>
                 <SyncPulse
                   appliedLabel={getAppliedLabel(dashboard, working)}
-                  marketplaceLabel={`eBay ${formatMarketplaceLabel(
-                    dashboard.ebay.marketplaceId,
-                  )}`}
+                  marketplaceLabel={`eBay ${formatMarketplaceLabel(dashboard.ebay.marketplaceId)}`}
                   readLabel={getReadLabel(dashboard)}
                   working={working}
                 />
@@ -257,10 +229,7 @@ export default function Index() {
             </s-box>
 
             <div className="syncbay-balanced-box-grid">
-              <s-grid
-                gap="base"
-                gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))"
-              >
+              <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
                 <MetricTile
                   detail="Seguiti e allineati a eBay."
                   icon="link"
@@ -286,9 +255,7 @@ export default function Index() {
                   }
                   icon="alert-triangle"
                   label="Conflitti aperti"
-                  tone={
-                    dashboard.conflicts.openCount > 0 ? "warning" : "neutral"
-                  }
+                  tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
                   trend={
                     newConflicts > 0
                       ? {
@@ -304,9 +271,7 @@ export default function Index() {
                 <MetricTile
                   detail={
                     dashboard.sync.catalogHealth.nextDueAt
-                      ? `Prossimo ${formatDateTime(
-                          dashboard.sync.catalogHealth.nextDueAt,
-                        )}.`
+                      ? `Prossimo ${formatDateTime(dashboard.sync.catalogHealth.nextDueAt)}.`
                       : "In attesa del primo controllo."
                   }
                   icon="clock"
@@ -323,8 +288,7 @@ export default function Index() {
                 <s-text color="subdued">
                   {reliability.totalJobs > 0
                     ? `${
-                        reliability.totalJobs ===
-                        DASHBOARD_RELIABILITY_JOB_LIMIT
+                        reliability.totalJobs === DASHBOARD_RELIABILITY_JOB_LIMIT
                           ? `Ultimi ${formatNumber(
                               DASHBOARD_RELIABILITY_JOB_LIMIT,
                             )} job in ${reliability.windowDays} giorni`
@@ -348,10 +312,7 @@ export default function Index() {
             </div>
 
             <div className="syncbay-balanced-box-grid">
-              <s-grid
-                gap="base"
-                gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-              >
+              <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))">
                 <s-section heading="Cosa fare adesso">
                   <div className="syncbay-action-list">
                     {contextualActions.map((action) => (
@@ -387,8 +348,8 @@ export default function Index() {
                     </ol>
                   ) : (
                     <s-text color="subdued">
-                      Ancora nessuna attività. Appena SyncBay importa o aggiorna
-                      il catalogo, gli eventi compaiono qui.
+                      Ancora nessuna attività. Appena SyncBay importa o aggiorna il catalogo, gli
+                      eventi compaiono qui.
                     </s-text>
                   )}
                 </s-section>
@@ -416,11 +377,7 @@ function getOnboardingSteps(dashboard: Dashboard): OnboardingSteps {
 
   return {
     ebay: ebayConnected ? "completed" : "active",
-    importCatalog: !ebayConnected
-      ? "pending"
-      : imported
-        ? "completed"
-        : "active",
+    importCatalog: !ebayConnected ? "pending" : imported ? "completed" : "active",
     sync: !imported ? "pending" : syncOn ? "completed" : "active",
   };
 }
@@ -501,8 +458,8 @@ function FirstRunOnboarding({
           <s-heading>Benvenuto in SyncBay</s-heading>
           <s-text>{SYNCBAY_TAGLINE}</s-text>
           <s-text color="subdued">
-            Tre passi e il tuo catalogo eBay è su Shopify, pronto a vendere. Ti
-            guidiamo uno alla volta.
+            Tre passi e il tuo catalogo eBay è su Shopify, pronto a vendere. Ti guidiamo uno alla
+            volta.
           </s-text>
         </s-stack>
         <ul className="syncbay-stepper">
@@ -513,8 +470,8 @@ function FirstRunOnboarding({
             title="Collega il tuo account eBay"
           >
             <s-text color="subdued">
-              SyncBay legge le tue inserzioni da eBay.it. eBay resta la tua
-              sorgente: non viene modificato.
+              SyncBay legge le tue inserzioni da eBay.it. eBay resta la tua sorgente: non viene
+              modificato.
             </s-text>
             {steps.ebay === "active" ? (
               <div>
@@ -531,8 +488,8 @@ function FirstRunOnboarding({
             title="Importa il catalogo"
           >
             <s-text color="subdued">
-              Rivedi le inserzioni trovate su eBay e portale in Shopify, con
-              un&apos;anteprima prima di confermare.
+              Rivedi le inserzioni trovate su eBay e portale in Shopify, con un&apos;anteprima prima
+              di confermare.
             </s-text>
             {steps.importCatalog === "active" ? (
               <div>
@@ -550,8 +507,8 @@ function FirstRunOnboarding({
             title="Attiva la sincronizzazione"
           >
             <s-text color="subdued">
-              Da qui SyncBay tiene Shopify allineato a eBay e protegge le
-              disponibilità secondo la finestra scelta.
+              Da qui SyncBay tiene Shopify allineato a eBay e protegge le disponibilità secondo la
+              finestra scelta.
             </s-text>
             {steps.sync === "active" ? (
               <div>
@@ -563,8 +520,8 @@ function FirstRunOnboarding({
           </Step>
         </ul>
         <s-text color="subdued">
-          Completati i tre passi, qui compare la panoramica operativa: stato del
-          sync, prodotti a rischio e attività.
+          Completati i tre passi, qui compare la panoramica operativa: stato del sync, prodotti a
+          rischio e attività.
         </s-text>
       </s-stack>
     </s-box>
@@ -606,18 +563,14 @@ function getPulseStatus(dashboard: Dashboard, working: boolean) {
 
   const latest = dashboard.sync.catalogHealth.latestIncrementalFinishedAt;
 
-  return latest
-    ? `Aggiornato ${formatDateTime(latest)}`
-    : "In attesa del primo allineamento";
+  return latest ? `Aggiornato ${formatDateTime(latest)}` : "In attesa del primo allineamento";
 }
 
 function getReadLabel(dashboard: Dashboard) {
   const requested = dashboard.sync.lastRunCounts.requested;
 
   if (requested !== null) {
-    return requested === 1
-      ? "1 inserzione letta"
-      : `${formatNumber(requested)} inserzioni lette`;
+    return requested === 1 ? "1 inserzione letta" : `${formatNumber(requested)} inserzioni lette`;
   }
 
   return `${formatNumber(dashboard.imports.mappingCount)} prodotti seguiti`;
@@ -651,10 +604,7 @@ function getSettingsMissing(dashboard: Dashboard) {
 }
 
 function getImportIncomplete(dashboard: Dashboard) {
-  return (
-    dashboard.imports.mappingCount === 0 ||
-    dashboard.importPreview.blockers.length > 0
-  );
+  return dashboard.imports.mappingCount === 0 || dashboard.importPreview.blockers.length > 0;
 }
 
 function getRecentActivity(dashboard: Dashboard): RecentActivity[] {
@@ -710,10 +660,7 @@ type ContextualAction = {
   tone: SyncBayTone;
 };
 
-function getContextualActions(
-  dashboard: Dashboard,
-  importIncomplete: boolean,
-): ContextualAction[] {
+function getContextualActions(dashboard: Dashboard, importIncomplete: boolean): ContextualAction[] {
   const actions: ContextualAction[] = [];
 
   if (
@@ -725,10 +672,7 @@ function getContextualActions(
       description: "Riattiva import, aggiornamenti e disponibilità.",
       href: getEbayOAuthStartHref(dashboard.shop.domain),
       icon: "link",
-      label:
-        dashboard.ebay.status === "NOT_CONNECTED"
-          ? "Collega eBay"
-          : "Ricollega eBay",
+      label: dashboard.ebay.status === "NOT_CONNECTED" ? "Collega eBay" : "Ricollega eBay",
       target: "_top",
       tone: "critical",
     });
@@ -751,9 +695,7 @@ function getContextualActions(
     description: "Porta in Shopify le inserzioni trovate su eBay.",
     href: "/app/import-preview",
     icon: "import",
-    label: importIncomplete
-      ? "Completa l'importazione"
-      : "Importa nuove inserzioni",
+    label: importIncomplete ? "Completa l'importazione" : "Importa nuove inserzioni",
     tone: "neutral",
   });
 

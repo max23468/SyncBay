@@ -18,9 +18,7 @@ function serializeBaseline(facets: SyncBayProductFacet[]) {
         value: facet.value,
       }))
       .sort((left, right) =>
-        `${left.namespace}:${left.key}`.localeCompare(
-          `${right.namespace}:${right.key}`,
-        ),
+        `${left.namespace}:${left.key}`.localeCompare(`${right.namespace}:${right.key}`),
       ),
   );
 }

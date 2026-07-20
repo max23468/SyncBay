@@ -104,8 +104,7 @@ test("keeps stock writes in dry-run unless a line is explicitly allowlisted", ()
 test("matches stock real-write allowlist tokens narrowly", () => {
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist:
-        "ebay:168148953253 fixture-shop.myshopify.com:variant:48298582016222",
+      allowlist: "ebay:168148953253 fixture-shop.myshopify.com:variant:48298582016222",
       ebayItemId: "168148953253",
       shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",
@@ -114,8 +113,7 @@ test("matches stock real-write allowlist tokens narrowly", () => {
   );
   assert.equal(
     isEbayStockRealWriteAllowed({
-      allowlist:
-        "168148953254 fixture-shop.myshopify.com:variant:48298582016223",
+      allowlist: "168148953254 fixture-shop.myshopify.com:variant:48298582016223",
       ebayItemId: "168148953253",
       shopDomain: "fixture-shop.myshopify.com",
       shopifyVariantGid: "gid://shopify/ProductVariant/48298582016222",

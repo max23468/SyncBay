@@ -221,8 +221,7 @@ test("retries the job without persisting conflicts when the baseline keeps advan
 });
 
 test("passes the mapped variant and default location to the product read", async () => {
-  let seenInput: { targets: unknown; defaultLocationGid: unknown } | null =
-    null;
+  let seenInput: { targets: unknown; defaultLocationGid: unknown } | null = null;
   const fakePorts = ports({
     async loadMappings() {
       const mappings = await ports().loadMappings(jobs);
@@ -286,14 +285,8 @@ test("keeps separate targets for sibling variants of the same product", async ()
     },
     async loadBaselines() {
       return new Map([
-        [
-          "mapping-1",
-          [{ mappingId: "mapping-1", field: "title", serializedValue: "Old" }],
-        ],
-        [
-          "mapping-2",
-          [{ mappingId: "mapping-2", field: "title", serializedValue: "Old" }],
-        ],
+        ["mapping-1", [{ mappingId: "mapping-1", field: "title", serializedValue: "Old" }]],
+        ["mapping-2", [{ mappingId: "mapping-2", field: "title", serializedValue: "Old" }]],
       ]);
     },
     async loadProducts(input) {

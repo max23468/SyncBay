@@ -5,23 +5,11 @@ type SyncBayBrandPanelProps = {
   label?: string;
 };
 
-export function SyncBayBrandPanel({
-  detail,
-  label = "1.0 privata",
-}: SyncBayBrandPanelProps) {
+export function SyncBayBrandPanel({ detail, label = "1.0 privata" }: SyncBayBrandPanelProps) {
   return (
-    <s-box
-      background="subdued"
-      border="base"
-      borderColor="base"
-      borderRadius="base"
-      padding="base"
-    >
+    <s-box background="subdued" border="base" borderColor="base" borderRadius="base" padding="base">
       <s-stack gap="base">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(180px, 1fr))"
-        >
+        <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(180px, 1fr))">
           <s-box inlineSize="180px">
             <s-image
               alt="SyncBay"

@@ -44,12 +44,9 @@ export function buildPrismaRuntimeDatabaseUrl(databaseUrl?: string) {
   }
 }
 
-export function buildPrismaRuntimePoolConfig(
-  databaseUrl?: string,
-): PrismaRuntimePoolConfig {
+export function buildPrismaRuntimePoolConfig(databaseUrl?: string): PrismaRuntimePoolConfig {
   const runtimeDatabaseUrl =
-    buildPrismaRuntimeDatabaseUrl(databaseUrl || DEFAULT_DATABASE_URL) ||
-    DEFAULT_DATABASE_URL;
+    buildPrismaRuntimeDatabaseUrl(databaseUrl || DEFAULT_DATABASE_URL) || DEFAULT_DATABASE_URL;
 
   try {
     const url = new URL(runtimeDatabaseUrl);
@@ -85,17 +82,12 @@ function isSupabasePostgresHost(hostname: string) {
   const host = hostname.toLowerCase();
 
   return (
-    (host.startsWith(SUPABASE_DIRECT_HOST_PREFIX) &&
-      host.endsWith(SUPABASE_DIRECT_HOST_SUFFIX)) ||
+    (host.startsWith(SUPABASE_DIRECT_HOST_PREFIX) && host.endsWith(SUPABASE_DIRECT_HOST_SUFFIX)) ||
     host.endsWith(SUPABASE_POOLER_HOST_SUFFIX)
   );
 }
 
-function getPositiveIntegerParam(
-  url: URL,
-  paramName: string,
-  fallback: number,
-) {
+function getPositiveIntegerParam(url: URL, paramName: string, fallback: number) {
   const value = Number(url.searchParams.get(paramName));
 
   return Number.isInteger(value) && value > 0 ? value : fallback;

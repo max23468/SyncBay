@@ -312,10 +312,7 @@ Doctor e Vercel production verdi.
 
   test("formats labels in Italian", () => {
     assert.equal(getImportCatalogModeLabel("new_products"), "Nuovi prodotti");
-    assert.equal(
-      getImportCatalogModeLabel("existing_catalog"),
-      "Collega catalogo esistente",
-    );
+    assert.equal(getImportCatalogModeLabel("existing_catalog"), "Collega catalogo esistente");
   });
   ```
 
@@ -347,9 +344,7 @@ Doctor e Vercel production verdi.
   }
 
   export function getImportCatalogModeLabel(mode: ImportCatalogMode) {
-    return mode === "existing_catalog"
-      ? "Collega catalogo esistente"
-      : "Nuovi prodotti";
+    return mode === "existing_catalog" ? "Collega catalogo esistente" : "Nuovi prodotti";
   }
   ```
 
@@ -388,9 +383,7 @@ Doctor e Vercel production verdi.
     normalizeImportCatalogMode,
   } from "../lib/syncbay-import-catalog-mode";
 
-  const catalogMode = normalizeImportCatalogMode(
-    url.searchParams.get("catalogMode"),
-  );
+  const catalogMode = normalizeImportCatalogMode(url.searchParams.get("catalogMode"));
 
   getImportWizardState(session, admin, trace, {
     catalogMode,
@@ -576,9 +569,7 @@ Doctor e Vercel production verdi.
     reasonCodes.push("handle_item_id");
     reasons.push("ItemID eBay trovato nell'handle Shopify");
   }
-  if (
-    (product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))
-  ) {
+  if ((product.tags ?? []).some((tag) => containsToken(tag, input.ebay.itemId))) {
     score += 80;
     reasonCodes.push("tag_item_id");
     reasons.push("ItemID eBay trovato nei tag Shopify");
@@ -600,10 +591,7 @@ Doctor e Vercel production verdi.
     confidence: MatchConfidence,
     reasonCodes: ExistingProductMatchReasonCode[],
   ) {
-    return (
-      confidence === "high" &&
-      reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code))
-    );
+    return confidence === "high" && reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code));
   }
   ```
 
@@ -776,13 +764,9 @@ Doctor e Vercel production verdi.
     const issueCodes = new Set(item.issues.map((issue) => issue.code));
     return [
       issueCodes.has("invalid_price") ? "prezzo_ebay_non_valido" : null,
-      issueCodes.has("invalid_quantity")
-        ? "disponibilita_ebay_non_valida"
-        : null,
+      issueCodes.has("invalid_quantity") ? "disponibilita_ebay_non_valida" : null,
       issueCodes.has("complex_variants") ? "varianti_non_supportate" : null,
-    ].filter((reason): reason is ExistingCatalogTakeoverReason =>
-      Boolean(reason),
-    );
+    ].filter((reason): reason is ExistingCatalogTakeoverReason => Boolean(reason));
   }
 
   function getBestAutoLinkableMatch(matches: ExistingProductMatchSuggestion[]) {
@@ -939,12 +923,8 @@ Doctor e Vercel production verdi.
     } | null;
   }
 
-  function toMatchCandidates(
-    product: ExistingProductNode,
-  ): ShopifyMatchCandidate[] {
-    const variants = product.variants?.nodes?.length
-      ? product.variants.nodes
-      : [null];
+  function toMatchCandidates(product: ExistingProductNode): ShopifyMatchCandidate[] {
+    const variants = product.variants?.nodes?.length ? product.variants.nodes : [null];
 
     return variants.flatMap((variant) =>
       product.id
@@ -1066,9 +1046,7 @@ Doctor e Vercel production verdi.
 
   ```ts
   const takeoverPreviewResult =
-    catalogMode === "existing_catalog" &&
-    previewLoadMode === "live" &&
-    ebayConnection
+    catalogMode === "existing_catalog" && previewLoadMode === "live" && ebayConnection
       ? (
           await getExistingCatalogTakeoverPreview({
             connection: ebayConnection,
@@ -1144,8 +1122,8 @@ Doctor e Vercel production verdi.
           />
         </s-grid>
         <s-text color="subdued">
-          SyncBay collega solo righe con segnali forti. I casi incerti restano
-          da rivedere e non vengono scritti.
+          SyncBay collega solo righe con segnali forti. I casi incerti restano da rivedere e non
+          vengono scritti.
         </s-text>
       </s-section>
     );
@@ -1158,8 +1136,8 @@ Doctor e Vercel production verdi.
 
   ```tsx
   <s-text>
-    Stato takeover: {formatExistingCatalogTakeoverStatus(row.status)}.
-    Operazioni: {row.plannedOperations.map(formatOperation).join(", ")}.
+    Stato takeover: {formatExistingCatalogTakeoverStatus(row.status)}. Operazioni:{" "}
+    {row.plannedOperations.map(formatOperation).join(", ")}.
   </s-text>
   ```
 
@@ -1265,10 +1243,7 @@ Doctor e Vercel production verdi.
   `getStringFromPayload`:
 
   ```ts
-  function getBooleanFromPayload(
-    payload: Prisma.JsonValue | null,
-    key: string,
-  ) {
+  function getBooleanFromPayload(payload: Prisma.JsonValue | null, key: string) {
     const value = getJsonObject(payload)?.[key];
     return typeof value === "boolean" ? value : false;
   }
@@ -1298,11 +1273,7 @@ Doctor e Vercel production verdi.
     <input type="hidden" name="intent" value="applyExistingCatalogTakeover" />
     <input type="hidden" name="confirmation" value="COLLEGA" />
     <s-button
-      disabled={
-        isSaving ||
-        report.summary.applicable === 0 ||
-        report.summary.blocked > 0
-      }
+      disabled={isSaving || report.summary.applicable === 0 || report.summary.blocked > 0}
       loading={isApplyingTakeover}
       type="submit"
       variant="primary"
@@ -1442,8 +1413,8 @@ Doctor e Vercel production verdi.
 
   ```tsx
   <s-text color="subdued">
-    Le collezioni automatiche non vengono modificate: SyncBay aggiorna solo i
-    campi prodotto usati dalle regole esistenti.
+    Le collezioni automatiche non vengono modificate: SyncBay aggiorna solo i campi prodotto usati
+    dalle regole esistenti.
   </s-text>
   ```
 
@@ -1521,9 +1492,9 @@ Doctor e Vercel production verdi.
 
   ```tsx
   <s-text>
-    SyncBay 1.0 privata è fornita a clienti selezionati per collegare eBay.it a
-    Shopify. eBay resta la sorgente di verità del catalogo; Shopify viene
-    riallineato secondo impostazioni, preview e conferme operative.
+    SyncBay 1.0 privata è fornita a clienti selezionati per collegare eBay.it a Shopify. eBay resta
+    la sorgente di verità del catalogo; Shopify viene riallineato secondo impostazioni, preview e
+    conferme operative.
   </s-text>
   ```
 

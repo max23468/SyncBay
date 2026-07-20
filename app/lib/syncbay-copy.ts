@@ -45,9 +45,7 @@ export const SYNCBAY_COPY = {
     },
     activityFilter: {
       title: "Nessuna attività per questo filtro",
-      body:
-        "Torna a Tutte oppure avvia l'importazione quando eBay e Shopify sono " +
-        "pronti.",
+      body: "Torna a Tutte oppure avvia l'importazione quando eBay e Shopify sono " + "pronti.",
       actionLabel: "Mostra tutte",
     },
   },

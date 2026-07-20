@@ -224,8 +224,7 @@ At the top of `app/lib/syncbay-product-facets.ts`, after `SyncBayProductFacetKey
 ```ts
 export type SyncBayProductFacetConfidence = "high" | "medium" | "low";
 
-export type SyncBayProductFacetSource =
-  "title_rule" | "category_hint" | "ebay_specific";
+export type SyncBayProductFacetSource = "title_rule" | "category_hint" | "ebay_specific";
 
 export interface SyncBayProductFacetInference extends SyncBayProductFacet {
   confidence: SyncBayProductFacetConfidence;
@@ -248,9 +247,7 @@ export function buildSyncBayProductFacetInferences(
     if (!inference) return [];
 
     const normalizedValues =
-      facet.key === "perizia"
-        ? normalizePeriziaValues(inference.values)
-        : inference.values;
+      facet.key === "perizia" ? normalizePeriziaValues(inference.values) : inference.values;
     const productFacet = buildFacet({
       key: facet.key,
       label: facet.label,
@@ -276,9 +273,7 @@ export function buildSyncBayProductFacetInferences(
 Replace the body of `buildSyncBayProductFacets` with:
 
 ```ts
-export function buildSyncBayProductFacets(
-  input: SyncBayProductFacetInput,
-): SyncBayProductFacet[] {
+export function buildSyncBayProductFacets(input: SyncBayProductFacetInput): SyncBayProductFacet[] {
   return buildSyncBayProductFacetInferences(input).flatMap((inference) =>
     inference.confidence === "high"
       ? [
@@ -323,9 +318,7 @@ function getFacetInference(
   }
 
   if (key === "categoria") {
-    const storefrontCategory = getStorefrontCategoryValue(
-      input.storeCategoryName,
-    );
+    const storefrontCategory = getStorefrontCategoryValue(input.storeCategoryName);
     if (storefrontCategory) {
       return {
         confidence: "high",
@@ -336,9 +329,7 @@ function getFacetInference(
       };
     }
 
-    const marketplaceCategory = getStorefrontCategoryValue(
-      input.ebayPrimaryCategoryName,
-    );
+    const marketplaceCategory = getStorefrontCategoryValue(input.ebayPrimaryCategoryName);
     if (marketplaceCategory) {
       return {
         confidence: "medium",
@@ -472,10 +463,7 @@ Expected: all tests pass.
 Create `app/lib/syncbay-product-facet-sync-plan.ts`:
 
 ```ts
-import type {
-  ShopifyProductFacetMetafield,
-  SyncBayProductFacet,
-} from "./syncbay-product-facets";
+import type { ShopifyProductFacetMetafield, SyncBayProductFacet } from "./syncbay-product-facets";
 
 export interface CurrentProductFacetMetafield {
   key: string;
@@ -509,26 +497,17 @@ export function buildProductFacetSyncPlan(input: {
     ]),
   );
   const previousByKey = new Map(
-    input.previousSyncBayFacets.map((facet) => [
-      `${facet.namespace}:${facet.key}`,
-      facet,
-    ]),
+    input.previousSyncBayFacets.map((facet) => [`${facet.namespace}:${facet.key}`, facet]),
   );
   const proposedByKey = new Map(
-    input.proposedFacets.map((facet) => [
-      `${facet.namespace}:${facet.key}`,
-      facet,
-    ]),
+    input.proposedFacets.map((facet) => [`${facet.namespace}:${facet.key}`, facet]),
   );
   const writes: ShopifyProductFacetMetafield[] = [];
   const deletes: ProductFacetSyncPlan["deletes"] = [];
   const conflicts: ShopifyProductFacetMetafield[] = [];
   const skipped: ProductFacetSyncPlan["skipped"] = [];
 
-  const candidateKeys = new Set([
-    ...proposedByKey.keys(),
-    ...previousByKey.keys(),
-  ]);
+  const candidateKeys = new Set([...proposedByKey.keys(), ...previousByKey.keys()]);
 
   for (const key of candidateKeys) {
     const facet = proposedByKey.get(key);
@@ -557,11 +536,7 @@ export function buildProductFacetSyncPlan(input: {
       continue;
     }
 
-    if (
-      previous &&
-      current.type === previous.type &&
-      current.value === previous.value
-    ) {
+    if (previous && current.type === previous.type && current.value === previous.value) {
       writes.push(toMetafield(facet));
       continue;
     }
@@ -673,9 +648,7 @@ test("does not overwrite Shopify values changed after the SyncBay baseline", () 
       value: JSON.stringify(["Argento"]),
     },
   ]);
-  assert.deepEqual(plan.skipped, [
-    { key: "materiale", reason: "manual_conflict" },
-  ]);
+  assert.deepEqual(plan.skipped, [{ key: "materiale", reason: "manual_conflict" }]);
 });
 
 test("deletes facets still aligned to SyncBay when evidence disappears", () => {
@@ -700,9 +673,7 @@ test("deletes facets still aligned to SyncBay when evidence disappears", () => {
       namespace: "syncbay_facets",
     },
   ]);
-  assert.deepEqual(plan.skipped, [
-    { key: "materiale", reason: "evidence_missing" },
-  ]);
+  assert.deepEqual(plan.skipped, [{ key: "materiale", reason: "evidence_missing" }]);
 });
 ```
 
@@ -774,10 +745,7 @@ export async function syncShopifyProductFacets(input: {
   previousSyncBayFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }) {
-  const currentMetafields = await loadCurrentFacetMetafields(
-    input.admin,
-    input.ownerId,
-  );
+  const currentMetafields = await loadCurrentFacetMetafields(input.admin, input.ownerId);
   const plan = buildProductFacetSyncPlan({
     currentMetafields,
     previousSyncBayFacets: input.previousSyncBayFacets,
@@ -830,18 +798,13 @@ function buildWriterOwnedFacetBaseline(input: {
   conflicts: Array<{ key: string; namespace: string }>;
   proposedFacets: SyncBayProductFacet[];
 }) {
-  const conflictKeys = new Set(
-    input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`),
-  );
+  const conflictKeys = new Set(input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`));
   return input.proposedFacets.filter(
     (facet) => !conflictKeys.has(`${facet.namespace}:${facet.key}`),
   );
 }
 
-async function loadCurrentFacetMetafields(
-  admin: ShopifyAdminGraphqlClient,
-  productGid: string,
-) {
+async function loadCurrentFacetMetafields(admin: ShopifyAdminGraphqlClient, productGid: string) {
   const response = await admin.graphql(
     `#graphql
     query SyncBayProductFacetMetafields($id: ID!) {
@@ -910,9 +873,7 @@ async function writeFacetMetafields(
     throw new Error(
       userErrors
         .map((error) =>
-          error.field?.length
-            ? `${error.field.join(".")}: ${error.message}`
-            : error.message,
+          error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
         )
         .join("; "),
     );
@@ -956,9 +917,7 @@ async function deleteFacetMetafields(
     throw new Error(
       userErrors
         .map((error) =>
-          error.field?.length
-            ? `${error.field.join(".")}: ${error.message}`
-            : error.message,
+          error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
         )
         .join("; "),
     );
@@ -1112,10 +1071,7 @@ facetBaselinesByItemId,
 Add helper:
 
 ```ts
-async function getLatestFacetBaselinesByItemId(input: {
-  ebayItemIds: string[];
-  shopId: string;
-}) {
+async function getLatestFacetBaselinesByItemId(input: { ebayItemIds: string[]; shopId: string }) {
   if (input.ebayItemIds.length === 0) return {};
 
   const rows = await prisma.productSnapshot.findMany({
@@ -1332,50 +1288,46 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] =
-    await Promise.all([
-      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
-      prisma.productMapping.findMany({
-        select: {
-          ebayItemId: true,
-          id: true,
-          shopifyProductGid: true,
-        },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          marketplaceId: getEbayMarketplaceId(input.job.payload),
-          shopId: input.job.shopId,
-          status: ProductMappingStatus.ACTIVE,
-        },
-      }),
-      prisma.productSnapshot.findMany({
-        orderBy: { capturedAt: "desc" },
-        select: {
-          ebayItemId: true,
-          payload: true,
-          title: true,
-        },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          shopId: input.job.shopId,
-          source: ProductSnapshotSource.EBAY,
-        },
-      }),
-      getLatestFacetBaselinesByItemId({
-        ebayItemIds: input.syncableItemIds,
+  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] = await Promise.all([
+    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+    prisma.productMapping.findMany({
+      select: {
+        ebayItemId: true,
+        id: true,
+        shopifyProductGid: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        marketplaceId: getEbayMarketplaceId(input.job.payload),
         shopId: input.job.shopId,
-      }),
-    ]);
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+    prisma.productSnapshot.findMany({
+      orderBy: { capturedAt: "desc" },
+      select: {
+        ebayItemId: true,
+        payload: true,
+        title: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        shopId: input.job.shopId,
+        source: ProductSnapshotSource.EBAY,
+      },
+    }),
+    getLatestFacetBaselinesByItemId({
+      ebayItemIds: input.syncableItemIds,
+      shopId: input.job.shopId,
+    }),
+  ]);
 
   const latestEbaySnapshotByItemId = new Map<
     string,
     { payload: Prisma.JsonValue | null; title: string | null }
   >();
   for (const snapshot of ebaySnapshots) {
-    if (
-      !snapshot.ebayItemId ||
-      latestEbaySnapshotByItemId.has(snapshot.ebayItemId)
-    ) {
+    if (!snapshot.ebayItemId || latestEbaySnapshotByItemId.has(snapshot.ebayItemId)) {
       continue;
     }
     latestEbaySnapshotByItemId.set(snapshot.ebayItemId, {
@@ -1410,19 +1362,12 @@ async function runFacetOnlyIncrementalSyncJob(input: {
 
     const payload = getJsonObject(ebaySnapshot.payload);
     const proposedFacets = buildSyncBayProductFacets({
-      ebayPrimaryCategoryName: getNullableStringFromRecord(
-        payload,
-        "ebayPrimaryCategoryName",
-      ),
+      ebayPrimaryCategoryName: getNullableStringFromRecord(payload, "ebayPrimaryCategoryName"),
       itemSpecifics: [],
-      storeCategoryName: getNullableStringFromRecord(
-        payload,
-        "storeCategoryName",
-      ),
+      storeCategoryName: getNullableStringFromRecord(payload, "storeCategoryName"),
       title: ebaySnapshot.title,
     });
-    const previousSyncBayFacets =
-      facetBaselinesByItemId[mapping.ebayItemId] ?? [];
+    const previousSyncBayFacets = facetBaselinesByItemId[mapping.ebayItemId] ?? [];
 
     if (proposedFacets.length === 0 && previousSyncBayFacets.length === 0) {
       skipped.push({
@@ -1467,17 +1412,14 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     delegatedJobId: null,
     job: input.job,
     result: {
-      alignedDescriptionConflictResolvedCount:
-        input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount:
-        input.alignedPriceConflictResolvedCount,
+      alignedDescriptionConflictResolvedCount: input.alignedDescriptionConflictResolvedCount,
+      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       facetConflictCount,
       facetOnly: true,
       facetSkippedCount,
       facetWrittenCount,
-      reactivationConflictResolvedCount:
-        input.reactivationConflictResolvedCount,
+      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
       requestedCount: input.requestedItemIds.length,
       skipped,
       syncedCount,
@@ -1491,10 +1433,7 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   };
 }
 
-function getNullableStringFromRecord(
-  value: Record<string, unknown> | null,
-  key: string,
-) {
+function getNullableStringFromRecord(value: Record<string, unknown> | null, key: string) {
   const entry = value?.[key];
   return typeof entry === "string" && entry.trim() ? entry.trim() : null;
 }
@@ -1515,10 +1454,7 @@ if (facetBackfillQueued) continue;
 Add helper:
 
 ```ts
-async function enqueueFacetBackfillJobsIfNeeded(input: {
-  now: Date;
-  shopId: string;
-}) {
+async function enqueueFacetBackfillJobsIfNeeded(input: { now: Date; shopId: string }) {
   const version = 1;
   const runId = `${input.shopId}:${DEFAULT_MARKETPLACE_ID}:v${version}`;
   const completedMarker = await prisma.syncJob.findFirst({
@@ -1610,10 +1546,7 @@ async function maybeMarkFacetBackfillRunSucceeded(job: DueSyncJob) {
     },
   });
 
-  if (
-    runJobs.length === 0 ||
-    runJobs.some((runJob) => runJob.status !== SyncJobStatus.SUCCEEDED)
-  ) {
+  if (runJobs.length === 0 || runJobs.some((runJob) => runJob.status !== SyncJobStatus.SUCCEEDED)) {
     return;
   }
 

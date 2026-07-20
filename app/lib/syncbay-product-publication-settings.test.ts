@@ -24,10 +24,7 @@ test("serializes and parses selected publication ids", () => {
     "gid://shopify/Publication/2",
   ]);
 
-  assert.equal(
-    serialized,
-    "gid://shopify/Publication/2,gid://shopify/Publication/1",
-  );
+  assert.equal(serialized, "gid://shopify/Publication/2,gid://shopify/Publication/1");
   assert.deepEqual(parseProductPublicationGids(serialized), [
     "gid://shopify/Publication/2",
     "gid://shopify/Publication/1",
@@ -37,18 +34,12 @@ test("serializes and parses selected publication ids", () => {
 test("resolves all-channel publication mode to every available publication", () => {
   assert.deepEqual(
     resolveProductPublicationIds({
-      availablePublicationIds: [
-        "gid://shopify/Publication/1",
-        "gid://shopify/Publication/2",
-      ],
+      availablePublicationIds: ["gid://shopify/Publication/1", "gid://shopify/Publication/2"],
       mode: "ALL",
       selectedPublicationIds: [],
     }),
     {
-      publicationIds: [
-        "gid://shopify/Publication/1",
-        "gid://shopify/Publication/2",
-      ],
+      publicationIds: ["gid://shopify/Publication/1", "gid://shopify/Publication/2"],
       status: "ready",
     },
   );
@@ -57,15 +48,9 @@ test("resolves all-channel publication mode to every available publication", () 
 test("resolves selected-channel publication mode only to selected available publications", () => {
   assert.deepEqual(
     resolveProductPublicationIds({
-      availablePublicationIds: [
-        "gid://shopify/Publication/1",
-        "gid://shopify/Publication/2",
-      ],
+      availablePublicationIds: ["gid://shopify/Publication/1", "gid://shopify/Publication/2"],
       mode: "SELECTED",
-      selectedPublicationIds: [
-        "gid://shopify/Publication/2",
-        "gid://shopify/Publication/missing",
-      ],
+      selectedPublicationIds: ["gid://shopify/Publication/2", "gid://shopify/Publication/missing"],
     }),
     {
       publicationIds: ["gid://shopify/Publication/2"],
@@ -82,8 +67,7 @@ test("blocks selected-channel mode when no selected publication is available", (
       selectedPublicationIds: ["gid://shopify/Publication/missing"],
     }),
     {
-      errorMessage:
-        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      errorMessage: "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
       status: "failed",
     },
   );
@@ -92,10 +76,7 @@ test("blocks selected-channel mode when no selected publication is available", (
 test("resolves stored selected publication ids without live availability", () => {
   assert.deepEqual(
     resolveStoredSelectedProductPublicationIds({
-      selectedPublicationIds: [
-        " gid://shopify/Publication/2 ",
-        "gid://shopify/Publication/2",
-      ],
+      selectedPublicationIds: [" gid://shopify/Publication/2 ", "gid://shopify/Publication/2"],
     }),
     {
       publicationIds: ["gid://shopify/Publication/2"],
@@ -110,8 +91,7 @@ test("blocks stored selected publication mode when no id is saved", () => {
       selectedPublicationIds: [],
     }),
     {
-      errorMessage:
-        "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
+      errorMessage: "Nessuno dei canali Shopify selezionati è disponibile per questo negozio.",
       status: "failed",
     },
   );

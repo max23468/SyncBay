@@ -27,10 +27,7 @@ const LOADER_ROUTE_BY_PAGE = {
 export function runUiCheck() {
   let scenarioCount = 0;
   for (const page of UI_PAGES) {
-    assertSyncBayLoaderPayloadBudget(
-      LOADER_ROUTE_BY_PAGE[page],
-      getUiFixture(page, "healthy"),
-    );
+    assertSyncBayLoaderPayloadBudget(LOADER_ROUTE_BY_PAGE[page], getUiFixture(page, "healthy"));
     for (const state of getUiFixtureStates(page)) {
       const result = spawnSync(
         process.execPath,
@@ -56,9 +53,7 @@ export function runUiCheck() {
       scenarioCount += 1;
     }
   }
-  console.log(
-    `UI SSR verificate: ${UI_PAGES.length} pagine, ${scenarioCount} scenari isolati`,
-  );
+  console.log(`UI SSR verificate: ${UI_PAGES.length} pagine, ${scenarioCount} scenari isolati`);
   return 0;
 }
 

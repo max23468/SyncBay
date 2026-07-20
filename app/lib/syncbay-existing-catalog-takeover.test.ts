@@ -6,10 +6,8 @@ import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching"
 
 import * as existingCatalogTakeover from "./syncbay-existing-catalog-takeover.ts";
 
-const {
-  buildExistingCatalogTakeoverApplyPlan,
-  buildExistingCatalogTakeoverReport,
-} = existingCatalogTakeover;
+const { buildExistingCatalogTakeoverApplyPlan, buildExistingCatalogTakeoverReport } =
+  existingCatalogTakeover;
 
 test("marks one auto-linkable valid row as applicable", () => {
   const report = buildExistingCatalogTakeoverReport({
@@ -137,10 +135,7 @@ test("keeps missing eBay photos in review when Shopify has no images to preserve
 
   assert.equal(report.summary.review, 1);
   assert.equal(report.rows[0]?.status, "da_rivedere");
-  assert.equal(
-    report.rows[0]?.fieldPolicy.images.operation,
-    "sync_from_ebay_if_available",
-  );
+  assert.equal(report.rows[0]?.fieldPolicy.images.operation, "sync_from_ebay_if_available");
   assert.ok(report.rows[0]?.reasons.includes("immagini_mancanti"));
 });
 
@@ -198,10 +193,7 @@ test("keeps weak matches with uncertain categories in review", () => {
 
   assert.equal(report.summary.review, 1);
   assert.equal(report.rows[0]?.status, "da_rivedere");
-  assert.deepEqual(report.rows[0]?.reasons, [
-    "categoria_incerta",
-    "match_non_automatico",
-  ]);
+  assert.deepEqual(report.rows[0]?.reasons, ["categoria_incerta", "match_non_automatico"]);
 });
 
 test("blocks invalid price and complex variants", () => {
@@ -402,8 +394,7 @@ function makePreviewItem(input: {
       ebayPrimaryCategoryName: "Monete",
       ebayPrimaryCategoryPath: "Collezionismo > Monete",
       imageCount,
-      imageUrls:
-        imageCount > 0 ? ["https://example.invalid/syncbay/test.jpg"] : [],
+      imageUrls: imageCount > 0 ? ["https://example.invalid/syncbay/test.jpg"] : [],
       priceAmount: input.priceAmount ?? 10,
       productFacets: [],
       productStatus: "published",
@@ -416,9 +407,7 @@ function makePreviewItem(input: {
       storeCategoryName: "Numismatica",
       title: `Prodotto ${input.itemId}`,
     },
-    status: issueCodes.some((code) => code !== "missing_images")
-      ? "error"
-      : "importable",
+    status: issueCodes.some((code) => code !== "missing_images") ? "error" : "importable",
   };
 }
 

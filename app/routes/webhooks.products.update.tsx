@@ -2,10 +2,7 @@ import type { ActionFunctionArgs } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import { isTransientWebhookPersistenceError } from "../lib/syncbay-webhook-errors";
-import {
-  getSyncBayRequestId,
-  logSyncBayRuntimeEvent,
-} from "../lib/syncbay-runtime-log";
+import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
@@ -15,8 +12,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const requestId = getSyncBayRequestId(request);
   const startedAt = performance.now();
   try {
-    const { payload, shop, topic, webhookId } =
-      await authenticate.webhook(request);
+    const { payload, shop, topic, webhookId } = await authenticate.webhook(request);
 
     await recordShopifyWebhookPlaceholder({
       payload,
@@ -49,8 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return new Response(null, {
       headers: {
-        "X-SyncBay-Webhook-Degraded":
-          "shopify-product-update-persistence-timeout",
+        "X-SyncBay-Webhook-Degraded": "shopify-product-update-persistence-timeout",
       },
       status: 202,
     });

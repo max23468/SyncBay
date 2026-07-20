@@ -68,9 +68,7 @@ export function buildExistingProductMatchSuggestions(input: {
   shopifyProducts: ShopifyMatchCandidate[];
 }): ExistingProductMatchSuggestion[] {
   const limit =
-    Number.isInteger(input.limit) && (input.limit ?? 0) > 0
-      ? (input.limit as number)
-      : 5;
+    Number.isInteger(input.limit) && (input.limit ?? 0) > 0 ? (input.limit as number) : 5;
 
   const bestByProduct = new Map<string, ExistingProductMatchSuggestion>();
 
@@ -186,42 +184,28 @@ function isAutoLinkable(
     return false;
   }
 
-  return (
-    confidence === "high" &&
-    reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code))
-  );
+  return confidence === "high" && reasonCodes.some((code) => STRONG_AUTO_LINK_CODES.has(code));
 }
 
-function getSyncBayItemId(
-  metafields: ShopifyMatchMetafieldCandidate[] | null | undefined,
-) {
+function getSyncBayItemId(metafields: ShopifyMatchMetafieldCandidate[] | null | undefined) {
   return metafields?.find(
-    (metafield) =>
-      metafield.namespace === "syncbay" && metafield.key === "ebay_item_id",
+    (metafield) => metafield.namespace === "syncbay" && metafield.key === "ebay_item_id",
   )?.value;
 }
 
-function sameToken(
-  first: string | null | undefined,
-  second: string | null | undefined,
-) {
+function sameToken(first: string | null | undefined, second: string | null | undefined) {
   const a = normalizeToken(first);
   const b = normalizeToken(second);
 
   return Boolean(a && b && a === b);
 }
 
-function containsToken(
-  value: string | null | undefined,
-  token: string | null | undefined,
-) {
+function containsToken(value: string | null | undefined, token: string | null | undefined) {
   const normalizedToken = normalizeToken(token);
 
   if (!normalizedToken) return false;
 
-  return tokenizeIdentifier(value).some(
-    (candidate) => candidate === normalizedToken,
-  );
+  return tokenizeIdentifier(value).some((candidate) => candidate === normalizedToken);
 }
 
 function normalizeToken(value: string | null | undefined) {
@@ -238,10 +222,7 @@ function tokenizeIdentifier(value: string | null | undefined) {
   );
 }
 
-function getTitleSimilarity(
-  first: string | null | undefined,
-  second: string | null | undefined,
-) {
+function getTitleSimilarity(first: string | null | undefined, second: string | null | undefined) {
   const a = tokenize(first);
   const b = tokenize(second);
   if (a.length === 0 || b.length === 0) return 0;

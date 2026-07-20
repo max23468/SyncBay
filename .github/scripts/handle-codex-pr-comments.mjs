@@ -12,14 +12,9 @@ import {
 
 const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
-const codexLoginPattern = new RegExp(
-  process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex",
-  "i",
-);
-const inboxIssueTitle =
-  process.env.CODEX_INBOX_ISSUE_TITLE ?? "Codex feedback inbox";
-const inboxIssueLabel =
-  process.env.CODEX_INBOX_ISSUE_LABEL ?? "codex-feedback-inbox";
+const codexLoginPattern = new RegExp(process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex", "i");
+const inboxIssueTitle = process.env.CODEX_INBOX_ISSUE_TITLE ?? "Codex feedback inbox";
+const inboxIssueLabel = process.env.CODEX_INBOX_ISSUE_LABEL ?? "codex-feedback-inbox";
 const repositoryName = repository?.split("/")[1] ?? "repository";
 const inboxMarker =
   process.env.CODEX_INBOX_MARKER ??
@@ -34,35 +29,14 @@ const scanMode = getCodexPrScanMode({
   inboxIssueTitle,
 });
 const eventPullRequestNumber = getEventPullRequestNumber(eventPayload);
-const recentPrLimit = parsePositiveInteger(
-  process.env.CODEX_RECENT_PR_LIMIT,
-  50,
-);
+const recentPrLimit = parsePositiveInteger(process.env.CODEX_RECENT_PR_LIMIT, 50);
 const recentPrDays = getRecentPrDays(process.env.CODEX_RECENT_PR_DAYS);
-const historyPrLimit = parsePositiveInteger(
-  process.env.CODEX_HISTORY_PR_LIMIT,
-  8,
-);
-const historyThreadLimit = parsePositiveInteger(
-  process.env.CODEX_HISTORY_THREAD_LIMIT,
-  5,
-);
-const actionablePrLimit = parsePositiveInteger(
-  process.env.CODEX_ACTIONABLE_PR_LIMIT,
-  20,
-);
-const actionableThreadLimit = parsePositiveInteger(
-  process.env.CODEX_ACTIONABLE_THREAD_LIMIT,
-  20,
-);
-const githubApiAttempts = parsePositiveInteger(
-  process.env.CODEX_GITHUB_API_ATTEMPTS,
-  4,
-);
-const githubApiRetryBaseMs = parsePositiveInteger(
-  process.env.CODEX_GITHUB_API_RETRY_BASE_MS,
-  1500,
-);
+const historyPrLimit = parsePositiveInteger(process.env.CODEX_HISTORY_PR_LIMIT, 8);
+const historyThreadLimit = parsePositiveInteger(process.env.CODEX_HISTORY_THREAD_LIMIT, 5);
+const actionablePrLimit = parsePositiveInteger(process.env.CODEX_ACTIONABLE_PR_LIMIT, 20);
+const actionableThreadLimit = parsePositiveInteger(process.env.CODEX_ACTIONABLE_THREAD_LIMIT, 20);
+const githubApiAttempts = parsePositiveInteger(process.env.CODEX_GITHUB_API_ATTEMPTS, 4);
+const githubApiRetryBaseMs = parsePositiveInteger(process.env.CODEX_GITHUB_API_RETRY_BASE_MS, 1500);
 const githubApiSecondaryRateLimitDelayMs = parsePositiveInteger(
   process.env.CODEX_GITHUB_API_SECONDARY_RATE_LIMIT_DELAY_MS,
   60_000,
@@ -92,9 +66,7 @@ for (const pr of prs) {
   if (codexThreads.length === 0) continue;
 
   const actionableThreads = codexThreads.filter(isActionableThread);
-  const historicalThreads = codexThreads.filter(
-    (thread) => !isActionableThread(thread),
-  );
+  const historicalThreads = codexThreads.filter((thread) => !isActionableThread(thread));
 
   inboxEntries.push({
     actionableThreads,
@@ -159,9 +131,7 @@ async function listPullRequests() {
   }
 
   if (eventPullRequestNumber && !prsByNumber.has(eventPullRequestNumber)) {
-    const eventPr = await githubJson(
-      `/repos/${owner}/${repo}/pulls/${eventPullRequestNumber}`,
-    );
+    const eventPr = await githubJson(`/repos/${owner}/${repo}/pulls/${eventPullRequestNumber}`);
     prsByNumber.set(eventPr.number, eventPr);
   }
 
@@ -179,9 +149,7 @@ async function getPullRequestFromInbox(prNumber) {
     return await githubJson(`/repos/${owner}/${repo}/pulls/${prNumber}`);
   } catch (error) {
     if (error.status === 404) {
-      console.warn(
-        `PR #${prNumber} presente nella inbox ma non trovata: la salto.`,
-      );
+      console.warn(`PR #${prNumber} presente nella inbox ma non trovata: la salto.`);
       return null;
     }
 
@@ -193,11 +161,7 @@ async function listInboxPullRequestNumbers() {
   const inboxIssues = await findInboxIssues();
 
   return [
-    ...new Set(
-      inboxIssues.flatMap((issue) =>
-        extractInboxPullRequestNumbers(issue.body ?? ""),
-      ),
-    ),
+    ...new Set(inboxIssues.flatMap((issue) => extractInboxPullRequestNumbers(issue.body ?? ""))),
   ];
 }
 
@@ -228,11 +192,7 @@ async function listRecentPullRequests() {
   });
 }
 
-async function listPullRequestPages({
-  limit = Infinity,
-  state,
-  stopAfterBatch,
-} = {}) {
+async function listPullRequestPages({ limit = Infinity, state, stopAfterBatch } = {}) {
   const results = [];
 
   for (let page = 1; results.length < limit; page++) {
@@ -312,10 +272,7 @@ async function listReviewThreads(prNumber) {
     if (!thread.comments.pageInfo.hasNextPage) continue;
 
     thread.comments.nodes.push(
-      ...(await listReviewThreadComments(
-        thread.id,
-        thread.comments.pageInfo.endCursor,
-      )),
+      ...(await listReviewThreadComments(thread.id, thread.comments.pageInfo.endCursor)),
     );
   }
 
@@ -378,10 +335,7 @@ async function upsertInboxIssue(entries) {
   const duplicateIssues = inboxIssues.filter(
     (issue) => issue.state === "open" && issue.number !== existingIssue?.number,
   );
-  const closedDuplicateNumbers = await closeDuplicateInboxIssues(
-    duplicateIssues,
-    existingIssue,
-  );
+  const closedDuplicateNumbers = await closeDuplicateInboxIssues(duplicateIssues, existingIssue);
 
   if (dryRun) {
     console.log(`DRY RUN: issue inbox non aggiornata.\n${body}`);
@@ -435,16 +389,13 @@ async function ensureInboxLabel() {
   if (dryRun) return;
 
   try {
-    await githubJson(
-      `/repos/${owner}/${repo}/labels/${encodeURIComponent(inboxIssueLabel)}`,
-    );
+    await githubJson(`/repos/${owner}/${repo}/labels/${encodeURIComponent(inboxIssueLabel)}`);
   } catch (error) {
     if (error.status !== 404) throw error;
 
     await githubJson(`/repos/${owner}/${repo}/labels`, {
       color: "5319e7",
-      description:
-        "Issue gestita automaticamente per i commenti Codex sulle PR",
+      description: "Issue gestita automaticamente per i commenti Codex sulle PR",
       name: inboxIssueLabel,
     });
   }
@@ -456,15 +407,11 @@ async function findInboxIssues() {
     q: `repo:${owner}/${repo} is:issue in:title "${inboxIssueTitle}"`,
   });
   const result = await githubJson(`/search/issues?${query}`);
-  const exactTitleIssues = result.items.filter(
-    (issue) => issue.title === inboxIssueTitle,
-  );
+  const exactTitleIssues = result.items.filter((issue) => issue.title === inboxIssueTitle);
   const issues = [];
 
   for (const issue of exactTitleIssues) {
-    const issueDetails = await githubJson(
-      `/repos/${owner}/${repo}/issues/${issue.number}`,
-    );
+    const issueDetails = await githubJson(`/repos/${owner}/${repo}/issues/${issue.number}`);
 
     if (isManagedInboxIssue(issueDetails)) {
       issues.push(issueDetails);
@@ -479,10 +426,7 @@ function isManagedInboxIssue(issue) {
 }
 
 function isLabeledInboxIssue(issue) {
-  return (
-    hasInboxIdentity(issue) &&
-    issue.labels?.some((label) => label.name === inboxIssueLabel)
-  );
+  return hasInboxIdentity(issue) && issue.labels?.some((label) => label.name === inboxIssueLabel);
 }
 
 function isMigratableInboxIssue(issue) {
@@ -494,9 +438,7 @@ function hasInboxIdentity(issue) {
 }
 
 function isTrustedInboxIssueCreator(issue) {
-  return ["app/github-actions", "github-actions[bot]"].includes(
-    issue.user?.login,
-  );
+  return ["app/github-actions", "github-actions[bot]"].includes(issue.user?.login);
 }
 
 function chooseCanonicalInboxIssue(issues) {
@@ -510,9 +452,7 @@ function chooseCanonicalInboxIssue(issues) {
 }
 
 function sortIssuesByUpdatedDesc(issues) {
-  return [...issues].sort(
-    (left, right) => new Date(right.updated_at) - new Date(left.updated_at),
-  );
+  return [...issues].sort((left, right) => new Date(right.updated_at) - new Date(left.updated_at));
 }
 
 async function closeDuplicateInboxIssues(issues, canonicalIssue) {
@@ -524,19 +464,14 @@ async function closeDuplicateInboxIssues(issues, canonicalIssue) {
       : `Chiudo come duplicato: il workflow ricreerà la inbox canonica "${inboxIssueTitle}".`;
 
     if (dryRun) {
-      console.log(
-        `DRY RUN: chiuderei la issue inbox duplicata #${issue.number}.`,
-      );
+      console.log(`DRY RUN: chiuderei la issue inbox duplicata #${issue.number}.`);
       closedDuplicateNumbers.push(issue.number);
       continue;
     }
 
-    await githubJson(
-      `/repos/${owner}/${repo}/issues/${issue.number}/comments`,
-      {
-        body,
-      },
-    );
+    await githubJson(`/repos/${owner}/${repo}/issues/${issue.number}/comments`, {
+      body,
+    });
     await githubJson(
       `/repos/${owner}/${repo}/issues/${issue.number}`,
       {
@@ -587,8 +522,7 @@ function buildInboxBody(entries) {
   if (totalActionable === 0) {
     lines.push("Nessun thread Codex actionable al momento.", "");
   } else {
-    const compactActionableEntries =
-      compactActionableEntriesForInbox(actionableEntries);
+    const compactActionableEntries = compactActionableEntriesForInbox(actionableEntries);
     const displayedActionable = compactActionableEntries.reduce(
       (total, entry) => total + entry.threads.length,
       0,
@@ -606,8 +540,7 @@ function buildInboxBody(entries) {
   if (totalHistorical === 0) {
     lines.push("Nessun thread Codex storico da mostrare.", "");
   } else {
-    const compactHistoricalEntries =
-      compactHistoricalEntriesForInbox(historicalEntries);
+    const compactHistoricalEntries = compactHistoricalEntriesForInbox(historicalEntries);
     const displayedHistorical = compactHistoricalEntries.reduce(
       (total, entry) => total + entry.threads.length,
       0,
@@ -669,8 +602,7 @@ function renderPrState(entry) {
 function renderThread(thread) {
   const firstCodexComment = getFirstCodexComment(thread);
   const location = renderThreadLocation(thread);
-  const summary =
-    firstLine(firstCodexComment?.body ?? "commento Codex") ?? "commento Codex";
+  const summary = firstLine(firstCodexComment?.body ?? "commento Codex") ?? "commento Codex";
   const threadUrl = firstCodexComment?.url;
   const state = `resolved=${thread.isResolved ? "yes" : "no"}, outdated=${
     thread.isOutdated ? "yes" : "no"
@@ -749,9 +681,7 @@ async function githubJson(path, body, method) {
   });
 
   if (!response.ok) {
-    const error = new Error(
-      `GitHub REST ${path} ha risposto ${response.status}: ${text}`,
-    );
+    const error = new Error(`GitHub REST ${path} ha risposto ${response.status}: ${text}`);
     error.status = response.status;
     throw error;
   }
@@ -789,10 +719,7 @@ async function githubRequest(path, init) {
     const response = await fetch(url, init);
     const text = await response.text();
 
-    if (
-      !shouldRetryGitHubRequest(response, text) ||
-      attempt === githubApiAttempts
-    ) {
+    if (!shouldRetryGitHubRequest(response, text) || attempt === githubApiAttempts) {
       const payload = parseGitHubJson(text, path, {
         allowInvalidJson: !response.ok,
       });
@@ -826,16 +753,8 @@ function parseGitHubJson(text, path, options = {}) {
 
 function shouldRetryGitHubRequest(response, text) {
   if ([500, 502, 503, 504].includes(response.status)) return true;
-  if (
-    response.status === 429 &&
-    isRetryableGitHubRateLimitResponse(response, text)
-  )
-    return true;
-  if (
-    response.status === 403 &&
-    isRetryableGitHubRateLimitResponse(response, text)
-  )
-    return true;
+  if (response.status === 429 && isRetryableGitHubRateLimitResponse(response, text)) return true;
+  if (response.status === 403 && isRetryableGitHubRateLimitResponse(response, text)) return true;
 
   return response.status === 401 && isRetryableGitHubAuthResponse(text);
 }
@@ -844,8 +763,7 @@ function isRetryableGitHubAuthResponse(text) {
   const normalizedText = text.toLowerCase();
 
   return (
-    normalizedText.includes("bad credentials") ||
-    normalizedText.includes("requires authentication")
+    normalizedText.includes("bad credentials") || normalizedText.includes("requires authentication")
   );
 }
 
@@ -866,10 +784,7 @@ function isGitHubRateLimitResponse(response, text) {
 
   const normalizedText = text.toLowerCase();
 
-  return (
-    normalizedText.includes("rate limit") ||
-    normalizedText.includes("abuse detection")
-  );
+  return normalizedText.includes("rate limit") || normalizedText.includes("abuse detection");
 }
 
 function githubRetryDelayMs(response, text, attempt) {
@@ -879,19 +794,13 @@ function githubRetryDelayMs(response, text, attempt) {
 
   const rateLimitResetDelayMs = githubRateLimitResetDelayMs(response);
 
-  if (
-    rateLimitResetDelayMs !== null &&
-    isGitHubRateLimitResponse(response, text)
-  ) {
+  if (rateLimitResetDelayMs !== null && isGitHubRateLimitResponse(response, text)) {
     return rateLimitResetDelayMs;
   }
 
   const backoffDelayMs = githubApiRetryBaseMs * 2 ** (attempt - 1);
 
-  if (
-    [403, 429].includes(response.status) &&
-    isGitHubRateLimitResponse(response, text)
-  ) {
+  if ([403, 429].includes(response.status) && isGitHubRateLimitResponse(response, text)) {
     return Math.max(githubApiSecondaryRateLimitDelayMs, backoffDelayMs);
   }
 
@@ -899,10 +808,7 @@ function githubRetryDelayMs(response, text, attempt) {
 }
 
 function githubRetryAfterDelayMs(response) {
-  const retryAfter = Number.parseInt(
-    response.headers.get("retry-after") ?? "",
-    10,
-  );
+  const retryAfter = Number.parseInt(response.headers.get("retry-after") ?? "", 10);
 
   if (Number.isInteger(retryAfter) && retryAfter > 0) return retryAfter * 1000;
 
@@ -910,13 +816,9 @@ function githubRetryAfterDelayMs(response) {
 }
 
 function githubRateLimitResetDelayMs(response) {
-  const resetEpochSeconds = Number.parseInt(
-    response.headers.get("x-ratelimit-reset") ?? "",
-    10,
-  );
+  const resetEpochSeconds = Number.parseInt(response.headers.get("x-ratelimit-reset") ?? "", 10);
 
-  if (!Number.isInteger(resetEpochSeconds) || resetEpochSeconds <= 0)
-    return null;
+  if (!Number.isInteger(resetEpochSeconds) || resetEpochSeconds <= 0) return null;
 
   return Math.max(resetEpochSeconds * 1000 - Date.now() + 1000, 0);
 }

@@ -1,19 +1,14 @@
 import type { PriceRoundingMode as PrismaPriceRoundingMode } from "@prisma/client";
 
 import prisma from "../db.server";
-import {
-  normalizePriceRoundingMode,
-  type SyncBayPricingRule,
-} from "../lib/syncbay-pricing-rules";
+import { normalizePriceRoundingMode, type SyncBayPricingRule } from "../lib/syncbay-pricing-rules";
 
 export const DEFAULT_PRICING_RULE: SyncBayPricingRule = {
   discountPercent: 0,
   roundingMode: "CENTS",
 };
 
-export async function getPricingRuleForShopId(
-  shopId: string,
-): Promise<SyncBayPricingRule> {
+export async function getPricingRuleForShopId(shopId: string): Promise<SyncBayPricingRule> {
   const pricingRule = await prisma.pricingRule.findUnique({
     select: {
       discountPercent: true,

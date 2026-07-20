@@ -32,9 +32,7 @@ interface ProductHistoryTransactionPort {
 }
 
 export interface ProductHistoryPorts {
-  transaction(
-    run: (tx: ProductHistoryTransactionPort) => Promise<void>,
-  ): Promise<void>;
+  transaction(run: (tx: ProductHistoryTransactionPort) => Promise<void>): Promise<void>;
 }
 
 type ProductHistoryTransactionClient = Pick<
@@ -43,9 +41,7 @@ type ProductHistoryTransactionClient = Pick<
 >;
 
 function compactUndefined<T extends Record<string, unknown>>(input: T) {
-  return Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined),
-  );
+  return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
 function createPrismaPorts(): ProductHistoryPorts {
@@ -110,9 +106,7 @@ function getJsonObject(value: unknown) {
 function getPayloadString(payload: unknown, ...path: string[]) {
   let current: unknown = payload;
   for (const key of path) current = getJsonObject(current)?.[key];
-  return typeof current === "string" && current.trim()
-    ? current.trim()
-    : undefined;
+  return typeof current === "string" && current.trim() ? current.trim() : undefined;
 }
 
 function getProductFacets(payload: unknown) {
@@ -120,9 +114,7 @@ function getProductFacets(payload: unknown) {
   if (facets === null) return undefined;
   const result: Record<string, string[]> = {};
   for (const facet of facets) {
-    result[facet.key] = [
-      ...new Set([...(result[facet.key] ?? []), facet.value]),
-    ];
+    result[facet.key] = [...new Set([...(result[facet.key] ?? []), facet.value])];
   }
   return result;
 }
@@ -147,11 +139,7 @@ export function buildProductBaselineWriteFromSnapshot(
       snapshot.priceAmount === undefined || snapshot.priceAmount === null
         ? snapshot.priceAmount
         : String(snapshot.priceAmount),
-    compareAtPriceAmount: getPayloadString(
-      snapshot.payload,
-      "pricing",
-      "compareAtPriceAmount",
-    ),
+    compareAtPriceAmount: getPayloadString(snapshot.payload, "pricing", "compareAtPriceAmount"),
     currency: snapshot.currency,
     quantity: snapshot.quantity,
     productStatus: snapshot.productStatus,
@@ -207,8 +195,7 @@ export async function recordProductSnapshotsInTransaction(
       update,
     });
   }
-  if (snapshots.length > 0)
-    await tx.productSnapshot.createMany({ data: snapshots });
+  if (snapshots.length > 0) await tx.productSnapshot.createMany({ data: snapshots });
 }
 
 export async function recordProductHistory(
@@ -245,22 +232,16 @@ const MAINTENANCE_SIZE_TABLES = [
   "SyncConflict",
 ];
 
-async function readMaintenanceTableSizeBytes(): Promise<
-  Record<string, number>
-> {
+async function readMaintenanceTableSizeBytes(): Promise<Record<string, number>> {
   try {
-    const rows = await prisma.$queryRaw<
-      { table_name: string; total_bytes: bigint }[]
-    >`
+    const rows = await prisma.$queryRaw<{ table_name: string; total_bytes: bigint }[]>`
       SELECT c.relname AS table_name, pg_total_relation_size(c.oid) AS total_bytes
       FROM pg_class c
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public'
         AND c.relname IN (${Prisma.join(MAINTENANCE_SIZE_TABLES)})
     `;
-    return Object.fromEntries(
-      rows.map((row) => [row.table_name, Number(row.total_bytes)]),
-    );
+    return Object.fromEntries(rows.map((row) => [row.table_name, Number(row.total_bytes)]));
   } catch {
     // La misura del peso è osservabilità accessoria: un errore qui non deve
     // marcare FAILED una maintenance che ha già pulito correttamente.
@@ -362,10 +343,7 @@ export async function runDailyOperationalMaintenance(
     try {
       await prisma.maintenanceRun.create({ data: { key, status: "RUNNING" } });
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         return { ...base, skipped: true };
       }
       throw error;
@@ -450,20 +428,17 @@ export async function runDailyOperationalMaintenance(
       if (deleted < 1000) break;
     }
 
-    const checkpointDeleted = await prisma.productSnapshotCheckpoint.deleteMany(
-      {
-        where: { checkpointWeek: { lt: plan.checkpointCutoff } },
-      },
-    );
+    const checkpointDeleted = await prisma.productSnapshotCheckpoint.deleteMany({
+      where: { checkpointWeek: { lt: plan.checkpointCutoff } },
+    });
     const cronRunDeletedCount = await prisma.$executeRaw`
       DELETE FROM cron.job_run_details
       WHERE end_time IS NOT NULL AND end_time < ${new Date(now.getTime() - 14 * 24 * 60 * 60 * 1_000)}
     `;
     await runRetentionCleanup({ now });
-    const uncompactedOversizeCount =
-      await prisma.productSnapshotCheckpoint.count({
-        where: { isComplete: false },
-      });
+    const uncompactedOversizeCount = await prisma.productSnapshotCheckpoint.count({
+      where: { isComplete: false },
+    });
     const tableSizeBytes = await readMaintenanceTableSizeBytes();
     const result: OperationalMaintenanceResult = {
       ...base,

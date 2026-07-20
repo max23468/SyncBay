@@ -27,9 +27,7 @@ export function getNextEbayTradingRateLimitRetryAt(input: {
   cooldownSecondsValue?: string | null;
   now: Date;
 }) {
-  const cooldownSeconds = getEbayTradingRateLimitCooldownSeconds(
-    input.cooldownSecondsValue,
-  );
+  const cooldownSeconds = getEbayTradingRateLimitCooldownSeconds(input.cooldownSecondsValue);
 
   if (cooldownSeconds) {
     return new Date(input.now.getTime() + cooldownSeconds * 1000);

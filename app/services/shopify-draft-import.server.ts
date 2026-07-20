@@ -1,10 +1,6 @@
 import { createHash } from "node:crypto";
 
-import {
-  Prisma,
-  ProductMappingStatus,
-  ProductSnapshotSource,
-} from "@prisma/client";
+import { Prisma, ProductMappingStatus, ProductSnapshotSource } from "@prisma/client";
 
 import prisma from "../db.server";
 import { mapWithConcurrency } from "../lib/map-with-concurrency";
@@ -26,20 +22,14 @@ import {
   resolveProductPublicationIds,
   resolveStoredSelectedProductPublicationIds,
 } from "../lib/syncbay-product-publication-settings";
-import {
-  getSyncBayDescriptionHash,
-  hashNullableText,
-} from "../lib/syncbay-description-hash";
+import { getSyncBayDescriptionHash, hashNullableText } from "../lib/syncbay-description-hash";
 import {
   buildExistingCatalogTagMutations,
   getShopifyImageMediaIds,
   shouldSyncExistingCatalogImages,
   type ExistingCatalogFieldPolicy,
 } from "../lib/syncbay-existing-catalog-field-policy";
-import {
-  calculateShopifyPricing,
-  type SyncBayPricingRule,
-} from "../lib/syncbay-pricing-rules";
+import { calculateShopifyPricing, type SyncBayPricingRule } from "../lib/syncbay-pricing-rules";
 import {
   buildEbayProductSnapshotPayload,
   getProductSnapshotThumbnailUrl,
@@ -66,10 +56,7 @@ import {
   selectShopifyVariantForSync,
 } from "../lib/syncbay-shopify-variant-selection";
 import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
-import type {
-  ImportPreviewItem,
-  ImportPreviewResult,
-} from "./import-preview.server";
+import type { ImportPreviewItem, ImportPreviewResult } from "./import-preview.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
 import { recordProductSnapshotsInTransaction } from "./product-history.server";
 import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
@@ -79,10 +66,7 @@ import { syncShopifyProductFacets } from "./syncbay-product-facets.server";
 const SYNCBAY_SOLD_OUT_TAG = "esaurito";
 
 export interface ShopifyAdminGraphqlClient {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
 interface ShopifyUserError {
@@ -312,18 +296,13 @@ interface ShopifyInventoryVerificationResponse {
   }>;
 }
 
-export type ShopifyDraftImportStatus =
-  "blocked" | "created" | "failed" | "queued";
+export type ShopifyDraftImportStatus = "blocked" | "created" | "failed" | "queued";
 
-type ShopifyDraftProductInput = ReturnType<
-  typeof buildShopifyDraftProductInputs
->[number];
+type ShopifyDraftProductInput = ReturnType<typeof buildShopifyDraftProductInputs>[number];
 type ShopifyCreatedProduct = NonNullable<
   NonNullable<ShopifyProductCreateResponse["data"]>["productCreate"]
 >["product"];
-type ShopifyProductFacetSyncResult = Awaited<
-  ReturnType<typeof syncShopifyProductFacets>
->;
+type ShopifyProductFacetSyncResult = Awaited<ReturnType<typeof syncShopifyProductFacets>>;
 type DraftImportPersistenceResult = {
   createdCount: number;
   inventoryFailedCount: number;
@@ -359,8 +338,7 @@ type ShopifyInventorySyncResult =
     }
   | {
       message: string;
-      reason:
-        "missing_inventory_item" | "missing_location" | "missing_quantity";
+      reason: "missing_inventory_item" | "missing_location" | "missing_quantity";
       status: "skipped";
       variantGid?: string;
     }
@@ -435,12 +413,8 @@ export function getDraftImportReadiness(input: {
   const plannedCreateCount = Math.min(importableItems.length, draftLimit);
   const blockers = [
     !enabled ? "import Shopify non abilitato" : null,
-    !input.hasDefaultLocation
-      ? "location Shopify predefinita non confermata"
-      : null,
-    importableItems.length === 0
-      ? "nessun prodotto importabile nella preview"
-      : null,
+    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+    importableItems.length === 0 ? "nessun prodotto importabile nella preview" : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
   return {
@@ -464,22 +438,16 @@ function buildShopifyDraftProductInputs(
     discountPercent: 0,
     roundingMode: "CENTS",
   },
-  existingCatalogFieldPoliciesByItemId: Record<
-    string,
-    ExistingCatalogFieldPolicy
-  > = {},
+  existingCatalogFieldPoliciesByItemId: Record<string, ExistingCatalogFieldPolicy> = {},
   facetBaselinesByItemId: Record<string, SyncBayProductFacet[]> = {},
 ) {
   return getImportablePreviewItems(previewResult)
     .slice(0, getDraftImportLimit())
     .map((item) => {
-      const categoryFields = buildShopifyDraftCategoryFields(
-        item.normalized.categoryProposal,
-      );
+      const categoryFields = buildShopifyDraftCategoryFields(item.normalized.categoryProposal);
 
       return {
-        existingCatalogFieldPolicy:
-          existingCatalogFieldPoliciesByItemId[item.itemId] ?? null,
+        existingCatalogFieldPolicy: existingCatalogFieldPoliciesByItemId[item.itemId] ?? null,
         facetBaseline: facetBaselinesByItemId[item.itemId] ?? [],
         media: dedupeImageUrls(item.normalized.imageUrls)
           .slice(0, MAX_SHOPIFY_MEDIA_PER_PRODUCT)
@@ -514,10 +482,7 @@ function buildShopifyDraftProductInputs(
 export interface CatalogImportExecutionInput {
   admin: ShopifyAdminGraphqlClient;
   defaultLocationGid?: string | null;
-  existingCatalogFieldPoliciesByItemId?: Record<
-    string,
-    ExistingCatalogFieldPolicy
-  >;
+  existingCatalogFieldPoliciesByItemId?: Record<string, ExistingCatalogFieldPolicy>;
   facetBaselinesByItemId?: Record<string, SyncBayProductFacet[]>;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
@@ -534,16 +499,13 @@ export async function executeShopifyCatalogImport(
 ): Promise<CatalogImportExecutionResult> {
   const shop = await ensureDraftImportShop(input.shopDomain);
   if (shop.id !== input.shopId) {
-    throw new Error(
-      "Il negozio del job import non corrisponde al dominio Shopify caricato.",
-    );
+    throw new Error("Il negozio del job import non corrisponde al dominio Shopify caricato.");
   }
   const pricingRule = await getPricingRuleForShopId(input.shopId);
   const admin = input.admin;
   const reuseOnly = input.reuseOnly === true;
   const importProductStatus =
-    input.importProductStatusOverride ??
-    normalizeImportProductStatus(shop.defaultProductStatus);
+    input.importProductStatusOverride ?? normalizeImportProductStatus(shop.defaultProductStatus);
   const readiness = getDraftImportReadiness({
     defaultProductStatus: importProductStatus,
     hasDefaultLocation: input.hasDefaultLocation,
@@ -605,9 +567,7 @@ export async function executeShopifyCatalogImport(
     result.status === "created" ? (result.warnings ?? []) : [],
   );
   const failedResult = results.find(
-    (
-      result,
-    ): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
+    (result): result is Extract<ShopifyDraftProductResult, { status: "failed" }> =>
       result.status === "failed",
   );
   const inventoryFailedResults = getInventoryFailedResults({
@@ -697,9 +657,7 @@ async function resolveDraftImportPublicationOptions(
     };
   }
 
-  const selectedPublicationIds = parseProductPublicationGids(
-    input.productPublicationGids,
-  );
+  const selectedPublicationIds = parseProductPublicationGids(input.productPublicationGids);
 
   if (mode === "SELECTED") {
     const resolution = resolveStoredSelectedProductPublicationIds({
@@ -752,18 +710,10 @@ async function createShopifyDraftProduct(
     shopId: string;
   },
 ): Promise<ShopifyDraftProductCreateResult> {
-  const existingProduct = await findExistingSyncBayDraftProduct(
-    admin,
-    draftProduct,
-    context,
-  );
+  const existingProduct = await findExistingSyncBayDraftProduct(admin, draftProduct, context);
 
   if (existingProduct) {
-    const statusResult = await updateShopifyProductFromEbay(
-      admin,
-      existingProduct,
-      draftProduct,
-    );
+    const statusResult = await updateShopifyProductFromEbay(admin, existingProduct, draftProduct);
 
     if (statusResult.status === "failed") {
       return statusResult;
@@ -814,11 +764,10 @@ async function createShopifyDraftProductSafely(
 
     if (result.status === "failed") return result;
 
-    const commercialFieldsSync =
-      await syncShopifyVariantCommercialFieldsFromEbay(admin, {
-        draftProduct,
-        product: result.product,
-      });
+    const commercialFieldsSync = await syncShopifyVariantCommercialFieldsFromEbay(admin, {
+      draftProduct,
+      product: result.product,
+    });
 
     if (commercialFieldsSync.status === "failed") {
       return commercialFieldsSync;
@@ -870,11 +819,9 @@ async function createShopifyDraftProductSafely(
       Boolean(inventorySync.warning)
         ? [getInventorySyncWarning(inventorySync)]
         : [];
-    const mediaWarnings =
-      mediaSync.status === "failed" ? [getMediaSyncWarning(mediaSync)] : [];
+    const mediaWarnings = mediaSync.status === "failed" ? [getMediaSyncWarning(mediaSync)] : [];
     const publicationWarnings =
-      publicationSync.status === "skipped" &&
-      publicationSync.reason === "no_publications"
+      publicationSync.status === "skipped" && publicationSync.reason === "no_publications"
         ? [publicationSync.message]
         : [];
 
@@ -1059,8 +1006,7 @@ async function findExistingSyncBayDraftProduct(
 
   if (!handleLookupResponse.ok) return null;
 
-  const handleLookupJson =
-    (await handleLookupResponse.json()) as ShopifyProductLookupResponse;
+  const handleLookupJson = (await handleLookupResponse.json()) as ShopifyProductLookupResponse;
 
   if (handleLookupJson.errors?.length) return null;
 
@@ -1216,15 +1162,10 @@ async function findMappedSyncBayDraftProduct(
 
   const mappedJson = json as ShopifyMappedProductLookupResponse;
   const variant =
-    mappedJson.data?.variantNode?.product?.id === product.id
-      ? mappedJson.data.variantNode
-      : null;
+    mappedJson.data?.variantNode?.product?.id === product.id ? mappedJson.data.variantNode : null;
   const selectedVariant = selectShopifyVariantForSync({
     preferredVariantGid: mapping.shopifyVariantGid,
-    variants: [
-      ...(variant ? [variant] : []),
-      ...(product.variants?.nodes ?? []),
-    ],
+    variants: [...(variant ? [variant] : []), ...(product.variants?.nodes ?? [])],
   });
 
   if (!selectedVariant) return null;
@@ -1349,18 +1290,14 @@ async function syncShopifyInventoryFromEbayQuantity(
 
   if (!variant || !inventoryItemGid) {
     return {
-      message:
-        "Inventory item Shopify non restituito per la variante importata.",
+      message: "Inventory item Shopify non restituito per la variante importata.",
       reason: "missing_inventory_item",
       status: "skipped",
       variantGid: variant?.id,
     };
   }
 
-  const trackingResult = await updateShopifyInventoryItemTracking(
-    admin,
-    inventoryItemGid,
-  );
+  const trackingResult = await updateShopifyInventoryItemTracking(admin, inventoryItemGid);
 
   if (trackingResult.status === "failed") {
     return {
@@ -1676,14 +1613,11 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
 > {
   const variant = getFirstProductVariant(input.product);
   const price = formatShopifyPrice(input.draftProduct.pricing.priceAmount);
-  const compareAtPrice = formatShopifyPrice(
-    input.draftProduct.pricing.compareAtPriceAmount,
-  );
+  const compareAtPrice = formatShopifyPrice(input.draftProduct.pricing.compareAtPriceAmount);
 
   if (!variant) {
     return {
-      errorMessage:
-        "Variante Shopify non restituita per il prodotto importato.",
+      errorMessage: "Variante Shopify non restituita per il prodotto importato.",
       status: "failed",
     };
   }
@@ -1728,8 +1662,7 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
       },
     },
   );
-  const json =
-    (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
+  const json = (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
 
   if (!response.ok) {
     return {
@@ -1754,8 +1687,7 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
     };
   }
 
-  const updatedVariant =
-    json.data?.productVariantsBulkUpdate?.productVariants?.[0];
+  const updatedVariant = json.data?.productVariantsBulkUpdate?.productVariants?.[0];
 
   if (!updatedVariant) {
     return {
@@ -1764,24 +1696,18 @@ async function syncShopifyVariantCommercialFieldsFromEbay(
     };
   }
 
-  const inventoryItemGid =
-    updatedVariant.inventoryItem?.id ?? variant.inventoryItem?.id ?? null;
+  const inventoryItemGid = updatedVariant.inventoryItem?.id ?? variant.inventoryItem?.id ?? null;
   const sku = input.draftProduct.previewItem.normalized.sku;
 
   if (sku && !inventoryItemGid) {
     return {
-      errorMessage:
-        "Inventory item Shopify non restituito per aggiornare lo SKU.",
+      errorMessage: "Inventory item Shopify non restituito per aggiornare lo SKU.",
       status: "failed",
     };
   }
 
   if (sku && inventoryItemGid) {
-    const skuResult = await updateShopifyInventoryItemSku(
-      admin,
-      inventoryItemGid,
-      sku,
-    );
+    const skuResult = await updateShopifyInventoryItemSku(admin, inventoryItemGid, sku);
 
     if (skuResult.status === "failed") return skuResult;
   }
@@ -2100,8 +2026,7 @@ async function deleteShopifyProductMediaFiles(
   productGid: string,
   mediaIds: string[],
 ): Promise<
-  | { deletedCount: number; status: "synced" }
-  | { errorMessage: string; status: "failed" }
+  { deletedCount: number; status: "synced" } | { errorMessage: string; status: "failed" }
 > {
   const uniqueMediaIds = [...new Set(mediaIds)];
 
@@ -2199,8 +2124,7 @@ async function createStagedImageMediaInput(input: {
 
   if (!config) {
     return {
-      errorMessage:
-        "Supabase Storage fallback non configurato nel runtime server.",
+      errorMessage: "Supabase Storage fallback non configurato nel runtime server.",
       status: "failed",
     };
   }
@@ -2276,15 +2200,11 @@ async function downloadImageForStaging(sourceUrl: string): Promise<
     };
   }
 
-  const contentType = normalizeImageContentType(
-    response.headers.get("content-type"),
-    sourceUrl,
-  );
+  const contentType = normalizeImageContentType(response.headers.get("content-type"), sourceUrl);
 
   if (!contentType) {
     return {
-      errorMessage:
-        "Il download immagine non ha restituito un content-type immagine supportato.",
+      errorMessage: "Il download immagine non ha restituito un content-type immagine supportato.",
       status: "failed",
     };
   }
@@ -2343,10 +2263,7 @@ async function createSupabaseSignedUrl(input: {
   objectPath: string;
   serviceRoleKey: string;
   supabaseUrl: string;
-}): Promise<
-  | { signedUrl: string; status: "synced" }
-  | { errorMessage: string; status: "failed" }
-> {
+}): Promise<{ signedUrl: string; status: "synced" } | { errorMessage: string; status: "failed" }> {
   const response = await fetch(
     `${input.supabaseUrl}/storage/v1/object/sign/${encodeURIComponent(input.bucket)}/${encodeSupabaseObjectPath(input.objectPath)}`,
     {
@@ -2514,13 +2431,10 @@ async function setShopifyInventoryQuantity(
     quantity: number;
   },
 ): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
-  const currentQuantityResult = await getShopifyInventoryAvailableQuantity(
-    admin,
-    {
-      inventoryItemGid: input.inventoryItemGid,
-      locationGid: input.locationGid,
-    },
-  );
+  const currentQuantityResult = await getShopifyInventoryAvailableQuantity(admin, {
+    inventoryItemGid: input.inventoryItemGid,
+    locationGid: input.locationGid,
+  });
 
   if (currentQuantityResult.status === "failed") return currentQuantityResult;
 
@@ -2622,9 +2536,7 @@ export async function markShopifyProductSoldOut(
   const inventoryItemGid = variant?.inventoryItem?.id ?? null;
 
   if (hasMappedVariant && !variant) {
-    warnings.push(
-      "Variante Shopify mappata non disponibile: scorta e policy non aggiornate.",
-    );
+    warnings.push("Variante Shopify mappata non disponibile: scorta e policy non aggiornate.");
   }
 
   if (variant) {
@@ -2637,16 +2549,11 @@ export async function markShopifyProductSoldOut(
       warnings.push(policyResult.errorMessage);
     }
   } else if (!hasMappedVariant) {
-    warnings.push(
-      "Politica di inventario non aggiornata: variante Shopify non disponibile.",
-    );
+    warnings.push("Politica di inventario non aggiornata: variante Shopify non disponibile.");
   }
 
   if (variant && inventoryItemGid && input.locationGid) {
-    const trackingResult = await updateShopifyInventoryItemTracking(
-      admin,
-      inventoryItemGid,
-    );
+    const trackingResult = await updateShopifyInventoryItemTracking(admin, inventoryItemGid);
 
     if (trackingResult.status === "failed") {
       warnings.push(trackingResult.errorMessage);
@@ -2675,9 +2582,7 @@ export async function markShopifyProductSoldOut(
   } else if (!input.locationGid) {
     warnings.push("Scorta non azzerata: location Shopify predefinita assente.");
   } else if (!inventoryItemGid) {
-    warnings.push(
-      "Scorta non azzerata: inventory item Shopify non disponibile.",
-    );
+    warnings.push("Scorta non azzerata: inventory item Shopify non disponibile.");
   }
 
   const tagResult = await updateShopifyProductTag(admin, {
@@ -2730,8 +2635,7 @@ async function getFirstShopifyProductVariantForSoldOut(
     );
   }
 
-  const lookupJson =
-    (await lookupResponse.json()) as ShopifyProductSoldOutLookupResponse;
+  const lookupJson = (await lookupResponse.json()) as ShopifyProductSoldOutLookupResponse;
 
   if (lookupJson.errors?.length) {
     throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
@@ -2740,10 +2644,7 @@ async function getFirstShopifyProductVariantForSoldOut(
   return lookupJson.data?.node?.variants?.nodes?.[0] ?? null;
 }
 
-async function getShopifyVariantForSoldOut(
-  admin: ShopifyAdminGraphqlClient,
-  variantGid: string,
-) {
+async function getShopifyVariantForSoldOut(admin: ShopifyAdminGraphqlClient, variantGid: string) {
   const lookupResponse = await admin.graphql(
     `#graphql
     query SyncBaySoldOutVariantLookup($id: ID!) {
@@ -2770,8 +2671,7 @@ async function getShopifyVariantForSoldOut(
     );
   }
 
-  const lookupJson =
-    (await lookupResponse.json()) as ShopifyVariantSoldOutLookupResponse;
+  const lookupJson = (await lookupResponse.json()) as ShopifyVariantSoldOutLookupResponse;
 
   if (lookupJson.errors?.length) {
     throw new Error(formatShopifyGraphqlErrors(lookupJson.errors));
@@ -2836,8 +2736,7 @@ async function setShopifyVariantInventoryPolicyDeny(
     };
   }
 
-  const json =
-    (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
+  const json = (await response.json()) as ShopifyProductVariantsBulkUpdateResponse;
 
   if (json.errors?.length) {
     return {
@@ -2971,17 +2870,15 @@ async function getShopifyInventoryAvailableQuantity(
 
   if (!inventoryItem) {
     return {
-      errorMessage:
-        "Shopify non ha restituito l'inventory item per leggere la quantità corrente.",
+      errorMessage: "Shopify non ha restituito l'inventory item per leggere la quantità corrente.",
       status: "failed",
     };
   }
 
   return {
     availableQuantity:
-      inventoryItem.inventoryLevel?.quantities?.find(
-        (quantity) => quantity.name === "available",
-      )?.quantity ?? null,
+      inventoryItem.inventoryLevel?.quantities?.find((quantity) => quantity.name === "available")
+        ?.quantity ?? null,
     status: "synced",
   };
 }
@@ -2993,10 +2890,7 @@ async function verifyShopifyInventoryAtLocation(
     locationGid: string;
     quantity: number;
   },
-): Promise<
-  | { status: "synced"; warning?: string }
-  | { errorMessage: string; status: "failed" }
-> {
+): Promise<{ status: "synced"; warning?: string } | { errorMessage: string; status: "failed" }> {
   const response = await admin.graphql(
     `#graphql
     query SyncBayVerifyInventory($inventoryItemGid: ID!, $locationGid: ID!) {
@@ -3053,9 +2947,8 @@ async function verifyShopifyInventoryAtLocation(
   }
 
   const availableQuantity =
-    inventoryItem.inventoryLevel?.quantities?.find(
-      (quantity) => quantity.name === "available",
-    )?.quantity ?? null;
+    inventoryItem.inventoryLevel?.quantities?.find((quantity) => quantity.name === "available")
+      ?.quantity ?? null;
 
   if (availableQuantity !== input.quantity) {
     return {
@@ -3098,24 +2991,18 @@ async function recordDraftImportPersistence(input: {
     await Promise.all(
       successfulPairs.map(async (pair) => {
         const now = new Date();
-        const variantGid =
-          getFirstProductVariant(pair.result.product)?.id ?? null;
-        const inventoryItemGid = getPersistableInventoryItemGid(
-          pair.result.inventorySync,
-        );
+        const variantGid = getFirstProductVariant(pair.result.product)?.id ?? null;
+        const inventoryItemGid = getPersistableInventoryItemGid(pair.result.inventorySync);
         const ebaySnapshot = buildEbayProductSnapshot({
           draftProduct: pair.draftProduct,
           mappingId: "",
           shopId: input.shopId,
         });
         const facetBaseline =
-          shouldPersistProductFacetBaseline(pair.result.facetSync) &&
-          pair.result.facetSync
+          shouldPersistProductFacetBaseline(pair.result.facetSync) && pair.result.facetSync
             ? pair.result.facetSync.baselineFacets
             : undefined;
-        const thumbnailUrl = getProductSnapshotThumbnailUrl(
-          ebaySnapshot.payload,
-        );
+        const thumbnailUrl = getProductSnapshotThumbnailUrl(ebaySnapshot.payload);
         const mapping = await tx.productMapping.upsert({
           where: {
             shopId_marketplaceId_ebayItemId: {
@@ -3141,9 +3028,7 @@ async function recordDraftImportPersistence(input: {
             lastErrorMessage: null,
             lastSyncedAt: now,
             shopifyProductGid: pair.result.product.id,
-            ...(inventoryItemGid
-              ? { shopifyInventoryItemGid: inventoryItemGid }
-              : {}),
+            ...(inventoryItemGid ? { shopifyInventoryItemGid: inventoryItemGid } : {}),
             shopifyVariantGid: variantGid,
             sku: pair.draftProduct.previewItem.normalized.sku,
             status: ProductMappingStatus.ACTIVE,
@@ -3155,9 +3040,7 @@ async function recordDraftImportPersistence(input: {
           { ...ebaySnapshot, mappingId: mapping.id },
           buildSyncBayProductSnapshot({
             draftProduct: pair.draftProduct,
-            importProductStatus: normalizeImportProductStatus(
-              pair.draftProduct.product.status,
-            ),
+            importProductStatus: normalizeImportProductStatus(pair.draftProduct.product.status),
             jobId: input.jobId,
             mappingId: mapping.id,
             productFacets: facetBaseline,
@@ -3170,9 +3053,7 @@ async function recordDraftImportPersistence(input: {
   });
 
   return {
-    createdCount: successfulPairs.filter(
-      (pair) => pair.result.resultType === "created",
-    ).length,
+    createdCount: successfulPairs.filter((pair) => pair.result.resultType === "created").length,
     inventoryFailedCount: successfulPairs.filter(
       (pair) => pair.result.inventorySync.status === "failed",
     ).length,
@@ -3186,9 +3067,8 @@ async function recordDraftImportPersistence(input: {
       (total, pair) => total + pair.result.mediaSync.deletedCount,
       0,
     ),
-    mediaFailedCount: successfulPairs.filter(
-      (pair) => pair.result.mediaSync.status === "failed",
-    ).length,
+    mediaFailedCount: successfulPairs.filter((pair) => pair.result.mediaSync.status === "failed")
+      .length,
     mediaImageCreatedCount: successfulPairs.reduce(
       (total, pair) => total + pair.result.mediaSync.createdCount,
       0,
@@ -3197,9 +3077,8 @@ async function recordDraftImportPersistence(input: {
       (total, pair) => total + pair.result.mediaSync.stagedCreatedCount,
       0,
     ),
-    mediaSyncedCount: successfulPairs.filter(
-      (pair) => pair.result.mediaSync.status === "synced",
-    ).length,
+    mediaSyncedCount: successfulPairs.filter((pair) => pair.result.mediaSync.status === "synced")
+      .length,
     managedCount: successfulPairs.length,
     publicationPublishedCount: successfulPairs.reduce(
       (total, pair) =>
@@ -3215,9 +3094,7 @@ async function recordDraftImportPersistence(input: {
     publicationSyncedCount: successfulPairs.filter(
       (pair) => pair.result.publicationSync.status === "synced",
     ).length,
-    reusedCount: successfulPairs.filter(
-      (pair) => pair.result.resultType === "reused",
-    ).length,
+    reusedCount: successfulPairs.filter((pair) => pair.result.resultType === "reused").length,
   };
 }
 
@@ -3266,8 +3143,7 @@ function buildDraftImportSummary(input: {
     mediaImageCreatedCount: input.persistenceResult.mediaImageCreatedCount,
     mediaStagedCount: input.persistenceResult.mediaStagedCount,
     mediaSyncedCount: input.persistenceResult.mediaSyncedCount,
-    publicationPublishedCount:
-      input.persistenceResult.publicationPublishedCount,
+    publicationPublishedCount: input.persistenceResult.publicationPublishedCount,
     publicationSkippedCount: input.persistenceResult.publicationSkippedCount,
     publicationSyncedCount: input.persistenceResult.publicationSyncedCount,
     requestedCount: input.products.length + (input.unchangedSkippedCount ?? 0),
@@ -3280,9 +3156,7 @@ function buildDraftImportSummary(input: {
 // la pipeline Shopify può essere saltata senza perdere alcuna modifica.
 export function isDraftProductUnchangedSinceLastEbaySnapshot(input: {
   draftProduct: ShopifyDraftProductInput;
-  previousEbaySnapshot: Parameters<
-    typeof shouldCreateProductSnapshot
-  >[0]["previous"];
+  previousEbaySnapshot: Parameters<typeof shouldCreateProductSnapshot>[0]["previous"];
   shopId: string;
 }) {
   if (!input.previousEbaySnapshot) return false;
@@ -3332,9 +3206,7 @@ async function partitionUnchangedDraftProducts(input: {
     },
     where: {
       ebayItemId: {
-        in: input.draftProducts.map(
-          (draftProduct) => draftProduct.source.ebayItemId,
-        ),
+        in: input.draftProducts.map((draftProduct) => draftProduct.source.ebayItemId),
       },
       lastErrorCode: null,
       marketplaceId: getEbayMarketplaceId(),
@@ -3343,9 +3215,7 @@ async function partitionUnchangedDraftProducts(input: {
       status: ProductMappingStatus.ACTIVE,
     },
   });
-  const mappingsByItemId = new Map(
-    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
-  );
+  const mappingsByItemId = new Map(mappings.map((mapping) => [mapping.ebayItemId, mapping]));
   const unchangedMappingIds: string[] = [];
   const changedDraftProducts = input.draftProducts.filter((draftProduct) => {
     const mapping = mappingsByItemId.get(draftProduct.source.ebayItemId);
@@ -3398,12 +3268,8 @@ function buildEbayProductSnapshot(input: {
   };
 }
 
-function shouldPersistProductFacetBaseline(
-  facetSync: ShopifyProductFacetSyncResult | undefined,
-) {
-  return Boolean(
-    facetSync && (facetSync.written.length > 0 || facetSync.deleted.length > 0),
-  );
+function shouldPersistProductFacetBaseline(facetSync: ShopifyProductFacetSyncResult | undefined) {
+  return Boolean(facetSync && (facetSync.written.length > 0 || facetSync.deleted.length > 0));
 }
 
 function buildSyncBayProductSnapshot(input: {
@@ -3425,9 +3291,7 @@ function buildSyncBayProductSnapshot(input: {
       shopifyDescriptionHtml: input.result.product.descriptionHtml,
     }),
     ebayItemId: item.itemId,
-    imageCount:
-      input.result.mediaSync.createdCount +
-      (input.result.mediaSync.preservedCount ?? 0),
+    imageCount: input.result.mediaSync.createdCount + (input.result.mediaSync.preservedCount ?? 0),
     mappingId: input.mappingId,
     payload: {
       handle: input.draftProduct.product.handle,
@@ -3447,9 +3311,7 @@ function buildSyncBayProductSnapshot(input: {
       tags: input.draftProduct.product.tags,
       ...(Object.hasOwn(input, "productFacets")
         ? {
-            productFacets: (input.productFacets ?? []).map(
-              serializeProductFacet,
-            ),
+            productFacets: (input.productFacets ?? []).map(serializeProductFacet),
           }
         : {}),
     } satisfies Prisma.JsonObject,
@@ -3465,15 +3327,11 @@ function buildSyncBayProductSnapshot(input: {
   };
 }
 
-function formatProductFacetSyncWarnings(
-  facetSync: ShopifyProductFacetSyncResult,
-) {
+function formatProductFacetSyncWarnings(facetSync: ShopifyProductFacetSyncResult) {
   const warnings: string[] = [];
 
   if (facetSync.status === "missing_owner") {
-    warnings.push(
-      "Faccette prodotto non aggiornate: prodotto Shopify non trovato.",
-    );
+    warnings.push("Faccette prodotto non aggiornate: prodotto Shopify non trovato.");
   }
 
   if (facetSync.written.length > 0) {
@@ -3626,8 +3484,7 @@ function isAlreadyActiveInventoryError(errors: ShopifyUserError[]) {
 
     return (
       normalizedMessage.includes("already") &&
-      (normalizedMessage.includes("active") ||
-        normalizedMessage.includes("stock"))
+      (normalizedMessage.includes("active") || normalizedMessage.includes("stock"))
     );
   });
 }
@@ -3645,8 +3502,7 @@ function getEbayMarketplaceId() {
 function getSupabaseStorageConfig() {
   const supabaseUrl = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const bucket =
-    process.env.SUPABASE_STORAGE_BUCKET?.trim() ?? "syncbay-import-staging";
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET?.trim() ?? "syncbay-import-staging";
 
   if (!supabaseUrl || !serviceRoleKey || !bucket) return null;
 
@@ -3686,10 +3542,7 @@ function buildSupabaseImageObjectPath(input: {
   jobId: string;
   sourceUrl: string;
 }) {
-  const hash = createHash("sha256")
-    .update(input.sourceUrl)
-    .digest("hex")
-    .slice(0, 16);
+  const hash = createHash("sha256").update(input.sourceUrl).digest("hex").slice(0, 16);
   const extension = getImageExtension(input.contentType, input.sourceUrl);
 
   return [
@@ -3711,20 +3564,12 @@ function encodeSupabaseObjectPath(path: string) {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
-function normalizeImageContentType(
-  rawContentType: string | null,
-  sourceUrl: string,
-) {
+function normalizeImageContentType(rawContentType: string | null, sourceUrl: string) {
   const contentType = rawContentType?.split(";")[0]?.trim().toLowerCase();
 
   if (contentType?.startsWith("image/")) return contentType;
 
-  const extension = sourceUrl
-    .split("?")[0]
-    .split("#")[0]
-    .split(".")
-    .pop()
-    ?.toLowerCase();
+  const extension = sourceUrl.split("?")[0].split("#")[0].split(".").pop()?.toLowerCase();
 
   if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
   if (extension === "png") return "image/png";
@@ -3758,9 +3603,7 @@ async function readShortResponseText(response: Response) {
 }
 
 function dedupeImageUrls(imageUrls: string[]) {
-  return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(
-    Boolean,
-  );
+  return [...new Set(imageUrls.map((imageUrl) => imageUrl.trim()))].filter(Boolean);
 }
 
 function getImportablePreviewItems(previewResult: ImportPreviewResult) {
@@ -3786,9 +3629,7 @@ function buildSyncBayProductMetafields(item: ImportPreviewItem) {
       storeCategoryName: item.normalized.storeCategoryName,
     }),
     ...buildShopifyProductFacetMetafields(item.normalized.productFacets),
-  ].filter((metafield): metafield is NonNullable<typeof metafield> =>
-    Boolean(metafield),
-  );
+  ].filter((metafield): metafield is NonNullable<typeof metafield> => Boolean(metafield));
 }
 
 function buildSyncBayProductHandle(ebayItemId: string) {
@@ -3799,10 +3640,7 @@ function buildSyncBayProductHandle(ebayItemId: string) {
 }
 
 export function getDraftImportLimit() {
-  const parsed = Number.parseInt(
-    process.env.SYNCBAY_DRAFT_IMPORT_LIMIT ?? "",
-    10,
-  );
+  const parsed = Number.parseInt(process.env.SYNCBAY_DRAFT_IMPORT_LIMIT ?? "", 10);
 
   if (!Number.isInteger(parsed)) return DEFAULT_DRAFT_IMPORT_LIMIT;
 

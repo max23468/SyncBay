@@ -15,8 +15,7 @@ export function normalizeShopifyWebhookTopic(topic: string) {
 
   return (
     SHOPIFY_WEBHOOK_TOPICS.find(
-      (candidate) =>
-        candidate === normalized || candidate.replace("/", "_") === normalized,
+      (candidate) => candidate === normalized || candidate.replace("/", "_") === normalized,
     ) ?? normalized
   );
 }
@@ -43,12 +42,8 @@ function extractShopifyOrderLineItems(payload: unknown) {
   if (!payload || typeof payload !== "object") return [];
 
   const record = payload as Record<string, unknown>;
-  const orderId =
-    getStringField(record, "admin_graphql_api_id") ??
-    getStringField(record, "id");
-  const rawLineItems = Array.isArray(record.line_items)
-    ? record.line_items
-    : [];
+  const orderId = getStringField(record, "admin_graphql_api_id") ?? getStringField(record, "id");
+  const rawLineItems = Array.isArray(record.line_items) ? record.line_items : [];
 
   return rawLineItems.flatMap((lineItem, index) => {
     if (!lineItem || typeof lineItem !== "object") return [];
@@ -67,12 +62,8 @@ function extractShopifyOrderLineItems(payload: unknown) {
           lineItemId ??
           `${orderId ?? "no-order"}:${productId ?? "no-product"}:${variantId ?? "no-variant"}:${index}`,
         quantity,
-        shopifyProductGid: productId
-          ? `gid://shopify/Product/${productId}`
-          : null,
-        shopifyVariantGid: variantId
-          ? `gid://shopify/ProductVariant/${variantId}`
-          : null,
+        shopifyProductGid: productId ? `gid://shopify/Product/${productId}` : null,
+        shopifyVariantGid: variantId ? `gid://shopify/ProductVariant/${variantId}` : null,
       },
     ];
   });
@@ -100,15 +91,10 @@ function extractShopifyInventoryItemGid(payload: unknown) {
   const record = payload as Record<string, unknown>;
   const inventoryItemId = getStringField(record, "inventory_item_id");
 
-  return inventoryItemId
-    ? `gid://shopify/InventoryItem/${inventoryItemId}`
-    : null;
+  return inventoryItemId ? `gid://shopify/InventoryItem/${inventoryItemId}` : null;
 }
 
-function getRecordField(
-  record: Record<string, unknown> | null | undefined,
-  key: string,
-) {
+function getRecordField(record: Record<string, unknown> | null | undefined, key: string) {
   const value = record?.[key];
 
   return value && typeof value === "object" && !Array.isArray(value)
@@ -116,10 +102,7 @@ function getRecordField(
     : null;
 }
 
-function getStringField(
-  record: Record<string, unknown> | null | undefined,
-  key: string,
-) {
+function getStringField(record: Record<string, unknown> | null | undefined, key: string) {
   const value = record?.[key];
 
   if (typeof value === "string" && value.trim()) return value.trim();

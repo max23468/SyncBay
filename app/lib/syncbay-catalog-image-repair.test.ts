@@ -99,8 +99,5 @@ test("excludes open-conflict mappings before capping catalog image repair candid
 });
 
 test("uses a UTC daily run key for idempotent image repair enqueueing", () => {
-  assert.equal(
-    getCatalogImageRepairRunKey(new Date("2026-06-11T23:30:00.000Z")),
-    "2026-06-11",
-  );
+  assert.equal(getCatalogImageRepairRunKey(new Date("2026-06-11T23:30:00.000Z")), "2026-06-11");
 });

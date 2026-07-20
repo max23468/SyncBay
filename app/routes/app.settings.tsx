@@ -1,21 +1,7 @@
-import type {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "react-router";
-import {
-  Form,
-  useActionData,
-  useLoaderData,
-  useNavigation,
-} from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
+import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 
-import {
-  ActionRow,
-  MetricTile,
-  SettingCard,
-  StatusRow,
-} from "../components/SyncBayUi";
+import { ActionRow, MetricTile, SettingCard, StatusRow } from "../components/SyncBayUi";
 import { useActionToast } from "../hooks/use-action-toast";
 import {
   getImportProductStatusLabelCapitalized,
@@ -54,10 +40,7 @@ import {
   getProductPublicationModeSummaryLabel,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
-import {
-  getSyncTargetLabel,
-  SYNC_TARGET_OPTIONS,
-} from "../lib/syncbay-sync-interval";
+import { getSyncTargetLabel, SYNC_TARGET_OPTIONS } from "../lib/syncbay-sync-interval";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import { authenticate } from "../shopify.server";
 import {
@@ -132,9 +115,7 @@ export const meta: MetaFunction = () => getSyncBayMeta("Impostazioni");
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
-  const { admin, session } = await trace.measure("auth.admin", () =>
-    authenticate.admin(request),
-  );
+  const { admin, session } = await trace.measure("auth.admin", () => authenticate.admin(request));
 
   const settings = await trace.measure("settings.state", () =>
     getShopSettingsState(session, admin, trace),
@@ -145,8 +126,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     details: {
       activeMappingCount: settings.sync.activeMappingCount,
       ebayStatus: settings.ebay.status,
-      publicationCount:
-        settings.productPublications.availablePublications.length,
+      publicationCount: settings.productPublications.availablePublications.length,
       syncBlockerCount: settings.sync.enablementBlockers.length,
     },
     payload: settings,
@@ -203,8 +183,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const selectedPublicationIds = formData
       .getAll("productPublicationGids")
       .map((value) => String(value));
-    const publications =
-      mode === "SELECTED" ? await loadShopifyProductPublications(admin) : [];
+    const publications = mode === "SELECTED" ? await loadShopifyProductPublications(admin) : [];
 
     if (!Array.isArray(publications) && "errorMessage" in publications) {
       return Response.json({
@@ -300,9 +279,7 @@ export default function SettingsRoute() {
       ? actionData.defaultProductStatus
       : settings.shop.defaultProductStatus;
   const currentSyncEnabled =
-    actionData?.intent === "saveSyncSettings"
-      ? actionData.syncEnabled
-      : settings.shop.syncEnabled;
+    actionData?.intent === "saveSyncSettings" ? actionData.syncEnabled : settings.shop.syncEnabled;
   const currentPublicationMode =
     actionData?.intent === "saveProductPublications"
       ? actionData.mode
@@ -348,24 +325,15 @@ export default function SettingsRoute() {
         />
 
         <div className="syncbay-balanced-box-grid">
-          <s-grid
-            gap="large"
-            gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-          >
-            <ImportProductSettingsCard
-              currentStatus={currentStatus}
-              isSaving={isSaving}
-            />
+          <s-grid gap="large" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))">
+            <ImportProductSettingsCard currentStatus={currentStatus} isSaving={isSaving} />
             <ProductPublicationSettingsCard
               currentPublicationMode={currentPublicationMode}
               isSaving={isSaving}
               selectedPublicationIds={selectedPublicationIds}
               settings={settings}
             />
-            <PricingRuleSettingsCard
-              currentPricingRule={currentPricingRule}
-              isSaving={isSaving}
-            />
+            <PricingRuleSettingsCard currentPricingRule={currentPricingRule} isSaving={isSaving} />
             <DescriptionRuleSettingsCard
               currentDescriptionRule={currentDescriptionRule}
               isSaving={isSaving}
@@ -398,9 +366,7 @@ function DescriptionRuleSettingsCard({
       statusTone="info"
       title="Regola descrizione"
     >
-      <s-paragraph>
-        {getDescriptionRuleDetail(currentDescriptionRule.mode)}
-      </s-paragraph>
+      <s-paragraph>{getDescriptionRuleDetail(currentDescriptionRule.mode)}</s-paragraph>
       <Form method="post">
         <input type="hidden" name="intent" value="saveDescriptionRule" />
         <s-select
@@ -416,8 +382,8 @@ function DescriptionRuleSettingsCard({
           ))}
         </s-select>
         <s-text color="subdued">
-          La scelta vale per i prossimi import e per le anteprime di pulizia. I
-          prodotti già importati non vengono riscritti automaticamente.
+          La scelta vale per i prossimi import e per le anteprime di pulizia. I prodotti già
+          importati non vengono riscritti automaticamente.
         </s-text>
         <s-button type="submit" disabled={isSaving}>
           {isSaving ? "Salvataggio..." : "Salva regola descrizione"}
@@ -449,23 +415,16 @@ function SyncCatalogSettingsCard({
       title="Sync catalogo"
     >
       <s-text color="subdued">
-        Negozio: {settings.shop.domain}. Il catalogo resta eBay verso Shopify;
-        la disponibilità eBay viene aggiornata solo dagli ordini Shopify pagati.
+        Negozio: {settings.shop.domain}. Il catalogo resta eBay verso Shopify; la disponibilità eBay
+        viene aggiornata solo dagli ordini Shopify pagati.
       </s-text>
       <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-        >
+        <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))">
           <MetricTile
             detail="Ultimo aggiornamento incrementale completato."
             icon="check-circle"
             label="Ultimo aggiornamento"
-            tone={
-              settings.sync.lastIncrementalFinishedAt
-                ? "success"
-                : unavailableMetric.tone
-            }
+            tone={settings.sync.lastIncrementalFinishedAt ? "success" : unavailableMetric.tone}
             value={
               settings.sync.lastIncrementalFinishedAt
                 ? formatDateTime(settings.sync.lastIncrementalFinishedAt)
@@ -482,17 +441,10 @@ function SyncCatalogSettingsCard({
         </s-grid>
       </div>
       {settings.sync.enablementBlockers.length > 0 ? (
-        <s-box
-          border="base"
-          borderColor="base"
-          borderRadius="base"
-          padding="base"
-        >
+        <s-box border="base" borderColor="base" borderRadius="base" padding="base">
           <s-stack gap="small-200">
             <s-badge tone="warning">Sync non attivabile</s-badge>
-            <s-text>
-              Per attivare il sync automatico mancano questi prerequisiti:
-            </s-text>
+            <s-text>Per attivare il sync automatico mancano questi prerequisiti:</s-text>
             <s-unordered-list>
               {settings.sync.enablementBlockers.map((blocker) => (
                 <s-list-item key={blocker}>{blocker}</s-list-item>
@@ -516,8 +468,8 @@ function SyncCatalogSettingsCard({
           ))}
         </s-select>
         <s-text color="subdued">
-          Finestra indicativa entro cui SyncBay punta ad allineare il catalogo.
-          Attuale: {getSyncTargetLabel(currentSyncTarget)}.
+          Finestra indicativa entro cui SyncBay punta ad allineare il catalogo. Attuale:{" "}
+          {getSyncTargetLabel(currentSyncTarget)}.
         </s-text>
         <s-button type="submit" disabled={isSaving}>
           {isSaving ? "Salvataggio..." : "Salva intervallo"}
@@ -528,9 +480,8 @@ function SyncCatalogSettingsCard({
           <summary>Disattiva sync automatico</summary>
           <s-stack gap="small-200">
             <s-text>
-              Disattivando il sync, SyncBay smette di allineare il catalogo da
-              eBay a Shopify finché non lo riattivi. La disponibilità eBay dagli
-              ordini Shopify resta gestita a parte.
+              Disattivando il sync, SyncBay smette di allineare il catalogo da eBay a Shopify finché
+              non lo riattivi. La disponibilità eBay dagli ordini Shopify resta gestita a parte.
             </s-text>
             <Form method="post">
               <input type="hidden" name="intent" value="saveSyncSettings" />
@@ -577,8 +528,8 @@ function ImportProductSettingsCard({
       title="Import prodotti"
     >
       <s-paragraph>
-        Il default si applica ai nuovi prodotti creati dai prossimi import. Le
-        bozze restano non pubblicate.
+        Il default si applica ai nuovi prodotti creati dai prossimi import. Le bozze restano non
+        pubblicate.
       </s-paragraph>
       <Form method="post">
         <input type="hidden" name="intent" value="saveImportDefaults" />
@@ -627,8 +578,7 @@ function ProductPublicationSettingsCard({
       title="Canali di vendita"
     >
       <s-paragraph>
-        I prodotti attivi creati o riusati seguono questa policy di
-        pubblicazione Shopify.
+        I prodotti attivi creati o riusati seguono questa policy di pubblicazione Shopify.
       </s-paragraph>
       {settings.productPublications.errorMessage ? (
         <s-paragraph>{settings.productPublications.errorMessage}</s-paragraph>
@@ -648,23 +598,20 @@ function ProductPublicationSettingsCard({
           ))}
         </s-select>
         <s-text color="subdued">
-          Le caselle qui sotto valgono solo con la policy «Solo canali
-          selezionati».
+          Le caselle qui sotto valgono solo con la policy «Solo canali selezionati».
         </s-text>
         {settings.productPublications.availablePublications.length > 0 ? (
           <s-stack gap="small-200">
-            {settings.productPublications.availablePublications.map(
-              (publication) => (
-                <s-checkbox
-                  checked={selectedPublicationIdSet.has(publication.id)}
-                  id={`publication-${publication.id}`}
-                  key={publication.id}
-                  label={publication.title}
-                  name="productPublicationGids"
-                  value={publication.id}
-                />
-              ),
-            )}
+            {settings.productPublications.availablePublications.map((publication) => (
+              <s-checkbox
+                checked={selectedPublicationIdSet.has(publication.id)}
+                id={`publication-${publication.id}`}
+                key={publication.id}
+                label={publication.title}
+                name="productPublicationGids"
+                value={publication.id}
+              />
+            ))}
           </s-stack>
         ) : (
           <s-paragraph>Nessun canale Shopify disponibile.</s-paragraph>
@@ -689,15 +636,12 @@ function PricingRuleSettingsCard({
       description="Prezzo Shopify calcolato dal prezzo eBay."
       icon="product"
       statusLabel={getPricingRuleSummaryLabel(currentPricingRule)}
-      statusTone={
-        currentPricingRule.discountPercent > 0 ? "success" : "neutral"
-      }
+      statusTone={currentPricingRule.discountPercent > 0 ? "success" : "neutral"}
       title="Regola prezzo"
     >
       <s-paragraph>
-        Lo sconto si applica a tutti i prodotti importati o riallineati. Il
-        prezzo eBay resta come compare-at price Shopify quando lo sconto è
-        maggiore di zero.
+        Lo sconto si applica a tutti i prodotti importati o riallineati. Il prezzo eBay resta come
+        compare-at price Shopify quando lo sconto è maggiore di zero.
       </s-paragraph>
       <Form method="post">
         <input type="hidden" name="intent" value="savePricingRule" />
@@ -709,8 +653,8 @@ function PricingRuleSettingsCard({
           required
         />
         <s-text color="subdued">
-          Inserisci un numero intero da 0 a 90. Con 0 SyncBay mantiene il prezzo
-          eBay senza prezzo barrato.
+          Inserisci un numero intero da 0 a 90. Con 0 SyncBay mantiene il prezzo eBay senza prezzo
+          barrato.
         </s-text>
         <s-select
           id="roundingMode"
@@ -806,9 +750,8 @@ function AdvancedSettingsCard({
           <summary>Scollega account eBay</summary>
           <s-stack gap="small-200">
             <s-text>
-              Scollegando eBay, SyncBay cancella i token salvati e ferma il sync
-              automatico. Il catalogo già importato resta su Shopify e potrai
-              ricollegare eBay quando vuoi.
+              Scollegando eBay, SyncBay cancella i token salvati e ferma il sync automatico. Il
+              catalogo già importato resta su Shopify e potrai ricollegare eBay quando vuoi.
             </s-text>
             <Form method="post">
               <input type="hidden" name="intent" value="disconnectEbay" />
@@ -831,9 +774,7 @@ function AdvancedSettingsCard({
             </s-list-item>
             <s-list-item>
               Scope Shopify attivi:{" "}
-              {settings.shopify.scopes.length > 0
-                ? settings.shopify.scopes.join(", ")
-                : "nessuno"}
+              {settings.shopify.scopes.length > 0 ? settings.shopify.scopes.join(", ") : "nessuno"}
             </s-list-item>
             <s-list-item>
               Scope richiesti dalla configurazione:{" "}

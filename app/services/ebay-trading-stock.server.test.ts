@@ -5,10 +5,7 @@ import { getEbayTradingAvailableQuantityFromItem } from "./ebay-trading-stock.se
 
 test("reads current eBay availability from QuantityAvailable", () => {
   assert.equal(
-    getEbayTradingAvailableQuantityFromItem(
-      { Quantity: "8", QuantityAvailable: "3" },
-      null,
-    ),
+    getEbayTradingAvailableQuantityFromItem({ Quantity: "8", QuantityAvailable: "3" }, null),
     3,
   );
 });

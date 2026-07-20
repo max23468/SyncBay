@@ -9,7 +9,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 ### Non versionato
 
 - Migrata la toolchain di qualità da ESLint/Prettier a oxlint/oxfmt. `npm run
-  lint` usa oxlint (config `.oxlintrc.json`, plugin import/react/jsx-a11y/
+lint` usa oxlint (config `.oxlintrc.json`, plugin import/react/jsx-a11y/
   typescript); `npm run format` e `format:check` usano oxfmt. Rimosse 11
   devDependency ESLint/Prettier e `eslint.config.mjs`. Due cali di copertura
   noti e accettati: oxlint non ha le regole `react-hooks`

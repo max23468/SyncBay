@@ -59,10 +59,7 @@ export function buildRetentionCleanupPlan(input: {
 /**
  * Vero quando un timestamp è scaduto rispetto al cutoff (anteriore o uguale).
  */
-export function isExpiredAtCutoff(
-  timestamp: Date | string | null | undefined,
-  cutoff: Date,
-) {
+export function isExpiredAtCutoff(timestamp: Date | string | null | undefined, cutoff: Date) {
   const time = toTime(timestamp);
   if (time === null) return false;
 
@@ -78,9 +75,7 @@ export function selectExpiredRecords<T>(
   cutoff: Date,
   getTimestamp: (record: T) => Date | string | null | undefined,
 ) {
-  return records.filter((record) =>
-    isExpiredAtCutoff(getTimestamp(record), cutoff),
-  );
+  return records.filter((record) => isExpiredAtCutoff(getTimestamp(record), cutoff));
 }
 
 export function getExpiredSucceededSyncJobsWhere(cutoff: Date) {
@@ -107,8 +102,7 @@ function normalizeRetentionDays(value: number) {
 function toTime(value: Date | string | null | undefined) {
   if (!value) return null;
 
-  const time =
-    value instanceof Date ? value.getTime() : new Date(value).getTime();
+  const time = value instanceof Date ? value.getTime() : new Date(value).getTime();
 
   return Number.isFinite(time) ? time : null;
 }

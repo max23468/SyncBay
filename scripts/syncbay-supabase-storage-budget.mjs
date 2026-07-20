@@ -23,9 +23,7 @@ const { stdout } = await promisify(execFile)(
     timeout: 45_000,
   },
 );
-const start = Math.min(
-  ...[stdout.indexOf("{"), stdout.indexOf("[")].filter((value) => value >= 0),
-);
+const start = Math.min(...[stdout.indexOf("{"), stdout.indexOf("[")].filter((value) => value >= 0));
 const parsed = JSON.parse(stdout.slice(start));
 const row = (parsed.rows ?? parsed)?.[0] ?? {};
 const observation = buildSupabaseStorageObservation({

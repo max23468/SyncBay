@@ -18,25 +18,18 @@ test("detects localized eBay Trading usage limit errors", () => {
 
 test("detects English eBay Trading call limit errors", () => {
   assert.equal(
-    isEbayTradingUsageLimitError(
-      "The application has exceeded the usage limit in this call.",
-    ),
+    isEbayTradingUsageLimitError("The application has exceeded the usage limit in this call."),
     true,
   );
 });
 
 test("detects English eBay Trading usage limit errors", () => {
-  assert.equal(
-    isEbayTradingUsageLimitError("Call usage limit has been reached."),
-    true,
-  );
+  assert.equal(isEbayTradingUsageLimitError("Call usage limit has been reached."), true);
 });
 
 test("ignores unrelated eBay Trading errors", () => {
   assert.equal(
-    isEbayTradingUsageLimitError(
-      "eBay Trading API ha risposto: token OAuth non valido.",
-    ),
+    isEbayTradingUsageLimitError("eBay Trading API ha risposto: token OAuth non valido."),
     false,
   );
 });

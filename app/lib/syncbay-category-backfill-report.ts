@@ -114,11 +114,7 @@ export function buildCategoryApplyPlan(
         shopifyCategoryGid: row.proposal?.shopifyCategoryGid ?? "",
         shopifyProductGid: row.shopifyProductGid ?? "",
       };
-      if (
-        !mapped.productType ||
-        !mapped.shopifyCategoryGid ||
-        !mapped.shopifyProductGid
-      ) {
+      if (!mapped.productType || !mapped.shopifyCategoryGid || !mapped.shopifyProductGid) {
         return [];
       }
 
@@ -130,9 +126,7 @@ export function buildCategoryApplyPlan(
         ? 0
         : options.includeCategoryConflicts
           ? report.rows.filter(
-              (row) =>
-                row.status === "conflict_manual" &&
-                !isKnownLegacyMapperConflict(row),
+              (row) => row.status === "conflict_manual" && !isKnownLegacyMapperConflict(row),
             ).length
           : report.summary.conflictsManual,
       ebayLookupFailed: report.summary.ebayLookupFailed,
@@ -156,9 +150,7 @@ function isKnownLegacyMapperConflict(row: CategoryBackfillReportRow) {
   const isCoinFlatteningConflict =
     (canRepairHighConfidence || canRepairUnchangedProductType) &&
     proposal.shopifyCategoryGid === SHOPIFY_TAXONOMY_GIDS.collectibleCoins &&
-    ["Monete italiane", "Monete commemorative", "Monete bullion"].includes(
-      proposal.productType,
-    ) &&
+    ["Monete italiane", "Monete commemorative", "Monete bullion"].includes(proposal.productType) &&
     new Set<string>([
       SHOPIFY_TAXONOMY_GIDS.bullionCoins,
       SHOPIFY_TAXONOMY_GIDS.commemorativeCoins,
@@ -168,8 +160,7 @@ function isKnownLegacyMapperConflict(row: CategoryBackfillReportRow) {
 
   const isMedalFlatteningConflict =
     canRepairHighConfidence &&
-    proposal.shopifyCategoryGid ===
-      SHOPIFY_TAXONOMY_GIDS.collectibleCoinsAndCurrency &&
+    proposal.shopifyCategoryGid === SHOPIFY_TAXONOMY_GIDS.collectibleCoinsAndCurrency &&
     proposal.productType === "Medaglie" &&
     new Set<string>([
       SHOPIFY_TAXONOMY_GIDS.collectibleCoins,
@@ -179,41 +170,26 @@ function isKnownLegacyMapperConflict(row: CategoryBackfillReportRow) {
 
   const isBanknoteFromCoinConflict =
     canRepairHighConfidence &&
-    proposal.shopifyCategoryGid ===
-      SHOPIFY_TAXONOMY_GIDS.collectibleBanknotes &&
+    proposal.shopifyCategoryGid === SHOPIFY_TAXONOMY_GIDS.collectibleBanknotes &&
     proposal.productType === "Banconote italiane" &&
-    new Set<string>([
-      SHOPIFY_TAXONOMY_GIDS.collectibleCoins,
-      SHOPIFY_TAXONOMY_GIDS.rareCoins,
-    ]).has(row.shopifyCategoryGid ?? "");
+    new Set<string>([SHOPIFY_TAXONOMY_GIDS.collectibleCoins, SHOPIFY_TAXONOMY_GIDS.rareCoins]).has(
+      row.shopifyCategoryGid ?? "",
+    );
 
-  return (
-    isCoinFlatteningConflict ||
-    isMedalFlatteningConflict ||
-    isBanknoteFromCoinConflict
-  );
+  return isCoinFlatteningConflict || isMedalFlatteningConflict || isBanknoteFromCoinConflict;
 }
 
-function getCategoryBackfillStatus(
-  row: CategoryBackfillReportRowInput,
-): CategoryBackfillStatus {
+function getCategoryBackfillStatus(row: CategoryBackfillReportRowInput): CategoryBackfillStatus {
   if (!row.shopifyProductGid) return "missing_shopify_product";
 
   const proposal = row.proposal;
-  if (
-    !proposal ||
-    proposal.confidence === "low" ||
-    !proposal.shopifyCategoryGid
-  ) {
+  if (!proposal || proposal.confidence === "low" || !proposal.shopifyCategoryGid) {
     if (row.lookupFailed) return "ebay_lookup_failed";
 
     return "uncertain";
   }
 
-  if (
-    row.shopifyCategoryGid &&
-    row.shopifyCategoryGid !== proposal.shopifyCategoryGid
-  ) {
+  if (row.shopifyCategoryGid && row.shopifyCategoryGid !== proposal.shopifyCategoryGid) {
     return "conflict_manual";
   }
 
@@ -254,10 +230,7 @@ function getProposedCategories(rows: CategoryBackfillReportRow[]) {
   });
 }
 
-function countStatus(
-  rows: CategoryBackfillReportRow[],
-  status: CategoryBackfillStatus,
-) {
+function countStatus(rows: CategoryBackfillReportRow[], status: CategoryBackfillStatus) {
   return rows.filter((row) => row.status === status).length;
 }
 

@@ -14,11 +14,7 @@
  * così la cancellazione resta osservabile.
  */
 
-import {
-  AuditEventType,
-  EbayAccountDeletionRequestStatus,
-  SyncJobStatus,
-} from "@prisma/client";
+import { AuditEventType, EbayAccountDeletionRequestStatus, SyncJobStatus } from "@prisma/client";
 
 import prisma from "../db.server";
 import {

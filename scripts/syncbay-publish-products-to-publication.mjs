@@ -2,16 +2,8 @@
 
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs as parseNodeArgs } from "node:util";
-import {
-  formatCliError,
-  querySupabaseJson,
-  sqlString,
-} from "./supabase-cli-env.mjs";
-import {
-  decryptSecret,
-  ensureTokenEncryptionKey,
-  loadDotEnv,
-} from "./syncbay-ebay-cli.mjs";
+import { formatCliError, querySupabaseJson, sqlString } from "./supabase-cli-env.mjs";
+import { decryptSecret, ensureTokenEncryptionKey, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_PUBLICATION_TITLE = "Online Store";
@@ -34,23 +26,16 @@ const publicationTitle = args.publicationTitle ?? DEFAULT_PUBLICATION_TITLE;
 const batchSize = args.batchSize ?? DEFAULT_BATCH_SIZE;
 
 await main().catch((error) => {
-  console.error(
-    `Pubblicazione prodotti non riuscita: ${formatCliError(error)}`,
-  );
+  console.error(`Pubblicazione prodotti non riuscita: ${formatCliError(error)}`);
   process.exit(1);
 });
 
 async function main() {
   const target = await loadTargetProducts();
-  const publication = await findPublicationByTitle(
-    target.accessToken,
-    publicationTitle,
-  );
+  const publication = await findPublicationByTitle(target.accessToken, publicationTitle);
 
   if (target.productGids.length === 0) {
-    console.log(
-      `Nessun prodotto SyncBay attivo da pubblicare per ${shopDomain}.`,
-    );
+    console.log(`Nessun prodotto SyncBay attivo da pubblicare per ${shopDomain}.`);
     return;
   }
 
@@ -93,11 +78,7 @@ async function main() {
 
   for (let index = 0; index < productGids.length; index += batchSize) {
     const batch = productGids.slice(index, index + batchSize);
-    const result = await publishProductBatch(
-      target.accessToken,
-      batch,
-      publication.id,
-    );
+    const result = await publishProductBatch(target.accessToken, batch, publication.id);
 
     failures.push(...result.failures);
     publishedCount += result.publishedCount;
@@ -112,26 +93,16 @@ async function main() {
 
   if (failures.length > 0) {
     console.error(JSON.stringify({ failures }, null, 2));
-    throw new Error(
-      `Pubblicazione incompleta: ${failures.length} prodotti con errore.`,
-    );
+    throw new Error(`Pubblicazione incompleta: ${failures.length} prodotti con errore.`);
   }
 
   console.log(`Pubblicazione completata: ${publishedCount} prodotti.`);
 }
 
-async function filterUnpublishedProductGids(
-  accessToken,
-  productGids,
-  publicationId,
-) {
+async function filterUnpublishedProductGids(accessToken, productGids, publicationId) {
   const unpublishedProductGids = [];
 
-  for (
-    let index = 0;
-    index < productGids.length;
-    index += DEFAULT_CHECK_BATCH_SIZE
-  ) {
+  for (let index = 0; index < productGids.length; index += DEFAULT_CHECK_BATCH_SIZE) {
     const batch = productGids.slice(index, index + DEFAULT_CHECK_BATCH_SIZE);
     const parsed = await shopifyGraphql(
       accessToken,
@@ -184,9 +155,7 @@ async function findPublicationByTitle(accessToken, title) {
     id: publication.id,
     title: publication.catalog?.title ?? publication.name ?? publication.id,
   }));
-  const selected = normalizedPublications.find(
-    (publication) => publication.title === title,
-  );
+  const selected = normalizedPublications.find((publication) => publication.title === title);
 
   if (!selected) {
     throw new Error(

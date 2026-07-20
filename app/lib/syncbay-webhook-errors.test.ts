@@ -5,9 +5,7 @@ import { isTransientWebhookPersistenceError } from "./syncbay-webhook-errors.ts"
 
 test("recognizes database connection timeouts as transient webhook persistence errors", () => {
   assert.equal(
-    isTransientWebhookPersistenceError(
-      new Error("timeout exceeded when trying to connect"),
-    ),
+    isTransientWebhookPersistenceError(new Error("timeout exceeded when trying to connect")),
     true,
   );
 });
@@ -16,8 +14,7 @@ test("recognizes Prisma transaction start timeouts as transient webhook persiste
   assert.equal(
     isTransientWebhookPersistenceError({
       code: "P2028",
-      message:
-        "Transaction API error: Unable to start a transaction in the given time.",
+      message: "Transaction API error: Unable to start a transaction in the given time.",
       name: "PrismaClientKnownRequestError",
     }),
     true,
@@ -35,9 +32,7 @@ test("recognizes Prisma errors that carry code on an Error instance", () => {
 
 test("recognizes transient session storage readiness failures", () => {
   assert.equal(
-    isTransientWebhookPersistenceError(
-      new Error("Prisma session storage is not ready"),
-    ),
+    isTransientWebhookPersistenceError(new Error("Prisma session storage is not ready")),
     true,
   );
 });
@@ -60,9 +55,7 @@ test("recognizes connection pool checkout timeouts nested in cause as transient"
 test("recognizes driver handler exits as transient webhook persistence errors", () => {
   assert.equal(
     isTransientWebhookPersistenceError(
-      new Error(
-        "(EDBHANDLEREXITED) DbHandler exited. Check logs for more information",
-      ),
+      new Error("(EDBHANDLEREXITED) DbHandler exited. Check logs for more information"),
     ),
     true,
   );
@@ -80,8 +73,5 @@ test("recognizes deadlocks reported via error cause as transient", () => {
 });
 
 test("does not classify unrelated errors as transient webhook persistence errors", () => {
-  assert.equal(
-    isTransientWebhookPersistenceError(new Error("invalid webhook payload")),
-    false,
-  );
+  assert.equal(isTransientWebhookPersistenceError(new Error("invalid webhook payload")), false);
 });

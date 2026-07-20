@@ -39,24 +39,20 @@ test("drops store navigation lists before the product description", () => {
 
 test("keeps allowed leading block tags outside generated paragraphs", () => {
   assert.equal(
-    cleanEbayDescriptionHtml(
-      "<ul><li>Conservazione SPL</li><li>Periziata</li></ul>",
-    ).html,
+    cleanEbayDescriptionHtml("<ul><li>Conservazione SPL</li><li>Periziata</li></ul>").html,
     "<ul><li>Conservazione SPL</li><li>Periziata</li></ul>",
   );
 
   assert.equal(
-    cleanEbayDescriptionHtml("<h2>Dettagli prodotto</h2><p>Moneta rara.</p>")
-      .html,
+    cleanEbayDescriptionHtml("<h2>Dettagli prodotto</h2><p>Moneta rara.</p>").html,
     "<h2>Dettagli prodotto</h2><p>Moneta rara.</p>",
   );
 });
 
 test("keeps product details from neutral tables while removing table markup", () => {
   assert.equal(
-    cleanEbayDescriptionHtml(
-      "<table><tr><td>Anno 1914</td><td>Conservazione SPL</td></tr></table>",
-    ).html,
+    cleanEbayDescriptionHtml("<table><tr><td>Anno 1914</td><td>Conservazione SPL</td></tr></table>")
+      .html,
     "<p>Anno 1914 Conservazione SPL</p>",
   );
 });
@@ -144,17 +140,14 @@ test("removes commercial trust slogans inside leading heading tags", () => {
 
 test("preserves spacing around inline semantic tags", () => {
   assert.equal(
-    cleanEbayDescriptionHtml("<p>Rara <strong>moneta</strong> italiana</p>")
-      .html,
+    cleanEbayDescriptionHtml("<p>Rara <strong>moneta</strong> italiana</p>").html,
     "<p>Rara <strong>moneta</strong> italiana</p>",
   );
 });
 
 test("removes empty formatting tags and empty break paragraphs", () => {
   assert.equal(
-    cleanEbayDescriptionHtml(
-      "<p><strong>Moneta</strong><strong></strong></p><p><br></p>",
-    ).html,
+    cleanEbayDescriptionHtml("<p><strong>Moneta</strong><strong></strong></p><p><br></p>").html,
     "<p><strong>Moneta</strong></p>",
   );
 });

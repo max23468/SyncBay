@@ -80,18 +80,13 @@ test("a retry reuses the outer job id for Shopify idempotency", async () => {
     });
   }
 
-  assert.deepEqual(harness.executedJobIds, [
-    "outer-job-retry",
-    "outer-job-retry",
-  ]);
+  assert.deepEqual(harness.executedJobIds, ["outer-job-retry", "outer-job-retry"]);
   assert.equal(harness.failedTransitions.length, 1);
   assert.equal(harness.succeededTransitions.length, 1);
 });
 
 test("partial product failures are summarized without an internal job", async () => {
-  const failedResults = [
-    { ebayItemId: "synthetic-item", errorMessage: "Errore sintetico" },
-  ];
+  const failedResults = [{ ebayItemId: "synthetic-item", errorMessage: "Errore sintetico" }];
   const harness = createLifecycleHarness([
     buildCatalogImportExecutionResult({
       errorCode: "SHOPIFY_DRAFT_IMPORT_FAILED",
@@ -128,16 +123,11 @@ test("the real catalog executor cannot create or finalize an internal job", () =
     "utf8",
   );
 
-  assert.doesNotMatch(
-    importSource,
-    /prisma\.syncJob\.(?:create|update|upsert)/,
-  );
+  assert.doesNotMatch(importSource, /prisma\.syncJob\.(?:create|update|upsert)/);
   assert.doesNotMatch(importSource, /startDraftImportJob|finishDraftImportJob/);
 });
 
-type UnchangedCheckInput = Parameters<
-  typeof isDraftProductUnchangedSinceLastEbaySnapshot
->[0];
+type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];
 
 function createSyntheticDraftProduct(overrides?: { quantity?: number }) {
   const normalized = {
@@ -175,9 +165,8 @@ function createSyntheticDraftProduct(overrides?: { quantity?: number }) {
 // payload JSON già serializzato e priceAmount in forma decimale-stringa.
 function createStoredEbaySnapshotRow() {
   const draftProduct = createSyntheticDraftProduct();
-  const item = (
-    draftProduct as { previewItem: { normalized: Record<string, unknown> } }
-  ).previewItem;
+  const item = (draftProduct as { previewItem: { normalized: Record<string, unknown> } })
+    .previewItem;
 
   return {
     currency: "EUR",

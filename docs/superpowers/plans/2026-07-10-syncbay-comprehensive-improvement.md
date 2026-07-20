@@ -533,9 +533,7 @@ In `shopify-conflict-detection.server.ts` dichiarare:
 
 ```ts
 export interface ShopifyConflictDetectionPorts {
-  loadMappings(
-    jobs: ShopifyChangeBatchJob[],
-  ): Promise<Map<string, ConflictMapping>>;
+  loadMappings(jobs: ShopifyChangeBatchJob[]): Promise<Map<string, ConflictMapping>>;
   loadBaselines(mappingIds: string[]): Promise<Map<string, ConflictBaseline>>;
   loadProducts(input: {
     productGids: string[];
@@ -572,12 +570,7 @@ export interface ShopifyConflictProduct {
 export interface ConflictDetectionPersistence {
   jobId: string;
   mappingId: string | null;
-  outcome:
-    | "conflict_opened"
-    | "conflict_resolved"
-    | "mapping_not_found"
-    | "noop"
-    | "failed";
+  outcome: "conflict_opened" | "conflict_resolved" | "mapping_not_found" | "noop" | "failed";
   fields: string[];
   errorCode?: string;
 }
@@ -1067,9 +1060,7 @@ export interface ProductSyncBaselineRecord extends Required<ProductBaselineWrite
   updatedAt: Date;
 }
 
-export async function upsertProductSyncBaseline(
-  input: ProductBaselineWrite,
-): Promise<void>;
+export async function upsertProductSyncBaseline(input: ProductBaselineWrite): Promise<void>;
 export async function loadProductSyncBaselines(
   mappingIds: string[],
 ): Promise<Map<string, ProductSyncBaselineRecord>>;
@@ -1185,13 +1176,10 @@ verificata nell'Ondata B.
 
 ```ts
 test("keeps dense events for 30 days and checkpoints for 180", () => {
-  assert.deepEqual(
-    buildProductHistoryRetentionPlan(new Date("2026-07-10T00:00:00Z")),
-    {
-      eventCutoff: new Date("2026-06-10T00:00:00.000Z"),
-      checkpointCutoff: new Date("2026-01-11T00:00:00.000Z"),
-    },
-  );
+  assert.deepEqual(buildProductHistoryRetentionPlan(new Date("2026-07-10T00:00:00Z")), {
+    eventCutoff: new Date("2026-06-10T00:00:00.000Z"),
+    checkpointCutoff: new Date("2026-01-11T00:00:00.000Z"),
+  });
 });
 ```
 
@@ -1396,10 +1384,7 @@ export interface CatalogImportExecutionInput {
   jobId: string;
   shopId: string;
   defaultLocationGid?: string | null;
-  existingCatalogFieldPoliciesByItemId?: Record<
-    string,
-    ExistingCatalogFieldPolicy
-  >;
+  existingCatalogFieldPoliciesByItemId?: Record<string, ExistingCatalogFieldPolicy>;
   facetBaselinesByItemId?: Record<string, SyncBayProductFacet[]>;
   hasDefaultLocation: boolean;
   importProductStatusOverride?: ImportProductStatus;
@@ -1617,14 +1602,7 @@ Ogni pagina espone fixture tipizzate almeno per `healthy`, `empty`, `loading`, `
 `syncbay-ui-check.mjs` esegue in sequenza:
 
 ```js
-const pages = [
-  "panoramica",
-  "catalogo",
-  "conflitti",
-  "importazione",
-  "attivita",
-  "impostazioni",
-];
+const pages = ["panoramica", "catalogo", "conflitti", "importazione", "attivita", "impostazioni"];
 ```
 
 per ciascuna pagina con `--fixture --check`, fallendo al primo exit non-zero.
@@ -1781,9 +1759,7 @@ In `app/styles/syncbay-embedded.css` aggiungere:
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  .syncbay-balanced-box-grid--compact-three
-    > s-grid
-    > :last-child:nth-child(odd) {
+  .syncbay-balanced-box-grid--compact-three > s-grid > :last-child:nth-child(odd) {
     grid-column: auto;
   }
 }

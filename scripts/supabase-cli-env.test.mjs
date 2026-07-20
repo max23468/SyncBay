@@ -1,18 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  getSupabaseCliCwd,
-  withSupabaseCliDefaults,
-} from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, withSupabaseCliDefaults } from "./supabase-cli-env.mjs";
 import { parseAdvisorType } from "./syncbay-supabase-advisors.mjs";
 
 test("uses the explicit Supabase cwd before the process cwd", () => {
   assert.equal(
-    getSupabaseCliCwd(
-      { SYNCBAY_SUPABASE_CWD: "/Users/Matteo/Progetti/SyncBay" },
-      "/tmp/worktree",
-    ),
+    getSupabaseCliCwd({ SYNCBAY_SUPABASE_CWD: "/Users/Matteo/Progetti/SyncBay" }, "/tmp/worktree"),
     "/Users/Matteo/Progetti/SyncBay",
   );
 });
@@ -30,8 +24,7 @@ test("falls back to the process cwd when no Supabase cwd is configured", () => {
 test("discovers a linked Supabase cwd from git worktrees", () => {
   assert.equal(
     getSupabaseCliCwd({}, "/tmp/unlinked-worktree", {
-      exists: (path) =>
-        path === "/Users/Matteo/Progetti/SyncBay/supabase/.temp/project-ref",
+      exists: (path) => path === "/Users/Matteo/Progetti/SyncBay/supabase/.temp/project-ref",
       runGitWorktreeList: () => `worktree /tmp/unlinked-worktree
 HEAD abc
 branch refs/heads/codex/example
@@ -57,8 +50,7 @@ test("disables Supabase CLI telemetry by default", () => {
     SUPABASE_TELEMETRY_DISABLED: "1",
   });
   assert.equal(
-    withSupabaseCliDefaults({ SUPABASE_TELEMETRY_DISABLED: "0" })
-      .SUPABASE_TELEMETRY_DISABLED,
+    withSupabaseCliDefaults({ SUPABASE_TELEMETRY_DISABLED: "0" }).SUPABASE_TELEMETRY_DISABLED,
     "0",
   );
 });

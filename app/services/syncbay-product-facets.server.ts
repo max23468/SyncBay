@@ -5,10 +5,7 @@ import {
 import type { SyncBayProductFacet } from "../lib/syncbay-product-facets";
 
 interface ShopifyAdminGraphqlClient {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
 interface ShopifyMetafieldsResponse {
@@ -46,10 +43,7 @@ export async function syncShopifyProductFacets(input: {
   previousSyncBayFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }) {
-  const currentMetafields = await loadCurrentFacetMetafields(
-    input.admin,
-    input.ownerId,
-  );
+  const currentMetafields = await loadCurrentFacetMetafields(input.admin, input.ownerId);
   if (!currentMetafields) {
     return {
       baselineFacets: input.previousSyncBayFacets,
@@ -118,9 +112,7 @@ function buildWriterOwnedFacetBaseline(input: {
   preservedFacets: SyncBayProductFacet[];
   proposedFacets: SyncBayProductFacet[];
 }) {
-  const conflictKeys = new Set(
-    input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`),
-  );
+  const conflictKeys = new Set(input.conflicts.map((facet) => `${facet.namespace}:${facet.key}`));
   const baselineByKey = new Map<string, SyncBayProductFacet>();
 
   for (const facet of input.preservedFacets) {
@@ -136,10 +128,7 @@ function buildWriterOwnedFacetBaseline(input: {
   return [...baselineByKey.values()];
 }
 
-async function loadCurrentFacetMetafields(
-  admin: ShopifyAdminGraphqlClient,
-  productGid: string,
-) {
+async function loadCurrentFacetMetafields(admin: ShopifyAdminGraphqlClient, productGid: string) {
   const response = await admin.graphql(
     `#graphql
     query SyncBayProductFacetMetafields($id: ID!) {
@@ -209,9 +198,7 @@ async function writeFacetMetafields(
     throw new Error(
       userErrors
         .map((error) =>
-          error.field?.length
-            ? `${error.field.join(".")}: ${error.message}`
-            : error.message,
+          error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
         )
         .join("; "),
     );
@@ -255,9 +242,7 @@ async function deleteFacetMetafields(
     throw new Error(
       userErrors
         .map((error) =>
-          error.field?.length
-            ? `${error.field.join(".")}: ${error.message}`
-            : error.message,
+          error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
         )
         .join("; "),
     );

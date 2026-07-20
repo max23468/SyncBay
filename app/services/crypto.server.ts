@@ -8,10 +8,7 @@ const IV_LENGTH = 12;
 export function encryptSecret(plaintext: string) {
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, getTokenKey(), iv);
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
   return [
@@ -23,8 +20,7 @@ export function encryptSecret(plaintext: string) {
 }
 
 export function decryptSecret(secret: string) {
-  const [version, encodedIv, encodedAuthTag, encodedCiphertext] =
-    secret.split(".");
+  const [version, encodedIv, encodedAuthTag, encodedCiphertext] = secret.split(".");
   if (version !== "v1" || !encodedIv || !encodedAuthTag || !encodedCiphertext) {
     throw new Error("Formato segreto cifrato non valido.");
   }
@@ -36,10 +32,7 @@ export function decryptSecret(secret: string) {
   const decipher = crypto.createDecipheriv(ALGORITHM, getTokenKey(), iv);
   decipher.setAuthTag(authTag);
 
-  return Buffer.concat([
-    decipher.update(ciphertext),
-    decipher.final(),
-  ]).toString("utf8");
+  return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
 }
 
 export function encryptSecretIfNeeded(value: string) {

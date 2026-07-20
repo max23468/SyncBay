@@ -2,9 +2,7 @@ export interface ShopifyVariantSelectionCandidate {
   id?: string | null;
 }
 
-export interface ShopifyVariantSelectionProduct<
-  Variant extends ShopifyVariantSelectionCandidate,
-> {
+export interface ShopifyVariantSelectionProduct<Variant extends ShopifyVariantSelectionCandidate> {
   variants?: {
     nodes?: Variant[] | null;
   } | null;
@@ -17,9 +15,7 @@ export function selectShopifyVariantForSync<
   const preferredVariantGid = input.preferredVariantGid?.trim() ?? "";
 
   if (preferredVariantGid) {
-    return (
-      variants.find((variant) => variant.id === preferredVariantGid) ?? null
-    );
+    return variants.find((variant) => variant.id === preferredVariantGid) ?? null;
   }
 
   return variants[0] ?? null;
@@ -33,10 +29,7 @@ export function mergePreferredShopifyVariantForSync<
 
   if (!preferredVariant?.id) return variants;
 
-  return [
-    preferredVariant,
-    ...variants.filter((variant) => variant.id !== preferredVariant.id),
-  ];
+  return [preferredVariant, ...variants.filter((variant) => variant.id !== preferredVariant.id)];
 }
 
 export function preserveSelectedShopifyVariantForSync<

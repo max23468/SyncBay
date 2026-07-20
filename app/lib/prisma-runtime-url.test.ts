@@ -46,8 +46,7 @@ test("does not change non-Supabase sslmode=require TLS semantics unless opted in
   );
 
   assert.deepEqual(config, {
-    connectionString:
-      "postgresql://user:pass@example.com/postgres?sslmode=require",
+    connectionString: "postgresql://user:pass@example.com/postgres?sslmode=require",
     max: 1,
     connectionTimeoutMillis: 10000,
   });
@@ -76,8 +75,7 @@ test("translates Prisma URL pool parameters to pg adapter pool config", () => {
   );
 
   assert.deepEqual(config, {
-    connectionString:
-      "postgresql://user:pass@example.com/postgres?sslmode=require",
+    connectionString: "postgresql://user:pass@example.com/postgres?sslmode=require",
     max: 2,
     connectionTimeoutMillis: 5000,
   });

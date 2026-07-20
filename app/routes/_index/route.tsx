@@ -48,14 +48,8 @@ export default function App() {
         </s-section>
 
         <s-section heading="Distribuzione privata">
-          <s-grid
-            gap="base"
-            gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))"
-          >
-            <InfoBox
-              body="Import guidato dei listing attivi in Shopify."
-              title="Catalogo eBay"
-            />
+          <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(200px, 1fr))">
+            <InfoBox body="Import guidato dei listing attivi in Shopify." title="Catalogo eBay" />
             <InfoBox
               body="Aggiornamento stock e retry prioritari."
               title="Disponibilità protetta"

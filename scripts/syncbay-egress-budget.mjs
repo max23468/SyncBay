@@ -31,10 +31,7 @@ const args = {
   avgBytesPerRow: parsePositiveNumber(rawArgs["avg-bytes-per-row"]),
   budgetGb: parsePositiveNumber(rawArgs["budget-gb"]),
   json: rawArgs.json,
-  top:
-    Number.isInteger(parsedTop) && parsedTop > 0
-      ? Math.min(parsedTop, 50)
-      : undefined,
+  top: Number.isInteger(parsedTop) && parsedTop > 0 ? Math.min(parsedTop, 50) : undefined,
 };
 const topLimit = args.top ?? 10;
 const MASSIVE_PAYLOAD_ROWS_THRESHOLD = 1_000;
@@ -133,23 +130,18 @@ function buildDiagnostics(rawDiagnostics) {
       avgRowsPerCall: totalCalls > 0 ? round3(totalRows / totalCalls) : 0,
       observedAt: rawDiagnostics.observedAt,
       productSnapshotPayloadReads: {
-        avgRowsPerCall:
-          payloadReadCalls > 0 ? round3(payloadReadRows / payloadReadCalls) : 0,
+        avgRowsPerCall: payloadReadCalls > 0 ? round3(payloadReadRows / payloadReadCalls) : 0,
         calls: payloadReadCalls,
         rows: payloadReadRows,
-        statementCount: normalizeCount(
-          rawDiagnostics.payloadReadStatementCount,
-        ),
+        statementCount: normalizeCount(rawDiagnostics.payloadReadStatementCount),
       },
       productSnapshotPayloadStatements: {
-        avgRowsPerCall:
-          payloadCalls > 0 ? round3(payloadRows / payloadCalls) : 0,
+        avgRowsPerCall: payloadCalls > 0 ? round3(payloadRows / payloadCalls) : 0,
         calls: payloadCalls,
         rows: payloadRows,
         statementCount: normalizeCount(rawDiagnostics.payloadStatementCount),
       },
-      selectAvgRowsPerCall:
-        selectCalls > 0 ? round3(selectRows / selectCalls) : 0,
+      selectAvgRowsPerCall: selectCalls > 0 ? round3(selectRows / selectCalls) : 0,
       selectCalls,
       selectRows,
       selectStatementCount: normalizeCount(rawDiagnostics.selectStatementCount),
@@ -164,9 +156,7 @@ function buildDiagnostics(rawDiagnostics) {
   }
 
   const statementRows = normalizeStatementRows(rawDiagnostics.statements ?? []);
-  const selectRows = statementRows.filter((row) =>
-    isEgressReadStatementQuery(row.query),
-  );
+  const selectRows = statementRows.filter((row) => isEgressReadStatementQuery(row.query));
   const payloadStatementRows = statementRows.filter(hasProductSnapshotPayload);
   const payloadReadRows = selectRows.filter(hasProductSnapshotPayload);
   const statementSummary = summarizeStatements(statementRows);
@@ -199,10 +189,7 @@ function normalizeTopQueries(rows) {
       avgRowsPerCall: calls > 0 ? round3(resultRows / calls) : 0,
       calls,
       queryId: String(row.queryId ?? ""),
-      queryPreview: normalizeSqlWhitespace(row.queryPreview ?? "").slice(
-        0,
-        240,
-      ),
+      queryPreview: normalizeSqlWhitespace(row.queryPreview ?? "").slice(0, 240),
       rows: resultRows,
     };
   });
@@ -261,8 +248,7 @@ function hasProductSnapshotPayload(row) {
 
 function printSummary({ budget, diagnostics }) {
   const payloadReadStats = diagnostics.productSnapshotPayloadReads ?? {};
-  const payloadStatementStats =
-    diagnostics.productSnapshotPayloadStatements ?? {};
+  const payloadStatementStats = diagnostics.productSnapshotPayloadStatements ?? {};
 
   console.log("SyncBay egress budget");
   console.log(`- stats_reset: ${diagnostics.statsReset}`);
@@ -294,9 +280,7 @@ function printSummary({ budget, diagnostics }) {
   const payloadReadSummary = summarizePayloadReads(payloadReadStats);
 
   if (payloadReadSummary.statementCount === 0) {
-    console.log(
-      "- ProductSnapshot.payload: nessuna SELECT su payload rilevata nella finestra.",
-    );
+    console.log("- ProductSnapshot.payload: nessuna SELECT su payload rilevata nella finestra.");
   } else {
     console.log(
       `- ProductSnapshot.payload SELECT: ${payloadReadSummary.statementCount} statement, calls ${payloadReadSummary.calls}, rows ${payloadReadSummary.rows}, avg rows/call ${payloadReadSummary.avgRowsPerCall} (${payloadReadSummary.massive ? "verificare" : "non massive"})`,

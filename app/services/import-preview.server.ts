@@ -115,9 +115,7 @@ export function buildImportPreview(
   mode: ImportPreviewResult["mode"] = "live",
   options: { descriptionRuleMode?: DescriptionRuleMode } = {},
 ): ImportPreviewResult {
-  const items = candidates.map((candidate) =>
-    buildPreviewItem(candidate, options),
-  );
+  const items = candidates.map((candidate) => buildPreviewItem(candidate, options));
   const summary = summarizePreviewItems(items);
 
   return {
@@ -149,15 +147,11 @@ export function addExistingProductMatchSuggestions(
   };
 }
 
-export function getEmptyImportPreview(
-  mode: ImportPreviewResult["mode"] = "live",
-) {
+export function getEmptyImportPreview(mode: ImportPreviewResult["mode"] = "live") {
   return buildImportPreview([], mode);
 }
 
-export function getMockImportPreview(
-  descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML",
-) {
+export function getMockImportPreview(descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML") {
   return buildImportPreview(
     [
       {
@@ -257,9 +251,7 @@ function buildPreviewItem(
   candidate: ImportPreviewListingCandidate,
   options: { descriptionRuleMode?: DescriptionRuleMode } = {},
 ): ImportPreviewItem {
-  const descriptionCleanup = cleanEbayDescriptionHtml(
-    candidate.descriptionHtml,
-  );
+  const descriptionCleanup = cleanEbayDescriptionHtml(candidate.descriptionHtml);
   const descriptionProjection = applyDescriptionRuleToHtml({
     cleanedHtml: descriptionCleanup.html,
     html: candidate.descriptionHtml,
@@ -272,12 +264,8 @@ function buildPreviewItem(
   });
   const issues = getPreviewIssues(candidate, descriptionProjection.wasChanged);
   const hasErrors = issues.some((issue) => issue.severity === "error");
-  const ebayPrimaryCategoryName = normalizeText(
-    candidate.ebayPrimaryCategoryName,
-  );
-  const ebayPrimaryCategoryPath = normalizeText(
-    candidate.ebayPrimaryCategoryPath,
-  );
+  const ebayPrimaryCategoryName = normalizeText(candidate.ebayPrimaryCategoryName);
+  const ebayPrimaryCategoryPath = normalizeText(candidate.ebayPrimaryCategoryPath);
   const storeCategoryName = normalizeText(candidate.storeCategoryName);
   const title = normalizeText(candidate.title) ?? "Titolo non disponibile";
   const categoryProposal = resolveShopifyCategoryProposal({
@@ -316,9 +304,7 @@ function buildPreviewItem(
       categoryProposal,
       currency: normalizeCurrency(candidate.currency),
       descriptionCleanedLength: descriptionProjection.html?.length ?? 0,
-      descriptionCleanedTextExcerpt: normalizePreviewDescriptionExcerpt(
-        descriptionProjection.html,
-      ),
+      descriptionCleanedTextExcerpt: normalizePreviewDescriptionExcerpt(descriptionProjection.html),
       descriptionHtml: descriptionProjection.html,
       descriptionMode: descriptionProjection.mode,
       descriptionOriginalLength: descriptionReport.rawLength,
@@ -371,8 +357,7 @@ function getPreviewIssues(
   if (!normalizeText(candidate.sku)) {
     issues.push({
       code: "missing_sku",
-      message:
-        "SKU mancante: il prodotto va corretto o escluso prima dell'import.",
+      message: "SKU mancante: il prodotto va corretto o escluso prima dell'import.",
       severity: "error",
     });
   }
@@ -420,8 +405,7 @@ function getPreviewIssues(
   if (candidate.descriptionHtml && descriptionWasChanged) {
     issues.push({
       code: "description_cleanup",
-      message:
-        "Descrizione eBay ripulita da template, colori o markup non essenziale.",
+      message: "Descrizione eBay ripulita da template, colori o markup non essenziale.",
       severity: "info",
     });
   }
@@ -429,19 +413,14 @@ function getPreviewIssues(
   return issues;
 }
 
-export function summarizePreviewItems(
-  items: ImportPreviewItem[],
-): ImportPreviewSummary {
+export function summarizePreviewItems(items: ImportPreviewItem[]): ImportPreviewSummary {
   return {
     errorCount: items.filter((item) => item.status === "error").length,
-    importableCount: items.filter((item) => item.status === "importable")
-      .length,
+    importableCount: items.filter((item) => item.status === "importable").length,
     skippedCount: items.filter((item) => item.status === "skipped").length,
     totalCount: items.length,
     warningCount: items.reduce(
-      (total, item) =>
-        total +
-        item.issues.filter((issue) => issue.severity === "warning").length,
+      (total, item) => total + item.issues.filter((issue) => issue.severity === "warning").length,
       0,
     ),
   };

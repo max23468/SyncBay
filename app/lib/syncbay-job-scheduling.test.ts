@@ -237,10 +237,7 @@ test("normalizes run-due job limits for cron drain batches", () => {
 });
 
 test("treats missing facetOnly as a regular incremental payload", () => {
-  assert.equal(
-    isFacetOnlyIncrementalJobPayload({ source: "seller_events_delta" }),
-    false,
-  );
+  assert.equal(isFacetOnlyIncrementalJobPayload({ source: "seller_events_delta" }), false);
   assert.equal(
     isFacetOnlyIncrementalJobPayload({
       facetOnly: true,
@@ -269,10 +266,7 @@ test("treats every non-facet incremental source as regular work", () => {
     }),
     false,
   );
-  assert.equal(
-    isRegularIncrementalJobPayload({ source: "facet_backfill" }),
-    false,
-  );
+  assert.equal(isRegularIncrementalJobPayload({ source: "facet_backfill" }), false);
 });
 
 test("prioritizes regular incremental jobs before facet-only jobs", () => {
@@ -431,11 +425,7 @@ test("keeps every usable Shopify change resource key for runtime matching", () =
       inventoryItemGid: "gid://shopify/InventoryItem/1",
       resourceId: "gid://shopify/InventoryLevel/1",
     }),
-    [
-      "gid://shopify/InventoryLevel/1",
-      "gid://shopify/InventoryItem/1",
-      "gid://shopify/Product/1",
-    ],
+    ["gid://shopify/InventoryLevel/1", "gid://shopify/InventoryItem/1", "gid://shopify/Product/1"],
   );
 });
 

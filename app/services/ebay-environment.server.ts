@@ -12,9 +12,7 @@ export function getEbayBasicAuthHeader() {
   ).toString("base64");
 }
 
-export function getEbayEnvironment(
-  environment = process.env.EBAY_ENVIRONMENT,
-): EbayEnvironment {
+export function getEbayEnvironment(environment = process.env.EBAY_ENVIRONMENT): EbayEnvironment {
   return environment === "production" ? "production" : "sandbox";
 }
 

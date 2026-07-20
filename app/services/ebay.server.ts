@@ -9,10 +9,7 @@ import {
   getEbayTokenUrl,
   requiredEnv,
 } from "./ebay-environment.server";
-import {
-  ensureShopForSession,
-  getEbayRuntimeReadiness,
-} from "./syncbay.server";
+import { ensureShopForSession, getEbayRuntimeReadiness } from "./syncbay.server";
 
 interface ShopifySessionLike {
   shop: string;
@@ -45,9 +42,7 @@ const EBAY_IDENTITY_URLS = {
 
 const OAUTH_STATE_TTL_MINUTES = 15;
 
-export async function createEbayAuthorizationRedirect(
-  session: ShopifySessionLike,
-) {
+export async function createEbayAuthorizationRedirect(session: ShopifySessionLike) {
   const readiness = getEbayRuntimeReadiness();
   if (!readiness.ready) {
     return {
@@ -87,13 +82,7 @@ export async function createEbayAuthorizationRedirect(
   };
 }
 
-export async function completeEbayAuthorization({
-  code,
-  state,
-}: {
-  code: string;
-  state: string;
-}) {
+export async function completeEbayAuthorization({ code, state }: { code: string; state: string }) {
   const stateHash = hashState(state);
   const oauthState = await prisma.ebayOAuthState.findUnique({
     include: { shop: true },
@@ -112,9 +101,7 @@ export async function completeEbayAuthorization({
   const refreshTokenExpiresAt = token.refresh_token_expires_in
     ? secondsFromNow(token.refresh_token_expires_in)
     : null;
-  const tokenExpiresAt = token.expires_in
-    ? secondsFromNow(token.expires_in)
-    : null;
+  const tokenExpiresAt = token.expires_in ? secondsFromNow(token.expires_in) : null;
   const scopes = token.scope ?? getEbayScopes().join(" ");
 
   await prisma.$transaction([
@@ -128,9 +115,7 @@ export async function completeEbayAuthorization({
       create: {
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token
-          ? encryptSecret(token.refresh_token)
-          : null,
+        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         marketplaceId: getEbayMarketplaceId(),
@@ -143,9 +128,7 @@ export async function completeEbayAuthorization({
       update: {
         connectedAt,
         encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token
-          ? encryptSecret(token.refresh_token)
-          : undefined,
+        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         refreshTokenExpiresAt: refreshTokenExpiresAt ?? undefined,
@@ -197,9 +180,7 @@ async function fetchEbayUser(accessToken: string) {
   };
 
   if (!response.ok || !json.userId) {
-    throw new Error(
-      "Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.",
-    );
+    throw new Error("Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.");
   }
 
   return {
@@ -228,18 +209,14 @@ async function exchangeAuthorizationCode(code: string) {
   };
 
   if (!response.ok || !json.access_token) {
-    throw new Error(
-      json.error_description ?? json.error ?? "Token OAuth eBay non ottenuto.",
-    );
+    throw new Error(json.error_description ?? json.error ?? "Token OAuth eBay non ottenuto.");
   }
 
   return json as EbayTokenResponse;
 }
 
 function getAuthorizeUrl() {
-  return getEbayEnvironment() === "production"
-    ? EBAY_AUTH_URLS.production
-    : EBAY_AUTH_URLS.sandbox;
+  return getEbayEnvironment() === "production" ? EBAY_AUTH_URLS.production : EBAY_AUTH_URLS.sandbox;
 }
 
 function getIdentityUserUrl() {

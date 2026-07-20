@@ -42,13 +42,8 @@ export async function processEbayAccountDeletionNotification(input: {
     body: input.body,
     signatureHeader: input.signatureHeader,
   });
-  const notification = parseAccountDeletionNotification(
-    input.body.toString("utf8"),
-  );
-  const hashedUserId = hashSecretIdentifier(
-    notification.userId,
-    "ebay-account-deletion-user-id",
-  );
+  const notification = parseAccountDeletionNotification(input.body.toString("utf8"));
+  const hashedUserId = hashSecretIdentifier(notification.userId, "ebay-account-deletion-user-id");
   const existing = await prisma.ebayAccountDeletionRequest.findUnique({
     where: { notificationId: notification.notificationId },
   });
@@ -90,9 +85,7 @@ export async function processEbayAccountDeletionNotification(input: {
     },
   });
   const connectionIds = connections.map((connection) => connection.id);
-  const shopIds = [
-    ...new Set(connections.map((connection) => connection.shopId)),
-  ];
+  const shopIds = [...new Set(connections.map((connection) => connection.shopId))];
   const matchedShopCount = shopIds.length;
   const status =
     matchedShopCount > 0
@@ -195,10 +188,7 @@ async function findProcessedDuplicateAccountDeletionRequest(input: {
       hashedUserId: input.hashedUserId,
       notificationId: { not: input.notification.notificationId },
       status: {
-        in: [
-          EbayAccountDeletionRequestStatus.PROCESSED,
-          EbayAccountDeletionRequestStatus.NO_MATCH,
-        ],
+        in: [EbayAccountDeletionRequestStatus.PROCESSED, EbayAccountDeletionRequestStatus.NO_MATCH],
       },
       ...(anchor.field === "eventDate"
         ? { eventDate: anchor.value }
@@ -207,9 +197,7 @@ async function findProcessedDuplicateAccountDeletionRequest(input: {
   });
 }
 
-function parseAccountDeletionNotification(
-  body: string,
-): AccountDeletionNotification {
+function parseAccountDeletionNotification(body: string): AccountDeletionNotification {
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
@@ -250,10 +238,7 @@ function parseAccountDeletionNotification(
   }
 
   if (!userId) {
-    throw new EbayAccountDeletionPayloadError(
-      "User ID eBay mancante.",
-      "user_id_missing",
-    );
+    throw new EbayAccountDeletionPayloadError("User ID eBay mancante.", "user_id_missing");
   }
 
   return {
@@ -276,11 +261,7 @@ async function purgeEbayDataForShops(
     shopIds: string[];
   },
 ) {
-  const jobStatusFilters = [
-    SyncJobStatus.PENDING,
-    SyncJobStatus.RUNNING,
-    SyncJobStatus.RETRYING,
-  ];
+  const jobStatusFilters = [SyncJobStatus.PENDING, SyncJobStatus.RUNNING, SyncJobStatus.RETRYING];
   const finishedAt = new Date();
 
   await Promise.all([
@@ -354,9 +335,7 @@ async function purgeEbayDataForShops(
 }
 
 function getObject(value: unknown) {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
 }
 
 function getString(value: unknown) {

@@ -41,8 +41,7 @@ export interface SourcesUpdateEntry {
 
 const PRODUCT_TYPE_TYPENAME = "CollectionSourceInclusionConditionProductType";
 const PRODUCT_TITLE_TYPENAME = "CollectionSourceInclusionConditionProductTitle";
-const VARIANT_INVENTORY_TYPENAME =
-  "CollectionSourceInclusionConditionVariantInventory";
+const VARIANT_INVENTORY_TYPENAME = "CollectionSourceInclusionConditionVariantInventory";
 
 const TEXT_RELATIONS = new Set([
   "EQUALS",
@@ -64,20 +63,14 @@ export function buildSourcesUpdate(input: {
   const { currentSource, proposedRuleSet } = input;
   const matchType = proposedRuleSet.appliedDisjunctively ? "ANY" : "ALL";
 
-  const typeRules = proposedRuleSet.rules.filter(
-    (rule) => rule.column === "TYPE",
-  );
-  const titleRules = proposedRuleSet.rules.filter(
-    (rule) => rule.column === "TITLE",
-  );
+  const typeRules = proposedRuleSet.rules.filter((rule) => rule.column === "TYPE");
+  const titleRules = proposedRuleSet.rules.filter((rule) => rule.column === "TITLE");
   const inventoryRules = proposedRuleSet.rules.filter(
     (rule) => rule.column === "VARIANT_INVENTORY",
   );
   const unsupported = proposedRuleSet.rules.filter(
     (rule) =>
-      rule.column !== "TYPE" &&
-      rule.column !== "TITLE" &&
-      rule.column !== "VARIANT_INVENTORY",
+      rule.column !== "TYPE" && rule.column !== "TITLE" && rule.column !== "VARIANT_INVENTORY",
   );
   if (unsupported.length > 0) {
     throw new Error(
@@ -123,9 +116,7 @@ export function buildSourcesUpdate(input: {
 
   if (inventoryRules.length > 0) {
     if (inventoryRules.length > 1) {
-      throw new Error(
-        "Più regole inventario non supportate nel modello sources.",
-      );
+      throw new Error("Più regole inventario non supportate nel modello sources.");
     }
     const [rule] = inventoryRules;
     if (!INVENTORY_RELATIONS.has(rule.relation)) {
@@ -141,35 +132,25 @@ export function buildSourcesUpdate(input: {
     );
     if (!existing) {
       conditionsToCreate.push(condition);
-    } else if (
-      existing.relation !== rule.relation ||
-      existing.value !== value
-    ) {
+    } else if (existing.relation !== rule.relation || existing.value !== value) {
       conditionsToUpdate.push({ condition, id: existing.id });
     }
   }
 
   const inclusion: SourcesUpdateEntry["condition"]["inclusion"] = { matchType };
-  if (conditionsToCreate.length > 0)
-    inclusion.conditionsToCreate = conditionsToCreate;
-  if (conditionsToUpdate.length > 0)
-    inclusion.conditionsToUpdate = conditionsToUpdate;
+  if (conditionsToCreate.length > 0) inclusion.conditionsToCreate = conditionsToCreate;
+  if (conditionsToUpdate.length > 0) inclusion.conditionsToUpdate = conditionsToUpdate;
 
   return { condition: { id: currentSource.id, inclusion } };
 }
 
-function requireSharedTextRelation(
-  rules: { relation: string }[],
-  label: string,
-): string {
+function requireSharedTextRelation(rules: { relation: string }[], label: string): string {
   const relation = rules[0].relation;
   if (!TEXT_RELATIONS.has(relation)) {
     throw new Error(`Relazione ${label} non supportata: ${relation}`);
   }
   if (rules.some((rule) => rule.relation !== relation)) {
-    throw new Error(
-      `Relazioni ${label} miste non supportate nel modello sources.`,
-    );
+    throw new Error(`Relazioni ${label} miste non supportate nel modello sources.`);
   }
   return relation;
 }

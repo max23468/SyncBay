@@ -30,8 +30,7 @@ export function shouldCreateProductSnapshot(input: {
   if (!input.previous) return true;
 
   return (
-    normalizeSnapshotForComparison(input.next) !==
-    normalizeSnapshotForComparison(input.previous)
+    normalizeSnapshotForComparison(input.next) !== normalizeSnapshotForComparison(input.previous)
   );
 }
 
@@ -84,9 +83,7 @@ function stripVolatilePayloadKeys(value: unknown): unknown {
 
   return Object.fromEntries(
     Object.entries(value).flatMap(([key, entryValue]) =>
-      VOLATILE_PAYLOAD_KEYS.has(key)
-        ? []
-        : [[key, stripVolatilePayloadKeys(entryValue)] as const],
+      VOLATILE_PAYLOAD_KEYS.has(key) ? [] : [[key, stripVolatilePayloadKeys(entryValue)] as const],
     ),
   );
 }

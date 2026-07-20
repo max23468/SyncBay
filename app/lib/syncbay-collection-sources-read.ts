@@ -38,8 +38,7 @@ const TYPENAME_TO_COLUMN: Record<string, string> = {
   CollectionSourceInclusionConditionProductStatus: "PRODUCT_STATUS",
   CollectionSourceInclusionConditionVariantInventory: "VARIANT_INVENTORY",
   CollectionSourceInclusionConditionVariantPrice: "VARIANT_PRICE",
-  CollectionSourceInclusionConditionVariantCompareAtPrice:
-    "VARIANT_COMPARE_AT_PRICE",
+  CollectionSourceInclusionConditionVariantCompareAtPrice: "VARIANT_COMPARE_AT_PRICE",
   CollectionSourceInclusionConditionVariantWeight: "VARIANT_WEIGHT",
   CollectionSourceInclusionConditionVariantTitle: "VARIANT_TITLE",
 };
@@ -53,8 +52,7 @@ export function conditionsSourceToRuleSet(
   const rules: LegacyRuleSet["rules"] = [];
 
   for (const condition of source.inclusion.conditions) {
-    const column =
-      TYPENAME_TO_COLUMN[condition.__typename] ?? condition.__typename;
+    const column = TYPENAME_TO_COLUMN[condition.__typename] ?? condition.__typename;
     const relation = condition.relation ?? "";
 
     if (Array.isArray(condition.values)) {

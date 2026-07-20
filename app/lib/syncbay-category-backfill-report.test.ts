@@ -264,96 +264,88 @@ test("can include known legacy mapper conflicts only when explicitly requested",
   });
 
   assert.deepEqual(buildCategoryApplyPlan(report).rows, []);
-  assert.deepEqual(
-    buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).rows,
-    [
-      {
-        ebayItemId: "1",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/1",
-      },
-      {
-        ebayItemId: "2",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/2",
-      },
-      {
-        ebayItemId: "3",
-        productType: "Medaglie",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/3",
-      },
-      {
-        ebayItemId: "4",
-        productType: "Banconote italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
-        shopifyProductGid: "gid://shopify/Product/4",
-      },
-      {
-        ebayItemId: "6",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/6",
-      },
-    ],
-  );
+  assert.deepEqual(buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).rows, [
+    {
+      ebayItemId: "1",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/1",
+    },
+    {
+      ebayItemId: "2",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/2",
+    },
+    {
+      ebayItemId: "3",
+      productType: "Medaglie",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/3",
+    },
+    {
+      ebayItemId: "4",
+      productType: "Banconote italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+      shopifyProductGid: "gid://shopify/Product/4",
+    },
+    {
+      ebayItemId: "6",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/6",
+    },
+  ]);
   assert.equal(
-    buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).skipped
-      .conflictsManual,
+    buildCategoryApplyPlan(report, { includeCategoryConflicts: true }).skipped.conflictsManual,
     2,
   );
-  assert.deepEqual(
-    buildCategoryApplyPlan(report, { forceCategoryConflicts: true }).rows,
-    [
-      {
-        ebayItemId: "1",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/1",
-      },
-      {
-        ebayItemId: "2",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/2",
-      },
-      {
-        ebayItemId: "3",
-        productType: "Medaglie",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/3",
-      },
-      {
-        ebayItemId: "4",
-        productType: "Banconote italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
-        shopifyProductGid: "gid://shopify/Product/4",
-      },
-      {
-        ebayItemId: "5",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
-        shopifyProductGid: "gid://shopify/Product/5",
-      },
-      {
-        ebayItemId: "6",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/6",
-      },
-      {
-        ebayItemId: "7",
-        productType: "Monete italiane",
-        shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
-        shopifyProductGid: "gid://shopify/Product/7",
-      },
-    ],
-  );
+  assert.deepEqual(buildCategoryApplyPlan(report, { forceCategoryConflicts: true }).rows, [
+    {
+      ebayItemId: "1",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/1",
+    },
+    {
+      ebayItemId: "2",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/2",
+    },
+    {
+      ebayItemId: "3",
+      productType: "Medaglie",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/3",
+    },
+    {
+      ebayItemId: "4",
+      productType: "Banconote italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-1",
+      shopifyProductGid: "gid://shopify/Product/4",
+    },
+    {
+      ebayItemId: "5",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2-3",
+      shopifyProductGid: "gid://shopify/Product/5",
+    },
+    {
+      ebayItemId: "6",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/6",
+    },
+    {
+      ebayItemId: "7",
+      productType: "Monete italiane",
+      shopifyCategoryGid: "gid://shopify/TaxonomyCategory/ae-2-2-2-2",
+      shopifyProductGid: "gid://shopify/Product/7",
+    },
+  ]);
   assert.equal(
-    buildCategoryApplyPlan(report, { forceCategoryConflicts: true }).skipped
-      .conflictsManual,
+    buildCategoryApplyPlan(report, { forceCategoryConflicts: true }).skipped.conflictsManual,
     0,
   );
 });

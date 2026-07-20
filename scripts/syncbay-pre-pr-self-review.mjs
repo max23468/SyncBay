@@ -19,9 +19,7 @@ const AREA_DEFINITIONS = [
     id: "catalogo_esistente",
     label: "Catalogo esistente / takeover",
     match: (path) =>
-      /existing-catalog|takeover|import-preview|draft-import|product-matching|matching/i.test(
-        path,
-      ),
+      /existing-catalog|takeover|import-preview|draft-import|product-matching|matching/i.test(path),
     questions: [
       "Il diff impedisce duplicati Shopify anche con guardrail server-side, non solo disabilitando la UI?",
       "Se c'è reuse/takeover, preserva prodotto e variante Shopify già selezionati invece di ricadere su candidati generici?",
@@ -148,13 +146,7 @@ const AREA_DEFINITIONS = [
     label: "Documentazione",
     match: (path) =>
       /^docs\//.test(path) ||
-      [
-        "README.md",
-        "BRAND.md",
-        "SECURITY.md",
-        "AGENTS.md",
-        "CHANGELOG.md",
-      ].includes(path),
+      ["README.md", "BRAND.md", "SECURITY.md", "AGENTS.md", "CHANGELOG.md"].includes(path),
     questions: [
       "La documentazione descrive stato reale e limiti, senza promettere funzionalità non implementate?",
       "La modifica introduce una decisione operativa stabile e aggiorna il documento canonico giusto senza duplicati?",
@@ -190,22 +182,14 @@ if (import.meta.main) {
   }
 }
 
-export function buildPrePrSelfReview({
-  base = DEFAULT_BASE,
-  changedFiles,
-  dirtyFiles = [],
-}) {
+export function buildPrePrSelfReview({ base = DEFAULT_BASE, changedFiles, dirtyFiles = [] }) {
   const files = dedupeFiles([...(changedFiles ?? []), ...dirtyFiles]);
   const fileClassifications = files.map((file) => ({
-    definitions: AREA_DEFINITIONS.filter((definition) =>
-      definition.match(file.path),
-    ),
+    definitions: AREA_DEFINITIONS.filter((definition) => definition.match(file.path)),
     file,
   }));
   const detectedDefinitions = AREA_DEFINITIONS.filter((definition) =>
-    fileClassifications.some(({ definitions }) =>
-      definitions.includes(definition),
-    ),
+    fileClassifications.some(({ definitions }) => definitions.includes(definition)),
   );
   const detectedAreas = detectedDefinitions.map((definition) => definition.id);
   const unmatchedFiles = fileClassifications
@@ -216,9 +200,7 @@ export function buildPrePrSelfReview({
     fileClassifications.every(
       ({ definitions }) =>
         definitions.length > 0 &&
-        definitions.every((definition) =>
-          DOCS_ONLY_AREA_IDS.has(definition.id),
-        ),
+        definitions.every((definition) => DOCS_ONLY_AREA_IDS.has(definition.id)),
     );
   const detectedRiskLevel = getHighestRisk(detectedDefinitions);
   const riskLevel =
@@ -226,8 +208,7 @@ export function buildPrePrSelfReview({
       ? "basso"
       : docsOnly
         ? "basso"
-        : unmatchedFiles.length > 0 &&
-            RISK_ORDER[detectedRiskLevel] < RISK_ORDER.medio
+        : unmatchedFiles.length > 0 && RISK_ORDER[detectedRiskLevel] < RISK_ORDER.medio
           ? "medio"
           : detectedRiskLevel;
   const suggestedChecks = docsOnly
@@ -247,9 +228,7 @@ export function buildPrePrSelfReview({
   const warnings = [];
 
   if (files.length === 0) {
-    failures.push(
-      `Nessun diff rilevato rispetto a ${base}: non c'è una PR da rivedere.`,
-    );
+    failures.push(`Nessun diff rilevato rispetto a ${base}: non c'è una PR da rivedere.`);
   }
 
   if (dirtyFiles.length > 0) {
@@ -341,9 +320,7 @@ Non sostituisce i test: serve a trovare prima i commenti Codex prevedibili.`);
 }
 
 function readChangedFiles(base) {
-  return parseNameStatusDiff(
-    runGit(["diff", "--name-status", "--find-renames", `${base}...HEAD`]),
-  );
+  return parseNameStatusDiff(runGit(["diff", "--name-status", "--find-renames", `${base}...HEAD`]));
 }
 
 function readDirtyFiles() {
@@ -358,9 +335,7 @@ function runGit(gitArgs) {
 
   if (result.status !== 0) {
     const details =
-      result.stderr.trim() ||
-      result.stdout.trim() ||
-      `exit code ${result.status ?? "sconosciuto"}`;
+      result.stderr.trim() || result.stdout.trim() || `exit code ${result.status ?? "sconosciuto"}`;
 
     throw new Error(`git ${gitArgs.join(" ")} non riuscito: ${details}`);
   }
@@ -417,9 +392,7 @@ function printPrePrSelfReview(report) {
 
 function getHighestRisk(definitions) {
   return definitions.reduce((highest, definition) => {
-    return RISK_ORDER[definition.risk] > RISK_ORDER[highest]
-      ? definition.risk
-      : highest;
+    return RISK_ORDER[definition.risk] > RISK_ORDER[highest] ? definition.risk : highest;
   }, "basso");
 }
 
@@ -431,9 +404,7 @@ function dedupeFiles(files) {
     byPath.set(file.path, file);
   }
 
-  return [...byPath.values()].sort((left, right) =>
-    left.path.localeCompare(right.path),
-  );
+  return [...byPath.values()].sort((left, right) => left.path.localeCompare(right.path));
 }
 
 function unique(items) {

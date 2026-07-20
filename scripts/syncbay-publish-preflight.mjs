@@ -54,9 +54,7 @@ function buildReport(args) {
   }
 
   if (status && !args.allowDirty) {
-    failures.push(
-      "Worktree sporco: committa o separa le modifiche prima della pubblicazione.",
-    );
+    failures.push("Worktree sporco: committa o separa le modifiche prima della pubblicazione.");
   } else if (status) {
     warnings.push("Worktree sporco consentito da --allow-dirty.");
   }
@@ -72,13 +70,10 @@ function buildReport(args) {
   }
 
   if (changelogState.hasMixedUnreleased) {
-    failures.push(
-      "CHANGELOG.md mescola voci versionate e non versionate in [Non rilasciato].",
-    );
+    failures.push("CHANGELOG.md mescola voci versionate e non versionate in [Non rilasciato].");
   }
 
-  const pr =
-    args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
+  const pr = args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
   const codexFeedback = loadCodexFeedback({
     pr,
     publishedMainPreflight,
@@ -89,11 +84,7 @@ function buildReport(args) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
-  if (
-    args.remote &&
-    (pr || publishedMainPreflight) &&
-    !codexFeedback?.readable
-  ) {
+  if (args.remote && (pr || publishedMainPreflight) && !codexFeedback?.readable) {
     failures.push(
       "Feedback Codex non leggibile: verificare autenticazione GitHub, review thread PR e issue #2 prima della pubblicazione.",
     );
@@ -225,12 +216,7 @@ function runGh(ghArgs) {
 }
 
 function getUpstreamState() {
-  const output = runGit([
-    "rev-list",
-    "--left-right",
-    "--count",
-    "HEAD...@{upstream}",
-  ]);
+  const output = runGit(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"]);
 
   if (!output) return null;
 
@@ -244,12 +230,7 @@ function getUpstreamState() {
 }
 
 function readCurrentPullRequest() {
-  const output = runGh([
-    "pr",
-    "view",
-    "--json",
-    "number,title,mergeStateStatus,state,url",
-  ]);
+  const output = runGh(["pr", "view", "--json", "number,title,mergeStateStatus,state,url"]);
 
   if (!output) return null;
 
@@ -276,14 +257,10 @@ function readCodexInbox(prNumber) {
 
   const parsed = JSON.parse(output);
   const body = parsed.body ?? "";
-  const actionableSectionMatch = body.match(
-    /## Da risolvere ora\s*(?<body>[\s\S]*?)(?=\n## |$)/,
-  );
+  const actionableSectionMatch = body.match(/## Da risolvere ora\s*(?<body>[\s\S]*?)(?=\n## |$)/);
   const actionableSection = actionableSectionMatch?.groups?.body ?? "";
   const prSectionMatch = prNumber
-    ? body.match(
-        new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"),
-      )
+    ? body.match(new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"))
     : null;
   const prSection = prSectionMatch?.[0] ?? "";
 
@@ -298,8 +275,7 @@ function readCodexInbox(prNumber) {
 }
 
 export function loadCodexFeedback(input, readers = {}) {
-  if (!input.remote || (!input.pr && !input.publishedMainPreflight))
-    return null;
+  if (!input.remote || (!input.pr && !input.publishedMainPreflight)) return null;
 
   const readInbox = readers.readInbox ?? readCodexInbox;
   const readThreads = readers.readThreads ?? readCodexReviewThreads;
@@ -362,8 +338,7 @@ export function readCodexReviewThreads(prNumber, options = {}) {
     }
 
     const parsed = JSON.parse(output);
-    const connection =
-      parsed.data?.repository?.pullRequest?.reviewThreads ?? null;
+    const connection = parsed.data?.repository?.pullRequest?.reviewThreads ?? null;
 
     threads.push(...(connection?.nodes ?? []));
     after =
@@ -372,17 +347,12 @@ export function readCodexReviewThreads(prNumber, options = {}) {
         : null;
   } while (after);
 
-  const codexLoginPattern = new RegExp(
-    process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex",
-    "i",
-  );
+  const codexLoginPattern = new RegExp(process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex", "i");
   const actionable = threads.some(
     (thread) =>
       !thread.isResolved &&
       !thread.isOutdated &&
-      thread.comments.nodes.some((comment) =>
-        codexLoginPattern.test(comment.author?.login ?? ""),
-      ),
+      thread.comments.nodes.some((comment) => codexLoginPattern.test(comment.author?.login ?? "")),
   );
 
   return {
@@ -440,14 +410,10 @@ function hasActionableThreads(markdown) {
 
 function getUnreleasedState() {
   const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
-  const match = changelog.match(
-    /^## \[Non rilasciato\]\s*(?<body>[\s\S]*?)(?=^## \[[^\]]+\])/m,
-  );
+  const match = changelog.match(/^## \[Non rilasciato\]\s*(?<body>[\s\S]*?)(?=^## \[[^\]]+\])/m);
   const body = match?.groups?.body?.trim() ?? "";
   const hasVersionedUnreleased =
-    /^###\s+(Novità|Correzioni|Sicurezza|Sotto il cofano|Modificato|Rimosso)\s*$/im.test(
-      body,
-    );
+    /^###\s+(Novità|Correzioni|Sicurezza|Sotto il cofano|Modificato|Rimosso)\s*$/im.test(body);
   const hasNonVersionedUnreleased = /^###\s+Non versionato\s*$/im.test(body);
 
   return {
@@ -459,7 +425,5 @@ function getUnreleasedState() {
 }
 
 function isConventionalTitle(title) {
-  return /^(feat|fix|perf|docs|chore|refactor|test|ci)(\([^)]+\))?!?: .+/.test(
-    title,
-  );
+  return /^(feat|fix|perf|docs|chore|refactor|test|ci)(\([^)]+\))?!?: .+/.test(title);
 }

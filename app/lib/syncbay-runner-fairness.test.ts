@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  buildRunnerLanePlan,
-  shouldClaimRunnerJob,
-} from "./syncbay-runner-fairness.ts";
+import { buildRunnerLanePlan, shouldClaimRunnerJob } from "./syncbay-runner-fairness.ts";
 
 const emptyDue = {
   UPDATE_EBAY_STOCK: 0,

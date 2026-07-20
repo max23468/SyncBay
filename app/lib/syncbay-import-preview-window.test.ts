@@ -80,9 +80,7 @@ function makePreview(
     })),
     mode: "live",
     summary: {
-      errorCount: Object.values(statusByItemId).filter(
-        (status) => status === "error",
-      ).length,
+      errorCount: Object.values(statusByItemId).filter((status) => status === "error").length,
       importableCount: itemIds.length,
       skippedCount: 0,
       totalCount: itemIds.length,

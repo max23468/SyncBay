@@ -171,10 +171,7 @@ test("keeps order stock quantity conflicts open when live Shopify is not aligned
 
 test("detects Shopify conflicts only for active mappings", () => {
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ACTIVE"), true);
-  assert.equal(
-    shouldDetectShopifyConflictsForMappingStatus("OUT_OF_STOCK"),
-    false,
-  );
+  assert.equal(shouldDetectShopifyConflictsForMappingStatus("OUT_OF_STOCK"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ARCHIVED"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("PAUSED"), false);
   assert.equal(shouldDetectShopifyConflictsForMappingStatus("ERROR"), false);
@@ -182,104 +179,38 @@ test("detects Shopify conflicts only for active mappings", () => {
 });
 
 test("blocks incremental sync on open conflicts for sellable or held mappings", () => {
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ACTIVE"),
-    true,
-  );
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus("OUT_OF_STOCK"),
-    false,
-  );
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ARCHIVED"),
-    false,
-  );
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus("PAUSED"),
-    true,
-  );
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus("ERROR"),
-    true,
-  );
-  assert.equal(
-    shouldBlockIncrementalSyncForOpenConflictMappingStatus(null),
-    false,
-  );
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus("ACTIVE"), true);
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus("OUT_OF_STOCK"), false);
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus("ARCHIVED"), false);
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus("PAUSED"), true);
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus("ERROR"), true);
+  assert.equal(shouldBlockIncrementalSyncForOpenConflictMappingStatus(null), false);
 });
 
 test("resolves open conflicts automatically only for inactive-source mappings", () => {
-  assert.equal(
-    shouldResolveOpenConflictsForInactiveMappingStatus("OUT_OF_STOCK"),
-    true,
-  );
-  assert.equal(
-    shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"),
-    false,
-  );
-  assert.equal(
-    shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"),
-    false,
-  );
-  assert.equal(
-    shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"),
-    false,
-  );
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("OUT_OF_STOCK"), true);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ACTIVE"), false);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("PAUSED"), false);
+  assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus("ERROR"), false);
   assert.equal(shouldResolveOpenConflictsForInactiveMappingStatus(null), false);
 });
 
 test("resolves live-aligned description conflicts only for active mappings", () => {
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ACTIVE"),
-    true,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("OUT_OF_STOCK"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ARCHIVED"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("PAUSED"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ERROR"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedDescriptionConflictForMappingStatus(null),
-    false,
-  );
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ACTIVE"), true);
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus("OUT_OF_STOCK"), false);
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ARCHIVED"), false);
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus("PAUSED"), false);
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus("ERROR"), false);
+  assert.equal(shouldResolveLiveAlignedDescriptionConflictForMappingStatus(null), false);
 });
 
 test("resolves live-aligned price conflicts only for active mappings", () => {
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus("ACTIVE"),
-    true,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus("OUT_OF_STOCK"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus("ARCHIVED"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus("PAUSED"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus("ERROR"),
-    false,
-  );
-  assert.equal(
-    shouldResolveLiveAlignedPriceConflictForMappingStatus(null),
-    false,
-  );
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus("ACTIVE"), true);
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus("OUT_OF_STOCK"), false);
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus("ARCHIVED"), false);
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus("PAUSED"), false);
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus("ERROR"), false);
+  assert.equal(shouldResolveLiveAlignedPriceConflictForMappingStatus(null), false);
 });
 
 test("recognizes live description conflicts already aligned to latest baseline", () => {

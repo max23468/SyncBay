@@ -49,8 +49,5 @@ export function buildRunnerLanePlan(input: {
 export function shouldClaimRunnerJob(input: { deadlineAt?: Date; now: Date }) {
   if (!input.deadlineAt) return true;
 
-  return (
-    input.deadlineAt.getTime() - input.now.getTime() >
-    RUNNER_CLAIM_SAFETY_WINDOW_MS
-  );
+  return input.deadlineAt.getTime() - input.now.getTime() > RUNNER_CLAIM_SAFETY_WINDOW_MS;
 }

@@ -2,10 +2,7 @@ import type { ActionFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 import { markShopUninstalled } from "../services/syncbay.server";
-import {
-  getSyncBayRequestId,
-  logSyncBayRuntimeEvent,
-} from "../lib/syncbay-runtime-log";
+import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runtime-log";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, session, topic } = await authenticate.webhook(request);

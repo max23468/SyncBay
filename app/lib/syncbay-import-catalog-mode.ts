@@ -6,9 +6,7 @@ const EXISTING_CATALOG_DRAFT_IMPORT_BLOCKER =
 export function normalizeImportCatalogMode(
   value: FormDataEntryValue | string | null | undefined,
 ): ImportCatalogMode {
-  return value === "existing" || value === "existing_catalog"
-    ? "existing_catalog"
-    : "new_products";
+  return value === "existing" || value === "existing_catalog" ? "existing_catalog" : "new_products";
 }
 
 export function getImportCatalogModeParam(mode: ImportCatalogMode) {
@@ -16,9 +14,7 @@ export function getImportCatalogModeParam(mode: ImportCatalogMode) {
 }
 
 export function getImportCatalogModeLabel(mode: ImportCatalogMode) {
-  return mode === "existing_catalog"
-    ? "Collega catalogo esistente"
-    : "Nuovi prodotti";
+  return mode === "existing_catalog" ? "Collega catalogo esistente" : "Nuovi prodotti";
 }
 
 export function canCreateDraftProductsForCatalogMode(mode: ImportCatalogMode) {
@@ -26,7 +22,5 @@ export function canCreateDraftProductsForCatalogMode(mode: ImportCatalogMode) {
 }
 
 export function getCatalogModeDraftImportBlocker(mode: ImportCatalogMode) {
-  return canCreateDraftProductsForCatalogMode(mode)
-    ? null
-    : EXISTING_CATALOG_DRAFT_IMPORT_BLOCKER;
+  return canCreateDraftProductsForCatalogMode(mode) ? null : EXISTING_CATALOG_DRAFT_IMPORT_BLOCKER;
 }

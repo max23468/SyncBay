@@ -43,33 +43,25 @@ export function getAlignedPriceConflictRepair(input: {
   });
   const price = formatShopifyMoney(pricing.priceAmount);
 
-  if (
-    !price ||
-    pricing.priceAmount === null ||
-    input.ebayPriceAmount === null
-  ) {
+  if (!price || pricing.priceAmount === null || input.ebayPriceAmount === null) {
     return null;
   }
 
   const compareAtPrice = formatShopifyMoney(pricing.compareAtPriceAmount);
   const expectedPriceCents = normalizeMoneyComparisonCents(price);
-  const expectedCompareAtPriceCents =
-    normalizeMoneyComparisonCents(compareAtPrice);
+  const expectedCompareAtPriceCents = normalizeMoneyComparisonCents(compareAtPrice);
   const shopifyValue = getPriceConflictValue(input.shopifyValue);
   const latestSyncBayValue = getPriceConflictValue(input.latestSyncBayValue);
 
   if (
-    normalizeMoneyComparisonCents(shopifyValue?.amount) !==
-      expectedPriceCents ||
-    normalizeMoneyComparisonCents(shopifyValue?.compareAtPrice) !==
-      expectedCompareAtPriceCents
+    normalizeMoneyComparisonCents(shopifyValue?.amount) !== expectedPriceCents ||
+    normalizeMoneyComparisonCents(shopifyValue?.compareAtPrice) !== expectedCompareAtPriceCents
   ) {
     return null;
   }
 
   if (
-    normalizeMoneyComparisonCents(latestSyncBayValue?.amount) ===
-      expectedPriceCents &&
+    normalizeMoneyComparisonCents(latestSyncBayValue?.amount) === expectedPriceCents &&
     normalizeMoneyComparisonCents(latestSyncBayValue?.compareAtPrice) ===
       expectedCompareAtPriceCents
   ) {
@@ -108,9 +100,7 @@ export function getFinalizedPriceConflictRepairIds(input: {
   conflictIds: string[];
   updatedCount: number;
 }) {
-  return input.updatedCount === input.conflictIds.length
-    ? input.conflictIds
-    : [];
+  return input.updatedCount === input.conflictIds.length ? input.conflictIds : [];
 }
 
 export function getPriceConflictRepairSnapshotVariantGid(input: {
@@ -119,10 +109,7 @@ export function getPriceConflictRepairSnapshotVariantGid(input: {
   selectedVariantGid?: string | null;
 }) {
   return (
-    input.selectedVariantGid ??
-    input.mappingVariantGid ??
-    input.latestSnapshotVariantGid ??
-    null
+    input.selectedVariantGid ?? input.mappingVariantGid ?? input.latestSnapshotVariantGid ?? null
   );
 }
 

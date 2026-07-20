@@ -1,7 +1,5 @@
 export function resolveRequiredShopDomainOption(input = {}) {
-  const shopDomain = normalizeShopDomain(
-    input.args?.shop ?? input.env?.SHOPIFY_DEV_STORE,
-  );
+  const shopDomain = normalizeShopDomain(input.args?.shop ?? input.env?.SHOPIFY_DEV_STORE);
 
   if (shopDomain) return shopDomain;
 

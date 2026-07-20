@@ -3,8 +3,7 @@ import type { ConflictResolution } from "./syncbay-conflict-actions";
 type Tone = "critical" | "warning" | "info" | "success";
 
 export type SyncBayJobOutcome = "succeeded" | "failed" | "retrying";
-export type SyncBayCatalogHealth =
-  "aligned" | "catching_up" | "delayed" | "error" | "disabled";
+export type SyncBayCatalogHealth = "aligned" | "catching_up" | "delayed" | "error" | "disabled";
 export type SyncBayRunnerActivity = "running" | "waiting" | "stopped";
 
 export function getSyncJobOutcome(status: string): SyncBayJobOutcome | null {
@@ -52,11 +51,7 @@ export function getOperationalUiState(input: {
           ? "In attesa del prossimo controllo"
           : "Fermo",
     runnerTone:
-      runnerActivity === "stopped"
-        ? "info"
-        : runnerActivity === "waiting"
-          ? "success"
-          : "info",
+      runnerActivity === "stopped" ? "info" : runnerActivity === "waiting" ? "success" : "info",
   } as const;
 }
 
@@ -64,11 +59,7 @@ export function getNeutralUnavailableMetric() {
   return { label: "Dato non disponibile", tone: "info" as const };
 }
 
-export function formatSyncMetric(
-  value: number,
-  unit: "job" | "prodotti" | "run",
-  period: string,
-) {
+export function formatSyncMetric(value: number, unit: "job" | "prodotti" | "run", period: string) {
   return `${formatInteger(value)} ${unit} ${period}`.trim();
 }
 
@@ -157,8 +148,7 @@ export type CatalogStatusKind =
   | "stale_sync"
   | "archived";
 
-export type CatalogAvailabilityKind =
-  "aligned" | "blocked" | "needs_check" | "unknown";
+export type CatalogAvailabilityKind = "aligned" | "blocked" | "needs_check" | "unknown";
 
 export interface CatalogRowStatusInput {
   lastErrorCode?: string | null;
@@ -198,9 +188,7 @@ export function shouldShowOverviewStatusHero(kind: NextActionKind) {
   return OVERVIEW_STATUS_HERO_KINDS.has(kind);
 }
 
-export function getActivityBadgeState(
-  input: ActivityBadgeStateInput,
-): ActivityBadgeState {
+export function getActivityBadgeState(input: ActivityBadgeStateInput): ActivityBadgeState {
   const openConflictCount = input.openConflictCount ?? 0;
 
   if (input.working) {
@@ -303,9 +291,7 @@ const INTEGER_FORMATTER = new Intl.NumberFormat("it-IT", {
 
 function formatInteger(value: number) {
   const formatted = INTEGER_FORMATTER.format(value);
-  return /^-?\d{4}$/u.test(formatted)
-    ? formatted.replace(/(\d)(\d{3})$/u, "$1.$2")
-    : formatted;
+  return /^-?\d{4}$/u.test(formatted) ? formatted.replace(/(\d)(\d{3})$/u, "$1.$2") : formatted;
 }
 
 export function getNextAction(input: NextActionInput): NextAction {
@@ -318,9 +304,7 @@ export function getNextAction(input: NextActionInput): NextAction {
       primaryActionHref: canStartOAuth
         ? getEbayOAuthStartHref(input.shopDomain)
         : "/app/import-preview",
-      primaryActionLabel: canStartOAuth
-        ? "Ricollega eBay"
-        : "Apri importazione",
+      primaryActionLabel: canStartOAuth ? "Ricollega eBay" : "Apri importazione",
       ...(canStartOAuth ? { primaryActionTarget: EBAY_OAUTH_LINK_TARGET } : {}),
       title: "Collegamento eBay mancante o scaduto",
       tone: "critical",
@@ -488,9 +472,7 @@ function formatLagLabel(lagSeconds: number) {
   if (seconds < 3600) {
     const minutes = Math.max(1, Math.round(seconds / 60));
 
-    return minutes === 1
-      ? "1 minuto di ritardo"
-      : `${minutes} minuti di ritardo`;
+    return minutes === 1 ? "1 minuto di ritardo" : `${minutes} minuti di ritardo`;
   }
 
   const hours = Math.round(seconds / 3600);
@@ -498,9 +480,7 @@ function formatLagLabel(lagSeconds: number) {
   return hours === 1 ? "1 ora di ritardo" : `${hours} ore di ritardo`;
 }
 
-export function getEbayConnectionAction(
-  input: EbayConnectionActionInput,
-): EbayConnectionAction {
+export function getEbayConnectionAction(input: EbayConnectionActionInput): EbayConnectionAction {
   const connected = input.status === "CONNECTED";
   const label = connected ? "Ricollega eBay" : "Collega eBay";
 
@@ -543,9 +523,7 @@ export function getCatalogStatusLabel(status: CatalogStatusKind) {
   return "Esaurito";
 }
 
-export function getCatalogRowStatus(
-  input: CatalogRowStatusInput,
-): CatalogStatusKind {
+export function getCatalogRowStatus(input: CatalogRowStatusInput): CatalogStatusKind {
   // La corsia "archived" del catalogo rappresenta i prodotti esauriti
   // (listing eBay inattivo). Vedi ADR 0011.
   if (input.mappingStatus === "OUT_OF_STOCK") {
@@ -591,9 +569,7 @@ export function isCatalogMappingStale(input: {
   return input.now.getTime() - referenceMs > thresholdMs;
 }
 
-export function getCatalogAvailabilityLabel(
-  availability: CatalogAvailabilityKind,
-) {
+export function getCatalogAvailabilityLabel(availability: CatalogAvailabilityKind) {
   if (availability === "aligned") return "Allineata";
   if (availability === "needs_check") return "Da verificare";
   if (availability === "blocked") return "Bloccata";
@@ -636,10 +612,7 @@ export function getConflictImpactText(field: string) {
   return "SyncBay ha trovato una differenza da sistemare prima del prossimo aggiornamento.";
 }
 
-export function getProductPublicationModeSummaryLabel(
-  mode: string,
-  selectedCount: number,
-) {
+export function getProductPublicationModeSummaryLabel(mode: string, selectedCount: number) {
   if (mode === "NONE") return "Non pubblicare automaticamente";
   if (mode === "SELECTED") {
     if (selectedCount === 0) return "Nessun canale selezionato";
@@ -651,9 +624,7 @@ export function getProductPublicationModeSummaryLabel(
   return "Tutti i canali disponibili";
 }
 
-export function getEbayConnectionStatusLabel(
-  status: string | null | undefined,
-) {
+export function getEbayConnectionStatusLabel(status: string | null | undefined) {
   if (status === "CONNECTED") return "Collegato";
   if (status === "EXPIRED") return "Da ricollegare";
   if (status === "REVOKED") return "Revocato";

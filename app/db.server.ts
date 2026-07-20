@@ -8,9 +8,7 @@ declare global {
 }
 
 function createPrismaClient() {
-  const adapter = new PrismaPg(
-    buildPrismaRuntimePoolConfig(process.env.DATABASE_URL),
-  );
+  const adapter = new PrismaPg(buildPrismaRuntimePoolConfig(process.env.DATABASE_URL));
 
   return new PrismaClient({ adapter });
 }

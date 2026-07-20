@@ -78,9 +78,7 @@ test("falls back to total rows when SELECT rows are unavailable", () => {
 
 test("classifies simple SELECT and read-only CTE queries as egress reads", () => {
   assert.equal(
-    isEgressReadStatementQuery(
-      'SELECT "public"."Shop"."id" FROM "public"."Shop" WHERE "id" = $1',
-    ),
+    isEgressReadStatementQuery('SELECT "public"."Shop"."id" FROM "public"."Shop" WHERE "id" = $1'),
     true,
   );
 

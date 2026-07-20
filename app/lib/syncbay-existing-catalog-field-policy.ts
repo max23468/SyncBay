@@ -25,8 +25,7 @@ export type ShopifyMediaPolicyNode = {
   mediaContentType?: string | null;
 };
 
-type JsonValue =
-  JsonValue[] | { [key: string]: JsonValue } | boolean | null | number | string;
+type JsonValue = JsonValue[] | { [key: string]: JsonValue } | boolean | null | number | string;
 type JsonObject = { [key: string]: JsonValue };
 
 const SYNCBAY_SHOPIFY_SOURCE_TAG = "Negozio eBay";
@@ -39,16 +38,11 @@ export function buildExistingCatalogFieldPolicy(input: {
   shopifyImageCount: number;
   syncbayLegacyTags: string[];
 }): ExistingCatalogFieldPolicy {
-  const exactRemovals = new Set([
-    ...input.syncbayLegacyTags,
-    ...(input.legacyTagsToRemove ?? []),
-  ]);
+  const exactRemovals = new Set([...input.syncbayLegacyTags, ...(input.legacyTagsToRemove ?? [])]);
   const currentTags = input.currentTags ?? [];
   const tagsToRemove = currentTags.filter((tag) => exactRemovals.has(tag));
   const preservedTags = currentTags.filter((tag) => !exactRemovals.has(tag));
-  const sourceTagAlreadyPresent = currentTags.includes(
-    SYNCBAY_SHOPIFY_SOURCE_TAG,
-  );
+  const sourceTagAlreadyPresent = currentTags.includes(SYNCBAY_SHOPIFY_SOURCE_TAG);
 
   return {
     handle: {
@@ -57,10 +51,7 @@ export function buildExistingCatalogFieldPolicy(input: {
       redirectRequired: false,
     },
     images: {
-      operation:
-        input.shopifyImageCount > 0
-          ? "preserve"
-          : "sync_from_ebay_if_available",
+      operation: input.shopifyImageCount > 0 ? "preserve" : "sync_from_ebay_if_available",
     },
     tags: {
       add: sourceTagAlreadyPresent ? [] : [SYNCBAY_SHOPIFY_SOURCE_TAG],
@@ -70,9 +61,7 @@ export function buildExistingCatalogFieldPolicy(input: {
   };
 }
 
-export function parseExistingCatalogLegacyTagsToRemove(
-  value: FormDataEntryValue | null,
-) {
+export function parseExistingCatalogLegacyTagsToRemove(value: FormDataEntryValue | null) {
   if (typeof value !== "string") return [];
 
   const tags: string[] = [];
@@ -140,9 +129,7 @@ export function shouldSyncExistingCatalogImages(input: {
   return input.currentImageCount === 0;
 }
 
-export function getShopifyImageMediaIds(
-  mediaNodes?: ShopifyMediaPolicyNode[] | null,
-) {
+export function getShopifyImageMediaIds(mediaNodes?: ShopifyMediaPolicyNode[] | null) {
   const imageIds: string[] = [];
 
   for (const media of mediaNodes ?? []) {
@@ -175,9 +162,7 @@ function normalizeNullableText(value: string | null | undefined) {
   return normalized ? normalized : null;
 }
 
-function parseExistingCatalogFieldPolicy(
-  value: unknown,
-): ExistingCatalogFieldPolicy | null {
+function parseExistingCatalogFieldPolicy(value: unknown): ExistingCatalogFieldPolicy | null {
   const policy = getRecord(value);
   const handle = getRecord(policy.handle);
   const images = getRecord(policy.images);
@@ -187,17 +172,13 @@ function parseExistingCatalogFieldPolicy(
   if (handle.operation !== "preserve" || handle.redirectRequired !== false) {
     return null;
   }
-  if (
-    imageOperation !== "preserve" &&
-    imageOperation !== "sync_from_ebay_if_available"
-  ) {
+  if (imageOperation !== "preserve" && imageOperation !== "sync_from_ebay_if_available") {
     return null;
   }
 
   return {
     handle: {
-      currentHandle:
-        typeof handle.currentHandle === "string" ? handle.currentHandle : null,
+      currentHandle: typeof handle.currentHandle === "string" ? handle.currentHandle : null,
       operation: "preserve",
       redirectRequired: false,
     },

@@ -22,16 +22,10 @@ test("renders the capitalized import status labels in Italian", () => {
 
 test("renders the plural imported products labels in Italian", () => {
   assert.equal(getImportedProductsLabel("DRAFT"), "bozze Shopify");
-  assert.equal(
-    getImportedProductsLabel("ACTIVE"),
-    "prodotti Shopify pubblicati",
-  );
+  assert.equal(getImportedProductsLabel("ACTIVE"), "prodotti Shopify pubblicati");
 });
 
 test("renders the singular imported product labels in Italian", () => {
   assert.equal(getImportedProductSingularLabel("DRAFT"), "bozza Shopify");
-  assert.equal(
-    getImportedProductSingularLabel("ACTIVE"),
-    "prodotto Shopify pubblicato",
-  );
+  assert.equal(getImportedProductSingularLabel("ACTIVE"), "prodotto Shopify pubblicato");
 });

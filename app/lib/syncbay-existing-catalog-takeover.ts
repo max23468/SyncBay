@@ -6,7 +6,10 @@ import type { ExistingProductMatchSuggestion } from "./syncbay-product-matching"
 const { buildExistingCatalogFieldPolicy } = existingCatalogFieldPolicy;
 
 export type ExistingCatalogTakeoverStatus =
-  "applicabile" | "bloccante" | "da_rivedere" | "gia_collegato";
+  | "applicabile"
+  | "bloccante"
+  | "da_rivedere"
+  | "gia_collegato";
 
 export type ExistingCatalogTakeoverReason =
   | "categoria_incerta"
@@ -133,10 +136,7 @@ export function buildExistingCatalogTakeoverApplyPlan(
   );
 
   return {
-    blockers:
-      rows.length === 0
-        ? ["Nessuna riga applicabile nel dry-run catalogo esistente."]
-        : [],
+    blockers: rows.length === 0 ? ["Nessuna riga applicabile nel dry-run catalogo esistente."] : [],
     ebayItemIds: rows.map((row) => row.itemId),
     rows,
   };
@@ -167,8 +167,7 @@ function buildExistingCatalogTakeoverRow(
     }),
     itemId: item.itemId,
     matchSuggestion,
-    plannedOperations:
-      status === "applicabile" ? getPlannedOperations(item) : [],
+    plannedOperations: status === "applicabile" ? getPlannedOperations(item) : [],
     productGid: matchSuggestion?.productGid ?? null,
     reasons,
     sku: item.normalized.sku,
@@ -188,9 +187,7 @@ function getBlockingReasons(item: ImportPreviewItem) {
       ? "disponibilita_ebay_non_valida"
       : null,
     issueCodes.has("complex_variants") ? "varianti_non_supportate" : null,
-  ].filter((reason): reason is ExistingCatalogTakeoverReason =>
-    Boolean(reason),
-  );
+  ].filter((reason): reason is ExistingCatalogTakeoverReason => Boolean(reason));
 }
 
 function getReviewReasons(
@@ -198,31 +195,22 @@ function getReviewReasons(
   matchSuggestion: ExistingProductMatchSuggestion | null,
 ) {
   const issueCodes = new Set(item.issues.map((issue) => issue.code));
-  const hasMissingEbayImages =
-    issueCodes.has("missing_images") || item.normalized.imageCount === 0;
-  const hasShopifyImagesToPreserve =
-    (matchSuggestion?.shopifyImageCount ?? 0) > 0;
+  const hasMissingEbayImages = issueCodes.has("missing_images") || item.normalized.imageCount === 0;
+  const hasShopifyImagesToPreserve = (matchSuggestion?.shopifyImageCount ?? 0) > 0;
   const hasStrongAutoMatch = Boolean(matchSuggestion);
 
   return [
-    hasMissingEbayImages && !hasShopifyImagesToPreserve
-      ? "immagini_mancanti"
-      : null,
+    hasMissingEbayImages && !hasShopifyImagesToPreserve ? "immagini_mancanti" : null,
     item.normalized.categoryProposal.confidence === "low" && !hasStrongAutoMatch
       ? "categoria_incerta"
       : null,
-  ].filter((reason): reason is ExistingCatalogTakeoverReason =>
-    Boolean(reason),
-  );
+  ].filter((reason): reason is ExistingCatalogTakeoverReason => Boolean(reason));
 }
 
-function getPlannedOperations(
-  item: ImportPreviewItem,
-): ExistingCatalogPlannedOperation[] {
+function getPlannedOperations(item: ImportPreviewItem): ExistingCatalogPlannedOperation[] {
   return APPLICABLE_PLANNED_OPERATIONS.filter(
     (operation) =>
-      operation !== "sync_category" ||
-      item.normalized.categoryProposal.confidence !== "low",
+      operation !== "sync_category" || item.normalized.categoryProposal.confidence !== "low",
   );
 }
 
@@ -260,9 +248,7 @@ function getStatus(input: {
   return "da_rivedere";
 }
 
-function summarizeRows(
-  rows: ExistingCatalogTakeoverRow[],
-): ExistingCatalogTakeoverSummary {
+function summarizeRows(rows: ExistingCatalogTakeoverRow[]): ExistingCatalogTakeoverSummary {
   return {
     alreadyLinked: rows.filter((row) => row.status === "gia_collegato").length,
     applicable: rows.filter((row) => row.status === "applicabile").length,

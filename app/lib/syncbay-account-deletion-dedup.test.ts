@@ -19,10 +19,10 @@ test("uses eventDate as the strongest account deletion dedupe anchor", () => {
 test("falls back to publishDate when eventDate is missing", () => {
   const publishDate = new Date("2026-06-21T08:00:03.000Z");
 
-  assert.deepEqual(
-    getAccountDeletionDedupAnchor({ eventDate: null, publishDate }),
-    { field: "publishDate", value: publishDate },
-  );
+  assert.deepEqual(getAccountDeletionDedupAnchor({ eventDate: null, publishDate }), {
+    field: "publishDate",
+    value: publishDate,
+  });
 });
 
 test("does not dedupe account deletion requests without stable dates", () => {
@@ -36,12 +36,6 @@ test("does not dedupe account deletion requests without stable dates", () => {
 });
 
 test("keeps no-match account deletion notifications out of persistent logs", () => {
-  assert.equal(
-    getAccountDeletionPersistenceMode({ matchedShopCount: 0 }),
-    "noop",
-  );
-  assert.equal(
-    getAccountDeletionPersistenceMode({ matchedShopCount: 1 }),
-    "persist",
-  );
+  assert.equal(getAccountDeletionPersistenceMode({ matchedShopCount: 0 }), "noop");
+  assert.equal(getAccountDeletionPersistenceMode({ matchedShopCount: 1 }), "persist");
 });

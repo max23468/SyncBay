@@ -7,14 +7,7 @@ import { readFileSync } from "node:fs";
 const MARKER = "[syncbay-loader-performance]";
 const DEFAULT_DEPLOYMENT = "syncbay.vercel.app";
 const DEFAULT_SINCE = "10m";
-const ROUTE_ORDER = [
-  "overview",
-  "catalog",
-  "import",
-  "activity",
-  "conflicts",
-  "settings",
-];
+const ROUTE_ORDER = ["overview", "catalog", "import", "activity", "conflicts", "settings"];
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -74,15 +67,7 @@ function parseArgs(rawArgs) {
 function readVercelLogs({ deployment, since }) {
   const result = spawnSync(
     "vercel",
-    [
-      "logs",
-      deployment,
-      "--since",
-      since,
-      "--query",
-      "syncbay-loader-performance",
-      "--json",
-    ],
+    ["logs", deployment, "--since", since, "--query", "syncbay-loader-performance", "--json"],
     {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
@@ -111,9 +96,7 @@ function parseLoaderPerformanceRecords(rawLogs) {
 
     const parsedLine = parseJsonMaybe(line);
     const messages =
-      parsedLine === null
-        ? [{ message: line, observedAt: null }]
-        : collectLogMessages(parsedLine);
+      parsedLine === null ? [{ message: line, observedAt: null }] : collectLogMessages(parsedLine);
 
     for (const item of messages) {
       const metric = extractMetricFromMessage(item.message);
@@ -133,9 +116,7 @@ function parseLoaderPerformanceRecords(rawLogs) {
     }
   }
 
-  return records.filter(
-    (record) => record.route !== "unknown" && Number.isFinite(record.totalMs),
-  );
+  return records.filter((record) => record.route !== "unknown" && Number.isFinite(record.totalMs));
 }
 
 function collectLogMessages(value, inheritedTimestamp = null) {
@@ -158,17 +139,11 @@ function collectLogMessages(value, inheritedTimestamp = null) {
   }
 
   if (Array.isArray(value.logs)) {
-    messages.push(
-      ...value.logs.flatMap((entry) => collectLogMessages(entry, ownTimestamp)),
-    );
+    messages.push(...value.logs.flatMap((entry) => collectLogMessages(entry, ownTimestamp)));
   }
 
   if (Array.isArray(value.entries)) {
-    messages.push(
-      ...value.entries.flatMap((entry) =>
-        collectLogMessages(entry, ownTimestamp),
-      ),
-    );
+    messages.push(...value.entries.flatMap((entry) => collectLogMessages(entry, ownTimestamp)));
   }
 
   return messages;
@@ -265,9 +240,7 @@ function printReport({ args, latestRecords, sampleCount }) {
   );
 
   if (latestRecords.length === 0) {
-    console.log(
-      `Nessun log ${MARKER} trovato. Apri le route embedded e rilancia il comando.`,
-    );
+    console.log(`Nessun log ${MARKER} trovato. Apri le route embedded e rilancia il comando.`);
     return;
   }
 
@@ -307,20 +280,14 @@ function printTable(rows) {
     Math.max(header.length, ...rows.map((row) => String(row[key]).length)),
   );
 
-  const header = columns
-    .map(([, label], index) => label.padEnd(widths[index]))
-    .join("  ");
+  const header = columns.map(([, label], index) => label.padEnd(widths[index])).join("  ");
   const separator = widths.map((width) => "-".repeat(width)).join("  ");
 
   console.log(header);
   console.log(separator);
 
   for (const row of rows) {
-    console.log(
-      columns
-        .map(([key], index) => String(row[key]).padEnd(widths[index]))
-        .join("  "),
-    );
+    console.log(columns.map(([key], index) => String(row[key]).padEnd(widths[index])).join("  "));
   }
 }
 
@@ -329,9 +296,7 @@ function formatMs(value) {
 }
 
 function formatNumber(value) {
-  return Number.isFinite(value)
-    ? new Intl.NumberFormat("it-IT").format(value)
-    : "-";
+  return Number.isFinite(value) ? new Intl.NumberFormat("it-IT").format(value) : "-";
 }
 
 function printHelp() {

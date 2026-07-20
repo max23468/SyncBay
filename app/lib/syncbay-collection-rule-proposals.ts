@@ -59,9 +59,7 @@ export function buildCollectionRuleReview(input: {
   collectionIntents: CollectionRuleIntent[];
   collections: ShopifyCollectionForRuleProposal[];
 }): CollectionRuleReview {
-  const intentByHandle = new Map(
-    input.collectionIntents.map((intent) => [intent.handle, intent]),
-  );
+  const intentByHandle = new Map(input.collectionIntents.map((intent) => [intent.handle, intent]));
   const proposals: CollectionRuleProposal[] = [];
   const warnings: CollectionRuleWarning[] = [];
 
@@ -103,23 +101,18 @@ function buildProposedRuleSet(
     }
   | { warning: CollectionRuleWarning }
   | null {
-  const productTypeRules = (intent.productTypeContains ?? []).map(
-    (condition) => ({
-      column: "TYPE",
-      condition,
-      relation: "CONTAINS",
-    }),
-  );
+  const productTypeRules = (intent.productTypeContains ?? []).map((condition) => ({
+    column: "TYPE",
+    condition,
+    relation: "CONTAINS",
+  }));
 
   if (productTypeRules.length > 0) {
     return {
       reason: "configured_product_type_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [
-          ...productTypeRules,
-          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
-        ],
+        rules: [...productTypeRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
       },
     };
   }
@@ -138,10 +131,7 @@ function buildProposedRuleSet(
       reason: "configured_title_alignment",
       ruleSet: {
         appliedDisjunctively: false,
-        rules: [
-          ...titleRules,
-          ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : []),
-        ],
+        rules: [...titleRules, ...(intent.requirePositiveInventory ? [INVENTORY_RULE] : [])],
       },
     };
   }
@@ -194,15 +184,9 @@ function isInventoryRule(rule: ShopifyCollectionRule) {
   );
 }
 
-function areRuleSetsEqual(
-  left: ShopifyCollectionRuleSet | null,
-  right: ShopifyCollectionRuleSet,
-) {
+function areRuleSetsEqual(left: ShopifyCollectionRuleSet | null, right: ShopifyCollectionRuleSet) {
   if (!left) return false;
-  return (
-    JSON.stringify(normalizeRuleSet(left)) ===
-    JSON.stringify(normalizeRuleSet(right))
-  );
+  return JSON.stringify(normalizeRuleSet(left)) === JSON.stringify(normalizeRuleSet(right));
 }
 
 function normalizeRuleSet(ruleSet: ShopifyCollectionRuleSet) {

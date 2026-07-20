@@ -77,25 +77,17 @@ export function shouldSkipQuantityConflictForArchivedProduct(input: {
   );
 }
 
-export function shouldDetectShopifyConflictsForMappingStatus(
-  mappingStatus: string | null,
-) {
+export function shouldDetectShopifyConflictsForMappingStatus(mappingStatus: string | null) {
   return mappingStatus === "ACTIVE";
 }
 
 export function shouldBlockIncrementalSyncForOpenConflictMappingStatus(
   mappingStatus: string | null,
 ) {
-  return (
-    mappingStatus === "ACTIVE" ||
-    mappingStatus === "PAUSED" ||
-    mappingStatus === "ERROR"
-  );
+  return mappingStatus === "ACTIVE" || mappingStatus === "PAUSED" || mappingStatus === "ERROR";
 }
 
-export function shouldResolveOpenConflictsForInactiveMappingStatus(
-  mappingStatus: string | null,
-) {
+export function shouldResolveOpenConflictsForInactiveMappingStatus(mappingStatus: string | null) {
   return mappingStatus === "OUT_OF_STOCK";
 }
 
@@ -135,8 +127,7 @@ export function isLiveDescriptionConflictAligned(input: {
     typeof input.latestSyncBayDescriptionHash === "string" &&
     input.latestSyncBayDescriptionHash.trim().length > 0 &&
     typeof input.currentShopifyDescriptionHash === "string" &&
-    input.latestSyncBayDescriptionHash.trim() ===
-      input.currentShopifyDescriptionHash.trim()
+    input.latestSyncBayDescriptionHash.trim() === input.currentShopifyDescriptionHash.trim()
   );
 }
 

@@ -1,8 +1,5 @@
 type ShopifyAdminGraphqlClient = {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 };
 
 type ShopifyPublicationNode = {
@@ -101,16 +98,14 @@ export async function syncShopifyProductPublications(
 
   if (!shouldPublishProductToSalesChannels(product.status)) {
     return {
-      message:
-        "SyncBay non pubblica prodotti Shopify non attivi sui canali di vendita.",
+      message: "SyncBay non pubblica prodotti Shopify non attivi sui canali di vendita.",
       publicationCount: 0,
       reason: "product_not_active",
       status: "skipped",
     };
   }
 
-  const publicationIds =
-    options.publicationIds ?? (await loadShopifyProductPublicationIds(admin));
+  const publicationIds = options.publicationIds ?? (await loadShopifyProductPublicationIds(admin));
 
   if ("errorMessage" in publicationIds) {
     return {
@@ -123,8 +118,7 @@ export async function syncShopifyProductPublications(
 
   if (publicationIds.length === 0) {
     return {
-      message:
-        "Shopify non ha restituito publication/canali su cui pubblicare.",
+      message: "Shopify non ha restituito publication/canali su cui pubblicare.",
       publicationCount: 0,
       reason: "no_publications",
       status: "skipped",
@@ -191,9 +185,7 @@ export async function syncShopifyProductPublications(
   };
 }
 
-export async function loadShopifyProductPublicationIds(
-  admin: ShopifyAdminGraphqlClient,
-) {
+export async function loadShopifyProductPublicationIds(admin: ShopifyAdminGraphqlClient) {
   const publications = await loadShopifyProductPublications(admin);
 
   if ("errorMessage" in publications) {
@@ -203,9 +195,7 @@ export async function loadShopifyProductPublicationIds(
   return getUniquePublicationIds(publications);
 }
 
-export async function loadShopifyProductPublications(
-  admin: ShopifyAdminGraphqlClient,
-) {
+export async function loadShopifyProductPublications(admin: ShopifyAdminGraphqlClient) {
   const publications = await fetchShopifyPublications(admin);
 
   if ("errorMessage" in publications) {
@@ -224,9 +214,7 @@ export async function loadShopifyProductPublications(
   );
 }
 
-function shouldPublishProductToSalesChannels(
-  status: string | null | undefined,
-) {
+function shouldPublishProductToSalesChannels(status: string | null | undefined) {
   return status === "ACTIVE";
 }
 
@@ -287,11 +275,7 @@ async function fetchShopifyPublications(admin: ShopifyAdminGraphqlClient) {
 
 function getUniquePublicationIds(publications: ShopifyProductPublication[]) {
   return [
-    ...new Set(
-      publications.flatMap((publication) =>
-        publication.id ? [publication.id] : [],
-      ),
-    ),
+    ...new Set(publications.flatMap((publication) => (publication.id ? [publication.id] : []))),
   ];
 }
 

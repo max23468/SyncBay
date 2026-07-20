@@ -84,9 +84,7 @@ test("always keeps the claimed seed inside a full batch", () => {
   const newerJobs = Array.from({ length: 49 }, (_, index) =>
     job({
       id: `newer-${index}`,
-      createdAt: new Date(
-        `2026-07-11T10:${String(index).padStart(2, "0")}:00Z`,
-      ),
+      createdAt: new Date(`2026-07-11T10:${String(index).padStart(2, "0")}:00Z`),
       productGid: `gid://shopify/Product/${index}`,
     }),
   );

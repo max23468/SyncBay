@@ -46,9 +46,7 @@ test("flags unavailable products that remain in specific collections", () => {
   });
 
   assert.equal(report.summary.unavailableInSpecific, 1);
-  assert.deepEqual(report.unavailableInSpecific[0]?.specificCollections, [
-    "Accessori numismatici",
-  ]);
+  assert.deepEqual(report.unavailableInSpecific[0]?.specificCollections, ["Accessori numismatici"]);
 });
 
 test("keeps available products in specific collections out of problem lists", () => {

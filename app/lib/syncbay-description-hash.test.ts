@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  getSyncBayDescriptionHash,
-  hashNullableText,
-} from "./syncbay-description-hash.ts";
+import { getSyncBayDescriptionHash, hashNullableText } from "./syncbay-description-hash.ts";
 
 test("uses Shopify-returned description HTML as SyncBay baseline", () => {
   const inputHtml = "<p>Descrizione eBay</p>";

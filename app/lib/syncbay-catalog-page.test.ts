@@ -40,31 +40,25 @@ test("matches catalog rows by title, SKU or eBay item id", () => {
   assert.equal(catalogRowMatchesSearch(row, "456789"), true);
   assert.equal(catalogRowMatchesSearch(row, "lampada"), false);
   assert.equal(
-    catalogRowMatchesSearch(
-      { ebayItemId: null, sku: null, title: null },
-      "tazze",
-    ),
+    catalogRowMatchesSearch({ ebayItemId: null, sku: null, title: null }, "tazze"),
     false,
   );
 });
 
 test("computes catalog pagination windows", () => {
-  assert.deepEqual(
-    getCatalogPageWindow({ page: 2, pageSize: 100, totalRows: 250 }),
-    {
-      currentEnd: 200,
-      currentStart: 101,
-      hasNextPage: true,
-      hasPreviousPage: true,
-      nextPage: 3,
-      offset: 100,
-      page: 2,
-      pageSize: 100,
-      previousPage: 1,
-      totalPages: 3,
-      totalRows: 250,
-    },
-  );
+  assert.deepEqual(getCatalogPageWindow({ page: 2, pageSize: 100, totalRows: 250 }), {
+    currentEnd: 200,
+    currentStart: 101,
+    hasNextPage: true,
+    hasPreviousPage: true,
+    nextPage: 3,
+    offset: 100,
+    page: 2,
+    pageSize: 100,
+    previousPage: 1,
+    totalPages: 3,
+    totalRows: 250,
+  });
 });
 
 test("plans simple catalog views as a single visible database page", () => {
@@ -130,26 +124,20 @@ test("keeps searched catalog views on the full in-memory plan", () => {
 });
 
 test("clamps catalog pages outside the available range", () => {
-  assert.equal(
-    getCatalogPageWindow({ page: 99, pageSize: 100, totalRows: 120 }).page,
-    2,
-  );
-  assert.deepEqual(
-    getCatalogPageWindow({ page: 4, pageSize: 100, totalRows: 0 }),
-    {
-      currentEnd: 0,
-      currentStart: 0,
-      hasNextPage: false,
-      hasPreviousPage: false,
-      nextPage: null,
-      offset: 0,
-      page: 1,
-      pageSize: 100,
-      previousPage: null,
-      totalPages: 1,
-      totalRows: 0,
-    },
-  );
+  assert.equal(getCatalogPageWindow({ page: 99, pageSize: 100, totalRows: 120 }).page, 2);
+  assert.deepEqual(getCatalogPageWindow({ page: 4, pageSize: 100, totalRows: 0 }), {
+    currentEnd: 0,
+    currentStart: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+    nextPage: null,
+    offset: 0,
+    page: 1,
+    pageSize: 100,
+    previousPage: null,
+    totalPages: 1,
+    totalRows: 0,
+  });
 });
 
 test("limits snapshot lookups to visible catalog rows", () => {

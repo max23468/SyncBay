@@ -42,35 +42,25 @@ export function buildSnapshotPricingSourcesByItemId(
       sku: snapshot.sku,
       source: "snapshot" as const,
       title: snapshot.title,
-      ...(snapshot.productStatus !== undefined
-        ? { productStatus: snapshot.productStatus }
-        : {}),
-      ...(snapshot.quantity !== undefined
-        ? { quantity: snapshot.quantity }
-        : {}),
+      ...(snapshot.productStatus !== undefined ? { productStatus: snapshot.productStatus } : {}),
+      ...(snapshot.quantity !== undefined ? { quantity: snapshot.quantity } : {}),
     });
   }
 
   return sources;
 }
 
-function getSnapshotOriginalPriceAmount(
-  snapshot: SyncBaySnapshotPricingSourceInput,
-) {
-  if (snapshot.source === "EBAY")
-    return normalizeMoneyAmount(snapshot.priceAmount);
+function getSnapshotOriginalPriceAmount(snapshot: SyncBaySnapshotPricingSourceInput) {
+  if (snapshot.source === "EBAY") return normalizeMoneyAmount(snapshot.priceAmount);
 
   return (
-    getJsonNumber(
-      getJsonObject(getJsonObject(snapshot.payload)?.pricing)?.ebayPriceAmount,
-    ) ?? normalizeMoneyAmount(snapshot.priceAmount)
+    getJsonNumber(getJsonObject(getJsonObject(snapshot.payload)?.pricing)?.ebayPriceAmount) ??
+    normalizeMoneyAmount(snapshot.priceAmount)
   );
 }
 
 function normalizeMoneyAmount(value: number | null) {
-  return typeof value === "number" && Number.isFinite(value) && value > 0
-    ? value
-    : null;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
 function getJsonObject(value: unknown) {

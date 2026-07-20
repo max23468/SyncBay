@@ -12,12 +12,7 @@ const checks = [
   },
   {
     file: "app/components/SyncBayBrandPanel.tsx",
-    needles: [
-      "SYNCBAY_BRAND_ASSETS.logoHorizontal",
-      "SYNCBAY_TAGLINE",
-      "<s-image",
-      "1.0 privata",
-    ],
+    needles: ["SYNCBAY_BRAND_ASSETS.logoHorizontal", "SYNCBAY_TAGLINE", "<s-image", "1.0 privata"],
   },
   {
     file: "app/routes/app.tsx",
@@ -70,12 +65,7 @@ const checks = [
   },
   {
     file: "app/lib/syncbay-conflict-actions.ts",
-    needles: [
-      "Sicuro",
-      "Da rivedere",
-      "Da decidere",
-      "getSafeBatchConflictResolutions",
-    ],
+    needles: ["Sicuro", "Da rivedere", "Da decidere", "getSafeBatchConflictResolutions"],
   },
   {
     file: "app/lib/syncbay-job-diagnostics.ts",
@@ -118,12 +108,7 @@ const checks = [
   },
   {
     file: "scripts/syncbay-ui-render.mjs",
-    needles: [
-      "--fixture",
-      "getCatalogFixture",
-      "getDashboardFixture",
-      "catalogo",
-    ],
+    needles: ["--fixture", "getCatalogFixture", "getDashboardFixture", "catalogo"],
   },
   {
     file: "app/routes/app.conflicts.tsx",
@@ -172,11 +157,7 @@ const checks = [
   },
   {
     file: "app/components/ImportExecutionSections.tsx",
-    needles: [
-      "Vai al catalogo",
-      "Avvia import catalogo",
-      "Applica takeover righe sicure",
-    ],
+    needles: ["Vai al catalogo", "Avvia import catalogo", "Applica takeover righe sicure"],
   },
   {
     file: "app/routes/app.settings.tsx",
@@ -223,8 +204,7 @@ for (const needle of [
   "@media (max-width: 640px)",
   ".syncbay-table-wrap",
 ]) {
-  if (!embeddedCss.includes(needle))
-    failures.push(`CSS embedded: manca "${needle}"`);
+  if (!embeddedCss.includes(needle)) failures.push(`CSS embedded: manca "${needle}"`);
 }
 
 // Le colonne appartengono alle s-grid delle route, che usano auto-fit sulla
@@ -237,27 +217,19 @@ for (const forbidden of [
   "overflow-wrap: anywhere",
 ]) {
   if (embeddedCss.includes(forbidden)) {
-    failures.push(
-      `CSS embedded: "${forbidden}" schiaccia le tile sotto la soglia leggibile`,
-    );
+    failures.push(`CSS embedded: "${forbidden}" schiaccia le tile sotto la soglia leggibile`);
   }
 }
 
 const robots = fs.readFileSync("public/robots.txt", "utf8");
 for (const route of ["/app/", "/auth/", "/api/", "/webhooks/"]) {
-  if (!robots.includes(`Disallow: ${route}`))
-    failures.push(`robots.txt: manca ${route}`);
+  if (!robots.includes(`Disallow: ${route}`)) failures.push(`robots.txt: manca ${route}`);
 }
 
 const forbiddenChecks = [
   {
     file: "app/routes/app.tsx",
-    needles: [
-      "SYNCBAY_BRAND_ASSETS",
-      "logoHorizontal",
-      "syncbay-app-brand",
-      "syncbay-app-shell",
-    ],
+    needles: ["SYNCBAY_BRAND_ASSETS", "logoHorizontal", "syncbay-app-brand", "syncbay-app-shell"],
   },
   {
     file: "app/styles/syncbay-embedded.css",
@@ -269,10 +241,9 @@ const navMenuContent = fs.existsSync("app/routes/app.tsx")
   ? fs.readFileSync("app/routes/app.tsx", "utf8")
   : "";
 
-const visibleOverviewLink =
-  /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<\/(?:a|Link)>/.test(
-    navMenuContent,
-  );
+const visibleOverviewLink = /<(?:a|Link)\s+(?:href|to)="\/app">\s*Panoramica\s*<\/(?:a|Link)>/.test(
+  navMenuContent,
+);
 
 const hiddenHomeLink =
   /<(?:a|Link)\s+(?:href|to)="\/app"\s+rel="home">\s*\{SYNCBAY_APP_NAME\}\s*<\/(?:a|Link)>/.test(
@@ -286,15 +257,11 @@ for (const file of publicFiles) {
 }
 
 if (!hiddenHomeLink) {
-  failures.push(
-    'app/routes/app.tsx: manca il link home tecnico nascosto href="/app" rel="home"',
-  );
+  failures.push('app/routes/app.tsx: manca il link home tecnico nascosto href="/app" rel="home"');
 }
 
 if (!visibleOverviewLink) {
-  failures.push(
-    'app/routes/app.tsx: manca la voce menu visibile href="/app">Panoramica</a>',
-  );
+  failures.push('app/routes/app.tsx: manca la voce menu visibile href="/app">Panoramica</a>');
 }
 
 for (const check of checks) {

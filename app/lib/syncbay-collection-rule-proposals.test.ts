@@ -226,10 +226,7 @@ test("uses product type rules from explicit collection intent", () => {
   });
 
   assert.equal(review.proposals.length, 1);
-  assert.equal(
-    review.proposals[0]?.reason,
-    "configured_product_type_alignment",
-  );
+  assert.equal(review.proposals[0]?.reason, "configured_product_type_alignment");
   assert.deepEqual(review.proposals[0]?.proposedRuleSet, {
     appliedDisjunctively: false,
     rules: [

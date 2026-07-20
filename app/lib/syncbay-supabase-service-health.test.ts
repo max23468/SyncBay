@@ -31,10 +31,7 @@ test("builds Supabase HTTP headers with both apikey and bearer token", () => {
 });
 
 test("rejects an empty API key before a diagnostic can hit Supabase anonymously", () => {
-  assert.throws(
-    () => buildSupabaseServiceHeaders("  "),
-    /API key Supabase mancante/,
-  );
+  assert.throws(() => buildSupabaseServiceHeaders("  "), /API key Supabase mancante/);
 });
 
 test("classifies missing API key separately from quota restrictions", () => {
@@ -45,8 +42,7 @@ test("classifies missing API key separately from quota restrictions", () => {
       status: 401,
     }),
     {
-      message:
-        "No API key found in request No `apikey` request header or url param was found.",
+      message: "No API key found in request No `apikey` request header or url param was found.",
       reason: "missing_api_key",
       status: "missing_api_key",
       statusCode: 401,
@@ -97,18 +93,13 @@ test("treats expected RLS denial as a healthy PostgREST probe only when allowed"
 
 test("extracts known Supabase restriction reasons from response text", () => {
   assert.equal(
-    getSupabaseRestrictionReason(
-      "restricted due to the following violations: exceed_egress_quota",
-    ),
+    getSupabaseRestrictionReason("restricted due to the following violations: exceed_egress_quota"),
     "exceed_egress_quota",
   );
   assert.equal(getSupabaseRestrictionReason("temporary outage"), null);
 });
 
 test("extracts expected Supabase RLS denial reasons", () => {
-  assert.equal(
-    getSupabaseRlsDeniedReason("permission denied for table Shop"),
-    "rls_denied",
-  );
+  assert.equal(getSupabaseRlsDeniedReason("permission denied for table Shop"), "rls_denied");
   assert.equal(getSupabaseRlsDeniedReason("Invalid API key"), null);
 });

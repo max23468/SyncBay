@@ -58,13 +58,7 @@ test("skips pricing rule sync with an operational reason when prerequisites are 
 });
 
 test("treats legacy pricing-rule update jobs as pricing-only", () => {
-  assert.equal(
-    isPricingOnlySyncJobPayload({ source: "pricing_rule_update" }),
-    true,
-  );
+  assert.equal(isPricingOnlySyncJobPayload({ source: "pricing_rule_update" }), true);
   assert.equal(isPricingOnlySyncJobPayload({ pricingOnly: true }), true);
-  assert.equal(
-    isPricingOnlySyncJobPayload({ source: "seller_events_delta" }),
-    false,
-  );
+  assert.equal(isPricingOnlySyncJobPayload({ source: "seller_events_delta" }), false);
 });

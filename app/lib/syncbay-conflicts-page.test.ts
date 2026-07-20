@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as conflictsPage from "./syncbay-conflicts-page.ts";
 
-const { CONFLICT_PAGE_SIZE, getConflictStatusFilter, normalizeConflictFilter } =
-  conflictsPage;
+const { CONFLICT_PAGE_SIZE, getConflictStatusFilter, normalizeConflictFilter } = conflictsPage;
 
 test("normalizes conflict filters", () => {
   assert.equal(normalizeConflictFilter("resolved"), "resolved");
@@ -19,13 +18,6 @@ test("uses a compact conflict page size", () => {
 
 test("maps conflict filters to status lists", () => {
   assert.deepEqual(getConflictStatusFilter("open"), ["OPEN"]);
-  assert.deepEqual(getConflictStatusFilter("resolved"), [
-    "RESOLVED",
-    "IGNORED",
-  ]);
-  assert.deepEqual(getConflictStatusFilter("all"), [
-    "OPEN",
-    "RESOLVED",
-    "IGNORED",
-  ]);
+  assert.deepEqual(getConflictStatusFilter("resolved"), ["RESOLVED", "IGNORED"]);
+  assert.deepEqual(getConflictStatusFilter("all"), ["OPEN", "RESOLVED", "IGNORED"]);
 });

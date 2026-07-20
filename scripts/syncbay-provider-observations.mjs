@@ -24,10 +24,7 @@ export async function observeVercel({
   const { plan, planObservation } = resolveVercelPlan(env.VERCEL_PLAN);
   const scope = team?.slug;
   const project =
-    link?.projectName ??
-    link?.projectId ??
-    env.VERCEL_PROJECT_ID?.trim() ??
-    undefined;
+    link?.projectName ?? link?.projectId ?? env.VERCEL_PROJECT_ID?.trim() ?? undefined;
   const speedWindowDays = plan === "hobby" ? 7 : 30;
 
   if (!scope) {
@@ -54,15 +51,7 @@ export async function observeVercel({
   const common = ["--scope", scope, "--format", "json"];
   const analyticsPromise = execute(
     "vercel",
-    [
-      "metrics",
-      "vercel.analytics_pageview.count",
-      "--all",
-      "--since",
-      "30d",
-      "--prod",
-      ...common,
-    ],
+    ["metrics", "vercel.analytics_pageview.count", "--all", "--since", "30d", "--prod", ...common],
     { cwd, env },
   );
   const speedPromises = SPEED_INSIGHTS_METRICS.map((metric) =>
@@ -82,49 +71,27 @@ export async function observeVercel({
   );
   const transferPromise = execute(
     "vercel",
-    [
-      "metrics",
-      "vercel.request.fdt_out_bytes",
-      "--all",
-      "--since",
-      "30d",
-      "--prod",
-      ...common,
-    ],
+    ["metrics", "vercel.request.fdt_out_bytes", "--all", "--since", "30d", "--prod", ...common],
     { cwd, env },
   );
   const runtimePromise = execute(
     "vercel",
-    [
-      "metrics",
-      "vercel.function_invocation.count",
-      "--all",
-      "--since",
-      "30d",
-      "--prod",
-      ...common,
-    ],
+    ["metrics", "vercel.function_invocation.count", "--all", "--since", "30d", "--prod", ...common],
     { cwd, env },
   );
-  const usagePromise = execute(
-    "vercel",
-    ["usage", "--format", "json", "--scope", scope],
-    { cwd, env },
-  );
+  const usagePromise = execute("vercel", ["usage", "--format", "json", "--scope", scope], {
+    cwd,
+    env,
+  });
 
-  const [
-    analyticsResult,
-    speedResults,
-    transferResult,
-    runtimeResult,
-    usageResult,
-  ] = await Promise.all([
-    analyticsPromise,
-    Promise.all(speedPromises),
-    transferPromise,
-    runtimePromise,
-    usagePromise,
-  ]);
+  const [analyticsResult, speedResults, transferResult, runtimeResult, usageResult] =
+    await Promise.all([
+      analyticsPromise,
+      Promise.all(speedPromises),
+      transferPromise,
+      runtimePromise,
+      usagePromise,
+    ]);
 
   return {
     plan: plan ?? null,
@@ -194,8 +161,7 @@ export function buildSupabaseStorageObservation({
   objectCount,
   quotaBytes = 1_000_000_000,
 }) {
-  const normalizedBytes =
-    Number.isFinite(Number(bytes)) && Number(bytes) > 0 ? Number(bytes) : 0;
+  const normalizedBytes = Number.isFinite(Number(bytes)) && Number(bytes) > 0 ? Number(bytes) : 0;
   const normalizedObjects =
     Number.isFinite(Number(objectCount)) && Number(objectCount) > 0
       ? Math.trunc(Number(objectCount))
@@ -238,10 +204,7 @@ export function metricTotal(payload) {
       total +
       Object.entries(summary ?? {}).reduce(
         (rowTotal, [key, value]) =>
-          rowTotal +
-          (key.endsWith("_sum") && Number.isFinite(Number(value))
-            ? Number(value)
-            : 0),
+          rowTotal + (key.endsWith("_sum") && Number.isFinite(Number(value)) ? Number(value) : 0),
         0,
       ),
     0,
@@ -249,8 +212,7 @@ export function metricTotal(payload) {
 }
 
 export function buildMetricObservation(result, { limit, scope, windowDays }) {
-  if (!result.ok)
-    return classifyMetricFailure(result, "verify_vercel_dashboard");
+  if (!result.ok) return classifyMetricFailure(result, "verify_vercel_dashboard");
   const payload = parseJson(result.stdout);
   if (!payload)
     return {
@@ -278,14 +240,9 @@ export function buildSpeedInsightsObservation(
   const observations = results.map((result) =>
     buildMetricObservation(result, { limit, scope: "project", windowDays }),
   );
-  const failure = observations.find(
-    (observation) => observation.status !== "observed",
-  );
+  const failure = observations.find((observation) => observation.status !== "observed");
   if (failure) return failure;
-  const value = observations.reduce(
-    (total, observation) => total + observation.value,
-    0,
-  );
+  const value = observations.reduce((total, observation) => total + observation.value, 0);
   return {
     status: partial ? "partial" : "observed",
     ...(partial ? { reason: "hobby_retention_7d" } : {}),
@@ -374,16 +331,13 @@ export function buildLockedMetricObservation(result, { action, quota } = {}) {
 
 async function readVercelLink(cwd) {
   const candidates = [path.join(cwd, ".vercel", "project.json")];
-  const gitResult = await executeCommand(
-    "git",
-    ["rev-parse", "--git-common-dir"],
-    { cwd, env: process.env },
-  );
+  const gitResult = await executeCommand("git", ["rev-parse", "--git-common-dir"], {
+    cwd,
+    env: process.env,
+  });
   if (gitResult.ok) {
     const commonDir = path.resolve(cwd, gitResult.stdout.trim());
-    candidates.push(
-      path.join(path.dirname(commonDir), ".vercel", "project.json"),
-    );
+    candidates.push(path.join(path.dirname(commonDir), ".vercel", "project.json"));
   }
   for (const candidate of [...new Set(candidates)]) {
     try {
@@ -433,9 +387,7 @@ function normalizeDeclaredPlan(value) {
   const normalized = String(value ?? "")
     .trim()
     .toLowerCase();
-  return normalized && !["auto", "unknown"].includes(normalized)
-    ? normalized
-    : null;
+  return normalized && !["auto", "unknown"].includes(normalized) ? normalized : null;
 }
 
 function parseJson(value) {
@@ -460,8 +412,7 @@ function classifyUtilization(value, limit) {
 
 function safeFailureReason(value) {
   if (/not found|enoent/i.test(value)) return "cli_not_installed";
-  if (/unauthorized|login|authentication/i.test(value))
-    return "authentication_required";
+  if (/unauthorized|login|authentication/i.test(value)) return "authentication_required";
   if (/timeout/i.test(value)) return "timeout";
   return "cli_query_failed";
 }

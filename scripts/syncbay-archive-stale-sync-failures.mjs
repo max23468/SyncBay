@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "node:util";
-import {
-  formatCliError,
-  querySupabaseJson,
-  sqlString,
-} from "./supabase-cli-env.mjs";
+import { formatCliError, querySupabaseJson, sqlString } from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_MAX_AGE_HOURS = 24;
@@ -48,9 +44,7 @@ await main().catch((error) => {
 });
 
 async function main() {
-  const payload = await querySupabaseJson(
-    args.apply ? buildApplySql() : buildPreviewSql(),
-  );
+  const payload = await querySupabaseJson(args.apply ? buildApplySql() : buildPreviewSql());
   const result = payload.rows?.[0]?.result ?? {};
 
   if (args.json) {

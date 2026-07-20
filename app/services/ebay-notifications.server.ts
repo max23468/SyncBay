@@ -69,10 +69,7 @@ export async function verifyEbayNotificationSignature(input: {
   const signature = decodeBase64(header.signature);
   const valid = verifier.verify(publicKey, signature);
   if (!valid) {
-    throw new EbayNotificationSignatureError(
-      "Firma eBay non valida.",
-      "signature_invalid",
-    );
+    throw new EbayNotificationSignatureError("Firma eBay non valida.", "signature_invalid");
   }
 
   return {
@@ -130,15 +127,12 @@ async function getEbayPublicKey(publicKeyId: string) {
   }
 
   const token = await getEbayApplicationAccessToken();
-  const response = await fetch(
-    `${getPublicKeyBaseUrl()}/${encodeURIComponent(publicKeyId)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
+  const response = await fetch(`${getPublicKeyBaseUrl()}/${encodeURIComponent(publicKeyId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
     },
-  );
+  });
   const json = (await response.json()) as EbayPublicKeyResponse & {
     errors?: Array<{ message?: string }>;
   };
@@ -172,25 +166,18 @@ async function getEbayApplicationAccessToken() {
     },
     method: "POST",
   });
-  const json =
-    (await response.json()) as Partial<EbayApplicationTokenResponse> & {
-      error?: string;
-      error_description?: string;
-    };
+  const json = (await response.json()) as Partial<EbayApplicationTokenResponse> & {
+    error?: string;
+    error_description?: string;
+  };
 
   if (!response.ok || !json.access_token) {
-    throw new Error(
-      json.error_description ??
-        json.error ??
-        "Application token eBay non ottenuto.",
-    );
+    throw new Error(json.error_description ?? json.error ?? "Application token eBay non ottenuto.");
   }
 
   cachedApplicationToken = {
     accessToken: json.access_token,
-    expiresAt:
-      Date.now() +
-      Math.max((json.expires_in ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
+    expiresAt: Date.now() + Math.max((json.expires_in ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
   };
 
   return cachedApplicationToken.accessToken;
@@ -206,11 +193,7 @@ function normalizePublicKey(publicKey: string) {
     .replace(/\s+/g, "");
   const lines = base64Key.match(/.{1,64}/g) ?? [base64Key];
 
-  return [
-    "-----BEGIN PUBLIC KEY-----",
-    ...lines,
-    "-----END PUBLIC KEY-----",
-  ].join("\n");
+  return ["-----BEGIN PUBLIC KEY-----", ...lines, "-----END PUBLIC KEY-----"].join("\n");
 }
 
 function decodeBase64(value: string) {

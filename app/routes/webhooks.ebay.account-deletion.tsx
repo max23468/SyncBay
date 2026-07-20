@@ -27,11 +27,7 @@ export const loader = async ({ url }: LoaderFunctionArgs) => {
   }
 
   const config = getAccountDeletionChallengeConfig();
-  if (
-    !config.endpoint ||
-    !config.verificationToken ||
-    config.missingRequirements.length > 0
-  ) {
+  if (!config.endpoint || !config.verificationToken || config.missingRequirements.length > 0) {
     return Response.json(
       {
         missingRequirements: config.missingRequirements,
@@ -77,8 +73,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!config.notificationsEnabled) {
     return Response.json(
       {
-        message:
-          "Notifiche account deletion eBay non abilitate per SyncBay 1.0 privata.",
+        message: "Notifiche account deletion eBay non abilitate per SyncBay 1.0 privata.",
         status: "disabled",
       },
       { status: 503 },

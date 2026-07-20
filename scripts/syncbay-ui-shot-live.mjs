@@ -25,16 +25,11 @@ const STORE = process.env.SHOPIFY_DEV_STORE_HANDLE?.trim();
 const APP_HANDLE = process.env.SHOPIFY_APP_HANDLE || "syncbay";
 
 if (!STORE) {
-  throw new Error(
-    "Configura SHOPIFY_DEV_STORE_HANDLE prima di aprire Shopify Admin.",
-  );
+  throw new Error("Configura SHOPIFY_DEV_STORE_HANDLE prima di aprire Shopify Admin.");
 }
 
 const navLabel = process.argv[2] || ""; // es. "Catalogo"; vuoto = Panoramica
-const name = (process.argv[3] || navLabel || "panoramica").replace(
-  /[^a-z0-9]+/gi,
-  "-",
-);
+const name = (process.argv[3] || navLabel || "panoramica").replace(/[^a-z0-9]+/gi, "-");
 const baseUrl = `https://admin.shopify.com/store/${STORE}/apps/${APP_HANDLE}/app`;
 
 const profileDir = join(root, ".shopify-pw-profile");
@@ -53,9 +48,7 @@ async function findAppFrameSrc(page) {
   const srcs = await page.$$eval("iframe", (frames) =>
     frames.map((f) => f.getAttribute("src") || ""),
   );
-  return (
-    srcs.find((s) => /trycloudflare\.com|vercel\.app|syncbay/i.test(s)) || null
-  );
+  return srcs.find((s) => /trycloudflare\.com|vercel\.app|syncbay/i.test(s)) || null;
 }
 
 try {
@@ -107,10 +100,7 @@ try {
   const finalSrc = await findAppFrameSrc(page);
   if (finalSrc) {
     try {
-      const handle = await page
-        .locator(`iframe[src="${finalSrc}"]`)
-        .first()
-        .elementHandle();
+      const handle = await page.locator(`iframe[src="${finalSrc}"]`).first().elementHandle();
       if (handle) {
         const framePath = outPath.replace(/\.png$/, "-frame.png");
         await handle.screenshot({ path: framePath });

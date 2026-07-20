@@ -41,9 +41,7 @@ test("lo smoke punta al dominio canonico dichiarato a Shopify", () => {
 });
 
 test("la dashboard embedded accetta il boundary auth e rifiuta una rotta esposta", () => {
-  const dashboard = PRODUCTION_SMOKE_CHECKS.find(
-    (check) => check.path === "/app",
-  );
+  const dashboard = PRODUCTION_SMOKE_CHECKS.find((check) => check.path === "/app");
 
   // 410 e' lo stato osservato in produzione; un 200 significherebbe rotta
   // embedded raggiungibile senza sessione Shopify.

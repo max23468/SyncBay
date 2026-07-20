@@ -175,22 +175,15 @@ function findCurrentMetafield(
   facet: SyncBayProductFacet,
 ) {
   return currentMetafields.find(
-    (metafield) =>
-      metafield.namespace === facet.namespace && metafield.key === facet.key,
+    (metafield) => metafield.namespace === facet.namespace && metafield.key === facet.key,
   );
 }
 
-function isExactMetafieldMatch(
-  current: CurrentProductFacetMetafield,
-  facet: SyncBayProductFacet,
-) {
+function isExactMetafieldMatch(current: CurrentProductFacetMetafield, facet: SyncBayProductFacet) {
   return current.type === facet.type && current.value === facet.value;
 }
 
-function hasSameMetafieldValues(
-  current: CurrentProductFacetMetafield,
-  facet: SyncBayProductFacet,
-) {
+function hasSameMetafieldValues(current: CurrentProductFacetMetafield, facet: SyncBayProductFacet) {
   return areSameValues(
     parseMetafieldValues(current.type, current.value),
     parseMetafieldValues(facet.type, facet.value),
@@ -216,9 +209,7 @@ function areSameValues(left: string[], right: string[]) {
   return left.every((value, index) => value === right[index]);
 }
 
-function toShopifyProductFacetMetafield(
-  facet: SyncBayProductFacet,
-): ShopifyProductFacetMetafield {
+function toShopifyProductFacetMetafield(facet: SyncBayProductFacet): ShopifyProductFacetMetafield {
   return {
     key: facet.key,
     namespace: facet.namespace,
@@ -253,16 +244,12 @@ function getProposedFacets(rows: ProductFacetBackfillReportRow[]) {
 
   return [...counts.values()].sort((left, right) => {
     if (right.count !== left.count) return right.count - left.count;
-    if (left.label !== right.label)
-      return left.label.localeCompare(right.label);
+    if (left.label !== right.label) return left.label.localeCompare(right.label);
 
     return left.value.localeCompare(right.value);
   });
 }
 
-function countStatus(
-  rows: ProductFacetBackfillReportRow[],
-  status: ProductFacetBackfillStatus,
-) {
+function countStatus(rows: ProductFacetBackfillReportRow[], status: ProductFacetBackfillStatus) {
   return rows.filter((row) => row.status === status).length;
 }

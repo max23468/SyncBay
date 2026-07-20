@@ -55,13 +55,10 @@ export function DraftImportSection({
   takeoverStatus: "blocked" | "queued" | null;
   wizard: ImportExecutionWizard;
 }) {
-  const catalogModeBlocker = getCatalogModeDraftImportBlocker(
-    wizard.catalogMode,
-  );
+  const catalogModeBlocker = getCatalogModeDraftImportBlocker(wizard.catalogMode);
   const report = wizard.previewResult.existingCatalogTakeover;
   const existing = wizard.catalogMode === "existing_catalog";
-  const takeoverBlocked =
-    !report || report.summary.applicable === 0 || report.summary.blocked > 0;
+  const takeoverBlocked = !report || report.summary.applicable === 0 || report.summary.blocked > 0;
 
   return (
     <>
@@ -73,10 +70,7 @@ export function DraftImportSection({
       {draftStatus === "created" ? (
         <s-paragraph>
           Operazione completata:{" "}
-          {formatDraftImportCount(
-            draftCount,
-            wizard.draftImport.importProductStatus,
-          )}
+          {formatDraftImportCount(draftCount, wizard.draftImport.importProductStatus)}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "queued" ? (
@@ -84,21 +78,16 @@ export function DraftImportSection({
           {existing ? "Takeover pianificato" : "Import pianificato"}:{" "}
           {existing
             ? formatTakeoverApplyCount(draftCount)
-            : formatDraftImportCount(
-                draftCount,
-                wizard.draftImport.importProductStatus,
-              )}
+            : formatDraftImportCount(draftCount, wizard.draftImport.importProductStatus)}
           {draftMessage ? ` ${draftMessage}` : null}
         </s-paragraph>
       ) : draftStatus === "blocked" || draftStatus === "failed" ? (
         <s-paragraph>
-          Import Shopify non completato:{" "}
-          {draftMessage ?? "requisiti incompleti"}.
+          Import Shopify non completato: {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : takeoverStatus === "blocked" ? (
         <s-paragraph>
-          Takeover catalogo esistente bloccato:{" "}
-          {draftMessage ?? "requisiti incompleti"}.
+          Takeover catalogo esistente bloccato: {draftMessage ?? "requisiti incompleti"}.
         </s-paragraph>
       ) : null}
       <s-unordered-list>
@@ -107,37 +96,21 @@ export function DraftImportSection({
         </s-list-item>
         {existing ? (
           <>
-            <s-list-item>
-              Righe applicabili: {report?.summary.applicable ?? 0}
-            </s-list-item>
-            <s-list-item>
-              Righe da rivedere: {report?.summary.review ?? 0}
-            </s-list-item>
-            <s-list-item>
-              Righe bloccanti: {report?.summary.blocked ?? 0}
-            </s-list-item>
+            <s-list-item>Righe applicabili: {report?.summary.applicable ?? 0}</s-list-item>
+            <s-list-item>Righe da rivedere: {report?.summary.review ?? 0}</s-list-item>
+            <s-list-item>Righe bloccanti: {report?.summary.blocked ?? 0}</s-list-item>
           </>
         ) : (
           <>
-            <s-list-item>
-              Prodotti importabili: {wizard.draftImport.importableCount}
-            </s-list-item>
-            <s-list-item>
-              Limite batch operativo: {wizard.draftImport.draftLimit}
-            </s-list-item>
-            <s-list-item>
-              Prodotti previsti: {wizard.draftImport.plannedCreateCount}
-            </s-list-item>
-            <s-list-item>
-              Limite 1.0: {wizard.previewPlan.limits.maxProducts} prodotti
-            </s-list-item>
+            <s-list-item>Prodotti importabili: {wizard.draftImport.importableCount}</s-list-item>
+            <s-list-item>Limite batch operativo: {wizard.draftImport.draftLimit}</s-list-item>
+            <s-list-item>Prodotti previsti: {wizard.draftImport.plannedCreateCount}</s-list-item>
+            <s-list-item>Limite 1.0: {wizard.previewPlan.limits.maxProducts} prodotti</s-list-item>
           </>
         )}
         <s-list-item>{wizard.draftImport.nextAction}</s-list-item>
         {wizard.draftImport.blockers.length ? (
-          <s-list-item>
-            Blocchi: {wizard.draftImport.blockers.join(", ")}
-          </s-list-item>
+          <s-list-item>Blocchi: {wizard.draftImport.blockers.join(", ")}</s-list-item>
         ) : null}
         {catalogModeBlocker ? (
           <s-list-item>Modalità catalogo: {catalogModeBlocker}</s-list-item>
@@ -145,11 +118,7 @@ export function DraftImportSection({
       </s-unordered-list>
       {existing ? (
         <Form method="post">
-          <input
-            type="hidden"
-            name="intent"
-            value="applyExistingCatalogTakeover"
-          />
+          <input type="hidden" name="intent" value="applyExistingCatalogTakeover" />
           <s-stack gap="small">
             <s-text-field
               id="existingCatalogTakeoverConfirmation"
@@ -167,15 +136,9 @@ export function DraftImportSection({
           <s-button
             type="submit"
             variant="primary"
-            disabled={
-              isSaving ||
-              takeoverBlocked ||
-              wizard.draftImport.blockers.length > 0
-            }
+            disabled={isSaving || takeoverBlocked || wizard.draftImport.blockers.length > 0}
           >
-            {isApplyingTakeover
-              ? "Pianificazione in corso..."
-              : "Applica takeover righe sicure"}
+            {isApplyingTakeover ? "Pianificazione in corso..." : "Applica takeover righe sicure"}
           </s-button>
         </Form>
       ) : (
@@ -189,9 +152,7 @@ export function DraftImportSection({
           <s-button
             type="submit"
             disabled={
-              isSaving ||
-              Boolean(catalogModeBlocker) ||
-              wizard.draftImport.blockers.length > 0
+              isSaving || Boolean(catalogModeBlocker) || wizard.draftImport.blockers.length > 0
             }
           >
             {catalogModeBlocker
@@ -206,16 +167,12 @@ export function DraftImportSection({
   );
 }
 
-export function AfterImportSection({
-  wizard,
-}: {
-  wizard: ImportExecutionWizard;
-}) {
+export function AfterImportSection({ wizard }: { wizard: ImportExecutionWizard }) {
   return (
     <>
       <s-text color="subdued">
-        Una volta avviato l&apos;import puoi controllare i prodotti collegati
-        nel Catalogo e completare eventuali canali o default dalle Impostazioni.
+        Una volta avviato l&apos;import puoi controllare i prodotti collegati nel Catalogo e
+        completare eventuali canali o default dalle Impostazioni.
       </s-text>
       <s-stack direction="inline" gap="small-200">
         <s-button href="/app/catalog" variant="primary">
@@ -253,15 +210,9 @@ export function ImportTechnicalDetails({
         <s-stack gap="base">
           <s-unordered-list>
             <s-list-item>Modalità preview: {previewModeLabel}</s-list-item>
-            <s-list-item>
-              Fonte: {formatPreviewSource(wizard.previewSource.source)}
-            </s-list-item>
-            <s-list-item>
-              Location salvata: {selectedLocationName ?? "non confermata"}
-            </s-list-item>
-            <s-list-item>
-              Scritture Shopify: solo dopo conferma esplicita
-            </s-list-item>
+            <s-list-item>Fonte: {formatPreviewSource(wizard.previewSource.source)}</s-list-item>
+            <s-list-item>Location salvata: {selectedLocationName ?? "non confermata"}</s-list-item>
+            <s-list-item>Scritture Shopify: solo dopo conferma esplicita</s-list-item>
           </s-unordered-list>
           <s-unordered-list>
             {wizard.validationRules.map((rule) => (

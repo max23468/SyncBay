@@ -51,15 +51,11 @@ export function findUnexpectedAuditEntries(vulnerabilities) {
 
 export function readAuditVulnerabilities(report) {
   if (isRecord(report?.error)) {
-    throw new Error(
-      "npm audit ha restituito un errore invece del report vulnerabilità.",
-    );
+    throw new Error("npm audit ha restituito un errore invece del report vulnerabilità.");
   }
 
   if (!isRecord(report?.vulnerabilities)) {
-    throw new Error(
-      "npm audit non ha restituito il blocco vulnerabilities; audit non affidabile.",
-    );
+    throw new Error("npm audit non ha restituito il blocco vulnerabilities; audit non affidabile.");
   }
 
   return report.vulnerabilities;

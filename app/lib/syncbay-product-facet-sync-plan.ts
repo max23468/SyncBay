@@ -1,7 +1,4 @@
-import type {
-  ShopifyProductFacetMetafield,
-  SyncBayProductFacet,
-} from "./syncbay-product-facets";
+import type { ShopifyProductFacetMetafield, SyncBayProductFacet } from "./syncbay-product-facets";
 
 export interface CurrentProductFacetMetafield {
   key: string;
@@ -37,16 +34,10 @@ export function buildProductFacetSyncPlan(input: {
     ]),
   );
   const previousByKey = new Map(
-    input.previousSyncBayFacets.map((facet) => [
-      `${facet.namespace}:${facet.key}`,
-      facet,
-    ]),
+    input.previousSyncBayFacets.map((facet) => [`${facet.namespace}:${facet.key}`, facet]),
   );
   const proposedByKey = new Map(
-    input.proposedFacets.map((facet) => [
-      `${facet.namespace}:${facet.key}`,
-      facet,
-    ]),
+    input.proposedFacets.map((facet) => [`${facet.namespace}:${facet.key}`, facet]),
   );
   const writes: ShopifyProductFacetMetafield[] = [];
   const deletes: ProductFacetSyncPlan["deletes"] = [];
@@ -54,10 +45,7 @@ export function buildProductFacetSyncPlan(input: {
   const preserved: SyncBayProductFacet[] = [];
   const skipped: ProductFacetSyncPlan["skipped"] = [];
 
-  const candidateKeys = new Set([
-    ...proposedByKey.keys(),
-    ...previousByKey.keys(),
-  ]);
+  const candidateKeys = new Set([...proposedByKey.keys(), ...previousByKey.keys()]);
 
   for (const key of candidateKeys) {
     const facet = proposedByKey.get(key);
@@ -90,11 +78,7 @@ export function buildProductFacetSyncPlan(input: {
       continue;
     }
 
-    if (
-      previous &&
-      current.type === previous.type &&
-      current.value === previous.value
-    ) {
+    if (previous && current.type === previous.type && current.value === previous.value) {
       writes.push(toMetafield(facet));
       continue;
     }

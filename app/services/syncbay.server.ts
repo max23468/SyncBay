@@ -59,10 +59,7 @@ import {
   getConflictStatusFilter,
 } from "../lib/syncbay-conflicts-page";
 import { getPageWindow } from "../lib/syncbay-pagination";
-import {
-  getSyncTargetLabel,
-  normalizeSyncTargetSeconds,
-} from "../lib/syncbay-sync-interval";
+import { getSyncTargetLabel, normalizeSyncTargetSeconds } from "../lib/syncbay-sync-interval";
 import { buildPricingRuleSyncPlan } from "../lib/syncbay-pricing-rule-sync";
 import {
   getCatalogRowStatus,
@@ -133,14 +130,8 @@ import {
   getMockImportPreview,
   type ImportPreviewResult,
 } from "./import-preview.server";
-import {
-  DEFAULT_PRICING_RULE,
-  normalizePricingRule,
-} from "./pricing-rules.server";
-import {
-  getDraftImportLimit,
-  getDraftImportReadiness,
-} from "./shopify-draft-import.server";
+import { DEFAULT_PRICING_RULE, normalizePricingRule } from "./pricing-rules.server";
+import { getDraftImportLimit, getDraftImportReadiness } from "./shopify-draft-import.server";
 import { getShopifyAdminGraphqlClient } from "./shopify-admin-session.server";
 import { getExistingCatalogTakeoverPreview } from "./existing-catalog-takeover-preview.server";
 
@@ -150,10 +141,7 @@ export interface ShopifySessionLike {
 }
 
 export interface ShopifyAdminGraphqlClient {
-  graphql: (
-    query: string,
-    options?: { variables?: Record<string, unknown> },
-  ) => Promise<Response>;
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
 type LatestProductSnapshotForDisplay = {
@@ -211,14 +199,10 @@ export async function getOverviewState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "dashboard.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "dashboard.shop.ensure", () =>
+    ensureShopForSession(session),
   );
-  const defaultProductStatus = normalizeImportProductStatus(
-    shop.defaultProductStatus,
-  );
+  const defaultProductStatus = normalizeImportProductStatus(shop.defaultProductStatus);
   const now = new Date();
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -306,11 +290,7 @@ export async function getOverviewState(
           where: {
             shopId: shop.id,
             status: {
-              in: [
-                SyncJobStatus.PENDING,
-                SyncJobStatus.RETRYING,
-                SyncJobStatus.RUNNING,
-              ],
+              in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING, SyncJobStatus.RUNNING],
             },
             type: SyncJobType.SYNC_INCREMENTAL,
           },
@@ -417,10 +397,7 @@ export async function getOverviewState(
     secondsUntilDue: catalogSyncHealth.secondsUntilDue,
   });
   const lastRunCounts = {
-    requested: readJobResultCount(
-      latestIncrementalWorkJob?.result,
-      "requestedCount",
-    ),
+    requested: readJobResultCount(latestIncrementalWorkJob?.result, "requestedCount"),
     synced: readJobResultCount(latestIncrementalWorkJob?.result, "syncedCount"),
   };
   const catalogSummary = await measureSyncBayPerformanceStage(
@@ -433,9 +410,7 @@ export async function getOverviewState(
         syncTargetSeconds: shop.syncTargetSeconds,
       }),
   );
-  const failedJobCount = recentJobs.filter(
-    (job) => job.status === SyncJobStatus.FAILED,
-  ).length;
+  const failedJobCount = recentJobs.filter((job) => job.status === SyncJobStatus.FAILED).length;
   const catalogHealthCenter = buildCatalogHealthCenter({
     activeIncrementalJobCount,
     erroredMappingCount,
@@ -520,9 +495,7 @@ export async function getOverviewState(
       ),
       jobsByStatus: summarizeJobsByStatus(recentJobs),
       jobsByType: summarizeJobsByType(recentJobs),
-      pendingJobs: recentJobs.filter(
-        (job) => job.status === SyncJobStatus.PENDING,
-      ).length,
+      pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
       nextRetryRunAfter: nextRetryJob?.runAfter.toISOString() ?? null,
       lastJobs: recentJobs.map((job) => ({
         attempts: job.attempts,
@@ -539,8 +512,7 @@ export async function getOverviewState(
       catalogHealth: {
         ...formatCatalogSyncHealth(catalogSyncHealth),
         activeIncrementalJobCount,
-        latestIncrementalFinishedAt:
-          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt?.toISOString() ?? null,
         latestIncrementalStatus: latestIncrementalJob?.status ?? null,
       },
       healthDigest: {
@@ -576,10 +548,8 @@ export async function getActivityState(
   session: ShopifySessionLike,
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "activity.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "activity.shop.ensure", () =>
+    ensureShopForSession(session),
   );
   const now = new Date();
   const [
@@ -633,11 +603,7 @@ export async function getActivityState(
         where: {
           shopId: shop.id,
           status: {
-            in: [
-              SyncJobStatus.PENDING,
-              SyncJobStatus.RETRYING,
-              SyncJobStatus.RUNNING,
-            ],
+            in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING, SyncJobStatus.RUNNING],
           },
           type: SyncJobType.SYNC_INCREMENTAL,
         },
@@ -668,9 +634,7 @@ export async function getActivityState(
     syncEnabled: shop.syncEnabled,
     syncTargetSeconds: shop.syncTargetSeconds,
   });
-  const failedJobCount = recentJobs.filter(
-    (job) => job.status === SyncJobStatus.FAILED,
-  ).length;
+  const failedJobCount = recentJobs.filter((job) => job.status === SyncJobStatus.FAILED).length;
   const catalogHealthCenter = buildCatalogHealthCenter({
     activeIncrementalJobCount,
     erroredMappingCount,
@@ -700,9 +664,7 @@ export async function getActivityState(
       })),
     },
     sync: {
-      pendingJobs: recentJobs.filter(
-        (job) => job.status === SyncJobStatus.PENDING,
-      ).length,
+      pendingJobs: recentJobs.filter((job) => job.status === SyncJobStatus.PENDING).length,
       lastJobs: recentJobs.map((job) => ({
         attempts: job.attempts,
         createdAt: job.createdAt.toISOString(),
@@ -718,8 +680,7 @@ export async function getActivityState(
       catalogHealth: {
         ...formatCatalogSyncHealth(catalogSyncHealth),
         activeIncrementalJobCount,
-        latestIncrementalFinishedAt:
-          latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+        latestIncrementalFinishedAt: latestIncrementalJob?.finishedAt?.toISOString() ?? null,
         latestIncrementalStatus: latestIncrementalJob?.status ?? null,
       },
       catalogHealthCenter,
@@ -767,10 +728,8 @@ export async function getCatalogPageState(
   } = {},
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "catalog.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "catalog.shop.ensure", () =>
+    ensureShopForSession(session),
   );
   const activeFilter = input.filter ?? "all";
   const activePage = input.page ?? 1;
@@ -787,16 +746,12 @@ export async function getCatalogPageState(
     () => prisma.productMapping.count({ where }),
   );
   const databasePageWhere =
-    !activeSearch.trim() && !activeSort
-      ? getCatalogDatabasePageWhere(where, activeFilter)
-      : null;
+    !activeSearch.trim() && !activeSort ? getCatalogDatabasePageWhere(where, activeFilter) : null;
   const databasePageTotalCount = databasePageWhere
     ? databasePageWhere === where
       ? totalAvailableCount
-      : await measureSyncBayPerformanceStage(
-          trace,
-          "catalog.db.databasePageTotalCount",
-          () => prisma.productMapping.count({ where: databasePageWhere }),
+      : await measureSyncBayPerformanceStage(trace, "catalog.db.databasePageTotalCount", () =>
+          prisma.productMapping.count({ where: databasePageWhere }),
         )
     : totalAvailableCount;
   const queryPlan = getCatalogQueryPlan({
@@ -810,33 +765,30 @@ export async function getCatalogPageState(
 
   if (queryPlan.mode === "database-page" && databasePageWhere) {
     const [[mappings, linkedCount], summary] = await Promise.all([
-      measureSyncBayPerformanceStage(
-        trace,
-        "catalog.db.databasePageTransaction",
-        () =>
-          prisma.$transaction([
-            prisma.productMapping.findMany({
-              include: {
-                conflicts: {
-                  select: {
-                    field: true,
-                    id: true,
-                  },
-                  where: { status: SyncConflictStatus.OPEN },
+      measureSyncBayPerformanceStage(trace, "catalog.db.databasePageTransaction", () =>
+        prisma.$transaction([
+          prisma.productMapping.findMany({
+            include: {
+              conflicts: {
+                select: {
+                  field: true,
+                  id: true,
                 },
+                where: { status: SyncConflictStatus.OPEN },
               },
-              orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-              skip: queryPlan.pagination.offset,
-              take: queryPlan.take,
-              where: databasePageWhere,
-            }),
-            prisma.productMapping.count({
-              where: {
-                ...where,
-                shopifyProductGid: { not: null },
-              },
-            }),
-          ]),
+            },
+            orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+            skip: queryPlan.pagination.offset,
+            take: queryPlan.take,
+            where: databasePageWhere,
+          }),
+          prisma.productMapping.count({
+            where: {
+              ...where,
+              shopifyProductGid: { not: null },
+            },
+          }),
+        ]),
       ),
       measureSyncBayPerformanceStage(trace, "catalog.db.summaryCounts", () =>
         getCatalogSummaryCounts({
@@ -851,10 +803,7 @@ export async function getCatalogPageState(
     const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
       trace,
       "catalog.db.latestSnapshots",
-      () =>
-        getLatestProductSnapshotByMappingId(
-          mappings.map((mapping) => mapping.id),
-        ),
+      () => getLatestProductSnapshotByMappingId(mappings.map((mapping) => mapping.id)),
     );
     const now = new Date();
     const pageRows = mappings.map((mapping) =>
@@ -902,50 +851,46 @@ export async function getCatalogPageState(
     };
   }
 
-  const [mappings, linkedCount, latestIncrementalJob] =
-    await measureSyncBayPerformanceStage(
-      trace,
-      "catalog.db.fullCatalogTransaction",
-      () =>
-        prisma.$transaction([
-          prisma.productMapping.findMany({
-            include: {
-              conflicts: {
-                select: {
-                  field: true,
-                  id: true,
-                },
-                where: { status: SyncConflictStatus.OPEN },
+  const [mappings, linkedCount, latestIncrementalJob] = await measureSyncBayPerformanceStage(
+    trace,
+    "catalog.db.fullCatalogTransaction",
+    () =>
+      prisma.$transaction([
+        prisma.productMapping.findMany({
+          include: {
+            conflicts: {
+              select: {
+                field: true,
+                id: true,
               },
+              where: { status: SyncConflictStatus.OPEN },
             },
-            orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
-            take: CATALOG_IMPORT_MAX_PRODUCTS,
-            where,
-          }),
-          prisma.productMapping.count({
-            where: {
-              ...where,
-              shopifyProductGid: { not: null },
-            },
-          }),
-          // Watermark a livello shop: ultimo ciclo di sync incrementale riuscito
-          // (delta eventi venditore o reconcile). Stesso segnale della salute sync
-          // in dashboard, così catalogo e dashboard restano coerenti.
-          prisma.syncJob.findFirst({
-            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { finishedAt: true },
-            where: getCompletedCatalogVerificationJobWhere(shop.id),
-          }),
-        ]),
-    );
+          },
+          orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+          take: CATALOG_IMPORT_MAX_PRODUCTS,
+          where,
+        }),
+        prisma.productMapping.count({
+          where: {
+            ...where,
+            shopifyProductGid: { not: null },
+          },
+        }),
+        // Watermark a livello shop: ultimo ciclo di sync incrementale riuscito
+        // (delta eventi venditore o reconcile). Stesso segnale della salute sync
+        // in dashboard, così catalogo e dashboard restano coerenti.
+        prisma.syncJob.findFirst({
+          orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+          select: { finishedAt: true },
+          where: getCompletedCatalogVerificationJobWhere(shop.id),
+        }),
+      ]),
+  );
   const catalogVerifiedAt = latestIncrementalJob?.finishedAt ?? null;
   const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
     trace,
     "catalog.db.latestSnapshots",
-    () =>
-      getLatestProductSnapshotByMappingId(
-        mappings.map((mapping) => mapping.id),
-      ),
+    () => getLatestProductSnapshotByMappingId(mappings.map((mapping) => mapping.id)),
   );
 
   // Le miniature non influenzano filtro/ordinamento: si risolvono dopo la
@@ -965,20 +910,13 @@ export async function getCatalogPageState(
     searchCatalogPageRows(allRows, activeSearch),
     activeFilter,
   );
-  const sortedRows = sortCatalogPageRows(
-    filteredRows,
-    activeSort,
-    activeSortDir,
-  );
+  const sortedRows = sortCatalogPageRows(filteredRows, activeSort, activeSortDir);
   const pagination = getCatalogPageWindow({
     page: activePage,
     pageSize: CATALOG_PAGE_SIZE,
     totalRows: sortedRows.length,
   });
-  const pageRows = sortedRows.slice(
-    pagination.offset,
-    pagination.offset + pagination.pageSize,
-  );
+  const pageRows = sortedRows.slice(pagination.offset, pagination.offset + pagination.pageSize);
   const rowsWithThumbnails = await getCatalogRowsWithThumbnails({
     rows: pageRows,
     shopDomain: shop.shopDomain,
@@ -1009,8 +947,7 @@ export async function getCatalogPageState(
     },
     summary: {
       archivedCount: allRows.filter((row) => row.status === "archived").length,
-      conflictCount: allRows.filter((row) => row.status === "open_conflict")
-        .length,
+      conflictCount: allRows.filter((row) => row.status === "open_conflict").length,
       freshCount: allRows.filter((row) => row.status === "active_fresh").length,
       linkedCount,
       needsCheckCount: allRows.filter(isCatalogRowNeedingCheck).length,
@@ -1024,33 +961,24 @@ export async function getConflictsPageState(
   input: { filter?: ConflictFilter; page?: number } = {},
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "conflicts.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "conflicts.shop.ensure", () =>
+    ensureShopForSession(session),
   );
   const activeFilter = input.filter ?? "open";
-  const statusFilter = [
-    ...getConflictStatusFilter(activeFilter),
-  ] as SyncConflictStatus[];
-  const allStatuses = [
-    ...getConflictStatusFilter("all"),
-  ] as SyncConflictStatus[];
-  const resolvedStatuses = [
-    ...getConflictStatusFilter("resolved"),
-  ] as SyncConflictStatus[];
-  const [summaryCounts, openConflictFields] =
-    await measureSyncBayPerformanceStage(
-      trace,
-      "conflicts.db.summaryTransaction",
-      () =>
-        getConflictSummaryCounts({
-          allStatuses,
-          resolvedStatuses,
-          shopId: shop.id,
-          statusFilter,
-        }),
-    );
+  const statusFilter = [...getConflictStatusFilter(activeFilter)] as SyncConflictStatus[];
+  const allStatuses = [...getConflictStatusFilter("all")] as SyncConflictStatus[];
+  const resolvedStatuses = [...getConflictStatusFilter("resolved")] as SyncConflictStatus[];
+  const [summaryCounts, openConflictFields] = await measureSyncBayPerformanceStage(
+    trace,
+    "conflicts.db.summaryTransaction",
+    () =>
+      getConflictSummaryCounts({
+        allStatuses,
+        resolvedStatuses,
+        shopId: shop.id,
+        statusFilter,
+      }),
+  );
   const decisionModeCounts = summarizeConflictDecisionModes(
     openConflictFields.map((conflict) => ({
       count: conflict.count,
@@ -1062,31 +990,26 @@ export async function getConflictsPageState(
     pageSize: CONFLICT_PAGE_SIZE,
     totalRows: summaryCounts.filteredCount,
   });
-  const conflicts = await measureSyncBayPerformanceStage(
-    trace,
-    "conflicts.db.pageRows",
-    () =>
-      prisma.syncConflict.findMany({
-        include: {
-          mapping: true,
-        },
-        orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
-        skip: pagination.offset,
-        take: pagination.pageSize,
-        where: {
-          shopId: shop.id,
-          status: { in: statusFilter },
-        },
-      }),
+  const conflicts = await measureSyncBayPerformanceStage(trace, "conflicts.db.pageRows", () =>
+    prisma.syncConflict.findMany({
+      include: {
+        mapping: true,
+      },
+      orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
+      skip: pagination.offset,
+      take: pagination.pageSize,
+      where: {
+        shopId: shop.id,
+        status: { in: statusFilter },
+      },
+    }),
   );
   const latestSnapshotByMappingId = await measureSyncBayPerformanceStage(
     trace,
     "conflicts.db.latestSnapshots",
     () =>
       getLatestProductSnapshotByMappingId(
-        conflicts.flatMap((conflict) =>
-          conflict.mapping?.id ? [conflict.mapping.id] : [],
-        ),
+        conflicts.flatMap((conflict) => (conflict.mapping?.id ? [conflict.mapping.id] : [])),
       ),
   );
   const rows = conflicts.map((conflict) =>
@@ -1119,9 +1042,7 @@ export async function getConflictsPageState(
             ...row.product,
             thumbnailUrl:
               (row.product.shopifyProductGid
-                ? shopifyThumbnailUrlByProductGid.get(
-                    row.product.shopifyProductGid,
-                  )
+                ? shopifyThumbnailUrlByProductGid.get(row.product.shopifyProductGid)
                 : null) ?? null,
           },
         },
@@ -1195,10 +1116,7 @@ async function getConflictSummaryCounts(input: {
   ] as const;
 }
 
-export async function requestSyncJobRetry(
-  session: ShopifySessionLike,
-  jobId: string,
-) {
+export async function requestSyncJobRetry(session: ShopifySessionLike, jobId: string) {
   const shop = await ensureShopForSession(session);
   const job = await prisma.syncJob.findFirst({
     where: {
@@ -1254,10 +1172,7 @@ export async function requestSyncJobRetry(
         errorMessage: null,
         finishedAt: null,
         attempts: 0,
-        maxAttempts: Math.max(
-          job.maxAttempts,
-          RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS,
-        ),
+        maxAttempts: Math.max(job.maxAttempts, RETRIED_SYNC_JOB_MIN_MAX_ATTEMPTS),
         result: Prisma.DbNull,
         runAfter: now,
         startedAt: null,
@@ -1300,15 +1215,9 @@ export async function resolveSyncConflict(
       status: SyncConflictStatus.OPEN,
     },
   });
-  let baselineSnapshot: Prisma.ProductSnapshotGetPayload<
-    Record<string, never>
-  > | null = null;
-  let descriptionBaselineSnapshot: { descriptionHash: string | null } | null =
-    null;
-  if (
-    resolution === SyncConflictResolution.KEEP_SHOPIFY &&
-    conflict?.mappingId
-  ) {
+  let baselineSnapshot: Prisma.ProductSnapshotGetPayload<Record<string, never>> | null = null;
+  let descriptionBaselineSnapshot: { descriptionHash: string | null } | null = null;
+  if (resolution === SyncConflictResolution.KEEP_SHOPIFY && conflict?.mappingId) {
     [baselineSnapshot, descriptionBaselineSnapshot] = await Promise.all([
       prisma.productSnapshot.findFirst({
         orderBy: { capturedAt: "desc" },
@@ -1329,8 +1238,7 @@ export async function resolveSyncConflict(
   const keepShopifySnapshot = baselineSnapshot
     ? buildKeepShopifyBaselineSnapshot({
         conflict,
-        latestDescriptionBaselineHash:
-          descriptionBaselineSnapshot?.descriptionHash ?? null,
+        latestDescriptionBaselineHash: descriptionBaselineSnapshot?.descriptionHash ?? null,
         snapshot: baselineSnapshot,
       })
     : null;
@@ -1364,10 +1272,7 @@ export async function resolveSyncConflict(
       await recordProductSnapshotsInTransaction(tx, [keepShopifySnapshot]);
     }
 
-    if (
-      resolution === SyncConflictResolution.REALIGN_FROM_EBAY &&
-      conflict.mapping?.ebayItemId
-    ) {
+    if (resolution === SyncConflictResolution.REALIGN_FROM_EBAY && conflict.mapping?.ebayItemId) {
       await tx.syncJob.create({
         data: {
           payload: {
@@ -1482,9 +1387,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
       },
     } satisfies Prisma.JsonObject,
     priceAmount:
-      input.conflict.field === "price"
-        ? keptShopifyPriceAmount
-        : input.snapshot.priceAmount,
+      input.conflict.field === "price" ? keptShopifyPriceAmount : input.snapshot.priceAmount,
     productStatus:
       input.conflict.field === "status"
         ? getJsonStringValue(shopifyValue)
@@ -1499,9 +1402,7 @@ function buildKeepShopifyBaselineSnapshot(input: {
     sku: input.snapshot.sku,
     source: ProductSnapshotSource.SYNCBAY,
     title:
-      input.conflict.field === "title"
-        ? getJsonStringValue(shopifyValue)
-        : input.snapshot.title,
+      input.conflict.field === "title" ? getJsonStringValue(shopifyValue) : input.snapshot.title,
   };
 }
 
@@ -1532,9 +1433,7 @@ async function findLatestKeepShopifyDescriptionBaseline(mappingId: string) {
 
 export async function startCatalogImportJobs(session: ShopifySessionLike) {
   const shop = await ensureShopForSession(session);
-  const importProductStatus = normalizeImportProductStatus(
-    shop.defaultProductStatus,
-  );
+  const importProductStatus = normalizeImportProductStatus(shop.defaultProductStatus);
   const connection = await prisma.ebayConnection.findUnique({
     where: {
       shopId_marketplaceId: {
@@ -1658,20 +1557,12 @@ export async function getImportWizardState(
     previewLoadMode?: ImportPreviewLoadMode;
   } = {},
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "import.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "import.shop.ensure", () =>
+    ensureShopForSession(session),
   );
-  const defaultProductStatus = normalizeImportProductStatus(
-    shop.defaultProductStatus,
-  );
-  const productPublicationMode = normalizeProductPublicationMode(
-    shop.productPublicationMode,
-  );
-  const selectedPublicationIds = parseProductPublicationGids(
-    shop.productPublicationGids,
-  );
+  const defaultProductStatus = normalizeImportProductStatus(shop.defaultProductStatus);
+  const productPublicationMode = normalizeProductPublicationMode(shop.productPublicationMode);
+  const selectedPublicationIds = parseProductPublicationGids(shop.productPublicationGids);
   const [descriptionRule, ebayConnection] = await Promise.all([
     measureSyncBayPerformanceStage(trace, "import.db.descriptionRule", () =>
       getExistingDescriptionRuleForSettings(shop.id),
@@ -1688,8 +1579,7 @@ export async function getImportWizardState(
     ),
   ]);
   const ebayRuntime = getEbayRuntimeReadiness();
-  const ebayConnected =
-    ebayConnection?.status === EbayConnectionStatus.CONNECTED;
+  const ebayConnected = ebayConnection?.status === EbayConnectionStatus.CONNECTED;
   const catalogMode = options.catalogMode ?? "new_products";
   const previewLoadMode = options.previewLoadMode ?? "deferred";
   const shouldLoadExistingCatalogPreview =
@@ -1699,24 +1589,18 @@ export async function getImportWizardState(
     previewLoadMode === "live";
   const preview =
     shouldLoadExistingCatalogPreview && ebayConnection
-      ? await measureSyncBayPerformanceStage(
-          trace,
-          "import.ebay.existingCatalogPreview",
-          () =>
-            getExistingCatalogTakeoverPreview({
-              connection: ebayConnection,
-              descriptionRuleMode: descriptionRule.mode,
-              maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
-            }),
+      ? await measureSyncBayPerformanceStage(trace, "import.ebay.existingCatalogPreview", () =>
+          getExistingCatalogTakeoverPreview({
+            connection: ebayConnection,
+            descriptionRuleMode: descriptionRule.mode,
+            maxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
+          }),
         )
       : ebayConnected && ebayConnection && previewLoadMode === "live"
-        ? await measureSyncBayPerformanceStage(
-            trace,
-            "import.ebay.preview",
-            () =>
-              getEbayLiveImportPreview(ebayConnection, {
-                descriptionRuleMode: descriptionRule.mode,
-              }),
+        ? await measureSyncBayPerformanceStage(trace, "import.ebay.preview", () =>
+            getEbayLiveImportPreview(ebayConnection, {
+              descriptionRuleMode: descriptionRule.mode,
+            }),
           )
         : ebayConnected
           ? getDeferredImportPreviewState()
@@ -1741,9 +1625,7 @@ export async function getImportWizardState(
             ? EXISTING_CATALOG_SHOPIFY_MATCH_FALLBACK_PRODUCTS
             : undefined,
         limit:
-          catalogMode === "existing_catalog"
-            ? EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS
-            : 250,
+          catalogMode === "existing_catalog" ? EXISTING_CATALOG_SHOPIFY_MATCH_MAX_PRODUCTS : 250,
         preferTargetedSkuHints: catalogMode === "existing_catalog",
         previewResult: preview.previewResult,
         skuHints:
@@ -1825,20 +1707,14 @@ async function getImportPreviewWithExistingShopifyMatches(input: {
     return input.previewResult;
   }
 
-  const shopifyProducts = await loadExistingShopifyProductsForMatching(
-    input.admin,
-    {
-      fallbackScanLimit: input.fallbackScanLimit,
-      limit: input.limit,
-      preferTargetedSkuHints: input.preferTargetedSkuHints,
-      skuHints: input.skuHints,
-    },
-  );
+  const shopifyProducts = await loadExistingShopifyProductsForMatching(input.admin, {
+    fallbackScanLimit: input.fallbackScanLimit,
+    limit: input.limit,
+    preferTargetedSkuHints: input.preferTargetedSkuHints,
+    skuHints: input.skuHints,
+  });
 
-  return addExistingProductMatchSuggestions(
-    input.previewResult,
-    shopifyProducts,
-  );
+  return addExistingProductMatchSuggestions(input.previewResult, shopifyProducts);
 }
 
 function getExistingCatalogSkuHints(previewResult: ImportPreviewResult) {
@@ -1853,21 +1729,11 @@ export async function getShopSettingsState(
   admin?: ShopifyAdminGraphqlClient,
   trace?: SyncBayLoaderPerformanceTrace,
 ) {
-  const shop = await measureSyncBayPerformanceStage(
-    trace,
-    "settings.shop.ensure",
-    () => ensureShopForSession(session),
+  const shop = await measureSyncBayPerformanceStage(trace, "settings.shop.ensure", () =>
+    ensureShopForSession(session),
   );
-  const [
-    ebayConnection,
-    activeMappingCount,
-    latestIncrementalJob,
-    pricingRule,
-    descriptionRule,
-  ] = await measureSyncBayPerformanceStage(
-    trace,
-    "settings.db.stateTransaction",
-    () =>
+  const [ebayConnection, activeMappingCount, latestIncrementalJob, pricingRule, descriptionRule] =
+    await measureSyncBayPerformanceStage(trace, "settings.db.stateTransaction", () =>
       prisma.$transaction([
         prisma.ebayConnection.findUnique({
           where: {
@@ -1905,7 +1771,7 @@ export async function getShopSettingsState(
           where: { shopId: shop.id },
         }),
       ]),
-  );
+    );
   const ebayRuntime = getEbayRuntimeReadiness();
   const shopifyScopes = splitScopes(shop.shopifyScopes);
   const shopifyReadiness = getShopifyReadiness(shopifyScopes);
@@ -1915,17 +1781,11 @@ export async function getShopSettingsState(
     hasDefaultLocation: Boolean(shop.defaultLocationGid),
     requestedSyncEnabled: true,
   });
-  const publicationMode = normalizeProductPublicationMode(
-    shop.productPublicationMode,
-  );
-  const selectedPublicationIds = parseProductPublicationGids(
-    shop.productPublicationGids,
-  );
+  const publicationMode = normalizeProductPublicationMode(shop.productPublicationMode);
+  const selectedPublicationIds = parseProductPublicationGids(shop.productPublicationGids);
   const publicationState = admin
-    ? await measureSyncBayPerformanceStage(
-        trace,
-        "settings.shopify.publications",
-        () => loadShopSettingsPublications(admin),
+    ? await measureSyncBayPerformanceStage(trace, "settings.shopify.publications", () =>
+        loadShopSettingsPublications(admin),
       )
     : { availablePublications: [], errorMessage: null };
 
@@ -1943,9 +1803,7 @@ export async function getShopSettingsState(
       mode: publicationMode,
       selectedPublicationIds,
     },
-    descriptionRule: normalizeDescriptionRule(
-      descriptionRule ?? DEFAULT_DESCRIPTION_RULE,
-    ),
+    descriptionRule: normalizeDescriptionRule(descriptionRule ?? DEFAULT_DESCRIPTION_RULE),
     pricingRule: normalizePricingRule(pricingRule ?? DEFAULT_PRICING_RULE),
     shopify: {
       configuredScopes: getConfiguredShopifyScopes(),
@@ -1955,9 +1813,7 @@ export async function getShopSettingsState(
       webhookTopics: SHOPIFY_WEBHOOK_TOPICS,
     },
     shop: {
-      defaultProductStatus: normalizeImportProductStatus(
-        shop.defaultProductStatus,
-      ),
+      defaultProductStatus: normalizeImportProductStatus(shop.defaultProductStatus),
       domain: shop.shopDomain,
       syncEnabled: shop.syncEnabled,
       syncTargetSeconds: shop.syncTargetSeconds,
@@ -1966,8 +1822,7 @@ export async function getShopSettingsState(
       activeMappingCount,
       canEnable: syncBlockers.length === 0,
       enablementBlockers: syncBlockers,
-      lastIncrementalFinishedAt:
-        latestIncrementalJob?.finishedAt?.toISOString() ?? null,
+      lastIncrementalFinishedAt: latestIncrementalJob?.finishedAt?.toISOString() ?? null,
     },
   };
 }
@@ -2104,9 +1959,7 @@ export async function updatePricingRuleSettings(
             batchIndex: index + 1,
             discountPercent: normalized.discountPercent,
             ebayItemIds,
-            importProductStatus: normalizeImportProductStatus(
-              shop.defaultProductStatus,
-            ),
+            importProductStatus: normalizeImportProductStatus(shop.defaultProductStatus),
             marketplaceId: getEbayMarketplaceId(),
             pricingOnly: syncPlan.pricingOnly,
             requestedCount: ebayItemIds.length,
@@ -2170,10 +2023,7 @@ async function getExistingPricingRuleForSettings(shopId: string) {
   return normalizePricingRule(pricingRule ?? DEFAULT_PRICING_RULE);
 }
 
-export async function updateSyncTargetSeconds(
-  session: ShopifySessionLike,
-  value: string,
-) {
+export async function updateSyncTargetSeconds(session: ShopifySessionLike, value: string) {
   const shop = await ensureShopForSession(session);
   const seconds = normalizeSyncTargetSeconds(value);
 
@@ -2231,19 +2081,14 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
     const cancelledJobs = await tx.syncJob.updateMany({
       data: {
         errorCode: "EBAY_DISCONNECTED",
-        errorMessage:
-          "Account eBay scollegato dalle impostazioni. Job catalogo annullato.",
+        errorMessage: "Account eBay scollegato dalle impostazioni. Job catalogo annullato.",
         finishedAt: disconnectedAt,
         status: SyncJobStatus.CANCELLED,
       },
       where: {
         shopId: shop.id,
         status: {
-          in: [
-            SyncJobStatus.PENDING,
-            SyncJobStatus.RETRYING,
-            SyncJobStatus.RUNNING,
-          ],
+          in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING, SyncJobStatus.RUNNING],
         },
         type: {
           in: [
@@ -2277,8 +2122,7 @@ export async function disconnectEbayConnection(session: ShopifySessionLike) {
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: { cancelledSyncJobCount: cancelledJobs.count },
-        message:
-          "Account eBay scollegato dalle impostazioni. Sync automatico disattivato.",
+        message: "Account eBay scollegato dalle impostazioni. Sync automatico disattivato.",
         shopId: shop.id,
         type: AuditEventType.EBAY_DISCONNECTED,
       },
@@ -2351,17 +2195,13 @@ export async function updateDefaultShopifyLocation(
   availableLocations: ShopifyLocationInput[],
 ) {
   const selectedLocation = availableLocations.find(
-    (location) =>
-      location.id === locationGid &&
-      location.isActive &&
-      location.fulfillsOnlineOrders,
+    (location) => location.id === locationGid && location.isActive && location.fulfillsOnlineOrders,
   );
 
   if (!selectedLocation) {
-    throw new Response(
-      "Scegli una location Shopify attiva e abilitata agli ordini online.",
-      { status: 400 },
-    );
+    throw new Response("Scegli una location Shopify attiva e abilitata agli ordini online.", {
+      status: 400,
+    });
   }
 
   const shop = await ensureShopForSession(session);
@@ -2416,11 +2256,7 @@ export async function updateDefaultImportProductStatus(
   session: ShopifySessionLike,
   defaultProductStatus: string,
 ) {
-  if (
-    !IMPORT_PRODUCT_STATUS_VALUES.includes(
-      defaultProductStatus as ImportProductStatus,
-    )
-  ) {
+  if (!IMPORT_PRODUCT_STATUS_VALUES.includes(defaultProductStatus as ImportProductStatus)) {
     throw new Response("Stato prodotti non supportato.", { status: 400 });
   }
 
@@ -2460,8 +2296,8 @@ export async function updateProductPublicationSettings(
   const availablePublicationIds = new Set(
     input.availablePublications.map((publication) => publication.id),
   );
-  const selectedPublicationIds = input.selectedPublicationIds.filter(
-    (publicationId) => availablePublicationIds.has(publicationId),
+  const selectedPublicationIds = input.selectedPublicationIds.filter((publicationId) =>
+    availablePublicationIds.has(publicationId),
   );
 
   if (mode === "SELECTED" && selectedPublicationIds.length === 0) {
@@ -2475,9 +2311,7 @@ export async function updateProductPublicationSettings(
 
   const shop = await ensureShopForSession(session);
   const serializedPublicationIds =
-    mode === "SELECTED"
-      ? serializeProductPublicationGids(selectedPublicationIds)
-      : null;
+    mode === "SELECTED" ? serializeProductPublicationGids(selectedPublicationIds) : null;
 
   await prisma.$transaction([
     prisma.shop.update({
@@ -2595,8 +2429,7 @@ export async function markShopUninstalled(shopDomain: string) {
     const cancelledJobs = await tx.syncJob.updateMany({
       data: {
         errorCode: "SHOP_UNINSTALLED",
-        errorMessage:
-          "Shopify app disinstallata. Job SyncBay residuo annullato.",
+        errorMessage: "Shopify app disinstallata. Job SyncBay residuo annullato.",
         finishedAt: uninstalledAt,
         status: SyncJobStatus.CANCELLED,
       },
@@ -2620,10 +2453,7 @@ export async function markShopUninstalled(shopDomain: string) {
   });
 }
 
-export async function updateShopifyScopes(
-  shopDomain: string,
-  scopes: string[],
-) {
+export async function updateShopifyScopes(shopDomain: string, scopes: string[]) {
   const shop = await prisma.shop.upsert({
     where: { shopDomain },
     create: {
@@ -2647,9 +2477,7 @@ export async function updateShopifyScopes(
   });
 }
 
-export async function recordShopifyWebhookPlaceholder(
-  input: WebhookRecordInput,
-) {
+export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput) {
   const normalizedTopic = normalizeShopifyWebhookTopic(input.topic);
   const shop = await prisma.shop.upsert({
     where: { shopDomain: input.shopDomain },
@@ -2778,9 +2606,7 @@ export function getEbayRuntimeReadiness() {
     marketplaceId: getEbayMarketplaceId(),
     missingRequirements,
     oauthEnabled,
-    oauthStatus: oauthEnabled
-      ? "Attivabile"
-      : "Predisposto, ma disabilitato da flag runtime",
+    oauthStatus: oauthEnabled ? "Attivabile" : "Predisposto, ma disabilitato da flag runtime",
     ready: missingRequirements.length === 0,
     summary: {
       detail:
@@ -2790,29 +2616,22 @@ export function getEbayRuntimeReadiness() {
             : "Env OAuth presenti; abilita il flag runtime per testare."
           : `Mancano ${missingRequirements.length} requisiti OAuth.`,
       label: "eBay",
-      status:
-        missingRequirements.length === 0 && oauthEnabled
-          ? "pronto"
-          : "da completare",
+      status: missingRequirements.length === 0 && oauthEnabled ? "pronto" : "da completare",
     },
   };
 }
 
 export function getAccountDeletionChallengeConfig() {
   const endpoint = process.env.EBAY_ACCOUNT_DELETION_ENDPOINT_URL;
-  const verificationToken =
-    process.env.EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN;
+  const verificationToken = process.env.EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN;
 
   return {
     endpoint,
     missingRequirements: [
       !hasRuntimeValue(endpoint) ? "endpoint account deletion eBay" : null,
-      !hasRuntimeValue(verificationToken)
-        ? "verification token account deletion eBay"
-        : null,
+      !hasRuntimeValue(verificationToken) ? "verification token account deletion eBay" : null,
     ].filter((requirement): requirement is string => Boolean(requirement)),
-    notificationsEnabled:
-      process.env.EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED === "true",
+    notificationsEnabled: process.env.EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED === "true",
     verificationToken,
   };
 }
@@ -2829,10 +2648,7 @@ export function getAccountDeletionPostConfig() {
 
   return {
     ...challengeConfig,
-    missingRequirements: [
-      ...challengeConfig.missingRequirements,
-      ...postRequirements,
-    ],
+    missingRequirements: [...challengeConfig.missingRequirements, ...postRequirements],
   };
 }
 
@@ -2840,27 +2656,20 @@ export function extractWebhookResourceId(payload: unknown) {
   if (!payload || typeof payload !== "object") return null;
 
   const record = payload as Record<string, unknown>;
-  return (
-    getStringField(record, "admin_graphql_api_id") ??
-    getStringField(record, "id")
-  );
+  return getStringField(record, "admin_graphql_api_id") ?? getStringField(record, "id");
 }
 
 function getPlaceholderJobType(topic: string) {
   if (["orders/create", "orders/paid", "orders/cancelled"].includes(topic))
     return SyncJobType.UPDATE_EBAY_STOCK;
   if (topic === "products/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
-  if (topic === "inventory_levels/update")
-    return SyncJobType.DETECT_SHOPIFY_CHANGES;
+  if (topic === "inventory_levels/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
 }
 
 function getWebhookJobPayload(topic: string, payload: unknown) {
-  return getShopifyWebhookJobPayload(
-    topic,
-    payload,
-  ) satisfies Prisma.JsonObject;
+  return getShopifyWebhookJobPayload(topic, payload) satisfies Prisma.JsonObject;
 }
 
 export function getEbayMarketplaceId() {
@@ -2872,14 +2681,9 @@ export function getCatalogImportBlockers(input: {
   hasDefaultLocation: boolean;
 }) {
   return [
-    process.env.SYNCBAY_DRAFT_IMPORT_ENABLED !== "true"
-      ? "import Shopify non abilitato"
-      : null,
-    !input.hasDefaultLocation
-      ? "location Shopify predefinita non confermata"
-      : null,
-    !input.connection ||
-    input.connection.status !== EbayConnectionStatus.CONNECTED
+    process.env.SYNCBAY_DRAFT_IMPORT_ENABLED !== "true" ? "import Shopify non abilitato" : null,
+    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
+    !input.connection || input.connection.status !== EbayConnectionStatus.CONNECTED
       ? "account eBay non collegato"
       : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
@@ -2891,10 +2695,7 @@ export async function upsertCatalogImportBatchJob(input: {
   catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
-  fieldPoliciesByItemId?: Record<
-    string,
-    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
-  >;
+  fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
   importProductStatus: ImportProductStatus;
   now: Date;
   reuseOnly: boolean;
@@ -2989,10 +2790,7 @@ export function buildCatalogImportBatchPayload(input: {
   catalogImportRunId: string;
   draftLimit: number;
   ebayItemIds: string[];
-  fieldPoliciesByItemId?: Record<
-    string,
-    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
-  >;
+  fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
   importProductStatus: ImportProductStatus;
   reuseOnly: boolean;
   shopId: string;
@@ -3033,10 +2831,7 @@ export function buildCatalogImportRunId(input: { now: Date; shopId: string }) {
 function buildCatalogImportBatchIdempotencyKey(input: {
   batchIndex: number;
   ebayItemIds: string[];
-  fieldPoliciesByItemId?: Record<
-    string,
-    ExistingCatalogTakeoverApplyRow["fieldPolicy"]
-  >;
+  fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
   importProductStatus: ImportProductStatus;
   reuseOnly: boolean;
   shopId: string;
@@ -3069,13 +2864,8 @@ function buildCatalogImportBatchIdempotencyKey(input: {
 }
 
 function getSyncTargetSeconds() {
-  const parsed = Number.parseInt(
-    process.env.SYNC_POLL_INTERVAL_SECONDS ?? "",
-    10,
-  );
-  return Number.isInteger(parsed) && parsed > 0
-    ? parsed
-    : DEFAULT_SYNC_TARGET_SECONDS;
+  const parsed = Number.parseInt(process.env.SYNC_POLL_INTERVAL_SECONDS ?? "", 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_SYNC_TARGET_SECONDS;
 }
 
 function getShopifyReadiness(scopes: string[]) {
@@ -3086,8 +2876,7 @@ function getShopifyReadiness(scopes: string[]) {
   const missingConfiguredScopes = REQUIRED_SHOPIFY_SCOPES.filter(
     (scope) => !hasEffectiveShopifyScope(configuredScopes, scope),
   );
-  const ready =
-    missingScopes.length === 0 && missingConfiguredScopes.length === 0;
+  const ready = missingScopes.length === 0 && missingConfiguredScopes.length === 0;
 
   return {
     missingConfiguredScopes,
@@ -3104,12 +2893,9 @@ function getShopifyReadiness(scopes: string[]) {
 }
 
 function getSupabaseReadiness() {
-  const queueProviderReady =
-    process.env.JOB_QUEUE_PROVIDER === "supabase_queues";
-  const schedulerProviderReady =
-    process.env.JOB_SCHEDULER_PROVIDER === "supabase_cron";
-  const storageBucket =
-    process.env.SUPABASE_STORAGE_BUCKET ?? "syncbay-import-staging";
+  const queueProviderReady = process.env.JOB_QUEUE_PROVIDER === "supabase_queues";
+  const schedulerProviderReady = process.env.JOB_SCHEDULER_PROVIDER === "supabase_cron";
+  const storageBucket = process.env.SUPABASE_STORAGE_BUCKET ?? "syncbay-import-staging";
 
   return {
     queueProviderReady,
@@ -3121,10 +2907,7 @@ function getSupabaseReadiness() {
           ? "Database operativo; queue, cron e storage sono predisposti."
           : "Provider queue/cron da allineare agli env runtime.",
       label: "Supabase",
-      status:
-        queueProviderReady && schedulerProviderReady
-          ? "pronto"
-          : "da completare",
+      status: queueProviderReady && schedulerProviderReady ? "pronto" : "da completare",
     },
   };
 }
@@ -3173,10 +2956,7 @@ function getPricingRoundingModeLabel(mode: string) {
   return "a due decimali";
 }
 
-function formatPricingRuleSummary(input: {
-  discountPercent: number;
-  roundingMode: string;
-}) {
+function formatPricingRuleSummary(input: { discountPercent: number; roundingMode: string }) {
   if (input.discountPercent === 0) {
     return "nessuno sconto applicato ai prezzi Shopify";
   }
@@ -3201,10 +2981,7 @@ function getComplianceReadiness() {
           : "Endpoint account deletion pronto; abilita il flag quando vuoi ricevere notifiche reali."
         : "Endpoint e verification token account deletion da completare.",
       label: "Privacy",
-      status:
-        ready && accountDeletion.notificationsEnabled
-          ? "pronto"
-          : "da completare",
+      status: ready && accountDeletion.notificationsEnabled ? "pronto" : "da completare",
     },
   };
 }
@@ -3217,9 +2994,7 @@ function getOnboardingReadiness(input: {
     defaults: {
       descriptionMode: getDescriptionRuleSummary(input.descriptionRuleMode),
       imageImport: "Tutte le immagini",
-      productStatus: getImportProductStatusLabelCapitalized(
-        input.defaultProductStatus,
-      ),
+      productStatus: getImportProductStatusLabelCapitalized(input.defaultProductStatus),
     },
     steps: [
       "Collega Shopify",
@@ -3231,14 +3006,11 @@ function getOnboardingReadiness(input: {
   };
 }
 
-function getMockImportPreviewState(
-  descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML",
-) {
+function getMockImportPreviewState(descriptionRuleMode: DescriptionRuleMode = "CLEAN_HTML") {
   const previewResult = getMockImportPreview(descriptionRuleMode);
 
   return {
-    coverageNote:
-      "Preview dimostrativa locale: usa dati fittizi finché eBay non è collegato.",
+    coverageNote: "Preview dimostrativa locale: usa dati fittizi finché eBay non è collegato.",
     errorMessage: null,
     previewResult,
     readCount: previewResult.summary.totalCount,
@@ -3278,16 +3050,12 @@ function getImportPreviewReadiness(input: {
 }) {
   const blockers = [
     !input.ebayConnected ? "account eBay non collegato" : null,
-    !input.hasDefaultLocation
-      ? "location Shopify predefinita non confermata"
-      : null,
+    !input.hasDefaultLocation ? "location Shopify predefinita non confermata" : null,
     input.listingReaderPending ? "preview live non ancora aggiornata" : null,
     input.listingReaderError
       ? `lettura listing eBay non riuscita: ${input.listingReaderError}`
       : null,
-    input.listingReaderAvailable === false
-      ? "lettura listing eBay non ancora implementata"
-      : null,
+    input.listingReaderAvailable === false ? "lettura listing eBay non ancora implementata" : null,
   ].filter((blocker): blocker is string => Boolean(blocker));
 
   return {
@@ -3295,9 +3063,7 @@ function getImportPreviewReadiness(input: {
     defaults: {
       descriptionMode: getDescriptionRuleSummary(input.descriptionRuleMode),
       imageImport: "Tutte le immagini",
-      productStatus: getImportProductStatusLabelCapitalized(
-        input.defaultProductStatus,
-      ),
+      productStatus: getImportProductStatusLabelCapitalized(input.defaultProductStatus),
     },
     summary: {
       detail:
@@ -3355,20 +3121,17 @@ function getRuntimePhaseReadiness(input: {
       status: "preparabile",
     },
     {
-      detail:
-        "Runner pianifica batch incrementali per mapping attivi entro il target configurato.",
+      detail: "Runner pianifica batch incrementali per mapping attivi entro il target configurato.",
       label: "Sync incrementale eBay -> Shopify",
       status: "preparabile",
     },
     {
-      detail:
-        "Webhook orders/paid crea job prioritari per ridurre disponibilità eBay.",
+      detail: "Webhook orders/paid crea job prioritari per ridurre disponibilità eBay.",
       label: "Protezione disponibilità Shopify -> eBay",
       status: input.ebayConnected ? "preparabile" : "bloccato",
     },
     {
-      detail:
-        "Webhook product/inventory aprono conflitti visibili e risolvibili in dashboard.",
+      detail: "Webhook product/inventory aprono conflitti visibili e risolvibili in dashboard.",
       label: "Conflitti Shopify",
       status: "preparabile",
     },
@@ -3383,10 +3146,7 @@ function getRuntimePhaseReadiness(input: {
 
 async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
   const uniqueMappingIds = [...new Set(mappingIds)];
-  const snapshotByMappingId = new Map<
-    string,
-    LatestProductSnapshotForDisplay
-  >();
+  const snapshotByMappingId = new Map<string, LatestProductSnapshotForDisplay>();
 
   if (uniqueMappingIds.length === 0) return snapshotByMappingId;
 
@@ -3493,9 +3253,7 @@ async function getLatestProductSnapshotByMappingId(mappingIds: string[]) {
     const baseline = snapshotByMappingId.get(snapshot.mappingId);
     snapshotByMappingId.set(
       snapshot.mappingId,
-      baseline
-        ? mergeProductDisplayBaselineWithSnapshot(baseline, snapshot)
-        : snapshot,
+      baseline ? mergeProductDisplayBaselineWithSnapshot(baseline, snapshot) : snapshot,
     );
   }
 
@@ -3512,16 +3270,10 @@ async function getShopifyThumbnailUrlByProductGid(input: {
   if (uniqueProductGids.length === 0) return thumbnailUrlByProductGid;
 
   const cacheKeyByProductGid = new Map(
-    uniqueProductGids.map((productGid) => [
-      productGid,
-      `${input.shopDomain}:${productGid}`,
-    ]),
+    uniqueProductGids.map((productGid) => [productGid, `${input.shopDomain}:${productGid}`]),
   );
   const productGidByCacheKey = new Map(
-    [...cacheKeyByProductGid].map(([productGid, cacheKey]) => [
-      cacheKey,
-      productGid,
-    ]),
+    [...cacheKeyByProductGid].map(([productGid, cacheKey]) => [cacheKey, productGid]),
   );
   const cached = readFreshThumbnailCacheEntries({
     cache: shopifyThumbnailCache,
@@ -3669,9 +3421,7 @@ async function getCatalogRowsWithThumbnails(input: {
     () =>
       getShopifyThumbnailUrlByProductGid({
         productGids: input.rows.flatMap((row) =>
-          !row.thumbnailUrl && row.shopifyProductGid
-            ? [row.shopifyProductGid as string]
-            : [],
+          !row.thumbnailUrl && row.shopifyProductGid ? [row.shopifyProductGid as string] : [],
         ),
         shopDomain: input.shopDomain,
       }),
@@ -3797,10 +3547,7 @@ function searchCatalogPageRows(rows: CatalogPageRow[], query: string) {
   return rows.filter((row) => catalogRowMatchesSearch(row, query));
 }
 
-function filterCatalogPageRows(
-  rows: CatalogPageRow[],
-  filter: CatalogPageFilter,
-) {
+function filterCatalogPageRows(rows: CatalogPageRow[], filter: CatalogPageFilter) {
   if (filter === "linked") {
     return rows.filter((row) => row.shopifyProductGid);
   }
@@ -3904,9 +3651,7 @@ function formatCatalogPageRow(input: {
     }),
   });
   const availability = getCatalogAvailability({
-    openConflictFields: input.mapping.conflicts.map(
-      (conflict) => conflict.field,
-    ),
+    openConflictFields: input.mapping.conflicts.map((conflict) => conflict.field),
     quantity: latestSnapshot?.quantity ?? null,
     status,
   });
@@ -3935,9 +3680,7 @@ function formatCatalogPageRow(input: {
     status,
     thumbnailUrl: input.thumbnailUrl,
     title:
-      latestSnapshot?.title ??
-      input.mapping.sku ??
-      `Inserzione eBay ${input.mapping.ebayItemId}`,
+      latestSnapshot?.title ?? input.mapping.sku ?? `Inserzione eBay ${input.mapping.ebayItemId}`,
   };
 }
 
@@ -4064,23 +3807,17 @@ async function getLatestImportRunSummary(shopId: string) {
     SyncJobStatus.RUNNING,
   ]);
   const plannedItemCount = catalogBatchJobs.reduce(
-    (total, job) =>
-      total + getImportJobItemCount(getJsonObject(job.payload), job.result),
+    (total, job) => total + getImportJobItemCount(getJsonObject(job.payload), job.result),
     0,
   );
   const completedItemCount = catalogBatchJobs
     .filter((job) => job.status === SyncJobStatus.SUCCEEDED)
     .reduce(
-      (total, job) =>
-        total + getImportJobItemCount(getJsonObject(job.payload), job.result),
+      (total, job) => total + getImportJobItemCount(getJsonObject(job.payload), job.result),
       0,
     );
-  const failedJobCount = runJobs.filter(
-    (job) => job.status === SyncJobStatus.FAILED,
-  ).length;
-  const activeJobCount = runJobs.filter((job) =>
-    activeStatuses.has(job.status),
-  ).length;
+  const failedJobCount = runJobs.filter((job) => job.status === SyncJobStatus.FAILED).length;
+  const activeJobCount = runJobs.filter((job) => activeStatuses.has(job.status)).length;
 
   return {
     activeJobCount,
@@ -4113,9 +3850,7 @@ async function getLatestImportRunSummary(shopId: string) {
       }),
     runId: latestRunId,
     statusRows: [...statusRowsByKey.values()].sort((left, right) =>
-      `${left.jobKind}:${left.status}`.localeCompare(
-        `${right.jobKind}:${right.status}`,
-      ),
+      `${left.jobKind}:${left.status}`.localeCompare(`${right.jobKind}:${right.status}`),
     ),
   };
 }
@@ -4134,8 +3869,7 @@ function getImportJobItemCount(
 ) {
   const payloadItemCount = getJsonArray(payload?.ebayItemIds)?.length;
   const requestedCount =
-    getJsonNumber(payload?.requestedCount) ??
-    getJsonNumber(getJsonObject(result)?.requestedCount);
+    getJsonNumber(payload?.requestedCount) ?? getJsonNumber(getJsonObject(result)?.requestedCount);
 
   return payloadItemCount ?? requestedCount ?? 0;
 }
@@ -4160,8 +3894,7 @@ function formatImportJobSummary(job: {
     canRequestRetry: canRequestRetry(job.status),
     createdAt: job.createdAt.toISOString(),
     errorMessage: job.errorMessage,
-    failedCount:
-      getJsonNumber(result?.failedCount) ?? failedResults?.length ?? 0,
+    failedCount: getJsonNumber(result?.failedCount) ?? failedResults?.length ?? 0,
     finishedAt: job.finishedAt?.toISOString() ?? null,
     id: job.id,
     managedCount: getJsonNumber(result?.managedCount) ?? 0,
@@ -4175,10 +3908,7 @@ function formatImportJobSummary(job: {
 }
 
 function canRequestRetry(status: SyncJobStatus) {
-  const retryableStatuses: SyncJobStatus[] = [
-    SyncJobStatus.FAILED,
-    SyncJobStatus.RETRYING,
-  ];
+  const retryableStatuses: SyncJobStatus[] = [SyncJobStatus.FAILED, SyncJobStatus.RETRYING];
 
   return retryableStatuses.includes(status);
 }
@@ -4197,9 +3927,7 @@ function normalizeConflictResolution(value: string) {
   throw new Response("Risoluzione conflitto non supportata.", { status: 400 });
 }
 
-function formatCatalogSyncHealth(
-  health: ReturnType<typeof getCatalogSyncHealth>,
-) {
+function formatCatalogSyncHealth(health: ReturnType<typeof getCatalogSyncHealth>) {
   return {
     nextDueAt: health.nextDueAt?.toISOString() ?? null,
     overdueAt: health.overdueAt?.toISOString() ?? null,
@@ -4247,10 +3975,7 @@ function splitScopes(scopes?: string | null) {
     : [];
 }
 
-async function lockShopForWebhookCoalescing(
-  tx: Prisma.TransactionClient,
-  shopId: string,
-) {
+async function lockShopForWebhookCoalescing(tx: Prisma.TransactionClient, shopId: string) {
   await tx.$queryRaw<Array<{ id: string }>>`
     SELECT id
     FROM "Shop"
@@ -4285,14 +4010,10 @@ async function findCoalescedWebhookJob(
   });
 }
 
-function getCoalescedWebhookMatchers(
-  details: Prisma.JsonObject,
-): Prisma.SyncJobWhereInput[] {
+function getCoalescedWebhookMatchers(details: Prisma.JsonObject): Prisma.SyncJobWhereInput[] {
   const topic = getJsonString(details.topic);
   const resourceKeys = getShopifyChangeJobResourceKeys(details);
-  const topicMatcher = topic
-    ? { payload: { path: ["topic"], equals: topic } }
-    : null;
+  const topicMatcher = topic ? { payload: { path: ["topic"], equals: topic } } : null;
   const matchers: Prisma.SyncJobWhereInput[] = [];
 
   for (const resourceKey of resourceKeys) {
@@ -4303,10 +4024,7 @@ function getCoalescedWebhookMatchers(
       ["admin_graphql_api_id"],
     ]) {
       matchers.push({
-        AND: [
-          ...(topicMatcher ? [topicMatcher] : []),
-          { payload: { path, equals: resourceKey } },
-        ],
+        AND: [...(topicMatcher ? [topicMatcher] : []), { payload: { path, equals: resourceKey } }],
       });
     }
   }
@@ -4389,10 +4107,7 @@ function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
 }
 
-function getStringField(
-  record: Record<string, unknown> | null | undefined,
-  key: string,
-) {
+function getStringField(record: Record<string, unknown> | null | undefined, key: string) {
   const value = record?.[key];
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);

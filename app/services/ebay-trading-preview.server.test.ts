@@ -25,15 +25,11 @@ test("builds existing catalog previews without fetching every item detail", asyn
     }
 
     if (callName === "GetItem") {
-      const itemId = String(init?.body ?? "").match(
-        /<ItemID>([^<]+)<\/ItemID>/,
-      )?.[1];
+      const itemId = String(init?.body ?? "").match(/<ItemID>([^<]+)<\/ItemID>/)?.[1];
       return xmlResponse(buildGetItemResponse(itemId ?? "missing"));
     }
 
-    return xmlResponse(
-      "<UnsupportedResponse><Ack>Failure</Ack></UnsupportedResponse>",
-    );
+    return xmlResponse("<UnsupportedResponse><Ack>Failure</Ack></UnsupportedResponse>");
   };
 
   try {
@@ -47,10 +43,7 @@ test("builds existing catalog previews without fetching every item detail", asyn
     });
 
     assert.equal(preview.previewResult.items.length, 12);
-    assert.equal(
-      calls.filter((callName) => callName === "GetMyeBaySelling").length,
-      1,
-    );
+    assert.equal(calls.filter((callName) => callName === "GetMyeBaySelling").length, 1);
     assert.equal(calls.filter((callName) => callName === "GetItem").length, 10);
   } finally {
     globalThis.fetch = originalFetch;
@@ -63,9 +56,9 @@ function buildGetMyeBaySellingResponse(count: number) {
   <Ack>Success</Ack>
   <ActiveList>
     <ItemArray>
-      ${Array.from({ length: count }, (_, index) =>
-        buildActiveListItem(String(1000 + index)),
-      ).join("\n")}
+      ${Array.from({ length: count }, (_, index) => buildActiveListItem(String(1000 + index))).join(
+        "\n",
+      )}
     </ItemArray>
     <PaginationResult>
       <TotalNumberOfEntries>${count}</TotalNumberOfEntries>

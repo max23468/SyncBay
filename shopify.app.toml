@@ -11,39 +11,39 @@ automatically_update_urls_on_dev = false
 [webhooks]
 api_version = "2026-07"
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/products/update"
-  topics = [ "products/update" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/products/update"
+topics = ["products/update"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/inventory_levels/update"
-  topics = [ "inventory_levels/update" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/inventory_levels/update"
+topics = ["inventory_levels/update"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/create"
-  topics = [ "orders/create" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/orders/create"
+topics = ["orders/create"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/paid"
-  topics = [ "orders/paid" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/orders/paid"
+topics = ["orders/paid"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/orders/cancelled"
-  topics = [ "orders/cancelled" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/orders/cancelled"
+topics = ["orders/cancelled"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/uninstalled"
-  topics = [ "app/uninstalled" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/app/uninstalled"
+topics = ["app/uninstalled"]
 
-  [[webhooks.subscriptions]]
-  uri = "/webhooks/app/scopes_update"
-  topics = [ "app/scopes_update" ]
+[[webhooks.subscriptions]]
+uri = "/webhooks/app/scopes_update"
+topics = ["app/scopes_update"]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_files,read_inventory,read_locations,read_orders,read_products,read_publications,write_files,write_inventory,write_locations,write_orders,write_products,write_publications"
-optional_scopes = [ ]
+optional_scopes = []
 use_legacy_install_flow = false
 
 [auth]
-redirect_urls = [ "https://syncbay.vercel.app/auth/callback" ]
+redirect_urls = ["https://syncbay.vercel.app/auth/callback"]

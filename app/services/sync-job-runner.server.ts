@@ -117,10 +117,7 @@ import {
 } from "../lib/syncbay-stale-failed-job-archive";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
-import {
-  getShopifyOrderStockAction,
-  getShopifyOrderStockTarget,
-} from "../lib/syncbay-order-stock";
+import { getShopifyOrderStockAction, getShopifyOrderStockTarget } from "../lib/syncbay-order-stock";
 import {
   isEbayStockDryRunEnabled,
   isPositiveShopifyOrderQuantity,
@@ -220,12 +217,11 @@ type ShopifyProductForConflict = {
 type ShopifyProductForConflictVariant = NonNullable<
   NonNullable<ShopifyProductForConflict["variants"]>["nodes"]
 >[number];
-type ShopifyProductForConflictMappedVariant =
-  ShopifyProductForConflictVariant & {
-    product?: {
-      id?: string | null;
-    } | null;
-  };
+type ShopifyProductForConflictMappedVariant = ShopifyProductForConflictVariant & {
+  product?: {
+    id?: string | null;
+  } | null;
+};
 type ShopifyProductForConflictResponse = {
   data?: {
     productNode?: ShopifyProductForConflict | null;
@@ -303,18 +299,12 @@ export async function runDueSyncJobs(
 
   await Promise.all(
     [...runnableJobsByShop.values()].map((shopJobs) =>
-      runDueSyncJobGroup(
-        shopJobs,
-        results,
-        now,
-        input.deadlineAt,
-        deadlineState,
-      ),
+      runDueSyncJobGroup(shopJobs, results, now, input.deadlineAt, deadlineState),
     ),
   );
 
-  const completedResults = results.filter(
-    (result): result is DueSyncJobRunResult => Boolean(result),
+  const completedResults = results.filter((result): result is DueSyncJobRunResult =>
+    Boolean(result),
   );
   const [archivedStaleFailedJobCount, retentionCleanup] = await Promise.all([
     archiveSupersededFailedIncrementalSyncJobs({ now }),
@@ -323,29 +313,20 @@ export async function runDueSyncJobs(
   const selectedByType = buildRunnerLaneCounts(
     completedResults.map((result) => result.type as RunnerLane),
   );
-  const dueCount = Object.values(dueByType).reduce(
-    (total, count) => total + count,
-    0,
-  );
+  const dueCount = Object.values(dueByType).reduce((total, count) => total + count, 0);
 
   return {
     archivedStaleFailedJobCount,
-    failedCount: completedResults.filter((result) => result.status === "failed")
-      .length,
+    failedCount: completedResults.filter((result) => result.status === "failed").length,
     processedCount: completedResults.length,
-    skippedCount: completedResults.filter(
-      (result) => result.status === "skipped",
-    ).length,
+    skippedCount: completedResults.filter((result) => result.status === "skipped").length,
     cleanedInternalImportJobCount,
-    continuationNeeded:
-      deadlineState.continuationNeeded || dueCount > completedResults.length,
+    continuationNeeded: deadlineState.continuationNeeded || dueCount > completedResults.length,
     dueByType,
     elapsedMs: Date.now() - startedAt,
     retentionCleanup,
     selectedByType,
-    succeededCount: completedResults.filter(
-      (result) => result.status === "succeeded",
-    ).length,
+    succeededCount: completedResults.filter((result) => result.status === "succeeded").length,
     results: completedResults,
   };
 }
@@ -372,19 +353,17 @@ async function countDueSyncJobsByType(now: Date) {
 }
 
 function buildRunnerLaneCounts(lanes: RunnerLane[]) {
-  const counts = Object.fromEntries(
-    RUNNER_LANES.map((lane) => [lane, 0]),
-  ) as Record<RunnerLane, number>;
+  const counts = Object.fromEntries(RUNNER_LANES.map((lane) => [lane, 0])) as Record<
+    RunnerLane,
+    number
+  >;
 
   for (const lane of lanes) counts[lane] += 1;
 
   return counts;
 }
 
-async function findDueSyncJobsByPriority(input: {
-  lanePlan: RunnerLane[];
-  now: Date;
-}) {
+async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[]; now: Date }) {
   const jobs: DueSyncJob[] = [];
 
   for (const lane of input.lanePlan) {
@@ -433,10 +412,7 @@ async function findDueRegularIncrementalSyncJobs(input: {
     SELECT "id"
     FROM "SyncJob"
     WHERE "type"::text = ${SyncJobType.SYNC_INCREMENTAL}
-      AND "status"::text IN (${Prisma.join([
-        SyncJobStatus.PENDING,
-        SyncJobStatus.RETRYING,
-      ])})
+      AND "status"::text IN (${Prisma.join([SyncJobStatus.PENDING, SyncJobStatus.RETRYING])})
       AND "runAfter" <= ${input.now}
       AND NOT COALESCE("payload" @> '{"facetOnly": true}'::jsonb, false)
       AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
@@ -525,13 +501,7 @@ async function runDueSyncJobGroup(
 
   results[nextJob.index] = await runDueSyncJob(claimedJob);
 
-  await runDueSyncJobGroup(
-    remainingJobs,
-    results,
-    now,
-    deadlineAt,
-    deadlineState,
-  );
+  await runDueSyncJobGroup(remainingJobs, results, now, deadlineAt, deadlineState);
 }
 
 async function claimDueSyncJob(job: DueSyncJob, now: Date) {
@@ -594,10 +564,7 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
   });
 }
 
-async function recoverStaleRunningSyncJobsForDueShops(input: {
-  limit: number;
-  now: Date;
-}) {
+async function recoverStaleRunningSyncJobsForDueShops(input: { limit: number; now: Date }) {
   const staleCutoff = getRunningSyncJobStaleCutoff(input.now);
   const staleRunningJobs = await prisma.syncJob.findMany({
     orderBy: [{ startedAt: "asc" }, { createdAt: "asc" }],
@@ -620,9 +587,7 @@ async function recoverStaleRunningSyncJobsForDueShops(input: {
   );
 }
 
-async function archiveSupersededFailedIncrementalSyncJobs(input: {
-  now: Date;
-}) {
+async function archiveSupersededFailedIncrementalSyncJobs(input: { now: Date }) {
   const failedJobShops = await prisma.syncJob.findMany({
     distinct: ["shopId"],
     select: { shopId: true },
@@ -645,8 +610,7 @@ async function archiveSupersededFailedIncrementalSyncJobs(input: {
       },
     });
     const latestSuccessAt =
-      latestSuccessfulIncrementalSync?.finishedAt ??
-      latestSuccessfulIncrementalSync?.updatedAt;
+      latestSuccessfulIncrementalSync?.finishedAt ?? latestSuccessfulIncrementalSync?.updatedAt;
 
     if (!latestSuccessAt) continue;
 
@@ -710,20 +674,13 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       where: {
         NOT: [
           {
-            AND: [
-              { type: SyncJobType.SYNC_INCREMENTAL },
-              getFacetOnlyIncrementalSyncJobWhere(),
-            ],
+            AND: [{ type: SyncJobType.SYNC_INCREMENTAL }, getFacetOnlyIncrementalSyncJobWhere()],
           },
         ],
         ...getSchedulableSyncJobWhere(),
         shopId: shop.id,
         status: {
-          in: [
-            SyncJobStatus.PENDING,
-            SyncJobStatus.RETRYING,
-            SyncJobStatus.RUNNING,
-          ],
+          in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING, SyncJobStatus.RUNNING],
         },
         type: {
           in: [
@@ -769,47 +726,40 @@ async function enqueueIncrementalSyncJobs(now: Date) {
     try {
       const connection = shop.ebayConnections[0];
       const { accessToken } = await getUsableEbayAccessToken(connection);
-      const [latestSellerEventsSyncJob, latestFullReconcileJob] =
-        await Promise.all([
-          prisma.syncJob.findFirst({
-            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { createdAt: true, finishedAt: true, payload: true },
-            where: {
-              AND: [
-                {
-                  payload: { path: ["source"], equals: "seller_events_delta" },
-                },
-                { payload: { path: ["watermarkAdvanced"], equals: true } },
-              ],
-              shopId: shop.id,
-              status: SyncJobStatus.SUCCEEDED,
-              type: SyncJobType.SYNC_INCREMENTAL,
-            },
-          }),
-          prisma.syncJob.findFirst({
-            orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
-            select: { createdAt: true, finishedAt: true, payload: true },
-            where: {
-              payload: { path: ["source"], equals: "catalog_reconcile" },
-              shopId: shop.id,
-              status: SyncJobStatus.SUCCEEDED,
-              type: SyncJobType.SYNC_INCREMENTAL,
-            },
-          }),
-        ]);
-      const latestFullReconcileAt = getJobCompletionTime(
-        latestFullReconcileJob,
-      );
+      const [latestSellerEventsSyncJob, latestFullReconcileJob] = await Promise.all([
+        prisma.syncJob.findFirst({
+          orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+          select: { createdAt: true, finishedAt: true, payload: true },
+          where: {
+            AND: [
+              {
+                payload: { path: ["source"], equals: "seller_events_delta" },
+              },
+              { payload: { path: ["watermarkAdvanced"], equals: true } },
+            ],
+            shopId: shop.id,
+            status: SyncJobStatus.SUCCEEDED,
+            type: SyncJobType.SYNC_INCREMENTAL,
+          },
+        }),
+        prisma.syncJob.findFirst({
+          orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }],
+          select: { createdAt: true, finishedAt: true, payload: true },
+          where: {
+            payload: { path: ["source"], equals: "catalog_reconcile" },
+            shopId: shop.id,
+            status: SyncJobStatus.SUCCEEDED,
+            type: SyncJobType.SYNC_INCREMENTAL,
+          },
+        }),
+      ]);
+      const latestFullReconcileAt = getJobCompletionTime(latestFullReconcileJob);
       const latestFullReconcileWatermarkAt =
-        getDateFromPayload(
-          latestFullReconcileJob?.payload ?? null,
-          "activeCatalogReadAt",
-        ) ??
+        getDateFromPayload(latestFullReconcileJob?.payload ?? null, "activeCatalogReadAt") ??
         latestFullReconcileJob?.createdAt ??
         latestFullReconcileAt;
       const fullReconcileDue = isFullCatalogReconcileDue({
-        intervalSecondsValue:
-          process.env.SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS,
+        intervalSecondsValue: process.env.SYNCBAY_EBAY_FULL_RECONCILE_INTERVAL_SECONDS,
         latestFullReconcileAt,
         now,
       });
@@ -819,9 +769,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
             latestSuccessfulSyncAt: getSellerEventsWatermarkAt({
               latestFullReconcileCompletedAt: latestFullReconcileAt,
               latestFullReconcileWatermarkAt,
-              latestSellerEventsCompletedAt: getJobCompletionTime(
-                latestSellerEventsSyncJob,
-              ),
+              latestSellerEventsCompletedAt: getJobCompletionTime(latestSellerEventsSyncJob),
               latestSellerEventsModTimeToValue: getStringFromPayload(
                 latestSellerEventsSyncJob?.payload ?? null,
                 "modTimeTo",
@@ -852,8 +800,7 @@ async function enqueueIncrementalSyncJobs(now: Date) {
       const errorMessage = getErrorMessage(error);
       const retryScheduledAt = isEbayTradingUsageLimitError(errorMessage)
         ? getNextEbayTradingRateLimitRetryAt({
-            cooldownSecondsValue:
-              process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
+            cooldownSecondsValue: process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
             now,
           })
         : null;
@@ -939,10 +886,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
     mappedEbayItemIds: mappings.map((mapping) => mapping.ebayItemId),
   });
 
-  if (
-    reconcilePlan.syncBatches.length === 0 &&
-    reconcilePlan.inactiveEbayItemIds.length === 0
-  ) {
+  if (reconcilePlan.syncBatches.length === 0 && reconcilePlan.inactiveEbayItemIds.length === 0) {
     await createIncrementalNoopMarker({
       now: input.now,
       payload: {
@@ -1039,10 +983,7 @@ async function cancelCatalogReconcileRuns(input: {
       shopId: input.shopId,
       status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
       type: {
-        in: [
-          SyncJobType.SYNC_INCREMENTAL,
-          SyncJobType.ARCHIVE_INACTIVE_LISTING,
-        ],
+        in: [SyncJobType.SYNC_INCREMENTAL, SyncJobType.ARCHIVE_INACTIVE_LISTING],
       },
     },
   });
@@ -1068,13 +1009,8 @@ async function cancelCatalogReconcileRuns(input: {
   });
 }
 
-async function enqueueCatalogImageRepairSyncJobs(input: {
-  now: Date;
-  shopId: string;
-}) {
-  const limit = getCatalogImageRepairLimit(
-    process.env.SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT,
-  );
+async function enqueueCatalogImageRepairSyncJobs(input: { now: Date; shopId: string }) {
+  const limit = getCatalogImageRepairLimit(process.env.SYNCBAY_CATALOG_IMAGE_REPAIR_LIMIT);
 
   if (limit === 0) return 0;
 
@@ -1131,10 +1067,7 @@ async function enqueueCatalogImageRepairSyncJobs(input: {
   return result.count;
 }
 
-async function enqueueFacetBackfillJobsIfNeeded(input: {
-  now: Date;
-  shopId: string;
-}) {
+async function enqueueFacetBackfillJobsIfNeeded(input: { now: Date; shopId: string }) {
   const version = 1;
   const runId = `${input.shopId}:${DEFAULT_MARKETPLACE_ID}:v${version}`;
   const completedMarker = await prisma.syncJob.findFirst({
@@ -1175,11 +1108,7 @@ async function enqueueFacetBackfillJobsIfNeeded(input: {
       ],
       shopId: input.shopId,
       status: {
-        in: [
-          SyncJobStatus.PENDING,
-          SyncJobStatus.RETRYING,
-          SyncJobStatus.RUNNING,
-        ],
+        in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING, SyncJobStatus.RUNNING],
       },
       type: SyncJobType.SYNC_INCREMENTAL,
     },
@@ -1355,9 +1284,7 @@ async function createIncrementalNoopMarker(input: {
   });
 }
 
-function getJobCompletionTime(
-  job: { createdAt: Date; finishedAt: Date | null } | null,
-) {
+function getJobCompletionTime(job: { createdAt: Date; finishedAt: Date | null } | null) {
   return job ? (job.finishedAt ?? job.createdAt) : null;
 }
 
@@ -1413,8 +1340,7 @@ async function recoverStaleRunningSyncJobs(
 
   for (const staleJob of staleJobs) {
     const nextAttempts = staleJob.attempts + 1;
-    const retryAt =
-      nextAttempts < staleJob.maxAttempts ? staleJob.runAfter : null;
+    const retryAt = nextAttempts < staleJob.maxAttempts ? staleJob.runAfter : null;
     const result = {
       recoveredJobType: staleJob.type,
       runnerErrorCode: STALE_RUNNING_SYNC_JOB_ERROR_CODE,
@@ -1471,10 +1397,7 @@ function getRunningSyncJobStaleCutoff(now: Date) {
   return new Date(now.getTime() - RUNNING_SYNC_JOB_STALE_AFTER_MS);
 }
 
-function getStaleRunningSyncJobWhere(
-  staleCutoff: Date,
-  shopId?: string,
-): Prisma.SyncJobWhereInput {
+function getStaleRunningSyncJobWhere(staleCutoff: Date, shopId?: string): Prisma.SyncJobWhereInput {
   return {
     AND: [
       getSchedulableSyncJobWhere(),
@@ -1517,8 +1440,7 @@ async function runDueSyncJob(job: DueSyncJob) {
     const errorMessage = getErrorMessage(error);
     const tradingRateLimitRetryAt = isEbayTradingUsageLimitError(errorMessage)
       ? getNextEbayTradingRateLimitRetryAt({
-          cooldownSecondsValue:
-            process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
+          cooldownSecondsValue: process.env.SYNCBAY_EBAY_TRADING_RATE_LIMIT_COOLDOWN_SECONDS,
           now: new Date(),
         })
       : null;
@@ -1582,8 +1504,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
     throw new Error("Connessione eBay non collegata per il job import.");
   }
 
-  const interruptedJobBeforeProvider =
-    await getInterruptedRunningSyncJobResult(job);
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, previewResult, facetBaselinesByItemId] = await Promise.all([
@@ -1594,16 +1515,9 @@ async function runImportCatalogJob(job: DueSyncJob) {
       shopId: job.shopId,
     }),
   ]);
-  const filteredPreviewResult = filterPreviewResultByItemIds(
-    previewResult,
-    ebayItemIds,
-  );
-  const foundItemIds = new Set(
-    filteredPreviewResult.items.map((item) => item.itemId),
-  );
-  const missingItemIds = ebayItemIds.filter(
-    (itemId) => !foundItemIds.has(itemId),
-  );
+  const filteredPreviewResult = filterPreviewResultByItemIds(previewResult, ebayItemIds);
+  const foundItemIds = new Set(filteredPreviewResult.items.map((item) => item.itemId));
+  const missingItemIds = ebayItemIds.filter((itemId) => !foundItemIds.has(itemId));
 
   if (missingItemIds.length > 0) {
     throw new Error(
@@ -1614,8 +1528,7 @@ async function runImportCatalogJob(job: DueSyncJob) {
   const executionInput = {
     admin,
     defaultLocationGid: job.shop.defaultLocationGid,
-    existingCatalogFieldPoliciesByItemId:
-      getExistingCatalogFieldPoliciesByItemId(job.payload),
+    existingCatalogFieldPoliciesByItemId: getExistingCatalogFieldPoliciesByItemId(job.payload),
     facetBaselinesByItemId,
     hasDefaultLocation: Boolean(job.shop.defaultLocationGid),
     importProductStatusOverride: getImportProductStatus(job.payload),
@@ -1706,11 +1619,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   const reactivationConflictMappingIds = [
     ...new Set(
       openConflicts.flatMap((conflict) => {
-        if (
-          !shouldResolveOpenConflictsForInactiveMappingStatus(
-            conflict.mapping?.status ?? null,
-          )
-        ) {
+        if (!shouldResolveOpenConflictsForInactiveMappingStatus(conflict.mapping?.status ?? null)) {
           return [];
         }
 
@@ -1720,8 +1629,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
   ];
   let reactivationConflictResolvedCount = 0;
   if (reactivationConflictMappingIds.length > 0) {
-    const interruptedJobBeforeConflictUpdate =
-      await getInterruptedRunningSyncJobResult(job);
+    const interruptedJobBeforeConflictUpdate = await getInterruptedRunningSyncJobResult(job);
     if (interruptedJobBeforeConflictUpdate) {
       return interruptedJobBeforeConflictUpdate;
     }
@@ -1741,30 +1649,23 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     ).count;
   }
 
-  const interruptedJobBeforeConflictProbe =
-    await getInterruptedRunningSyncJobResult(job);
-  if (interruptedJobBeforeConflictProbe)
-    return interruptedJobBeforeConflictProbe;
+  const interruptedJobBeforeConflictProbe = await getInterruptedRunningSyncJobResult(job);
+  if (interruptedJobBeforeConflictProbe) return interruptedJobBeforeConflictProbe;
 
-  const alignedDescriptionConflicts =
-    await resolveLiveAlignedDescriptionConflicts({
-      conflicts: openConflicts,
-      defaultLocationGid: job.shop.defaultLocationGid,
-      shopId: job.shopId,
-      shopDomain: job.shop.shopDomain,
-    });
-  const resolvedAlignedDescriptionConflictIds = new Set(
-    alignedDescriptionConflicts.conflictIds,
-  );
+  const alignedDescriptionConflicts = await resolveLiveAlignedDescriptionConflicts({
+    conflicts: openConflicts,
+    defaultLocationGid: job.shop.defaultLocationGid,
+    shopId: job.shopId,
+    shopDomain: job.shop.shopDomain,
+  });
+  const resolvedAlignedDescriptionConflictIds = new Set(alignedDescriptionConflicts.conflictIds);
   const alignedPriceConflicts = await resolveLiveAlignedPriceConflicts({
     conflicts: openConflicts,
     defaultLocationGid: job.shop.defaultLocationGid,
     job,
     shopDomain: job.shop.shopDomain,
   });
-  const resolvedAlignedPriceConflictIds = new Set(
-    alignedPriceConflicts.conflictIds,
-  );
+  const resolvedAlignedPriceConflictIds = new Set(alignedPriceConflicts.conflictIds);
   const openConflictItemIds = new Set(
     openConflicts.flatMap((conflict) => {
       if (
@@ -1774,9 +1675,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
         return [];
       }
       if (
-        !shouldBlockIncrementalSyncForOpenConflictMappingStatus(
-          conflict.mapping?.status ?? null,
-        )
+        !shouldBlockIncrementalSyncForOpenConflictMappingStatus(conflict.mapping?.status ?? null)
       ) {
         return [];
       }
@@ -1784,16 +1683,13 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       return conflict.mapping?.ebayItemId ? [conflict.mapping.ebayItemId] : [];
     }),
   );
-  const syncableItemIds = ebayItemIds.filter(
-    (itemId) => !openConflictItemIds.has(itemId),
-  );
+  const syncableItemIds = ebayItemIds.filter((itemId) => !openConflictItemIds.has(itemId));
 
   if (syncableItemIds.length === 0) {
     await markJobSucceeded({
       job,
       result: {
-        alignedDescriptionConflictResolvedCount:
-          alignedDescriptionConflicts.count,
+        alignedDescriptionConflictResolvedCount: alignedDescriptionConflicts.count,
         alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
         conflictSkippedCount: ebayItemIds.length,
         reactivationConflictResolvedCount,
@@ -1814,8 +1710,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   if (isFacetOnlySyncJobPayload(job.payload)) {
     return runFacetOnlyIncrementalSyncJob({
-      alignedDescriptionConflictResolvedCount:
-        alignedDescriptionConflicts.count,
+      alignedDescriptionConflictResolvedCount: alignedDescriptionConflicts.count,
       alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
       job,
       openConflictSkippedCount: openConflictItemIds.size,
@@ -1827,8 +1722,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
 
   if (isPricingOnlySyncJobPayload(job.payload)) {
     return runPricingOnlyIncrementalSyncJob({
-      alignedDescriptionConflictResolvedCount:
-        alignedDescriptionConflicts.count,
+      alignedDescriptionConflictResolvedCount: alignedDescriptionConflicts.count,
       alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
       job,
       openConflictSkippedCount: openConflictItemIds.size,
@@ -1838,8 +1732,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     });
   }
 
-  const interruptedJobBeforeProvider =
-    await getInterruptedRunningSyncJobResult(job);
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
   const [admin, previewResult, facetBaselinesByItemId] = await Promise.all([
@@ -1850,10 +1743,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
       shopId: job.shopId,
     }),
   ]);
-  const filteredPreviewResult = filterPreviewResultByItemIds(
-    previewResult,
-    syncableItemIds,
-  );
+  const filteredPreviewResult = filterPreviewResultByItemIds(previewResult, syncableItemIds);
   const result = await executeShopifyCatalogImport({
     admin,
     defaultLocationGid: job.shop.defaultLocationGid,
@@ -1889,8 +1779,7 @@ async function runIncrementalSyncJob(job: DueSyncJob) {
     job,
     result: {
       ...result.summary,
-      alignedDescriptionConflictResolvedCount:
-        alignedDescriptionConflicts.count,
+      alignedDescriptionConflictResolvedCount: alignedDescriptionConflicts.count,
       alignedPriceConflictResolvedCount: alignedPriceConflicts.count,
       conflictSkippedCount: openConflictItemIds.size,
       reactivationConflictResolvedCount,
@@ -1918,63 +1807,58 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(
-    input.job,
-  );
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(input.job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
-  const [admin, previewResult, pricingRule, mappings, snapshots] =
-    await Promise.all([
-      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
-      getIncrementalPreviewResult(input.job, input.syncableItemIds),
-      getPricingRuleForShopId(input.job.shopId),
-      prisma.productMapping.findMany({
-        select: {
-          ebayItemId: true,
-          id: true,
-          shopifyProductGid: true,
-          shopifyVariantGid: true,
-          sku: true,
+  const [admin, previewResult, pricingRule, mappings, snapshots] = await Promise.all([
+    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+    getIncrementalPreviewResult(input.job, input.syncableItemIds),
+    getPricingRuleForShopId(input.job.shopId),
+    prisma.productMapping.findMany({
+      select: {
+        ebayItemId: true,
+        id: true,
+        shopifyProductGid: true,
+        shopifyVariantGid: true,
+        sku: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        marketplaceId: getEbayMarketplaceId(input.job.payload),
+        shopId: input.job.shopId,
+      },
+    }),
+    prisma.productSnapshot.findMany({
+      orderBy: { capturedAt: "desc" },
+      select: {
+        capturedAt: true,
+        currency: true,
+        ebayItemId: true,
+        payload: true,
+        priceAmount: true,
+        productStatus: true,
+        quantity: true,
+        sku: true,
+        source: true,
+        title: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        priceAmount: { not: null },
+        shopId: input.job.shopId,
+        source: {
+          in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY],
         },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          marketplaceId: getEbayMarketplaceId(input.job.payload),
-          shopId: input.job.shopId,
-        },
-      }),
-      prisma.productSnapshot.findMany({
-        orderBy: { capturedAt: "desc" },
-        select: {
-          capturedAt: true,
-          currency: true,
-          ebayItemId: true,
-          payload: true,
-          priceAmount: true,
-          productStatus: true,
-          quantity: true,
-          sku: true,
-          source: true,
-          title: true,
-        },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          priceAmount: { not: null },
-          shopId: input.job.shopId,
-          source: {
-            in: [ProductSnapshotSource.EBAY, ProductSnapshotSource.SYNCBAY],
-          },
-        },
-      }),
-    ]);
+      },
+    }),
+  ]);
   const previewItemsById = new Map(
-    filterPreviewResultByItemIds(
-      previewResult,
-      input.syncableItemIds,
-    ).items.map((item) => [item.itemId, item]),
+    filterPreviewResultByItemIds(previewResult, input.syncableItemIds).items.map((item) => [
+      item.itemId,
+      item,
+    ]),
   );
-  const mappingsByItemId = new Map(
-    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
-  );
+  const mappingsByItemId = new Map(mappings.map((mapping) => [mapping.ebayItemId, mapping]));
   const snapshotPricingSourcesByItemId = buildSnapshotPricingSourcesByItemId(
     snapshots.flatMap((snapshot) =>
       snapshot.ebayItemId
@@ -1984,10 +1868,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
               currency: snapshot.currency,
               ebayItemId: snapshot.ebayItemId,
               payload: snapshot.payload,
-              priceAmount:
-                snapshot.priceAmount === null
-                  ? null
-                  : Number(snapshot.priceAmount),
+              priceAmount: snapshot.priceAmount === null ? null : Number(snapshot.priceAmount),
               productStatus: snapshot.productStatus,
               quantity: snapshot.quantity,
               sku: snapshot.sku,
@@ -2022,16 +1903,10 @@ async function runPricingOnlyIncrementalSyncJob(input: {
             title: item.normalized.title,
           };
 
-    if (
-      !pricingSource ||
-      !mapping?.shopifyProductGid ||
-      !mapping.shopifyVariantGid
-    ) {
+    if (!pricingSource || !mapping?.shopifyProductGid || !mapping.shopifyVariantGid) {
       skipped.push({
         ebayItemId: itemId,
-        reason: !pricingSource
-          ? "pricing_source_missing"
-          : "shopify_mapping_missing",
+        reason: !pricingSource ? "pricing_source_missing" : "shopify_mapping_missing",
       });
       continue;
     }
@@ -2069,10 +1944,8 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       continue;
     }
 
-    const interruptedJobBeforePricingWrite =
-      await getInterruptedRunningSyncJobResult(input.job);
-    if (interruptedJobBeforePricingWrite)
-      return interruptedJobBeforePricingWrite;
+    const interruptedJobBeforePricingWrite = await getInterruptedRunningSyncJobResult(input.job);
+    if (interruptedJobBeforePricingWrite) return interruptedJobBeforePricingWrite;
 
     const updateResult = await updateShopifyVariantPricingOnly(admin, {
       compareAtPrice,
@@ -2126,8 +1999,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
     const syncedMappingIds = syncBaySnapshots
       .map((snapshot) => snapshot.mappingId)
       .filter((mappingId): mappingId is string => Boolean(mappingId));
-    const changedSyncBaySnapshots =
-      await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
+    const changedSyncBaySnapshots = await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
 
     await prisma.$transaction(async (tx) => {
       if (changedSyncBaySnapshots.length > 0) {
@@ -2144,14 +2016,11 @@ async function runPricingOnlyIncrementalSyncJob(input: {
   await markJobSucceeded({
     job: input.job,
     result: {
-      alignedDescriptionConflictResolvedCount:
-        input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount:
-        input.alignedPriceConflictResolvedCount,
+      alignedDescriptionConflictResolvedCount: input.alignedDescriptionConflictResolvedCount,
+      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       pricingOnly: true,
-      reactivationConflictResolvedCount:
-        input.reactivationConflictResolvedCount,
+      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
       requestedCount: input.requestedItemIds.length,
       skipped,
       skippedCount: skipped.length,
@@ -2161,9 +2030,7 @@ async function runPricingOnlyIncrementalSyncJob(input: {
       unchangedCount: unchanged.length,
     },
     warnings:
-      skipped.length > 0
-        ? [`Sync prezzo completato con ${skipped.length} prodotti saltati.`]
-        : [],
+      skipped.length > 0 ? [`Sync prezzo completato con ${skipped.length} prodotti saltati.`] : [],
   });
   await maybeMarkSellerEventsRunWatermarkSucceeded(input.job);
   await maybeMarkCatalogReconcileRunWatermarkSucceeded(input.job);
@@ -2184,58 +2051,50 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   requestedItemIds: string[];
   syncableItemIds: string[];
 }) {
-  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(
-    input.job,
-  );
+  const interruptedJobBeforeProvider = await getInterruptedRunningSyncJobResult(input.job);
   if (interruptedJobBeforeProvider) return interruptedJobBeforeProvider;
 
-  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] =
-    await Promise.all([
-      getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
-      prisma.productMapping.findMany({
-        select: {
-          ebayItemId: true,
-          id: true,
-          shopifyProductGid: true,
-        },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          marketplaceId: getEbayMarketplaceId(input.job.payload),
-          shopId: input.job.shopId,
-          status: ProductMappingStatus.ACTIVE,
-        },
-      }),
-      prisma.productSnapshot.findMany({
-        orderBy: { capturedAt: "desc" },
-        select: {
-          ebayItemId: true,
-          payload: true,
-          title: true,
-        },
-        where: {
-          ebayItemId: { in: input.syncableItemIds },
-          shopId: input.job.shopId,
-          source: ProductSnapshotSource.EBAY,
-        },
-      }),
-      getLatestFacetBaselinesByItemId({
-        ebayItemIds: input.syncableItemIds,
+  const [admin, mappings, ebaySnapshots, facetBaselinesByItemId] = await Promise.all([
+    getShopifyAdminGraphqlClient(input.job.shop.shopDomain),
+    prisma.productMapping.findMany({
+      select: {
+        ebayItemId: true,
+        id: true,
+        shopifyProductGid: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        marketplaceId: getEbayMarketplaceId(input.job.payload),
         shopId: input.job.shopId,
-      }),
-    ]);
-  const mappingsByItemId = new Map(
-    mappings.map((mapping) => [mapping.ebayItemId, mapping]),
-  );
+        status: ProductMappingStatus.ACTIVE,
+      },
+    }),
+    prisma.productSnapshot.findMany({
+      orderBy: { capturedAt: "desc" },
+      select: {
+        ebayItemId: true,
+        payload: true,
+        title: true,
+      },
+      where: {
+        ebayItemId: { in: input.syncableItemIds },
+        shopId: input.job.shopId,
+        source: ProductSnapshotSource.EBAY,
+      },
+    }),
+    getLatestFacetBaselinesByItemId({
+      ebayItemIds: input.syncableItemIds,
+      shopId: input.job.shopId,
+    }),
+  ]);
+  const mappingsByItemId = new Map(mappings.map((mapping) => [mapping.ebayItemId, mapping]));
   const latestEbaySnapshotByItemId = new Map<
     string,
     { payload: Prisma.JsonValue | null; title: string | null }
   >();
 
   for (const snapshot of ebaySnapshots) {
-    if (
-      !snapshot.ebayItemId ||
-      latestEbaySnapshotByItemId.has(snapshot.ebayItemId)
-    ) {
+    if (!snapshot.ebayItemId || latestEbaySnapshotByItemId.has(snapshot.ebayItemId)) {
       continue;
     }
 
@@ -2255,8 +2114,7 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   const now = new Date();
 
   for (const itemId of input.syncableItemIds) {
-    const interruptedJobBeforeFacetWrite =
-      await getInterruptedRunningSyncJobResult(input.job);
+    const interruptedJobBeforeFacetWrite = await getInterruptedRunningSyncJobResult(input.job);
     if (interruptedJobBeforeFacetWrite) return interruptedJobBeforeFacetWrite;
 
     const mapping = mappingsByItemId.get(itemId);
@@ -2280,15 +2138,9 @@ async function runFacetOnlyIncrementalSyncJob(input: {
 
     const payload = getJsonObject(ebaySnapshot.payload);
     const proposedFacets = buildSyncBayProductFacetProposalFromSnapshot({
-      ebayPrimaryCategoryName: getNullableStringFromRecord(
-        payload,
-        "ebayPrimaryCategoryName",
-      ),
+      ebayPrimaryCategoryName: getNullableStringFromRecord(payload, "ebayPrimaryCategoryName"),
       payload,
-      storeCategoryName: getNullableStringFromRecord(
-        payload,
-        "storeCategoryName",
-      ),
+      storeCategoryName: getNullableStringFromRecord(payload, "storeCategoryName"),
       title: ebaySnapshot.title,
     });
     const previousSyncBayFacets = facetBaselinesByItemId[itemId] ?? [];
@@ -2334,10 +2186,7 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     const shouldPersistFacetBaseline =
       facetSync.written.length > 0 ||
       facetSync.deleted.length > 0 ||
-      hasSyncBayProductFacetBaselineChanged(
-        previousSyncBayFacets,
-        facetSync.baselineFacets,
-      );
+      hasSyncBayProductFacetBaselineChanged(previousSyncBayFacets, facetSync.baselineFacets);
 
     if (shouldPersistFacetBaseline) {
       syncBaySnapshots.push({
@@ -2360,8 +2209,7 @@ async function runFacetOnlyIncrementalSyncJob(input: {
     const syncedMappingIds = syncBaySnapshots
       .map((snapshot) => snapshot.mappingId)
       .filter((mappingId): mappingId is string => Boolean(mappingId));
-    const changedSyncBaySnapshots =
-      await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
+    const changedSyncBaySnapshots = await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
 
     await prisma.$transaction(async (tx) => {
       if (changedSyncBaySnapshots.length > 0) {
@@ -2378,18 +2226,15 @@ async function runFacetOnlyIncrementalSyncJob(input: {
   await markJobSucceeded({
     job: input.job,
     result: {
-      alignedDescriptionConflictResolvedCount:
-        input.alignedDescriptionConflictResolvedCount,
-      alignedPriceConflictResolvedCount:
-        input.alignedPriceConflictResolvedCount,
+      alignedDescriptionConflictResolvedCount: input.alignedDescriptionConflictResolvedCount,
+      alignedPriceConflictResolvedCount: input.alignedPriceConflictResolvedCount,
       conflictSkippedCount: input.openConflictSkippedCount,
       facetConflictCount,
       facetDeletedCount,
       facetOnly: true,
       facetSkippedCount,
       facetWrittenCount,
-      reactivationConflictResolvedCount:
-        input.reactivationConflictResolvedCount,
+      reactivationConflictResolvedCount: input.reactivationConflictResolvedCount,
       requestedCount: input.requestedItemIds.length,
       skipped,
       skippedCount: skipped.length,
@@ -2416,9 +2261,7 @@ type SyncBayPricingBaselineSnapshot = {
   source: ProductSnapshotSource;
 };
 
-type SyncBayFacetSyncResult = Awaited<
-  ReturnType<typeof syncShopifyProductFacets>
->;
+type SyncBayFacetSyncResult = Awaited<ReturnType<typeof syncShopifyProductFacets>>;
 
 async function getLatestFacetBaselinesByItemId(input: {
   ebayItemIds: string[];
@@ -2447,9 +2290,7 @@ async function getLatestFacetBaselinesByItemId(input: {
       continue;
     }
 
-    const baseline = getProductFacetBaselineFromSnapshotPayload(
-      snapshot.payload,
-    );
+    const baseline = getProductFacetBaselineFromSnapshotPayload(snapshot.payload);
     if (baseline === null) continue;
 
     baselines[snapshot.ebayItemId] = baseline;
@@ -2487,9 +2328,7 @@ function buildFacetOnlyWarnings(input: {
   );
 
   if (input.skipped.length > 0) {
-    warnings.push(
-      `Backfill faccette completato con ${input.skipped.length} prodotti saltati.`,
-    );
+    warnings.push(`Backfill faccette completato con ${input.skipped.length} prodotti saltati.`);
   }
 
   if (conflictCount > 0) {
@@ -2501,9 +2340,7 @@ function buildFacetOnlyWarnings(input: {
   return warnings;
 }
 
-function buildLatestSyncBayPricingBaselinesByItemId(
-  snapshots: SyncBayPricingBaselineSnapshot[],
-) {
+function buildLatestSyncBayPricingBaselinesByItemId(snapshots: SyncBayPricingBaselineSnapshot[]) {
   const baselines = new Map<string, SyncBayPricingWriteBaseline>();
   const sortedSnapshots = [...snapshots].sort(
     (left, right) => right.capturedAt.getTime() - left.capturedAt.getTime(),
@@ -2525,10 +2362,7 @@ function buildLatestSyncBayPricingBaselinesByItemId(
     if (priceAmount === null) continue;
 
     baselines.set(snapshot.ebayItemId, {
-      compareAtPriceAmount: getPricingPayloadMoneyAmount(
-        snapshot.payload,
-        "compareAtPriceAmount",
-      ),
+      compareAtPriceAmount: getPricingPayloadMoneyAmount(snapshot.payload, "compareAtPriceAmount"),
       priceAmount,
     });
   }
@@ -2536,9 +2370,7 @@ function buildLatestSyncBayPricingBaselinesByItemId(
   return baselines;
 }
 
-function getSnapshotPriceAmountForPricingWriteBaseline(
-  snapshot: SyncBayPricingBaselineSnapshot,
-) {
+function getSnapshotPriceAmountForPricingWriteBaseline(snapshot: SyncBayPricingBaselineSnapshot) {
   if (snapshot.priceAmount === null) return null;
 
   const priceAmount = Number(snapshot.priceAmount);
@@ -2623,8 +2455,7 @@ async function updateShopifyVariantPricingOnly(
     };
   }
 
-  const updatedVariant =
-    json.data?.productVariantsBulkUpdate?.productVariants?.[0] ?? null;
+  const updatedVariant = json.data?.productVariantsBulkUpdate?.productVariants?.[0] ?? null;
 
   if (!updatedVariant) {
     return {
@@ -2642,18 +2473,14 @@ async function updateShopifyVariantPricingOnly(
 
 async function runUpdateEbayStockJob(job: DueSyncJob) {
   const lineItems = getOrderLineItems(job.payload);
-  const stockAction = getShopifyOrderStockAction(
-    getJsonObject(job.payload)?.stockAction,
-  );
+  const stockAction = getShopifyOrderStockAction(getJsonObject(job.payload)?.stockAction);
 
   if (lineItems.length === 0) {
     throw new Error("Job stock eBay senza righe ordine Shopify.");
   }
 
   const connection = await getConnectedEbayConnection(job);
-  const stockDryRun = isEbayStockDryRunEnabled(
-    process.env.SYNCBAY_EBAY_STOCK_DRY_RUN,
-  );
+  const stockDryRun = isEbayStockDryRunEnabled(process.env.SYNCBAY_EBAY_STOCK_DRY_RUN);
   const shopDomain = job.shop.shopDomain;
   let accessToken: string | null = null;
   const planned: Prisma.JsonObject[] = [];
@@ -2744,8 +2571,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         quantity: { not: null },
       },
     });
-    const latestSnapshot =
-      selectLatestStockBaselineSnapshot(latestStockSnapshots);
+    const latestSnapshot = selectLatestStockBaselineSnapshot(latestStockSnapshots);
     // Tutte le righe dell'ordine sullo stesso mapping, non solo questa: il tetto
     // di ripristino è la quantità eBay precedente all'ordine, altrimenti la
     // seconda riga si fermerebbe al pre-decremento della prima.
@@ -2760,8 +2586,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     const reservationSnapshot =
       reservationSnapshots.find(
         (snapshot) =>
-          getStringFromPayload(snapshot.payload, "orderLineItemKey") ===
-          lineItem.lineItemKey,
+          getStringFromPayload(snapshot.payload, "orderLineItemKey") === lineItem.lineItemKey,
       ) ?? null;
     const latestSkuPolicySnapshot = await prisma.productSnapshot.findFirst({
       orderBy: { capturedAt: "desc" },
@@ -2800,9 +2625,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
           : Math.max(
               ownPreviousQuantity,
               ...reservationSnapshots.flatMap((snapshot) => {
-                const quantity = getJsonNumber(
-                  getJsonObject(snapshot.payload)?.previousQuantity,
-                );
+                const quantity = getJsonNumber(getJsonObject(snapshot.payload)?.previousQuantity);
 
                 return quantity === null ? [] : [quantity];
               }),
@@ -2894,8 +2717,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       continue;
     }
 
-    const interruptedJobBeforeTokenLookup =
-      await getInterruptedRunningSyncJobResult(job);
+    const interruptedJobBeforeTokenLookup = await getInterruptedRunningSyncJobResult(job);
     if (interruptedJobBeforeTokenLookup) return interruptedJobBeforeTokenLookup;
 
     accessToken ??= (await getUsableEbayAccessToken(connection)).accessToken;
@@ -2904,8 +2726,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       throw new Error("Token eBay non disponibile per aggiornare lo stock.");
     }
 
-    const interruptedJobBeforeEbayWrite =
-      await getInterruptedRunningSyncJobResult(job);
+    const interruptedJobBeforeEbayWrite = await getInterruptedRunningSyncJobResult(job);
     if (interruptedJobBeforeEbayWrite) return interruptedJobBeforeEbayWrite;
 
     await reviseEbayTradingInventoryQuantity({
@@ -2921,12 +2742,9 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       mappingId: mapping.id,
       payload: {
         ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
-        previousQuantity:
-          stockAction === "restore" ? ebayAvailableQuantity : previousQuantity,
+        previousQuantity: stockAction === "restore" ? ebayAvailableQuantity : previousQuantity,
         orderLineItemKey: lineItem.lineItemKey,
-        ...(stockAction === "restore"
-          ? { orderPreviousQuantity: previousQuantity }
-          : {}),
+        ...(stockAction === "restore" ? { orderPreviousQuantity: previousQuantity } : {}),
         reason: getShopifyOrderStockReason(job.payload, stockAction),
         stockAction,
         syncJobId: job.id,
@@ -2944,9 +2762,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       title: latestSnapshot?.title ?? null,
     } satisfies Prisma.ProductSnapshotCreateManyInput;
     // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
-    await prisma.$transaction((tx) =>
-      recordProductSnapshotsInTransaction(tx, [stockSnapshot]),
-    );
+    await prisma.$transaction((tx) => recordProductSnapshotsInTransaction(tx, [stockSnapshot]));
     let resolvedQuantityConflicts = 0;
     let resolvedQuantityConflictCleanupError: string | undefined;
     try {
@@ -2976,9 +2792,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       nextQuantity,
       orderedQuantity: lineItem.quantity,
       previousQuantity,
-      reason: stockDryRun
-        ? "stock_real_write_allowlisted"
-        : "stock_dry_run_disabled",
+      reason: stockDryRun ? "stock_real_write_allowlisted" : "stock_dry_run_disabled",
       resolvedQuantityConflictCleanupError,
       resolvedQuantityConflicts,
       stockAction,
@@ -2995,8 +2809,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         process.env.SYNCBAY_EBAY_STOCK_REAL_WRITE_ALLOWLIST?.trim(),
       ),
       quantityConflictCleanupFailures,
-      quantityConflictCleanupFailureCount:
-        quantityConflictCleanupFailures.length,
+      quantityConflictCleanupFailureCount: quantityConflictCleanupFailures.length,
       resolvedQuantityConflictCount,
       skipped,
       skippedCount: skipped.length,
@@ -3004,13 +2817,9 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       updatedCount: updated.length,
     },
     warnings: [
-      ...(skipped.length > 0
-        ? ["Alcune righe ordine non sono state applicate a eBay."]
-        : []),
+      ...(skipped.length > 0 ? ["Alcune righe ordine non sono state applicate a eBay."] : []),
       ...(quantityConflictCleanupFailures.length > 0
-        ? [
-            "Alcune pulizie dei conflitti quantità non sono state completate dopo la write eBay.",
-          ]
+        ? ["Alcune pulizie dei conflitti quantità non sono state completate dopo la write eBay."]
         : []),
     ],
   });
@@ -3052,9 +2861,7 @@ async function filterChangedSyncBayProductSnapshots(
 
   if (mappingIds.length === 0) return snapshots;
 
-  const previousSnapshots = await prisma.$queryRaw<
-    LatestSyncBayProductSnapshotForDedupe[]
-  >`
+  const previousSnapshots = await prisma.$queryRaw<LatestSyncBayProductSnapshotForDedupe[]>`
       SELECT DISTINCT ON ("mappingId")
         "currency",
         "descriptionHash",
@@ -3085,9 +2892,7 @@ async function filterChangedSyncBayProductSnapshots(
   return snapshots.filter((snapshot) =>
     shouldCreateProductSnapshot({
       next: snapshot,
-      previous: snapshot.mappingId
-        ? previousSnapshotByMappingId.get(snapshot.mappingId)
-        : null,
+      previous: snapshot.mappingId ? previousSnapshotByMappingId.get(snapshot.mappingId) : null,
     }),
   );
 }
@@ -3166,9 +2971,7 @@ async function runMarkInactiveListingSoldOutJob(job: DueSyncJob) {
     sku: mapping.sku,
     source: ProductSnapshotSource.SYNCBAY,
   } satisfies Prisma.ProductSnapshotCreateManyInput;
-  const changedSoldOutSnapshots = await filterChangedSyncBayProductSnapshots([
-    soldOutSnapshot,
-  ]);
+  const changedSoldOutSnapshots = await filterChangedSyncBayProductSnapshots([soldOutSnapshot]);
   const resolvedConflicts = await prisma.$transaction(async (tx) => {
     await tx.productMapping.update({
       data: {
@@ -3236,10 +3039,7 @@ async function maybeMarkSellerEventsRunWatermarkSucceeded(job: DueSyncJob) {
       ],
       shopId: job.shopId,
       type: {
-        in: [
-          SyncJobType.SYNC_INCREMENTAL,
-          SyncJobType.ARCHIVE_INACTIVE_LISTING,
-        ],
+        in: [SyncJobType.SYNC_INCREMENTAL, SyncJobType.ARCHIVE_INACTIVE_LISTING],
       },
     },
   });
@@ -3302,10 +3102,7 @@ async function maybeMarkCatalogReconcileRunWatermarkSucceeded(job: DueSyncJob) {
       ],
       shopId: job.shopId,
       type: {
-        in: [
-          SyncJobType.SYNC_INCREMENTAL,
-          SyncJobType.ARCHIVE_INACTIVE_LISTING,
-        ],
+        in: [SyncJobType.SYNC_INCREMENTAL, SyncJobType.ARCHIVE_INACTIVE_LISTING],
       },
     },
   });
@@ -3321,19 +3118,11 @@ async function maybeMarkCatalogReconcileRunWatermarkSucceeded(job: DueSyncJob) {
   const payloadObject = getJsonObject(job.payload);
   const finishedAt = new Date();
   const processedJobCount = runJobs.length;
-  const activeCatalogReadAt = getStringFromPayload(
-    job.payload,
-    "activeCatalogReadAt",
-  );
-  const activeCatalogReadCount = getJsonNumber(
-    payloadObject?.activeCatalogReadCount,
-  );
+  const activeCatalogReadAt = getStringFromPayload(job.payload, "activeCatalogReadAt");
+  const activeCatalogReadCount = getJsonNumber(payloadObject?.activeCatalogReadCount);
   const activeCatalogTotalAvailable =
     getJsonNumber(payloadObject?.activeCatalogTotalAvailable) ?? null;
-  const activeScanComplete = getBooleanFromPayload(
-    job.payload,
-    "activeScanComplete",
-  );
+  const activeScanComplete = getBooleanFromPayload(job.payload, "activeScanComplete");
   const markerPayload = {
     activeCatalogReadAt,
     activeCatalogReadCount,
@@ -3373,12 +3162,7 @@ async function maybeMarkFacetBackfillRunSucceeded(job: DueSyncJob) {
   const version = getJsonNumber(payloadObject?.facetBackfillVersion);
   const expectedBatchCount = getJsonNumber(payloadObject?.batchCount);
 
-  if (
-    source !== "facet_backfill" ||
-    !runId ||
-    version === null ||
-    expectedBatchCount === null
-  ) {
+  if (source !== "facet_backfill" || !runId || version === null || expectedBatchCount === null) {
     return;
   }
 
@@ -3456,10 +3240,7 @@ async function runDetectShopifyChangesJob(job: DueSyncJob) {
     toShopifyChangeBatchJob(job),
     queued.map(toShopifyChangeBatchJob),
   );
-  const selectedIds = new Set([
-    ...batch.jobs.map(({ id }) => id),
-    ...batch.duplicateJobIds,
-  ]);
+  const selectedIds = new Set([...batch.jobs.map(({ id }) => id), ...batch.duplicateJobIds]);
   const siblingIds = [...selectedIds].filter((id) => id !== job.id);
   if (siblingIds.length > 0) {
     await prisma.syncJob.updateMany({
@@ -3620,9 +3401,7 @@ async function getLatestSyncBayConflictBaseline(mappingId: string) {
     productStatus: statusSnapshot?.productStatus ?? null,
     quantity: quantitySnapshot?.quantity ?? null,
     shopifyVariantGid:
-      priceSnapshot?.shopifyVariantGid ??
-      quantitySnapshot?.shopifyVariantGid ??
-      null,
+      priceSnapshot?.shopifyVariantGid ?? quantitySnapshot?.shopifyVariantGid ?? null,
     title: titleSnapshot?.title ?? null,
   };
 }
@@ -3708,9 +3487,7 @@ function getPricingPayloadMoneyAmount(
   return null;
 }
 
-function getSnapshotPricingPayloadObject(
-  payload: Prisma.JsonValue | null | undefined,
-) {
+function getSnapshotPricingPayloadObject(payload: Prisma.JsonValue | null | undefined) {
   const pricing = getJsonObject(getJsonObject(payload)?.pricing);
 
   return pricing ? ({ pricing } satisfies Prisma.JsonObject) : {};
@@ -3732,10 +3509,7 @@ async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
   return rows[0] ?? null;
 }
 
-async function getImportPreviewResultByItemIds(
-  connection: EbayConnection,
-  ebayItemIds: string[],
-) {
+async function getImportPreviewResultByItemIds(connection: EbayConnection, ebayItemIds: string[]) {
   const { accessToken } = await getUsableEbayAccessToken(connection);
   const candidates = await getEbayTradingCandidatesByItemIds({
     accessToken,
@@ -3746,10 +3520,7 @@ async function getImportPreviewResultByItemIds(
   return buildImportPreview(candidates, "live");
 }
 
-async function getIncrementalPreviewResult(
-  job: DueSyncJob,
-  ebayItemIds: string[],
-) {
+async function getIncrementalPreviewResult(job: DueSyncJob, ebayItemIds: string[]) {
   const payloadCandidates = getPreviewCandidates(job.payload);
 
   if (payloadCandidates.length > 0) {
@@ -3773,9 +3544,7 @@ function getPreviewCandidates(payload: Prisma.JsonValue | null) {
     : [];
 }
 
-function getPreviewCandidate(
-  value: unknown,
-): ImportPreviewListingCandidate | null {
+function getPreviewCandidate(value: unknown): ImportPreviewListingCandidate | null {
   return deserializeIncrementalPreviewCandidate(value);
 }
 
@@ -3790,8 +3559,7 @@ async function getInterruptedRunningSyncJobResult(
   if (shouldContinueRunningSyncJob(currentJob?.status ?? null)) return null;
 
   return {
-    errorMessage:
-      "Job SyncBay interrotto: lo stato non è più RUNNING prima del lavoro provider.",
+    errorMessage: "Job SyncBay interrotto: lo stato non è più RUNNING prima del lavoro provider.",
     jobId: job.id,
     status: "skipped",
     type: job.type,
@@ -3887,10 +3655,7 @@ function toPrismaJsonObject(value: Record<string, unknown>): Prisma.JsonObject {
   return structuredClone(value) as Prisma.JsonObject;
 }
 
-async function splitOversizedEbayItemJobIfNeeded(
-  job: DueSyncJob,
-  ebayItemIds: string[],
-) {
+async function splitOversizedEbayItemJobIfNeeded(job: DueSyncJob, ebayItemIds: string[]) {
   if (ebayItemIds.length <= RUNNER_EBAY_ITEM_BATCH_SIZE) return "not_needed";
 
   const payload = getJsonObject(job.payload);
@@ -3946,8 +3711,7 @@ async function splitOversizedEbayItemJobIfNeeded(
       select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
       data: {
         details: result,
-        message:
-          "Job SyncBay spezzato in batch più piccoli per il runner automatico.",
+        message: "Job SyncBay spezzato in batch più piccoli per il runner automatico.",
         shopId: job.shopId,
         type: AuditEventType.SYNC_JOB_SUCCEEDED,
       },
@@ -3963,9 +3727,7 @@ function filterPreviewResultByItemIds(
   previewResult: ImportPreviewResult,
   ebayItemIds: string[],
 ): ImportPreviewResult {
-  const itemsById = new Map(
-    previewResult.items.map((item) => [item.itemId, item]),
-  );
+  const itemsById = new Map(previewResult.items.map((item) => [item.itemId, item]));
   const items = ebayItemIds.flatMap((itemId) => {
     const item = itemsById.get(itemId);
 
@@ -3984,9 +3746,7 @@ function getEbayItemIds(payload: Prisma.JsonValue | null) {
   const ebayItemIds = object?.ebayItemIds;
 
   return Array.isArray(ebayItemIds)
-    ? ebayItemIds.filter(
-        (itemId): itemId is string => typeof itemId === "string",
-      )
+    ? ebayItemIds.filter((itemId): itemId is string => typeof itemId === "string")
     : [];
 }
 
@@ -4016,9 +3776,7 @@ function getImportProductStatus(payload: Prisma.JsonValue | null) {
   );
 }
 
-function getExistingCatalogFieldPoliciesByItemId(
-  payload: Prisma.JsonValue | null,
-) {
+function getExistingCatalogFieldPoliciesByItemId(payload: Prisma.JsonValue | null) {
   return parseExistingCatalogFieldPoliciesByItemId(
     getJsonObject(payload)?.existingCatalogFieldPoliciesByItemId,
   );
@@ -4027,9 +3785,7 @@ function getExistingCatalogFieldPoliciesByItemId(
 function isFacetOnlySyncJobPayload(payload: Prisma.JsonValue | null) {
   const source = getStringFromPayload(payload, "source");
 
-  return (
-    getBooleanFromPayload(payload, "facetOnly") || source === "facet_backfill"
-  );
+  return getBooleanFromPayload(payload, "facetOnly") || source === "facet_backfill";
 }
 
 async function getConnectedEbayConnection(job: DueSyncJob) {
@@ -4059,11 +3815,7 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
     const lineItemObject = getJsonObject(lineItem);
     const quantity = getJsonNumber(lineItemObject?.quantity);
 
-    if (
-      !lineItemObject ||
-      !quantity ||
-      !isPositiveShopifyOrderQuantity(quantity)
-    ) {
+    if (!lineItemObject || !quantity || !isPositiveShopifyOrderQuantity(quantity)) {
       return [];
     }
 
@@ -4209,8 +3961,8 @@ async function findOrderStockReservationSnapshots(input: {
   mappingId: string;
   shopId: string;
 }) {
-  const lineItemKeys = input.lineItemKeys.filter(
-    (lineItemKey): lineItemKey is string => Boolean(lineItemKey),
+  const lineItemKeys = input.lineItemKeys.filter((lineItemKey): lineItemKey is string =>
+    Boolean(lineItemKey),
   );
 
   if (lineItemKeys.length === 0) return [];
@@ -4275,10 +4027,7 @@ async function getLiveShopifyQuantityForMapping(input: {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function findMappingByInventoryItemGid(
-  shopId: string,
-  inventoryItemGid: string,
-) {
+async function findMappingByInventoryItemGid(shopId: string, inventoryItemGid: string) {
   return prisma.productMapping.findUnique({
     where: {
       shopId_shopifyInventoryItemGid: {
@@ -4374,9 +4123,7 @@ async function getShopifyProductForConflict(
   if (!product) return null;
 
   const preferredVariant =
-    json.data?.variantNode?.product?.id === product.id
-      ? json.data.variantNode
-      : null;
+    json.data?.variantNode?.product?.id === product.id ? json.data.variantNode : null;
 
   return {
     ...product,
@@ -4417,8 +4164,7 @@ function getDetectedShopifyConflicts(
   );
   const readyImageCount =
     product.media?.nodes?.filter(
-      (media) =>
-        media.mediaContentType === "IMAGE" && media.preview?.status === "READY",
+      (media) => media.mediaContentType === "IMAGE" && media.preview?.status === "READY",
     ).length ?? 0;
   const quantityConflict = shouldSkipQuantityConflictForArchivedProduct({
     shopifyProductStatus: product.status ?? null,
@@ -4433,20 +4179,13 @@ function getDetectedShopifyConflicts(
   })
     ? null
     : buildConflict("images", snapshot.imageCount, readyImageCount);
-  const shopifyDescriptionHash = hashNullableText(
-    product.descriptionHtml ?? null,
-  );
-  const descriptionConflict =
-    shouldSkipDescriptionConflictWhenEbayHasNoDescription({
-      shopifyDescriptionHash,
-      syncBayDescriptionHash: snapshot.descriptionHash,
-    })
-      ? null
-      : buildConflict(
-          "description",
-          snapshot.descriptionHash,
-          shopifyDescriptionHash,
-        );
+  const shopifyDescriptionHash = hashNullableText(product.descriptionHtml ?? null);
+  const descriptionConflict = shouldSkipDescriptionConflictWhenEbayHasNoDescription({
+    shopifyDescriptionHash,
+    syncBayDescriptionHash: snapshot.descriptionHash,
+  })
+    ? null
+    : buildConflict("description", snapshot.descriptionHash, shopifyDescriptionHash);
   const fields = [
     buildConflict("title", snapshot.title, product.title),
     descriptionConflict,
@@ -4490,16 +4229,11 @@ function getLiveShopifyQuantityForConflict(
 }
 
 function getVariantLocationQuantity(
-  variant:
-    | NonNullable<
-        NonNullable<ShopifyProductForConflict["variants"]>["nodes"]
-      >[number]
-    | null,
+  variant: NonNullable<NonNullable<ShopifyProductForConflict["variants"]>["nodes"]>[number] | null,
 ) {
-  const availableQuantity =
-    variant?.inventoryItem?.inventoryLevel?.quantities?.find(
-      (quantity) => quantity.name === "available",
-    )?.quantity;
+  const availableQuantity = variant?.inventoryItem?.inventoryLevel?.quantities?.find(
+    (quantity) => quantity.name === "available",
+  )?.quantity;
 
   return typeof availableQuantity === "number" ? availableQuantity : null;
 }
@@ -4721,13 +4455,9 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
       conflict.field === "description" &&
       conflict.mappingId &&
       conflict.mapping?.shopifyProductGid &&
-      shouldResolveLiveAlignedDescriptionConflictForMappingStatus(
-        conflict.mapping?.status ?? null,
-      ),
+      shouldResolveLiveAlignedDescriptionConflictForMappingStatus(conflict.mapping?.status ?? null),
   );
-  const mappingIds = [
-    ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
-  ];
+  const mappingIds = [...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? []))];
 
   if (mappingIds.length === 0) {
     return { conflictIds: [], count: 0 };
@@ -4754,10 +4484,7 @@ async function resolveLiveAlignedDescriptionConflicts(input: {
       snapshot.descriptionHash &&
       !latestDescriptionHashByMappingId.has(snapshot.mappingId)
     ) {
-      latestDescriptionHashByMappingId.set(
-        snapshot.mappingId,
-        snapshot.descriptionHash,
-      );
+      latestDescriptionHashByMappingId.set(snapshot.mappingId, snapshot.descriptionHash);
     }
   }
 
@@ -4840,69 +4567,53 @@ async function resolveLiveAlignedPriceConflicts(input: {
       conflict.mappingId &&
       conflict.mapping?.ebayItemId &&
       conflict.mapping?.shopifyProductGid &&
-      shouldResolveLiveAlignedPriceConflictForMappingStatus(
-        conflict.mapping?.status ?? null,
-      ),
+      shouldResolveLiveAlignedPriceConflictForMappingStatus(conflict.mapping?.status ?? null),
   );
   const itemIds = [
-    ...new Set(
-      candidates.flatMap((conflict) => conflict.mapping?.ebayItemId ?? []),
-    ),
+    ...new Set(candidates.flatMap((conflict) => conflict.mapping?.ebayItemId ?? [])),
   ];
-  const mappingIds = [
-    ...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? [])),
-  ];
+  const mappingIds = [...new Set(candidates.flatMap((conflict) => conflict.mappingId ?? []))];
 
   if (itemIds.length === 0 || mappingIds.length === 0) {
     return { conflictIds: [], count: 0 };
   }
 
-  const [admin, previewResult, pricingRule, latestSyncBaySnapshots] =
-    await Promise.all([
-      getShopifyAdminGraphqlClient(input.shopDomain),
-      getIncrementalPreviewResult(input.job, itemIds),
-      getPricingRuleForShopId(input.job.shopId),
-      prisma.productSnapshot.findMany({
-        orderBy: { capturedAt: "desc" },
-        select: {
-          currency: true,
-          descriptionHash: true,
-          ebayItemId: true,
-          imageCount: true,
-          mappingId: true,
-          payload: true,
-          priceAmount: true,
-          productStatus: true,
-          quantity: true,
-          shopId: true,
-          shopifyProductGid: true,
-          shopifyVariantGid: true,
-          sku: true,
-          title: true,
-        },
-        where: {
-          mappingId: { in: mappingIds },
-          shopId: input.job.shopId,
-          source: ProductSnapshotSource.SYNCBAY,
-        },
-      }),
-    ]);
+  const [admin, previewResult, pricingRule, latestSyncBaySnapshots] = await Promise.all([
+    getShopifyAdminGraphqlClient(input.shopDomain),
+    getIncrementalPreviewResult(input.job, itemIds),
+    getPricingRuleForShopId(input.job.shopId),
+    prisma.productSnapshot.findMany({
+      orderBy: { capturedAt: "desc" },
+      select: {
+        currency: true,
+        descriptionHash: true,
+        ebayItemId: true,
+        imageCount: true,
+        mappingId: true,
+        payload: true,
+        priceAmount: true,
+        productStatus: true,
+        quantity: true,
+        shopId: true,
+        shopifyProductGid: true,
+        shopifyVariantGid: true,
+        sku: true,
+        title: true,
+      },
+      where: {
+        mappingId: { in: mappingIds },
+        shopId: input.job.shopId,
+        source: ProductSnapshotSource.SYNCBAY,
+      },
+    }),
+  ]);
   const previewItemsById = new Map(
-    filterPreviewResultByItemIds(previewResult, itemIds).items.map((item) => [
-      item.itemId,
-      item,
-    ]),
+    filterPreviewResultByItemIds(previewResult, itemIds).items.map((item) => [item.itemId, item]),
   );
-  const latestSnapshotByMappingId = new Map<
-    string,
-    (typeof latestSyncBaySnapshots)[number]
-  >();
+  const latestSnapshotByMappingId = new Map<string, (typeof latestSyncBaySnapshots)[number]>();
 
   for (const snapshot of latestSyncBaySnapshots) {
-    if (
-      snapshot.mappingId &&
-      !latestSnapshotByMappingId.has(snapshot.mappingId)
-    ) {
+    if (snapshot.mappingId && !latestSnapshotByMappingId.has(snapshot.mappingId)) {
       latestSnapshotByMappingId.set(snapshot.mappingId, snapshot);
     }
   }
@@ -4914,20 +4625,10 @@ async function resolveLiveAlignedPriceConflicts(input: {
   for (const conflict of candidates) {
     const mapping = conflict.mapping;
     const mappingId = conflict.mappingId;
-    const item = mapping?.ebayItemId
-      ? previewItemsById.get(mapping.ebayItemId)
-      : null;
-    const latestSnapshot = mappingId
-      ? latestSnapshotByMappingId.get(mappingId)
-      : null;
+    const item = mapping?.ebayItemId ? previewItemsById.get(mapping.ebayItemId) : null;
+    const latestSnapshot = mappingId ? latestSnapshotByMappingId.get(mappingId) : null;
 
-    if (
-      !mapping ||
-      !mappingId ||
-      !item ||
-      !latestSnapshot ||
-      !mapping.shopifyProductGid
-    ) {
+    if (!mapping || !mappingId || !item || !latestSnapshot || !mapping.shopifyProductGid) {
       continue;
     }
 
@@ -4941,13 +4642,11 @@ async function resolveLiveAlignedPriceConflicts(input: {
       mapping.shopifyProductGid,
       input.defaultLocationGid,
       {
-        preferredVariantGid:
-          mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
+        preferredVariantGid: mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
       },
     );
     const variant = selectShopifyVariantForSync({
-      preferredVariantGid:
-        mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
+      preferredVariantGid: mapping.shopifyVariantGid ?? latestSnapshot.shopifyVariantGid,
       variants: product?.variants?.nodes,
     });
     const repair = getAlignedPriceConflictRepair({
@@ -5003,8 +4702,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
       productStatus: latestSnapshot.productStatus,
       quantity: latestSnapshot.quantity,
       shopId: input.job.shopId,
-      shopifyProductGid:
-        latestSnapshot.shopifyProductGid ?? mapping.shopifyProductGid,
+      shopifyProductGid: latestSnapshot.shopifyProductGid ?? mapping.shopifyProductGid,
       shopifyVariantGid: getPriceConflictRepairSnapshotVariantGid({
         latestSnapshotVariantGid: latestSnapshot.shopifyVariantGid,
         mappingVariantGid: mapping.shopifyVariantGid,
@@ -5020,8 +4718,7 @@ async function resolveLiveAlignedPriceConflicts(input: {
     return { conflictIds: [], count: 0 };
   }
 
-  const changedSyncBaySnapshots =
-    await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
+  const changedSyncBaySnapshots = await filterChangedSyncBayProductSnapshots(syncBaySnapshots);
   const resolvedMappingIds = [
     ...new Set(
       syncBaySnapshots
@@ -5143,10 +4840,7 @@ function getJsonString(value: Prisma.JsonValue | undefined) {
   return typeof value === "string" ? value : null;
 }
 
-function getNullableStringFromRecord(
-  value: Record<string, Prisma.JsonValue> | null,
-  key: string,
-) {
+function getNullableStringFromRecord(value: Record<string, Prisma.JsonValue> | null, key: string) {
   const entry = value?.[key];
 
   return typeof entry === "string" && entry.trim() ? entry.trim() : null;
@@ -5167,9 +4861,7 @@ function formatShopifyGraphqlErrors(errors: Array<{ message: string }>) {
 function formatShopifyUserErrors(errors: ShopifyUserError[]) {
   return errors
     .map((error) =>
-      error.field?.length
-        ? `${error.field.join(".")}: ${error.message}`
-        : error.message,
+      error.field?.length ? `${error.field.join(".")}: ${error.message}` : error.message,
     )
     .join("; ");
 }

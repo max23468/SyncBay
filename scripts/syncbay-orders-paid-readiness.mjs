@@ -2,11 +2,7 @@
 
 import { parseArgs } from "node:util";
 import { buildReadinessReport } from "./syncbay-orders-paid-readiness-report.mjs";
-import {
-  formatCliError,
-  querySupabaseJson,
-  sqlString,
-} from "./supabase-cli-env.mjs";
+import { formatCliError, querySupabaseJson, sqlString } from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_CANDIDATE_LIMIT = 5;
@@ -252,9 +248,7 @@ select jsonb_build_object(
 
 function printReport(report) {
   console.log(`Shop: ${report.shopDomain}`);
-  console.log(
-    `Runtime webhook orders/paid: ${report.webhookRuntimeReady ? "pronto" : "bloccato"}`,
-  );
+  console.log(`Runtime webhook orders/paid: ${report.webhookRuntimeReady ? "pronto" : "bloccato"}`);
   console.log(
     `Test Admin orderCreate: ${report.adminOrderCreateTestReady ? "pronto" : "bloccato"}`,
   );
@@ -263,12 +257,8 @@ function printReport(report) {
   console.log("Sessione Shopify offline:");
   console.log(`- id: ${report.session.id ?? "non trovata"}`);
   console.log(`- expires: ${report.session.expires ?? "assente"}`);
-  console.log(
-    `- refreshToken: ${report.session.hasRefreshToken ? "presente" : "assente"}`,
-  );
-  console.log(
-    `- refreshTokenExpires: ${report.session.refreshTokenExpires ?? "assente"}`,
-  );
+  console.log(`- refreshToken: ${report.session.hasRefreshToken ? "presente" : "assente"}`);
+  console.log(`- refreshTokenExpires: ${report.session.refreshTokenExpires ?? "assente"}`);
   console.log(
     `- scope: ${report.session.scopes.length > 0 ? report.session.scopes.join(", ") : "assenti"}`,
   );
@@ -276,36 +266,22 @@ function printReport(report) {
   console.log("Connessione eBay:");
   console.log(`- marketplace: ${report.ebayConnection.marketplaceId}`);
   console.log(`- status: ${report.ebayConnection.status ?? "assente"}`);
-  console.log(
-    `- accessToken: ${report.ebayConnection.hasAccessToken ? "presente" : "assente"}`,
-  );
-  console.log(
-    `- tokenExpiresAt: ${report.ebayConnection.tokenExpiresAt ?? "assente"}`,
-  );
-  console.log(
-    `- refreshToken: ${report.ebayConnection.hasRefreshToken ? "presente" : "assente"}`,
-  );
+  console.log(`- accessToken: ${report.ebayConnection.hasAccessToken ? "presente" : "assente"}`);
+  console.log(`- tokenExpiresAt: ${report.ebayConnection.tokenExpiresAt ?? "assente"}`);
+  console.log(`- refreshToken: ${report.ebayConnection.hasRefreshToken ? "presente" : "assente"}`);
   console.log(
     `- refreshTokenExpiresAt: ${report.ebayConnection.refreshTokenExpiresAt ?? "assente"}`,
   );
   console.log("");
   console.log("Coda:");
   console.log(`- job attivi: ${report.queue?.activeJobs ?? 0}`);
-  console.log(
-    `- UPDATE_EBAY_STOCK attivi: ${report.queue?.activeStockJobs ?? 0}`,
-  );
-  console.log(
-    `- SYNC_INCREMENTAL attivi: ${report.queue?.activeSyncJobs ?? 0}`,
-  );
+  console.log(`- UPDATE_EBAY_STOCK attivi: ${report.queue?.activeStockJobs ?? 0}`);
+  console.log(`- SYNC_INCREMENTAL attivi: ${report.queue?.activeSyncJobs ?? 0}`);
   console.log("");
   console.log("Mapping idonei al test:");
   console.log(`- attivi: ${report.mappingCounts?.activeMappings ?? 0}`);
-  console.log(
-    `- attivi con variante Shopify: ${report.mappingCounts?.activeWithVariant ?? 0}`,
-  );
-  console.log(
-    `- attivi con snapshot EUR: ${report.mappingCounts?.activeWithEurSnapshot ?? 0}`,
-  );
+  console.log(`- attivi con variante Shopify: ${report.mappingCounts?.activeWithVariant ?? 0}`);
+  console.log(`- attivi con snapshot EUR: ${report.mappingCounts?.activeWithEurSnapshot ?? 0}`);
   console.log(
     `- idonei con quantità positiva: ${report.mappingCounts?.eligibleQuantityPositive ?? 0}`,
   );
@@ -347,9 +323,7 @@ function printReport(report) {
     ]
       .filter(Boolean)
       .join(", ");
-    const error = job.errorCode
-      ? `, ${job.errorCode}: ${job.errorMessage}`
-      : "";
+    const error = job.errorCode ? `, ${job.errorCode}: ${job.errorMessage}` : "";
     console.log(
       `- ${job.id}: ${job.status}, tentativi ${job.attempts}, aggiornato ${job.updatedAt}${result ? `, ${result}` : ""}${error}`,
     );

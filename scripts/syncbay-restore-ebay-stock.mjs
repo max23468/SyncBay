@@ -78,12 +78,8 @@ const item = await getTradingItem({
 });
 const sellingStatus = asRecord(item?.SellingStatus);
 const verifiedQuantity = toNumberOrNull(getString(item, "Quantity"));
-const verifiedQuantityAvailable = toNumberOrNull(
-  getString(item, "QuantityAvailable"),
-);
-const verifiedQuantitySold = toNumberOrNull(
-  getString(sellingStatus, "QuantitySold"),
-);
+const verifiedQuantityAvailable = toNumberOrNull(getString(item, "QuantityAvailable"));
+const verifiedQuantitySold = toNumberOrNull(getString(sellingStatus, "QuantitySold"));
 const verifiedAvailableQuantity =
   verifiedQuantityAvailable ??
   (verifiedQuantity !== null && verifiedQuantitySold !== null
@@ -229,9 +225,7 @@ function assertVerifiedAvailableQuantity(input) {
   if (input.verifiedAvailableQuantity === input.targetQuantity) return;
 
   const actual =
-    input.verifiedAvailableQuantity === null
-      ? "non verificabile"
-      : input.verifiedAvailableQuantity;
+    input.verifiedAvailableQuantity === null ? "non verificabile" : input.verifiedAvailableQuantity;
 
   throw new Error(
     `Ripristino eBay non confermato per item ${input.itemId}: disponibilità verificata ${actual}, attesa ${input.targetQuantity}. Snapshot SyncBay non scritto.`,

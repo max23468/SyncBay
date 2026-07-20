@@ -42,11 +42,7 @@ test("refreshes outside persistence and then uses compare-and-swap", async () =>
     },
   });
 
-  assert.deepEqual(events, [
-    "read-session",
-    "refresh-http",
-    "compare-and-swap",
-  ]);
+  assert.deepEqual(events, ["read-session", "refresh-http", "compare-and-swap"]);
   assert.equal(result.accessToken, "new");
 });
 
@@ -67,9 +63,7 @@ test("recovers the winning session when refresh throws after losing the race", a
 });
 
 test("rethrows when refresh fails and the session is unchanged", async () => {
-  const refreshError = new Error(
-    "Refresh token Shopify offline non riuscito (HTTP 400).",
-  );
+  const refreshError = new Error("Refresh token Shopify offline non riuscito (HTTP 400).");
   // Il DB restituisce la stessa riga cifrata su ogni lettura quando nessun
   // altro runner ha ruotato la sessione: nessun vincitore da recuperare.
   const stored = row("old", "refresh");
@@ -166,9 +160,7 @@ test("logs a successful refresh that wins compare-and-swap", async () => {
   });
 
   assert.equal(result.accessToken, "new");
-  assert.deepEqual(logged, [
-    { level: "info", outcome: "refresh-riuscito-e-persistito" },
-  ]);
+  assert.deepEqual(logged, [{ level: "info", outcome: "refresh-riuscito-e-persistito" }]);
 });
 
 test("dedupes concurrent in-flight session loads by key", async () => {
@@ -187,11 +179,7 @@ test("dedupes concurrent in-flight session loads by key", async () => {
   const other = dedupeInFlight(map, "offline_altro-shop", async () => "altro");
 
   release("session");
-  assert.deepEqual(await Promise.all([first, second, other]), [
-    "session",
-    "session",
-    "altro",
-  ]);
+  assert.deepEqual(await Promise.all([first, second, other]), ["session", "session", "altro"]);
   // Un solo refresh per i due chiamanti concorrenti sullo stesso shop.
   assert.equal(creations, 1);
   // A promise conclusa la mappa si svuota: la prossima chiamata rilegge.

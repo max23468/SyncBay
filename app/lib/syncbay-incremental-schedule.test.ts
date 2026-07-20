@@ -3,8 +3,7 @@ import { test } from "vitest";
 
 import * as incrementalSchedule from "./syncbay-incremental-schedule.ts";
 
-const { getNextIncrementalEnqueueAt, shouldEnqueueIncrementalSyncNow } =
-  incrementalSchedule;
+const { getNextIncrementalEnqueueAt, shouldEnqueueIncrementalSyncNow } = incrementalSchedule;
 
 const now = new Date("2026-06-03T12:00:00.000Z");
 

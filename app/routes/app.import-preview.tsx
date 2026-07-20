@@ -1,8 +1,4 @@
-import type {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "react-router";
+import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import {
   Form,
   redirect,
@@ -121,23 +117,13 @@ export const meta: MetaFunction = () => getSyncBayMeta("Importazione");
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const trace = createSyncBayLoaderPerformanceTrace();
   const url = new URL(request.url);
-  const previewLoadMode = normalizeImportPreviewLoadMode(
-    url.searchParams.get("preview"),
-  );
-  const catalogMode = normalizeImportCatalogMode(
-    url.searchParams.get("catalogMode"),
-  );
-  const activePreviewFilter = getImportPreviewFilter(
-    url.searchParams.get("previewFilter"),
-  );
+  const previewLoadMode = normalizeImportPreviewLoadMode(url.searchParams.get("preview"));
+  const catalogMode = normalizeImportCatalogMode(url.searchParams.get("catalogMode"));
+  const activePreviewFilter = getImportPreviewFilter(url.searchParams.get("previewFilter"));
   const activePreviewPage = normalizePage(url.searchParams.get("previewPage"));
-  const { admin, session } = await trace.measure("auth.admin", () =>
-    authenticate.admin(request),
-  );
+  const { admin, session } = await trace.measure("auth.admin", () => authenticate.admin(request));
   const [locationResult, wizard] = await Promise.all([
-    trace.measure("import.shopify.locations", () =>
-      fetchShopifyLocations(admin),
-    ),
+    trace.measure("import.shopify.locations", () => fetchShopifyLocations(admin)),
     trace.measure("import.wizard", () =>
       getImportWizardState(session, admin, trace, {
         catalogMode,
@@ -214,8 +200,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const result = await startCatalogImportJobs(session);
 
     return Response.json({
-      count:
-        result.status === "queued" ? result.plannedListingCount : undefined,
+      count: result.status === "queued" ? result.plannedListingCount : undefined,
       draftStatus: result.status,
       intent,
       jobCount: result.status === "queued" ? result.batchCount : undefined,
@@ -238,8 +223,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return Response.json(
       {
-        count:
-          result.status === "queued" ? result.plannedListingCount : undefined,
+        count: result.status === "queued" ? result.plannedListingCount : undefined,
         intent,
         jobCount: result.status === "queued" ? result.batchCount : undefined,
         message:
@@ -305,8 +289,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       await recordShopifyLocationRenamed(session, {
         locationGid: result.location.id,
         locationName: result.location.name,
-        previousLocationName:
-          selectedLocation?.name ?? "nome precedente non letto",
+        previousLocationName: selectedLocation?.name ?? "nome precedente non letto",
       });
       params.set("name", result.location.name);
       params.set("updated", "location-name");
@@ -333,23 +316,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  await updateDefaultShopifyLocation(
-    session,
-    locationGid,
-    locationResult.locations,
-  );
+  await updateDefaultShopifyLocation(session, locationGid, locationResult.locations);
 
   throw redirect("/app/import-preview?updated=location");
 };
 
 export default function ImportPreview() {
-  const {
-    canWriteLocations,
-    locationError,
-    locationRename,
-    locations,
-    wizard,
-  } = useLoaderData<typeof loader>();
+  const { canWriteLocations, locationError, locationRename, locations, wizard } =
+    useLoaderData<typeof loader>();
   const actionData = useActionData() as ImportPreviewActionData | undefined;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
@@ -361,17 +335,14 @@ export default function ImportPreview() {
   const isRenamingLocation = isSaving && activeIntent === "renameLocation";
   const isSavingLocation = isSaving && activeIntent === "saveLocation";
   const isCreatingDrafts = isSaving && activeIntent === "createDraftProducts";
-  const isApplyingTakeover =
-    isSaving && activeIntent === "applyExistingCatalogTakeover";
+  const isApplyingTakeover = isSaving && activeIntent === "applyExistingCatalogTakeover";
   const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
   const previewReadLabel = getPreviewReadLabel(wizard.previewSource.source);
-  const draftActionData =
-    actionData?.intent === "createDraftProducts" ? actionData : null;
+  const draftActionData = actionData?.intent === "createDraftProducts" ? actionData : null;
   const takeoverActionData =
     actionData?.intent === "applyExistingCatalogTakeover" ? actionData : null;
   const draftStatus =
-    draftActionData?.draftStatus ??
-    (searchParams.get("draft") as ShopifyDraftImportStatus | null);
+    draftActionData?.draftStatus ?? (searchParams.get("draft") as ShopifyDraftImportStatus | null);
   const takeoverQueued = takeoverActionData?.status === "queued";
 
   useActionToast(
@@ -390,14 +361,11 @@ export default function ImportPreview() {
   const locationRenameStatus = searchParams.get(
     "locationRename",
   ) as ShopifyLocationRenameStatus | null;
-  const activePreviewFilter = getImportPreviewFilter(
-    searchParams.get("previewFilter"),
-  );
+  const activePreviewFilter = getImportPreviewFilter(searchParams.get("previewFilter"));
   const activePreviewPage = normalizePage(searchParams.get("previewPage"));
   const visibleRuntimePhases = wizard.runtimePhases.filter(
     (phase) =>
-      !phase.label.toLowerCase().includes("ebay") &&
-      !phase.detail.toLowerCase().includes("ebay"),
+      !phase.label.toLowerCase().includes("ebay") && !phase.detail.toLowerCase().includes("ebay"),
   );
 
   const stepDone = [
@@ -478,14 +446,10 @@ export default function ImportPreview() {
         >
           <ExtractedDraftImportSection
             draftCount={
-              takeoverActionData?.count ??
-              draftActionData?.count ??
-              searchParams.get("count")
+              takeoverActionData?.count ?? draftActionData?.count ?? searchParams.get("count")
             }
             draftMessage={
-              takeoverActionData?.message ??
-              draftActionData?.message ??
-              searchParams.get("message")
+              takeoverActionData?.message ?? draftActionData?.message ?? searchParams.get("message")
             }
             draftStatus={takeoverQueued ? "queued" : draftStatus}
             isCreatingDrafts={isCreatingDrafts}
@@ -543,10 +507,7 @@ const IMPORT_PREVIEW_FILTERS: Array<{
   { label: "Da reimportare", value: "reimport" },
   { label: "Errore", value: "error" },
 ];
-const IMPORT_CATALOG_MODES: ImportCatalogMode[] = [
-  "new_products",
-  "existing_catalog",
-];
+const IMPORT_CATALOG_MODES: ImportCatalogMode[] = ["new_products", "existing_catalog"];
 const IMPORT_PREVIEW_PAGE_SIZE = 10;
 
 function PreparationSection({
@@ -573,9 +534,8 @@ function PreparationSection({
   return (
     <>
       <s-text color="subdued">
-        Negozio: {shopDomain}. Stato eBay:{" "}
-        {getEbayConnectionStatusLabel(wizard.ebay.status)}. SyncBay ti mostra
-        l&apos;anteprima prima di scrivere sul catalogo Shopify.
+        Negozio: {shopDomain}. Stato eBay: {getEbayConnectionStatusLabel(wizard.ebay.status)}.
+        SyncBay ti mostra l&apos;anteprima prima di scrivere sul catalogo Shopify.
       </s-text>
       {wizard.ebay.status === "CONNECTED" ? (
         <details className="syncbay-details">
@@ -599,9 +559,7 @@ function PreparationSection({
           ) : null}
         </s-stack>
       )}
-      {ebayAction.blockerText ? (
-        <s-text color="subdued">{ebayAction.blockerText}</s-text>
-      ) : null}
+      {ebayAction.blockerText ? <s-text color="subdued">{ebayAction.blockerText}</s-text> : null}
       <s-text color="subdued">{getPreviewIntro(previewSource.source)}</s-text>
       {searchParams.get("updated") === "location" ? (
         <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
@@ -612,13 +570,11 @@ function PreparationSection({
         </s-paragraph>
       ) : locationRenameStatus === "blocked" ? (
         <s-paragraph>
-          Rinomina bloccata:{" "}
-          {searchParams.get("message") ?? "permessi incompleti"}.
+          Rinomina bloccata: {searchParams.get("message") ?? "permessi incompleti"}.
         </s-paragraph>
       ) : locationRenameStatus === "failed" ? (
         <s-paragraph>
-          Rinomina non completata:{" "}
-          {searchParams.get("message") ?? "errore Shopify"}.
+          Rinomina non completata: {searchParams.get("message") ?? "errore Shopify"}.
         </s-paragraph>
       ) : null}
     </>
@@ -648,8 +604,8 @@ function LocationShopifySection({
   return (
     <>
       <s-text color="subdued">
-        Conferma la location e controlla i default di importazione. La
-        configurazione completa resta in Impostazioni.
+        Conferma la location e controlla i default di importazione. La configurazione completa resta
+        in Impostazioni.
       </s-text>
       {locationError ? (
         <s-paragraph>{locationError}</s-paragraph>
@@ -661,9 +617,7 @@ function LocationShopifySection({
           wizard={wizard}
         />
       ) : (
-        <s-paragraph>
-          Nessuna location Shopify leggibile con gli scope attuali.
-        </s-paragraph>
+        <s-paragraph>Nessuna location Shopify leggibile con gli scope attuali.</s-paragraph>
       )}
       {selectedLocation ? (
         <details className="syncbay-details">
@@ -732,9 +686,7 @@ function LocationSaveForm({
             <s-option key={location.id} value={location.id}>
               {location.name}
               {location.isActive ? "" : " - non attiva"}
-              {location.fulfillsOnlineOrders
-                ? ""
-                : " - non gestisce ordini online"}
+              {location.fulfillsOnlineOrders ? "" : " - non gestisce ordini online"}
             </s-option>
           ))}
         </s-select>
@@ -776,10 +728,7 @@ function LocationRenameForm({
           required
         />
         <s-stack direction="inline" gap="small-200">
-          <s-button
-            type="submit"
-            disabled={!locationRename.canRename || isSaving}
-          >
+          <s-button type="submit" disabled={!locationRename.canRename || isSaving}>
             {isRenamingLocation ? "Rinomina..." : "Rinomina location"}
           </s-button>
         </s-stack>
@@ -787,14 +736,11 @@ function LocationRenameForm({
         {!canWriteLocations ? (
           <>
             <s-paragraph>
-              Apri di nuovo SyncBay da Shopify Admin per autorizzare la modifica
-              del nome location.
+              Apri di nuovo SyncBay da Shopify Admin per autorizzare la modifica del nome location.
             </s-paragraph>
             <details className="syncbay-row-details">
               <summary>Dettagli tecnici</summary>
-              <s-text color="subdued">
-                Permesso richiesto: `write_locations`.
-              </s-text>
+              <s-text color="subdued">Permesso richiesto: `write_locations`.</s-text>
             </details>
           </>
         ) : null}
@@ -822,34 +768,21 @@ function PreviewStatusSection({
 
   return (
     <>
-      <s-text color="subdued">
-        {getPreviewStatusMessage(wizard.previewSource)}
-      </s-text>
+      <s-text color="subdued">{getPreviewStatusMessage(wizard.previewSource)}</s-text>
       <s-text color="subdued">
         Modalità: {previewModeLabel}. {wizard.previewSource.coverageNote}
       </s-text>
-      <ImportCatalogModeSelector
-        activeMode={wizard.catalogMode}
-        searchParams={searchParams}
-      />
+      <ImportCatalogModeSelector activeMode={wizard.catalogMode} searchParams={searchParams} />
       <s-stack direction="inline" gap="small-200">
-        <s-button
-          href={getImportPreviewLiveHref(wizard.catalogMode)}
-          variant="primary"
-        >
+        <s-button href={getImportPreviewLiveHref(wizard.catalogMode)} variant="primary">
           Aggiorna preview live
         </s-button>
       </s-stack>
       {wizard.importPreview.blockers.length > 0 ? (
-        <s-paragraph>
-          Blocchi: {wizard.importPreview.blockers.join(", ")}.
-        </s-paragraph>
+        <s-paragraph>Blocchi: {wizard.importPreview.blockers.join(", ")}.</s-paragraph>
       ) : null}
       <div className="syncbay-balanced-box-grid">
-        <s-grid
-          gap="base"
-          gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))"
-        >
+        <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(160px, 1fr))">
           <MetricTile
             detail={previewReadLabel}
             icon="import"
@@ -868,11 +801,7 @@ function PreviewStatusSection({
             detail="Pronti per il primo import."
             icon="check-circle"
             label="Importabili"
-            tone={
-              wizard.previewResult.summary.importableCount > 0
-                ? "success"
-                : "neutral"
-            }
+            tone={wizard.previewResult.summary.importableCount > 0 ? "success" : "neutral"}
             value={formatNumber(wizard.previewResult.summary.importableCount)}
           />
           <MetricTile
@@ -885,20 +814,14 @@ function PreviewStatusSection({
         </s-grid>
       </div>
       {wizard.previewResult.existingCatalogTakeover ? (
-        <ExistingCatalogTakeoverSection
-          report={wizard.previewResult.existingCatalogTakeover}
-        />
+        <ExistingCatalogTakeoverSection report={wizard.previewResult.existingCatalogTakeover} />
       ) : null}
       <ImportPreviewFilterNav
         activeFilter={activeFilter}
         catalogMode={wizard.catalogMode}
         previewMode={wizard.previewResult.mode}
       />
-      <PreviewExamplesSection
-        activeFilter={activeFilter}
-        activePage={activePage}
-        wizard={wizard}
-      />
+      <PreviewExamplesSection activeFilter={activeFilter} activePage={activePage} wizard={wizard} />
     </>
   );
 }
@@ -923,10 +846,7 @@ function PreviewExamplesSection({
   });
   const visibleItems = previewWindow
     ? filteredItems
-    : filteredItems.slice(
-        pagination.offset,
-        pagination.offset + pagination.pageSize,
-      );
+    : filteredItems.slice(pagination.offset, pagination.offset + pagination.pageSize);
 
   return (
     <s-stack gap="base">
@@ -940,18 +860,12 @@ function PreviewExamplesSection({
               key={item.itemId}
               padding="base"
             >
-              <s-stack
-                direction="inline"
-                gap="base"
-                justifyContent="space-between"
-              >
+              <s-stack direction="inline" gap="base" justifyContent="space-between">
                 <s-stack gap="small-200">
                   <s-text type="strong">{item.normalized.title}</s-text>
                   <s-text color="subdued">
-                    SKU {item.normalized.sku ?? "mancante"} · immagini{" "}
-                    {item.normalized.imageCount} ·{" "}
-                    {formatPreviewIssues(item.issues)} ·{" "}
-                    {item.normalized.qualitySummary}
+                    SKU {item.normalized.sku ?? "mancante"} · immagini {item.normalized.imageCount}{" "}
+                    · {formatPreviewIssues(item.issues)} · {item.normalized.qualitySummary}
                   </s-text>
                 </s-stack>
                 <s-badge tone={getPreviewStatusTone(item.status)}>
@@ -975,17 +889,10 @@ function PreviewExamplesSection({
           />
         </>
       ) : (
-        <s-box
-          border="base"
-          borderColor="base"
-          borderRadius="base"
-          padding="base"
-        >
+        <s-box border="base" borderColor="base" borderRadius="base" padding="base">
           <s-stack gap="base">
             <s-heading>Nessun elemento in questa vista</s-heading>
-            <s-text>
-              Prova con il filtro Tutti o completa i prerequisiti di lettura.
-            </s-text>
+            <s-text>Prova con il filtro Tutti o completa i prerequisiti di lettura.</s-text>
           </s-stack>
         </s-box>
       )}
@@ -1034,44 +941,32 @@ function MatchSuggestionDetails({
           <>
             <s-text>
               Confidenza {formatMatchConfidence(suggestion.confidence)}:{" "}
-              {suggestion.reasons.join(", ")}. Conferma manuale richiesta prima
-              di collegare il prodotto.
+              {suggestion.reasons.join(", ")}. Conferma manuale richiesta prima di collegare il
+              prodotto.
             </s-text>
-            <s-text color="subdued">
-              Prodotto Shopify: {suggestion.productGid}
-            </s-text>
+            <s-text color="subdued">Prodotto Shopify: {suggestion.productGid}</s-text>
           </>
         ) : null}
         {takeoverRow ? (
           <>
             <s-text>
-              Stato riallineamento:{" "}
-              {formatExistingCatalogTakeoverStatus(takeoverRow.status)}.
+              Stato riallineamento: {formatExistingCatalogTakeoverStatus(takeoverRow.status)}.
             </s-text>
             {takeoverRow.plannedOperations.length > 0 ? (
               <s-text color="subdued">
                 Operazioni:{" "}
-                {takeoverRow.plannedOperations
-                  .map(formatExistingCatalogOperation)
-                  .join(", ")}
-                .
+                {takeoverRow.plannedOperations.map(formatExistingCatalogOperation).join(", ")}.
               </s-text>
             ) : null}
             {takeoverRow.reasons.length > 0 ? (
               <s-text color="subdued">
-                Motivi:{" "}
-                {takeoverRow.reasons
-                  .map(formatExistingCatalogReason)
-                  .join(", ")}
-                .
+                Motivi: {takeoverRow.reasons.map(formatExistingCatalogReason).join(", ")}.
               </s-text>
             ) : null}
             <s-unordered-list>
-              {formatExistingCatalogFieldPolicy(takeoverRow.fieldPolicy).map(
-                (policyLine) => (
-                  <s-list-item key={policyLine}>{policyLine}</s-list-item>
-                ),
-              )}
+              {formatExistingCatalogFieldPolicy(takeoverRow.fieldPolicy).map((policyLine) => (
+                <s-list-item key={policyLine}>{policyLine}</s-list-item>
+              ))}
             </s-unordered-list>
           </>
         ) : null}
@@ -1087,10 +982,7 @@ function DescriptionPreviewDetails({
 }) {
   const description = item.normalized;
 
-  if (
-    description.descriptionOriginalLength === 0 &&
-    description.descriptionCleanedLength === 0
-  ) {
+  if (description.descriptionOriginalLength === 0 && description.descriptionCleanedLength === 0) {
     return null;
   }
 
@@ -1104,15 +996,12 @@ function DescriptionPreviewDetails({
       </summary>
       <s-stack gap="small-200">
         <s-text color="subdued">
-          Prima: {formatNumber(description.descriptionOriginalLength)}{" "}
-          caratteri. Dopo: {formatNumber(description.descriptionCleanedLength)}{" "}
-          caratteri. Segnali template:{" "}
+          Prima: {formatNumber(description.descriptionOriginalLength)} caratteri. Dopo:{" "}
+          {formatNumber(description.descriptionCleanedLength)} caratteri. Segnali template:{" "}
           {formatNumber(description.descriptionTemplateSignalCount)}.
         </s-text>
         {description.descriptionOriginalTextExcerpt ? (
-          <s-text color="subdued">
-            Originale: {description.descriptionOriginalTextExcerpt}
-          </s-text>
+          <s-text color="subdued">Originale: {description.descriptionOriginalTextExcerpt}</s-text>
         ) : null}
         {description.descriptionCleanedTextExcerpt ? (
           <s-text>Preview: {description.descriptionCleanedTextExcerpt}</s-text>
@@ -1137,9 +1026,7 @@ function ImportPreviewPagination({
 }) {
   return (
     <PaginationNav
-      getPageHref={(page) =>
-        getImportPreviewHref(activeFilter, page, catalogMode, previewMode)
-      }
+      getPageHref={(page) => getImportPreviewHref(activeFilter, page, catalogMode, previewMode)}
       pagination={pagination}
       summary={`Mostrati ${formatNumber(pagination.currentStart)}-${formatNumber(
         pagination.currentEnd,
@@ -1161,21 +1048,12 @@ function ImportPreviewFilterNav({
 }) {
   return (
     <div className="syncbay-filter-nav">
-      <s-stack
-        direction="inline"
-        gap="small-200"
-        accessibilityRole="navigation"
-      >
+      <s-stack direction="inline" gap="small-200" accessibilityRole="navigation">
         {IMPORT_PREVIEW_FILTERS.map((filter) => (
           <s-clickable-chip
             aria-current={activeFilter === filter.value ? "page" : undefined}
             color={activeFilter === filter.value ? "strong" : "base"}
-            href={getImportPreviewHref(
-              filter.value,
-              1,
-              catalogMode,
-              previewMode,
-            )}
+            href={getImportPreviewHref(filter.value, 1, catalogMode, previewMode)}
             key={filter.value}
           >
             {filter.label}
@@ -1211,17 +1089,10 @@ function ImportCatalogModeSelector({
   );
 }
 
-function getImportCatalogModeHref(
-  searchParams: URLSearchParams,
-  mode: ImportCatalogMode,
-) {
+function getImportCatalogModeHref(searchParams: URLSearchParams, mode: ImportCatalogMode) {
   const params = new URLSearchParams();
-  const previewMode = normalizeImportPreviewLoadMode(
-    searchParams.get("preview"),
-  );
-  const previewFilter = getImportPreviewFilter(
-    searchParams.get("previewFilter"),
-  );
+  const previewMode = normalizeImportPreviewLoadMode(searchParams.get("preview"));
+  const previewFilter = getImportPreviewFilter(searchParams.get("previewFilter"));
 
   if (previewMode === "live") params.set("preview", "live");
   if (previewFilter !== "all") params.set("previewFilter", previewFilter);
@@ -1257,9 +1128,7 @@ function getImportPreviewHref(
 
   const queryString = params.toString();
 
-  return queryString
-    ? `/app/import-preview?${queryString}`
-    : "/app/import-preview";
+  return queryString ? `/app/import-preview?${queryString}` : "/app/import-preview";
 }
 
 function formatCatalogImportQueuedMessage(result: {
@@ -1331,10 +1200,7 @@ async function fetchShopifyLocations(
   };
 }
 
-function hasSessionScope(
-  scopes: string | null | undefined,
-  requiredScope: string,
-) {
+function hasSessionScope(scopes: string | null | undefined, requiredScope: string) {
   return Boolean(
     scopes
       ?.split(",")

@@ -61,7 +61,5 @@ function getString(record: Record<string, unknown> | null, key: string) {
   const nested = asRecord(value);
   const text = nested?.["#text"];
 
-  return typeof text === "string" || typeof text === "number"
-    ? String(text)
-    : null;
+  return typeof text === "string" || typeof text === "number" ? String(text) : null;
 }

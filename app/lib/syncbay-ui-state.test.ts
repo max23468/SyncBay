@@ -133,8 +133,7 @@ test("builds eBay connection actions only when OAuth is startable", () => {
       status: "NOT_CONNECTED",
     }),
     {
-      blockerText:
-        "Collegamento eBay non disponibile: mancano 2 requisiti di configurazione.",
+      blockerText: "Collegamento eBay non disponibile: mancano 2 requisiti di configurazione.",
       href: null,
       label: "Collega eBay",
       variant: undefined,
@@ -548,22 +547,10 @@ test("maps conflict fields and impact text for merchant decisions", () => {
 });
 
 test("maps product publication policy summaries", () => {
-  assert.equal(
-    getProductPublicationModeSummaryLabel("ALL", 0),
-    "Tutti i canali disponibili",
-  );
-  assert.equal(
-    getProductPublicationModeSummaryLabel("NONE", 0),
-    "Non pubblicare automaticamente",
-  );
-  assert.equal(
-    getProductPublicationModeSummaryLabel("SELECTED", 2),
-    "2 canali selezionati",
-  );
-  assert.equal(
-    getProductPublicationModeSummaryLabel("SELECTED", 0),
-    "Nessun canale selezionato",
-  );
+  assert.equal(getProductPublicationModeSummaryLabel("ALL", 0), "Tutti i canali disponibili");
+  assert.equal(getProductPublicationModeSummaryLabel("NONE", 0), "Non pubblicare automaticamente");
+  assert.equal(getProductPublicationModeSummaryLabel("SELECTED", 2), "2 canali selezionati");
+  assert.equal(getProductPublicationModeSummaryLabel("SELECTED", 0), "Nessun canale selezionato");
 });
 
 test("maps eBay connection status labels", () => {
@@ -584,10 +571,7 @@ test("maps timeline category labels", () => {
 test("maps canonical sync job titles", () => {
   assert.equal(getSyncJobTitle("IMPORT_CATALOG"), "Importazione catalogo");
   assert.equal(getSyncJobTitle("SYNC_INCREMENTAL"), "Aggiornamento catalogo");
-  assert.equal(
-    getSyncJobTitle("ARCHIVE_INACTIVE_LISTING"),
-    "Prodotto segnato come esaurito",
-  );
+  assert.equal(getSyncJobTitle("ARCHIVE_INACTIVE_LISTING"), "Prodotto segnato come esaurito");
   assert.equal(getSyncJobTitle("UNKNOWN"), "Attività SyncBay");
 });
 

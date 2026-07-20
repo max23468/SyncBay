@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
 import { parseArgs } from "node:util";
-import {
-  formatCliError,
-  querySupabaseJson,
-  sqlString,
-} from "./supabase-cli-env.mjs";
+import { formatCliError, querySupabaseJson, sqlString } from "./supabase-cli-env.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_STALE_HOURS = 24;
@@ -272,12 +268,8 @@ function printReport(report) {
   console.log(
     `Description riparabili: ${report.repairableDescriptionConflictCount} (${report.alignedDescriptionConflictCount} già allineati, ${report.baselineRepairableDescriptionConflictCount} con baseline da creare)`,
   );
-  console.log(
-    `Immagini riparabili: ${report.imageRepairableConflictCount ?? 0}`,
-  );
-  console.log(
-    `Mapping inattivi da chiudere: ${report.inactiveMappingConflictCount}`,
-  );
+  console.log(`Immagini riparabili: ${report.imageRepairableConflictCount ?? 0}`);
+  console.log(`Mapping inattivi da chiudere: ${report.inactiveMappingConflictCount}`);
   console.log(`Cooldown eBay attivi: ${sumRows(report.cooldownRows)}`);
   console.log("");
 
@@ -294,28 +286,20 @@ function printReport(report) {
   if (report.cooldownRows.length > 0) {
     console.log("Cooldown provider:");
     for (const row of report.cooldownRows) {
-      console.log(
-        `- ${row.type} ${row.errorCode}: ${row.jobCount} job, retry da ${row.retryAt}`,
-      );
+      console.log(`- ${row.type} ${row.errorCode}: ${row.jobCount} job, retry da ${row.retryAt}`);
     }
     console.log("");
   }
 
   const repairableFalsePositives =
-    report.repairableDescriptionConflictCount +
-    (report.imageRepairableConflictCount ?? 0);
+    report.repairableDescriptionConflictCount + (report.imageRepairableConflictCount ?? 0);
   if (repairableFalsePositives > 0) {
     console.log(
       `Prossimo passo: ${repairableFalsePositives} falsi positivi da baseline superate; risolvili dalla pagina Conflitti (gli script di riparazione una tantum sono stati ritirati).`,
     );
   } else if (report.repairableConflictCount > 0) {
-    console.log(
-      "Prossimo passo: chiudi i conflitti dei mapping inattivi dalla pagina Conflitti.",
-    );
-  } else if (
-    report.staleOpenConflictCount > 0 ||
-    report.cooldownRows.length > 0
-  ) {
+    console.log("Prossimo passo: chiudi i conflitti dei mapping inattivi dalla pagina Conflitti.");
+  } else if (report.staleOpenConflictCount > 0 || report.cooldownRows.length > 0) {
     console.log(
       "Prossimo passo: attendi il cooldown provider oppure risolvi i conflitti aperti dalla pagina Conflitti.",
     );

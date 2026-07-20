@@ -18,10 +18,7 @@ export function getShopifyProductThumbnailUrl(value: unknown) {
     const image = getObject(mediaNode.image);
     const previewImage = getObject(preview?.image);
 
-    for (const candidate of [
-      getString(image?.url),
-      getString(previewImage?.url),
-    ]) {
+    for (const candidate of [getString(image?.url), getString(previewImage?.url)]) {
       if (candidate && isSafeHttpUrl(candidate)) return candidate;
     }
   }

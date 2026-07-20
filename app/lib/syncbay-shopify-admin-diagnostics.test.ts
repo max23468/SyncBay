@@ -3,10 +3,8 @@ import { test } from "vitest";
 
 import * as shopifyAdminDiagnostics from "./syncbay-shopify-admin-diagnostics.ts";
 
-const {
-  buildShopifyAdminDiagnosticsProductQuery,
-  normalizeShopifyAdminDiagnosticsProductInput,
-} = shopifyAdminDiagnostics;
+const { buildShopifyAdminDiagnosticsProductQuery, normalizeShopifyAdminDiagnosticsProductInput } =
+  shopifyAdminDiagnostics;
 
 test("normalizes a bounded product diagnostics payload", () => {
   assert.deepEqual(
@@ -95,10 +93,7 @@ test("builds the fixed Shopify product diagnostics query without arbitrary Graph
     ids: ["gid://shopify/Product/1"],
     locationId: "gid://shopify/Location/1",
   });
-  assert.match(
-    withLocation.query,
-    /inventoryLevel\(locationId: \$locationId\)/,
-  );
+  assert.match(withLocation.query, /inventoryLevel\(locationId: \$locationId\)/);
 });
 
 test("includes product category and product type for category backfill dry-runs", () => {

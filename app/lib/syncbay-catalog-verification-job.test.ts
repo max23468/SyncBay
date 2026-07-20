@@ -3,10 +3,8 @@ import { test } from "vitest";
 
 import * as catalogVerificationJob from "./syncbay-catalog-verification-job.ts";
 
-const {
-  getCompletedCatalogVerificationJobWhere,
-  getCompletedIncrementalWorkJobWhere,
-} = catalogVerificationJob;
+const { getCompletedCatalogVerificationJobWhere, getCompletedIncrementalWorkJobWhere } =
+  catalogVerificationJob;
 
 test("selects only completed catalog verification watermarks", () => {
   assert.deepEqual(getCompletedCatalogVerificationJobWhere("shop-1"), {

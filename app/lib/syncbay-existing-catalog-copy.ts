@@ -5,9 +5,7 @@ import type {
   ExistingCatalogTakeoverStatus,
 } from "./syncbay-existing-catalog-takeover";
 
-export function formatExistingCatalogTakeoverStatus(
-  value: ExistingCatalogTakeoverStatus,
-) {
+export function formatExistingCatalogTakeoverStatus(value: ExistingCatalogTakeoverStatus) {
   const labels: Record<ExistingCatalogTakeoverStatus, string> = {
     applicabile: "applicabile",
     bloccante: "bloccante",
@@ -17,9 +15,7 @@ export function formatExistingCatalogTakeoverStatus(
   return labels[value];
 }
 
-export function formatExistingCatalogOperation(
-  value: ExistingCatalogPlannedOperation,
-) {
+export function formatExistingCatalogOperation(value: ExistingCatalogPlannedOperation) {
   const labels: Record<ExistingCatalogPlannedOperation, string> = {
     add_syncbay_tag: "aggiungere tag SyncBay",
     claim_mapping: "creare mapping",
@@ -35,9 +31,7 @@ export function formatExistingCatalogOperation(
   return labels[value];
 }
 
-export function formatExistingCatalogFieldPolicy(
-  policy: ExistingCatalogFieldPolicy,
-) {
+export function formatExistingCatalogFieldPolicy(policy: ExistingCatalogFieldPolicy) {
   return [
     policy.handle.currentHandle
       ? `URL preservato: ${policy.handle.currentHandle}`
@@ -54,9 +48,7 @@ export function formatExistingCatalogFieldPolicy(
   ];
 }
 
-export function formatExistingCatalogReason(
-  value: ExistingCatalogTakeoverReason,
-) {
+export function formatExistingCatalogReason(value: ExistingCatalogTakeoverReason) {
   const labels: Record<ExistingCatalogTakeoverReason, string> = {
     categoria_incerta: "categoria incerta",
     disponibilita_ebay_non_valida: "disponibilità eBay non valida",

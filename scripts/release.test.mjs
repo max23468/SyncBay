@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  analyzeUnreleased,
-  findUnreleasedPreamble,
-  splitUnreleasedBody,
-} from "./release.mjs";
+import { analyzeUnreleased, findUnreleasedPreamble, splitUnreleasedBody } from "./release.mjs";
 
 const VERSIONED = `### Correzioni
 
@@ -52,9 +48,7 @@ test("ignora le sezioni dichiarate ma vuote", () => {
 });
 
 test("rileva un bullet scritto sopra la prima sezione", () => {
-  const preamble = findUnreleasedPreamble(
-    `- Nota fuori posto.\n\n${VERSIONED}`,
-  );
+  const preamble = findUnreleasedPreamble(`- Nota fuori posto.\n\n${VERSIONED}`);
 
   assert.equal(preamble, "- Nota fuori posto.");
 });
@@ -64,17 +58,12 @@ test("non segnala nulla quando il blocco parte da una sezione", () => {
 });
 
 test("tollera i commenti di servizio sopra la prima sezione", () => {
-  assert.equal(
-    findUnreleasedPreamble(`<!-- promemoria -->\n\n${VERSIONED}`),
-    "",
-  );
+  assert.equal(findUnreleasedPreamble(`<!-- promemoria -->\n\n${VERSIONED}`), "");
 });
 
 test("tiene insieme piu' sezioni versionate nell'ordine di scrittura", () => {
   const novita = `### Novità\n\n- Nuova vista.`;
-  const split = splitUnreleasedBody(
-    `${novita}\n\n${VERSIONED}\n\n${NON_VERSIONED}`,
-  );
+  const split = splitUnreleasedBody(`${novita}\n\n${VERSIONED}\n\n${NON_VERSIONED}`);
 
   assert.equal(split.versioned, `${novita}\n\n${VERSIONED}`);
   assert.equal(split.nonVersioned, NON_VERSIONED);

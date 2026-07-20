@@ -33,25 +33,19 @@ test("adds SyncBay metadata for browser tabs and previews", () => {
   assert(
     meta.some(
       (entry) =>
-        "name" in entry &&
-        entry.name === "application-name" &&
-        entry.content === "SyncBay",
+        "name" in entry && entry.name === "application-name" && entry.content === "SyncBay",
     ),
   );
   assert(
     meta.some(
       (entry) =>
-        "property" in entry &&
-        entry.property === "og:site_name" &&
-        entry.content === "SyncBay",
+        "property" in entry && entry.property === "og:site_name" && entry.content === "SyncBay",
     ),
   );
   assert(
     meta.some(
       (entry) =>
-        "name" in entry &&
-        entry.name === "description" &&
-        entry.content === SYNCBAY_TAGLINE,
+        "name" in entry && entry.name === "description" && entry.content === SYNCBAY_TAGLINE,
     ),
   );
 });

@@ -16,9 +16,7 @@ const RUNTIME_ENV_PATTERN =
 
 export function buildIsolatedUiEnv(source = process.env) {
   const isolated = Object.fromEntries(
-    SAFE_ENV_KEYS.flatMap((key) =>
-      source[key] === undefined ? [] : [[key, source[key]]],
-    ),
+    SAFE_ENV_KEYS.flatMap((key) => (source[key] === undefined ? [] : [[key, source[key]]])),
   );
 
   return {

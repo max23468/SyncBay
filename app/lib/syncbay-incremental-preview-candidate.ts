@@ -45,8 +45,7 @@ export function deserializeIncrementalPreviewCandidate(
     priceAmount: getNullableNumber(object.priceAmount),
     quantity: getNullableNumber(object.quantity),
     sku: getNullableString(object.sku),
-    skuGenerated:
-      typeof object.skuGenerated === "boolean" ? object.skuGenerated : false,
+    skuGenerated: typeof object.skuGenerated === "boolean" ? object.skuGenerated : false,
     storeCategoryId: getNullableString(object.storeCategoryId),
     storeCategoryName: getNullableString(object.storeCategoryName),
     title: getNullableString(object.title),
