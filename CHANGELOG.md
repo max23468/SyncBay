@@ -6,6 +6,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ## [Non rilasciato]
 
+### Correzioni
+
+- Gli ordini Shopify in valuta diversa da EUR (es. HUF, USD via Shopify Markets)
+  ora decrementano correttamente la disponibilità eBay. Il decremento di scorta
+  usa `ReviseInventoryStatus`, che invia solo la quantità e mai il prezzo, quindi
+  la valuta con cui paga il compratore è irrilevante: il guard che bloccava
+  l'intero job sulla valuta dell'ordine è stato rimosso. Prima questi ordini
+  lasciavano il listing vendibile su eBay (rischio oversell) e la rilevazione
+  modifiche Shopify li scambiava per edit manuali, generando falsi conflitti
+  `quantity`. La coerenza di valuta del listing eBay resta garantita per riga da
+  `validateEbayStockCurrency` (snapshot in EUR).
+
 ### Non versionato
 
 - Migrata la toolchain di qualità da ESLint/Prettier a oxlint/oxfmt. `npm run

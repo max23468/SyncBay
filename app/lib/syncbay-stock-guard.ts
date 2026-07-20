@@ -139,60 +139,6 @@ export function validateEbayStockCurrency(input: {
   };
 }
 
-export function validateEbayStockOrderCurrency(input: {
-  marketplaceId: string;
-  orderCurrency: string | null | undefined;
-}):
-  | {
-      expectedCurrency: string | null;
-      ok: true;
-      orderCurrency: string | null;
-      reason: null;
-    }
-  | {
-      expectedCurrency: string | null;
-      ok: false;
-      orderCurrency: string | null;
-      reason: "currency_mismatch" | "missing_order_currency";
-    } {
-  const expectedCurrency = getExpectedMarketplaceCurrency(input.marketplaceId);
-  const orderCurrency = normalizeCurrency(input.orderCurrency);
-
-  if (!expectedCurrency) {
-    return {
-      expectedCurrency,
-      ok: true,
-      orderCurrency,
-      reason: null,
-    };
-  }
-
-  if (!orderCurrency) {
-    return {
-      expectedCurrency,
-      ok: false,
-      orderCurrency,
-      reason: "missing_order_currency",
-    };
-  }
-
-  if (orderCurrency !== expectedCurrency) {
-    return {
-      expectedCurrency,
-      ok: false,
-      orderCurrency,
-      reason: "currency_mismatch",
-    };
-  }
-
-  return {
-    expectedCurrency,
-    ok: true,
-    orderCurrency,
-    reason: null,
-  };
-}
-
 export function selectShopifyOrderCurrency(input: {
   currency?: string | null;
   presentmentCurrency?: string | null;
