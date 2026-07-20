@@ -123,7 +123,6 @@ import {
   isPositiveShopifyOrderQuantity,
   shouldDryRunEbayStockLine,
   validateEbayStockCurrency,
-  validateEbayStockOrderCurrency,
 } from "../lib/syncbay-stock-guard";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import {
@@ -2488,38 +2487,13 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const skipped: Prisma.JsonObject[] = [];
   let resolvedQuantityConflictCount = 0;
   const quantityConflictCleanupFailures: Prisma.JsonObject[] = [];
-  const orderCurrencyValidation = validateEbayStockOrderCurrency({
-    marketplaceId: connection.marketplaceId,
-    orderCurrency: getOrderCurrency(job.payload),
-  });
-
-  if (!orderCurrencyValidation.ok) {
-    await markJobSucceeded({
-      job,
-      result: {
-        dryRun: stockDryRun,
-        planned,
-        plannedCount: planned.length,
-        skipped: lineItems.map((lineItem) => ({
-          expectedCurrency: orderCurrencyValidation.expectedCurrency,
-          lineItemKey: lineItem.lineItemKey,
-          orderCurrency: orderCurrencyValidation.orderCurrency,
-          quantity: lineItem.quantity,
-          reason: orderCurrencyValidation.reason,
-        })),
-        skippedCount: lineItems.length,
-        updated,
-        updatedCount: updated.length,
-      },
-      warnings: ["Ordine Shopify saltato: valuta non coerente con eBay.it."],
-    });
-
-    return {
-      jobId: job.id,
-      status: "succeeded" as const,
-      type: job.type,
-    };
-  }
+  // La disponibilità è un conteggio di unità: ReviseInventoryStatus invia solo
+  // <Quantity>, mai il prezzo. La valuta con cui il compratore paga su Shopify
+  // (presentment: HUF, USD, ...) è quindi irrilevante per il decremento eBay e
+  // non deve bloccarlo, altrimenti gli ordini in valuta estera lasciano il
+  // listing vendibile su eBay (rischio oversell) e generano falsi conflitti
+  // quantity. La coerenza di valuta del listing eBay resta garantita per riga
+  // da `validateEbayStockCurrency` (snapshot in EUR) più sotto.
 
   for (const lineItem of lineItems) {
     const mapping = await findProductMappingForOrderLine(job.shopId, lineItem);
@@ -3828,12 +3802,6 @@ function getOrderLineItems(payload: Prisma.JsonValue | null) {
       },
     ];
   });
-}
-
-function getOrderCurrency(payload: Prisma.JsonValue | null) {
-  const object = getJsonObject(payload);
-
-  return getJsonString(object?.orderCurrency);
 }
 
 async function findProductMappingForOrderLine(

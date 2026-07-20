@@ -10,7 +10,6 @@ import {
   selectShopifyOrderCurrency,
   shouldDryRunEbayStockLine,
   validateEbayStockCurrency,
-  validateEbayStockOrderCurrency,
 } from "./syncbay-stock-guard.ts";
 
 test("maps EBAY_IT to EUR", () => {
@@ -176,47 +175,6 @@ test("allows marketplaces without a configured stock currency guard", () => {
       ok: true,
       reason: null,
       snapshotCurrency: null,
-    },
-  );
-
-  assert.deepEqual(
-    validateEbayStockOrderCurrency({
-      marketplaceId: "EBAY_DE",
-      orderCurrency: undefined,
-    }),
-    {
-      expectedCurrency: null,
-      ok: true,
-      orderCurrency: null,
-      reason: null,
-    },
-  );
-});
-
-test("blocks EBAY_IT stock updates when order currency is missing or not EUR", () => {
-  assert.deepEqual(
-    validateEbayStockOrderCurrency({
-      marketplaceId: "EBAY_IT",
-      orderCurrency: undefined,
-    }),
-    {
-      expectedCurrency: "EUR",
-      ok: false,
-      orderCurrency: null,
-      reason: "missing_order_currency",
-    },
-  );
-
-  assert.deepEqual(
-    validateEbayStockOrderCurrency({
-      marketplaceId: "EBAY_IT",
-      orderCurrency: "USD",
-    }),
-    {
-      expectedCurrency: "EUR",
-      ok: false,
-      orderCurrency: "USD",
-      reason: "currency_mismatch",
     },
   );
 });

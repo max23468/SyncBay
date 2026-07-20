@@ -121,6 +121,20 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.79] — 2026-07-20
+
+### Correzioni
+
+- Gli ordini Shopify in valuta diversa da EUR (es. HUF, USD via Shopify Markets)
+  ora decrementano correttamente la disponibilità eBay. Il decremento di scorta
+  usa `ReviseInventoryStatus`, che invia solo la quantità e mai il prezzo, quindi
+  la valuta con cui paga il compratore è irrilevante: il guard che bloccava
+  l'intero job sulla valuta dell'ordine è stato rimosso. Prima questi ordini
+  lasciavano il listing vendibile su eBay (rischio oversell) e la rilevazione
+  modifiche Shopify li scambiava per edit manuali, generando falsi conflitti
+  `quantity`. La coerenza di valuta del listing eBay resta garantita per riga da
+  `validateEbayStockCurrency` (snapshot in EUR).
+
 ## [1.0.78] — 2026-07-18
 
 ### Correzioni
@@ -3954,6 +3968,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.79]: #1079--2026-07-20
 [1.0.78]: #1078--2026-07-18
 [1.0.77]: #1077--2026-07-18
 [1.0.76]: #1076--2026-07-17
