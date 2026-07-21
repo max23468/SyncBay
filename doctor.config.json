@@ -1,6 +1,6 @@
 {
   "ignore": {
-    "files": [".shopify/**"],
+    "files": [".shopify/**", "prisma/generated/**"],
     "overrides": [
       {
         "files": [
@@ -14,6 +14,10 @@
       {
         "files": ["app/components/SyncBayLive.tsx"],
         "rules": ["react-doctor/no-event-handler"]
+      },
+      {
+        "files": ["app/services/*.server.ts"],
+        "rules": ["react-doctor/no-fetch-response-used-without-status-check"]
       }
     ]
   },
