@@ -2715,7 +2715,6 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       ebayItemId: mapping.ebayItemId,
       mappingId: mapping.id,
       payload: {
-        ...getSnapshotPricingPayloadObject(latestSnapshot?.payload),
         previousQuantity: stockAction === "restore" ? ebayAvailableQuantity : previousQuantity,
         orderLineItemKey: lineItem.lineItemKey,
         ...(stockAction === "restore" ? { orderPreviousQuantity: previousQuantity } : {}),
@@ -2725,15 +2724,12 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
         updatedEbayFromShopifyOrder: true,
       } satisfies Prisma.JsonObject,
       currency: currencyValidation.snapshotCurrency,
-      priceAmount: latestSnapshot?.priceAmount ?? null,
-      productStatus: latestSnapshot?.productStatus ?? null,
       quantity: nextQuantity,
       shopId: job.shopId,
       shopifyProductGid: mapping.shopifyProductGid,
       shopifyVariantGid: mapping.shopifyVariantGid,
       sku: mapping.sku,
       source: ProductSnapshotSource.SYNCBAY,
-      title: latestSnapshot?.title ?? null,
     } satisfies Prisma.ProductSnapshotCreateManyInput;
     // Questo snapshot è anche il marker durevole di idempotenza dopo la write eBay.
     await prisma.$transaction((tx) => recordProductSnapshotsInTransaction(tx, [stockSnapshot]));
@@ -3459,12 +3455,6 @@ function getPricingPayloadMoneyAmount(
   }
 
   return null;
-}
-
-function getSnapshotPricingPayloadObject(payload: Prisma.JsonValue | null | undefined) {
-  const pricing = getJsonObject(getJsonObject(payload)?.pricing);
-
-  return pricing ? ({ pricing } satisfies Prisma.JsonObject) : {};
 }
 
 async function findLatestSyncBayDescriptionBaseline(mappingId: string) {
