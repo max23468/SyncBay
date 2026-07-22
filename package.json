@@ -138,6 +138,7 @@
   ],
   "overrides": {
     "ajv@8.6.3": "8.20.0",
+    "fast-uri": "3.1.4",
     "esbuild": "0.28.1",
     "p-map": "^4.0.0",
     "global-agent": "4.1.3",

@@ -69,6 +69,7 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
   let json: EbayTokenResponse;
 
   try {
+    // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per identificare refresh token non autorizzati; lo status è verificato subito dopo.
     response = await fetch(getEbayTokenUrl(connection.environment), {
       body,
       headers: {

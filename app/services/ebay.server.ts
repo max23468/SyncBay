@@ -169,6 +169,7 @@ async function consumeOAuthState(oauthStateId: string) {
 }
 
 async function fetchEbayUser(accessToken: string) {
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per validare userId e riportare l'errore del provider; lo status è verificato subito dopo.
   const response = await fetch(getIdentityUserUrl(), {
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -191,6 +192,7 @@ async function fetchEbayUser(accessToken: string) {
 }
 
 async function exchangeAuthorizationCode(code: string) {
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per propagare error_description; lo status è verificato subito dopo.
   const response = await fetch(getEbayTokenUrl(), {
     body: new URLSearchParams({
       code,

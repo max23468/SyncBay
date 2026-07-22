@@ -127,6 +127,7 @@ async function getEbayPublicKey(publicKeyId: string) {
   }
 
   const token = await getEbayApplicationAccessToken();
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per distinguere la chiave mancante dall'errore del provider; lo status è verificato subito dopo.
   const response = await fetch(`${getPublicKeyBaseUrl()}/${encodeURIComponent(publicKeyId)}`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -155,6 +156,7 @@ async function getEbayApplicationAccessToken() {
     return cachedApplicationToken.accessToken;
   }
 
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per propagare error e error_description; lo status è verificato subito dopo.
   const response = await fetch(getEbayTokenUrl(), {
     body: new URLSearchParams({
       grant_type: "client_credentials",

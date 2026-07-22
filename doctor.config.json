@@ -3,34 +3,9 @@
     "files": [".shopify/**", "prisma/generated/**"],
     "overrides": [
       {
-        "files": [
-          "app/routes/app.tsx",
-          "app/routes/app._index.tsx",
-          "app/routes/app.import-preview.tsx",
-          "app/routes/app.settings.tsx"
-        ],
+        "files": ["app/routes/app.tsx"],
         "rules": ["react-doctor/only-export-components"]
-      },
-      {
-        "files": ["app/components/SyncBayLive.tsx"],
-        "rules": ["react-doctor/no-event-handler"]
-      },
-      {
-        "files": ["app/services/*.server.ts"],
-        "rules": ["react-doctor/no-fetch-response-used-without-status-check"]
       }
     ]
-  },
-  "surfaces": {
-    "score": {
-      "excludeRules": [
-        "react-doctor/async-await-in-loop",
-        "react-doctor/async-parallel",
-        "react-doctor/server-sequential-independent-await"
-      ]
-    }
-  },
-  "supplyChain": {
-    "minScore": 47
   }
 }
