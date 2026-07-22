@@ -123,6 +123,8 @@ export function buildProductBaselineWriteFromSnapshot(
   snapshot: Prisma.ProductSnapshotCreateManyInput,
 ): ProductBaselineWrite | null {
   if (!snapshot.mappingId) return null;
+  const payload = getJsonObject(snapshot.payload);
+  const isOrderStockSnapshot = payload?.updatedEbayFromShopifyOrder === true;
   return {
     mappingId: snapshot.mappingId,
     shopId: snapshot.shopId,
@@ -133,18 +135,21 @@ export function buildProductBaselineWriteFromSnapshot(
       "inventorySync",
       "inventoryItemGid",
     ),
-    title: snapshot.title,
-    descriptionHash: snapshot.descriptionHash,
-    priceAmount:
-      snapshot.priceAmount === undefined || snapshot.priceAmount === null
+    title: isOrderStockSnapshot ? undefined : snapshot.title,
+    descriptionHash: isOrderStockSnapshot ? undefined : snapshot.descriptionHash,
+    priceAmount: isOrderStockSnapshot
+      ? undefined
+      : snapshot.priceAmount === undefined || snapshot.priceAmount === null
         ? snapshot.priceAmount
         : String(snapshot.priceAmount),
-    compareAtPriceAmount: getPayloadString(snapshot.payload, "pricing", "compareAtPriceAmount"),
+    compareAtPriceAmount: isOrderStockSnapshot
+      ? undefined
+      : getPayloadString(snapshot.payload, "pricing", "compareAtPriceAmount"),
     currency: snapshot.currency,
     quantity: snapshot.quantity,
-    productStatus: snapshot.productStatus,
-    imageCount: snapshot.imageCount,
-    productFacets: getProductFacets(snapshot.payload),
+    productStatus: isOrderStockSnapshot ? undefined : snapshot.productStatus,
+    imageCount: isOrderStockSnapshot ? undefined : snapshot.imageCount,
+    productFacets: isOrderStockSnapshot ? undefined : getProductFacets(snapshot.payload),
     lastWriterJobId: getPayloadString(snapshot.payload, "syncJobId"),
   };
 }

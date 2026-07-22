@@ -1,7 +1,36 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { recordProductHistory } from "./product-history.server";
+import {
+  buildProductBaselineWriteFromSnapshot,
+  recordProductHistory,
+} from "./product-history.server";
+
+test("order stock snapshots update quantity without replacing catalog baselines", () => {
+  const baseline = buildProductBaselineWriteFromSnapshot({
+    descriptionHash: "description-hash",
+    imageCount: 3,
+    mappingId: "mapping-1",
+    payload: {
+      pricing: { compareAtPriceAmount: "12.00" },
+      updatedEbayFromShopifyOrder: true,
+    },
+    priceAmount: "10.00",
+    productStatus: "ACTIVE",
+    quantity: 4,
+    shopId: "shop-1",
+    source: "SYNCBAY",
+    title: "Titolo",
+  });
+
+  assert.equal(baseline?.quantity, 4);
+  assert.equal(baseline?.priceAmount, undefined);
+  assert.equal(baseline?.compareAtPriceAmount, undefined);
+  assert.equal(baseline?.title, undefined);
+  assert.equal(baseline?.descriptionHash, undefined);
+  assert.equal(baseline?.productStatus, undefined);
+  assert.equal(baseline?.imageCount, undefined);
+});
 
 test("writes baseline and snapshots in one transaction", async () => {
   const events: string[] = [];
