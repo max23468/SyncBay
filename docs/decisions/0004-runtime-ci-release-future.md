@@ -87,7 +87,7 @@ Esclusioni consapevoli:
 - Supabase Preview: l'integrazione GitHub Supabase è disattivata perché le
   migration canoniche vivono in `prisma/migrations`, non in
   `supabase/migrations`, quindi il check non validava il flusso reale;
-- Vercel, React Doctor, Doppler e CodeQL restano advisory o path-scoped e non
+- Vercel, React Doctor e CodeQL restano advisory o path-scoped e non
   sono status richiesti dal ruleset.
 
 Render SSR e hydration Chromium sono nel workflow `UI browser check`, avviato

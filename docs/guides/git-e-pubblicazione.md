@@ -19,7 +19,7 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
   minimale separato del titolo Conventional Commit.
 - React Doctor `latest` resta advisory: pubblica score e review sui file React
   cambiati, ma i finding non generano un run fallito; fallisce soltanto se lo
-  scanner non riesce a completarsi. Doppler, CodeQL, Vercel e inbox Codex
+  scanner non riesce a completarsi. CodeQL, Vercel e inbox Codex
   restano check mirati o advisory e non bloccano indiscriminatamente ogni PR.
 
 ## Regola base
@@ -113,7 +113,7 @@ Con il deployment Vercel production privato attivo, "pubblicato" significa almen
   unico e con conversazioni da risolvere;
 - check richiesti `Verifica proporzionata` e `Conventional PR title`, senza
   policy strict/up-to-date per evitare rebase e run duplicati;
-- nessun deployment, React Doctor, Doppler, CodeQL aggregato o Supabase Preview
+- nessun deployment, React Doctor, CodeQL aggregato o Supabase Preview
   richiesto come status separato;
 - push forzati e cancellazione di `main` vietati;
 - secret scanning e push protection GitHub attivi.
@@ -171,7 +171,7 @@ Per modifiche puramente documentali:
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
 
 Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
-React Doctor `latest` e Doppler non partono quando nessun path di loro
+React Doctor `latest` non parte quando nessun path di sua
 competenza cambia. Vercel salta inoltre i build limitati a docs, governance,
 CI, test e tooling non runtime.
 

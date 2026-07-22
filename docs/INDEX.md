@@ -23,7 +23,6 @@ intento.
 | Vedere idee e debiti non ancora promossi                                  | `BACKLOG.md`                                                        |
 | Capire runtime, tool e verifiche                                          | `TOOLCHAIN.md`                                                      |
 | Usare comandi di diagnostica o manutenzione live                          | `guides/comandi-manutenzione.md`                                    |
-| Verificare integrazione Doppler e segreti CI                              | `doppler-setup.md`                                                  |
 | Capire identità, tono e visual direction                                  | `../BRAND.md`                                                       |
 | Capire la struttura docs/repo                                             | `structure.md`                                                      |
 | Consultare decisioni stabili                                              | `DECISIONS.md`                                                      |
