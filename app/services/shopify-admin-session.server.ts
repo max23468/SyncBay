@@ -253,6 +253,7 @@ async function refreshOfflineShopifyAccessToken(input: {
     throw new Error("Credenziali Shopify app mancanti: impossibile aggiornare il token offline.");
   }
 
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload Shopify viene letto prima di response.ok per distinguere il refresh non riuscito; lo status è verificato subito dopo.
   const response = await fetch(`https://${input.shopDomain}/admin/oauth/access_token`, {
     body: new URLSearchParams({
       client_id: clientId,

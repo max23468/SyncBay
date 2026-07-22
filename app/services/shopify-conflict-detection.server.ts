@@ -465,7 +465,6 @@ export function createPrismaShopifyConflictDetectionPorts(): ShopifyConflictDete
               where: { id: existing.id },
             });
           else
-            // react-doctor-disable-next-line react-doctor/async-await-in-loop -- scritture conflitti per campo, in serie per contenere le connessioni concorrenti sul pooler.
             await prisma.syncConflict.create({
               data: {
                 ...data,

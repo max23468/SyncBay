@@ -327,6 +327,7 @@ async function fetchEbayJson<T>(input: {
   marketplaceId: string;
   url: URL;
 }): Promise<T> {
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per restituire il messaggio d'errore del provider; lo status è verificato subito dopo.
   const response = await fetch(input.url, {
     headers: {
       Accept: "application/json",

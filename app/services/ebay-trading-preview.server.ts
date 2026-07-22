@@ -415,6 +415,7 @@ export async function fetchTradingXml(input: {
   connection: EbayConnection;
   requestXml: string;
 }) {
+  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il corpo XML serve anche per gli errori eBay Trading; lo status è verificato subito dopo la lettura.
   const response = await fetch(getTradingBaseUrl(input.connection.environment), {
     body: input.requestXml,
     headers: {
