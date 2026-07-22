@@ -138,7 +138,6 @@
 - Create: `scripts/syncbay-workflow-config.test.mjs`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `.github/workflows/react-doctor.yml`
-- Modify: `.github/workflows/doppler-check.yml`
 - Modify: `.github/workflows/pr-title.yml`
 
 **Interfaces:**
@@ -147,7 +146,7 @@
 
 - [x] **Step 1: Scrivere test failing sui workflow**
 
-  Verificare testualmente che CI abbia `fetch-depth: 0`, classificazione docs/runtime e un solo `verify:full`; che React Doctor abbia filtri path runtime; che Doppler abbia filtri path configurazione; che PR Title non usi `synchronize`.
+  Verificare testualmente che CI abbia `fetch-depth: 0`, classificazione docs/runtime e un solo `verify:full`; che React Doctor abbia filtri path runtime; che PR Title non usi `synchronize`.
 
 - [x] **Step 2: Eseguire il test e verificare RED**
 

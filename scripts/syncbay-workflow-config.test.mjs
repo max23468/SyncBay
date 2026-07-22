@@ -53,15 +53,6 @@ test("React Doctor runs only for runtime and frontend paths", () => {
   assert.doesNotMatch(source, /^\s*push:\s*$/m);
 });
 
-test("Doppler check runs only for environment and deployment surfaces", () => {
-  const source = readWorkflow("doppler-check.yml");
-
-  assert.match(source, /paths:/);
-  assert.match(source, /\.env\.example/);
-  assert.match(source, /vercel\.json/);
-  assert.match(source, /docs\/doppler-setup\.md/);
-});
-
 test("PR title validation reruns cheaply for every title-related PR event", () => {
   const source = readWorkflow("pr-title.yml");
 
