@@ -1,4 +1,4 @@
-const TRADING_API_COMPATIBILITY_LEVEL = "1453";
+const TRADING_API_COMPATIBILITY_LEVEL = "1455";
 
 export interface TradingItemCacheEntry {
   descriptionHtml: string | null;

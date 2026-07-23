@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Allineato il livello di compatibilità eBay Trading API `1453 -> 1455` nelle
+  costanti `TRADING_API_COMPATIBILITY_LEVEL` (`app/lib/syncbay-ebay-trading-bulk.ts`
+  e `app/services/ebay-trading-preview.server.ts`). Le revisioni 1454/1455 sono
+  additive (nuovi campi opzionali su GetOrders/GetItemTransactions, warning
+  apparel sizing) e non toccano le chiamate usate da SyncBay (GetSellerList,
+  GetItem, GetMyeBaySelling, GetSellerEvents, ReviseInventoryStatus).
 - Aggiornate dipendenze patch: `react` e `react-dom` `19.2.7 -> 19.2.8`,
   `oxlint` `1.74.0 -> 1.75.0`, override `@hono/node-server` `1.19.13 -> 1.19.14`.
   Ripulito il blocco `allowScripts`: voci Prisma allineate a `7.9.0` (erano
