@@ -8,6 +8,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Aggiornate dipendenze patch: `react` e `react-dom` `19.2.7 -> 19.2.8`,
+  `oxlint` `1.74.0 -> 1.75.0`, override `@hono/node-server` `1.19.13 -> 1.19.14`.
+  Ripulito il blocco `allowScripts`: voci Prisma allineate a `7.9.0` (erano
+  ancora `7.8.0`) e rimossa `unrs-resolver@1.12.2`, non più presente
+  nell'albero. `npm audit` resta a 0 vulnerabilità.
 - Migrata la toolchain di qualità da ESLint/Prettier a oxlint/oxfmt. `npm run
 lint` usa oxlint (config `.oxlintrc.json`, plugin
   import/react/jsx-a11y/typescript); `npm run format` e `format:check` usano
