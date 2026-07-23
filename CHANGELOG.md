@@ -8,6 +8,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Aggiornato `oxfmt` `0.59.0 -> 0.60.0`. `format:check` resta verde senza
+  riformattare alcun file: nessuna variazione di output del formatter.
 - Allineato il livello di compatibilità eBay Trading API `1453 -> 1455` nelle
   costanti `TRADING_API_COMPATIBILITY_LEVEL` (`app/lib/syncbay-ebay-trading-bulk.ts`
   e `app/services/ebay-trading-preview.server.ts`). Le revisioni 1454/1455 sono
