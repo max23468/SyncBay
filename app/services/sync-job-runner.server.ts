@@ -87,6 +87,7 @@ import {
   shouldEnqueueIncrementalSyncNow,
 } from "../lib/syncbay-incremental-schedule";
 import {
+  CATALOG_RECONCILE_JOB_SOURCE,
   FACET_BACKFILL_INCREMENTAL_JOB_SOURCE,
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
@@ -400,6 +401,14 @@ async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[]; now: D
   return jobs;
 }
 
+// Un reconcile catalogo si spezza in decine di batch con lo stesso `runAfter`:
+// in FIFO puro precedono ogni delta eventi accodato dopo, quindi la corsia live
+// eBay -> Shopify resta ferma finché il giro non è drenato (ore, a pochi batch
+// per tick). I delta sono anche gli unici job che fanno avanzare il watermark di
+// verifica catalogo, quindi nel frattempo la UI marca l'intero catalogo come
+// "Da controllare". Teniamo i batch reconcile in coda agli altri incrementali:
+// `false` ordina prima di `true`, quindi ogni tick prende prima il delta dovuto
+// e riempie gli slot restanti con il reconcile, che perde un job per tick.
 async function findDueRegularIncrementalSyncJobs(input: {
   excludeIds?: string[];
   limit: number;
@@ -420,7 +429,10 @@ async function findDueRegularIncrementalSyncJobs(input: {
           ? Prisma.sql`AND "id" NOT IN (${Prisma.join(input.excludeIds)})`
           : Prisma.empty
       }
-    ORDER BY "runAfter" ASC, "createdAt" ASC
+    ORDER BY
+      (COALESCE("payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,
+      "runAfter" ASC,
+      "createdAt" ASC
     LIMIT ${input.limit}
   `);
 
