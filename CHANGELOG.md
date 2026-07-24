@@ -134,6 +134,20 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.81] — 2026-07-24
+
+### Correzioni
+
+- Il runner esegue i delta eventi eBay prima dei batch del reconcile catalogo.
+  Un giro di reconcile si spezza in decine di job con lo stesso `runAfter`: in
+  ordine FIFO precedevano ogni delta accodato dopo, così la sincronizzazione
+  live eBay -> Shopify restava ferma per ore, fino al drenaggio del giro. Poiché
+  i delta sono anche gli unici job che fanno avanzare il watermark di verifica
+  catalogo, nel frattempo il Catalogo marcava tutti i prodotti collegati come
+  `Da controllare` pur senza conflitti né errori. Ora ogni tick prende prima il
+  delta dovuto e riempie gli slot restanti con il reconcile, che perde un job
+  per tick.
+
 ## [1.0.80] — 2026-07-22
 
 ### Correzioni
@@ -3989,6 +4003,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.81]: #1081--2026-07-24
 [1.0.80]: #1080--2026-07-22
 [1.0.79]: #1079--2026-07-20
 [1.0.78]: #1078--2026-07-18
