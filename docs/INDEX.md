@@ -37,6 +37,7 @@ intento.
 | Capire cadenza Supabase Cron del runner                                   | `decisions/0019-cadenza-cron-runner.md`                             |
 | Capire perimetro e go-live 1.0 custom privata                             | `decisions/0020-1-0-custom-privata-catalogo-esistente.md`           |
 | Capire la protezione stock dagli ordini Shopify                           | `decisions/0022-stock-ebay-su-ciclo-ordine-shopify.md`              |
+| Capire il batch del runner (`limit`)                                      | `decisions/0023-batch-runner-limit-cinque.md`                       |
 | Capire architettura proposta                                              | `guides/architettura.md`                                            |
 | Preparare lo scaffold senza saltare passaggi                              | `guides/pre-scaffold-checklist.md`                                  |
 | Capire provisioning Vercel/Supabase                                       | `guides/provisioning-runtime.md`                                    |
