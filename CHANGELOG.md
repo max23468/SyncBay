@@ -8,6 +8,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Il batch automatico del runner passa da `limit=2` a `limit=5` (ADR 0023). La
+  modifica vive nella query string del secret Supabase Vault
+  `syncbay_run_due_url`, non nel codice applicativo: `DEFAULT_RUN_DUE_LIMIT` era
+  già `5`. Motivo: il volume di un giro di reconcile catalogo è fisso (~100 job
+  da eseguire comunque), quindi il limite ne governa la durata, non il consumo;
+  a coda vuota resta inerte perché il runner claima solo job dovuti. Un giro di
+  reconcile scende da 4,75-9 ore a circa 2. ADR 0021 resta valido per cadenza
+  cron, target di sync e deadline: aggiornato solo il paragrafo sul batch.
 - Aggiornato `oxfmt` `0.59.0 -> 0.60.0`. `format:check` resta verde senza
   riformattare alcun file: nessuna variazione di output del formatter.
 - Allineato il livello di compatibilità eBay Trading API `1453 -> 1455` nelle

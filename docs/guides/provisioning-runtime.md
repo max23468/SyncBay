@@ -174,7 +174,7 @@ Non salvarla in Git e non stamparla nei log.
 - `npx prisma migrate deploy` iniziale su Supabase tramite pooler
 - migration OAuth eBay applicata su Supabase con `supabase db query --linked` e registrazione in `_prisma_migrations`
 - primitive Supabase runtime applicate con `supabase db query --linked`: `pgmq`, `pg_cron`, coda `syncbay_jobs`, bucket privato `syncbay-import-staging`
-- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=2` ogni 5 minuti tramite `pg_net` e secret in Supabase Vault, con timeout HTTP 90 s; il runner non anticipa più i sync incrementali in scadenza entro il tick successivo, per preservare l'intervallo target configurato
+- schedule Supabase Cron `syncbay-run-due-jobs` applicata con `supabase db query --linked`; chiama `/api/jobs/run-due?limit=5` (ADR 0023; era `limit=2`) ogni 5 minuti tramite `pg_net` e secret in Supabase Vault, con timeout HTTP 90 s; il runner non anticipa più i sync incrementali in scadenza entro il tick successivo, per preservare l'intervallo target configurato
 - la schedule Supabase Cron legacy `syncbay-maintain-supabase-internal-tables`
   è stata ritirata: la maintenance applicativa giornaliera conserva 14 giorni
   di `cron.job_run_details` e non interviene su `net._http_response` senza una

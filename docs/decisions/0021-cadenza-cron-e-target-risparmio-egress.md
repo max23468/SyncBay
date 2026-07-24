@@ -38,7 +38,9 @@ cadono prima del tick successivo: altrimenti un negozio con intervallo 10, 15,
 spostando in avanti i marker no-op. I `runAfter` usati come backoff provider
 restano comunque rispettati.
 
-Il batch automatico resta `limit=2`. La capacità non viene recuperata alzando il
+Il batch automatico resta `limit=2` (**superato da ADR 0023**, che lo porta a
+`limit=5`; il resto di questa decisione resta valido). La capacità non viene
+recuperata alzando il
 limite: il runner riserva una corsia allo stock e una alla rilevazione conflitti,
 poi usa gli slot residui per sync/import e assorbe fino a 25 webhook distinti
 dello stesso shop dentro un singolo slot conflitti. Ogni richiesta ha deadline
@@ -48,7 +50,8 @@ prima del timeout HTTP `pg_net` di 90 secondi.
 ## Conseguenze
 
 - Le invocazioni automatiche del runner scendono da circa 30/ora a 12/ora.
-- La capacità nominale è 24 slot/ora con `limit=2`; uno slot conflitti può però
+- La capacità nominale è 24 slot/ora con `limit=2` (60/ora con il `limit=5` di
+  ADR 0023); uno slot conflitti può però
   chiudere fino a 25 risorse distinte, senza aumentare connessioni e invocazioni.
 - La freschezza ordinaria diventa più prudente: il minimo selezionabile è 5
   minuti e il massimo 30 minuti.
