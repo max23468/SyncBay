@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 
 const DEFAULT_BASE = "origin/main";
 const DOCS_ONLY_AREA_IDS = new Set(["documentazione", "release_governance"]);
+const MARKDOWN_PATTERN = /\.md$/;
 
 const GENERAL_REVIEW_QUESTIONS = [
   "La diagnosi è provata nel codice o nei test, oppure sto seguendo un'ipotesi non verificata?",
@@ -144,9 +145,7 @@ const AREA_DEFINITIONS = [
   {
     id: "documentazione",
     label: "Documentazione",
-    match: (path) =>
-      /^docs\//.test(path) ||
-      ["README.md", "BRAND.md", "SECURITY.md", "AGENTS.md", "CHANGELOG.md"].includes(path),
+    match: (path) => /^docs\//.test(path) || MARKDOWN_PATTERN.test(path),
     questions: [
       "La documentazione descrive stato reale e limiti, senza promettere funzionalità non implementate?",
       "La modifica introduce una decisione operativa stabile e aggiorna il documento canonico giusto senza duplicati?",
@@ -185,7 +184,7 @@ if (import.meta.main) {
 export function buildPrePrSelfReview({ base = DEFAULT_BASE, changedFiles, dirtyFiles = [] }) {
   const files = dedupeFiles([...(changedFiles ?? []), ...dirtyFiles]);
   const fileClassifications = files.map((file) => ({
-    definitions: AREA_DEFINITIONS.filter((definition) => definition.match(file.path)),
+    definitions: classifyPath(file.path),
     file,
   }));
   const detectedDefinitions = AREA_DEFINITIONS.filter((definition) =>
@@ -292,6 +291,15 @@ export function parseShortStatus(output) {
       return { path: rawPath, status };
     })
     .filter((file) => Boolean(file.path));
+}
+
+// Un file Markdown resta documentazione ovunque viva: `app/services/AGENTS.md`
+// non è runtime né UI solo perché sta sotto `app/`. Il fallback conservativo
+// vale ancora per ogni altro file, incluso qualsiasi non-Markdown sotto `app/`.
+function classifyPath(path) {
+  const definitions = AREA_DEFINITIONS.filter((definition) => definition.match(path));
+  if (!MARKDOWN_PATTERN.test(path)) return definitions;
+  return definitions.filter((definition) => DOCS_ONLY_AREA_IDS.has(definition.id));
 }
 
 function parseArgs(rawArgs) {

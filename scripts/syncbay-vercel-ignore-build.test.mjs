@@ -41,6 +41,7 @@ test("skips changes limited to documentation governance CI and non-runtime tooli
 
 test("skips application tests but builds unknown files conservatively", () => {
   assert.equal(shouldBuildVercel(["app/lib/example.test.ts"]), false);
+  assert.equal(shouldBuildVercel(["app/services/AGENTS.md"]), false);
   assert.equal(shouldBuildVercel(["new-runtime.config.mjs"]), true);
 });
 

@@ -8,6 +8,17 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- I file `.md` non contano più come runtime o deployable per la classificazione
+  del diff. Finora qualunque percorso sotto `app/` finiva nelle aree runtime e
+  UI a prescindere dall'estensione: la PR #514, di sola documentazione, toccava
+  `app/services/AGENTS.md` e per questo ha eseguito la corsia full di
+  `verify:changed` (build, prisma, smoke) ed è stata classificata deployable da
+  `publish:complete`, che ha atteso un deployment Vercel e la catena di verifica
+  post-deploy. Ora `scripts/syncbay-pre-pr-self-review.mjs` assegna a un file
+  Markdown solo le aree documentazione e release/governance, e
+  `scripts/syncbay-vercel-ignore-build.mjs` lo esclude dal build. Il fallback
+  conservativo resta invariato per ogni altro file non classificato, Markdown
+  escluso.
 - `npm run audit:prod` esce dal check richiesto della CI ed entra nei gate
   advisory (ADR 0004). Il suo esito dipende dal database advisory e non dal diff
   in revisione: le sei vulnerabilità pubblicate a monte il 2026-07-25
