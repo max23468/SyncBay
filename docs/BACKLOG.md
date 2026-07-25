@@ -70,12 +70,24 @@ mentre `react-router.config.ts` usa framework mode con `ssr: true` e nessun
 riferimento RSC. Le due voci restano quindi visibili nell'audit finché la
 migrazione non avviene, senza rischio applicativo reale.
 
+Il blocco non è di volontà ma di peer range: `@vercel/react-router@1.3.1`
+dichiara peer `@react-router/dev: "7"` e `@react-router/node: "7"`, e
+`@shopify/shopify-app-react-router@1.2.1` dichiara peer `react-router: "^7.6.2"`.
+Finché Vercel e Shopify non aggiornano, la major 8 non è installabile senza
+rompere il contratto peer di entrambe le integrazioni. Stesso schema di
+`docs/BACKLOG.md` per TypeScript 7: si aspetta il monte, non si forza con
+`--legacy-peer-deps`.
+
 La migrazione è già parzialmente preparata: i future flag `v8_middleware`,
 `v8_passThroughRequests`, `v8_splitRouteModules`,
-`v8_trailingSlashAwareDataRequests` e `v8_viteEnvironmentApi` sono attivi. Resta
-da valutare l'impatto su `@vercel/react-router`, sul preset Vercel e sulle route
-embedded prima di promuoverla in roadmap; è un major applicativo, non un fix di
-sicurezza, e merita il suo ADR.
+`v8_trailingSlashAwareDataRequests` e `v8_viteEnvironmentApi` sono attivi. Quando
+i peer si apriranno resterà da valutare l'impatto sul preset Vercel e sulle route
+embedded: è un major applicativo, non un fix di sicurezza, e merita il suo ADR.
+
+Nel frattempo l'advisory è registrata in `ACCEPTED_ADVISORIES`
+(`scripts/syncbay-audit-prod.mjs`) con motivo e condizione di revisione, così
+`audit:prod` resta verde e continua a fallire su qualunque vulnerabilità nuova.
+La voce va rimossa insieme alla migrazione.
 
 ## Decisioni collegate
 

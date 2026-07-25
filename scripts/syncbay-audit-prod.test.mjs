@@ -1,7 +1,52 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { findUnexpectedAuditEntries, readAuditVulnerabilities } from "./syncbay-audit-prod.mjs";
+import {
+  findAcceptedAuditEntries,
+  findUnexpectedAuditEntries,
+  readAuditVulnerabilities,
+} from "./syncbay-audit-prod.mjs";
+
+// Catena reale: `react-router` porta l'advisory accettata, `@react-router/node`
+// la eredita come causa transitiva.
+const reactRouterAudit = {
+  "@react-router/node": {
+    severity: "high",
+    via: ["react-router"],
+  },
+  "react-router": {
+    severity: "high",
+    via: [{ url: "https://github.com/advisories/GHSA-qwww-vcr4-c8h2" }],
+  },
+};
+
+test("accepts the documented React Router advisory and its transitive effect", () => {
+  assert.deepEqual(findUnexpectedAuditEntries(reactRouterAudit), []);
+  assert.deepEqual(
+    findAcceptedAuditEntries(reactRouterAudit).map(([name]) => name),
+    ["@react-router/node", "react-router"],
+  );
+});
+
+// La proprieta' che rende la waiver sicura: copre quell'advisory, non il
+// pacchetto. Una vulnerabilita' nuova su react-router deve tornare a fallire.
+test("rejects a new advisory on a package with an accepted one", () => {
+  const vulnerabilities = {
+    ...reactRouterAudit,
+    "react-router": {
+      severity: "high",
+      via: [
+        { url: "https://github.com/advisories/GHSA-qwww-vcr4-c8h2" },
+        { url: "https://github.com/advisories/GHSA-0000-0000-0000" },
+      ],
+    },
+  };
+
+  assert.deepEqual(
+    findUnexpectedAuditEntries(vulnerabilities).map(([name]) => name),
+    ["@react-router/node", "react-router"],
+  );
+});
 
 const knownPrisma7Audit = {
   "@hono/node-server": {

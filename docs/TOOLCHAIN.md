@@ -244,6 +244,15 @@ ogni giorno e sulle PR che toccano dipendenze o lo script stesso, mentre resta
 obbligatorio in locale dentro `verify:changed` e `verify:full`, che non passano
 `--without-advisory-gates`. Il segnale resta, il merge non è più accoppiato.
 
+Le advisory che non possono essere chiuse si registrano in
+`ACCEPTED_ADVISORIES` (`scripts/syncbay-audit-prod.mjs`), con identificativo
+GHSA, motivo e condizione di revisione. La waiver vale per quello specifico
+advisory e non per il pacchetto: una vulnerabilità nuova sullo stesso pacchetto
+fa fallire di nuovo il gate. Le voci accettate vengono stampate a ogni
+esecuzione riuscita, così restano una decisione visibile invece di un buco
+silenzioso. Un gate perennemente rosso smette di essere letto: l'accettazione
+esplicita serve a mantenerlo credibile, non a nascondere il problema.
+
 `npm run format:check` gira su ogni corsia, docs inclusa: oxfmt formatta anche
 Markdown, CSS e TOML oltre a JS/TS, quindi il drift può entrare da qualunque
 diff e nessun altro gate lo intercetterebbe. È il controllo più economico

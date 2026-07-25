@@ -8,6 +8,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- `audit:prod` accetta esplicitamente le advisory senza correzione installabile.
+  `ACCEPTED_ADVISORIES` in `scripts/syncbay-audit-prod.mjs` registra
+  GHSA-qwww-vcr4-c8h2 (React Router, CSRF bypass in RSC mode) con motivo e
+  condizione di revisione: SyncBay non usa le API RSC, e la major 8 non è
+  installabile perché `@vercel/react-router@1.3.1` dichiara peer
+  `@react-router/node: "7"` e `@shopify/shopify-app-react-router@1.2.1` dichiara
+  peer `react-router: "^7.6.2"`. La waiver copre il singolo advisory e non il
+  pacchetto: `findUnexpectedAuditEntries` risolve anche le cause transitive, ma
+  una vulnerabilità nuova su `react-router` torna a far fallire il gate. Le voci
+  accettate vengono stampate a ogni esecuzione riuscita. Serviva perché
+  `publish:complete` esegue `audit:prod` nella catena post-deploy: con due voci
+  permanentemente rosse il percorso di pubblicazione si interrompeva a ogni diff
+  runtime.
 - I file `.md` non contano più come runtime o deployable per la classificazione
   del diff. Finora qualunque percorso sotto `app/` finiva nelle aree runtime e
   UI a prescindere dall'estensione: la PR #514, di sola documentazione, toccava

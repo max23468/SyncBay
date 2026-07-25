@@ -95,7 +95,11 @@ Esclusioni consapevoli:
   deve essere funzione del diff, mentre l'esito di `npm audit` è funzione della
   data: come check richiesto una vulnerabilità pubblicata a monte bloccava ogni
   PR aperta, docs incluse, spingendo a scavalcare la ruleset per motivi
-  estranei al diff. Il gate resta obbligatorio nei comandi locali.
+  estranei al diff. Il gate resta obbligatorio nei comandi locali. Le advisory
+  che non hanno una correzione installabile si accettano esplicitamente in
+  `ACCEPTED_ADVISORIES` con GHSA, motivo e condizione di revisione: la waiver
+  copre il singolo advisory, non il pacchetto, e le voci accettate restano
+  stampate a ogni esecuzione.
 
 Render SSR e hydration Chromium sono nel workflow `UI browser check`, avviato
 manualmente o con label `full-ui-check` per modifiche UI sostanziali. Non sono
