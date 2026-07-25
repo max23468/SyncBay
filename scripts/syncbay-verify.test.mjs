@@ -129,6 +129,27 @@ test("CI can omit advisory gates already handled by parallel workflows", () => {
   );
 });
 
+// L'esito di `audit:prod` dipende dal database advisory, non dal diff: una
+// vulnerabilità pubblicata a monte renderebbe rossa ogni PR aperta, anche
+// docs-only. La corsia full e' quella che serve davvero, perche' un diff con
+// file non classificati ci ricade.
+test("CI can omit the advisory audit gate on the full lane", () => {
+  const plan = buildVerificationPlan({
+    excludeAdvisoryGates: true,
+    mode: "full",
+  });
+
+  const labels = plan.commands.map((entry) => entry.label);
+  assert.ok(!labels.includes("npm run audit:prod"));
+  assert.ok(labels.includes("npm run build:raw"));
+});
+
+test("keeps the advisory audit gate when the flag is absent", () => {
+  const plan = buildVerificationPlan({ mode: "full" });
+
+  assert.ok(plan.commands.map((entry) => entry.label).includes("npm run audit:prod"));
+});
+
 test("CI can leave changed UI gates to the explicit cached browser workflow", () => {
   const plan = buildVerificationPlan({
     excludeUiGates: true,

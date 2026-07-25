@@ -235,6 +235,15 @@ La CI PR mantiene un unico job conclusivo: per diff docs-only esegue
 e smoke dedotti dalle superfici toccate. React Doctor resta nel workflow
 parallelo advisory e non viene duplicato nel check richiesto.
 
+Un check che blocca il merge deve essere funzione del diff in revisione. `npm
+run audit:prod` non lo è: dipende dal database advisory, che cambia da solo,
+quindi una vulnerabilità pubblicata a monte renderebbe rossa ogni PR aperta,
+docs-only comprese, per una causa che l'autore non può risolvere nel proprio
+scope. Sta quindi tra i gate advisory: il workflow `Audit produzione` lo esegue
+ogni giorno e sulle PR che toccano dipendenze o lo script stesso, mentre resta
+obbligatorio in locale dentro `verify:changed` e `verify:full`, che non passano
+`--without-advisory-gates`. Il segnale resta, il merge non è più accoppiato.
+
 `npm run format:check` gira su ogni corsia, docs inclusa: oxfmt formatta anche
 Markdown, CSS e TOML oltre a JS/TS, quindi il drift può entrare da qualunque
 diff e nessun altro gate lo intercetterebbe. È il controllo più economico
