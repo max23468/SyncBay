@@ -110,6 +110,7 @@ import {
   RUNNER_LANES,
   buildRunnerLanePlan,
   shouldClaimRunnerJob,
+  shouldPrioritizeNonReconcileIncrementalJob,
   type RunnerLane,
 } from "../lib/syncbay-runner-fairness";
 import {
@@ -369,10 +370,14 @@ async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[]; now: D
   for (const lane of input.lanePlan) {
     const type = lane as SyncJobType;
     if (type === SyncJobType.SYNC_INCREMENTAL) {
+      const selectedIncrementalJobs = jobs.filter(
+        (job) => job.type === SyncJobType.SYNC_INCREMENTAL,
+      ).length;
       const regularJobs = await findDueRegularIncrementalSyncJobs({
         excludeIds: jobs.map((job) => job.id),
         limit: 1,
         now: input.now,
+        prioritizeNonReconcile: shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs),
       });
       jobs.push(...regularJobs);
 
@@ -406,13 +411,14 @@ async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[]; now: D
 // eBay -> Shopify resta ferma finché il giro non è drenato (ore, a pochi batch
 // per tick). I delta sono anche gli unici job che fanno avanzare il watermark di
 // verifica catalogo, quindi nel frattempo la UI marca l'intero catalogo come
-// "Da controllare". Teniamo i batch reconcile in coda agli altri incrementali:
-// `false` ordina prima di `true`, quindi ogni tick prende prima il delta dovuto
-// e riempie gli slot restanti con il reconcile, che perde un job per tick.
+// "Da controllare". Il primo slot incrementale privilegia il delta live; quelli
+// successivi tornano FIFO, così un flusso continuo di delta non affama il
+// reconcile già aperto.
 async function findDueRegularIncrementalSyncJobs(input: {
   excludeIds?: string[];
   limit: number;
   now: Date;
+  prioritizeNonReconcile: boolean;
 }) {
   if (input.limit <= 0) return [];
 
@@ -430,7 +436,11 @@ async function findDueRegularIncrementalSyncJobs(input: {
           : Prisma.empty
       }
     ORDER BY
-      (COALESCE("payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,
+      ${
+        input.prioritizeNonReconcile
+          ? Prisma.sql`(COALESCE("payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,`
+          : Prisma.empty
+      }
       "runAfter" ASC,
       "createdAt" ASC
     LIMIT ${input.limit}

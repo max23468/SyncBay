@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { buildRunnerLanePlan, shouldClaimRunnerJob } from "./syncbay-runner-fairness.ts";
+import {
+  buildRunnerLanePlan,
+  shouldClaimRunnerJob,
+  shouldPrioritizeNonReconcileIncrementalJob,
+} from "./syncbay-runner-fairness.ts";
 
 const emptyDue = {
   UPDATE_EBAY_STOCK: 0,
@@ -41,6 +45,20 @@ test("uses the remaining lane for regular sync when stock is absent", () => {
     }),
     ["DETECT_SHOPIFY_CHANGES", "SYNC_INCREMENTAL"],
   );
+});
+
+test("runs an open reconcile despite continuous live deltas", () => {
+  const pending = ["reconcile"];
+  const selected = Array.from({ length: 5 }, (_, selectedIncrementalJobs) => {
+    pending.push(`delta-${selectedIncrementalJobs}`);
+    const deltaIndex = shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs)
+      ? pending.findIndex((job) => job.startsWith("delta-"))
+      : -1;
+
+    return pending.splice(deltaIndex >= 0 ? deltaIndex : 0, 1)[0];
+  });
+
+  assert.deepEqual(selected.slice(0, 2), ["delta-0", "reconcile"]);
 });
 
 test("does not claim another job after the request deadline", () => {
