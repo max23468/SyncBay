@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
+import { buildPrePrSelfReview } from "./syncbay-pre-pr-self-review.mjs";
 import {
   buildVerificationPlan,
   createVerificationFingerprint,
@@ -34,6 +35,23 @@ test("keeps docs-only changes on lightweight checks including formatting", () =>
       label: "git diff --check origin/main",
     },
   ]);
+});
+
+// Il Markdown sotto `app/` e' documentazione, non runtime: prima finiva sulla
+// corsia pesante solo per il prefisso di percorso (PR #514).
+test("keeps a diff of Markdown under app/ on the docs lane", () => {
+  const plan = buildVerificationPlan({
+    base: "origin/main",
+    mode: "changed",
+    review: buildPrePrSelfReview({
+      changedFiles: [
+        { path: "app/services/AGENTS.md", status: "M" },
+        { path: "app/routes/NOTE.md", status: "A" },
+      ],
+    }),
+  });
+
+  assert.equal(plan.lane, "docs");
 });
 
 test("runs the formatting check on every lane", () => {

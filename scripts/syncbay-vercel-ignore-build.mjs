@@ -28,6 +28,9 @@ export function shouldBuildVercel(paths) {
 export function isDeployRelevantPath(path) {
   if (typeof path !== "string" || path.length === 0) return true;
   if (/\.(?:spec|test)\.[cm]?[jt]sx?$/.test(path)) return false;
+  // Il Markdown non entra nel bundle nemmeno sotto `app/`: `app/services/AGENTS.md`
+  // non è un deploy. Restano deployable tutti gli altri file non classificati.
+  if (/\.md$/.test(path)) return false;
   if (DEPLOY_SCRIPTS.has(path)) return true;
   if (path.startsWith("scripts/")) return false;
   if (NON_DEPLOY_ROOT_FILES.has(path)) return false;
