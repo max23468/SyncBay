@@ -8,6 +8,18 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- `npm run audit:prod` esce dal check richiesto della CI ed entra nei gate
+  advisory (ADR 0004). Il suo esito dipende dal database advisory e non dal diff
+  in revisione: le sei vulnerabilità pubblicate a monte il 2026-07-25
+  (`find-my-way`, `react-router`, `valibot` e i loro transitivi) rendevano rossa
+  ogni PR aperta, docs-only comprese, senza che l'autore potesse risolverle nel
+  proprio scope. Due correzioni in `scripts/syncbay-verify.mjs`: `audit:prod`
+  entra in `ADVISORY_GATE_LABELS`, e `fullCommands()` ora onora
+  `excludeAdvisoryGates`, che prima ignorava — per questo la corsia full
+  eseguiva comunque i gate advisory nonostante la CI passi
+  `--without-advisory-gates`. Il nuovo workflow `audit-prod.yml` lo esegue ogni
+  giorno e sulle PR che toccano dipendenze o lo script; `verify:changed` e
+  `verify:full` in locale continuano a eseguirlo sempre.
 - Il batch automatico del runner passa da `limit=2` a `limit=5` (ADR 0023). La
   modifica vive nella query string del secret Supabase Vault
   `syncbay_run_due_url`, non nel codice applicativo: `DEFAULT_RUN_DUE_LIMIT` era

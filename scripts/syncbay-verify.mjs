@@ -18,7 +18,10 @@ const UI_GATE_LABELS = new Set([
   "npm run ui:check",
   "npm run ui:browser-check",
 ]);
-const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor"]);
+// Gate il cui esito dipende dal mondo esterno (database advisory, registry) e
+// non dal diff in revisione: restano obbligatori in locale e su workflow
+// dedicati, ma non bloccano il merge di una PR che non li ha causati.
+const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor", "npm run audit:prod"]);
 
 // La formattazione riguarda ogni tipo di file, quindi il controllo vale per
 // tutte le corsie, docs incluse. Costa circa 7 secondi ed e' il gate piu'
@@ -61,7 +64,7 @@ export function buildVerificationPlan({
 } = {}) {
   if (mode === "full") {
     return {
-      commands: fullCommands({ excludeUiGates }),
+      commands: fullCommands({ excludeAdvisoryGates, excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -74,7 +77,7 @@ export function buildVerificationPlan({
 
   if ((review?.unmatchedFiles ?? []).length > 0) {
     return {
-      commands: fullCommands({ excludeUiGates }),
+      commands: fullCommands({ excludeAdvisoryGates, excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -444,10 +447,11 @@ function cloneCommands(commands) {
   return commands.map((entry) => ({ ...entry, args: [...entry.args] }));
 }
 
-function fullCommands({ excludeUiGates = false } = {}) {
-  const commands = excludeUiGates
-    ? FULL_COMMANDS.filter((entry) => !UI_GATE_LABELS.has(entry.label))
-    : FULL_COMMANDS;
+function fullCommands({ excludeAdvisoryGates = false, excludeUiGates = false } = {}) {
+  const commands = FULL_COMMANDS.filter((entry) => {
+    if (excludeUiGates && UI_GATE_LABELS.has(entry.label)) return false;
+    return !(excludeAdvisoryGates && ADVISORY_GATE_LABELS.has(entry.label));
+  });
   return cloneCommands(commands);
 }
 

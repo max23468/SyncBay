@@ -88,7 +88,14 @@ Esclusioni consapevoli:
   migration canoniche vivono in `prisma/migrations`, non in
   `supabase/migrations`, quindi il check non validava il flusso reale;
 - Vercel, React Doctor e CodeQL restano advisory o path-scoped e non
-  sono status richiesti dal ruleset.
+  sono status richiesti dal ruleset;
+- audit advisory delle dipendenze di produzione: `npm run audit:prod` esce dal
+  check richiesto ed entra nel workflow `audit-prod.yml`, schedulato ogni giorno
+  e path-scoped sulle PR che toccano dipendenze. Un gate che blocca il merge
+  deve essere funzione del diff, mentre l'esito di `npm audit` è funzione della
+  data: come check richiesto una vulnerabilità pubblicata a monte bloccava ogni
+  PR aperta, docs incluse, spingendo a scavalcare la ruleset per motivi
+  estranei al diff. Il gate resta obbligatorio nei comandi locali.
 
 Render SSR e hydration Chromium sono nel workflow `UI browser check`, avviato
 manualmente o con label `full-ui-check` per modifiche UI sostanziali. Non sono
