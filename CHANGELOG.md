@@ -20,6 +20,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   `--without-advisory-gates`. Il nuovo workflow `audit-prod.yml` lo esegue ogni
   giorno e sulle PR che toccano dipendenze o lo script; `verify:changed` e
   `verify:full` in locale continuano a eseguirlo sempre.
+- Riadattata la documentazione agentica alle guide dei modelli di quinta
+  generazione: `AGENTS.md` 239 -> 144 righe, `app/services/AGENTS.md` 29 -> 32
+  (tabella verifiche sostituita da ownership esplicita), `CLAUDE.md` 7 -> 5.
+  Rimossa la duplicazione con `docs/TOOLCHAIN.md` (matrice di verifica per
+  rischio e semantica publish/deploy/release vivevano in entrambi i file), la
+  checklist finale che riassumeva le altre sezioni e lo scaffolding di verifica
+  esplicito (self-review pre-PR, stop condition sui retry) che i modelli attuali
+  eseguono da soli. Aggiunte come intento le calibrazioni comportamentali che le
+  guide indicano: concisione verso il maintainer, cadenza degli aggiornamenti
+  durante il lavoro, lunghezza dei documenti scritti su disco, cap sulla delega a
+  subagent e confine esplicito tra decisioni autonome e conferma. Invarianti di
+  prodotto, regole di sicurezza e dati e vincoli con ADR alle spalle restano
+  invariati nella sostanza.
 - Il batch automatico del runner passa da `limit=2` a `limit=5` (ADR 0023). La
   modifica vive nella query string del secret Supabase Vault
   `syncbay_run_due_url`, non nel codice applicativo: `DEFAULT_RUN_DUE_LIMIT` era
