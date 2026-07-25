@@ -19,6 +19,19 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   `scripts/syncbay-vercel-ignore-build.mjs` lo esclude dal build. Il fallback
   conservativo resta invariato per ogni altro file non classificato, Markdown
   escluso.
+- Chiuse quattro delle sei advisory di produzione con due `overrides`:
+  `find-my-way` `9.6.0 -> 9.7.0` (DDoS via HTTP2, GHSA-c96f-x56v-gq3h) e
+  `valibot` `1.2.0 -> 1.4.2` (`record()` fa lanciare `flatten()`,
+  GHSA-5qjj-4xww-7phc). Entrambe arrivano nell'albero di produzione da
+  `@prisma/client@7 -> prisma -> @prisma/dev`, cioè da un server di sviluppo che
+  Prisma 7 spedisce nel tree del client: `prisma` è già in devDependencies e non
+  bastava. Cadono con loro anche i flag derivati su `@prisma/dev` e `prisma`.
+  L'override è a rischio basso perché `@prisma/dev` non viene eseguito nel
+  runtime SyncBay, e va rimosso quando Prisma aggiornerà le due transitive a
+  monte. Restano `react-router` e `@react-router/node`: la correzione esiste solo
+  in `8.3.0` e la linea 7 non ha backport, ma SyncBay non è esposta perché
+  l'advisory riguarda solo le API RSC instabili, che non usa. Motivazione e
+  condizioni in `docs/BACKLOG.md`.
 - `npm run audit:prod` esce dal check richiesto della CI ed entra nei gate
   advisory (ADR 0004). Il suo esito dipende dal database advisory e non dal diff
   in revisione: le sei vulnerabilità pubblicate a monte il 2026-07-25

@@ -55,6 +55,27 @@ Vincoli da rispettare prima di promuoverla:
 | Rimozione override `ajv`      | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata.                              |
 | Policy production e App Store | Aperta | Esiste un deployment Vercel production per la distribuzione privata, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy    | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi.                                                                     |
+| Migrazione React Router 8     | Aperta | Unica via per chiudere GHSA-qwww-vcr4-c8h2; SyncBay non è esposta perché non usa le API RSC. Vedi sotto.                                                            |
+
+### Migrazione React Router 8
+
+`npm run audit:prod` segnala `react-router` e `@react-router/node` per
+GHSA-qwww-vcr4-c8h2 (CSRF bypass che consente l'esecuzione di una action prima
+della risposta 400). Le versioni affette sono `>=7.12.0 <8.3.0` e la correzione
+esiste solo in `8.3.0`: la linea 7 si ferma a `7.18.1` e non ha backport, quindi
+non c'è aggiornamento possibile dentro la major corrente.
+
+SyncBay non è esposta: l'advisory riguarda esclusivamente le API RSC instabili,
+mentre `react-router.config.ts` usa framework mode con `ssr: true` e nessun
+riferimento RSC. Le due voci restano quindi visibili nell'audit finché la
+migrazione non avviene, senza rischio applicativo reale.
+
+La migrazione è già parzialmente preparata: i future flag `v8_middleware`,
+`v8_passThroughRequests`, `v8_splitRouteModules`,
+`v8_trailingSlashAwareDataRequests` e `v8_viteEnvironmentApi` sono attivi. Resta
+da valutare l'impatto su `@vercel/react-router`, sul preset Vercel e sulle route
+embedded prima di promuoverla in roadmap; è un major applicativo, non un fix di
+sicurezza, e merita il suo ADR.
 
 ## Decisioni collegate
 
