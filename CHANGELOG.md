@@ -204,6 +204,14 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.82] — 2026-07-26
+
+### Correzioni
+
+- Il runner limita al primo slot incrementale la priorità dei delta live e torna
+  poi all'ordine FIFO, evitando che un flusso continuo di eventi eBay affami i
+  job di riconciliazione catalogo già aperti.
+
 ## [1.0.81] — 2026-07-24
 
 ### Correzioni
@@ -4073,6 +4081,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.82]: #1082--2026-07-26
 [1.0.81]: #1081--2026-07-24
 [1.0.80]: #1080--2026-07-22
 [1.0.79]: #1079--2026-07-20
