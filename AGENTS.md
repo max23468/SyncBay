@@ -46,6 +46,10 @@ real-time. Il limite operativo è 2.000 prodotti per shop.
 
 ## Provider e UI
 
+- Per operazioni remote usa prima plugin, connector, MCP o app provider
+  disponibili; ricorri a CLI, API raw o browser solo per capacità mancanti o
+  fallite, dichiarando il fallback. Non aggirare permessi, policy, rate limit,
+  quote o blocchi economici.
 - Shopify: Admin GraphQL per prodotti, inventario, media e webhook, mantenendo
   compatibilità con Shopify CLI, App Bridge e app embedded. Location, inventory
   item, stato prodotto, media e webhook sono superfici critiche.
