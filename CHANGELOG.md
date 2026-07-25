@@ -69,7 +69,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   durante il lavoro, lunghezza dei documenti scritti su disco, cap sulla delega a
   subagent e confine esplicito tra decisioni autonome e conferma. Invarianti di
   prodotto, regole di sicurezza e dati e vincoli con ADR alle spalle restano
-  invariati nella sostanza.
+  invariati nella sostanza. Ripristinata inoltre in forma compatta la regola
+  provider-first, rimossa per errore durante il taglio: plugin, connector, MCP o
+  app disponibili precedono CLI, API raw e browser per le operazioni remote.
 - Il batch automatico del runner passa da `limit=2` a `limit=5` (ADR 0023). La
   modifica vive nella query string del secret Supabase Vault
   `syncbay_run_due_url`, non nel codice applicativo: `DEFAULT_RUN_DUE_LIMIT` era
