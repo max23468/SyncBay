@@ -47,7 +47,7 @@ export function buildRunnerLanePlan(input: {
 }
 
 export function shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs: number) {
-  return selectedIncrementalJobs === 0;
+  return selectedIncrementalJobs !== 1;
 }
 
 export function shouldClaimRunnerJob(input: { deadlineAt?: Date; now: Date }) {

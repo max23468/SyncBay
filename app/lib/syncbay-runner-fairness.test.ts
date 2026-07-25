@@ -47,7 +47,7 @@ test("uses the remaining lane for regular sync when stock is absent", () => {
   );
 });
 
-test("runs an open reconcile despite continuous live deltas", () => {
+test("reserves one slot for reconcile and keeps the others for live deltas", () => {
   const pending = ["reconcile"];
   const selected = Array.from({ length: 5 }, (_, selectedIncrementalJobs) => {
     pending.push(`delta-${selectedIncrementalJobs}`);
@@ -58,7 +58,7 @@ test("runs an open reconcile despite continuous live deltas", () => {
     return pending.splice(deltaIndex >= 0 ? deltaIndex : 0, 1)[0];
   });
 
-  assert.deepEqual(selected.slice(0, 2), ["delta-0", "reconcile"]);
+  assert.deepEqual(selected, ["delta-0", "reconcile", "delta-1", "delta-2", "delta-3"]);
 });
 
 test("does not claim another job after the request deadline", () => {

@@ -411,9 +411,9 @@ async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[]; now: D
 // eBay -> Shopify resta ferma finché il giro non è drenato (ore, a pochi batch
 // per tick). I delta sono anche gli unici job che fanno avanzare il watermark di
 // verifica catalogo, quindi nel frattempo la UI marca l'intero catalogo come
-// "Da controllare". Il primo slot incrementale privilegia il delta live; quelli
-// successivi tornano FIFO, così un flusso continuo di delta non affama il
-// reconcile già aperto.
+// "Da controllare". Il secondo slot incrementale resta FIFO per far avanzare il
+// reconcile già aperto; tutti gli altri privilegiano i delta live, così i batch
+// dello stesso delta non slittano ai tick successivi.
 async function findDueRegularIncrementalSyncJobs(input: {
   excludeIds?: string[];
   limit: number;
