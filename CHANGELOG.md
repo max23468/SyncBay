@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Aggiornate le dipendenze non-major: Prisma e adapter `7.9.0 -> 7.9.1`,
+  Playwright `1.61.1 -> 1.62.0`, oxlint `1.75.0 -> 1.76.0` e oxfmt
+  `0.60.0 -> 0.61.0`. La toolchain documentata usa npm `11.18.0`.
 - `audit:prod` accetta esplicitamente le advisory senza correzione installabile.
   `ACCEPTED_ADVISORIES` in `scripts/syncbay-audit-prod.mjs` registra
   GHSA-qwww-vcr4-c8h2 (React Router, CSRF bypass in RSC mode) con motivo e
