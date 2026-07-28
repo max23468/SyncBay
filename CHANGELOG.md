@@ -8,8 +8,8 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
-- Aggiornata la toolchain a npm `12.0.1` in locale e CI; Vercel CLI passa a
-  `58.0.0`.
+- Aggiornata la toolchain a npm `12.0.1` in locale, CI e build Vercel; Vercel
+  CLI passa a `58.0.0`.
 - Aggiornate le dipendenze non-major: Prisma e adapter `7.9.0 -> 7.9.1`,
   Playwright `1.61.1 -> 1.62.0`, oxlint `1.75.0 -> 1.76.0` e oxfmt
   `0.60.0 -> 0.61.0`.

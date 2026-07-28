@@ -21,6 +21,9 @@ percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
 rimosso e le dipendenze necessarie solo a build, tooling e migration locali
 vivono in `devDependencies`.
 
+CI e Vercel eseguono esplicitamente npm `12.0.1` prima dell'installazione:
+Node 24 include ancora npm 11, che `engine-strict` rifiuta.
+
 Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
 toolchain coerente con `.node-version`, non dal Node Homebrew globale. Sulla
 postazione Codex attuale l'allineamento persistente passa dagli shim `mise`; se
