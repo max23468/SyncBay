@@ -66,6 +66,11 @@ export function buildCreationPlan({ base = DEFAULT_BASE, branch, context, repoRo
 
 export function getSetupCommands() {
   return [
+    {
+      args: ["install", "--global", "npm@12.0.1"],
+      command: "npm",
+      label: "npm install --global npm@12.0.1",
+    },
     { args: ["install"], command: "npm", label: "npm install" },
     {
       args: ["run", "prisma:generate"],

@@ -21,8 +21,10 @@ percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
 rimosso e le dipendenze necessarie solo a build, tooling e migration locali
 vivono in `devDependencies`.
 
-CI e Vercel eseguono esplicitamente npm `12.0.1` prima dell'installazione:
-Node 24 include ancora npm 11, che `engine-strict` rifiuta.
+CI, Vercel e il setup delle worktree eseguono esplicitamente npm `12.0.1` prima
+dell'installazione: Node 24 include ancora npm 11, che `engine-strict` rifiuta.
+Nel primo setup di un checkout eseguire `npm install --global npm@12.0.1` prima
+di `npm install`.
 
 Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
 toolchain coerente con `.node-version`, non dal Node Homebrew globale. Sulla
@@ -101,7 +103,7 @@ cancellati.
 
 | Scopo                          | Comando                                                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Installazione                  | `npm install`                                                                                                    |
+| Installazione                  | `npm install --global npm@12.0.1` al primo setup, poi `npm install`                                              |
 | Sviluppo Shopify               | `npm run dev`                                                                                                    |
 | Typecheck                      | `npm run typecheck`                                                                                              |
 | Lint (oxlint)                  | `npm run lint`                                                                                                   |
@@ -210,11 +212,12 @@ Il comando usa `origin/main` come base esplicita, deriva il percorso
 worktree, la directory non è ignorata, il ref base manca oppure branch o
 percorso collidono. `--dry-run` mostra il piano senza creare nulla.
 
-Dopo `git worktree add`, il setup esegue in serie `npm install`, una sola
-generazione Prisma, doctor locale, test delle librerie e test dei servizi raw;
-alla fine richiede un checkout pulito. Se uno step fallisce, la worktree viene
-lasciata ispezionabile e il setup si riprende al suo interno con
-`npm run worktree:prepare`, senza una seconda creazione o retry ciechi.
+Dopo `git worktree add`, il setup allinea npm a `12.0.1`, poi esegue in serie
+`npm install`, una sola generazione Prisma, doctor locale, test delle librerie e
+test dei servizi raw; alla fine richiede un checkout pulito. Se uno step
+fallisce, la worktree viene lasciata ispezionabile e il setup si riprende al suo
+interno con `npm run worktree:prepare`, senza una seconda creazione o retry
+ciechi.
 
 ## Verifiche per tipo di modifica
 
