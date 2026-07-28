@@ -67,7 +67,7 @@ test("reports missing worktree dependencies with exact repair commands", () => {
       {
         engines: {
           node: ">=24.15 <25",
-          npm: ">=11 <12",
+          npm: ">=12 <13",
         },
         packageManager: `npm@${npmVersion}`,
       },
