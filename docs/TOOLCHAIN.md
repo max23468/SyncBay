@@ -10,13 +10,13 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Versione locale preferita | `.node-version` = `24.18.0`                   |
 | Range supportato          | `package.json` `engines.node` = `>=24.15 <25` |
 | Enforcement engine        | `.npmrc` con `engine-strict=true`             |
-| Package manager           | `npm@11.18.0`                                 |
+| Package manager           | `npm@12.0.1`                                  |
 | Lockfile                  | `package-lock.json`                           |
 
 Il floor Node `>=24.15` resta il minimo verificato per la catena React Doctor
 risolta dinamicamente su `latest`; non abbassarlo senza rivalidare il quality
 gate corrente. Il package manager canonico è dichiarato in
-`package.json` come `npm@11.18.0`. Il deploy avviene solo su Vercel: il
+`package.json` come `npm@12.0.1`. Il deploy avviene solo su Vercel: il
 percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
 rimosso e le dipendenze necessarie solo a build, tooling e migration locali
 vivono in `devDependencies`.
@@ -36,6 +36,7 @@ forzare installazioni o downgrade dentro la repo.
 | Shopify Admin/Webhook API   | `2026-07`                               |
 | Frontend/backend app        | React Router, React, TypeScript, Vite   |
 | Hosting previsto            | Vercel                                  |
+| CLI hosting                 | Vercel CLI `58.0.0`                     |
 | Database                    | Supabase Postgres                       |
 | ORM                         | Prisma `7.9.1` con `@prisma/adapter-pg` |
 | Queue e scheduler previsti  | Supabase Queues e Supabase Cron         |

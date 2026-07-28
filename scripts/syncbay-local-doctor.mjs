@@ -320,7 +320,7 @@ function satisfiesNodeRange(version, range) {
 function satisfiesNpmRange(version, range) {
   if (!range) return true;
   const [major] = parseVersionParts(version);
-  if (range === ">=11 <12") return major === 11;
+  if (range === ">=12 <13") return major === 12;
   return true;
 }
 

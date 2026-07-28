@@ -58,6 +58,10 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Setup npm per React Doctor full manuale
+        if: github.event_name == 'workflow_dispatch'
+        run: npm install --global npm@12.0.1
+
       - name: Installa dipendenze per React Doctor full manuale
         if: github.event_name == 'workflow_dispatch'
         run: npm ci
