@@ -10,13 +10,13 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Versione locale preferita | `.node-version` = `24.18.0`                   |
 | Range supportato          | `package.json` `engines.node` = `>=24.15 <25` |
 | Enforcement engine        | `.npmrc` con `engine-strict=true`             |
-| Package manager           | `npm@11.17.0`                                 |
+| Package manager           | `npm@11.18.0`                                 |
 | Lockfile                  | `package-lock.json`                           |
 
 Il floor Node `>=24.15` resta il minimo verificato per la catena React Doctor
 risolta dinamicamente su `latest`; non abbassarlo senza rivalidare il quality
 gate corrente. Il package manager canonico è dichiarato in
-`package.json` come `npm@11.17.0`. Il deploy avviene solo su Vercel: il
+`package.json` come `npm@11.18.0`. Il deploy avviene solo su Vercel: il
 percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
 rimosso e le dipendenze necessarie solo a build, tooling e migration locali
 vivono in `devDependencies`.
@@ -37,7 +37,7 @@ forzare installazioni o downgrade dentro la repo.
 | Frontend/backend app        | React Router, React, TypeScript, Vite   |
 | Hosting previsto            | Vercel                                  |
 | Database                    | Supabase Postgres                       |
-| ORM                         | Prisma `7.8.0` con `@prisma/adapter-pg` |
+| ORM                         | Prisma `7.9.1` con `@prisma/adapter-pg` |
 | Queue e scheduler previsti  | Supabase Queues e Supabase Cron         |
 | Storage immagini temporaneo | Supabase Storage privato                |
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights   |
@@ -68,7 +68,7 @@ usa ancora l'opzione deprecata `envFile: false`. La patch versionata in
 a una migrazione verificata a una release React Router/preset Vercel che non
 emetta più quel warning.
 
-Prisma è aggiornato a 7.8.0 con `prisma.config.ts`, generator di compatibilità
+Prisma è aggiornato a 7.9.1 con `prisma.config.ts`, generator di compatibilità
 `prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
 post-generate verso il path atteso da `@prisma/client`. Questa scelta mantiene
 compatibili il test runner Node nativo e il template React Router finché il
