@@ -2520,6 +2520,9 @@ export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput)
             jobPayloads.length > 1 ? `:${index + 1}` : ""
           }`
         : null;
+      // Sequenziale per forza: transazione interattiva Prisma su connessione
+      // singola, e la coalescenza vede i job creati dai payload precedenti.
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       const coalescedJob = await findCoalescedWebhookJob(tx, {
         details,
         jobType,
