@@ -21,6 +21,20 @@ export function getOrderLineMappingLookup(input: {
   return null;
 }
 
+export function getOrderReservationSnapshotLookups(input: {
+  lineItemKeys: (string | null)[];
+  orderResourceId: string | null;
+}) {
+  return [
+    ...(input.orderResourceId
+      ? [{ field: "shopifyOrderId" as const, value: input.orderResourceId }]
+      : []),
+    ...input.lineItemKeys.flatMap((value) =>
+      value ? [{ field: "orderLineItemKey" as const, value }] : [],
+    ),
+  ];
+}
+
 export function getShopifyOrderStockTarget(input: {
   action: ShopifyOrderStockAction;
   ebayAvailableQuantity?: number | null;

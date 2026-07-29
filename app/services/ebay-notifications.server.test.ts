@@ -20,6 +20,7 @@ test("rejects attacker-controlled public key IDs before provider lookup", async 
   await assert.rejects(
     verifyEbayNotificationSignature({
       body: Buffer.from("{}"),
+      lookupBudgetKey: "synthetic-source",
       signatureHeader,
     }),
     (error: unknown) =>
@@ -30,7 +31,7 @@ test("rejects attacker-controlled public key IDs before provider lookup", async 
   vi.unstubAllGlobals();
 });
 
-test("bounds unique unauthenticated public key lookups", async () => {
+test("bounds public key lookups without exhausting another source budget", async () => {
   const originalClientId = process.env.EBAY_CLIENT_ID;
   const originalClientSecret = process.env.EBAY_CLIENT_SECRET;
   process.env.EBAY_CLIENT_ID = "synthetic-client";
@@ -55,12 +56,28 @@ test("bounds unique unauthenticated public key lookups", async () => {
       await assert.rejects(
         verifyEbayNotificationSignature({
           body: Buffer.from("{}"),
+          lookupBudgetKey: "abusive-source",
           signatureHeader,
         }),
       );
     }
 
     assert.equal(fetchMock.mock.calls.length, 21);
+
+    const independentSignatureHeader = Buffer.from(
+      JSON.stringify({
+        kid: "independent-key",
+        signature: "c3ludGhldGlj",
+      }),
+    ).toString("base64");
+    await assert.rejects(
+      verifyEbayNotificationSignature({
+        body: Buffer.from("{}"),
+        lookupBudgetKey: "provider-source",
+        signatureHeader: independentSignatureHeader,
+      }),
+    );
+    assert.equal(fetchMock.mock.calls.length, 22);
   } finally {
     vi.unstubAllGlobals();
     restoreEnv("EBAY_CLIENT_ID", originalClientId);

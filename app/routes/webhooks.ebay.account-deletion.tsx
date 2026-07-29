@@ -99,6 +99,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await processEbayAccountDeletionNotification({
       body,
+      lookupBudgetKey:
+        request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() || "unattributed",
       signatureHeader: request.headers.get("x-ebay-signature"),
     });
   } catch (error) {
