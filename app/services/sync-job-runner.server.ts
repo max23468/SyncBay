@@ -122,6 +122,7 @@ import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-reco
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
 import {
   getOrderLineMappingLookup,
+  getOrderReservationSnapshotLookups,
   getShopifyOrderStockAction,
   getShopifyOrderStockTarget,
 } from "../lib/syncbay-order-stock";
@@ -3950,28 +3951,19 @@ async function findOrderStockReservationSnapshots(input: {
   orderResourceId: string | null;
   shopId: string;
 }) {
-  const lineItemKeys = input.lineItemKeys.filter((lineItemKey): lineItemKey is string =>
-    Boolean(lineItemKey),
-  );
+  const lookups = getOrderReservationSnapshotLookups(input);
 
-  if (!input.orderResourceId && lineItemKeys.length === 0) return [];
+  if (lookups.length === 0) return [];
 
   return prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
     where: {
       AND: [
-        input.orderResourceId
-          ? {
-              payload: {
-                path: ["shopifyOrderId"],
-                equals: input.orderResourceId,
-              },
-            }
-          : {
-              OR: lineItemKeys.map((lineItemKey) => ({
-                payload: { path: ["orderLineItemKey"], equals: lineItemKey },
-              })),
-            },
+        {
+          OR: lookups.map((lookup) => ({
+            payload: { path: [lookup.field], equals: lookup.value },
+          })),
+        },
         {
           payload: {
             path: ["updatedEbayFromShopifyOrder"],

@@ -36,10 +36,12 @@ export class EbayAccountDeletionPayloadError extends Error {
 
 export async function processEbayAccountDeletionNotification(input: {
   body: Buffer;
+  lookupBudgetKey: string;
   signatureHeader: string | null;
 }) {
   const verification = await verifyEbayNotificationSignature({
     body: input.body,
+    lookupBudgetKey: input.lookupBudgetKey,
     signatureHeader: input.signatureHeader,
   });
   const notification = parseAccountDeletionNotification(input.body.toString("utf8"));

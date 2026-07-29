@@ -3,6 +3,7 @@ import { test } from "vitest";
 
 import {
   getOrderLineMappingLookup,
+  getOrderReservationSnapshotLookups,
   getShopifyOrderStockAction,
   getShopifyOrderStockTarget,
 } from "./syncbay-order-stock.ts";
@@ -26,6 +27,20 @@ test("never falls back from an unmapped Shopify variant to a sibling mapping", (
       shopifyProductGid: "gid://shopify/Product/1",
       shopifyVariantGid: null,
     },
+  );
+});
+
+test("finds reservation snapshots by both order and line identifiers", () => {
+  assert.deepEqual(
+    getOrderReservationSnapshotLookups({
+      lineItemKeys: ["line-1", null, "line-2"],
+      orderResourceId: "order-1",
+    }),
+    [
+      { field: "shopifyOrderId", value: "order-1" },
+      { field: "orderLineItemKey", value: "line-1" },
+      { field: "orderLineItemKey", value: "line-2" },
+    ],
   );
 });
 

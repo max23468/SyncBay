@@ -44,6 +44,7 @@ const PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
 const PUBLIC_KEY_FAILURE_CACHE_TTL_MS = 30 * 1000;
 const PUBLIC_KEY_LOOKUP_LIMIT = 20;
 const PUBLIC_KEY_LOOKUP_WINDOW_MS = 60 * 1000;
+const PUBLIC_KEY_LOOKUP_SCOPE_LIMIT = 1000;
 const EBAY_REQUEST_TIMEOUT_MS = 5 * 1000;
 const SIGNATURE_HEADER_MAX_BYTES = 8 * 1024;
 const PUBLIC_KEY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
@@ -54,7 +55,7 @@ let applicationTokenPromise: Promise<string> | null = null;
 const publicKeyCache = new Map<string, CachedPublicKey>();
 const failedPublicKeyCache = new Map<string, number>();
 const publicKeyLookups = new Map<string, Promise<string>>();
-const publicKeyLookupTimestamps: number[] = [];
+const publicKeyLookupTimestampsByScope = new Map<string, number[]>();
 
 export class EbayNotificationSignatureError extends Error {
   constructor(
@@ -68,10 +69,11 @@ export class EbayNotificationSignatureError extends Error {
 
 export async function verifyEbayNotificationSignature(input: {
   body: Buffer;
+  lookupBudgetKey: string;
   signatureHeader: string | null;
 }) {
   const header = parseSignatureHeader(input.signatureHeader);
-  const publicKey = await getEbayPublicKey(header.kid);
+  const publicKey = await getEbayPublicKey(header.kid, input.lookupBudgetKey);
   const verifier = crypto.createVerify("sha1");
   verifier.update(input.body);
   verifier.end();
@@ -143,7 +145,7 @@ function parseSignatureHeader(signatureHeader: string | null) {
   };
 }
 
-async function getEbayPublicKey(publicKeyId: string) {
+async function getEbayPublicKey(publicKeyId: string, lookupBudgetKey: string) {
   const now = Date.now();
   for (const [keyId, expiresAt] of failedPublicKeyCache) {
     if (expiresAt <= now) failedPublicKeyCache.delete(keyId);
@@ -161,16 +163,11 @@ async function getEbayPublicKey(publicKeyId: string) {
   const pendingLookup = publicKeyLookups.get(publicKeyId);
   if (pendingLookup) return pendingLookup;
 
-  while (
-    publicKeyLookupTimestamps[0] &&
-    publicKeyLookupTimestamps[0] <= now - PUBLIC_KEY_LOOKUP_WINDOW_MS
-  ) {
-    publicKeyLookupTimestamps.shift();
-  }
-  if (publicKeyLookupTimestamps.length >= PUBLIC_KEY_LOOKUP_LIMIT) {
+  const lookupTimestamps = getPublicKeyLookupTimestamps(lookupBudgetKey, now);
+  if (lookupTimestamps.length >= PUBLIC_KEY_LOOKUP_LIMIT) {
     throw new Error("Limite temporaneo lookup public key eBay raggiunto.");
   }
-  publicKeyLookupTimestamps.push(now);
+  lookupTimestamps.push(now);
 
   const lookup = fetchEbayPublicKey(publicKeyId);
   publicKeyLookups.set(publicKeyId, lookup);
@@ -183,6 +180,30 @@ async function getEbayPublicKey(publicKeyId: string) {
   } finally {
     publicKeyLookups.delete(publicKeyId);
   }
+}
+
+function getPublicKeyLookupTimestamps(lookupBudgetKey: string, now: number) {
+  for (const [scope, timestamps] of publicKeyLookupTimestampsByScope) {
+    while (timestamps[0] && timestamps[0] <= now - PUBLIC_KEY_LOOKUP_WINDOW_MS) {
+      timestamps.shift();
+    }
+    if (timestamps.length === 0) publicKeyLookupTimestampsByScope.delete(scope);
+  }
+
+  const scope = lookupBudgetKey.trim().slice(0, 128) || "unattributed";
+  let timestamps = publicKeyLookupTimestampsByScope.get(scope);
+  if (timestamps) return timestamps;
+
+  // ponytail: limite LRU per istanza; passare a uno store distribuito solo se
+  // l'abuso multi-IP supera concretamente le difese del provider/Vercel.
+  if (publicKeyLookupTimestampsByScope.size >= PUBLIC_KEY_LOOKUP_SCOPE_LIMIT) {
+    const oldestScope = publicKeyLookupTimestampsByScope.keys().next().value;
+    if (oldestScope) publicKeyLookupTimestampsByScope.delete(oldestScope);
+  }
+
+  timestamps = [];
+  publicKeyLookupTimestampsByScope.set(scope, timestamps);
+  return timestamps;
 }
 
 async function fetchEbayPublicKey(publicKeyId: string) {
