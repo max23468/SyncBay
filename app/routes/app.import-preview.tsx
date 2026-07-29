@@ -23,6 +23,7 @@ import {
 } from "../components/ImportExecutionSections";
 import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { parseFormDataWithLimit } from "../lib/syncbay-request-body";
 import { parseExistingCatalogLegacyTagsToRemove } from "../lib/syncbay-existing-catalog-field-policy";
 import {
   formatExistingCatalogFieldPolicy,
@@ -176,10 +177,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const [{ admin, session }, formData] = await Promise.all([
-    authenticate.admin(request),
-    request.formData(),
-  ]);
+  const { admin, session } = await authenticate.admin(request);
+  const formData = await parseFormDataWithLimit(request);
   const intent = String(formData.get("intent") ?? "saveLocation");
 
   if (intent === "createDraftProducts") {

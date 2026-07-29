@@ -11,6 +11,7 @@ import {
 import { LiveSync } from "../components/SyncBayLive";
 import { useActionToast } from "../hooks/use-action-toast";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { parseFormDataWithLimit } from "../lib/syncbay-request-body";
 import { SYNCBAY_COPY } from "../lib/syncbay-copy";
 import {
   formatItDateTime as formatDateTime,
@@ -93,10 +94,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const [{ session }, formData] = await Promise.all([
-    authenticate.admin(request),
-    request.formData(),
-  ]);
+  const { session } = await authenticate.admin(request);
+  const formData = await parseFormDataWithLimit(request);
   const intent = String(formData.get("intent") ?? "");
 
   if (intent === "retryJob") {

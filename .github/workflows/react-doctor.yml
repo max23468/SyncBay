@@ -19,7 +19,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  issues: write
   statuses: write
 
 concurrency:
@@ -33,13 +32,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: React Doctor sui file cambiati
         if: github.event_name == 'pull_request'
-        uses: millionco/react-doctor@v2
+        uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
         with:
           node-version: 24
-          version: latest
+          version: 0.9.2
           # I finding sono advisory: score e review restano visibili, ma non
           # generano un run rosso. Errori operativi dello scanner continuano a
           # fallire l'action.

@@ -87,9 +87,10 @@ import { getShopifyProductThumbnailUrl } from "../lib/syncbay-shopify-product-th
 import { hasEffectiveShopifyScope } from "../lib/syncbay-shopify-scopes";
 import { getKeepShopifyDescriptionHash } from "../lib/syncbay-keep-shopify-baseline";
 import {
-  getShopifyWebhookJobPayload,
+  getShopifyWebhookJobPayloads,
   normalizeShopifyWebhookTopic,
   SHOPIFY_WEBHOOK_TOPICS,
+  shouldRecordShopifyWebhook,
 } from "../lib/syncbay-shopify-webhook";
 import { shouldWriteShopifyWebhookAuditLog } from "../lib/syncbay-webhook-audit";
 import { getCatalogSyncHealth } from "../lib/syncbay-sync-health";
@@ -2479,42 +2480,46 @@ export async function updateShopifyScopes(shopDomain: string, scopes: string[]) 
 
 export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput) {
   const normalizedTopic = normalizeShopifyWebhookTopic(input.topic);
-  const shop = await prisma.shop.upsert({
-    where: { shopDomain: input.shopDomain },
-    create: {
-      installationStatus: ShopInstallationStatus.INSTALLED,
-      shopDomain: input.shopDomain,
-      syncTargetSeconds: getSyncTargetSeconds(),
-    },
-    update: {
-      installationStatus: ShopInstallationStatus.INSTALLED,
-    },
-  });
   const jobType = getPlaceholderJobType(normalizedTopic);
-  const details = {
-    ...getWebhookJobPayload(normalizedTopic, input.payload),
-    provider: "shopify",
-    resourceId: input.resourceId ?? null,
-    topic: normalizedTopic,
-    webhookId: input.webhookId ?? null,
-  } satisfies Prisma.JsonObject;
+  const jobPayloads = getShopifyWebhookJobPayloads(normalizedTopic, input.payload);
 
-  if (jobType) {
-    const idempotencyKey = input.webhookId
-      ? `shopify:${shop.id}:${normalizedTopic}:${input.webhookId}`
-      : null;
-    const jobData = {
-      idempotencyKey,
-      payload: details,
-      shopId: shop.id,
-      status: SyncJobStatus.PENDING,
-      type: jobType,
-    };
-    await prisma.$transaction(async (tx) => {
-      let coalesced = false;
-      let jobCreated = false;
-      await lockShopForWebhookCoalescing(tx, shop.id);
+  await prisma.$transaction(async (tx) => {
+    const shop = await tx.shop.upsert({
+      where: { shopDomain: input.shopDomain },
+      create: {
+        installationStatus: ShopInstallationStatus.INSTALLED,
+        shopDomain: input.shopDomain,
+        syncTargetSeconds: getSyncTargetSeconds(),
+      },
+      update: {},
+    });
+    await lockShopForWebhookCoalescing(tx, shop.id);
 
+    const installation = await tx.shop.findUniqueOrThrow({
+      select: { installationStatus: true },
+      where: { id: shop.id },
+    });
+    if (!shouldRecordShopifyWebhook(installation.installationStatus)) return;
+
+    let anyJobCoalesced = false;
+    let anyJobCreated = false;
+
+    for (const [index, payload] of jobPayloads.entries()) {
+      const details = {
+        ...payload,
+        provider: "shopify",
+        resourceId: input.resourceId ?? null,
+        topic: normalizedTopic,
+        webhookId: input.webhookId ?? null,
+      } satisfies Prisma.JsonObject;
+
+      if (!jobType) continue;
+
+      const idempotencyKey = input.webhookId
+        ? `shopify:${shop.id}:${normalizedTopic}:${input.webhookId}${
+            jobPayloads.length > 1 ? `:${index + 1}` : ""
+          }`
+        : null;
       const coalescedJob = await findCoalescedWebhookJob(tx, {
         details,
         jobType,
@@ -2537,51 +2542,69 @@ export async function recordShopifyWebhookPlaceholder(input: WebhookRecordInput)
           },
         });
 
-        coalesced = updated.count === 1;
+        anyJobCoalesced ||= updated.count === 1;
+        if (updated.count === 1) continue;
       }
 
-      if (!coalesced) {
-        if (idempotencyKey) {
-          const created = await tx.syncJob.createMany({
-            data: [jobData],
-            skipDuplicates: true,
-          });
-          jobCreated = created.count === 1;
-        } else {
-          await tx.syncJob.create({ data: jobData });
-          jobCreated = true;
-        }
-      }
-
-      if (
-        shouldWriteShopifyWebhookAuditLog({
-          jobCoalesced: coalesced,
-          jobCreated,
-          jobType,
-        })
-      ) {
-        await tx.auditLog.create({
-          select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-          data: {
-            details,
-            message: "Webhook Shopify ricevuto e tracciato.",
-            shopId: shop.id,
-            type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
-          },
+      const jobData = {
+        idempotencyKey,
+        payload: details,
+        shopId: shop.id,
+        status: SyncJobStatus.PENDING,
+        type: jobType,
+      };
+      if (idempotencyKey) {
+        const created = await tx.syncJob.createMany({
+          data: [jobData],
+          skipDuplicates: true,
         });
+        anyJobCreated ||= created.count === 1;
+      } else {
+        await tx.syncJob.create({ data: jobData });
+        anyJobCreated = true;
       }
-    });
-    return;
-  }
+    }
 
-  await prisma.auditLog.create({
-    select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
-    data: {
-      details,
-      message: "Webhook Shopify ricevuto e tracciato.",
-      shopId: shop.id,
-      type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
-    },
+    if (
+      shouldWriteShopifyWebhookAuditLog({
+        jobCoalesced: anyJobCoalesced,
+        jobCreated: anyJobCreated,
+        jobType,
+      })
+    ) {
+      await tx.auditLog.create({
+        select: SYNCBAY_AUDIT_LOG_CREATE_SELECT,
+        data: {
+          details:
+            jobPayloads.length === 1
+              ? {
+                  ...jobPayloads[0],
+                  provider: "shopify",
+                  resourceId: input.resourceId ?? null,
+                  topic: normalizedTopic,
+                  webhookId: input.webhookId ?? null,
+                }
+              : {
+                  jobBatchCount: jobPayloads.length,
+                  lineItemCount: jobPayloads.reduce(
+                    (count, payload) =>
+                      count +
+                      ("lineItems" in payload && Array.isArray(payload.lineItems)
+                        ? payload.lineItems.length
+                        : 0),
+                    0,
+                  ),
+                  provider: "shopify",
+                  resourceId: input.resourceId ?? null,
+                  topic: normalizedTopic,
+                  webhookId: input.webhookId ?? null,
+                },
+          message: "Webhook Shopify ricevuto e tracciato.",
+          shopId: shop.id,
+          type: AuditEventType.SHOPIFY_WEBHOOK_RECEIVED,
+        },
+      });
+    }
   });
 }
 
@@ -2666,10 +2689,6 @@ function getPlaceholderJobType(topic: string) {
   if (topic === "inventory_levels/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
-}
-
-function getWebhookJobPayload(topic: string, payload: unknown) {
-  return getShopifyWebhookJobPayload(topic, payload) satisfies Prisma.JsonObject;
 }
 
 export function getEbayMarketplaceId() {

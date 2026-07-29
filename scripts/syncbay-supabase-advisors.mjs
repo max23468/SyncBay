@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 
-import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv, getSupabaseCliPath } from "./supabase-cli-env.mjs";
 
 const VALID_TYPES = new Set(["security", "performance"]);
 
 if (import.meta.main) {
   const advisorType = parseAdvisorType(process.argv.slice(2));
   const result = spawnSync(
-    "npx",
-    ["supabase", "db", "advisors", "--linked", "--type", advisorType],
+    getSupabaseCliPath(),
+    ["db", "advisors", "--linked", "--type", advisorType],
     {
       cwd: getSupabaseCliCwd(),
       env: await getSupabaseCliEnv(),

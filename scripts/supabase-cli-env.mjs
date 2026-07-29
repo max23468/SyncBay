@@ -1,12 +1,28 @@
 import { execFile, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
 const SUPABASE_DB_PASSWORD_KEYCHAIN_SERVICE = "syncbay-supabase-db-password";
 const SUPABASE_DB_PASSWORD_KEYCHAIN_ACCOUNT = "SyncBay";
+const SUPABASE_CLI_PATH = fileURLToPath(new URL("../node_modules/.bin/supabase", import.meta.url));
+const SUPABASE_CLI_ENV_KEYS = [
+  "HOME",
+  "HTTPS_PROXY",
+  "HTTP_PROXY",
+  "NO_PROXY",
+  "PATH",
+  "SSL_CERT_FILE",
+  "SUPABASE_ACCESS_TOKEN",
+  "SUPABASE_DB_PASSWORD",
+  "SUPABASE_PROJECT_REF",
+  "SUPABASE_TELEMETRY_DISABLED",
+  "TMPDIR",
+  "XDG_CONFIG_HOME",
+];
 
 let cachedEnvPromise;
 
@@ -22,8 +38,8 @@ export async function getSupabaseCliEnv() {
 // Prima viveva copiata, con piccole varianti, in ogni script di manutenzione.
 export async function querySupabaseJson(sql, options = {}) {
   const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "db", "query", "--linked", "--output", "json", sql],
+    getSupabaseCliPath(),
+    ["db", "query", "--linked", "--output", "json", sql],
     {
       cwd: options.cwd ?? getSupabaseCliCwd(),
       env: await getSupabaseCliEnv(),
@@ -54,6 +70,10 @@ export function findJsonStart(value) {
 
 export function sqlString(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+export function getSupabaseCliPath() {
+  return SUPABASE_CLI_PATH;
 }
 
 export function sqlQuote(value) {
@@ -116,8 +136,12 @@ async function buildSupabaseCliEnv() {
 }
 
 export function withSupabaseCliDefaults(env) {
+  const allowedEnv = Object.fromEntries(
+    SUPABASE_CLI_ENV_KEYS.flatMap((key) => (typeof env[key] === "string" ? [[key, env[key]]] : [])),
+  );
+
   return {
-    ...env,
+    ...allowedEnv,
     SUPABASE_TELEMETRY_DISABLED: env.SUPABASE_TELEMETRY_DISABLED ?? "1",
   };
 }

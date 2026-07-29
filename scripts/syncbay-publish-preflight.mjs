@@ -3,6 +3,7 @@
 import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
+import { isTrustedCodexLogin } from "../.github/scripts/codex-pr-comments-helpers.mjs";
 
 const REQUIRED_SCRIPTS = [
   "doctor:local",
@@ -347,12 +348,13 @@ export function readCodexReviewThreads(prNumber, options = {}) {
         : null;
   } while (after);
 
-  const codexLoginPattern = new RegExp(process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex", "i");
   const actionable = threads.some(
     (thread) =>
       !thread.isResolved &&
       !thread.isOutdated &&
-      thread.comments.nodes.some((comment) => codexLoginPattern.test(comment.author?.login ?? "")),
+      thread.comments.nodes.some((comment) =>
+        isTrustedCodexLogin(comment.author?.login ?? "", process.env.CODEX_BOT_LOGINS),
+      ),
   );
 
   return {

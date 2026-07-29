@@ -41,10 +41,20 @@ const EBAY_PUBLIC_KEY_URLS = {
 
 const EBAY_APPLICATION_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
+const PUBLIC_KEY_FAILURE_CACHE_TTL_MS = 30 * 1000;
+const PUBLIC_KEY_LOOKUP_LIMIT = 20;
+const PUBLIC_KEY_LOOKUP_WINDOW_MS = 60 * 1000;
+const EBAY_REQUEST_TIMEOUT_MS = 5 * 1000;
+const SIGNATURE_HEADER_MAX_BYTES = 8 * 1024;
+const PUBLIC_KEY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 const TOKEN_EXPIRY_SAFETY_MS = 60 * 1000;
 
 let cachedApplicationToken: CachedApplicationToken | null = null;
+let applicationTokenPromise: Promise<string> | null = null;
 const publicKeyCache = new Map<string, CachedPublicKey>();
+const failedPublicKeyCache = new Map<string, number>();
+const publicKeyLookups = new Map<string, Promise<string>>();
+const publicKeyLookupTimestamps: number[] = [];
 
 export class EbayNotificationSignatureError extends Error {
   constructor(
@@ -87,6 +97,13 @@ function parseSignatureHeader(signatureHeader: string | null) {
     );
   }
 
+  if (Buffer.byteLength(signatureHeader) > SIGNATURE_HEADER_MAX_BYTES) {
+    throw new EbayNotificationSignatureError(
+      "Header X-EBAY-SIGNATURE troppo grande.",
+      "signature_malformed",
+    );
+  }
+
   let decoded: unknown;
   try {
     decoded = JSON.parse(decodeBase64(signatureHeader).toString("utf8"));
@@ -105,7 +122,13 @@ function parseSignatureHeader(signatureHeader: string | null) {
   }
 
   const header = decoded as EbaySignatureHeader;
-  if (!header.kid || !header.signature) {
+  if (
+    typeof header.kid !== "string" ||
+    !PUBLIC_KEY_ID_PATTERN.test(header.kid) ||
+    typeof header.signature !== "string" ||
+    !header.signature ||
+    header.signature.length > SIGNATURE_HEADER_MAX_BYTES
+  ) {
     throw new EbayNotificationSignatureError(
       "Header X-EBAY-SIGNATURE incompleto.",
       "signature_malformed",
@@ -121,11 +144,48 @@ function parseSignatureHeader(signatureHeader: string | null) {
 }
 
 async function getEbayPublicKey(publicKeyId: string) {
+  const now = Date.now();
+  for (const [keyId, expiresAt] of failedPublicKeyCache) {
+    if (expiresAt <= now) failedPublicKeyCache.delete(keyId);
+  }
   const cached = publicKeyCache.get(publicKeyId);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (cached && cached.expiresAt > now) {
     return cached.key;
   }
 
+  const failedUntil = failedPublicKeyCache.get(publicKeyId) ?? 0;
+  if (failedUntil > now) {
+    throw new Error("Public key eBay non disponibile.");
+  }
+
+  const pendingLookup = publicKeyLookups.get(publicKeyId);
+  if (pendingLookup) return pendingLookup;
+
+  while (
+    publicKeyLookupTimestamps[0] &&
+    publicKeyLookupTimestamps[0] <= now - PUBLIC_KEY_LOOKUP_WINDOW_MS
+  ) {
+    publicKeyLookupTimestamps.shift();
+  }
+  if (publicKeyLookupTimestamps.length >= PUBLIC_KEY_LOOKUP_LIMIT) {
+    throw new Error("Limite temporaneo lookup public key eBay raggiunto.");
+  }
+  publicKeyLookupTimestamps.push(now);
+
+  const lookup = fetchEbayPublicKey(publicKeyId);
+  publicKeyLookups.set(publicKeyId, lookup);
+
+  try {
+    return await lookup;
+  } catch (error) {
+    failedPublicKeyCache.set(publicKeyId, Date.now() + PUBLIC_KEY_FAILURE_CACHE_TTL_MS);
+    throw error;
+  } finally {
+    publicKeyLookups.delete(publicKeyId);
+  }
+}
+
+async function fetchEbayPublicKey(publicKeyId: string) {
   const token = await getEbayApplicationAccessToken();
   // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per distinguere la chiave mancante dall'errore del provider; lo status è verificato subito dopo.
   const response = await fetch(`${getPublicKeyBaseUrl()}/${encodeURIComponent(publicKeyId)}`, {
@@ -133,6 +193,7 @@ async function getEbayPublicKey(publicKeyId: string) {
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
     },
+    signal: AbortSignal.timeout(EBAY_REQUEST_TIMEOUT_MS),
   });
   const json = (await response.json()) as EbayPublicKeyResponse & {
     errors?: Array<{ message?: string }>;
@@ -156,6 +217,16 @@ async function getEbayApplicationAccessToken() {
     return cachedApplicationToken.accessToken;
   }
 
+  applicationTokenPromise ??= fetchEbayApplicationAccessToken();
+
+  try {
+    return await applicationTokenPromise;
+  } finally {
+    applicationTokenPromise = null;
+  }
+}
+
+async function fetchEbayApplicationAccessToken() {
   // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per propagare error e error_description; lo status è verificato subito dopo.
   const response = await fetch(getEbayTokenUrl(), {
     body: new URLSearchParams({
@@ -167,6 +238,7 @@ async function getEbayApplicationAccessToken() {
       "Content-Type": "application/x-www-form-urlencoded",
     },
     method: "POST",
+    signal: AbortSignal.timeout(EBAY_REQUEST_TIMEOUT_MS),
   });
   const json = (await response.json()) as Partial<EbayApplicationTokenResponse> & {
     error?: string;

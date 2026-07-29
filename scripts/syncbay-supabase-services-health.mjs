@@ -9,6 +9,7 @@ import {
   buildSupabaseServiceHeaders,
   classifySupabaseServiceResponse,
 } from "../app/lib/syncbay-supabase-service-health.ts";
+import { getSupabaseCliEnv, getSupabaseCliPath } from "./supabase-cli-env.mjs";
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -111,13 +112,10 @@ async function resolveSupabaseApiKey(projectRef) {
   }
 
   const { stdout } = await execFileAsync(
-    "npx",
-    ["supabase", "projects", "api-keys", "--project-ref", projectRef, "--output", "json"],
+    getSupabaseCliPath(),
+    ["projects", "api-keys", "--project-ref", projectRef, "--output", "json"],
     {
-      env: {
-        ...process.env,
-        SUPABASE_TELEMETRY_DISABLED: "1",
-      },
+      env: await getSupabaseCliEnv(),
       maxBuffer: 1024 * 1024,
       timeout: 30_000,
     },

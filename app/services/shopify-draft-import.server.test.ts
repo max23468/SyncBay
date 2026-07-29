@@ -9,7 +9,10 @@ import {
 } from "../lib/syncbay-catalog-import-execution";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
-import { isDraftProductUnchangedSinceLastEbaySnapshot } from "./shopify-draft-import.server";
+import {
+  downloadImageForStaging,
+  isDraftProductUnchangedSinceLastEbaySnapshot,
+} from "./shopify-draft-import.server";
 
 function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
   const executedJobIds: string[] = [];
@@ -125,6 +128,44 @@ test("the real catalog executor cannot create or finalize an internal job", () =
 
   assert.doesNotMatch(importSource, /prisma\.syncJob\.(?:create|update|upsert)/);
   assert.doesNotMatch(importSource, /startDraftImportJob|finishDraftImportJob/);
+});
+
+test("image staging rejects private destinations and oversized streams", async () => {
+  const fetchCalls: string[] = [];
+  const privateResult = await downloadImageForStaging("https://127.0.0.1/image.jpg", {
+    fetchImpl: async (url) => {
+      fetchCalls.push(String(url));
+      return new Response();
+    },
+  });
+
+  assert.equal(privateResult.status, "failed");
+  assert.equal(fetchCalls.length, 0);
+
+  const redirectResult = await downloadImageForStaging("https://images.example/image.jpg", {
+    fetchImpl: async (url) => {
+      fetchCalls.push(String(url));
+      return new Response(null, {
+        headers: { location: "https://127.0.0.1/internal" },
+        status: 302,
+      });
+    },
+    lookupHost: async () => [{ address: "93.184.216.34", family: 4 }],
+  });
+
+  assert.equal(redirectResult.status, "failed");
+  assert.equal(fetchCalls.length, 1);
+
+  const oversizedResult = await downloadImageForStaging("https://images.example/image.jpg", {
+    fetchImpl: async () =>
+      new Response("12345", {
+        headers: { "content-type": "image/jpeg" },
+      }),
+    lookupHost: async () => [{ address: "93.184.216.34", family: 4 }],
+    maxBytes: 4,
+  });
+
+  assert.equal(oversizedResult.status, "failed");
 });
 
 type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];

@@ -4,6 +4,23 @@ export function getShopifyOrderStockAction(value: unknown) {
   return value === "restore" ? "restore" : "decrement";
 }
 
+export function getOrderLineMappingLookup(input: {
+  shopifyProductGid: string | null;
+  shopifyVariantGid: string | null;
+}) {
+  if (input.shopifyVariantGid) {
+    return { shopifyVariantGid: input.shopifyVariantGid };
+  }
+  if (input.shopifyProductGid) {
+    return {
+      shopifyProductGid: input.shopifyProductGid,
+      shopifyVariantGid: null,
+    };
+  }
+
+  return null;
+}
+
 export function getShopifyOrderStockTarget(input: {
   action: ShopifyOrderStockAction;
   ebayAvailableQuantity?: number | null;

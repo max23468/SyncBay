@@ -156,7 +156,7 @@ cancellati.
 | Diagnostica immagini Catalogo  | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`                                       |
 | Test guardia stock eBay        | `npm run test:stock-guard`                                                                                       |
 | Test script e workflow         | `npm run test:tooling`                                                                                           |
-| React Doctor latest            | `npm run quality:react-doctor`                                                                                   |
+| React Doctor pin               | `npm run quality:react-doctor`                                                                                   |
 | Codice morto ed export inutili | `npm run quality:knip`                                                                                           |
 | Release dry-run                | `npm run release:dry-run`                                                                                        |
 | Release locale                 | `npm run release`                                                                                                |
@@ -229,7 +229,7 @@ ciechi.
 | Moduli `app/services`, runtime condiviso o CI                               | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                             |
 | Moduli puri `app/lib`                                                       | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                       |
 | Pubblicazione/merge PR                                                      | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry  |
-| Qualità React dopo release major/minor o cambi UI/React trasversali         | `npm run quality:react-doctor`, che risolve esplicitamente `react-doctor@latest`                                             |
+| Qualità React dopo release major/minor o cambi UI/React trasversali         | `npm run quality:react-doctor`, dalla versione esatta fissata nel lockfile                                                   |
 | Refactor che rimuovono consumatori, ritiri di funzionalità o consolidamenti | `npm run quality:knip`, che rileva file ed export rimasti senza consumatori                                                  |
 | Flussi UI principali                                                        | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                         |
 | Prisma/database                                                             | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                        |

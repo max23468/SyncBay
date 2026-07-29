@@ -17,7 +17,7 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, `Verifica proporzionata` e dal check
   minimale separato del titolo Conventional Commit.
-- React Doctor `latest` resta advisory: pubblica score e review sui file React
+- React Doctor resta advisory e fissato a una revisione verificata: pubblica score e review sui file React
   cambiati, ma i finding non generano un run fallito; fallisce soltanto se lo
   scanner non riesce a completarsi. CodeQL, Vercel e inbox Codex
   restano check mirati o advisory e non bloccano indiscriminatamente ogni PR.
@@ -149,7 +149,9 @@ Il workflow:
   PR recenti degli ultimi 7 giorni e PR già presenti nella inbox;
 - ignora i commenti su issue ordinarie che non sono PR o la inbox Codex;
 - mantiene un opt-in `CODEX_FULL_SCAN=true` per scansioni storiche complete;
-- cerca review thread scritti da account che matchano `codex`;
+- cerca review thread scritti dall'account bot Codex esatto
+  `chatgpt-codex-connector[bot]` o dagli account esplicitamente elencati in
+  `CODEX_BOT_LOGINS`;
 - distingue thread actionable da thread risolti o outdated;
 - aggiorna la inbox;
 - evita aggiornamenti della issue quando il contenuto non cambia.
@@ -171,7 +173,7 @@ Per modifiche puramente documentali:
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
 
 Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
-React Doctor `latest` non parte quando nessun path di sua
+React Doctor non parte quando nessun path di sua
 competenza cambia. Vercel salta inoltre i build limitati a docs, governance,
 CI, test e tooling non runtime.
 
