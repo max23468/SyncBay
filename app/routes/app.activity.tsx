@@ -95,6 +95,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  // Il body va letto solo dopo l'autenticazione: parallelizzare drenerebbe lo
+  // stream di richieste non autenticate.
+  // react-doctor-disable-next-line react-doctor/server-sequential-independent-await
   const formData = await parseFormDataWithLimit(request);
   const intent = String(formData.get("intent") ?? "");
 
