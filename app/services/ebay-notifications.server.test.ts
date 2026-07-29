@@ -78,6 +78,38 @@ test("bounds public key lookups without exhausting another source budget", async
       }),
     );
     assert.equal(fetchMock.mock.calls.length, 22);
+
+    for (let index = 0; index < 79; index += 1) {
+      const signatureHeader = Buffer.from(
+        JSON.stringify({
+          kid: `distributed-key-${index}`,
+          signature: "c3ludGhldGlj",
+        }),
+      ).toString("base64");
+      await assert.rejects(
+        verifyEbayNotificationSignature({
+          body: Buffer.from("{}"),
+          lookupBudgetKey: `distributed-source-${index}`,
+          signatureHeader,
+        }),
+      );
+    }
+    assert.equal(fetchMock.mock.calls.length, 101);
+
+    const overflowSignatureHeader = Buffer.from(
+      JSON.stringify({
+        kid: "global-overflow-key",
+        signature: "c3ludGhldGlj",
+      }),
+    ).toString("base64");
+    await assert.rejects(
+      verifyEbayNotificationSignature({
+        body: Buffer.from("{}"),
+        lookupBudgetKey: "global-overflow-source",
+        signatureHeader: overflowSignatureHeader,
+      }),
+    );
+    assert.equal(fetchMock.mock.calls.length, 101);
   } finally {
     vi.unstubAllGlobals();
     restoreEnv("EBAY_CLIENT_ID", originalClientId);
