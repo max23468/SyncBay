@@ -258,7 +258,7 @@ test("reads paginated Codex review threads before deciding publication safety", 
                 nodes: [
                   {
                     comments: {
-                      nodes: [{ author: { login: "codex-reviewer" } }],
+                      nodes: [{ author: { login: "chatgpt-codex-connector[bot]" } }],
                     },
                     isOutdated: false,
                     isResolved: false,

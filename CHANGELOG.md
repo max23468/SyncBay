@@ -8,6 +8,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Rafforzati i confini pubblici e provider: body HTTP e form bounded dopo
+  autenticazione, lookup chiavi eBay limitati, download immagini con timeout,
+  limite byte e blocco destinazioni non pubbliche, job stock Shopify suddivisi
+  in batch e mai riattivati dopo uninstall. Tooling Codex, React Doctor e
+  Supabase CLI usano identità o revisioni esatte.
 - Aggiornata la toolchain a npm `12.0.1` in locale, setup worktree, CI e build
   Vercel; Vercel CLI passa a `58.0.0`.
 - Aggiornate le dipendenze non-major: Prisma e adapter `7.9.0 -> 7.9.1`,

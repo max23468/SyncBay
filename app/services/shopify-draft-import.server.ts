@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { lookup } from "node:dns/promises";
+import { BlockList, isIP } from "node:net";
 
 import { Prisma, ProductMappingStatus, ProductSnapshotSource } from "@prisma/client";
 
@@ -326,6 +328,14 @@ const MAX_DRAFT_IMPORT_LIMIT = 50;
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
+const IMAGE_DOWNLOAD_MAX_BYTES = 20 * 1024 * 1024;
+const IMAGE_DOWNLOAD_TIMEOUT_MS = 15 * 1000;
+const IMAGE_DOWNLOAD_MAX_REDIRECTS = 3;
+const NON_PUBLIC_IMAGE_ADDRESSES = buildNonPublicImageAddressBlockList();
+type LookupHost = (
+  hostname: string,
+  options: { all: true; verbatim: true },
+) => Promise<Array<{ address: string; family: number }>>;
 
 type ShopifyInventorySyncResult =
   | {
@@ -2176,7 +2186,14 @@ async function createStagedImageMediaInput(input: {
   };
 }
 
-async function downloadImageForStaging(sourceUrl: string): Promise<
+export async function downloadImageForStaging(
+  sourceUrl: string,
+  options: {
+    fetchImpl?: typeof fetch;
+    lookupHost?: LookupHost;
+    maxBytes?: number;
+  } = {},
+): Promise<
   | {
       body: Uint8Array;
       contentType: string;
@@ -2187,11 +2204,20 @@ async function downloadImageForStaging(sourceUrl: string): Promise<
       status: "failed";
     }
 > {
-  const response = await fetch(sourceUrl, {
-    headers: {
-      "user-agent": "SyncBay/0.1 image-staging",
-    },
-  });
+  const maxBytes = options.maxBytes ?? IMAGE_DOWNLOAD_MAX_BYTES;
+  let response: Response;
+
+  try {
+    response = await fetchPublicImage(sourceUrl, {
+      fetchImpl: options.fetchImpl ?? fetch,
+      lookupHost: options.lookupHost ?? lookup,
+    });
+  } catch {
+    return {
+      errorMessage: "URL immagine eBay non raggiungibile in modo sicuro.",
+      status: "failed",
+    };
+  }
 
   if (!response.ok) {
     return {
@@ -2209,7 +2235,30 @@ async function downloadImageForStaging(sourceUrl: string): Promise<
     };
   }
 
-  const body = new Uint8Array(await response.arrayBuffer());
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    await response.body?.cancel();
+    return {
+      errorMessage: "Il download immagine supera il limite consentito.",
+      status: "failed",
+    };
+  }
+
+  let body: Uint8Array | null;
+  try {
+    body = await readImageBodyWithLimit(response, maxBytes);
+  } catch {
+    return {
+      errorMessage: "Download immagine eBay interrotto.",
+      status: "failed",
+    };
+  }
+  if (!body) {
+    return {
+      errorMessage: "Il download immagine supera il limite consentito.",
+      status: "failed",
+    };
+  }
 
   if (body.byteLength === 0) {
     return {
@@ -2223,6 +2272,120 @@ async function downloadImageForStaging(sourceUrl: string): Promise<
     contentType,
     status: "synced",
   };
+}
+
+async function fetchPublicImage(
+  sourceUrl: string,
+  options: {
+    fetchImpl: typeof fetch;
+    lookupHost: LookupHost;
+  },
+  redirectCount = 0,
+): Promise<Response> {
+  const url = await validatePublicImageUrl(sourceUrl, options.lookupHost);
+  const response = await options.fetchImpl(url, {
+    headers: {
+      "user-agent": "SyncBay/0.1 image-staging",
+    },
+    redirect: "manual",
+    signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
+  });
+
+  if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+
+  const location = response.headers.get("location");
+  await response.body?.cancel();
+  if (!location || redirectCount >= IMAGE_DOWNLOAD_MAX_REDIRECTS) {
+    throw new Error("Redirect immagine non valido.");
+  }
+
+  return fetchPublicImage(new URL(location, url).toString(), options, redirectCount + 1);
+}
+
+async function validatePublicImageUrl(sourceUrl: string, lookupHost: LookupHost) {
+  const url = new URL(sourceUrl);
+
+  if (url.protocol !== "https:" || url.username || url.password) {
+    throw new Error("URL immagine non sicuro.");
+  }
+
+  const literalVersion = isIP(url.hostname);
+  const addresses = literalVersion
+    ? [{ address: url.hostname, family: literalVersion }]
+    : await lookupHost(url.hostname, { all: true, verbatim: true });
+
+  if (
+    addresses.length === 0 ||
+    addresses.some(({ address, family }) =>
+      NON_PUBLIC_IMAGE_ADDRESSES.check(address, family === 6 ? "ipv6" : "ipv4"),
+    )
+  ) {
+    throw new Error("Destinazione immagine non pubblica.");
+  }
+
+  return url;
+}
+
+async function readImageBodyWithLimit(response: Response, maxBytes: number) {
+  if (!response.body) return new Uint8Array();
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    byteLength += value.byteLength;
+    if (byteLength > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(byteLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return body;
+}
+
+function buildNonPublicImageAddressBlockList() {
+  const blockList = new BlockList();
+  const ipv4Subnets = [
+    ["0.0.0.0", 8],
+    ["10.0.0.0", 8],
+    ["100.64.0.0", 10],
+    ["127.0.0.0", 8],
+    ["169.254.0.0", 16],
+    ["172.16.0.0", 12],
+    ["192.0.0.0", 24],
+    ["192.0.2.0", 24],
+    ["192.168.0.0", 16],
+    ["198.18.0.0", 15],
+    ["198.51.100.0", 24],
+    ["203.0.113.0", 24],
+    ["224.0.0.0", 4],
+    ["240.0.0.0", 4],
+  ] as const;
+  const ipv6Subnets = [
+    ["::", 128],
+    ["::1", 128],
+    ["fc00::", 7],
+    ["fe80::", 10],
+    ["ff00::", 8],
+    ["2001:db8::", 32],
+  ] as const;
+
+  for (const [address, prefix] of ipv4Subnets) blockList.addSubnet(address, prefix, "ipv4");
+  for (const [address, prefix] of ipv6Subnets) blockList.addSubnet(address, prefix, "ipv6");
+
+  return blockList;
 }
 
 async function uploadSupabaseStorageObject(input: {

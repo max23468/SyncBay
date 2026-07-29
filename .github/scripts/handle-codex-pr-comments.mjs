@@ -6,13 +6,14 @@ import {
   getCodexPrScanMode,
   getEventPullRequestNumber,
   getRecentPrDays,
+  isTrustedCodexLogin,
   parsePositiveInteger,
   shouldPatchInboxIssue,
 } from "./codex-pr-comments-helpers.mjs";
 
 const repository = process.env.GITHUB_REPOSITORY;
 const token = process.env.GITHUB_TOKEN;
-const codexLoginPattern = new RegExp(process.env.CODEX_BOT_LOGIN_PATTERN ?? "codex", "i");
+const codexBotLogins = process.env.CODEX_BOT_LOGINS;
 const inboxIssueTitle = process.env.CODEX_INBOX_ISSUE_TITLE ?? "Codex feedback inbox";
 const inboxIssueLabel = process.env.CODEX_INBOX_ISSUE_LABEL ?? "codex-feedback-inbox";
 const repositoryName = repository?.split("/")[1] ?? "repository";
@@ -319,7 +320,7 @@ async function listReviewThreadComments(threadId, cursor) {
 
 function isCodexThread(thread) {
   return thread.comments.nodes.some((comment) =>
-    codexLoginPattern.test(comment.author?.login ?? ""),
+    isTrustedCodexLogin(comment.author?.login ?? "", codexBotLogins),
   );
 }
 

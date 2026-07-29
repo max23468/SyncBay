@@ -1,7 +1,33 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { getShopifyOrderStockAction, getShopifyOrderStockTarget } from "./syncbay-order-stock.ts";
+import {
+  getOrderLineMappingLookup,
+  getShopifyOrderStockAction,
+  getShopifyOrderStockTarget,
+} from "./syncbay-order-stock.ts";
+
+test("never falls back from an unmapped Shopify variant to a sibling mapping", () => {
+  assert.deepEqual(
+    getOrderLineMappingLookup({
+      shopifyProductGid: "gid://shopify/Product/1",
+      shopifyVariantGid: "gid://shopify/ProductVariant/2",
+    }),
+    {
+      shopifyVariantGid: "gid://shopify/ProductVariant/2",
+    },
+  );
+  assert.deepEqual(
+    getOrderLineMappingLookup({
+      shopifyProductGid: "gid://shopify/Product/1",
+      shopifyVariantGid: null,
+    }),
+    {
+      shopifyProductGid: "gid://shopify/Product/1",
+      shopifyVariantGid: null,
+    },
+  );
+});
 
 test("decrements eBay as soon as Shopify commits an order", () => {
   assert.equal(

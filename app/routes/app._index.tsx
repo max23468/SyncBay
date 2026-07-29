@@ -18,6 +18,7 @@ import {
 import { LiveSync } from "../components/SyncBayLive";
 import { getSyncBayMeta, SYNCBAY_BRAND_ASSETS, SYNCBAY_TAGLINE } from "../lib/syncbay-brand";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { parseFormDataWithLimit } from "../lib/syncbay-request-body";
 import {
   formatItDateTime as formatDateTime,
   formatItNumber as formatNumber,
@@ -79,10 +80,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const [{ session }, formData] = await Promise.all([
-    authenticate.admin(request),
-    request.formData(),
-  ]);
+  const { session } = await authenticate.admin(request);
+  const formData = await parseFormDataWithLimit(request);
   const intent = String(formData.get("intent") ?? "");
 
   if (intent === "retryJob") {

@@ -2,7 +2,7 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv, getSupabaseCliPath } from "./supabase-cli-env.mjs";
 import { buildSupabaseStorageObservation } from "./syncbay-provider-observations.mjs";
 
 const FREE_STORAGE_BYTES = 1_000_000_000;
@@ -14,8 +14,8 @@ from storage.objects;
 `;
 
 const { stdout } = await promisify(execFile)(
-  "npx",
-  ["supabase", "db", "query", "--linked", "--output", "json", sql],
+  getSupabaseCliPath(),
+  ["db", "query", "--linked", "--output", "json", sql],
   {
     cwd: getSupabaseCliCwd(),
     env: await getSupabaseCliEnv(),

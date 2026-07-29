@@ -6,6 +6,7 @@ import {
   ProductMappingStatus,
   ProductSnapshotSource,
   Prisma,
+  ShopInstallationStatus,
   SyncConflictResolution,
   SyncConflictStatus,
   SyncJobStatus,
@@ -119,7 +120,11 @@ import {
 } from "../lib/syncbay-stale-failed-job-archive";
 import { getRecoverableRunningSyncJobTypes } from "../lib/syncbay-stale-job-recovery";
 import { hasProcessedStockLineInJobResults } from "../lib/syncbay-stock-job-idempotency";
-import { getShopifyOrderStockAction, getShopifyOrderStockTarget } from "../lib/syncbay-order-stock";
+import {
+  getOrderLineMappingLookup,
+  getShopifyOrderStockAction,
+  getShopifyOrderStockTarget,
+} from "../lib/syncbay-order-stock";
 import {
   isEbayStockDryRunEnabled,
   isPositiveShopifyOrderQuantity,
@@ -569,6 +574,9 @@ async function claimDueSyncJob(job: DueSyncJob, now: Date) {
       where: {
         id: job.id,
         runAfter: { lte: now },
+        shop: {
+          installationStatus: ShopInstallationStatus.INSTALLED,
+        },
         shopId: job.shopId,
         status: { in: [SyncJobStatus.PENDING, SyncJobStatus.RETRYING] },
         ...getSchedulableSyncJobWhere(),
@@ -2509,6 +2517,10 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
   const skipped: Prisma.JsonObject[] = [];
   let resolvedQuantityConflictCount = 0;
   const quantityConflictCleanupFailures: Prisma.JsonObject[] = [];
+  const reservationSnapshotsByMappingId = new Map<
+    string,
+    ReturnType<typeof findOrderStockReservationSnapshots>
+  >();
   // La disponibilità è un conteggio di unità: ReviseInventoryStatus invia solo
   // <Quantity>, mai il prezzo. La valuta con cui il compratore paga su Shopify
   // (presentment: HUF, USD, ...) è quindi irrilevante per il decremento eBay e
@@ -2571,14 +2583,20 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
     // Tutte le righe dell'ordine sullo stesso mapping, non solo questa: il tetto
     // di ripristino è la quantità eBay precedente all'ordine, altrimenti la
     // seconda riga si fermerebbe al pre-decremento della prima.
-    const reservationSnapshots =
-      stockAction === "restore"
-        ? await findOrderStockReservationSnapshots({
-            lineItemKeys: lineItems.map((item) => item.lineItemKey),
-            mappingId: mapping.id,
-            shopId: job.shopId,
-          })
-        : [];
+    let reservationSnapshots: Awaited<ReturnType<typeof findOrderStockReservationSnapshots>> = [];
+    if (stockAction === "restore") {
+      let reservationSnapshotsPromise = reservationSnapshotsByMappingId.get(mapping.id);
+      if (!reservationSnapshotsPromise) {
+        reservationSnapshotsPromise = findOrderStockReservationSnapshots({
+          lineItemKeys: lineItems.map((item) => item.lineItemKey),
+          mappingId: mapping.id,
+          orderResourceId: getStringFromPayload(job.payload, "resourceId"),
+          shopId: job.shopId,
+        });
+        reservationSnapshotsByMappingId.set(mapping.id, reservationSnapshotsPromise);
+      }
+      reservationSnapshots = await reservationSnapshotsPromise;
+    }
     const reservationSnapshot =
       reservationSnapshots.find(
         (snapshot) =>
@@ -2739,6 +2757,7 @@ async function runUpdateEbayStockJob(job: DueSyncJob) {
       payload: {
         previousQuantity: stockAction === "restore" ? ebayAvailableQuantity : previousQuantity,
         orderLineItemKey: lineItem.lineItemKey,
+        shopifyOrderId: getStringFromPayload(job.payload, "resourceId"),
         ...(stockAction === "restore" ? { orderPreviousQuantity: previousQuantity } : {}),
         reason: getShopifyOrderStockReason(job.payload, stockAction),
         stockAction,
@@ -3824,24 +3843,13 @@ async function findProductMappingForOrderLine(
     shopifyVariantGid: string | null;
   },
 ) {
-  if (lineItem.shopifyVariantGid) {
-    const mapping = await prisma.productMapping.findFirst({
-      where: {
-        shopId,
-        shopifyVariantGid: lineItem.shopifyVariantGid,
-        status: ProductMappingStatus.ACTIVE,
-      },
-    });
-
-    if (mapping) return mapping;
-  }
-
-  if (!lineItem.shopifyProductGid) return null;
+  const lookup = getOrderLineMappingLookup(lineItem);
+  if (!lookup) return null;
 
   return prisma.productMapping.findFirst({
     where: {
+      ...lookup,
       shopId,
-      shopifyProductGid: lineItem.shopifyProductGid,
       status: ProductMappingStatus.ACTIVE,
     },
   });
@@ -3939,23 +3947,31 @@ function getOrderStockActionSnapshotFilter(action: "decrement" | "restore") {
 async function findOrderStockReservationSnapshots(input: {
   lineItemKeys: (string | null)[];
   mappingId: string;
+  orderResourceId: string | null;
   shopId: string;
 }) {
   const lineItemKeys = input.lineItemKeys.filter((lineItemKey): lineItemKey is string =>
     Boolean(lineItemKey),
   );
 
-  if (lineItemKeys.length === 0) return [];
+  if (!input.orderResourceId && lineItemKeys.length === 0) return [];
 
   return prisma.productSnapshot.findMany({
     orderBy: { capturedAt: "desc" },
     where: {
       AND: [
-        {
-          OR: lineItemKeys.map((lineItemKey) => ({
-            payload: { path: ["orderLineItemKey"], equals: lineItemKey },
-          })),
-        },
+        input.orderResourceId
+          ? {
+              payload: {
+                path: ["shopifyOrderId"],
+                equals: input.orderResourceId,
+              },
+            }
+          : {
+              OR: lineItemKeys.map((lineItemKey) => ({
+                payload: { path: ["orderLineItemKey"], equals: lineItemKey },
+              })),
+            },
         {
           payload: {
             path: ["updatedEbayFromShopifyOrder"],

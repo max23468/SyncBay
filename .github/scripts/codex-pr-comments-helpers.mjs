@@ -1,4 +1,13 @@
 const DEFAULT_RECENT_PR_DAYS = 7;
+const DEFAULT_CODEX_BOT_LOGINS = ["chatgpt-codex-connector[bot]"];
+
+export function isTrustedCodexLogin(login, configuredLogins) {
+  const trustedLogins = (configuredLogins?.split(",") ?? DEFAULT_CODEX_BOT_LOGINS)
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return trustedLogins.includes(login);
+}
 
 export function getRecentPrDays(value) {
   return parsePositiveInteger(value, DEFAULT_RECENT_PR_DAYS);

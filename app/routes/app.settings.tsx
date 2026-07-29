@@ -9,6 +9,7 @@ import {
   type ImportProductStatus,
 } from "../lib/import-product-status";
 import { embeddedNoStoreHeaders } from "../lib/syncbay-cache-headers";
+import { parseFormDataWithLimit } from "../lib/syncbay-request-body";
 import {
   formatItDateTime as formatDateTime,
   formatItNumber as formatNumber,
@@ -138,10 +139,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const [{ admin, session }, formData] = await Promise.all([
-    authenticate.admin(request),
-    request.formData(),
-  ]);
+  const { admin, session } = await authenticate.admin(request);
+  const formData = await parseFormDataWithLimit(request);
   const intent = String(formData.get("intent") ?? "");
 
   if (intent === "saveSyncSettings") {

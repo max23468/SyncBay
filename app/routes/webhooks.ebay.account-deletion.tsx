@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 
+import { readRequestBodyWithLimit, RequestBodyTooLargeError } from "../lib/syncbay-request-body";
 import {
   EbayAccountDeletionPayloadError,
   processEbayAccountDeletionNotification,
@@ -80,8 +81,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const body = Buffer.from(await request.arrayBuffer());
-  if (body.byteLength > MAX_NOTIFICATION_BODY_BYTES) {
+  let body: Buffer;
+  try {
+    body = Buffer.from(await readRequestBodyWithLimit(request, MAX_NOTIFICATION_BODY_BYTES));
+  } catch (error) {
+    if (!(error instanceof RequestBodyTooLargeError)) throw error;
+
     return Response.json(
       {
         message: "Payload eBay account deletion troppo grande.",

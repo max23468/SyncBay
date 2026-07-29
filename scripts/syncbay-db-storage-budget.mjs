@@ -2,12 +2,12 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { getSupabaseCliCwd, getSupabaseCliEnv } from "./supabase-cli-env.mjs";
+import { getSupabaseCliCwd, getSupabaseCliEnv, getSupabaseCliPath } from "./supabase-cli-env.mjs";
 
 const sql = `select pg_database_size(current_database())::bigint as bytes;`;
 const { stdout } = await promisify(execFile)(
-  "npx",
-  ["supabase", "db", "query", "--linked", "--output", "json", sql],
+  getSupabaseCliPath(),
+  ["db", "query", "--linked", "--output", "json", sql],
   {
     cwd: getSupabaseCliCwd(),
     env: await getSupabaseCliEnv(),

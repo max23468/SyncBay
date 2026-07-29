@@ -45,8 +45,8 @@ test("accepts only known Supabase advisor types", () => {
 });
 
 test("disables Supabase CLI telemetry by default", () => {
-  assert.deepEqual(withSupabaseCliDefaults({ EXAMPLE: "1" }), {
-    EXAMPLE: "1",
+  assert.deepEqual(withSupabaseCliDefaults({ EXAMPLE_SECRET: "1", PATH: "/usr/bin" }), {
+    PATH: "/usr/bin",
     SUPABASE_TELEMETRY_DISABLED: "1",
   });
   assert.equal(

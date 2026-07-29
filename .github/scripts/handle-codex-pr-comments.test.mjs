@@ -4,8 +4,18 @@ import { test } from "vitest";
 import {
   getCodexPrScanMode,
   getRecentPrDays,
+  isTrustedCodexLogin,
   shouldPatchInboxIssue,
 } from "./codex-pr-comments-helpers.mjs";
+
+test("trusts only exact Codex bot logins", () => {
+  assert.equal(isTrustedCodexLogin("chatgpt-codex-connector[bot]"), true);
+  assert.equal(isTrustedCodexLogin("helpful-codex-contributor"), false);
+  assert.equal(
+    isTrustedCodexLogin("second-codex[bot]", "chatgpt-codex-connector[bot],second-codex[bot]"),
+    true,
+  );
+});
 
 test("uses targeted scan mode for pull request events", () => {
   assert.equal(

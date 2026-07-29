@@ -1,4 +1,5 @@
 import { selectShopifyOrderCurrency } from "./syncbay-stock-guard";
+import { chunkArray } from "./chunk-array";
 
 export const SHOPIFY_WEBHOOK_TOPICS = [
   "app/uninstalled",
@@ -9,6 +10,21 @@ export const SHOPIFY_WEBHOOK_TOPICS = [
   "products/update",
   "inventory_levels/update",
 ] as const;
+export const SHOPIFY_ORDER_STOCK_JOB_LINE_LIMIT = 25;
+
+interface ShopifyWebhookJobPayload {
+  inventoryItemGid?: string | null;
+  lineItems?: Array<{
+    lineItemKey: string;
+    quantity: number;
+    shopifyProductGid: string | null;
+    shopifyVariantGid: string | null;
+  }>;
+  orderCurrency?: string | null;
+  stockAction?: "decrement" | "restore";
+  stockBatchCount?: number;
+  stockBatchIndex?: number;
+}
 
 export function normalizeShopifyWebhookTopic(topic: string) {
   const normalized = topic.toLowerCase();
@@ -20,7 +36,14 @@ export function normalizeShopifyWebhookTopic(topic: string) {
   );
 }
 
-export function getShopifyWebhookJobPayload(topic: string, payload: unknown) {
+export function shouldRecordShopifyWebhook(installationStatus: string) {
+  return installationStatus === "INSTALLED";
+}
+
+export function getShopifyWebhookJobPayload(
+  topic: string,
+  payload: unknown,
+): ShopifyWebhookJobPayload {
   if (["orders/create", "orders/paid", "orders/cancelled"].includes(topic)) {
     return {
       orderCurrency: extractShopifyOrderCurrency(payload),
@@ -36,6 +59,27 @@ export function getShopifyWebhookJobPayload(topic: string, payload: unknown) {
   }
 
   return {};
+}
+
+export function getShopifyWebhookJobPayloads(
+  topic: string,
+  payload: unknown,
+): ShopifyWebhookJobPayload[] {
+  const jobPayload = getShopifyWebhookJobPayload(topic, payload);
+  const lineItems = "lineItems" in jobPayload ? jobPayload.lineItems : null;
+
+  if (!lineItems || lineItems.length <= SHOPIFY_ORDER_STOCK_JOB_LINE_LIMIT) {
+    return [jobPayload];
+  }
+
+  const batches = chunkArray(lineItems, SHOPIFY_ORDER_STOCK_JOB_LINE_LIMIT);
+
+  return batches.map((batch, index) => ({
+    ...jobPayload,
+    lineItems: batch,
+    stockBatchCount: batches.length,
+    stockBatchIndex: index + 1,
+  }));
 }
 
 function extractShopifyOrderLineItems(payload: unknown) {
