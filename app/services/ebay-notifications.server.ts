@@ -42,9 +42,9 @@ const EBAY_PUBLIC_KEY_URLS = {
 const EBAY_APPLICATION_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
 const PUBLIC_KEY_FAILURE_CACHE_TTL_MS = 30 * 1000;
+const PUBLIC_KEY_GLOBAL_LOOKUP_LIMIT = 100;
 const PUBLIC_KEY_LOOKUP_LIMIT = 20;
 const PUBLIC_KEY_LOOKUP_WINDOW_MS = 60 * 1000;
-const PUBLIC_KEY_LOOKUP_SCOPE_LIMIT = 1000;
 const EBAY_REQUEST_TIMEOUT_MS = 5 * 1000;
 const SIGNATURE_HEADER_MAX_BYTES = 8 * 1024;
 const PUBLIC_KEY_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
@@ -55,6 +55,7 @@ let applicationTokenPromise: Promise<string> | null = null;
 const publicKeyCache = new Map<string, CachedPublicKey>();
 const failedPublicKeyCache = new Map<string, number>();
 const publicKeyLookups = new Map<string, Promise<string>>();
+const publicKeyLookupTimestamps: number[] = [];
 const publicKeyLookupTimestampsByScope = new Map<string, number[]>();
 
 export class EbayNotificationSignatureError extends Error {
@@ -163,11 +164,7 @@ async function getEbayPublicKey(publicKeyId: string, lookupBudgetKey: string) {
   const pendingLookup = publicKeyLookups.get(publicKeyId);
   if (pendingLookup) return pendingLookup;
 
-  const lookupTimestamps = getPublicKeyLookupTimestamps(lookupBudgetKey, now);
-  if (lookupTimestamps.length >= PUBLIC_KEY_LOOKUP_LIMIT) {
-    throw new Error("Limite temporaneo lookup public key eBay raggiunto.");
-  }
-  lookupTimestamps.push(now);
+  consumePublicKeyLookupBudget(lookupBudgetKey, now);
 
   const lookup = fetchEbayPublicKey(publicKeyId);
   publicKeyLookups.set(publicKeyId, lookup);
@@ -182,7 +179,14 @@ async function getEbayPublicKey(publicKeyId: string, lookupBudgetKey: string) {
   }
 }
 
-function getPublicKeyLookupTimestamps(lookupBudgetKey: string, now: number) {
+function consumePublicKeyLookupBudget(lookupBudgetKey: string, now: number) {
+  while (
+    publicKeyLookupTimestamps[0] &&
+    publicKeyLookupTimestamps[0] <= now - PUBLIC_KEY_LOOKUP_WINDOW_MS
+  ) {
+    publicKeyLookupTimestamps.shift();
+  }
+
   for (const [scope, timestamps] of publicKeyLookupTimestampsByScope) {
     while (timestamps[0] && timestamps[0] <= now - PUBLIC_KEY_LOOKUP_WINDOW_MS) {
       timestamps.shift();
@@ -191,19 +195,18 @@ function getPublicKeyLookupTimestamps(lookupBudgetKey: string, now: number) {
   }
 
   const scope = lookupBudgetKey.trim().slice(0, 128) || "unattributed";
-  let timestamps = publicKeyLookupTimestampsByScope.get(scope);
-  if (timestamps) return timestamps;
+  const timestamps = publicKeyLookupTimestampsByScope.get(scope) ?? [];
 
-  // ponytail: limite LRU per istanza; passare a uno store distribuito solo se
-  // l'abuso multi-IP supera concretamente le difese del provider/Vercel.
-  if (publicKeyLookupTimestampsByScope.size >= PUBLIC_KEY_LOOKUP_SCOPE_LIMIT) {
-    const oldestScope = publicKeyLookupTimestampsByScope.keys().next().value;
-    if (oldestScope) publicKeyLookupTimestampsByScope.delete(oldestScope);
+  if (
+    timestamps.length >= PUBLIC_KEY_LOOKUP_LIMIT ||
+    publicKeyLookupTimestamps.length >= PUBLIC_KEY_GLOBAL_LOOKUP_LIMIT
+  ) {
+    throw new Error("Limite temporaneo lookup public key eBay raggiunto.");
   }
 
-  timestamps = [];
+  timestamps.push(now);
+  publicKeyLookupTimestamps.push(now);
   publicKeyLookupTimestampsByScope.set(scope, timestamps);
-  return timestamps;
 }
 
 async function fetchEbayPublicKey(publicKeyId: string) {
