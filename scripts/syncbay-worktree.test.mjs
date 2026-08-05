@@ -105,18 +105,17 @@ test("setup installs and verifies serially with one Prisma generation", () => {
   const labels = commands.map((entry) => entry.label);
 
   assert.deepEqual(labels, [
-    "npm install --global npm@12.0.1",
-    "npm install",
-    "npm run prisma:generate",
-    "npm run doctor:local -- --json",
-    "npm run test:lib",
-    "npm run test:services:raw",
+    "npx --yes npm@12.0.2 install",
+    "npx --yes npm@12.0.2 run prisma:generate",
+    "npx --yes npm@12.0.2 run doctor:local -- --json",
+    "npx --yes npm@12.0.2 run test:lib",
+    "npx --yes npm@12.0.2 run test:services:raw",
     "git status --short --untracked-files=all",
   ]);
   assert.deepEqual(commands[0], {
-    args: ["install", "--global", "npm@12.0.1"],
-    command: "npm",
-    label: "npm install --global npm@12.0.1",
+    args: ["--yes", "npm@12.0.2", "install"],
+    command: "npx",
+    label: "npx --yes npm@12.0.2 install",
   });
   assert.equal(labels.filter((label) => label.includes("prisma:generate")).length, 1);
 });

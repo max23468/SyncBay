@@ -67,30 +67,29 @@ export function buildCreationPlan({ base = DEFAULT_BASE, branch, context, repoRo
 export function getSetupCommands() {
   return [
     {
-      args: ["install", "--global", "npm@12.0.1"],
-      command: "npm",
-      label: "npm install --global npm@12.0.1",
-    },
-    { args: ["install"], command: "npm", label: "npm install" },
-    {
-      args: ["run", "prisma:generate"],
-      command: "npm",
-      label: "npm run prisma:generate",
+      args: ["--yes", "npm@12.0.2", "install"],
+      command: "npx",
+      label: "npx --yes npm@12.0.2 install",
     },
     {
-      args: ["run", "doctor:local", "--", "--json"],
-      command: "npm",
-      label: "npm run doctor:local -- --json",
+      args: ["--yes", "npm@12.0.2", "run", "prisma:generate"],
+      command: "npx",
+      label: "npx --yes npm@12.0.2 run prisma:generate",
     },
     {
-      args: ["run", "test:lib"],
-      command: "npm",
-      label: "npm run test:lib",
+      args: ["--yes", "npm@12.0.2", "run", "doctor:local", "--", "--json"],
+      command: "npx",
+      label: "npx --yes npm@12.0.2 run doctor:local -- --json",
     },
     {
-      args: ["run", "test:services:raw"],
-      command: "npm",
-      label: "npm run test:services:raw",
+      args: ["--yes", "npm@12.0.2", "run", "test:lib"],
+      command: "npx",
+      label: "npx --yes npm@12.0.2 run test:lib",
+    },
+    {
+      args: ["--yes", "npm@12.0.2", "run", "test:services:raw"],
+      command: "npx",
+      label: "npx --yes npm@12.0.2 run test:services:raw",
     },
     {
       args: ["status", "--short", "--untracked-files=all"],
