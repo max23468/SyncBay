@@ -7,23 +7,23 @@ Questo documento dichiara runtime, package manager, lockfile, tool e verifiche a
 | Area                      | Valore                                        |
 | ------------------------- | --------------------------------------------- |
 | Runtime principale        | Node.js                                       |
-| Versione locale preferita | `.node-version` = `24.18.0`                   |
+| Versione locale preferita | `.node-version` = `24.19.0`                   |
 | Range supportato          | `package.json` `engines.node` = `>=24.15 <25` |
 | Enforcement engine        | `.npmrc` con `engine-strict=true`             |
-| Package manager           | `npm@12.0.1`                                  |
+| Package manager           | `npm@12.0.2`                                  |
 | Lockfile                  | `package-lock.json`                           |
 
 Il floor Node `>=24.15` resta il minimo verificato per la catena React Doctor
-risolta dinamicamente su `latest`; non abbassarlo senza rivalidare il quality
+pinnata nel repository; non abbassarlo senza rivalidare il quality
 gate corrente. Il package manager canonico è dichiarato in
-`package.json` come `npm@12.0.1`. Il deploy avviene solo su Vercel: il
+`package.json` come `npm@12.0.2`. Il deploy avviene solo su Vercel: il
 percorso Docker (Dockerfile, `.dockerignore`, script `docker-start`) è stato
 rimosso e le dipendenze necessarie solo a build, tooling e migration locali
 vivono in `devDependencies`.
 
-CI, Vercel e il setup delle worktree eseguono esplicitamente npm `12.0.1` prima
+CI, Vercel e il setup delle worktree eseguono esplicitamente npm `12.0.2` prima
 dell'installazione: Node 24 include ancora npm 11, che `engine-strict` rifiuta.
-Nel primo setup di un checkout eseguire `npm install --global npm@12.0.1` prima
+Nel primo setup di un checkout eseguire `npm install --global npm@12.0.2` prima
 di `npm install`.
 
 Guardia locale: i checkout e i worktree SyncBay devono risolvere `node` dalla
@@ -37,11 +37,11 @@ forzare installazioni o downgrade dentro la repo.
 
 | Area                        | Tool                                    |
 | --------------------------- | --------------------------------------- |
-| Shopify app                 | Shopify CLI `4.5.2`                     |
+| Shopify app                 | Shopify CLI `4.6.0`                     |
 | Shopify Admin/Webhook API   | `2026-07`                               |
 | Frontend/backend app        | React Router, React, TypeScript, Vite   |
 | Hosting previsto            | Vercel                                  |
-| CLI hosting                 | Vercel CLI `58.0.0`                     |
+| CLI hosting                 | Vercel CLI `58.7.1`                     |
 | Database                    | Supabase Postgres                       |
 | ORM                         | Prisma `7.9.1` con `@prisma/adapter-pg` |
 | Queue e scheduler previsti  | Supabase Queues e Supabase Cron         |
@@ -59,15 +59,15 @@ solo dopo il superamento dei check obbligatori della ruleset di `main`. Una CI
 fallita, un conflitto, un major o una PR modificata manualmente richiedono
 intervento umano; non viene applicata alcuna auto-approvazione. In
 particolare React Router 8 non deve essere aperto come bump parziale: SyncBay
-usa il preset `@vercel/react-router` e la versione `1.3.1` dichiara peer su
+usa il preset `@vercel/react-router` e la versione `1.3.2` dichiara peer su
 React Router 7. La migrazione a React Router 8 va quindi fatta in una branch
 dedicata aggiornando insieme `react-router`, i pacchetti `@react-router/*` e il
 preset Vercel solo quando esiste una versione compatibile.
 
-Finché SyncBay resta su React Router 7 con Vite 8, `@react-router/dev@7.18.1`
+Finché SyncBay resta su React Router 7 con Vite 8, `@react-router/dev@7.18.2`
 è patchato con `patch-package` perché la sua configurazione vite-node interna
 usa ancora l'opzione deprecata `envFile: false`. La patch versionata in
-`patches/@react-router+dev+7.18.1.patch` sostituisce quell'opzione con
+`patches/@react-router+dev+7.18.2.patch` sostituisce quell'opzione con
 `envDir: false` e viene riapplicata da `postinstall`. `patch-package` vive in
 `devDependencies`: senza il percorso Docker non esiste più un install
 `--omit=dev` che debba eseguire `postinstall`. Rimuovere la patch solo insieme
@@ -86,9 +86,9 @@ con Prisma 7. Future major Prisma restano manuali.
 I tipi Node oltre la major del runtime dichiarato richiedono un pass manuale:
 il runtime repo resta `>=24.15 <25`.
 
-Knip cerca file, export e dipendenze non usati. Come React Doctor è risolto via
-`npx` e non vive in `devDependencies`; la major è pinnata perché `knip.json` ne
-segue lo schema. È uno strumento advisory e manuale, non un gate: non entra in
+Knip cerca file, export e dipendenze non usati. È risolto via `npx` e non vive
+in `devDependencies`; la major è pinnata perché `knip.json` ne segue lo schema.
+È uno strumento advisory e manuale, non un gate: non entra in
 `verify:changed` né in `verify:full`. La configurazione dichiara come entry i
 file che Knip non può raggiungere perché referenziati via stringa (config Vite e
 stub del render UI) e ignora i binari di sistema `psql`, `security` e `vercel`.
@@ -103,7 +103,7 @@ cancellati.
 
 | Scopo                          | Comando                                                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Installazione                  | `npm install --global npm@12.0.1` al primo setup, poi `npm install`                                              |
+| Installazione                  | `npm install --global npm@12.0.2` al primo setup, poi `npm install`                                              |
 | Sviluppo Shopify               | `npm run dev`                                                                                                    |
 | Typecheck                      | `npm run typecheck`                                                                                              |
 | Lint (oxlint)                  | `npm run lint`                                                                                                   |
@@ -212,8 +212,8 @@ Il comando usa `origin/main` come base esplicita, deriva il percorso
 worktree, la directory non è ignorata, il ref base manca oppure branch o
 percorso collidono. `--dry-run` mostra il piano senza creare nulla.
 
-Dopo `git worktree add`, il setup allinea npm a `12.0.1`, poi esegue in serie
-`npm install`, una sola generazione Prisma, doctor locale, test delle librerie e
+Dopo `git worktree add`, il setup usa npm `12.0.2` via `npx`, poi esegue in serie
+l'installazione, una sola generazione Prisma, doctor locale, test delle librerie e
 test dei servizi raw; alla fine richiede un checkout pulito. Se uno step
 fallisce, la worktree viene lasciata ispezionabile e il setup si riprende al suo
 interno con `npm run worktree:prepare`, senza una seconda creazione o retry

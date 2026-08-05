@@ -8,6 +8,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Allineate le dipendenze compatibili e la toolchain: Node `24.19.0`, npm
+  `12.0.2`, Shopify CLI `4.6.0`, preset Vercel `1.3.2`, React Doctor `0.9.5`,
+  Supabase CLI `2.111.0`, tsx `4.23.8`, oxlint `1.77.0` e oxfmt `0.62.0`.
+  L'override `fast-uri` passa a `3.1.5` per chiudere
+  GHSA-7p8r-x3mc-p8w7; il setup worktree invoca l'npm esatto via `npx` e la
+  patch React Router è riallineata alla `7.18.2`. Restano esclusi i major
+  incompatibili React Router 8, TypeScript 7 e tipi Node 26.
 - Rafforzati i confini pubblici e provider: body HTTP e form bounded dopo
   autenticazione, lookup chiavi eBay limitati, download immagini con timeout,
   limite byte e blocco destinazioni non pubbliche, job stock Shopify suddivisi

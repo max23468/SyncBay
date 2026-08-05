@@ -62,7 +62,7 @@ Vincoli da rispettare prima di promuoverla:
 `npm run audit:prod` segnala `react-router` e `@react-router/node` per
 GHSA-qwww-vcr4-c8h2 (CSRF bypass che consente l'esecuzione di una action prima
 della risposta 400). Le versioni affette sono `>=7.12.0 <8.3.0` e la correzione
-esiste solo in `8.3.0`: la linea 7 si ferma a `7.18.1` e non ha backport, quindi
+esiste solo in `8.3.0`: la linea 7 si ferma a `7.18.2` e non ha backport, quindi
 non c'è aggiornamento possibile dentro la major corrente.
 
 SyncBay non è esposta: l'advisory riguarda esclusivamente le API RSC instabili,
@@ -70,7 +70,7 @@ mentre `react-router.config.ts` usa framework mode con `ssr: true` e nessun
 riferimento RSC. Le due voci restano quindi visibili nell'audit finché la
 migrazione non avviene, senza rischio applicativo reale.
 
-Il blocco non è di volontà ma di peer range: `@vercel/react-router@1.3.1`
+Il blocco non è di volontà ma di peer range: `@vercel/react-router@1.3.2`
 dichiara peer `@react-router/dev: "7"` e `@react-router/node: "7"`, e
 `@shopify/shopify-app-react-router@1.2.1` dichiara peer `react-router: "^7.6.2"`.
 Finché Vercel e Shopify non aggiornano, la major 8 non è installabile senza
