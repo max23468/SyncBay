@@ -176,6 +176,9 @@ export function pullRequestNumber(event, input) {
   return number;
 }
 
+export const isRetryableGitHubResponse = (status, remaining) =>
+  status === 429 || status >= 500 || (status === 403 && remaining === "0");
+
 async function request(path, options = {}) {
   const response = await fetch(`https://api.github.com${path}`, {
     ...options,
@@ -186,7 +189,14 @@ async function request(path, options = {}) {
       ...options.headers,
     },
   });
-  if (!response.ok) throw new Error(`${options.method ?? "GET"} ${path}: ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(`${options.method ?? "GET"} ${path}: ${response.status}`);
+    error.retryable = isRetryableGitHubResponse(
+      response.status,
+      response.headers.get("x-ratelimit-remaining"),
+    );
+    throw error;
+  }
   return response.json();
 }
 
@@ -268,11 +278,16 @@ async function main() {
   const freshReview = ["opened", "ready_for_review"].includes(event.action);
   const requestedAt = reusesExistingReview ? 0 : pullRequest.updated_at;
   for (let attempt = 0; attempt < CODEX_REVIEW_POLLING.attempts; attempt += 1) {
-    const [comments, reactions, reviews, reviewComments, exactReactions] = await reviewSignals(
-      repository,
-      number,
-      requestedAt,
-    );
+    let signals;
+    try {
+      signals = await reviewSignals(repository, number, requestedAt);
+    } catch (error) {
+      if (!(error instanceof TypeError) && !error.retryable) throw error;
+      console.warn(`Lettura GitHub transitoria, nuovo tentativo: ${error.message}`);
+      await new Promise((resolve) => setTimeout(resolve, CODEX_REVIEW_POLLING.intervalMs));
+      continue;
+    }
+    const [comments, reactions, reviews, reviewComments, exactReactions] = signals;
     const result = classifyCodexReview({
       headSha,
       requestedAt,

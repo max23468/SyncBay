@@ -5,6 +5,7 @@ import {
   CODEX_REVIEW_POLLING,
   classifyCodexReview,
   hasSuccessfulCodexStatus,
+  isRetryableGitHubResponse,
   latestCodexInvocation,
   pullRequestNumber,
 } from "./codex-review-gate.mjs";
@@ -477,6 +478,14 @@ test("il bootstrap accetta soltanto un numero PR", () => {
   assert.equal(pullRequestNumber({ pull_request: { number: 42 } }), "42");
   assert.equal(pullRequestNumber({}, "208"), "208");
   assert.throws(() => pullRequestNumber({}, "208/merge"), /Numero PR non valido/);
+});
+
+test("ritenta soltanto errori GitHub recuperabili", () => {
+  assert.equal(isRetryableGitHubResponse(429, null), true);
+  assert.equal(isRetryableGitHubResponse(502, null), true);
+  assert.equal(isRetryableGitHubResponse(403, "0"), true);
+  assert.equal(isRetryableGitHubResponse(403, "4999"), false);
+  assert.equal(isRetryableGitHubResponse(404, null), false);
 });
 
 test("un rerun riusa soltanto l'ultimo status Codex riuscito dello stesso SHA", () => {
