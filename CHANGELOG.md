@@ -251,6 +251,14 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.85] — 2026-08-06
+
+### Correzioni
+
+- Unificate le richieste REST JSON eBay di Identity, Inventory, Notification e
+  Analytics: tutte applicano timeout, autenticazione Bearer e diagnostica degli
+  errori provider nello stesso punto, senza cambiare i flussi OAuth e Trading.
+
 ## [1.0.84] — 2026-08-06
 
 ### Correzioni
@@ -4144,6 +4152,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.85]: #1085--2026-08-06
 [1.0.84]: #1084--2026-08-06
 [1.0.83]: #1083--2026-07-26
 [1.0.82]: #1082--2026-07-26

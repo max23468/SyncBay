@@ -4,6 +4,7 @@ import { parseArgs as parseNodeArgs } from "node:util";
 
 import { getEbayApiBaseUrl } from "../app/services/ebay-environment.server.ts";
 import { requestEbayOAuthToken } from "../app/services/ebay-oauth.server.ts";
+import { requestEbayRestJson } from "../app/services/ebay-rest.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
@@ -104,22 +105,11 @@ async function analyticsRateLimitCall({ accessToken, mode, target }) {
   url.searchParams.set("api_name", "tradingapi");
   url.searchParams.set("api_context", "tradingapi");
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
+  return requestEbayRestJson({
+    accessToken,
+    operation: "Analytics API rate limit",
+    url,
   });
-  const text = await response.text();
-  const body = text ? JSON.parse(text) : {};
-
-  if (!response.ok) {
-    throw new Error(
-      `Analytics API rate limit fallita (${response.status}): ${JSON.stringify(body).slice(0, 500)}`,
-    );
-  }
-
-  return body;
 }
 
 function normalizeArray(value) {

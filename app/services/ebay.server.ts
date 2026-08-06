@@ -5,6 +5,7 @@ import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write"
 import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
 import { getEbayEnvironment, getEbayMarketplaceId, requiredEnv } from "./ebay-environment.server";
 import { requestEbayOAuthToken } from "./ebay-oauth.server";
+import { requestEbayRestJson } from "./ebay-rest.server";
 import { ensureShopForSession, getEbayRuntimeReadiness } from "./syncbay.server";
 
 interface ShopifySessionLike {
@@ -157,18 +158,13 @@ async function consumeOAuthState(oauthStateId: string) {
 }
 
 async function fetchEbayUser(accessToken: string) {
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per validare userId e riportare l'errore del provider; lo status è verificato subito dopo.
-  const response = await fetch(getIdentityUserUrl(), {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-    },
+  const json = await requestEbayRestJson<EbayUserResponse>({
+    accessToken,
+    operation: "Profilo eBay",
+    url: new URL(getIdentityUserUrl()),
   });
-  const json = (await response.json()) as EbayUserResponse & {
-    errors?: Array<{ message?: string }>;
-  };
 
-  if (!response.ok || !json.userId) {
+  if (!json.userId) {
     throw new Error("Profilo eBay non ottenuto. Verifica scope Identity e consenso utente.");
   }
 
