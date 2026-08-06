@@ -344,6 +344,21 @@ test("un limite Codex chiude il gate senza lasciare il workflow appeso", () => {
   );
 });
 
+test("un errore Codex sconosciuto chiude il gate", () => {
+  assert.equal(
+    classify({
+      comments: [
+        {
+          user: bot,
+          created_at: "2026-08-04T12:00:01Z",
+          body: "Codex Review: Something went wrong. Try again later.\n\nUnknown error",
+        },
+      ],
+    }).state,
+    "failure",
+  );
+});
+
 test("un errore tardivo non chiude una review corrente ancora in corso", () => {
   assert.equal(
     classify({

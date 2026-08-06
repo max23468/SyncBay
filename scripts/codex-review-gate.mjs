@@ -87,7 +87,9 @@ export function classifyCodexReview({
       timestamp(comment.created_at) >= timestamp(requestedAt) &&
       now - timestamp(requestedAt) >= 30_000 &&
       timestamp(comment.created_at) >= latestEyesAt &&
-      /reached your Codex usage limits|could not complete|unable to review/i.test(comment.body)
+      /reached your Codex usage limits|could not complete|unable to review|something went wrong|unknown error/i.test(
+        comment.body,
+      )
     ) {
       completions.push({
         state: "failure",
