@@ -55,6 +55,7 @@ test("React Doctor follows the advisory PR gate used by CF-Ready", () => {
   assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
   assert.match(source, /millionco\/react-doctor@[0-9a-f]{40}/);
   assert.match(source, /persist-credentials:\s*false/);
+  assert.match(source, /version:\s*0\.9\.5/);
   assert.match(source, /blocking:\s*none/);
   assert.match(source, /comment:\s*"false"/);
   assert.match(source, /review-comments:\s*"true"/);
