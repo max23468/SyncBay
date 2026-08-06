@@ -32,6 +32,7 @@ export async function requestEbayOAuthToken(input: {
   grant: EbayOAuthGrant;
   signal?: AbortSignal;
 }) {
+  const authorization = `Basic ${getEbayBasicAuthHeader()}`;
   let response: Response;
 
   try {
@@ -39,7 +40,7 @@ export async function requestEbayOAuthToken(input: {
     response = await fetch(getEbayTokenUrl(input.environment), {
       body: buildGrantBody(input.grant),
       headers: {
-        Authorization: `Basic ${getEbayBasicAuthHeader()}`,
+        Authorization: authorization,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       method: "POST",

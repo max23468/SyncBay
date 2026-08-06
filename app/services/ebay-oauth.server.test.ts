@@ -70,6 +70,14 @@ test("uses one OAuth adapter for every eBay grant and environment", async () => 
         error.code === "invalid_grant" &&
         error.status === 401,
     );
+    delete process.env.EBAY_CLIENT_ID;
+    await assert.rejects(
+      requestEbayOAuthToken({
+        environment: "sandbox",
+        grant: { scope: "synthetic-scope", type: "client_credentials" },
+      }),
+      /EBAY_CLIENT_ID non configurata/,
+    );
   } finally {
     vi.unstubAllGlobals();
     restoreEnv("EBAY_CLIENT_ID", originalClientId);
