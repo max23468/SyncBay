@@ -203,6 +203,15 @@ test("image staging supports all-address lookups for its pinned DNS resolution",
   );
 });
 
+test("image staging omits the response body for no-content HTTP statuses", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(importSource, /\[204, 205, 304\]\.includes\(status\)[\s\S]*\? null/);
+});
+
 type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];
 
 function createSyntheticDraftProduct(overrides?: { quantity?: number }) {

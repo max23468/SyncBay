@@ -2349,6 +2349,7 @@ function requestPublicImage({ address, family, url }: PublicImageTarget) {
         signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
       },
       (response) => {
+        const status = response.statusCode ?? 500;
         const headers = new Headers();
         for (const [name, value] of Object.entries(response.headers)) {
           if (Array.isArray(value)) {
@@ -2359,11 +2360,16 @@ function requestPublicImage({ address, family, url }: PublicImageTarget) {
         }
 
         resolve(
-          new Response(Readable.toWeb(response) as ReadableStream<Uint8Array>, {
-            headers,
-            status: response.statusCode ?? 500,
-            statusText: response.statusMessage,
-          }),
+          new Response(
+            [204, 205, 304].includes(status)
+              ? null
+              : (Readable.toWeb(response) as ReadableStream<Uint8Array>),
+            {
+              headers,
+              status,
+              statusText: response.statusMessage,
+            },
+          ),
         );
       },
     );
