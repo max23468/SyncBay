@@ -124,6 +124,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   inoltre sugli endpoint ufficiali correnti Inventory `v1` (specifica 1.18.5),
   Notification `v1` (specifica 1.6.7), OAuth/Identity `v1` e Developer Analytics
   `v1_beta`: non richiedono cambi di path.
+- Unificati nell'adapter OAuth eBay condiviso i grant authorization code,
+  refresh token e client credentials usati da runtime, notifiche e script
+  operativi. Eliminati Basic Auth, POST form, parsing e gestione errori
+  duplicati; la diagnostica rate-limit usa ora correttamente gli endpoint
+  Sandbox quando la connessione persiste `sandbox`.
 - Aggiornate dipendenze patch: `react` e `react-dom` `19.2.7 -> 19.2.8`,
   `oxlint` `1.74.0 -> 1.75.0`, override `@hono/node-server` `1.19.13 -> 1.19.14`.
   Ripulito il blocco `allowScripts`: voci Prisma allineate a `7.9.0` (erano
