@@ -21,6 +21,13 @@ test("centralizes authenticated eBay JSON requests and provider errors", async (
     if (path === "/invalid-json") {
       return new Response("not-json", { status: 502 });
     }
+    if (path === "/body-timeout") {
+      const response = Response.json({ ok: true });
+      vi.spyOn(response, "json").mockRejectedValue(
+        new DOMException("Synthetic body timeout", "TimeoutError"),
+      );
+      return response;
+    }
     if (path === "/network-error") {
       throw new Error("synthetic network failure");
     }
@@ -61,6 +68,16 @@ test("centralizes authenticated eBay JSON requests and provider errors", async (
       (error: unknown) =>
         error instanceof Error &&
         error.message === "Profilo eBay: risposta JSON non valida (HTTP 502).",
+    );
+    await assert.rejects(
+      requestEbayRestJson({
+        accessToken: "synthetic-token",
+        operation: "Profilo eBay",
+        url: new URL("https://apiz.ebay.com/body-timeout"),
+      }),
+      (error: unknown) =>
+        error instanceof Error &&
+        error.message === "Profilo eBay: timeout durante la richiesta eBay.",
     );
     await assert.rejects(
       requestEbayRestJson({
