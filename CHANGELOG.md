@@ -10,9 +10,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 - Allineato il gate React Doctor al modello CF-Ready: `verify:full` esegue la
   scansione locale completa e blocca dai warning in su; l'Action advisory gira
-  su ogni PR e sul push a `main`, pubblica score e review inline, usa revisioni
-  immutabili, fissa lo scanner a `0.9.5` come il gate locale e lascia
-  disabilitato il controllo supply-chain esterno. Le
+  sui file cambiati di ogni PR e sull'intero progetto dopo il push a `main`,
+  pubblica score e review inline, usa revisioni immutabili, fissa lo scanner a
+  `0.9.5` come il gate locale e lascia disabilitato il controllo supply-chain
+  esterno. Le
   worktree isolate sotto `.worktrees/` non contaminano più lo score del checkout
   corrente.
 - Allineate le dipendenze compatibili e la toolchain: Node `24.19.0`, npm

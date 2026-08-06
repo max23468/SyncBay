@@ -27,6 +27,7 @@ jobs:
       - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
         with:
           version: 0.9.5
+          scope: ${{ github.event_name == 'push' && 'full' || 'changed' }}
           blocking: none
           comment: "false"
           review-comments: "true"
