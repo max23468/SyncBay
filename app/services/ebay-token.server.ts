@@ -51,13 +51,14 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
   }
 
   const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
+  const refreshToken = decryptSecret(connection.encryptedRefreshToken);
   let token;
 
   try {
     token = await requestEbayOAuthToken({
       environment: connection.environment,
       grant: {
-        refreshToken: decryptSecret(connection.encryptedRefreshToken),
+        refreshToken,
         scope: scopes,
         type: "refresh_token",
       },
