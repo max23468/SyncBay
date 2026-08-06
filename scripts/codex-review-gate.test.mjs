@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { test } from "vitest";
 import {
+  CODEX_REVIEW_POLLING,
   classifyCodexReview,
   hasSuccessfulCodexStatus,
   pullRequestNumber,
@@ -217,6 +218,28 @@ test("un finding top-level marcato su un altro SHA non blocca l'HEAD", () => {
   );
 });
 
+test("un rerun ignora i finding top-level senza SHA", () => {
+  assert.equal(
+    classify({
+      requestedAt: 0,
+      requiresReviewedCommit: true,
+      comments: [
+        {
+          user: bot,
+          created_at: "2026-08-04T12:00:01Z",
+          body: "**P2** Finding di un tentativo precedente.",
+        },
+        {
+          user: bot,
+          created_at: "2026-08-04T12:00:02Z",
+          body: `Codex Review: Didn't find any major issues.\n\n**Reviewed commit:** \`${headSha.slice(0, 10)}\``,
+        },
+      ],
+    }).state,
+    "success",
+  );
+});
+
 test("una review Codex vuota non viene scambiata per un finding", () => {
   assert.equal(
     classify({
@@ -304,6 +327,11 @@ test("un errore tardivo non chiude una review corrente ancora in corso", () => {
     }).state,
     "pending",
   );
+});
+
+test("il polling mantiene cinque ore senza saturare la quota con tre PR", () => {
+  assert.equal(CODEX_REVIEW_POLLING.attempts * CODEX_REVIEW_POLLING.intervalMs, 5 * 60 * 60 * 1000);
+  assert.ok((4 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 160);
 });
 
 test("il bootstrap accetta soltanto un numero PR", () => {

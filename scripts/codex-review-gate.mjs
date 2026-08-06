@@ -3,6 +3,9 @@ import { pathToFileURL } from "node:url";
 const CODEX_BOT = "chatgpt-codex-connector[bot]";
 const isDirectExecution =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+// ponytail: 90 s limita tre PR concorrenti a circa 480 richieste/ora; passare a
+// un'unica query GraphQL se la concorrenza reale cresce oltre questo livello.
+export const CODEX_REVIEW_POLLING = { attempts: 200, intervalMs: 90_000 };
 
 const timestamp = (value) => new Date(value ?? 0).getTime();
 const reviewedCommit = (body = "") =>
@@ -52,7 +55,7 @@ export function classifyCodexReview({
 
     const commit = reviewedCommit(comment.body);
     if (
-      (!commit || headSha.startsWith(commit)) &&
+      (commit ? headSha.startsWith(commit) : timestamp(requestedAt) > 0) &&
       timestamp(comment.created_at) >= timestamp(requestedAt) &&
       /\bP[0-3]\b/.test(comment.body)
     ) {
@@ -224,7 +227,7 @@ async function main() {
 
   const freshReview = ["opened", "ready_for_review"].includes(event.action);
   const requestedAt = reusesExistingReview ? 0 : pullRequest.updated_at;
-  for (let attempt = 0; attempt < 600; attempt += 1) {
+  for (let attempt = 0; attempt < CODEX_REVIEW_POLLING.attempts; attempt += 1) {
     const [comments, reactions, reviews, reviewComments] = await reviewSignals(repository, number);
     const result = classifyCodexReview({
       headSha,
@@ -239,7 +242,7 @@ async function main() {
       await setStatus(repository, headSha, result.state, result.description);
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 30_000));
+    await new Promise((resolve) => setTimeout(resolve, CODEX_REVIEW_POLLING.intervalMs));
   }
 
   await setStatus(repository, headSha, "error", "Review Codex non conclusa entro cinque ore");
