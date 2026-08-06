@@ -102,20 +102,22 @@ test("Dependabot auto-merges only patch and minor updates through branch gates",
 });
 
 test("CI workflows use the current Node and cache action majors", () => {
-  for (const name of ["ci.yml", "codex-pr-comments.yml", "ui-browser-check.yml"]) {
+  for (const name of ["ci.yml", "ui-browser-check.yml"]) {
     assert.match(readWorkflow(name), /actions\/setup-node@v7/);
   }
 
   assert.match(readWorkflow("ui-browser-check.yml"), /actions\/cache@v6/);
 });
 
-test("Codex inbox uses one daily refresh and ignores ordinary issues", () => {
-  const source = readWorkflow("codex-pr-comments.yml");
+test("Codex review gate reruns on every PR HEAD and executes trusted code", () => {
+  const source = readWorkflow("codex-review-gate.yml");
 
-  assert.match(source, /cron:\s*"17 3 \* \* \*"/);
-  assert.match(source, /github\.event\.issue\.pull_request/);
-  assert.match(source, /Codex feedback inbox/);
-  assert.doesNotMatch(source, /types:\s*\[[^\]]*synchronize/);
+  assert.match(source, /pull_request_target:/);
+  assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
+  assert.match(source, /statuses:\s*write/);
+  assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
+  assert.match(source, /ref:\s*\$\{\{ github\.event\.repository\.default_branch \}\}/);
+  assert.match(source, /node scripts\/codex-review-gate\.mjs/);
 });
 
 test("Vercel delegates ignored builds to the tested classifier", () => {

@@ -10,19 +10,20 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Remote GitHub: https://github.com/max23468/SyncBay
 - Branch predefinito: `main`.
 - Issue e PR template configurati in `.github/`.
-- Workflow `Codex PR comments` configurato per mantenere la issue `Codex feedback inbox`.
+- Workflow `Codex review gate` configurato per pubblicare lo status
+  `codex-review` riferito all'HEAD corrente.
 - Dependabot configurato per GitHub Actions e npm, con auto-merge squash delle
   sole PR patch/minor dopo i check obbligatori di `main`.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
-- Repository pubblico protetto da PR, `Verifica proporzionata` e dal check
-  minimale separato del titolo Conventional Commit.
+- Repository pubblico protetto da PR, `Verifica proporzionata`,
+  `Conventional PR title` e `codex-review`.
 - React Doctor usa una scansione locale completa bloccante dai warning in su e
   un'Action advisory fissata a una revisione verificata: su ogni PR pubblica
   score e review per i file cambiati senza rendere rosso il run per i finding,
   e registra lo stato anche sul push a `main`. L'Action fallisce soltanto se lo
-  scanner non riesce a completarsi. CodeQL, Vercel e inbox Codex
-  restano check mirati o advisory e non bloccano indiscriminatamente ogni PR.
+  scanner non riesce a completarsi. CodeQL e Vercel restano check mirati o
+  advisory; `codex-review` blocca soltanto in base alla review dell'HEAD.
 
 ## Regola base
 
@@ -113,8 +114,9 @@ Con il deployment Vercel production privato attivo, "pubblicato" significa almen
   branch assorbiti;
 - PR obbligatoria verso `main`, senza approval obbligatorie per il maintainer
   unico e con conversazioni da risolvere;
-- check richiesti `Verifica proporzionata` e `Conventional PR title`, senza
-  policy strict/up-to-date per evitare rebase e run duplicati;
+- check richiesti `Verifica proporzionata`, `Conventional PR title` e
+  `codex-review`, senza policy strict/up-to-date per evitare rebase e run
+  duplicati;
 - nessun deployment, React Doctor, CodeQL aggregato o Supabase Preview
   richiesto come status separato;
 - push forzati e cancellazione di `main` vietati;
@@ -140,30 +142,23 @@ può bastare `git diff --check` e rilettura del documento, come indicato sotto.
 Per runtime, UI, provider, database o tooling condiviso, la checklist deve
 essere chiusa prima della PR o dichiarata esplicitamente nel riepilogo.
 
-## Commenti Codex sulle PR
+## Gate Codex sulle PR
 
-Il workflow `.github/workflows/codex-pr-comments.yml` mantiene una issue operativa chiamata `Codex feedback inbox`.
+Il workflow `.github/workflows/codex-review-gate.yml` non chiede review e non
+pubblica commenti. Osserva soltanto i segnali del reviewer
+`chatgpt-codex-connector[bot]` e aggiorna lo status `codex-review`: i finding
+P0-P3 inline o top-level del tentativo corrente falliscono il gate, mentre
+l'esito positivo deve riferirsi all'HEAD esatto. Ogni `synchronize` invalida
+l'evidenza precedente; `reopened` e il dispatch manuale possono riusare solo
+uno status riuscito dello stesso SHA. Dopo ogni push l'autore richiede
+`@codex review`: la reazione positiva del bot su quell'invocazione identifica
+il tentativo corrente anche quando una review pulita non pubblica testo.
 
-Il workflow:
-
-- sugli eventi PR analizza la PR corrente e le PR già presenti nella inbox;
-- sullo schedule giornaliero, dispatch manuale o refresh della inbox analizza PR aperte,
-  PR recenti degli ultimi 7 giorni e PR già presenti nella inbox;
-- ignora i commenti su issue ordinarie che non sono PR o la inbox Codex;
-- mantiene un opt-in `CODEX_FULL_SCAN=true` per scansioni storiche complete;
-- cerca review thread scritti dall'account bot Codex esatto
-  `chatgpt-codex-connector[bot]` o dagli account esplicitamente elencati in
-  `CODEX_BOT_LOGINS`;
-- distingue thread actionable da thread risolti o outdated;
-- aggiorna la inbox;
-- evita aggiornamenti della issue quando il contenuto non cambia.
-
-Prima di mergiare una PR non banale, controllare i review thread Codex della PR
-corrente. Il preflight remoto usa i thread GitHub come fonte primaria e legge
-la `Codex feedback inbox` solo se i thread non sono disponibili o durante il
-controllo post-merge su `main`. La inbox resta la dashboard globale del
-workflow, ma thread di altre PR non vengono riletti nel preflight della PR
-corrente.
+Il workflow usa `pull_request_target` con permessi minimi e fa checkout
+esclusivamente del branch predefinito fidato, senza installare dipendenze né
+eseguire codice della PR. Prima del merge il preflight remoto continua a
+leggere i review thread della PR corrente e blocca quelli Codex ancora
+actionable; non esiste più una inbox globale separata.
 
 ## Docs-only
 
@@ -182,8 +177,7 @@ limitati a docs, governance, CI, test e tooling non runtime.
 La CI non installa Chromium per ogni sincronizzazione. Le PR con UI sostanziale
 ricevono la label `full-ui-check`, che avvia render e hydration browser in un
 workflow dedicato; lo stesso workflow può essere lanciato manualmente. Il
-workflow della inbox Codex non si riavvia a ogni push: i review thread restano
-comunque letti dal preflight finale.
+gate Codex si riavvia a ogni push e richiede evidenza riferita al nuovo HEAD.
 
 ## Check prima della chiusura
 
