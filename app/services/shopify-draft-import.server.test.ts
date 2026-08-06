@@ -133,7 +133,7 @@ test("the real catalog executor cannot create or finalize an internal job", () =
 test("image staging rejects private destinations and oversized streams", async () => {
   const fetchCalls: string[] = [];
   const privateResult = await downloadImageForStaging("https://127.0.0.1/image.jpg", {
-    fetchImpl: async (url) => {
+    requestImpl: async ({ url }) => {
       fetchCalls.push(String(url));
       return new Response();
     },
@@ -143,7 +143,7 @@ test("image staging rejects private destinations and oversized streams", async (
   assert.equal(fetchCalls.length, 0);
 
   const redirectResult = await downloadImageForStaging("https://images.example/image.jpg", {
-    fetchImpl: async (url) => {
+    requestImpl: async ({ url }) => {
       fetchCalls.push(String(url));
       return new Response(null, {
         headers: { location: "https://127.0.0.1/internal" },
@@ -157,7 +157,7 @@ test("image staging rejects private destinations and oversized streams", async (
   assert.equal(fetchCalls.length, 1);
 
   const oversizedResult = await downloadImageForStaging("https://images.example/image.jpg", {
-    fetchImpl: async () =>
+    requestImpl: async () =>
       new Response("12345", {
         headers: { "content-type": "image/jpeg" },
       }),
@@ -166,6 +166,60 @@ test("image staging rejects private destinations and oversized streams", async (
   });
 
   assert.equal(oversizedResult.status, "failed");
+});
+
+test("image staging connects to the public address validated by DNS", async () => {
+  let lookupCalls = 0;
+  const result = await downloadImageForStaging("https://images.example/image.jpg", {
+    lookupHost: async () => {
+      lookupCalls += 1;
+      return [
+        lookupCalls === 1
+          ? { address: "93.184.216.34", family: 4 }
+          : { address: "127.0.0.1", family: 4 },
+        { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
+      ];
+    },
+    requestImpl: async ({ addresses }) => {
+      assert.deepEqual(addresses, [
+        { address: "93.184.216.34", family: 4 },
+        { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
+      ]);
+      return new Response("image", {
+        headers: { "content-type": "image/jpeg" },
+      });
+    },
+  });
+
+  assert.equal(result.status, "synced");
+  assert.equal(lookupCalls, 1);
+});
+
+test("image staging supports all-address lookups for its pinned DNS resolution", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(importSource, /if \(options\.all\)[\s\S]*callback\(null, addresses\)/);
+});
+
+test("image staging omits the response body for no-content HTTP statuses", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(importSource, /\[204, 205, 304\]\.includes\(status\)[\s\S]*\? null/);
+});
+
+test("image staging rejects response-conversion errors", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(importSource, /catch \(error\) \{\s*reject\(error\);\s*\}/);
 });
 
 type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];
