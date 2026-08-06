@@ -1,12 +1,20 @@
 import type { EbayConnection } from "@prisma/client";
-import { XMLParser } from "fast-xml-parser";
 
 import { mapWithConcurrency } from "../lib/map-with-concurrency";
+import {
+  asEbayTradingArray as asArray,
+  asEbayTradingRecord as asRecord,
+  buildGetItemRequest,
+  buildGetMyeBaySellingRequest,
+  buildGetSellerEventsRequest,
+  getEbayTradingText as toText,
+} from "../lib/syncbay-ebay-trading";
 import { getEbayStorefrontMetadata } from "../lib/syncbay-ebay-storefront";
 import { buildExistingCatalogPreviewMetadata } from "../lib/syncbay-existing-catalog-preview";
 import { parseEbayTradingItemSpecifics } from "../lib/syncbay-product-facets";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
+import { callEbayTradingApi } from "./ebay-trading-api.server";
 import { buildImportPreview, type ImportPreviewListingCandidate } from "./import-preview.server";
 
 interface EbayTradingPreviewInput {
@@ -48,27 +56,9 @@ export interface EbayTradingSellerEventsDelta {
 
 type XmlRecord = Record<string, unknown>;
 
-const EBAY_TRADING_URLS = {
-  production: "https://api.ebay.com/ws/api.dll",
-  sandbox: "https://api.sandbox.ebay.com/ws/api.dll",
-};
-const EBAY_TRADING_SITE_IDS: Record<string, string> = {
-  EBAY_IT: "101",
-};
-const TRADING_API_COMPATIBILITY_LEVEL = "1455";
-const TRADING_API_ERROR_LANGUAGE = "it_IT";
 const TRADING_API_MAX_ENTRIES_PER_PAGE = 200;
 const GET_ITEM_DETAIL_LOOKUP_LIMIT = 10;
 const GET_ITEM_LOOKUP_CONCURRENCY = 4;
-const xmlParser = new XMLParser({
-  attributeNamePrefix: "@_",
-  ignoreAttributes: false,
-  parseAttributeValue: false,
-  parseTagValue: false,
-  removeNSPrefix: true,
-  textNodeName: "#text",
-  trimValues: true,
-});
 
 export async function getEbayTradingImportPreview(
   input: EbayTradingPreviewInput,
@@ -77,7 +67,7 @@ export async function getEbayTradingImportPreview(
     entriesPerPage: input.limit,
     pageNumber: 1,
   });
-  const body = await fetchTradingXml({
+  const body = await callEbayTradingApi({
     accessToken: input.accessToken,
     callName: "GetMyeBaySelling",
     connection: input.connection,
@@ -155,7 +145,7 @@ async function getEbayTradingCatalogPreviewCandidates(input: {
       entriesPerPage,
       pageNumber,
     });
-    const body = await fetchTradingXml({
+    const body = await callEbayTradingApi({
       accessToken: input.accessToken,
       callName: "GetMyeBaySelling",
       connection: input.connection,
@@ -234,7 +224,7 @@ export async function getEbayTradingCatalogImportPlan(input: {
       entriesPerPage,
       pageNumber,
     });
-    const body = await fetchTradingXml({
+    const body = await callEbayTradingApi({
       accessToken: input.accessToken,
       callName: "GetMyeBaySelling",
       connection: input.connection,
@@ -308,7 +298,7 @@ export async function getEbayTradingSellerEventsDelta(input: {
   modTimeFrom: Date;
   modTimeTo: Date;
 }): Promise<EbayTradingSellerEventsDelta> {
-  const body = await fetchTradingXml({
+  const body = await callEbayTradingApi({
     accessToken: input.accessToken,
     callName: "GetSellerEvents",
     connection: input.connection,
@@ -343,13 +333,6 @@ export async function getEbayTradingSellerEventsDelta(input: {
     timeTo: input.modTimeTo.toISOString(),
     truncated: allItems.length > input.maxEvents,
   };
-}
-
-class EbayTradingPreviewError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EbayTradingPreviewError";
-  }
 }
 
 async function getEnrichedTradingCandidate(
@@ -397,9 +380,9 @@ async function getEnrichedTradingCandidate(
 }
 
 async function getTradingItemDetail(input: EbayTradingRequestContext, itemId: string) {
-  const requestXml = buildGetItemRequest(itemId);
+  const requestXml = buildGetItemRequest({ includeItemSpecifics: true, itemId });
 
-  return fetchTradingXml({
+  return callEbayTradingApi({
     accessToken: input.accessToken,
     callName: "GetItem",
     connection: input.connection,
@@ -407,93 +390,6 @@ async function getTradingItemDetail(input: EbayTradingRequestContext, itemId: st
   })
     .then((body) => asRecord(body.Item))
     .catch(() => null);
-}
-
-export async function fetchTradingXml(input: {
-  accessToken: string;
-  callName: "GetItem" | "GetMyeBaySelling" | "GetSellerEvents" | "ReviseInventoryStatus";
-  connection: EbayConnection;
-  requestXml: string;
-}) {
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il corpo XML serve anche per gli errori eBay Trading; lo status è verificato subito dopo la lettura.
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: input.requestXml,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": input.callName,
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-    },
-    method: "POST",
-  });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new EbayTradingPreviewError(
-      `eBay Trading API ${input.callName} ha risposto con HTTP ${response.status}.`,
-    );
-  }
-
-  const parsed = xmlParser.parse(responseText) as unknown;
-  const responseNode = asRecord(parsed)?.[`${input.callName}Response`];
-  const body = asRecord(responseNode);
-  if (!body) {
-    throw new EbayTradingPreviewError(
-      `eBay Trading API ${input.callName} ha restituito una risposta non leggibile.`,
-    );
-  }
-
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    throw new EbayTradingPreviewError(getTradingApiErrorMessage(body));
-  }
-
-  return body;
-}
-
-function buildGetMyeBaySellingRequest(input: { entriesPerPage: number; pageNumber: number }) {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<GetMyeBaySellingRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>${TRADING_API_ERROR_LANGUAGE}</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <ActiveList>
-    <Include>true</Include>
-    <Pagination>
-      <EntriesPerPage>${input.entriesPerPage}</EntriesPerPage>
-      <PageNumber>${input.pageNumber}</PageNumber>
-    </Pagination>
-  </ActiveList>
-  <HideVariations>false</HideVariations>
-</GetMyeBaySellingRequest>`;
-}
-
-function buildGetItemRequest(itemId: string) {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>${TRADING_API_ERROR_LANGUAGE}</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <IncludeItemSpecifics>true</IncludeItemSpecifics>
-  <ItemID>${escapeXml(itemId)}</ItemID>
-</GetItemRequest>`;
-}
-
-function buildGetSellerEventsRequest(input: { modTimeFrom: Date; modTimeTo: Date }) {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<GetSellerEventsRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>${TRADING_API_ERROR_LANGUAGE}</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <ModTimeFrom>${input.modTimeFrom.toISOString()}</ModTimeFrom>
-  <ModTimeTo>${input.modTimeTo.toISOString()}</ModTimeTo>
-  <NewItemFilter>true</NewItemFilter>
-  <HideVariations>false</HideVariations>
-</GetSellerEventsRequest>`;
 }
 
 function getTradingItems(container: XmlRecord | null) {
@@ -676,31 +572,6 @@ function getTotalPages(activeList: XmlRecord | null) {
   return typeof total === "number" ? total : null;
 }
 
-function getTradingApiErrorMessage(body: XmlRecord) {
-  const errors: string[] = [];
-
-  for (const errorNode of asArray(body.Errors)) {
-    const error = asRecord(errorNode);
-    const shortMessage = getString(error, "ShortMessage");
-    const longMessage = getString(error, "LongMessage");
-    const message = normalizeText(longMessage ?? shortMessage);
-
-    if (message) errors.push(message);
-  }
-
-  return errors.length > 0
-    ? `eBay Trading API ha risposto: ${errors.join("; ")}.`
-    : "eBay Trading API non ha completato la lettura dei listing.";
-}
-
-function getTradingBaseUrl(environment: string) {
-  return environment === "production" ? EBAY_TRADING_URLS.production : EBAY_TRADING_URLS.sandbox;
-}
-
-function getTradingSiteId(marketplaceId: string) {
-  return EBAY_TRADING_SITE_IDS[marketplaceId] ?? "0";
-}
-
 function getMoneyValue(value: unknown) {
   const text = toText(value);
   if (!text) return null;
@@ -728,29 +599,6 @@ function getString(record: XmlRecord | null, key: string) {
   return record ? normalizeText(toText(record[key])) : null;
 }
 
-function toText(value: unknown): string | null {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const record = asRecord(value);
-  const text = record?.["#text"];
-  if (typeof text === "string") return text;
-  if (typeof text === "number") return String(text);
-
-  return null;
-}
-
-function asRecord(value: unknown): XmlRecord | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as XmlRecord) : null;
-}
-
-function asArray(value: unknown) {
-  if (Array.isArray(value)) return value;
-  if (value === null || typeof value === "undefined") return [];
-
-  return [value];
-}
-
 function normalizeText(value: string | null | undefined) {
   const normalized = value?.trim();
   return normalized && normalized.length > 0 ? normalized : null;
@@ -758,13 +606,4 @@ function normalizeText(value: string | null | undefined) {
 
 function normalizePositiveInteger(value: number) {
   return Number.isInteger(value) && value > 0 ? value : 1;
-}
-
-export function escapeXml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
 }

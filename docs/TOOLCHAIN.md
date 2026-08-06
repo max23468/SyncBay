@@ -39,6 +39,11 @@ forzare installazioni o downgrade dentro la repo.
 | --------------------------- | --------------------------------------- |
 | Shopify app                 | Shopify CLI `4.6.0`                     |
 | Shopify Admin/Webhook API   | `2026-07`                               |
+| eBay Trading API            | compatibility level `1455`              |
+| eBay Inventory API          | endpoint `v1`, specifica `1.18.5`       |
+| eBay Notification API       | endpoint `v1`, specifica `1.6.7`        |
+| eBay OAuth / Identity API   | endpoint `v1`                           |
+| eBay Developer Analytics    | endpoint `v1_beta`                      |
 | Frontend/backend app        | React Router, React, TypeScript, Vite   |
 | Hosting previsto            | Vercel                                  |
 | CLI hosting                 | Vercel CLI `58.7.1`                     |
@@ -49,6 +54,18 @@ forzare installazioni o downgrade dentro la repo.
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights   |
 | Quality React               | React Doctor                            |
 | Codice morto                | Knip                                    |
+
+Versioni eBay verificate il 2026-08-06 sulle fonti ufficiali: [Trading API
+release notes](https://developer.ebay.com/devzone/XML/docs/ReleaseNotes.html),
+[Inventory API release
+notes](https://developer.ebay.com/api-docs/sell/inventory/static/release-notes.html),
+[Notification API release
+notes](https://developer.ebay.com/api-docs/sell/notification/release-notes.html)
+e [Developer Analytics rate
+limits](https://developer.ebay.com/api-docs/developer/analytics/resources/rate_limit/methods/getUserRateLimits).
+Le release minori REST aggiornano lo schema dietro lo stesso path major: non
+vanno inserite nell'URL. Trading richiede invece il livello corrente sia
+nell'header sia nel campo XML `Version`; entrambi derivano dalla stessa costante.
 
 ## Aggiornamenti automatici
 

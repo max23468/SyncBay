@@ -4,23 +4,11 @@ import crypto from "node:crypto";
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-import { XMLParser } from "fast-xml-parser";
-
+import { getEbayTokenUrl } from "../app/services/ebay-environment.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
-const TRADING_API_COMPATIBILITY_LEVEL = "1453";
 const TOKEN_ENCRYPTION_KEYCHAIN_SERVICE = "syncbay-token-encryption-key";
-
-export const tradingXmlParser = new XMLParser({
-  attributeNamePrefix: "@_",
-  ignoreAttributes: false,
-  parseAttributeValue: false,
-  parseTagValue: false,
-  removeNSPrefix: true,
-  textNodeName: "#text",
-  trimValues: true,
-});
 
 export function loadDotEnv(path = ".env") {
   if (!existsSync(path)) return;
@@ -100,12 +88,6 @@ export function decryptSecret(secret) {
   ]).toString("utf8");
 }
 
-export function getTokenUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/identity/v1/oauth2/token"
-    : "https://api.sandbox.ebay.com/identity/v1/oauth2/token";
-}
-
 export async function getAccessToken(connection) {
   const expiresAt = connection.tokenExpiresAt ? new Date(connection.tokenExpiresAt) : null;
 
@@ -131,7 +113,7 @@ export async function getAccessToken(connection) {
   const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
   if (scopes) body.set("scope", scopes);
 
-  const response = await fetch(getTokenUrl(connection.environment), {
+  const response = await fetch(getEbayTokenUrl(connection.environment), {
     body,
     headers: {
       Authorization: `Basic ${Buffer.from(
@@ -227,96 +209,4 @@ returning id;
 `);
 
   return json.access_token;
-}
-
-export function getTradingBaseUrl(environment) {
-  return environment === "production"
-    ? "https://api.ebay.com/ws/api.dll"
-    : "https://api.sandbox.ebay.com/ws/api.dll";
-}
-
-export function getTradingSiteId(marketplaceId) {
-  if (marketplaceId === "EBAY_IT") return "101";
-
-  throw new Error(`Marketplace Trading API non supportato: ${marketplaceId}.`);
-}
-
-export async function tradingCall(input) {
-  const response = await fetch(getTradingBaseUrl(input.connection.environment), {
-    body: input.requestXml,
-    headers: {
-      "Content-Type": "text/xml; charset=utf-8",
-      "X-EBAY-API-CALL-NAME": input.callName,
-      "X-EBAY-API-COMPATIBILITY-LEVEL": TRADING_API_COMPATIBILITY_LEVEL,
-      "X-EBAY-API-IAF-TOKEN": input.accessToken,
-      "X-EBAY-API-SITEID": getTradingSiteId(input.connection.marketplaceId),
-    },
-    method: "POST",
-  });
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(`eBay Trading API HTTP ${response.status}.`);
-  }
-
-  const parsed = tradingXmlParser.parse(responseText);
-  const body = asRecord(asRecord(parsed)?.[`${input.callName}Response`]);
-  if (!body) {
-    throw new Error(`eBay Trading API ${input.callName} non leggibile.`);
-  }
-
-  const ack = getString(body, "Ack");
-  if (ack && !["Success", "Warning"].includes(ack)) {
-    const errors = asRecord(body.Errors);
-    throw new Error(
-      getString(errors, "LongMessage") ??
-        getString(errors, "ShortMessage") ??
-        `eBay Trading API ${input.callName} non riuscita.`,
-    );
-  }
-
-  return body;
-}
-
-export async function getTradingItem(input) {
-  const body = await tradingCall({
-    accessToken: input.accessToken,
-    callName: "GetItem",
-    connection: input.connection,
-    requestXml: `<?xml version="1.0" encoding="utf-8"?>
-<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>${
-    input.includeItemSpecifics ? "\n  <IncludeItemSpecifics>true</IncludeItemSpecifics>" : ""
-  }
-  <ItemID>${escapeXml(input.itemId)}</ItemID>
-</GetItemRequest>`,
-  });
-
-  return asRecord(body.Item);
-}
-
-export function escapeXml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-export function asRecord(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
-}
-
-export function getString(record, key) {
-  const value = asRecord(record)?.[key];
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const nested = asRecord(value);
-  const text = nested?.["#text"];
-
-  return typeof text === "string" || typeof text === "number" ? String(text) : null;
 }

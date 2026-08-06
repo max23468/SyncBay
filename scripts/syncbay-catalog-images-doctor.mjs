@@ -2,14 +2,10 @@
 import { parseArgs as parseNodeArgs } from "node:util";
 
 import { mapWithConcurrency } from "../app/lib/map-with-concurrency.ts";
+import { asEbayTradingRecord as asRecord } from "../app/lib/syncbay-ebay-trading.ts";
+import { getEbayTradingItem as getTradingItem } from "../app/services/ebay-trading-api.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
-import {
-  asRecord,
-  ensureTokenEncryptionKey,
-  getAccessToken,
-  getTradingItem,
-  loadDotEnv,
-} from "./syncbay-ebay-cli.mjs";
+import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_LIMIT = 20;

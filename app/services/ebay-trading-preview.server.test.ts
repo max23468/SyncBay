@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 import type { EbayConnection } from "@prisma/client";
 
+import { escapeEbayTradingXml } from "../lib/syncbay-ebay-trading.ts";
 import * as ebayTradingPreview from "./ebay-trading-preview.server.ts";
 
-const { escapeXml, getEbayTradingCatalogImportPreview } = ebayTradingPreview;
+const { getEbayTradingCatalogImportPreview } = ebayTradingPreview;
 
 test("escapes every XML metacharacter used in eBay requests", () => {
-  assert.equal(escapeXml(`A&B<C>D"E'F`), "A&amp;B&lt;C&gt;D&quot;E&apos;F");
+  assert.equal(escapeEbayTradingXml(`A&B<C>D"E'F`), "A&amp;B&lt;C&gt;D&quot;E&apos;F");
 });
 
 test("builds existing catalog previews without fetching every item detail", async () => {

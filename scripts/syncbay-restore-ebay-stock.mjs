@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 
 import {
+  asEbayTradingRecord as asRecord,
+  buildReviseInventoryStatusRequest,
+  getEbayTradingString as getString,
+} from "../app/lib/syncbay-ebay-trading.ts";
+import {
+  callEbayTradingApi as tradingCall,
+  getEbayTradingItem as getTradingItem,
+} from "../app/services/ebay-trading-api.server.ts";
+import {
   parseRestoreEbayStockArgs,
   shouldCreateRestoreSnapshot,
 } from "./syncbay-restore-ebay-stock-args.mjs";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
-import {
-  asRecord,
-  ensureTokenEncryptionKey,
-  escapeXml,
-  getAccessToken,
-  getString,
-  getTradingItem,
-  loadDotEnv,
-  tradingCall,
-} from "./syncbay-ebay-cli.mjs";
+import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 
 const args = parseRestoreEbayStockArgs(process.argv.slice(2));
 
@@ -234,21 +234,6 @@ function assertVerifiedAvailableQuantity(input) {
 
 function jsonSql(value) {
   return `${sqlQuote(JSON.stringify(value))}::jsonb`;
-}
-
-function buildReviseInventoryStatusRequest(input) {
-  const sku = input.sku?.trim();
-
-  return `<?xml version="1.0" encoding="utf-8"?>
-<ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <InventoryStatus>
-    <ItemID>${escapeXml(input.itemId)}</ItemID>
-    ${sku ? `<SKU>${escapeXml(sku)}</SKU>` : ""}
-    <Quantity>${input.quantity}</Quantity>
-  </InventoryStatus>
-</ReviseInventoryStatusRequest>`;
 }
 
 function toNumberOrNull(value) {

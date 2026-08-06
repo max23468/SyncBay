@@ -20,17 +20,21 @@ import {
   buildGetSellerListRequest,
   buildTradingItemCache,
 } from "../app/lib/syncbay-ebay-trading-bulk.ts";
+import {
+  asEbayTradingRecord as asRecord,
+  getEbayTradingString as getString,
+} from "../app/lib/syncbay-ebay-trading.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
+import {
+  callEbayTradingApi as tradingCall,
+  getEbayTradingItem as getTradingItem,
+} from "../app/services/ebay-trading-api.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import {
-  asRecord,
   ensureTokenEncryptionKey,
   getAccessToken,
   getShopifyAccessToken,
-  getString,
-  getTradingItem,
   loadDotEnv,
-  tradingCall,
 } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
