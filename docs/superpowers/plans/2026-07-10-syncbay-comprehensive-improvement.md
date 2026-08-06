@@ -640,7 +640,7 @@ npm run coverage:lib
 npm run typecheck
 npm run lint
 npm run build
-npm run quality:react-doctor
+npm run doctor
 ```
 
 Expected: tutti verdi; i test server dimostrano un'unica lettura Shopify batch e transizioni complete per ogni job.
@@ -899,7 +899,7 @@ npm run coverage:lib
 npm run typecheck
 npm run lint
 npm run build
-npm run quality:react-doctor
+npm run doctor
 npm run audit:prod
 ```
 
@@ -1708,7 +1708,7 @@ e usa già:
 defaultChecked={selectedPublicationIdSet.has(publication.id)}
 ```
 
-Non modificare nuovamente `app.settings.tsx` salvo regressione dimostrata. Run: `npm run quality:react-doctor`
+Non modificare nuovamente `app.settings.tsx` salvo regressione dimostrata. Run: `npm run doctor`
 
 Expected: `100/100`, nessun warning `Array lookup inside a loop`.
 
@@ -1922,7 +1922,7 @@ Aggiornare `.mex/context/setup.md` con i comandi runtime, test e manutenzione re
 Run:
 
 ```bash
-npm run quality:react-doctor
+npm run doctor
 npm run smoke:ui
 npm run ui:check
 npm run ui:browser-check
@@ -1978,7 +1978,7 @@ npm run prisma:validate
 npm run ui:check
 npm run ui:browser-check
 npm run smoke:ui
-npm run quality:react-doctor
+npm run doctor
 npm run audit:prod
 npm run db:verify
 npm run db:storage-budget

@@ -30,6 +30,11 @@ test("keeps docs-only changes on lightweight checks including formatting", () =>
       label: "npm run format:check",
     },
     {
+      args: ["run", "doctor"],
+      command: "npm",
+      label: "npm run doctor",
+    },
+    {
       args: ["diff", "--check", "origin/main"],
       command: "git",
       label: "git diff --check origin/main",
@@ -69,6 +74,24 @@ test("runs the formatting check on every lane", () => {
       }),
     ).includes("npm run format:check"),
   );
+});
+
+test("runs React Doctor in every required verification lane", () => {
+  const labelsFor = (plan) => plan.commands.map((entry) => entry.label);
+
+  for (const plan of [
+    buildVerificationPlan({ mode: "full" }),
+    buildVerificationPlan({
+      mode: "changed",
+      review: { suggestedChecks: ["git diff --check"], unmatchedFiles: [] },
+    }),
+    buildVerificationPlan({
+      mode: "changed",
+      review: { suggestedChecks: ["npm run lint"], unmatchedFiles: [] },
+    }),
+  ]) {
+    assert.ok(labelsFor(plan).includes("npm run doctor"));
+  }
 });
 
 test("falls back to the full lane when changed files are not classified", () => {
@@ -126,46 +149,20 @@ test("deduplicates changed checks and keeps live placeholders manual", () => {
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run format:check", "npm run prisma:generate", "npm run typecheck:raw", "npm run lint"],
+    [
+      "npm run format:check",
+      "npm run doctor",
+      "npm run prisma:generate",
+      "npm run typecheck:raw",
+      "npm run lint",
+    ],
   );
   assert.deepEqual(plan.manualChecks, ["npm run conflicts:doctor -- --shop <shop.myshopify.com>"]);
 });
 
-test("CI can omit advisory gates already handled by parallel workflows", () => {
-  const plan = buildVerificationPlan({
-    excludeAdvisoryGates: true,
-    mode: "changed",
-    review: {
-      suggestedChecks: ["npm run smoke:ui", "npm run quality:react-doctor"],
-      unmatchedFiles: [],
-    },
-  });
-
-  assert.deepEqual(
-    plan.commands.map((entry) => entry.label),
-    ["npm run format:check", "npm run smoke:ui"],
-  );
-});
-
-// L'esito di `audit:prod` dipende dal database advisory, non dal diff: una
-// vulnerabilità pubblicata a monte renderebbe rossa ogni PR aperta, anche
-// docs-only. La corsia full e' quella che serve davvero, perche' un diff con
-// file non classificati ci ricade.
-test("CI can omit the advisory audit gate on the full lane", () => {
-  const plan = buildVerificationPlan({
-    excludeAdvisoryGates: true,
-    mode: "full",
-  });
-
-  const labels = plan.commands.map((entry) => entry.label);
-  assert.ok(!labels.includes("npm run audit:prod"));
-  assert.ok(labels.includes("npm run build:raw"));
-});
-
-test("keeps local advisory gates when the flag is absent", () => {
+test("keeps the full local audit gate", () => {
   const plan = buildVerificationPlan({ mode: "full" });
 
-  assert.ok(plan.commands.map((entry) => entry.label).includes("npm run quality:react-doctor"));
   assert.ok(plan.commands.map((entry) => entry.label).includes("npm run audit:prod"));
 });
 
@@ -186,7 +183,7 @@ test("CI can leave changed UI gates to the explicit cached browser workflow", ()
 
   assert.deepEqual(
     plan.commands.map((entry) => entry.label),
-    ["npm run format:check", "npm run lint"],
+    ["npm run format:check", "npm run doctor", "npm run lint"],
   );
 });
 
@@ -203,6 +200,7 @@ test("keeps provider-backed checks manual and accepts the tooling wrapper", () =
     plan.commands.map((entry) => entry.label),
     [
       "npm run format:check",
+      "npm run doctor",
       "npm run prisma:generate",
       "npm run prisma:validate",
       "npm run test:tooling",

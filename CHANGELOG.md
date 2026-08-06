@@ -8,12 +8,15 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
-- Allineato il gate React Doctor al modello CF-Ready: `verify:full` esegue la
-  scansione locale completa e blocca dai warning in su; l'Action advisory gira
-  sui file cambiati di ogni PR e sull'intero progetto dopo il push a `main`,
-  pubblica score e review inline, usa revisioni immutabili, fissa lo scanner a
-  `0.9.5` come il gate locale e lascia disabilitato il controllo supply-chain
-  esterno. Lo script npm `shopify` importa esplicitamente il manifest della CLI
+- Portato React Doctor a enforcement completo: l'unico script `doctor` entra
+  sempre nel gate generale, mentre il workflow dedicato blocca dai warning in
+  su, analizza i file cambiati sulle PR e l'intero progetto sul push a `main`.
+  Action e checkout usano revisioni immutabili, scanner e devDependency sono
+  fissati a `0.9.5`, lo status `react-doctor` è obbligatorio con strict checking
+  e un workflow settimanale verifica il ruleset contro la deriva. L'unica
+  esclusione di regola resta il falso positivo dimostrato sugli export imposti
+  dal route-module React Router `app/routes/app.tsx`; il controllo supply-chain
+  esterno resta disabilitato. Lo script npm `shopify` importa esplicitamente il manifest della CLI
   e ne confronta la versione con il pin del progetto: il runner privo di
   `node_modules` riconosce la dipendenza come usata, mentre il comando fallisce
   se l'installazione locale manca o non è allineata. Le
@@ -88,7 +91,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   entra in `ADVISORY_GATE_LABELS`, e `fullCommands()` ora onora
   `excludeAdvisoryGates`, che prima ignorava — per questo la corsia full
   eseguiva comunque i gate advisory nonostante la CI passi
-  `--without-advisory-gates`. Il nuovo workflow `audit-prod.yml` lo esegue ogni
+  l'esclusione esplicita dei gate advisory. Il workflow `audit-prod.yml` lo esegue ogni
   giorno e sulle PR che toccano dipendenze o lo script; `verify:changed` e
   `verify:full` in locale continuano a eseguirlo sempre.
 - Riadattata la documentazione agentica alle guide dei modelli di quinta
@@ -2445,7 +2448,7 @@ eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
 ### Sotto il cofano
 
 - Aggiornato React Doctor a `0.5.4`, sostituendo il flag deprecato
-  `--diff false` con `--scope full` nel gate `quality:react-doctor`.
+  `--diff false` con `--scope full` nel gate `doctor`.
 
 ## [0.35.13] — 2026-06-13
 
@@ -2518,7 +2521,7 @@ eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
 ### Sotto il cofano
 
 - React Doctor è ora una dev dependency del progetto e il gate
-  `quality:react-doctor` usa la config `doctor.config.json` con il flag
+  `doctor` usa la config `doctor.config.json` con il flag
   `--blocking`, evitando i warning di deprecazione del runner.
 - La route Impostazioni è stata divisa in sezioni React locali più piccole,
   chiudendo il warning `react-doctor/no-giant-component` e portando lo score
@@ -3790,7 +3793,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
   Shopify e nella pulizia eBay account deletion, mantenendo claim atomico,
   concorrenza controllata e isolamento per shop.
 - Configurato il quality gate React Doctor per usare sempre
-  `react-doctor@latest`.
+  React Doctor dalla versione allora corrente.
 
 ## [0.17.2] — 2026-05-26
 

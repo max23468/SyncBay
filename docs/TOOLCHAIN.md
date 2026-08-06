@@ -116,12 +116,15 @@ asserzione di compile-time sulla copertura degli enum Prisma (`*CoverPrisma`)
 sono marcati `@knipignore`: non hanno importatori per costruzione e non vanno
 cancellati.
 
-React Doctor segue due corsie: `verify:full` esegue dalla dipendenza pinnata la
-scansione completa locale e blocca dai warning in su; il workflow dedicato usa
-l'Action ufficiale fissata a una revisione verificata, resta advisory sui
-finding, pubblica score e review inline su ogni PR e registra lo stato dopo il
-push a `main`. Il controllo supply-chain esterno è disabilitato perché audit npm
-e GitHub coprono già le dipendenze.
+React Doctor segue due corsie entrambe bloccanti dai warning in su: il gate
+generale esegue `npm run doctor` dalla dipendenza pinnata e il workflow dedicato
+usa l'Action ufficiale fissata a una revisione verificata, pubblica score e
+review inline su ogni PR e ripete la scansione completa dopo il push a `main`.
+L'unica esclusione di regola riguarda `app/routes/app.tsx`: React Router impone
+nello stesso route-module gli export `loader`, `headers` ed `ErrorBoundary`,
+quindi `only-export-components` è un falso positivo dimostrato. Il controllo
+supply-chain esterno è disabilitato perché audit npm e GitHub coprono già le
+dipendenze.
 
 ## Comandi locali
 
@@ -180,7 +183,7 @@ e GitHub coprono già le dipendenze.
 | Diagnostica immagini Catalogo  | `npm run catalog:images:doctor -- --shop <shop.myshopify.com> [--limit N]`                                       |
 | Test guardia stock eBay        | `npm run test:stock-guard`                                                                                       |
 | Test script e workflow         | `npm run test:tooling`                                                                                           |
-| React Doctor pin               | `npm run quality:react-doctor`                                                                                   |
+| React Doctor                   | `npm run doctor`                                                                                                 |
 | Codice morto ed export inutili | `npm run quality:knip`                                                                                           |
 | Release dry-run                | `npm run release:dry-run`                                                                                        |
 | Release locale                 | `npm run release`                                                                                                |
@@ -253,7 +256,7 @@ ciechi.
 | Moduli `app/services`, runtime condiviso o CI                               | `npm run verify:full -- --force`; aggiungere test mirati prima del gate completo                                             |
 | Moduli puri `app/lib`                                                       | test del file durante l'iterazione, poi `npm run verify:changed -- --base origin/main`                                       |
 | Pubblicazione/merge PR                                                      | `npm run verify:publish -- --remote`; aggiungere `npm run conflicts:doctor` quando il lavoro tocca conflitti, stale o retry  |
-| Qualità React dopo release major/minor o cambi UI/React trasversali         | `npm run quality:react-doctor`, dalla versione esatta fissata nel lockfile                                                   |
+| Qualità React dopo release major/minor o cambi UI/React trasversali         | `npm run doctor`, dalla versione esatta fissata nel lockfile                                                                 |
 | Refactor che rimuovono consumatori, ritiri di funzionalità o consolidamenti | `npm run quality:knip`, che rileva file ed export rimasti senza consumatori                                                  |
 | Flussi UI principali                                                        | `npm run smoke:ui` quando il dev server o lo script sono applicabili                                                         |
 | Prisma/database                                                             | `npm run prisma:validate`, `npm run audit:prod`; `npm run db:verify` se Supabase linked è disponibile                        |
@@ -261,10 +264,11 @@ ciechi.
 | Versioning/changelog runtime                                                | `npm run release:dry-run`                                                                                                    |
 
 La CI PR mantiene un unico job conclusivo: per diff docs-only esegue
-`npm run format:check` e `git diff --check`; per gli altri diff esegue
-`verify:changed -- --no-receipt` e quindi soltanto test, typecheck, lint, build
-e smoke dedotti dalle superfici toccate. React Doctor resta nel workflow
-parallelo advisory e non viene duplicato nel check richiesto.
+`npm run format:check`, `npm run doctor` e `git diff --check`; per gli altri
+diff esegue `verify:changed -- --no-receipt`, che include sempre React Doctor e
+poi soltanto test, typecheck, lint, build e smoke dedotti dalle superfici
+toccate. Il workflow dedicato duplica intenzionalmente React Doctor per
+produrre review inline e uno status `react-doctor` richiesto separatamente.
 
 Un check che blocca il merge deve essere funzione del diff in revisione. `npm
 run audit:prod` non lo è: dipende dal database advisory, che cambia da solo,
@@ -272,8 +276,8 @@ quindi una vulnerabilità pubblicata a monte renderebbe rossa ogni PR aperta,
 docs-only comprese, per una causa che l'autore non può risolvere nel proprio
 scope. Sta quindi tra i gate advisory: il workflow `Audit produzione` lo esegue
 ogni giorno e sulle PR che toccano dipendenze o lo script stesso, mentre resta
-obbligatorio in locale dentro `verify:changed` e `verify:full`, che non passano
-`--without-advisory-gates`. Il segnale resta, il merge non è più accoppiato.
+obbligatorio in locale dentro `verify:changed` e `verify:full`. Il segnale
+resta, il merge non è più accoppiato.
 
 Le advisory che non possono essere chiuse si registrano in
 `ACCEPTED_ADVISORIES` (`scripts/syncbay-audit-prod.mjs`), con identificativo

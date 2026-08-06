@@ -41,8 +41,9 @@ dedicato; resta da definire una policy production stabile oltre il pilota.
 La CI runtime completa è stata attivata il 2026-06-27 con il workflow
 `.github/workflows/ci.yml`, un job unico `verify` su `pull_request` verso
 `main` e `workflow_dispatch`. Il ruleset di `main` richiede PR, risoluzione
-delle conversazioni, `Verifica proporzionata`, `Conventional PR title` e
-`codex-review`, senza approval o policy strict/up-to-date. Il check del titolo è
+delle conversazioni, `Verifica proporzionata`, `Conventional PR title`,
+`codex-review` e `react-doctor`, senza approval e con policy strict/up-to-date.
+Il check del titolo è
 minimale e separato per rivalidare title edit e nuovi SHA senza poter sostituire
 il gate runtime. Il run duplicato dopo il merge è stato rimosso perché il
 ruleset impedisce il normale push diretto a `main`.
@@ -57,13 +58,14 @@ checkout, installazione o esecuzione del contenuto della PR.
 
 Il job sceglie una sola corsia:
 
-- diff docs/governance: `git diff --check`;
+- diff docs/governance: React Doctor e `git diff --check`;
 - diff runtime/tooling: `npm ci` e `verify:changed -- --no-receipt`, con i gate
-  dedotti dalle superfici toccate.
+  dedotti dalle superfici toccate e React Doctor sempre incluso.
 
 La corsia mirata può eseguire in serie, quando pertinenti:
 
 - installazione deterministica dipendenze (`npm ci`);
+- React Doctor dalla dipendenza esatta del lockfile (`npm run doctor`);
 - generazione Prisma una sola volta;
 - lint (`npm run lint`);
 - test tooling (`npm run test:tooling`);
@@ -76,9 +78,6 @@ La corsia mirata può eseguire in serie, quando pertinenti:
 
 Esclusioni consapevoli:
 
-- `format/check`: prettier non è ancora configurato nel repo; introdurlo è una
-  decisione separata e va fatto solo dopo un primo allineamento di formato per
-  non aprire un gate sistematicamente rosso;
 - `db:verify` e `db:push:dry-run`: girano con `--linked` contro il Supabase
   remoto reale, quindi validano lo stato del DB live e non la PR, richiedono
   secret e non sono deterministici; restano controlli locali o, in futuro, un
@@ -90,15 +89,11 @@ Esclusioni consapevoli:
   Un gate corretto richiederebbe l'intero stack `supabase start` in CI: resta
   un follow-up possibile, da introdurre solo dopo verifica verde dedicata. In
   CI lo schema è comunque coperto da `prisma:validate`;
-- qualità React: resta nel workflow dedicato `react-doctor.yml`; l'Action
-  ufficiale, fissata a una revisione verificata, gira in modalità advisory su
-  ogni PR e sul push a `main`, mentre `verify:full` esegue la scansione locale
-  completa dalla versione esatta del lockfile e blocca dai warning in su;
 - Supabase Preview: l'integrazione GitHub Supabase è disattivata perché le
   migration canoniche vivono in `prisma/migrations`, non in
   `supabase/migrations`, quindi il check non validava il flusso reale;
-- Vercel, React Doctor e CodeQL restano advisory o mirati e non sono status
-  richiesti dal ruleset;
+- Vercel e CodeQL restano advisory o mirati e non sono status richiesti dal
+  ruleset;
 - audit advisory delle dipendenze di produzione: `npm run audit:prod` esce dal
   check richiesto ed entra nel workflow `audit-prod.yml`, schedulato ogni giorno
   e path-scoped sulle PR che toccano dipendenze. Un gate che blocca il merge
@@ -118,6 +113,13 @@ a includerli per la prova completa proporzionata al rischio.
 
 Il workflow precedente `pr-quality.yml` (solo `test:lib` + `coverage:lib`) è
 stato rimosso perché interamente sussunto da `ci.yml`.
+
+React Doctor resta inoltre nel workflow dedicato `react-doctor.yml`: l'Action
+ufficiale è fissata a SHA, usa la stessa versione della devDependency, analizza
+il diff sulle PR e tutto il progetto sul push a `main`, pubblica review inline
+e fallisce dai warning in su. Lo status `react-doctor` è richiesto dal ruleset
+con strict checking; `github-governance.yml` ne verifica periodicamente
+contesto, integration id e protezione dalla deriva.
 
 Il workflow Quality di Pratix e il modello di CI prudente di DocMolder sono
 riferimenti, ma SyncBay non li ha copiati alla cieca: i comandi nascono dallo

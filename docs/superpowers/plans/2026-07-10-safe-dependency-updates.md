@@ -99,7 +99,7 @@ npm run coverage:lib
 npm run build
 npm run prisma:validate
 npm run smoke:ui
-npm run quality:react-doctor
+npm run doctor
 ```
 
 Expected: tutti i comandi terminano con exit code 0. Se Shopify CLI 4.4.0 o React Doctor 0.7.3 introducono un errore specifico, ripristinare solo quel candidato alla versione più recente della linea precedente e ripetere l'intero gate.

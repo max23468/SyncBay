@@ -98,7 +98,7 @@ const AREA_DEFINITIONS = [
       "npm run lint",
       "npm run build",
       "npm run smoke:ui",
-      "npm run quality:react-doctor",
+      "npm run doctor",
     ],
     risk: "medio",
   },

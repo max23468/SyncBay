@@ -28,6 +28,6 @@ jobs:
         with:
           version: 0.9.5
           scope: ${{ github.event_name == 'push' && 'full' || 'changed' }}
-          blocking: none
+          blocking: warning
           comment: "false"
           review-comments: "true"
