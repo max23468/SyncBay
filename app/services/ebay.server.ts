@@ -6,6 +6,7 @@ import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
 import {
   getEbayBasicAuthHeader,
   getEbayEnvironment,
+  getEbayMarketplaceId,
   getEbayTokenUrl,
   requiredEnv,
 } from "./ebay-environment.server";
@@ -225,10 +226,6 @@ function getIdentityUserUrl() {
   return getEbayEnvironment() === "production"
     ? EBAY_IDENTITY_URLS.production
     : EBAY_IDENTITY_URLS.sandbox;
-}
-
-function getEbayMarketplaceId() {
-  return process.env.EBAY_MARKETPLACE_ID ?? "EBAY_IT";
 }
 
 function getEbayScopes() {

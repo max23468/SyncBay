@@ -6,7 +6,7 @@
     "scripts/syncbay-ui-browser-client.tsx",
     "scripts/syncbay-ui-polaris-stub.js"
   ],
-  "ignoreBinaries": ["psql", "security", "vercel"],
+  "ignoreBinaries": ["psql", "vercel"],
   "ignoreExportsUsedInFile": true,
   "tags": ["-knipignore"]
 }

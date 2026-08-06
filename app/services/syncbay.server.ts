@@ -120,6 +120,7 @@ import {
   normalizeDescriptionRule,
   normalizeDescriptionRuleFormInput,
 } from "../lib/syncbay-description-rules";
+import { getEbayMarketplaceId } from "./ebay-environment.server";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingCatalogImportPlan } from "./ebay-trading-preview.server";
 import { getEbayLiveImportPreview } from "./ebay-inventory-preview.server";
@@ -171,7 +172,6 @@ interface ShopifyLocationInput {
   name: string;
 }
 
-const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const DEFAULT_EBAY_ENVIRONMENT = "sandbox";
 const DEFAULT_SYNC_TARGET_SECONDS = 300;
 export const CATALOG_IMPORT_MAX_PRODUCTS = 2000;
@@ -2692,10 +2692,6 @@ function getPlaceholderJobType(topic: string) {
   if (topic === "inventory_levels/update") return SyncJobType.DETECT_SHOPIFY_CHANGES;
 
   return null;
-}
-
-export function getEbayMarketplaceId() {
-  return process.env.EBAY_MARKETPLACE_ID ?? DEFAULT_MARKETPLACE_ID;
 }
 
 export function getCatalogImportBlockers(input: {
