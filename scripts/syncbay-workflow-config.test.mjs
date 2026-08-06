@@ -9,6 +9,10 @@ function readWorkflow(name) {
   return fs.readFileSync(`${ROOT}.github/workflows/${name}`, "utf8");
 }
 
+function readJson(name) {
+  return JSON.parse(fs.readFileSync(`${ROOT}${name}`, "utf8"));
+}
+
 test("CI classifies the diff and runs only targeted blocking gates", () => {
   const source = readWorkflow("ci.yml");
 
@@ -41,18 +45,30 @@ test("browser UI gates run only on explicit request or label", () => {
   assert.match(source, /run:\s*npm run ui:browser-check/);
 });
 
-test("React Doctor runs only for runtime and frontend paths", () => {
+test("React Doctor follows the advisory PR gate used by CF-Ready", () => {
   const source = readWorkflow("react-doctor.yml");
 
-  assert.match(source, /paths:/);
-  assert.match(source, /app\/\*\*\/\*\.tsx/);
-  assert.match(source, /package-lock\.json/);
-  assert.match(source, /\.oxlintrc\.json/);
+  assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
+  assert.match(source, /^\s*push:\s*$/m);
+  assert.match(source, /branches:\s*\[main\]/);
+  assert.doesNotMatch(source, /paths:/);
+  assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
   assert.match(source, /millionco\/react-doctor@[0-9a-f]{40}/);
-  assert.match(source, /version:\s*0\.9\.5/);
   assert.match(source, /persist-credentials:\s*false/);
-  assert.doesNotMatch(source, /ready_for_review/);
-  assert.doesNotMatch(source, /^\s*push:\s*$/m);
+  assert.match(source, /blocking:\s*none/);
+  assert.match(source, /comment:\s*"false"/);
+  assert.match(source, /review-comments:\s*"true"/);
+  assert.doesNotMatch(source, /workflow_dispatch:/);
+});
+
+test("React Doctor blocks local full scans on warnings", () => {
+  const config = readJson("doctor.config.json");
+  const packageJson = readJson("package.json");
+
+  assert.equal(config.blocking, "warning");
+  assert.equal(config.supplyChain.enabled, false);
+  assert.ok(config.ignore.files.includes(".worktrees/**"));
+  assert.equal(packageJson.scripts["quality:react-doctor"], "react-doctor --scope full .");
 });
 
 test("PR title validation reruns cheaply for every title-related PR event", () => {
@@ -83,12 +99,7 @@ test("Dependabot auto-merges only patch and minor updates through branch gates",
 });
 
 test("CI workflows use the current Node and cache action majors", () => {
-  for (const name of [
-    "ci.yml",
-    "codex-pr-comments.yml",
-    "react-doctor.yml",
-    "ui-browser-check.yml",
-  ]) {
+  for (const name of ["ci.yml", "codex-pr-comments.yml", "ui-browser-check.yml"]) {
     assert.match(readWorkflow(name), /actions\/setup-node@v7/);
   }
 

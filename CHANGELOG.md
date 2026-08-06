@@ -8,6 +8,12 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Allineato il gate React Doctor al modello CF-Ready: `verify:full` esegue la
+  scansione locale completa e blocca dai warning in su; l'Action advisory gira
+  su ogni PR e sul push a `main`, pubblica score e review inline, usa revisioni
+  immutabili e lascia disabilitato il controllo supply-chain esterno. Le
+  worktree isolate sotto `.worktrees/` non contaminano più lo score del checkout
+  corrente.
 - Allineate le dipendenze compatibili e la toolchain: Node `24.19.0`, npm
   `12.0.2`, Shopify CLI `4.6.0`, preset Vercel `1.3.2`, React Doctor `0.9.5`,
   Supabase CLI `2.111.0`, tsx `4.23.8`, oxlint `1.77.0` e oxfmt `0.62.0`.

@@ -17,8 +17,10 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, `Verifica proporzionata` e dal check
   minimale separato del titolo Conventional Commit.
-- React Doctor resta advisory e fissato a una revisione verificata: pubblica score e review sui file React
-  cambiati, ma i finding non generano un run fallito; fallisce soltanto se lo
+- React Doctor usa una scansione locale completa bloccante dai warning in su e
+  un'Action advisory fissata a una revisione verificata: su ogni PR pubblica
+  score e review per i file cambiati senza rendere rosso il run per i finding,
+  e registra lo stato anche sul push a `main`. L'Action fallisce soltanto se lo
   scanner non riesce a completarsi. CodeQL, Vercel e inbox Codex
   restano check mirati o advisory e non bloccano indiscriminatamente ogni PR.
 
@@ -172,10 +174,10 @@ Per modifiche puramente documentali:
 - non inventare test applicativi;
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
 
-Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo;
-React Doctor non parte quando nessun path di sua
-competenza cambia. Vercel salta inoltre i build limitati a docs, governance,
-CI, test e tooling non runtime.
+Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo.
+React Doctor resta separato e parte su ogni PR, così il suo stato è sempre
+presente; l'Action analizza soltanto il diff. Vercel salta inoltre i build
+limitati a docs, governance, CI, test e tooling non runtime.
 
 La CI non installa Chromium per ogni sincronizzazione. Le PR con UI sostanziale
 ricevono la label `full-ui-check`, che avvia render e hydration browser in un

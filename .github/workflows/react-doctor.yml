@@ -2,19 +2,9 @@ name: React Doctor
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - "app/**/*.ts"
-      - "app/**/*.tsx"
-      - "app/**/*.css"
-      - "package.json"
-      - "package-lock.json"
-      - "react-router.config.ts"
-      - "vite.config.ts"
-      - "tsconfig.json"
-      - ".oxlintrc.json"
-      - ".github/workflows/react-doctor.yml"
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -28,44 +18,14 @@ concurrency:
 jobs:
   react-doctor:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: React Doctor sui file cambiati
-        if: github.event_name == 'pull_request'
-        uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
+      - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
         with:
-          node-version: 24
-          version: 0.9.5
-          # I finding sono advisory: score e review restano visibili, ma non
-          # generano un run rosso. Errori operativi dello scanner continuano a
-          # fallire l'action.
           blocking: none
-          scope: changed
-          # Niente commento riassuntivo "sticky": le PR pulite non ricevono
-          # commenti. L'action analizza i file cambiati nelle PR e usa Node 24
-          # senza cache package-manager interna.
-          comment: false
-          review-comments: true
-
-      - name: Setup Node per React Doctor full manuale
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Setup npm per React Doctor full manuale
-        if: github.event_name == 'workflow_dispatch'
-        run: npm install --global npm@12.0.2
-
-      - name: Installa dipendenze per React Doctor full manuale
-        if: github.event_name == 'workflow_dispatch'
-        run: npm ci
-
-      - name: React Doctor full manuale
-        if: github.event_name == 'workflow_dispatch'
-        run: npm run quality:react-doctor
+          comment: "false"
+          review-comments: "true"

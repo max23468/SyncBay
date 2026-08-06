@@ -16,7 +16,7 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
-    "quality:react-doctor": "react-doctor --scope full --blocking error .",
+    "quality:react-doctor": "react-doctor --scope full .",
     "quality:knip": "npx --yes knip@6",
     "perf:loaders": "node scripts/measure-loader-performance.mjs",
     "smoke:production": "node scripts/syncbay-production-smoke.mjs",

@@ -18,9 +18,9 @@ const UI_GATE_LABELS = new Set([
   "npm run ui:check",
   "npm run ui:browser-check",
 ]);
-// Gate il cui esito dipende dal mondo esterno (database advisory, registry) e
-// non dal diff in revisione: restano obbligatori in locale e su workflow
-// dedicati, ma non bloccano il merge di una PR che non li ha causati.
+// Gate gestiti da workflow separati: React Doctor analizza il diff della PR,
+// mentre audit:prod dipende anche dal registry e dal database advisory. Restano
+// obbligatori in locale, senza duplicarli nel check conclusivo della CI.
 const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor", "npm run audit:prod"]);
 
 // La formattazione riguarda ogni tipo di file, quindi il controllo vale per
@@ -32,6 +32,7 @@ const FULL_COMMANDS = [
   npmCommand("format:check"),
   npmCommand("prisma:generate"),
   npmCommand("lint"),
+  npmCommand("quality:react-doctor"),
   npmCommand("test:tooling"),
   npmCommand("typecheck:raw"),
   npmCommand("coverage:lib"),

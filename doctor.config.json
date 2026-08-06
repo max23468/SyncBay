@@ -1,6 +1,11 @@
 {
+  "$schema": "https://react.doctor/schema/config.json",
+  "blocking": "warning",
+  "supplyChain": {
+    "enabled": false
+  },
   "ignore": {
-    "files": [".shopify/**", "prisma/generated/**"],
+    "files": [".shopify/**", ".worktrees/**", "prisma/generated/**"],
     "overrides": [
       {
         "files": ["app/routes/app.tsx"],
