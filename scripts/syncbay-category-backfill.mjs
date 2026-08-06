@@ -8,14 +8,16 @@ import {
 } from "../app/lib/syncbay-category-backfill-report.ts";
 import { getSyncBayCategorySourceFromMetafields } from "../app/lib/syncbay-shopify-product-metafields.ts";
 import { resolveShopifyCategoryProposal } from "../app/lib/syncbay-shopify-category-mapping.ts";
+import {
+  asEbayTradingRecord as asRecord,
+  getEbayTradingString as getString,
+} from "../app/lib/syncbay-ebay-trading.ts";
+import { getEbayTradingItem as getTradingItem } from "../app/services/ebay-trading-api.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import {
-  asRecord,
   ensureTokenEncryptionKey,
   getAccessToken,
   getShopifyAccessToken,
-  getString,
-  getTradingItem,
   loadDotEnv,
 } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";

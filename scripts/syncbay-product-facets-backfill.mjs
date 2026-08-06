@@ -12,14 +12,16 @@ import {
 } from "../app/lib/syncbay-product-facets.ts";
 import { parsePositiveLimitOption } from "../app/lib/syncbay-cli-args.ts";
 import { getProductFacetsFromSnapshotPayload } from "../app/lib/syncbay-product-snapshot-payload.ts";
+import {
+  asEbayTradingRecord as asRecord,
+  getEbayTradingString as getString,
+} from "../app/lib/syncbay-ebay-trading.ts";
+import { getEbayTradingItem as getTradingItem } from "../app/services/ebay-trading-api.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import {
-  asRecord,
   ensureTokenEncryptionKey,
   getAccessToken,
   getShopifyAccessToken,
-  getString,
-  getTradingItem,
   loadDotEnv,
 } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";

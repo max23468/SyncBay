@@ -2,15 +2,13 @@
 import { parseArgs as parseNodeArgs } from "node:util";
 
 import { mapWithConcurrency } from "../app/lib/map-with-concurrency.ts";
-import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import {
-  asRecord,
-  ensureTokenEncryptionKey,
-  getAccessToken,
-  getString,
-  getTradingItem,
-  loadDotEnv,
-} from "./syncbay-ebay-cli.mjs";
+  asEbayTradingRecord as asRecord,
+  getEbayTradingString as getString,
+} from "../app/lib/syncbay-ebay-trading.ts";
+import { getEbayTradingItem as getTradingItem } from "../app/services/ebay-trading-api.server.ts";
+import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
+import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const GET_ITEM_CONCURRENCY = 4;

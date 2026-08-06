@@ -5,14 +5,10 @@ import {
   buildDescriptionCleanupReportRow,
   summarizeDescriptionCleanupReport,
 } from "../app/lib/syncbay-description-cleanup.ts";
+import { getEbayTradingString as getString } from "../app/lib/syncbay-ebay-trading.ts";
+import { getEbayTradingItem as getTradingItem } from "../app/services/ebay-trading-api.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
-import {
-  ensureTokenEncryptionKey,
-  getAccessToken,
-  getString,
-  getTradingItem,
-  loadDotEnv,
-} from "./syncbay-ebay-cli.mjs";
+import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_SAMPLE_LIMIT = 20;

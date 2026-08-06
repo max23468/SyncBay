@@ -1,4 +1,8 @@
-const TRADING_API_COMPATIBILITY_LEVEL = "1455";
+import {
+  asEbayTradingRecord as asRecord,
+  EBAY_TRADING_API_COMPATIBILITY_LEVEL,
+  getEbayTradingString as getString,
+} from "./syncbay-ebay-trading";
 
 export interface TradingItemCacheEntry {
   descriptionHtml: string | null;
@@ -14,7 +18,7 @@ export function buildGetSellerListRequest(input: {
 }) {
   return `<?xml version="1.0" encoding="utf-8"?>
 <GetSellerListRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <Version>${TRADING_API_COMPATIBILITY_LEVEL}</Version>
+  <Version>${EBAY_TRADING_API_COMPATIBILITY_LEVEL}</Version>
   <DetailLevel>ReturnAll</DetailLevel>
   <ErrorLanguage>it_IT</ErrorLanguage>
   <WarningLevel>High</WarningLevel>
@@ -45,21 +49,4 @@ export function buildTradingItemCache(items: unknown[]) {
   }
 
   return cache;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function getString(record: Record<string, unknown> | null, key: string) {
-  const value = record?.[key];
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const nested = asRecord(value);
-  const text = nested?.["#text"];
-
-  return typeof text === "string" || typeof text === "number" ? String(text) : null;
 }

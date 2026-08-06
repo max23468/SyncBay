@@ -1,7 +1,14 @@
 import type { EbayConnection } from "@prisma/client";
 
+import {
+  asEbayTradingArray as asArray,
+  asEbayTradingRecord as asRecord,
+  buildGetItemRequest,
+  buildReviseInventoryStatusRequest,
+  getEbayTradingText as getText,
+} from "../lib/syncbay-ebay-trading";
 import { selectEbayTradingInventorySku } from "../lib/syncbay-stock-guard";
-import { escapeXml, fetchTradingXml } from "./ebay-trading-preview.server";
+import { callEbayTradingApi } from "./ebay-trading-api.server";
 
 export async function reviseEbayTradingInventoryQuantity(input: {
   accessToken: string;
@@ -11,17 +18,22 @@ export async function reviseEbayTradingInventoryQuantity(input: {
   sku?: string | null;
   skuGenerated?: boolean | null;
 }) {
-  await fetchTradingXml({
+  const sku = selectEbayTradingInventorySku(input);
+  await callEbayTradingApi({
     accessToken: input.accessToken,
     callName: "ReviseInventoryStatus",
     connection: input.connection,
-    requestXml: buildReviseInventoryStatusRequest(input),
+    requestXml: buildReviseInventoryStatusRequest({
+      itemId: input.itemId,
+      quantity: input.quantity,
+      sku,
+    }),
   });
 
   return {
     itemId: input.itemId,
     quantity: input.quantity,
-    sku: selectEbayTradingInventorySku(input),
+    sku,
     status: "updated" as const,
   };
 }
@@ -33,11 +45,11 @@ export async function getEbayTradingAvailableQuantity(input: {
   sku?: string | null;
   skuGenerated?: boolean | null;
 }) {
-  const body = await fetchTradingXml({
+  const body = await callEbayTradingApi({
     accessToken: input.accessToken,
     callName: "GetItem",
     connection: input.connection,
-    requestXml: buildGetItemRequest(input.itemId),
+    requestXml: buildGetItemRequest({ itemId: input.itemId }),
   });
 
   return getEbayTradingAvailableQuantityFromItem(
@@ -74,35 +86,6 @@ export function getEbayTradingAvailableQuantityFromItem(
   return getAvailableQuantity(item);
 }
 
-function buildReviseInventoryStatusRequest(input: {
-  itemId: string;
-  quantity: number;
-  sku?: string | null;
-  skuGenerated?: boolean | null;
-}) {
-  const sku = selectEbayTradingInventorySku(input);
-
-  return `<?xml version="1.0" encoding="utf-8"?>
-<ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <InventoryStatus>
-    <ItemID>${escapeXml(input.itemId)}</ItemID>
-    ${sku ? `<SKU>${escapeXml(sku)}</SKU>` : ""}
-    <Quantity>${Math.max(0, Math.floor(input.quantity))}</Quantity>
-  </InventoryStatus>
-</ReviseInventoryStatusRequest>`;
-}
-function buildGetItemRequest(itemId: string) {
-  return `<?xml version="1.0" encoding="utf-8"?>
-<GetItemRequest xmlns="urn:ebay:apis:eBLBaseComponents">
-  <DetailLevel>ReturnAll</DetailLevel>
-  <ErrorLanguage>it_IT</ErrorLanguage>
-  <WarningLevel>High</WarningLevel>
-  <ItemID>${escapeXml(itemId)}</ItemID>
-</GetItemRequest>`;
-}
-
 function getAvailableQuantity(record: Record<string, unknown>) {
   const direct = getInteger(record.QuantityAvailable);
   if (direct !== null) return direct;
@@ -120,25 +103,4 @@ function getInteger(value: unknown) {
 
   const number = Number.parseInt(text, 10);
   return Number.isInteger(number) ? number : null;
-}
-
-function getText(value: unknown): string | null {
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return String(value);
-
-  const text = asRecord(value)?.["#text"];
-  if (typeof text === "string") return text;
-  if (typeof text === "number") return String(text);
-  return null;
-}
-
-function asRecord(value: unknown) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function asArray(value: unknown) {
-  if (Array.isArray(value)) return value;
-  return value === null || typeof value === "undefined" ? [] : [value];
 }

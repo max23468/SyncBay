@@ -14,6 +14,7 @@ test("builds a paginated GetSellerList request for active listing descriptions",
   });
 
   assert.match(request, /<GetSellerListRequest/);
+  assert.match(request, /<Version>1455<\/Version>/);
   assert.match(request, /<DetailLevel>ReturnAll<\/DetailLevel>/);
   assert.match(request, /<EntriesPerPage>200<\/EntriesPerPage>/);
   assert.match(request, /<PageNumber>2<\/PageNumber>/);
