@@ -99,7 +99,7 @@ export function classifyCodexReview({
   if (commentFailure) return commentFailure;
 
   for (const review of reviews) {
-    const commit = reviewedCommit(review.body);
+    const commit = review.commit_id ?? reviewedCommit(review.body);
     if (
       review.user?.login === CODEX_BOT &&
       commit &&

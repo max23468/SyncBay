@@ -54,6 +54,24 @@ test("un pollice tardivo non approva una review del commit precedente", () => {
   );
 });
 
+test("il commit_id nativo approva una review pulita con corpo vuoto", () => {
+  assert.equal(
+    classify({
+      reactions: [{ user: bot, content: "+1", created_at: "2026-08-04T12:00:03Z" }],
+      requiresReviewedCommit: true,
+      reviews: [
+        {
+          user: bot,
+          commit_id: headSha,
+          submitted_at: "2026-08-04T12:00:02Z",
+          body: "",
+        },
+      ],
+    }).state,
+    "success",
+  );
+});
+
 test("un vecchio pollice non approva una review successiva dello stesso commit", () => {
   assert.equal(
     classify({
