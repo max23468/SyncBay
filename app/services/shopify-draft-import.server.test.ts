@@ -177,10 +177,14 @@ test("image staging connects to the public address validated by DNS", async () =
         lookupCalls === 1
           ? { address: "93.184.216.34", family: 4 }
           : { address: "127.0.0.1", family: 4 },
+        { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
       ];
     },
-    requestImpl: async ({ address }) => {
-      assert.equal(address, "93.184.216.34");
+    requestImpl: async ({ addresses }) => {
+      assert.deepEqual(addresses, [
+        { address: "93.184.216.34", family: 4 },
+        { address: "2606:2800:220:1:248:1893:25c8:1946", family: 6 },
+      ]);
       return new Response("image", {
         headers: { "content-type": "image/jpeg" },
       });
@@ -197,10 +201,7 @@ test("image staging supports all-address lookups for its pinned DNS resolution",
     "utf8",
   );
 
-  assert.match(
-    importSource,
-    /if \(options\.all\)[\s\S]*callback\(null, \[\{ address, family \}\]\)/,
-  );
+  assert.match(importSource, /if \(options\.all\)[\s\S]*callback\(null, addresses\)/);
 });
 
 test("image staging omits the response body for no-content HTTP statuses", () => {

@@ -339,8 +339,7 @@ type LookupHost = (
   options: { all: true; verbatim: true },
 ) => Promise<Array<{ address: string; family: number }>>;
 type PublicImageTarget = {
-  address: string;
-  family: 4 | 6;
+  addresses: Array<{ address: string; family: 4 | 6 }>;
   url: URL;
 };
 type RequestPublicImage = (target: PublicImageTarget) => Promise<Response>;
@@ -2325,15 +2324,16 @@ async function validatePublicImageUrl(sourceUrl: string, lookupHost: LookupHost)
     throw new Error("Destinazione immagine non pubblica.");
   }
 
-  const { address, family } = addresses[0];
   return {
-    address,
-    family: family === 6 ? 6 : 4,
+    addresses: addresses.map(({ address, family }) => ({
+      address,
+      family: family === 6 ? 6 : 4,
+    })),
     url,
   } satisfies PublicImageTarget;
 }
 
-function requestPublicImage({ address, family, url }: PublicImageTarget) {
+function requestPublicImage({ addresses, url }: PublicImageTarget) {
   return new Promise<Response>((resolve, reject) => {
     const request = httpsRequest(
       url,
@@ -2341,9 +2341,10 @@ function requestPublicImage({ address, family, url }: PublicImageTarget) {
         headers: { "user-agent": "SyncBay/0.1 image-staging" },
         lookup: (_hostname, options, callback) => {
           if (options.all) {
-            callback(null, [{ address, family }]);
+            callback(null, addresses);
             return;
           }
+          const { address, family } = addresses[0];
           callback(null, address, family);
         },
         signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
