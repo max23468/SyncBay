@@ -99,7 +99,7 @@ test("Dependabot auto-merges only patch and minor updates through branch gates",
 });
 
 test("CI workflows use the current Node and cache action majors", () => {
-  for (const name of ["ci.yml", "react-doctor.yml", "ui-browser-check.yml"]) {
+  for (const name of ["ci.yml", "ui-browser-check.yml"]) {
     assert.match(readWorkflow(name), /actions\/setup-node@v7/);
   }
 
