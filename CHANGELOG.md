@@ -16,7 +16,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   e un workflow settimanale verifica il ruleset contro la deriva. L'unica
   esclusione di regola resta il falso positivo dimostrato sugli export imposti
   dal route-module React Router `app/routes/app.tsx`; il controllo supply-chain
-  esterno resta disabilitato. Lo script npm `shopify` importa esplicitamente il manifest della CLI
+  esterno resta disabilitato. La modalità CI del verifier esclude soltanto i
+  gate live, senza poter saltare Doctor; il drift-check usa l'API pubblica dei
+  ruleset senza introdurre token amministrativi. Lo script npm `shopify`
+  importa esplicitamente il manifest della CLI
   e ne confronta la versione con il pin del progetto: il runner privo di
   `node_modules` riconosce la dipendenza come usata, mentre il comando fallisce
   se l'installazione locale manca o non è allineata. Le

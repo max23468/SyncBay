@@ -5,8 +5,7 @@ on:
     - cron: "0 7 * * 1"
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: github-governance
@@ -16,15 +15,14 @@ jobs:
   governance:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Verifica ruleset main
         run: |
           set -euo pipefail
-          ruleset_id="$(gh api "repos/$GITHUB_REPOSITORY/rulesets" --jq '.[] | select(.name == "Protezione main proporzionata") | .id')"
+          api="https://api.github.com/repos/$GITHUB_REPOSITORY/rulesets"
+          ruleset_id="$(curl --fail --silent --show-error "$api" | jq -r '.[] | select(.name == "Protezione main proporzionata") | .id')"
           test -n "$ruleset_id"
-          ruleset="$(gh api "repos/$GITHUB_REPOSITORY/rulesets/$ruleset_id")"
+          ruleset="$(curl --fail --silent --show-error "$api/$ruleset_id")"
           test "$(jq -r '.enforcement == "active" and .target == "branch" and .conditions.ref_name.include == ["~DEFAULT_BRANCH"]' <<< "$ruleset")" = true
           test "$(jq -r '.rules[] | select(.type == "required_status_checks") | .parameters.strict_required_status_checks_policy' <<< "$ruleset")" = true
           test "$(jq -c '[.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | sort' <<< "$ruleset")" = '["Conventional PR title","Verifica proporzionata","codex-review","react-doctor"]'

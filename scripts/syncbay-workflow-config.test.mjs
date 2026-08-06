@@ -22,7 +22,7 @@ test("CI classifies the diff and runs only targeted blocking gates", () => {
   // I gate non devono essere condizionati alla corsia: altrimenti un diff
   // docs-only salterebbe `format:check`, che nessun altro check intercetta.
   assert.doesNotMatch(source, /steps\.lane\.outputs\.lane ==/);
-  assert.match(source, /npm run verify:changed -- --base .* --no-receipt --without-ui-gates/);
+  assert.match(source, /npm run verify:changed -- --base .* --ci --no-receipt --without-ui-gates/);
   assert.doesNotMatch(source, /playwright install/);
   assert.doesNotMatch(source, /verify:full/);
   // I run manuali (workflow_dispatch) devono avere una base valida: senza di
@@ -92,7 +92,9 @@ test("scheduled GitHub governance check protects the exact React Doctor status",
 
   assert.match(source, /schedule:/);
   assert.match(source, /workflow_dispatch:/);
-  assert.match(source, /permissions:\s*\n\s*contents:\s*read/);
+  assert.match(source, /permissions:\s*\{\}/);
+  assert.match(source, /curl --fail --silent --show-error/);
+  assert.doesNotMatch(source, /GH_TOKEN|github\.token|gh api/);
   assert.match(source, /strict_required_status_checks_policy/);
   assert.match(source, /Conventional PR title.*Verifica proporzionata.*codex-review.*react-doctor/);
   assert.match(source, /integration_id.*15368/);

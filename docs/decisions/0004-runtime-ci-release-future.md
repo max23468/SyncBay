@@ -62,6 +62,9 @@ Il job sceglie una sola corsia:
 - diff runtime/tooling: `npm ci` e `verify:changed -- --no-receipt`, con i gate
   dedotti dalle superfici toccate e React Doctor sempre incluso.
 
+La CI aggiunge `--ci` al verifier: la modalità esclude soltanto i comandi
+marcati `live`, oggi `audit:prod`, senza poter escludere React Doctor.
+
 La corsia mirata può eseguire in serie, quando pertinenti:
 
 - installazione deterministica dipendenze (`npm ci`);

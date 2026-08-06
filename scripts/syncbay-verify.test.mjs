@@ -166,6 +166,16 @@ test("keeps the full local audit gate", () => {
   assert.ok(plan.commands.map((entry) => entry.label).includes("npm run audit:prod"));
 });
 
+test("CI omits only live gates and keeps React Doctor", () => {
+  const labels = buildVerificationPlan({ ci: true, mode: "full" }).commands.map(
+    (entry) => entry.label,
+  );
+
+  assert.ok(labels.includes("npm run doctor"));
+  assert.ok(labels.includes("npm run build:raw"));
+  assert.ok(!labels.includes("npm run audit:prod"));
+});
+
 test("CI can leave changed UI gates to the explicit cached browser workflow", () => {
   const plan = buildVerificationPlan({
     excludeUiGates: true,

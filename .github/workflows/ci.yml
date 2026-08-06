@@ -60,4 +60,4 @@ jobs:
       # `verify:changed`, che per i diff docs-only esegue `format:check`,
       # `doctor` e `git diff --check`. La classificazione resta diagnostica.
       - name: Verifica i gate pertinenti al diff
-        run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --no-receipt --without-ui-gates
+        run: npm run verify:changed -- --base "${{ steps.lane.outputs.base }}" --ci --no-receipt --without-ui-gates

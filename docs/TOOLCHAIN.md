@@ -269,6 +269,8 @@ diff esegue `verify:changed -- --no-receipt`, che include sempre React Doctor e
 poi soltanto test, typecheck, lint, build e smoke dedotti dalle superfici
 toccate. Il workflow dedicato duplica intenzionalmente React Doctor per
 produrre review inline e uno status `react-doctor` richiesto separatamente.
+La CI passa anche `--ci`, che esclude esclusivamente i comandi marcati `live`:
+oggi il solo `audit:prod`, già coperto dal workflow giornaliero dedicato.
 
 Un check che blocca il merge deve essere funzione del diff in revisione. `npm
 run audit:prod` non lo è: dipende dal database advisory, che cambia da solo,
