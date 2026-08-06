@@ -348,6 +348,48 @@ test("un errore tardivo non chiude una review corrente ancora in corso", () => {
   );
 });
 
+test("un errore successivo a eyes chiude il tentativo", () => {
+  assert.equal(
+    classify({
+      comments: [
+        {
+          user: bot,
+          created_at: "2026-08-04T12:00:03Z",
+          body: "Codex could not complete the review",
+        },
+      ],
+      progressReactions: [{ user: bot, content: "eyes", created_at: "2026-08-04T12:00:02Z" }],
+    }).state,
+    "failure",
+  );
+});
+
+test("un rerun ignora un errore transitorio storico", () => {
+  assert.equal(
+    classify({
+      requestedAt: 0,
+      requiresReviewedCommit: true,
+      comments: [
+        {
+          user: bot,
+          created_at: "2026-08-04T12:00:01Z",
+          body: "Codex could not complete the review",
+        },
+      ],
+      reviews: [
+        {
+          user: bot,
+          commit_id: headSha,
+          submitted_at: "2026-08-04T12:00:02Z",
+          body: "",
+        },
+      ],
+      reactions: [{ user: bot, content: "+1", created_at: "2026-08-04T12:00:03Z" }],
+    }).state,
+    "success",
+  );
+});
+
 test("il polling mantiene cinque ore senza saturare la quota con cinque PR", () => {
   assert.equal(CODEX_REVIEW_POLLING.attempts * CODEX_REVIEW_POLLING.intervalMs, 5 * 60 * 60 * 1000);
   assert.ok((5 * 5 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 500);

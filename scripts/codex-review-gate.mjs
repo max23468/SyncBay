@@ -24,12 +24,14 @@ export function classifyCodexReview({
 }) {
   const completions = [];
   const cleanComments = [];
-  const inProgress = progressReactions.some(
-    (reaction) =>
-      reaction.user?.login === CODEX_BOT &&
-      reaction.content === "eyes" &&
-      timestamp(reaction.created_at) >= timestamp(requestedAt),
-  );
+  const latestEyesAt = progressReactions
+    .filter(
+      (reaction) =>
+        reaction.user?.login === CODEX_BOT &&
+        reaction.content === "eyes" &&
+        timestamp(reaction.created_at) >= timestamp(requestedAt),
+    )
+    .reduce((latest, reaction) => Math.max(latest, timestamp(reaction.created_at)), 0);
 
   for (const comment of reviewComments) {
     if (
@@ -80,9 +82,10 @@ export function classifyCodexReview({
     }
 
     if (
+      timestamp(requestedAt) > 0 &&
       timestamp(comment.created_at) >= timestamp(requestedAt) &&
       now - timestamp(requestedAt) >= 30_000 &&
-      !inProgress &&
+      timestamp(comment.created_at) >= latestEyesAt &&
       /reached your Codex usage limits|could not complete|unable to review/i.test(comment.body)
     ) {
       completions.push({
