@@ -2349,28 +2349,32 @@ function requestPublicImage({ address, family, url }: PublicImageTarget) {
         signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
       },
       (response) => {
-        const status = response.statusCode ?? 500;
-        const headers = new Headers();
-        for (const [name, value] of Object.entries(response.headers)) {
-          if (Array.isArray(value)) {
-            for (const item of value) headers.append(name, item);
-          } else if (value !== undefined) {
-            headers.set(name, value);
+        try {
+          const status = response.statusCode ?? 500;
+          const headers = new Headers();
+          for (const [name, value] of Object.entries(response.headers)) {
+            if (Array.isArray(value)) {
+              for (const item of value) headers.append(name, item);
+            } else if (value !== undefined) {
+              headers.set(name, value);
+            }
           }
-        }
 
-        resolve(
-          new Response(
-            [204, 205, 304].includes(status)
-              ? null
-              : (Readable.toWeb(response) as ReadableStream<Uint8Array>),
-            {
-              headers,
-              status,
-              statusText: response.statusMessage,
-            },
-          ),
-        );
+          resolve(
+            new Response(
+              [204, 205, 304].includes(status)
+                ? null
+                : (Readable.toWeb(response) as ReadableStream<Uint8Array>),
+              {
+                headers,
+                status,
+                statusText: response.statusMessage,
+              },
+            ),
+          );
+        } catch (error) {
+          reject(error);
+        }
       },
     );
     request.once("error", reject);

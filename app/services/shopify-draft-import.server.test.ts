@@ -212,6 +212,15 @@ test("image staging omits the response body for no-content HTTP statuses", () =>
   assert.match(importSource, /\[204, 205, 304\]\.includes\(status\)[\s\S]*\? null/);
 });
 
+test("image staging rejects response-conversion errors", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(importSource, /catch \(error\) \{\s*reject\(error\);\s*\}/);
+});
+
 type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];
 
 function createSyntheticDraftProduct(overrides?: { quantity?: number }) {
