@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 const CODEX_BOT = "chatgpt-codex-connector[bot]";
 const isDirectExecution =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-// ponytail: 90 s limita tre PR concorrenti a circa 480 richieste/ora; passare a
+// ponytail: 90 s limita tre PR concorrenti a circa 600 richieste/ora; passare a
 // un'unica query GraphQL se la concorrenza reale cresce oltre questo livello.
 export const CODEX_REVIEW_POLLING = { attempts: 200, intervalMs: 90_000 };
 
@@ -142,6 +142,16 @@ export function classifyCodexReview({
 export const hasSuccessfulCodexStatus = (statuses) =>
   statuses.find((status) => status.context === "codex-review")?.state === "success";
 
+export const latestCodexInvocation = (comments, requestedAt) =>
+  comments
+    .filter(
+      (comment) =>
+        comment.user?.login !== CODEX_BOT &&
+        /@codex\s+review\b/i.test(comment.body) &&
+        timestamp(comment.created_at) >= timestamp(requestedAt),
+    )
+    .sort((left, right) => timestamp(right.created_at) - timestamp(left.created_at))[0];
+
 export function pullRequestNumber(event, input) {
   const number = String(event.pull_request?.number ?? input);
   if (!/^\d+$/.test(number)) throw new Error("Numero PR non valido");
@@ -185,13 +195,19 @@ async function setStatus(repository, sha, state, description) {
   });
 }
 
-const reviewSignals = (repository, number) =>
-  Promise.all([
+async function reviewSignals(repository, number, requestedAt) {
+  const [comments, reactions, reviews, reviewComments] = await Promise.all([
     all(`/repos/${repository}/issues/${number}/comments`),
     all(`/repos/${repository}/issues/${number}/reactions`),
     all(`/repos/${repository}/pulls/${number}/reviews`),
     all(`/repos/${repository}/pulls/${number}/comments`),
   ]);
+  const invocation = latestCodexInvocation(comments, requestedAt);
+  const invocationReactions = invocation
+    ? await all(`/repos/${repository}/issues/comments/${invocation.id}/reactions`)
+    : [];
+  return [comments, [...reactions, ...invocationReactions], reviews, reviewComments];
+}
 
 async function main() {
   const event = JSON.parse(
@@ -228,7 +244,11 @@ async function main() {
   const freshReview = ["opened", "ready_for_review"].includes(event.action);
   const requestedAt = reusesExistingReview ? 0 : pullRequest.updated_at;
   for (let attempt = 0; attempt < CODEX_REVIEW_POLLING.attempts; attempt += 1) {
-    const [comments, reactions, reviews, reviewComments] = await reviewSignals(repository, number);
+    const [comments, reactions, reviews, reviewComments] = await reviewSignals(
+      repository,
+      number,
+      requestedAt,
+    );
     const result = classifyCodexReview({
       headSha,
       requestedAt,

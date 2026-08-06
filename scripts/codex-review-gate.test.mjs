@@ -5,6 +5,7 @@ import {
   CODEX_REVIEW_POLLING,
   classifyCodexReview,
   hasSuccessfulCodexStatus,
+  latestCodexInvocation,
   pullRequestNumber,
 } from "./codex-review-gate.mjs";
 
@@ -331,7 +332,31 @@ test("un errore tardivo non chiude una review corrente ancora in corso", () => {
 
 test("il polling mantiene cinque ore senza saturare la quota con tre PR", () => {
   assert.equal(CODEX_REVIEW_POLLING.attempts * CODEX_REVIEW_POLLING.intervalMs, 5 * 60 * 60 * 1000);
-  assert.ok((4 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 160);
+  assert.ok((5 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 200);
+});
+
+test("legge le reazioni dall'ultima invocazione Codex del tentativo corrente", () => {
+  assert.equal(
+    latestCodexInvocation(
+      [
+        { id: 1, user: bot, body: "@codex review", created_at: "2026-08-04T12:00:03Z" },
+        {
+          id: 2,
+          user: { login: "max23468" },
+          body: "@codex review",
+          created_at: "2026-08-04T12:00:01Z",
+        },
+        {
+          id: 3,
+          user: { login: "max23468" },
+          body: "@codex review",
+          created_at: "2026-08-04T12:00:02Z",
+        },
+      ],
+      requestedAt,
+    ).id,
+    3,
+  );
 });
 
 test("il bootstrap accetta soltanto un numero PR", () => {
