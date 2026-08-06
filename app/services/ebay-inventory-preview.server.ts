@@ -9,7 +9,9 @@ import {
 } from "./import-preview.server";
 import { getExpectedMarketplaceCurrency } from "../lib/syncbay-stock-guard";
 import type { DescriptionRuleMode } from "../lib/syncbay-description-rules";
-import { EbayTokenError, getUsableEbayAccessToken } from "./ebay-token.server";
+import { getEbayApiBaseUrl } from "./ebay-environment.server";
+import { requestEbayRestJson } from "./ebay-rest.server";
+import { getUsableEbayAccessToken } from "./ebay-token.server";
 import { getEbayTradingImportPreview } from "./ebay-trading-preview.server";
 
 interface EbayInventoryItem {
@@ -59,15 +61,6 @@ interface EbayOffersResponse {
   offers?: EbayOffer[];
 }
 
-interface EbayErrorResponse {
-  error?: string;
-  error_description?: string;
-  errors?: Array<{
-    errorId?: number;
-    message?: string;
-  }>;
-}
-
 export interface EbayInventoryPreviewState {
   coverageNote: string;
   errorMessage: string | null;
@@ -81,10 +74,6 @@ export interface EbayInventoryPreviewState {
   totalAvailable: number | null;
 }
 
-const EBAY_INVENTORY_URLS = {
-  production: "https://api.ebay.com/sell/inventory/v1",
-  sandbox: "https://api.sandbox.ebay.com/sell/inventory/v1",
-};
 const EBAY_MARKETPLACE_LOCALES: Record<string, string> = {
   EBAY_IT: "it-IT",
 };
@@ -256,13 +245,16 @@ async function fetchInventoryItems(input: {
   connection: EbayConnection;
   limit: number;
 }) {
-  const url = new URL(`${getInventoryBaseUrl(input.connection.environment)}/inventory_item`);
+  const url = new URL(
+    `${getEbayApiBaseUrl(input.connection.environment)}/sell/inventory/v1/inventory_item`,
+  );
   url.searchParams.set("limit", String(input.limit));
   url.searchParams.set("offset", "0");
 
-  const response = await fetchEbayJson<EbayInventoryItemsResponse>({
+  const response = await requestEbayRestJson<EbayInventoryItemsResponse>({
     accessToken: input.accessToken,
-    marketplaceId: input.connection.marketplaceId,
+    headers: { "Accept-Language": getMarketplaceLocale(input.connection.marketplaceId) },
+    operation: "eBay Inventory API",
     url,
   });
 
@@ -307,48 +299,20 @@ async function fetchPublishedOfferForSku(input: {
   connection: EbayConnection;
   sku: string;
 }) {
-  const url = new URL(`${getInventoryBaseUrl(input.connection.environment)}/offer`);
+  const url = new URL(`${getEbayApiBaseUrl(input.connection.environment)}/sell/inventory/v1/offer`);
   url.searchParams.set("sku", input.sku);
   url.searchParams.set("marketplace_id", input.connection.marketplaceId);
   url.searchParams.set("limit", "100");
   url.searchParams.set("offset", "0");
 
-  const response = await fetchEbayJson<EbayOffersResponse>({
+  const response = await requestEbayRestJson<EbayOffersResponse>({
     accessToken: input.accessToken,
-    marketplaceId: input.connection.marketplaceId,
+    headers: { "Accept-Language": getMarketplaceLocale(input.connection.marketplaceId) },
+    operation: "eBay Inventory API",
     url,
   });
 
   return (response.offers ?? []).find(isPublishedOffer) ?? null;
-}
-
-async function fetchEbayJson<T>(input: {
-  accessToken: string;
-  marketplaceId: string;
-  url: URL;
-}): Promise<T> {
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per restituire il messaggio d'errore del provider; lo status è verificato subito dopo.
-  const response = await fetch(input.url, {
-    headers: {
-      Accept: "application/json",
-      "Accept-Language": getMarketplaceLocale(input.marketplaceId),
-      Authorization: `Bearer ${input.accessToken}`,
-    },
-  });
-  const json = (await response.json()) as T & EbayErrorResponse;
-
-  if (!response.ok) {
-    throw new EbayInventoryPreviewError(getEbayApiErrorMessage(json, response.status));
-  }
-
-  return json;
-}
-
-class EbayInventoryPreviewError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EbayInventoryPreviewError";
-  }
 }
 
 function isPublishedOffer(offer: EbayOffer) {
@@ -382,12 +346,6 @@ function hasInventoryGroups(item: EbayInventoryItem) {
   return (item.groupIds?.length ?? 0) > 0 || (item.inventoryItemGroupKeys?.length ?? 0) > 0;
 }
 
-function getInventoryBaseUrl(environment: string) {
-  return environment === "production"
-    ? EBAY_INVENTORY_URLS.production
-    : EBAY_INVENTORY_URLS.sandbox;
-}
-
 function getMarketplaceLocale(marketplaceId: string) {
   return EBAY_MARKETPLACE_LOCALES[marketplaceId] ?? "en-US";
 }
@@ -405,20 +363,7 @@ function parseMoneyValue(value: string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getEbayApiErrorMessage(json: EbayErrorResponse, status: number) {
-  const apiMessage =
-    json.error_description ??
-    json.errors?.map((error) => error.message).find(Boolean) ??
-    json.error;
-
-  return apiMessage
-    ? `eBay Inventory API ha risposto con HTTP ${status}: ${apiMessage}.`
-    : `eBay Inventory API ha risposto con HTTP ${status}.`;
-}
-
 function getPublicPreviewErrorMessage(error: unknown) {
-  if (error instanceof EbayTokenError) return error.message;
-  if (error instanceof EbayInventoryPreviewError) return error.message;
   if (error instanceof Error) return error.message;
 
   return "Lettura Inventory API eBay non riuscita.";

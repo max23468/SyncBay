@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 
-import { getEbayEnvironment } from "./ebay-environment.server";
+import { getEbayApiBaseUrl, getEbayEnvironment } from "./ebay-environment.server";
 import { requestEbayOAuthToken } from "./ebay-oauth.server";
+import { requestEbayRestJson } from "./ebay-rest.server";
 
 interface EbayPublicKeyResponse {
   algorithm?: string;
@@ -25,11 +26,6 @@ interface CachedPublicKey {
   key: string;
   expiresAt: number;
 }
-
-const EBAY_PUBLIC_KEY_URLS = {
-  production: "https://api.ebay.com/commerce/notification/v1/public_key",
-  sandbox: "https://api.sandbox.ebay.com/commerce/notification/v1/public_key",
-};
 
 const EBAY_APPLICATION_SCOPE = "https://api.ebay.com/oauth/api_scope";
 const PUBLIC_KEY_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -203,19 +199,16 @@ function consumePublicKeyLookupBudget(lookupBudgetKey: string, now: number) {
 
 async function fetchEbayPublicKey(publicKeyId: string) {
   const token = await getEbayApplicationAccessToken();
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per distinguere la chiave mancante dall'errore del provider; lo status è verificato subito dopo.
-  const response = await fetch(`${getPublicKeyBaseUrl()}/${encodeURIComponent(publicKeyId)}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
+  const json = await requestEbayRestJson<EbayPublicKeyResponse>({
+    accessToken: token,
+    operation: "Public key eBay",
     signal: AbortSignal.timeout(EBAY_REQUEST_TIMEOUT_MS),
+    url: new URL(
+      `${getEbayApiBaseUrl(getEbayEnvironment())}/commerce/notification/v1/public_key/${encodeURIComponent(publicKeyId)}`,
+    ),
   });
-  const json = (await response.json()) as EbayPublicKeyResponse & {
-    errors?: Array<{ message?: string }>;
-  };
 
-  if (!response.ok || !json.key) {
+  if (!json.key) {
     throw new Error("Public key eBay non ottenuta.");
   }
 
@@ -279,10 +272,4 @@ function decodeBase64(value: string) {
   } catch {
     return Buffer.from(value, "base64url");
   }
-}
-
-function getPublicKeyBaseUrl() {
-  return getEbayEnvironment() === "production"
-    ? EBAY_PUBLIC_KEY_URLS.production
-    : EBAY_PUBLIC_KEY_URLS.sandbox;
 }
