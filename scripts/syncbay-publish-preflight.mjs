@@ -3,7 +3,6 @@
 import { parseArgs as parseNodeArgs } from "node:util";
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
-import { isTrustedCodexLogin } from "../.github/scripts/codex-pr-comments-helpers.mjs";
 
 const REQUIRED_SCRIPTS = [
   "doctor:local",
@@ -77,7 +76,6 @@ function buildReport(args) {
   const pr = args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
   const codexFeedback = loadCodexFeedback({
     pr,
-    publishedMainPreflight,
     remote: Boolean(args.remote),
   });
 
@@ -85,10 +83,8 @@ function buildReport(args) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
   }
 
-  if (args.remote && (pr || publishedMainPreflight) && !codexFeedback?.readable) {
-    failures.push(
-      "Feedback Codex non leggibile: verificare autenticazione GitHub, review thread PR e issue #2 prima della pubblicazione.",
-    );
+  if (pr && !codexFeedback?.readable) {
+    failures.push("Review thread Codex non leggibili: verificare l'autenticazione GitHub.");
   }
 
   if (pr && !isConventionalTitle(pr.title)) {
@@ -100,17 +96,7 @@ function buildReport(args) {
   }
 
   if (codexFeedback?.actionable) {
-    failures.push(
-      pr
-        ? `Codex segnala thread actionable su PR #${pr.number}.`
-        : "Codex feedback inbox segnala thread actionable nella sezione Da risolvere ora.",
-    );
-  }
-
-  if (codexFeedback?.globalActionable && !codexFeedback.actionable) {
-    warnings.push(
-      "Codex feedback inbox segnala thread actionable su altre PR: non blocca questa pubblicazione.",
-    );
+    failures.push(`Codex segnala thread actionable su PR #${pr.number}.`);
   }
 
   return {
@@ -124,7 +110,7 @@ function buildReport(args) {
       requiredScripts: REQUIRED_SCRIPTS,
     },
     failures,
-    inbox: codexFeedback,
+    codexReview: codexFeedback,
     ok: failures.length === 0,
     pr,
     statusLines: status ? status.split(/\r?\n/).filter(Boolean) : [],
@@ -182,7 +168,7 @@ function parseArgs(rawArgs) {
     console.log(`Uso: npm run publish:preflight -- [--remote] [--allow-dirty] [--allow-main] [--json]
 
 Controlla branch, worktree, changelog, script minimi e, con --remote, PR
-GitHub più Codex feedback inbox prima di merge/pubblicazione.`);
+GitHub più review thread Codex prima di merge/pubblicazione.`);
     process.exit(0);
   }
 
@@ -238,71 +224,9 @@ function readCurrentPullRequest() {
   return JSON.parse(output);
 }
 
-function readCodexInbox(prNumber) {
-  const output = runGh([
-    "issue",
-    "view",
-    "2",
-    "--repo",
-    "max23468/SyncBay",
-    "--json",
-    "body,updatedAt,url",
-  ]);
-
-  if (!output) {
-    return {
-      actionable: null,
-      readable: false,
-    };
-  }
-
-  const parsed = JSON.parse(output);
-  const body = parsed.body ?? "";
-  const actionableSectionMatch = body.match(/## Da risolvere ora\s*(?<body>[\s\S]*?)(?=\n## |$)/);
-  const actionableSection = actionableSectionMatch?.groups?.body ?? "";
-  const prSectionMatch = prNumber
-    ? body.match(new RegExp(`### PR #${prNumber}[^#]+?(?=\\n### PR #|\\n## |$)`, "s"))
-    : null;
-  const prSection = prSectionMatch?.[0] ?? "";
-
-  return {
-    actionable: prNumber ? hasActionableThreads(prSection) : false,
-    globalActionable: hasActionableThreads(actionableSection),
-    prActionable: prNumber ? hasActionableThreads(prSection) : false,
-    readable: true,
-    updatedAt: parsed.updatedAt,
-    url: parsed.url,
-  };
-}
-
 export function loadCodexFeedback(input, readers = {}) {
-  if (!input.remote || (!input.pr && !input.publishedMainPreflight)) return null;
-
-  const readInbox = readers.readInbox ?? readCodexInbox;
-  const readThreads = readers.readThreads ?? readCodexReviewThreads;
-
-  if (input.pr) {
-    const reviewThreads = readThreads(input.pr.number);
-    if (reviewThreads.readable) {
-      return buildCodexFeedbackPreflight({
-        inbox: null,
-        prNumber: input.pr.number,
-        reviewThreads,
-      });
-    }
-
-    return buildCodexFeedbackPreflight({
-      inbox: readInbox(input.pr.number),
-      prNumber: input.pr.number,
-      reviewThreads,
-    });
-  }
-
-  return buildCodexFeedbackPreflight({
-    inbox: readInbox(null),
-    prNumber: null,
-    reviewThreads: null,
-  });
+  if (!input.remote || !input.pr) return null;
+  return (readers.readThreads ?? readCodexReviewThreads)(input.pr.number);
 }
 
 export function readCodexReviewThreads(prNumber, options = {}) {
@@ -352,8 +276,8 @@ export function readCodexReviewThreads(prNumber, options = {}) {
     (thread) =>
       !thread.isResolved &&
       !thread.isOutdated &&
-      thread.comments.nodes.some((comment) =>
-        isTrustedCodexLogin(comment.author?.login ?? "", process.env.CODEX_BOT_LOGINS),
+      thread.comments.nodes.some(
+        (comment) => comment.author?.login === "chatgpt-codex-connector[bot]",
       ),
   );
 
@@ -364,34 +288,6 @@ export function readCodexReviewThreads(prNumber, options = {}) {
   };
 }
 
-export function buildCodexFeedbackPreflight(input) {
-  const inbox = input.inbox ?? {
-    globalActionable: false,
-    prActionable: false,
-    readable: false,
-  };
-  const reviewThreads = input.reviewThreads ?? {
-    actionable: null,
-    readable: false,
-    source: "reviewThreads",
-  };
-  const canUseReviewThreads = Boolean(input.prNumber) && reviewThreads.readable;
-  const actionable = canUseReviewThreads
-    ? Boolean(reviewThreads.actionable)
-    : input.prNumber
-      ? Boolean(inbox.prActionable ?? inbox.actionable)
-      : Boolean(inbox.globalActionable);
-
-  return {
-    actionable,
-    globalActionable: Boolean(inbox.globalActionable),
-    readable: Boolean(reviewThreads.readable || inbox.readable),
-    source: canUseReviewThreads ? reviewThreads.source : "inbox",
-    updatedAt: inbox.updatedAt ?? null,
-    url: inbox.url ?? null,
-  };
-}
-
 export function isPublishedMainPreflight(input) {
   return (
     input.remote &&
@@ -399,14 +295,6 @@ export function isPublishedMainPreflight(input) {
     !input.status?.trim() &&
     input.upstreamState?.ahead === 0 &&
     input.upstreamState?.behind === 0
-  );
-}
-
-function hasActionableThreads(markdown) {
-  return (
-    /Thread actionable totali:\s*[1-9]\d*/.test(markdown) ||
-    markdown.includes("resolved=no") ||
-    /- \[ \]/.test(markdown)
   );
 }
 
