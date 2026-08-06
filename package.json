@@ -42,7 +42,7 @@
     "audit:prod": "node scripts/syncbay-audit-prod.mjs",
     "test:stock-guard": "vitest run app/lib/syncbay-stock-guard.test.ts",
     "test:tooling": "vitest run scripts/",
-    "shopify": "shopify",
+    "shopify": "npm exec --package=@shopify/cli -- shopify",
     "prisma": "prisma",
     "vite": "vite",
     "prisma:generate": "prisma generate && node scripts/link-prisma-client.mjs",
