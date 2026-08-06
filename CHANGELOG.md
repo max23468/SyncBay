@@ -90,13 +90,11 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   in revisione: le sei vulnerabilità pubblicate a monte il 2026-07-25
   (`find-my-way`, `react-router`, `valibot` e i loro transitivi) rendevano rossa
   ogni PR aperta, docs-only comprese, senza che l'autore potesse risolverle nel
-  proprio scope. Due correzioni in `scripts/syncbay-verify.mjs`: `audit:prod`
-  entra in `ADVISORY_GATE_LABELS`, e `fullCommands()` ora onora
-  `excludeAdvisoryGates`, che prima ignorava — per questo la corsia full
-  eseguiva comunque i gate advisory nonostante la CI passi
-  l'esclusione esplicita dei gate advisory. Il workflow `audit-prod.yml` lo esegue ogni
-  giorno e sulle PR che toccano dipendenze o lo script; `verify:changed` e
-  `verify:full` in locale continuano a eseguirlo sempre.
+  proprio scope. `scripts/syncbay-verify.mjs` marca `audit:prod` come comando
+  `live`: la CI passa `--ci` ed esclude soltanto questi controlli esterni, mentre
+  React Doctor resta sempre nel gate richiesto. Il workflow `audit-prod.yml` lo
+  esegue ogni giorno e sulle PR che toccano dipendenze o lo script;
+  `verify:changed` e `verify:full` in locale continuano a eseguirlo sempre.
 - Riadattata la documentazione agentica alle guide dei modelli di quinta
   generazione: `AGENTS.md` 239 -> 144 righe, `app/services/AGENTS.md` 29 -> 32
   (tabella verifiche sostituita da ownership esplicita), `CLAUDE.md` 7 -> 5.
