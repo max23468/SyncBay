@@ -13,9 +13,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   sui file cambiati di ogni PR e sull'intero progetto dopo il push a `main`,
   pubblica score e review inline, usa revisioni immutabili, fissa lo scanner a
   `0.9.5` come il gate locale e lascia disabilitato il controllo supply-chain
-  esterno. Lo script npm `shopify` dichiara esplicitamente `@shopify/cli@4.6.0`,
-  così anche il runner privo di `node_modules` riconosce la dipendenza come
-  usata senza poter scaricare una versione diversa dal pin del progetto. Le
+  esterno. Lo script npm `shopify` importa esplicitamente il manifest della CLI
+  e ne confronta la versione con il pin del progetto: il runner privo di
+  `node_modules` riconosce la dipendenza come usata, mentre il comando fallisce
+  se l'installazione locale manca o non è allineata. Le
   worktree isolate sotto `.worktrees/` non contaminano più lo score del checkout
   corrente.
 - Sostituita la `Codex feedback inbox` con il required check exact-HEAD
