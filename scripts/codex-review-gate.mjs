@@ -127,6 +127,7 @@ export function classifyCodexReview({
   const exactThumbsUpAt = exactReactions
     .filter(
       (reaction) =>
+        timestamp(requestedAt) > 0 &&
         reaction.user?.login === CODEX_BOT &&
         reaction.content === "+1" &&
         timestamp(reaction.created_at) >= timestamp(requestedAt),
@@ -162,6 +163,7 @@ export const latestCodexInvocation = (comments, requestedAt) =>
   comments
     .filter(
       (comment) =>
+        timestamp(requestedAt) > 0 &&
         comment.user?.login !== CODEX_BOT &&
         /@codex\s+review\b/i.test(comment.body) &&
         timestamp(comment.created_at) >= timestamp(requestedAt),

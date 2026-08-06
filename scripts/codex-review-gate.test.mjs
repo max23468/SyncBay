@@ -111,6 +111,33 @@ test("il pollice sull'invocazione corrente approva l'HEAD senza review testuale"
   );
 });
 
+test("un rerun non riusa il pollice di una vecchia invocazione", () => {
+  const reaction = { user: bot, content: "+1", created_at: "2026-08-04T12:00:01Z" };
+  assert.equal(
+    classify({
+      exactReactions: [reaction],
+      reactions: [reaction],
+      requestedAt: 0,
+      requiresReviewedCommit: true,
+    }).state,
+    "pending",
+  );
+  assert.equal(
+    latestCodexInvocation(
+      [
+        {
+          id: 1,
+          user: { login: "max23468" },
+          body: "@codex review",
+          created_at: "2026-08-04T12:00:01Z",
+        },
+      ],
+      0,
+    ),
+    undefined,
+  );
+});
+
 test("il verdetto pulito del task agent approva soltanto l'HEAD dichiarato", () => {
   assert.equal(
     classify({
