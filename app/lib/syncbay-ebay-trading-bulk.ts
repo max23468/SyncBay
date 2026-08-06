@@ -2,7 +2,7 @@ import {
   asEbayTradingRecord as asRecord,
   EBAY_TRADING_API_COMPATIBILITY_LEVEL,
   getEbayTradingString as getString,
-} from "./syncbay-ebay-trading";
+} from "./syncbay-ebay-trading.ts";
 
 export interface TradingItemCacheEntry {
   descriptionHtml: string | null;

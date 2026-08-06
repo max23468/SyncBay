@@ -7,7 +7,7 @@ import {
   getEbayTradingBaseUrl,
   parseEbayTradingResponse,
   type EbayTradingCallName,
-} from "../lib/syncbay-ebay-trading";
+} from "../lib/syncbay-ebay-trading.ts";
 
 type EbayTradingConnection = Pick<EbayConnection, "environment" | "marketplaceId">;
 

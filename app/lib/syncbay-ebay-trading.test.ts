@@ -33,3 +33,13 @@ test("reports every eBay error returned by the shared parser", () => {
     /Primo errore; Secondo errore/,
   );
 });
+
+test("normalizes the SKU before revising inventory", () => {
+  const request = trading.buildReviseInventoryStatusRequest({
+    itemId: "1001",
+    quantity: 3,
+    sku: " SELLER-1 ",
+  });
+
+  assert.match(request, /<SKU>SELLER-1<\/SKU>/);
+});

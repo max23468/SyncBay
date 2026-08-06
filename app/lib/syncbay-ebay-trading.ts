@@ -131,6 +131,8 @@ export function buildReviseInventoryStatusRequest(input: {
   quantity: number;
   sku?: string | null;
 }) {
+  const sku = input.sku?.trim();
+
   return `<?xml version="1.0" encoding="utf-8"?>
 <ReviseInventoryStatusRequest xmlns="urn:ebay:apis:eBLBaseComponents">
   <Version>${EBAY_TRADING_API_COMPATIBILITY_LEVEL}</Version>
@@ -138,7 +140,7 @@ export function buildReviseInventoryStatusRequest(input: {
   <WarningLevel>High</WarningLevel>
   <InventoryStatus>
     <ItemID>${escapeEbayTradingXml(input.itemId)}</ItemID>
-    ${input.sku ? `<SKU>${escapeEbayTradingXml(input.sku)}</SKU>` : ""}
+    ${sku ? `<SKU>${escapeEbayTradingXml(sku)}</SKU>` : ""}
     <Quantity>${Math.max(0, Math.floor(input.quantity))}</Quantity>
   </InventoryStatus>
 </ReviseInventoryStatusRequest>`;
