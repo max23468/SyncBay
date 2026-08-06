@@ -3,9 +3,9 @@ import { pathToFileURL } from "node:url";
 const CODEX_BOT = "chatgpt-codex-connector[bot]";
 const isDirectExecution =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-// ponytail: 90 s limita tre PR concorrenti a circa 600 richieste/ora; passare a
+// ponytail: 180 s limita cinque PR concorrenti a circa 500 richieste/ora; passare a
 // un'unica query GraphQL se la concorrenza reale cresce oltre questo livello.
-export const CODEX_REVIEW_POLLING = { attempts: 200, intervalMs: 90_000 };
+export const CODEX_REVIEW_POLLING = { attempts: 100, intervalMs: 180_000 };
 
 const timestamp = (value) => new Date(value ?? 0).getTime();
 const reviewedCommit = (body = "") =>

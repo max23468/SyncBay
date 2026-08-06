@@ -348,9 +348,9 @@ test("un errore tardivo non chiude una review corrente ancora in corso", () => {
   );
 });
 
-test("il polling mantiene cinque ore senza saturare la quota con tre PR", () => {
+test("il polling mantiene cinque ore senza saturare la quota con cinque PR", () => {
   assert.equal(CODEX_REVIEW_POLLING.attempts * CODEX_REVIEW_POLLING.intervalMs, 5 * 60 * 60 * 1000);
-  assert.ok((5 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 200);
+  assert.ok((5 * 5 * 60 * 60 * 1000) / CODEX_REVIEW_POLLING.intervalMs <= 500);
 });
 
 test("legge le reazioni dall'ultima invocazione Codex del tentativo corrente", () => {
