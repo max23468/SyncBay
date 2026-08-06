@@ -162,9 +162,10 @@ test("CI can omit the advisory audit gate on the full lane", () => {
   assert.ok(labels.includes("npm run build:raw"));
 });
 
-test("keeps the advisory audit gate when the flag is absent", () => {
+test("keeps local advisory gates when the flag is absent", () => {
   const plan = buildVerificationPlan({ mode: "full" });
 
+  assert.ok(plan.commands.map((entry) => entry.label).includes("npm run quality:react-doctor"));
   assert.ok(plan.commands.map((entry) => entry.label).includes("npm run audit:prod"));
 });
 

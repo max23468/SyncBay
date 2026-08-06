@@ -2,7 +2,7 @@
 
 - **Stato**: Accettato
 - **Data**: 2026-05-09
-- **Aggiornato**: 2026-07-14
+- **Aggiornato**: 2026-08-06
 - **Decisori**: maintainer, Codex
 
 ## Contesto
@@ -82,13 +82,15 @@ Esclusioni consapevoli:
   Un gate corretto richiederebbe l'intero stack `supabase start` in CI: resta
   un follow-up possibile, da introdurre solo dopo verifica verde dedicata. In
   CI lo schema è comunque coperto da `prisma:validate`;
-- qualità React: resta nel workflow dedicato `react-doctor.yml`, usa sempre
-  `react-doctor@latest` sui file PR pertinenti e mantiene il full scan manuale;
+- qualità React: resta nel workflow dedicato `react-doctor.yml`; l'Action
+  ufficiale, fissata a una revisione verificata, gira in modalità advisory su
+  ogni PR e sul push a `main`, mentre `verify:full` esegue la scansione locale
+  completa dalla versione esatta del lockfile e blocca dai warning in su;
 - Supabase Preview: l'integrazione GitHub Supabase è disattivata perché le
   migration canoniche vivono in `prisma/migrations`, non in
   `supabase/migrations`, quindi il check non validava il flusso reale;
-- Vercel, React Doctor e CodeQL restano advisory o path-scoped e non
-  sono status richiesti dal ruleset;
+- Vercel, React Doctor e CodeQL restano advisory o mirati e non sono status
+  richiesti dal ruleset;
 - audit advisory delle dipendenze di produzione: `npm run audit:prod` esce dal
   check richiesto ed entra nel workflow `audit-prod.yml`, schedulato ogni giorno
   e path-scoped sulle PR che toccano dipendenze. Un gate che blocca il merge

@@ -99,6 +99,13 @@ asserzione di compile-time sulla copertura degli enum Prisma (`*CoverPrisma`)
 sono marcati `@knipignore`: non hanno importatori per costruzione e non vanno
 cancellati.
 
+React Doctor segue due corsie: `verify:full` esegue dalla dipendenza pinnata la
+scansione completa locale e blocca dai warning in su; il workflow dedicato usa
+l'Action ufficiale fissata a una revisione verificata, resta advisory sui
+finding, pubblica score e review inline su ogni PR e registra lo stato dopo il
+push a `main`. Il controllo supply-chain esterno è disabilitato perché audit npm
+e GitHub coprono già le dipendenze.
+
 ## Comandi locali
 
 | Scopo                          | Comando                                                                                                          |
