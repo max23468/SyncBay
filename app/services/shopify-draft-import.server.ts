@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
+import { request as httpsRequest } from "node:https";
 import { BlockList, isIP } from "node:net";
+import { Readable } from "node:stream";
 
 import { Prisma, ProductMappingStatus, ProductSnapshotSource } from "@prisma/client";
 
@@ -336,6 +338,12 @@ type LookupHost = (
   hostname: string,
   options: { all: true; verbatim: true },
 ) => Promise<Array<{ address: string; family: number }>>;
+type PublicImageTarget = {
+  address: string;
+  family: 4 | 6;
+  url: URL;
+};
+type RequestPublicImage = (target: PublicImageTarget) => Promise<Response>;
 
 type ShopifyInventorySyncResult =
   | {
@@ -2189,9 +2197,9 @@ async function createStagedImageMediaInput(input: {
 export async function downloadImageForStaging(
   sourceUrl: string,
   options: {
-    fetchImpl?: typeof fetch;
     lookupHost?: LookupHost;
     maxBytes?: number;
+    requestImpl?: RequestPublicImage;
   } = {},
 ): Promise<
   | {
@@ -2209,8 +2217,8 @@ export async function downloadImageForStaging(
 
   try {
     response = await fetchPublicImage(sourceUrl, {
-      fetchImpl: options.fetchImpl ?? fetch,
       lookupHost: options.lookupHost ?? lookup,
+      requestImpl: options.requestImpl ?? requestPublicImage,
     });
   } catch {
     return {
@@ -2277,19 +2285,13 @@ export async function downloadImageForStaging(
 async function fetchPublicImage(
   sourceUrl: string,
   options: {
-    fetchImpl: typeof fetch;
     lookupHost: LookupHost;
+    requestImpl: RequestPublicImage;
   },
   redirectCount = 0,
 ): Promise<Response> {
-  const url = await validatePublicImageUrl(sourceUrl, options.lookupHost);
-  const response = await options.fetchImpl(url, {
-    headers: {
-      "user-agent": "SyncBay/0.1 image-staging",
-    },
-    redirect: "manual",
-    signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
-  });
+  const target = await validatePublicImageUrl(sourceUrl, options.lookupHost);
+  const response = await options.requestImpl(target);
 
   if (![301, 302, 303, 307, 308].includes(response.status)) return response;
 
@@ -2299,7 +2301,7 @@ async function fetchPublicImage(
     throw new Error("Redirect immagine non valido.");
   }
 
-  return fetchPublicImage(new URL(location, url).toString(), options, redirectCount + 1);
+  return fetchPublicImage(new URL(location, target.url).toString(), options, redirectCount + 1);
 }
 
 async function validatePublicImageUrl(sourceUrl: string, lookupHost: LookupHost) {
@@ -2323,7 +2325,45 @@ async function validatePublicImageUrl(sourceUrl: string, lookupHost: LookupHost)
     throw new Error("Destinazione immagine non pubblica.");
   }
 
-  return url;
+  const { address, family } = addresses[0];
+  return {
+    address,
+    family: family === 6 ? 6 : 4,
+    url,
+  } satisfies PublicImageTarget;
+}
+
+function requestPublicImage({ address, family, url }: PublicImageTarget) {
+  return new Promise<Response>((resolve, reject) => {
+    const request = httpsRequest(
+      url,
+      {
+        headers: { "user-agent": "SyncBay/0.1 image-staging" },
+        lookup: (_hostname, _options, callback) => callback(null, address, family),
+        signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
+      },
+      (response) => {
+        const headers = new Headers();
+        for (const [name, value] of Object.entries(response.headers)) {
+          if (Array.isArray(value)) {
+            for (const item of value) headers.append(name, item);
+          } else if (value !== undefined) {
+            headers.set(name, value);
+          }
+        }
+
+        resolve(
+          new Response(Readable.toWeb(response) as ReadableStream<Uint8Array>, {
+            headers,
+            status: response.statusCode ?? 500,
+            statusText: response.statusMessage,
+          }),
+        );
+      },
+    );
+    request.once("error", reject);
+    request.end();
+  });
 }
 
 async function readImageBodyWithLimit(response: Response, maxBytes: number) {
