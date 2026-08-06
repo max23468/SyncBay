@@ -6,9 +6,9 @@ import { EbayConnectionStatus, type EbayConnection, type Prisma } from "@prisma/
 import type { ExistingCatalogTakeoverApplyRow } from "../lib/syncbay-existing-catalog-takeover";
 import type { ExistingProductMatchSuggestion } from "../lib/syncbay-product-matching";
 import type { ImportPreviewItem } from "./import-preview.server";
+import { getExistingCatalogTakeoverPreview } from "./existing-catalog-takeover-preview.server";
 import {
   applyExistingCatalogTakeoverClaims,
-  getExistingCatalogTakeoverPreview,
   runExistingCatalogTakeoverStart,
 } from "./existing-catalog-takeover.server";
 import { buildCatalogImportBatchPayload, type ShopifyAdminGraphqlClient } from "./syncbay.server";

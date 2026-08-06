@@ -133,6 +133,7 @@ import {
   validateEbayStockCurrency,
 } from "../lib/syncbay-stock-guard";
 import { getUsableEbayAccessToken } from "./ebay-token.server";
+import { DEFAULT_EBAY_MARKETPLACE_ID as DEFAULT_MARKETPLACE_ID } from "./ebay-environment.server";
 import {
   getEbayTradingCandidatesByItemIds,
   getEbayTradingCatalogImportPlan,
@@ -253,7 +254,6 @@ type ShopifyPricingVariantUpdateResponse = {
   };
   errors?: Array<{ message: string }>;
 };
-const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const CATALOG_RECONCILE_MAX_PRODUCTS = 2000;
 const RUNNER_EBAY_ITEM_BATCH_SIZE = 10;
 const CATALOG_IMAGE_REPAIR_DEFAULT_LIMIT = 20;

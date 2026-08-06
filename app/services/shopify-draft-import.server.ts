@@ -58,6 +58,7 @@ import {
   selectShopifyVariantForSync,
 } from "../lib/syncbay-shopify-variant-selection";
 import { shouldUseMappedShopifyVariant } from "../lib/syncbay-sold-out-variant";
+import { getEbayMarketplaceId } from "./ebay-environment.server";
 import type { ImportPreviewItem, ImportPreviewResult } from "./import-preview.server";
 import { getPricingRuleForShopId } from "./pricing-rules.server";
 import { recordProductSnapshotsInTransaction } from "./product-history.server";
@@ -325,7 +326,6 @@ const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
 const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 2;
 const DEFAULT_DRAFT_IMPORT_LIMIT = 3;
 const MAX_DRAFT_IMPORT_LIMIT = 50;
-const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
 const MAX_SHOPIFY_MEDIA_PER_PRODUCT = 250;
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
 const IMAGE_DOWNLOAD_MAX_BYTES = 20 * 1024 * 1024;
@@ -3656,10 +3656,6 @@ function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
 
   return "Errore inatteso durante l'import Shopify.";
-}
-
-function getEbayMarketplaceId() {
-  return process.env.EBAY_MARKETPLACE_ID ?? DEFAULT_MARKETPLACE_ID;
 }
 
 function getSupabaseStorageConfig() {
