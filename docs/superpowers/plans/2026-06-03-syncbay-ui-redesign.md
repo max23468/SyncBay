@@ -1063,7 +1063,7 @@ Expected: PASS.
 Run:
 
 ```bash
-npm run quality:react-doctor
+npm run doctor
 ```
 
 Expected: no errors. If it reports warnings only, review whether they are actionable before closing.

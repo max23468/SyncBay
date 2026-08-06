@@ -18,21 +18,18 @@ const UI_GATE_LABELS = new Set([
   "npm run ui:check",
   "npm run ui:browser-check",
 ]);
-// Gate gestiti da workflow separati: React Doctor analizza il diff della PR,
-// mentre audit:prod dipende anche dal registry e dal database advisory. Restano
-// obbligatori in locale, senza duplicarli nel check conclusivo della CI.
-const ADVISORY_GATE_LABELS = new Set(["npm run quality:react-doctor", "npm run audit:prod"]);
-
 // La formattazione riguarda ogni tipo di file, quindi il controllo vale per
 // tutte le corsie, docs incluse. Costa circa 7 secondi ed e' il gate piu'
 // economico: sta per primo cosi' un problema banale fallisce subito.
 const FORMAT_CHECK_LABEL = "npm run format:check";
+const DOCTOR_GATE_LABEL = "npm run doctor";
+const AUDIT_GATE_LABEL = "npm run audit:prod";
 
 const FULL_COMMANDS = [
   npmCommand("format:check"),
   npmCommand("prisma:generate"),
   npmCommand("lint"),
-  npmCommand("quality:react-doctor"),
+  npmCommand("doctor"),
   npmCommand("test:tooling"),
   npmCommand("typecheck:raw"),
   npmCommand("coverage:lib"),
@@ -58,14 +55,14 @@ if (import.meta.main) {
 
 export function buildVerificationPlan({
   base = DEFAULT_BASE,
-  excludeAdvisoryGates = false,
+  ci = false,
   excludeUiGates = false,
   mode,
   review,
 } = {}) {
   if (mode === "full") {
     return {
-      commands: fullCommands({ excludeAdvisoryGates, excludeUiGates }),
+      commands: fullCommands({ ci, excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -78,7 +75,7 @@ export function buildVerificationPlan({
 
   if ((review?.unmatchedFiles ?? []).length > 0) {
     return {
-      commands: fullCommands({ excludeAdvisoryGates, excludeUiGates }),
+      commands: fullCommands({ ci, excludeUiGates }),
       lane: "full",
       manualChecks: [],
       mode,
@@ -90,6 +87,7 @@ export function buildVerificationPlan({
     return {
       commands: [
         npmCommand("format:check"),
+        npmCommand("doctor"),
         {
           args: ["diff", "--check", base],
           command: "git",
@@ -103,11 +101,12 @@ export function buildVerificationPlan({
   }
 
   const manualChecks = suggestions.filter(isManualCheck);
-  const executableSuggestions = suggestions.filter((suggestion) => {
-    if (isManualCheck(suggestion)) return false;
-    if (excludeUiGates && UI_GATE_LABELS.has(suggestion)) return false;
-    return !(excludeAdvisoryGates && ADVISORY_GATE_LABELS.has(suggestion));
-  });
+  const executableSuggestions = suggestions.filter(
+    (suggestion) =>
+      !isManualCheck(suggestion) &&
+      !(ci && suggestion === AUDIT_GATE_LABEL) &&
+      !(excludeUiGates && UI_GATE_LABELS.has(suggestion)),
+  );
   const normalized = normalizeSuggestedChecks(executableSuggestions, base);
 
   return {
@@ -200,7 +199,7 @@ function runCli(args) {
   const review = args.mode === "changed" ? readReview(args.base) : null;
   const plan = buildVerificationPlan({
     base: args.base,
-    excludeAdvisoryGates: args.excludeAdvisoryGates,
+    ci: args.ci,
     excludeUiGates: args.excludeUiGates,
     mode: args.mode,
     review,
@@ -300,6 +299,7 @@ function normalizeSuggestedChecks(suggestions, base) {
     ].includes(label),
   );
   if (needsPrisma) normalizedLabels.unshift("npm run prisma:generate");
+  normalizedLabels.unshift(DOCTOR_GATE_LABEL);
   normalizedLabels.unshift(FORMAT_CHECK_LABEL);
 
   return unique(normalizedLabels).map(commandFromLabel);
@@ -378,7 +378,7 @@ function readValidReceipt(receiptPath, fingerprint) {
 function parseArgs(rawArgs) {
   const parsed = {
     base: DEFAULT_BASE,
-    excludeAdvisoryGates: false,
+    ci: false,
     excludeUiGates: false,
     force: false,
     json: false,
@@ -400,18 +400,18 @@ function parseArgs(rawArgs) {
       parsed.force = true;
       continue;
     }
+    if (arg === "--ci") {
+      if (!["changed", "full"].includes(parsed.mode)) {
+        throw new Error("--ci è supportato solo con verify:changed o verify:full.");
+      }
+      parsed.ci = true;
+      continue;
+    }
     if (arg === "--without-ui-gates") {
       if (!["changed", "full"].includes(parsed.mode)) {
         throw new Error("--without-ui-gates è supportato solo con verify:changed o verify:full.");
       }
       parsed.excludeUiGates = true;
-      continue;
-    }
-    if (arg === "--without-advisory-gates") {
-      if (parsed.mode !== "changed") {
-        throw new Error("--without-advisory-gates è supportato solo con verify:changed.");
-      }
-      parsed.excludeAdvisoryGates = true;
       continue;
     }
     if (arg === "--json") {
@@ -448,11 +448,10 @@ function cloneCommands(commands) {
   return commands.map((entry) => ({ ...entry, args: [...entry.args] }));
 }
 
-function fullCommands({ excludeAdvisoryGates = false, excludeUiGates = false } = {}) {
-  const commands = FULL_COMMANDS.filter((entry) => {
-    if (excludeUiGates && UI_GATE_LABELS.has(entry.label)) return false;
-    return !(excludeAdvisoryGates && ADVISORY_GATE_LABELS.has(entry.label));
-  });
+function fullCommands({ ci = false, excludeUiGates = false } = {}) {
+  const commands = FULL_COMMANDS.filter(
+    (entry) => !(ci && entry.live) && !(excludeUiGates && UI_GATE_LABELS.has(entry.label)),
+  );
   return cloneCommands(commands);
 }
 

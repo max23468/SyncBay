@@ -16,14 +16,13 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
   sole PR patch/minor dopo i check obbligatori di `main`.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
-- Repository pubblico protetto da PR, `Verifica proporzionata`,
-  `Conventional PR title` e `codex-review`.
-- React Doctor usa una scansione locale completa bloccante dai warning in su e
-  un'Action advisory fissata a una revisione verificata: su ogni PR pubblica
-  score e review per i file cambiati senza rendere rosso il run per i finding,
-  e registra lo stato anche sul push a `main`. L'Action fallisce soltanto se lo
-  scanner non riesce a completarsi. CodeQL e Vercel restano check mirati o
-  advisory; `codex-review` blocca soltanto in base alla review dell'HEAD.
+- Repository pubblico protetto da PR, strict checking, `Verifica
+proporzionata`, `Conventional PR title`, `codex-review` e `react-doctor`.
+- React Doctor è bloccante dai warning in su sia dentro `Verifica
+proporzionata` sia nello status dedicato `react-doctor`: sulle PR pubblica
+  score e review per i file cambiati, mentre sul push a `main` analizza tutto il
+  progetto. CodeQL e Vercel restano check mirati o advisory; `codex-review`
+  blocca soltanto in base alla review dell'HEAD.
 
 ## Regola base
 
@@ -114,11 +113,10 @@ Con il deployment Vercel production privato attivo, "pubblicato" significa almen
   branch assorbiti;
 - PR obbligatoria verso `main`, senza approval obbligatorie per il maintainer
   unico e con conversazioni da risolvere;
-- check richiesti `Verifica proporzionata`, `Conventional PR title` e
-  `codex-review`, senza policy strict/up-to-date per evitare rebase e run
-  duplicati;
-- nessun deployment, React Doctor, CodeQL aggregato o Supabase Preview
-  richiesto come status separato;
+- check richiesti `Verifica proporzionata`, `Conventional PR title`,
+  `codex-review` e `react-doctor`, con policy strict/up-to-date;
+- nessun deployment, CodeQL aggregato o Supabase Preview richiesto come status
+  separato;
 - push forzati e cancellazione di `main` vietati;
 - secret scanning e push protection GitHub attivi.
 
@@ -169,9 +167,10 @@ Per modifiche puramente documentali:
 - non inventare test applicativi;
 - aggiornare `CHANGELOG.md` sotto `Non versionato` quando la modifica è significativa.
 
-Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo.
-React Doctor resta separato e parte su ogni PR, così il suo stato è sempre
-presente; l'Action analizza soltanto il diff. Vercel salta inoltre i build
+Anche la CI distingue docs-only e runtime mantenendo un unico job conclusivo,
+che esegue sempre React Doctor. Il workflow dedicato parte su ogni PR, così il
+suo stato richiesto è sempre presente e l'Action analizza soltanto il diff.
+Vercel salta inoltre i build
 limitati a docs, governance, CI, test e tooling non runtime.
 
 La CI non installa Chromium per ogni sincronizzazione. Le PR con UI sostanziale

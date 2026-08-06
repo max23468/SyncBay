@@ -22,10 +22,7 @@ test("CI classifies the diff and runs only targeted blocking gates", () => {
   // I gate non devono essere condizionati alla corsia: altrimenti un diff
   // docs-only salterebbe `format:check`, che nessun altro check intercetta.
   assert.doesNotMatch(source, /steps\.lane\.outputs\.lane ==/);
-  assert.match(
-    source,
-    /npm run verify:changed -- --base .* --no-receipt --without-advisory-gates --without-ui-gates/,
-  );
+  assert.match(source, /npm run verify:changed -- --base .* --ci --no-receipt --without-ui-gates/);
   assert.doesNotMatch(source, /playwright install/);
   assert.doesNotMatch(source, /verify:full/);
   // I run manuali (workflow_dispatch) devono avere una base valida: senza di
@@ -45,8 +42,9 @@ test("browser UI gates run only on explicit request or label", () => {
   assert.match(source, /run:\s*npm run ui:browser-check/);
 });
 
-test("React Doctor follows the advisory PR gate used by CF-Ready", () => {
+test("React Doctor blocks PR warnings with pinned code and minimal permissions", () => {
   const source = readWorkflow("react-doctor.yml");
+  const packageJson = readJson("package.json");
 
   assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
   assert.match(source, /^\s*push:\s*$/m);
@@ -55,24 +53,51 @@ test("React Doctor follows the advisory PR gate used by CF-Ready", () => {
   assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
   assert.match(source, /millionco\/react-doctor@[0-9a-f]{40}/);
   assert.match(source, /persist-credentials:\s*false/);
-  assert.match(source, /version:\s*0\.9\.5/);
+  assert.match(source, /fetch-depth:\s*0/);
+  assert.match(source, new RegExp(`version:\\s*${packageJson.devDependencies["react-doctor"]}`));
   assert.match(source, /scope:.*github\.event_name == 'push'.*'full'.*'changed'/);
-  assert.match(source, /blocking:\s*none/);
+  assert.match(source, /blocking:\s*warning/);
   assert.match(source, /comment:\s*"false"/);
   assert.match(source, /review-comments:\s*"true"/);
+  assert.match(source, /timeout-minutes:\s*10/);
+  assert.match(source, /cancel-in-progress:\s*true/);
+  assert.match(source, /contents:\s*read/);
+  assert.match(source, /pull-requests:\s*write/);
+  assert.match(source, /statuses:\s*write/);
   assert.doesNotMatch(source, /workflow_dispatch:/);
 });
 
-test("React Doctor blocks local full scans on warnings", () => {
+test("React Doctor has one exact canonical script and a warning-blocking config", () => {
   const config = readJson("doctor.config.json");
   const packageJson = readJson("package.json");
+  const packageLock = readJson("package-lock.json");
 
   assert.equal(config.blocking, "warning");
   assert.equal(config.supplyChain.enabled, false);
   assert.ok(config.ignore.files.includes(".worktrees/**"));
-  assert.equal(packageJson.scripts["quality:react-doctor"], "react-doctor --scope full .");
+  assert.equal(packageJson.scripts.doctor, "react-doctor --scope full .");
+  assert.deepEqual(
+    Object.entries(packageJson.scripts).filter(([, command]) => command.includes("react-doctor")),
+    [["doctor", "react-doctor --scope full ."]],
+  );
+  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.5");
+  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.5");
+  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.5");
   assert.match(packageJson.scripts.shopify, /require\('@shopify\/cli\/package\.json'\)/);
   assert.match(packageJson.scripts.shopify, /p\.devDependencies\['@shopify\/cli'\]/);
+});
+
+test("scheduled GitHub governance check protects the exact React Doctor status", () => {
+  const source = readWorkflow("github-governance.yml");
+
+  assert.match(source, /schedule:/);
+  assert.match(source, /workflow_dispatch:/);
+  assert.match(source, /permissions:\s*\{\}/);
+  assert.match(source, /curl --fail --silent --show-error/);
+  assert.doesNotMatch(source, /GH_TOKEN|github\.token|gh api/);
+  assert.match(source, /strict_required_status_checks_policy/);
+  assert.match(source, /Conventional PR title.*Verifica proporzionata.*codex-review.*react-doctor/);
+  assert.match(source, /integration_id.*15368/);
 });
 
 test("PR title validation reruns cheaply for every title-related PR event", () => {

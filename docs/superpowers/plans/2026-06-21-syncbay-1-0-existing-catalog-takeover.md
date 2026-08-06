@@ -35,7 +35,7 @@ post-1.0.
 | Task 8 | Completato | Privacy, termini minimi, mini kit clienti selezionati e release locale `0.50.0`; PR #340.                                                                                                                                                                                                                                                                  | Chiuso come readiness legale/prodotto, non come installazione o onboarding Numisleo.             |
 
 **Verifiche fresche della revisione:** `npm run typecheck`, `npm run lint`,
-`npm run build`, `npm run test:lib`, `npm run quality:react-doctor`,
+`npm run build`, `npm run test:lib`, `npm run doctor`,
 `npm run smoke:ui`, `npm run release:dry-run`; PR #340 mergeata con CI, React
 Doctor e Vercel production verdi.
 
