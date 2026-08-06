@@ -71,6 +71,7 @@ test("React Doctor blocks local full scans on warnings", () => {
   assert.equal(config.supplyChain.enabled, false);
   assert.ok(config.ignore.files.includes(".worktrees/**"));
   assert.equal(packageJson.scripts["quality:react-doctor"], "react-doctor --scope full .");
+  assert.equal(packageJson.scripts.shopify, "npm exec --package=@shopify/cli -- shopify");
 });
 
 test("PR title validation reruns cheaply for every title-related PR event", () => {
