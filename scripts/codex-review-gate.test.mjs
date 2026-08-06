@@ -99,6 +99,18 @@ test("il pollice senza Reviewed commit non approva", () => {
   );
 });
 
+test("il pollice sull'invocazione corrente approva l'HEAD senza review testuale", () => {
+  const reaction = { user: bot, content: "+1", created_at: "2026-08-04T12:00:01Z" };
+  assert.equal(
+    classify({
+      exactReactions: [reaction],
+      reactions: [reaction],
+      requiresReviewedCommit: true,
+    }).state,
+    "success",
+  );
+});
+
 test("il verdetto pulito del task agent approva soltanto l'HEAD dichiarato", () => {
   assert.equal(
     classify({

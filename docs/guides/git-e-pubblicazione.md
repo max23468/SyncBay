@@ -150,7 +150,9 @@ pubblica commenti. Osserva soltanto i segnali del reviewer
 P0-P3 inline o top-level del tentativo corrente falliscono il gate, mentre
 l'esito positivo deve riferirsi all'HEAD esatto. Ogni `synchronize` invalida
 l'evidenza precedente; `reopened` e il dispatch manuale possono riusare solo
-uno status riuscito dello stesso SHA.
+uno status riuscito dello stesso SHA. Dopo ogni push l'autore richiede
+`@codex review`: la reazione positiva del bot su quell'invocazione identifica
+il tentativo corrente anche quando una review pulita non pubblica testo.
 
 Il workflow usa `pull_request_target` con permessi minimi e fa checkout
 esclusivamente del branch predefinito fidato, senza installare dipendenze né

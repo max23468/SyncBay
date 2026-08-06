@@ -16,6 +16,7 @@ export function classifyCodexReview({
   requestedAt,
   now = Date.now(),
   comments,
+  exactReactions = [],
   reactions,
   progressReactions = reactions,
   requiresReviewedCommit = false,
@@ -121,9 +122,19 @@ export function classifyCodexReview({
         timestamp(reaction.created_at) >= timestamp(requestedAt),
     )
     .reduce((latest, reaction) => Math.max(latest, timestamp(reaction.created_at)), 0);
+  const exactThumbsUpAt = exactReactions
+    .filter(
+      (reaction) =>
+        reaction.user?.login === CODEX_BOT &&
+        reaction.content === "+1" &&
+        timestamp(reaction.created_at) >= timestamp(requestedAt),
+    )
+    .reduce((latest, reaction) => Math.max(latest, timestamp(reaction.created_at)), 0);
 
   if (thumbsUpAt) {
-    if (!requiresReviewedCommit) cleanComments.push(thumbsUpAt);
+    if (!requiresReviewedCommit || exactThumbsUpAt) {
+      cleanComments.push(exactThumbsUpAt || thumbsUpAt);
+    }
     for (const commentAt of cleanComments) {
       if (thumbsUpAt < commentAt) continue;
       completions.push({
@@ -209,7 +220,13 @@ async function reviewSignals(repository, number, requestedAt) {
   const invocationReactions = invocation
     ? await all(`/repos/${repository}/issues/comments/${invocation.id}/reactions`)
     : [];
-  return [comments, [...reactions, ...invocationReactions], reviews, reviewComments];
+  return [
+    comments,
+    [...reactions, ...invocationReactions],
+    reviews,
+    reviewComments,
+    invocationReactions,
+  ];
 }
 
 async function main() {
@@ -247,7 +264,7 @@ async function main() {
   const freshReview = ["opened", "ready_for_review"].includes(event.action);
   const requestedAt = reusesExistingReview ? 0 : pullRequest.updated_at;
   for (let attempt = 0; attempt < CODEX_REVIEW_POLLING.attempts; attempt += 1) {
-    const [comments, reactions, reviews, reviewComments] = await reviewSignals(
+    const [comments, reactions, reviews, reviewComments, exactReactions] = await reviewSignals(
       repository,
       number,
       requestedAt,
@@ -256,6 +273,7 @@ async function main() {
       headSha,
       requestedAt,
       comments,
+      exactReactions,
       reactions,
       requiresReviewedCommit: !freshReview,
       reviews,
