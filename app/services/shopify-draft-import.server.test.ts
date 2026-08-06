@@ -191,6 +191,18 @@ test("image staging connects to the public address validated by DNS", async () =
   assert.equal(lookupCalls, 1);
 });
 
+test("image staging supports all-address lookups for its pinned DNS resolution", () => {
+  const importSource = readFileSync(
+    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    importSource,
+    /if \(options\.all\)[\s\S]*callback\(null, \[\{ address, family \}\]\)/,
+  );
+});
+
 type UnchangedCheckInput = Parameters<typeof isDraftProductUnchangedSinceLastEbaySnapshot>[0];
 
 function createSyntheticDraftProduct(overrides?: { quantity?: number }) {

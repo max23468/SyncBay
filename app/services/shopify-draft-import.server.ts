@@ -2339,7 +2339,13 @@ function requestPublicImage({ address, family, url }: PublicImageTarget) {
       url,
       {
         headers: { "user-agent": "SyncBay/0.1 image-staging" },
-        lookup: (_hostname, _options, callback) => callback(null, address, family),
+        lookup: (_hostname, options, callback) => {
+          if (options.all) {
+            callback(null, [{ address, family }]);
+            return;
+          }
+          callback(null, address, family);
+        },
         signal: AbortSignal.timeout(IMAGE_DOWNLOAD_TIMEOUT_MS),
       },
       (response) => {
