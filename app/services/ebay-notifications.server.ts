@@ -1,15 +1,7 @@
 import crypto from "node:crypto";
 
-import {
-  getEbayBasicAuthHeader,
-  getEbayEnvironment,
-  getEbayTokenUrl,
-} from "./ebay-environment.server";
-
-interface EbayApplicationTokenResponse {
-  access_token: string;
-  expires_in?: number;
-}
+import { getEbayEnvironment } from "./ebay-environment.server";
+import { requestEbayOAuthToken } from "./ebay-oauth.server";
 
 interface EbayPublicKeyResponse {
   algorithm?: string;
@@ -251,31 +243,18 @@ async function getEbayApplicationAccessToken() {
 }
 
 async function fetchEbayApplicationAccessToken() {
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per propagare error e error_description; lo status è verificato subito dopo.
-  const response = await fetch(getEbayTokenUrl(), {
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
+  const token = await requestEbayOAuthToken({
+    environment: getEbayEnvironment(),
+    grant: {
       scope: EBAY_APPLICATION_SCOPE,
-    }),
-    headers: {
-      Authorization: `Basic ${getEbayBasicAuthHeader()}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      type: "client_credentials",
     },
-    method: "POST",
     signal: AbortSignal.timeout(EBAY_REQUEST_TIMEOUT_MS),
   });
-  const json = (await response.json()) as Partial<EbayApplicationTokenResponse> & {
-    error?: string;
-    error_description?: string;
-  };
-
-  if (!response.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? "Application token eBay non ottenuto.");
-  }
 
   cachedApplicationToken = {
-    accessToken: json.access_token,
-    expiresAt: Date.now() + Math.max((json.expires_in ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
+    accessToken: token.accessToken,
+    expiresAt: Date.now() + Math.max((token.expiresIn ?? 0) * 1000 - TOKEN_EXPIRY_SAFETY_MS, 0),
   };
 
   return cachedApplicationToken.accessToken;

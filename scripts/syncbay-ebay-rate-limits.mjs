@@ -2,13 +2,13 @@
 
 import { parseArgs as parseNodeArgs } from "node:util";
 
+import { getEbayApiBaseUrl } from "../app/services/ebay-environment.server.ts";
+import { requestEbayOAuthToken } from "../app/services/ebay-oauth.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import { ensureTokenEncryptionKey, getAccessToken, loadDotEnv } from "./syncbay-ebay-cli.mjs";
 import { resolveRequiredShopDomainOption } from "./syncbay-shop-domain-option.mjs";
 
 const DEFAULT_MARKETPLACE_ID = "EBAY_IT";
-const DEFAULT_OAUTH_BASE_URL = "https://api.ebay.com";
-const DEFAULT_ANALYTICS_BASE_URL = "https://api.ebay.com";
 const DEFAULT_ANALYTICS_SCOPE = "https://api.ebay.com/oauth/api_scope";
 
 function parseArgs(argv) {
@@ -28,14 +28,6 @@ function parseArgs(argv) {
     marketplaceId: values.marketplace ?? DEFAULT_MARKETPLACE_ID,
     shop: values.shop ?? null,
   };
-}
-
-function getOauthBaseUrl(mode) {
-  return mode === "SANDBOX" ? "https://api.sandbox.ebay.com" : DEFAULT_OAUTH_BASE_URL;
-}
-
-function getAnalyticsBaseUrl(mode) {
-  return mode === "SANDBOX" ? "https://api.sandbox.ebay.com" : DEFAULT_ANALYTICS_BASE_URL;
 }
 
 async function getShopState(shopDomain, marketplaceId) {
@@ -91,33 +83,15 @@ select jsonb_build_object(
 }
 
 async function getApplicationAccessToken(mode) {
-  const clientId = process.env.EBAY_CLIENT_ID;
-  const clientSecret = process.env.EBAY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error(
-      "EBAY_CLIENT_ID e EBAY_CLIENT_SECRET sono necessari per leggere i limiti applicativi eBay.",
-    );
-  }
-
-  const response = await fetch(`${getOauthBaseUrl(mode)}/identity/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
+  const token = await requestEbayOAuthToken({
+    environment: mode,
+    grant: {
       scope: process.env.EBAY_ANALYTICS_RATE_LIMIT_SCOPE ?? DEFAULT_ANALYTICS_SCOPE,
-    }),
+      type: "client_credentials",
+    },
   });
-  const body = await response.json().catch(() => ({}));
 
-  if (!response.ok || typeof body.access_token !== "string") {
-    throw new Error(`Token applicativo eBay fallito (${response.status}).`);
-  }
-
-  return body.access_token;
+  return token.accessToken;
 }
 
 async function analyticsRateLimitCall({ accessToken, mode, target }) {
@@ -125,7 +99,7 @@ async function analyticsRateLimitCall({ accessToken, mode, target }) {
     target === "application"
       ? "/developer/analytics/v1_beta/rate_limit/"
       : "/developer/analytics/v1_beta/user_rate_limit/",
-    getAnalyticsBaseUrl(mode),
+    getEbayApiBaseUrl(mode),
   );
   url.searchParams.set("api_name", "tradingapi");
   url.searchParams.set("api_context", "tradingapi");

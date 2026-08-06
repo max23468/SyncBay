@@ -2,15 +2,7 @@ import { EbayConnectionStatus, type EbayConnection } from "@prisma/client";
 
 import prisma from "../db.server";
 import { decryptSecret, encryptSecret } from "./crypto.server";
-import { getEbayBasicAuthHeader, getEbayTokenUrl } from "./ebay-environment.server";
-
-interface EbayTokenResponse {
-  access_token?: string;
-  error?: string;
-  error_description?: string;
-  expires_in?: number;
-  scope?: string;
-}
+import { EbayOAuthRequestError, requestEbayOAuthToken } from "./ebay-oauth.server";
 
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 7200;
@@ -58,58 +50,49 @@ async function refreshEbayAccessToken(connection: EbayConnection) {
     throw new EbayTokenError("Refresh token eBay scaduto: ricollega eBay.");
   }
 
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: decryptSecret(connection.encryptedRefreshToken),
-  });
   const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
-  if (scopes) body.set("scope", scopes);
-
-  let response: Response;
-  let json: EbayTokenResponse;
+  const refreshToken = decryptSecret(connection.encryptedRefreshToken);
+  let token;
 
   try {
-    // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per identificare refresh token non autorizzati; lo status è verificato subito dopo.
-    response = await fetch(getEbayTokenUrl(connection.environment), {
-      body,
-      headers: {
-        Authorization: `Basic ${getEbayBasicAuthHeader()}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+    token = await requestEbayOAuthToken({
+      environment: connection.environment,
+      grant: {
+        refreshToken,
+        scope: scopes,
+        type: "refresh_token",
       },
-      method: "POST",
     });
-    json = (await response.json()) as EbayTokenResponse;
-  } catch {
-    throw new EbayTokenError("Errore di rete durante refresh token eBay.");
-  }
-
-  const shouldMarkReconnect =
-    !response.ok &&
-    (response.status === 401 || response.status === 403 || isAuthTokenError(json.error));
-
-  if (!response.ok || !json.access_token) {
-    if (shouldMarkReconnect) {
+  } catch (error) {
+    if (
+      error instanceof EbayOAuthRequestError &&
+      (error.status === 401 || error.status === 403 || isAuthTokenError(error.code))
+    ) {
       await markReconnectRequired(connection.id);
     }
 
     throw new EbayTokenError(
-      json.error_description ?? json.error ?? "Refresh token eBay non riuscito.",
+      error instanceof EbayOAuthRequestError
+        ? error.status === null
+          ? "Errore di rete durante refresh token eBay."
+          : error.message
+        : "Refresh token eBay non riuscito.",
     );
   }
 
-  const tokenExpiresAt = secondsFromNow(json.expires_in ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS);
+  const tokenExpiresAt = secondsFromNow(token.expiresIn ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS);
   await prisma.ebayConnection.update({
     data: {
-      encryptedAccessToken: encryptSecret(json.access_token),
+      encryptedAccessToken: encryptSecret(token.accessToken),
       lastRefreshAt: new Date(),
-      scopes: json.scope ?? connection.scopes,
+      scopes: token.scope ?? connection.scopes,
       tokenExpiresAt,
     },
     where: { id: connection.id },
   });
 
   return {
-    accessToken: json.access_token,
+    accessToken: token.accessToken,
     refreshed: true,
   };
 }

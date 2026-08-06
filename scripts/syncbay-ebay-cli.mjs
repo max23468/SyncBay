@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-import { getEbayTokenUrl } from "../app/services/ebay-environment.server.ts";
+import { requestEbayOAuthToken } from "../app/services/ebay-oauth.server.ts";
 import { querySupabaseJson, sqlQuote } from "./supabase-cli-env.mjs";
 import { selectTokenEncryptionKey } from "./syncbay-token-key-source.mjs";
 
@@ -106,45 +106,31 @@ export async function getAccessToken(connection) {
     throw new Error("Refresh token eBay assente.");
   }
 
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: decryptSecret(connection.encryptedRefreshToken),
-  });
   const scopes = connection.scopes?.trim() || process.env.EBAY_SCOPES?.trim();
-  if (scopes) body.set("scope", scopes);
-
-  const response = await fetch(getEbayTokenUrl(connection.environment), {
-    body,
-    headers: {
-      Authorization: `Basic ${Buffer.from(
-        `${requiredEnv("EBAY_CLIENT_ID")}:${requiredEnv("EBAY_CLIENT_SECRET")}`,
-        "utf8",
-      ).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+  const token = await requestEbayOAuthToken({
+    environment: connection.environment,
+    grant: {
+      refreshToken: decryptSecret(connection.encryptedRefreshToken),
+      scope: scopes,
+      type: "refresh_token",
     },
-    method: "POST",
   });
-  const json = await response.json();
 
-  if (!response.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? "Refresh token eBay non riuscito.");
-  }
-
-  const tokenExpiresAt = new Date(Date.now() + Number(json.expires_in ?? 7200) * 1000);
-  const encryptedAccessToken = encryptSecret(json.access_token);
+  const tokenExpiresAt = new Date(Date.now() + Number(token.expiresIn ?? 7200) * 1000);
+  const encryptedAccessToken = encryptSecret(token.accessToken);
 
   await querySupabaseJson(`
 update "EbayConnection"
 set "encryptedAccessToken" = ${sqlQuote(encryptedAccessToken)},
     "lastRefreshAt" = now(),
     "tokenExpiresAt" = ${sqlQuote(tokenExpiresAt.toISOString())}::timestamp,
-    "scopes" = coalesce(${sqlQuote(json.scope ?? null)}, "scopes"),
+    "scopes" = coalesce(${sqlQuote(token.scope ?? null)}, "scopes"),
     "updatedAt" = now()
 where id = ${sqlQuote(connection.id)}
 returning id;
 `);
 
-  return { accessToken: json.access_token, refreshed: true };
+  return { accessToken: token.accessToken, refreshed: true };
 }
 
 export function decryptIfEnvelope(value) {

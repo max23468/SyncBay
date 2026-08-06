@@ -3,26 +3,13 @@ import { AuditEventType, EbayConnectionStatus } from "@prisma/client";
 import prisma from "../db.server";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
-import {
-  getEbayBasicAuthHeader,
-  getEbayEnvironment,
-  getEbayMarketplaceId,
-  getEbayTokenUrl,
-  requiredEnv,
-} from "./ebay-environment.server";
+import { getEbayEnvironment, getEbayMarketplaceId, requiredEnv } from "./ebay-environment.server";
+import { requestEbayOAuthToken } from "./ebay-oauth.server";
 import { ensureShopForSession, getEbayRuntimeReadiness } from "./syncbay.server";
 
 interface ShopifySessionLike {
   shop: string;
   scope?: string | null;
-}
-
-interface EbayTokenResponse {
-  access_token: string;
-  expires_in?: number;
-  refresh_token?: string;
-  refresh_token_expires_in?: number;
-  scope?: string;
 }
 
 interface EbayUserResponse {
@@ -97,12 +84,12 @@ export async function completeEbayAuthorization({ code, state }: { code: string;
   await consumeOAuthState(oauthState.id);
 
   const token = await exchangeAuthorizationCode(code);
-  const ebayUser = await fetchEbayUser(token.access_token);
+  const ebayUser = await fetchEbayUser(token.accessToken);
   const connectedAt = new Date();
-  const refreshTokenExpiresAt = token.refresh_token_expires_in
-    ? secondsFromNow(token.refresh_token_expires_in)
+  const refreshTokenExpiresAt = token.refreshTokenExpiresIn
+    ? secondsFromNow(token.refreshTokenExpiresIn)
     : null;
-  const tokenExpiresAt = token.expires_in ? secondsFromNow(token.expires_in) : null;
+  const tokenExpiresAt = token.expiresIn ? secondsFromNow(token.expiresIn) : null;
   const scopes = token.scope ?? getEbayScopes().join(" ");
 
   await prisma.$transaction([
@@ -115,8 +102,8 @@ export async function completeEbayAuthorization({ code, state }: { code: string;
       },
       create: {
         connectedAt,
-        encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : null,
+        encryptedAccessToken: encryptSecret(token.accessToken),
+        encryptedRefreshToken: token.refreshToken ? encryptSecret(token.refreshToken) : null,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         marketplaceId: getEbayMarketplaceId(),
@@ -128,8 +115,8 @@ export async function completeEbayAuthorization({ code, state }: { code: string;
       },
       update: {
         connectedAt,
-        encryptedAccessToken: encryptSecret(token.access_token),
-        encryptedRefreshToken: token.refresh_token ? encryptSecret(token.refresh_token) : undefined,
+        encryptedAccessToken: encryptSecret(token.accessToken),
+        encryptedRefreshToken: token.refreshToken ? encryptSecret(token.refreshToken) : undefined,
         ebayUserId: ebayUser.userId,
         environment: getEbayEnvironment(),
         refreshTokenExpiresAt: refreshTokenExpiresAt ?? undefined,
@@ -193,29 +180,14 @@ async function fetchEbayUser(accessToken: string) {
 }
 
 async function exchangeAuthorizationCode(code: string) {
-  // react-doctor-disable-next-line react-doctor/no-fetch-response-used-without-status-check -- il payload eBay viene letto prima di response.ok per propagare error_description; lo status è verificato subito dopo.
-  const response = await fetch(getEbayTokenUrl(), {
-    body: new URLSearchParams({
+  return requestEbayOAuthToken({
+    environment: getEbayEnvironment(),
+    grant: {
       code,
-      grant_type: "authorization_code",
-      redirect_uri: requiredEnv("EBAY_RU_NAME"),
-    }),
-    headers: {
-      Authorization: `Basic ${getEbayBasicAuthHeader()}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      redirectUri: requiredEnv("EBAY_RU_NAME"),
+      type: "authorization_code",
     },
-    method: "POST",
   });
-  const json = (await response.json()) as Partial<EbayTokenResponse> & {
-    error?: string;
-    error_description?: string;
-  };
-
-  if (!response.ok || !json.access_token) {
-    throw new Error(json.error_description ?? json.error ?? "Token OAuth eBay non ottenuto.");
-  }
-
-  return json as EbayTokenResponse;
 }
 
 function getAuthorizeUrl() {
