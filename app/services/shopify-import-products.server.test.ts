@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test, vi } from "vitest";
+import { beforeEach, test, vi } from "vitest";
 
 const fakes = vi.hoisted(() => ({
-  inventory: vi.fn(async () => ({
+  inventory: vi.fn(async (): Promise<Record<string, unknown>> => ({
     inventoryItemGid: "gid://shopify/InventoryItem/1",
     locationGid: "gid://shopify/Location/1",
     quantity: 2,
@@ -61,10 +61,38 @@ vi.mock("./syncbay-product-facets.server", () => ({
 import { buildImportPreview } from "./import-preview.server";
 import {
   buildShopifyDraftProductInputs,
-  createShopifyDraftProductSafely,
+  createShopifyDraftProductSafely as createShopifyDraftProductSafelyImpl,
 } from "./shopify-import-products.server";
 
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
 test("l’aggiornamento eBay riallinea prodotto e variante Shopify prima di pubblicare", async () => {
+  const mutations: string[] = [];
+  const result = await runProductSync(getActiveDraftProduct(), getMappedProductAdmin(mutations));
+
+  assert.equal(result.status, "created");
+  assert.deepEqual(mutations, ["product", "variant"]);
+  assert.equal(fakes.inventory.mock.calls.length, 1);
+  assert.equal(fakes.media.mock.calls.length, 1);
+  assert.equal(fakes.publication.mock.calls.length, 1);
+});
+
+test("non pubblica un prodotto ACTIVE quando l’inventario non è sincronizzato", async () => {
+  fakes.inventory.mockResolvedValueOnce({
+    errorMessage: "Inventario sintetico non sincronizzato.",
+    status: "failed",
+  });
+
+  const result = await runProductSync(getActiveDraftProduct(), getMappedProductAdmin());
+
+  assert.equal(result.status, "failed");
+  assert.match(result.errorMessage, /Pubblicazione prodotto Shopify rinviata/);
+  assert.equal(fakes.publication.mock.calls.length, 0);
+});
+
+function getActiveDraftProduct() {
   const draftProduct = buildShopifyDraftProductInputs(
     buildImportPreview([
       {
@@ -80,7 +108,10 @@ test("l’aggiornamento eBay riallinea prodotto e variante Shopify prima di pubb
     "ACTIVE",
   )[0];
   assert.ok(draftProduct);
-  const mutations: string[] = [];
+  return draftProduct;
+}
+
+function getMappedProductAdmin(mutations: string[] = []) {
   const product = {
     descriptionHtml: "",
     id: "gid://shopify/Product/1",
@@ -99,7 +130,7 @@ test("l’aggiornamento eBay riallinea prodotto e variante Shopify prima di pubb
       ],
     },
   };
-  const admin = {
+  return {
     graphql: async (query: string) => {
       if (query.includes("SyncBayFindMappedProductVariant")) {
         return Response.json({
@@ -150,18 +181,17 @@ test("l’aggiornamento eBay riallinea prodotto e variante Shopify prima di pubb
       throw new Error(`Query Shopify inattesa: ${query}`);
     },
   };
+}
 
-  const result = await createShopifyDraftProductSafely(admin, draftProduct, {
+async function runProductSync(
+  draftProduct: ReturnType<typeof getActiveDraftProduct>,
+  admin: ReturnType<typeof getMappedProductAdmin>,
+) {
+  return createShopifyDraftProductSafelyImpl(admin, draftProduct, {
     defaultLocationGid: "gid://shopify/Location/1",
     jobId: "job-1",
     publicationOptions: { publicationIds: ["gid://shopify/Publication/1"] },
     reuseOnly: false,
     shopId: "shop-1",
   });
-
-  assert.equal(result.status, "created");
-  assert.deepEqual(mutations, ["product", "variant"]);
-  assert.equal(fakes.inventory.mock.calls.length, 1);
-  assert.equal(fakes.media.mock.calls.length, 1);
-  assert.equal(fakes.publication.mock.calls.length, 1);
-});
+}
