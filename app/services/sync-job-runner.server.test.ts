@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { SyncJobType } from "@prisma/client";
+import { SyncJobStatus, SyncJobType } from "@prisma/client";
 import { test, vi } from "vitest";
 
 const fakes = vi.hoisted(() => ({
@@ -7,6 +7,7 @@ const fakes = vi.hoisted(() => ({
   claim: vi.fn(async (job) => job),
   conflicts: vi.fn(async (job) => result(job)),
   count: vi.fn(async () => dueCounts()),
+  currentStatus: "RUNNING" as string,
   enqueue: vi.fn(async () => {}),
   find: vi.fn(async () => []),
   import: vi.fn(async (job) => result(job)),
@@ -15,6 +16,14 @@ const fakes = vi.hoisted(() => ({
   maintenance: vi.fn(async () => ({ cleaned: 0 })),
   recover: vi.fn(async () => {}),
   stock: vi.fn(async (job) => result(job)),
+}));
+
+vi.mock("../db.server", () => ({
+  default: {
+    syncJob: {
+      findUnique: async () => ({ status: fakes.currentStatus }),
+    },
+  },
 }));
 
 vi.mock("./sync-job-scheduling.server", () => ({
@@ -47,7 +56,7 @@ vi.mock("./sync-job-conflicts.server", () => ({
   runDetectShopifyChangesJob: fakes.conflicts,
 }));
 
-import type { DueSyncJob } from "./sync-job-shared.server";
+import { getInterruptedRunningSyncJobResult, type DueSyncJob } from "./sync-job-shared.server";
 import { runDueSyncJob, runDueSyncJobs } from "./sync-job-runner.server";
 
 test("runDueSyncJobs coordina una coda vuota senza possedere famiglie di job", async () => {
@@ -76,6 +85,16 @@ test("il dispatcher inoltra ogni tipo alla sua famiglia", async () => {
     assert.equal((await runDueSyncJob(job)).status, "succeeded");
     assert.equal(worker.mock.calls.at(-1)?.[0], job);
   }
+});
+
+test("interrompe il lavoro provider quando il job non è più RUNNING", async () => {
+  const job = makeJob(SyncJobType.SYNC_INCREMENTAL);
+
+  fakes.currentStatus = SyncJobStatus.RUNNING;
+  assert.equal(await getInterruptedRunningSyncJobResult(job), null);
+
+  fakes.currentStatus = SyncJobStatus.CANCELLED;
+  assert.equal((await getInterruptedRunningSyncJobResult(job))?.status, "skipped");
 });
 
 function makeJob(type: SyncJobType) {

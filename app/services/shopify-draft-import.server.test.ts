@@ -9,6 +9,7 @@ import {
 } from "../lib/syncbay-catalog-import-execution";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
+import { markShopifyProductSoldOut } from "./shopify-import-inventory.server";
 import { downloadImageForStaging } from "./shopify-import-media.server";
 import { isDraftProductUnchangedSinceLastEbaySnapshot } from "./shopify-import-persistence.server";
 
@@ -126,6 +127,47 @@ test("the real catalog executor cannot create or finalize an internal job", () =
 
   assert.doesNotMatch(importSource, /prisma\.syncJob\.(?:create|update|upsert)/);
   assert.doesNotMatch(importSource, /startDraftImportJob|finishDraftImportJob/);
+});
+
+test("l’esaurito usa la variante Shopify mappata senza ripiegare sulla prima", async () => {
+  const queries: string[] = [];
+  const mappedVariantGid = "gid://shopify/ProductVariant/2";
+  const result = await markShopifyProductSoldOut(
+    {
+      graphql: async (query, options) => {
+        if (query.includes("SyncBaySoldOutVariantLookup")) {
+          queries.push("variant");
+          assert.equal(options?.variables?.id, mappedVariantGid);
+          return Response.json({
+            data: { node: { id: mappedVariantGid, inventoryItem: null } },
+          });
+        }
+        if (query.includes("SyncBaySetVariantInventoryPolicyDeny")) {
+          queries.push("policy");
+          const variants = options?.variables?.variants as Array<{ id: string }> | undefined;
+          assert.equal(variants?.[0]?.id, mappedVariantGid);
+          return Response.json({
+            data: { productVariantsBulkUpdate: { productVariants: [], userErrors: [] } },
+          });
+        }
+        if (query.includes("SyncBayUpdateProductTag")) {
+          queries.push("tag");
+          return Response.json({ data: { tagsAdd: { userErrors: [] } } });
+        }
+
+        throw new Error(`Query Shopify inattesa: ${query}`);
+      },
+    },
+    {
+      jobId: "job-sold-out",
+      locationGid: null,
+      productGid: "gid://shopify/Product/1",
+      variantGid: ` ${mappedVariantGid} `,
+    },
+  );
+
+  assert.deepEqual(queries, ["variant", "policy", "tag"]);
+  assert.ok(result.warnings.includes("Scorta non azzerata: location Shopify predefinita assente."));
 });
 
 test("image staging rejects private destinations and oversized streams", async () => {
