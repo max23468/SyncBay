@@ -2,6 +2,13 @@ interface ShopifyAdminGraphqlClient {
   graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
+export interface ShopifyLocation {
+  fulfillsOnlineOrders: boolean;
+  id: string;
+  isActive: boolean;
+  name: string;
+}
+
 interface LocationEditResponse {
   data?: {
     locationEdit?: {

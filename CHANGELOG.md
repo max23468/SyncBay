@@ -251,6 +251,17 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.86] — 2026-08-07
+
+### Sotto il cofano
+
+- Separati i coordinatori di stato/catalogo/import, importazione Shopify e job
+  runner per responsabilità funzionale; riassorbiti i micro-moduli a uso singolo
+  e aggiunta copertura diretta dei flussi incrementali, pricing, faccette, stock,
+  overview, catalogo e aggiornamento Shopify da eBay. La pagina di importazione
+  mantiene invariato il flusso, con le tre sezioni operative estratte dalla
+  route.
+
 ## [1.0.85] — 2026-08-06
 
 ### Correzioni
@@ -4152,6 +4163,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.86]: #1086--2026-08-07
 [1.0.85]: #1085--2026-08-06
 [1.0.84]: #1084--2026-08-06
 [1.0.83]: #1083--2026-07-26

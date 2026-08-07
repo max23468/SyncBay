@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { windowImportPreviewResult } from "./syncbay-import-preview-window.ts";
+import {
+  normalizeImportPreviewWindowFilter,
+  windowImportPreviewResult,
+} from "./syncbay-import-preview-window.ts";
+
+test("normalizes only supported preview filters", () => {
+  assert.equal(normalizeImportPreviewWindowFilter("ready"), "ready");
+  assert.equal(normalizeImportPreviewWindowFilter("unsupported"), "all");
+  assert.equal(normalizeImportPreviewWindowFilter(null), "all");
+});
 
 test("keeps preview summary complete while sending only the requested item page", () => {
   const preview = makePreview(["a", "b", "c", "d", "e"]);

@@ -100,8 +100,8 @@ mostrate al negoziante usano il linguaggio "esaurito". Anche lo stato UI interno
 
 - `docs/guides/sync-engine.md`
 - `docs/data-model.md`
-- `app/services/sync-job-runner.server.ts` (job che mette in esaurito il listing
-  inattivo)
-- `app/services/shopify-draft-import.server.ts` (`markShopifyProductSoldOut`,
+- `app/services/sync-job-incremental.server.ts` (job che mette in esaurito il
+  listing inattivo)
+- `app/services/shopify-import-inventory.server.ts` (`markShopifyProductSoldOut`,
   rimozione marcatori al rientro)
 - Shopify docs, disponibilità e politica di inventario delle varianti.

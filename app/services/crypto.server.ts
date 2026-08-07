@@ -1,7 +1,5 @@
 import crypto from "node:crypto";
 
-import { isEncryptedSecretEnvelope } from "../lib/syncbay-secret-envelope";
-
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 
@@ -36,7 +34,13 @@ export function decryptSecret(secret: string) {
 }
 
 export function encryptSecretIfNeeded(value: string) {
-  if (!value || isEncryptedSecretEnvelope(value)) return value;
+  const [version, iv, tag, ciphertext, ...extra] = value.split(".");
+  if (
+    !value ||
+    (version === "v1" && Boolean(iv) && Boolean(tag) && Boolean(ciphertext) && extra.length === 0)
+  ) {
+    return value;
+  }
 
   return encryptSecret(value);
 }

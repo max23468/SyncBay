@@ -96,6 +96,7 @@ Cambi solo di presentazione/dati, senza nuova decisione architetturale:
 
 - `docs/decisions/0010-ui-design-layer-e-marchi-terzi.md`
 - `app/lib/syncbay-sync-interval.ts`
-- `app/services/syncbay.server.ts` (`disconnectEbayConnection`,
-  `updateSyncTargetSeconds`, `getShopSettingsState`)
+- `app/services/syncbay-operations.server.ts` (`disconnectEbayConnection`)
+- `app/services/syncbay-product-updates.server.ts` (`updateSyncTargetSeconds`)
+- `app/services/syncbay-state.server.ts` (`getShopSettingsState`)
 - `app/services/ebay-account-deletion.server.ts` (flusso compliance distinto)

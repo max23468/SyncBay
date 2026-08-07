@@ -4,7 +4,6 @@ import {
   createShopifyAdminGraphqlClient,
   getOfflineShopifySessionId,
 } from "../lib/syncbay-shopify-admin";
-import { shouldRefreshOfflineShopifySession } from "../lib/syncbay-shopify-session-refresh";
 import { decryptSecret, encryptSecret } from "./crypto.server";
 
 export async function getShopifyAdminGraphqlClient(shopDomain: string) {
@@ -128,7 +127,8 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
 
   const session = decryptPersistedSession(persisted);
 
-  if (!shouldRefreshOfflineShopifySession(session.expires, input.now())) {
+  const now = input.now();
+  if (session.expires && session.expires.getTime() > now.getTime() + 5 * 60 * 1000) {
     return session;
   }
 
@@ -143,10 +143,7 @@ export async function getUsableOfflineShopifySessionWithPorts(input: {
     );
   }
 
-  if (
-    session.refreshTokenExpires &&
-    session.refreshTokenExpires.getTime() <= input.now().getTime()
-  ) {
+  if (session.refreshTokenExpires && session.refreshTokenExpires.getTime() <= now.getTime()) {
     throw new Error(
       "Refresh token Shopify offline scaduto: riapri l'app Shopify per autorizzare di nuovo SyncBay.",
     );

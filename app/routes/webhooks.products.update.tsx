@@ -6,7 +6,7 @@ import { getSyncBayRequestId, logSyncBayRuntimeEvent } from "../lib/syncbay-runt
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
-} from "../services/syncbay.server";
+} from "../services/syncbay-operations.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const requestId = getSyncBayRequestId(request);

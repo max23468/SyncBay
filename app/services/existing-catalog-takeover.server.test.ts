@@ -11,7 +11,8 @@ import {
   applyExistingCatalogTakeoverClaims,
   runExistingCatalogTakeoverStart,
 } from "./existing-catalog-takeover.server";
-import { buildCatalogImportBatchPayload, type ShopifyAdminGraphqlClient } from "./syncbay.server";
+import { buildCatalogImportBatchPayload } from "./syncbay-import.server";
+import type { ShopifyAdminGraphqlClient } from "./syncbay-shared.server";
 
 const admin: ShopifyAdminGraphqlClient = {
   graphql: async () => new Response(JSON.stringify({ data: {} })),
@@ -264,7 +265,9 @@ function makeWizard(items: ImportPreviewItem[]) {
       readCount: items.length,
       totalAvailable: items.length,
     },
-  } as unknown as Awaited<ReturnType<(typeof import("./syncbay.server"))["getImportWizardState"]>>;
+  } as unknown as Awaited<
+    ReturnType<(typeof import("./syncbay-import.server"))["getImportWizardState"]>
+  >;
 }
 
 function makePreviewResult(items: ImportPreviewItem[]) {

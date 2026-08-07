@@ -5,12 +5,16 @@ Integra il file root per `app/services/**`. Per i gate vale la riga
 
 ## Ownership
 
-- `sync-job-runner.server.ts`: claim, fairness, deadline e transizioni dei job.
-  Invoca i worker ma non possiede UI o configurazione.
-- `syncbay.server.ts`: facade usata dalle route per stato, impostazioni, retry,
-  conflitti e import.
-- `shopify-draft-import.server.ts`: scritture prodotto/inventario/media Shopify,
-  baseline e riuso catalogo.
+- `sync-job-runner.server.ts`: coordinamento sottile del tick; scheduling/claim
+  e le famiglie import, incrementale, stock e conflitti vivono nei moduli
+  `sync-job-*.server.ts` dedicati.
+- `syncbay-state.server.ts`, `syncbay-catalog.server.ts`,
+  `syncbay-import.server.ts`, `syncbay-product-updates.server.ts` e
+  `syncbay-operations.server.ts`: superfici route separate per letture, catalogo,
+  importazione, aggiornamenti prodotto e comandi operativi.
+- `shopify-draft-import.server.ts` coordina l'import; prodotti/varianti,
+  inventario, media e persistenza vivono nei rispettivi moduli
+  `shopify-import-*.server.ts`.
 - `shopify-existing-products.server.ts`: scansione e matching conservativo del
   catalogo Shopify esistente.
 - `shopify-conflict-detection.server.ts`: letture Shopify aggregate e apertura
@@ -22,11 +26,12 @@ Integra il file root per `app/services/**`. Per i gate vale la riga
 
 - Il runner è l'unico proprietario delle transizioni dei job in esecuzione: non
   duplicare claim, completamento o recovery in route e script.
-- La logica deterministica sta in `app/lib` con test puri; i servizi coordinano
-  Prisma e provider.
+- La logica deterministica riusata o non banale sta in `app/lib` con test puri;
+  una condizione triviale propria di un solo flusso resta nel chiamante ed è
+  coperta dal test del servizio. I servizi coordinano Prisma e provider.
 - Usa gli adapter e le primitive Shopify condivise: niente fetch, retry o
   decifratura paralleli dentro un singolo servizio.
 - Un errore provider o di una singola riga non promuove a successo l'intero
   batch né lascia job `RUNNING` dopo la fine della richiesta.
-- Runner, `syncbay.server.ts` e import sono i tre hotspot: se il comportamento
-  richiesto appartiene a uno solo, non toccare gli altri.
+- Runner e import sono gli hotspot principali: se il comportamento richiesto
+  appartiene a una sola superficie, non toccare le altre.

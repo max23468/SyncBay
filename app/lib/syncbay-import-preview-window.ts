@@ -8,6 +8,24 @@ export type ImportPreviewWindowFilter =
   | "ready"
   | "reimport";
 
+export const IMPORT_PREVIEW_PAGE_SIZE = 10;
+
+export function normalizeImportPreviewWindowFilter(
+  value: string | null,
+): ImportPreviewWindowFilter {
+  if (
+    value === "error" ||
+    value === "imported" ||
+    value === "importing" ||
+    value === "ready" ||
+    value === "reimport"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
 type WindowablePreviewItem = {
   itemId: string;
   status: string;

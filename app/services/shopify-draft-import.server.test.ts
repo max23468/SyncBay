@@ -9,10 +9,8 @@ import {
 } from "../lib/syncbay-catalog-import-execution";
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
-import {
-  downloadImageForStaging,
-  isDraftProductUnchangedSinceLastEbaySnapshot,
-} from "./shopify-draft-import.server";
+import { downloadImageForStaging } from "./shopify-import-media.server";
+import { isDraftProductUnchangedSinceLastEbaySnapshot } from "./shopify-import-persistence.server";
 
 function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
   const executedJobIds: string[] = [];
@@ -197,7 +195,7 @@ test("image staging connects to the public address validated by DNS", async () =
 
 test("image staging supports all-address lookups for its pinned DNS resolution", () => {
   const importSource = readFileSync(
-    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    new URL("./shopify-import-media.server.ts", import.meta.url),
     "utf8",
   );
 
@@ -206,7 +204,7 @@ test("image staging supports all-address lookups for its pinned DNS resolution",
 
 test("image staging omits the response body for no-content HTTP statuses", () => {
   const importSource = readFileSync(
-    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    new URL("./shopify-import-media.server.ts", import.meta.url),
     "utf8",
   );
 
@@ -215,7 +213,7 @@ test("image staging omits the response body for no-content HTTP statuses", () =>
 
 test("image staging rejects response-conversion errors", () => {
   const importSource = readFileSync(
-    new URL("./shopify-draft-import.server.ts", import.meta.url),
+    new URL("./shopify-import-media.server.ts", import.meta.url),
     "utf8",
   );
 

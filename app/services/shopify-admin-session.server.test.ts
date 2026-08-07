@@ -19,6 +19,22 @@ function row(accessToken: string, refreshToken: string) {
   };
 }
 
+test("keeps sessions outside the five-minute refresh safety window", async () => {
+  let refreshCalls = 0;
+  const result = await getUsableOfflineShopifySessionWithPorts({
+    compareAndSwap: async () => true,
+    now: () => new Date("2026-07-11T09:54:59Z"),
+    readSession: async () => row("current", "refresh"),
+    refresh: async () => {
+      refreshCalls += 1;
+      throw new Error("refresh non atteso");
+    },
+  });
+
+  assert.equal(result.accessToken, "current");
+  assert.equal(refreshCalls, 0);
+});
+
 test("refreshes outside persistence and then uses compare-and-swap", async () => {
   const events: string[] = [];
   const result = await getUsableOfflineShopifySessionWithPorts({

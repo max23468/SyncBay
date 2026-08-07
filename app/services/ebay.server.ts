@@ -6,7 +6,7 @@ import { createOAuthState, encryptSecret, hashState } from "./crypto.server";
 import { getEbayEnvironment, getEbayMarketplaceId, requiredEnv } from "./ebay-environment.server";
 import { requestEbayOAuthToken } from "./ebay-oauth.server";
 import { requestEbayRestJson } from "./ebay-rest.server";
-import { ensureShopForSession, getEbayRuntimeReadiness } from "./syncbay.server";
+import { ensureShopForSession, getEbayRuntimeReadiness } from "./syncbay-operations.server";
 
 interface ShopifySessionLike {
   shop: string;

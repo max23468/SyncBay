@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 import {
   extractWebhookResourceId,
   recordShopifyWebhookPlaceholder,
-} from "../services/syncbay.server";
+} from "../services/syncbay-operations.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { payload, shop, topic, webhookId } = await authenticate.webhook(request);

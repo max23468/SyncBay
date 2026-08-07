@@ -110,8 +110,8 @@ const PAGES = {
     path: "/app/activity",
     fixture: getDashboardFixture,
     loader: async (_mod, session) => {
-      const services = await loadServices();
-      return services.getOverviewState(session);
+      const services = await loadServices("/app/services/syncbay-state.server.ts");
+      return services.getActivityState(session);
     },
   },
   catalogo: {
@@ -119,7 +119,7 @@ const PAGES = {
     path: "/app/catalog",
     fixture: getCatalogFixture,
     loader: async (_mod, session) => {
-      const services = await loadServices();
+      const services = await loadServices("/app/services/syncbay-catalog.server.ts");
       return services.getCatalogPageState(session);
     },
   },
@@ -128,7 +128,7 @@ const PAGES = {
     path: "/app/conflicts",
     fixture: getConflictsFixture,
     loader: async (_mod, session) => {
-      const services = await loadServices();
+      const services = await loadServices("/app/services/syncbay-catalog.server.ts");
       return services.getConflictsPageState(session);
     },
   },
@@ -143,7 +143,7 @@ const PAGES = {
     path: "/app/settings",
     fixture: getSettingsFixture,
     loader: async (_mod, session) => {
-      const services = await loadServices();
+      const services = await loadServices("/app/services/syncbay-state.server.ts");
       return services.getShopSettingsState(session);
     },
   },
@@ -152,7 +152,7 @@ const PAGES = {
     path: "/app",
     fixture: getDashboardFixture,
     loader: async (mod, session) => {
-      const services = await loadServices();
+      const services = await loadServices("/app/services/syncbay-state.server.ts");
       return services.getOverviewState(session);
     },
   },
@@ -181,12 +181,12 @@ const vite = await createServer({
   logLevel: "error",
 });
 
-let cachedServices;
-async function loadServices() {
-  if (!cachedServices) {
-    cachedServices = await vite.ssrLoadModule("/app/services/syncbay.server.ts");
+const cachedServices = new Map();
+async function loadServices(modulePath) {
+  if (!cachedServices.has(modulePath)) {
+    cachedServices.set(modulePath, await vite.ssrLoadModule(modulePath));
   }
-  return cachedServices;
+  return cachedServices.get(modulePath);
 }
 
 async function loadSession() {
