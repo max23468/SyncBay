@@ -147,12 +147,17 @@ const checks = [
       "Preparazione Shopify",
       "Anteprima catalogo",
       "Dopo l'import",
+      "Anteprima prima",
+      "syncbay-stepper",
+    ],
+  },
+  {
+    file: "app/components/ImportPreviewSections.tsx",
+    needles: [
       "Pronti da importare",
       "Da reimportare",
       "Modifica impostazioni",
       "Rinomina location",
-      "Anteprima prima",
-      "syncbay-stepper",
     ],
   },
   {

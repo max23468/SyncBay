@@ -41,11 +41,11 @@ import {
   shouldShowOverviewStatusHero,
   type NextActionKind,
 } from "../lib/syncbay-ui-state";
+import { getOverviewState } from "../services/syncbay-state.server";
 import {
-  getOverviewState,
   requestSyncJobRetry,
   resolveSyncConflict,
-} from "../services/syncbay.server";
+} from "../services/syncbay-product-updates.server";
 import { authenticate } from "../shopify.server";
 
 type Dashboard = Awaited<ReturnType<typeof getOverviewState>>;

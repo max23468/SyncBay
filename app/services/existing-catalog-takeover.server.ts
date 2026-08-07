@@ -20,17 +20,16 @@ import { buildShopifyProductFacetMetafields } from "../lib/syncbay-product-facet
 import { buildSyncBayProductMetafields } from "../lib/syncbay-shopify-product-metafields";
 import { getEbayMarketplaceId } from "./ebay-environment.server";
 import { recordProductSnapshotsInTransaction } from "./product-history.server";
-import { getDraftImportLimit } from "./shopify-draft-import.server";
+import { getDraftImportLimit } from "./shopify-import-shared.server";
 import {
   CATALOG_IMPORT_MAX_PRODUCTS,
   buildCatalogImportRunId,
-  ensureShopForSession,
   getCatalogImportBlockers,
   getImportWizardState,
   upsertCatalogImportBatchJob,
-  type ShopifyAdminGraphqlClient,
-  type ShopifySessionLike,
-} from "./syncbay.server";
+} from "./syncbay-import.server";
+import { ensureShopForSession } from "./syncbay-operations.server";
+import type { ShopifyAdminGraphqlClient, ShopifySessionLike } from "./syncbay-shared.server";
 
 const TAKEOVER_METAFIELDS_SET_BATCH_SIZE = 20;
 

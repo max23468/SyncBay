@@ -44,16 +44,16 @@ import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { getSyncTargetLabel, SYNC_TARGET_OPTIONS } from "../lib/syncbay-sync-interval";
 import { APP_VERSION, BUILD_DATE } from "../lib/version";
 import { authenticate } from "../shopify.server";
+import { disconnectEbayConnection } from "../services/syncbay-operations.server";
+import { getShopSettingsState } from "../services/syncbay-state.server";
 import {
-  disconnectEbayConnection,
-  getShopSettingsState,
   updateShopSyncEnabled,
   updateDefaultImportProductStatus,
   updateDescriptionRuleSettings,
   updatePricingRuleSettings,
   updateProductPublicationSettings,
   updateSyncTargetSeconds,
-} from "../services/syncbay.server";
+} from "../services/syncbay-product-updates.server";
 
 type SettingsActionData =
   | {

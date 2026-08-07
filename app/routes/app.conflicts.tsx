@@ -39,11 +39,11 @@ import { type ConflictFilter, normalizeConflictFilter } from "../lib/syncbay-con
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { normalizePage } from "../lib/syncbay-pagination";
 import { authenticate } from "../shopify.server";
+import { getConflictsPageState } from "../services/syncbay-catalog.server";
 import {
-  getConflictsPageState,
   resolveBatchSafeConflicts,
   resolveSyncConflict,
-} from "../services/syncbay.server";
+} from "../services/syncbay-product-updates.server";
 
 type Conflicts = Awaited<ReturnType<typeof getConflictsPageState>>;
 type ConflictRow = Conflicts["rows"][number];

@@ -21,7 +21,7 @@ import {
 import { getCatalogAvailabilityLabel, getCatalogStatusLabel } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 import { authenticate } from "../shopify.server";
-import { getCatalogPageState } from "../services/syncbay.server";
+import { getCatalogPageState } from "../services/syncbay-catalog.server";
 
 type Catalog = Awaited<ReturnType<typeof getCatalogPageState>>;
 type CatalogRow = Catalog["rows"][number];

@@ -129,7 +129,8 @@ Search & Discovery e del tema compatibile.
 - `app/lib/syncbay-product-facets.ts`
 - `app/services/import-preview.server.ts`
 - `app/services/ebay-trading-preview.server.ts`
-- `app/services/shopify-draft-import.server.ts`
+- `app/services/shopify-import-products.server.ts`
+- `app/services/sync-job-incremental.server.ts`
 - `scripts/syncbay-product-facets-backfill.mjs`
 - `docs/syncbay-product-technical-plan.md`
 - Shopify Search & Discovery filters:

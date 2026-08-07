@@ -61,5 +61,5 @@ Questa ADR sostituisce soltanto la scelta del trigger esclusivo
 - `docs/decisions/0020-1-0-custom-privata-catalogo-esistente.md`
 - `docs/guides/sync-engine.md`
 - `app/lib/syncbay-order-stock.ts`
-- `app/services/sync-job-runner.server.ts`
+- `app/services/sync-job-stock.server.ts`
 - `shopify.app.toml`

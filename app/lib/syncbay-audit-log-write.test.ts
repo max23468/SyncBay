@@ -8,8 +8,10 @@ const AUDIT_LOG_SERVICE_FILES = [
   "../services/ebay-account-deletion.server.ts",
   "../services/ebay.server.ts",
   "../services/shopify-draft-import.server.ts",
-  "../services/sync-job-runner.server.ts",
-  "../services/syncbay.server.ts",
+  "../services/sync-job-incremental.server.ts",
+  "../services/sync-job-scheduling.server.ts",
+  "../services/sync-job-shared.server.ts",
+  "../services/syncbay-operations.server.ts",
 ];
 
 test("selects only the audit log id after create writes", () => {

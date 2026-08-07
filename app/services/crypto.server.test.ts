@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { decryptSecret, encryptSecret } from "./crypto.server";
+import { decryptSecret, encryptSecret, encryptSecretIfNeeded } from "./crypto.server";
 
 test("normalizes whitespace in TOKEN_ENCRYPTION_KEY so scripts and runtime match", () => {
   const previous = process.env.TOKEN_ENCRYPTION_KEY;
@@ -27,6 +27,20 @@ test("throws when TOKEN_ENCRYPTION_KEY is only whitespace", () => {
   try {
     process.env.TOKEN_ENCRYPTION_KEY = "   ";
     assert.throws(() => encryptSecret("x"), /TOKEN_ENCRYPTION_KEY non configurata/);
+  } finally {
+    process.env.TOKEN_ENCRYPTION_KEY = previous;
+  }
+});
+
+test("encrypts plaintext once and preserves complete v1 envelopes", () => {
+  const previous = process.env.TOKEN_ENCRYPTION_KEY;
+  try {
+    process.env.TOKEN_ENCRYPTION_KEY = "syncbay-crypto-test-key";
+    const encrypted = encryptSecretIfNeeded("token-plain");
+
+    assert.match(encrypted, /^v1\.[^.]+\.[^.]+\.[^.]+$/);
+    assert.equal(encryptSecretIfNeeded(encrypted), encrypted);
+    assert.notEqual(encryptSecretIfNeeded("v1.incomplete"), "v1.incomplete");
   } finally {
     process.env.TOKEN_ENCRYPTION_KEY = previous;
   }

@@ -34,7 +34,8 @@ import {
   getOperationalUiState,
 } from "../lib/syncbay-ui-state";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
-import { getActivityState, requestSyncJobRetry } from "../services/syncbay.server";
+import { getActivityState } from "../services/syncbay-state.server";
+import { requestSyncJobRetry } from "../services/syncbay-product-updates.server";
 import { authenticate } from "../shopify.server";
 
 type Activity = Awaited<ReturnType<typeof getActivityState>>;

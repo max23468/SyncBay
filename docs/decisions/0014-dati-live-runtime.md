@@ -69,4 +69,4 @@ embedded:
 - `docs/decisions/0010-ui-design-layer-e-marchi-terzi.md`
 - `docs/decisions/0013-accento-ui-bay-blue-e-tema.md`
 - `app/routes/app._index.tsx`
-- `app/services/syncbay.server.ts` (`getDashboardState`)
+- `app/services/syncbay-state.server.ts` (`getOverviewState`)

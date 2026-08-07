@@ -79,4 +79,5 @@ prima del timeout HTTP `pg_net` di 90 secondi.
 - `docs/decisions/0019-cadenza-cron-runner.md`
 - `app/lib/syncbay-sync-interval.ts`
 - `app/services/sync-job-runner.server.ts`
+- `app/services/sync-job-scheduling.server.ts`
 - `prisma/migrations/20260623094000_set_runner_cron_five_minutes/migration.sql`

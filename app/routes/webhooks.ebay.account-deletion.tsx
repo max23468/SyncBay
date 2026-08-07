@@ -11,7 +11,7 @@ import { EbayNotificationSignatureError } from "../services/ebay-notifications.s
 import {
   getAccountDeletionChallengeConfig,
   getAccountDeletionPostConfig,
-} from "../services/syncbay.server";
+} from "../services/syncbay-operations.server";
 
 const MAX_NOTIFICATION_BODY_BYTES = 128 * 1024;
 
