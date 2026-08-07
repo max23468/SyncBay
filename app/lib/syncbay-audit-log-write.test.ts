@@ -11,7 +11,9 @@ const AUDIT_LOG_SERVICE_FILES = [
   "../services/sync-job-incremental.server.ts",
   "../services/sync-job-scheduling.server.ts",
   "../services/sync-job-shared.server.ts",
+  "../services/syncbay-import.server.ts",
   "../services/syncbay-operations.server.ts",
+  "../services/syncbay-product-updates.server.ts",
 ];
 
 test("selects only the audit log id after create writes", () => {

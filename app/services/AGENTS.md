@@ -26,8 +26,9 @@ Integra il file root per `app/services/**`. Per i gate vale la riga
 
 - Il runner è l'unico proprietario delle transizioni dei job in esecuzione: non
   duplicare claim, completamento o recovery in route e script.
-- La logica deterministica sta in `app/lib` con test puri; i servizi coordinano
-  Prisma e provider.
+- La logica deterministica riusata o non banale sta in `app/lib` con test puri;
+  una condizione triviale propria di un solo flusso resta nel chiamante ed è
+  coperta dal test del servizio. I servizi coordinano Prisma e provider.
 - Usa gli adapter e le primitive Shopify condivise: niente fetch, retry o
   decifratura paralleli dentro un singolo servizio.
 - Un errore provider o di una singola riga non promuove a successo l'intero
