@@ -33,10 +33,10 @@ test("makes every batch due while preserving its order", () => {
 test("identifica soltanto le sequenze batch ordinate", () => {
   assert.equal(
     getOrderedBatchRunIdentity({
-      payload: { batchIndex: 1, catalogImportRunId: "import-run" },
+      payload: { batchIndex: 1, catalogImportSequenceId: "import-sequence" },
       type: "IMPORT_CATALOG",
     }),
-    "IMPORT_CATALOG:import-run",
+    "IMPORT_CATALOG:import-sequence",
   );
   assert.equal(
     getOrderedBatchRunIdentity({

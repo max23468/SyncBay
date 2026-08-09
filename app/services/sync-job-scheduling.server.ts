@@ -285,7 +285,7 @@ async function findDueCatalogImportSyncJobs(input: {
     : Prisma.empty;
   const orderedBatchBlocker = getOrderedBatchBlockerSql({
     excludeIds: input.excludeIds,
-    runIdKey: "catalogImportRunId",
+    runIdKey: "catalogImportSequenceId",
   });
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
     SELECT candidate."id"

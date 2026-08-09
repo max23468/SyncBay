@@ -112,6 +112,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     now,
     shopId: shop.id,
   });
+  const catalogImportSequenceId = buildCatalogImportSequenceId(shop.id);
   let createdJobCount = 0;
   let existingJobCount = 0;
   let requeuedJobCount = 0;
@@ -123,6 +124,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
       batchCount: batches.length,
       batchIndex,
       catalogImportRunId,
+      catalogImportSequenceId,
       draftLimit,
       ebayItemIds,
       importProductStatus,
@@ -374,6 +376,7 @@ export async function upsertCatalogImportBatchJob(input: {
   batchCount: number;
   batchIndex: number;
   catalogImportRunId: string;
+  catalogImportSequenceId: string;
   draftLimit: number;
   ebayItemIds: string[];
   fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
@@ -469,6 +472,7 @@ export function buildCatalogImportBatchPayload(input: {
   batchCount: number;
   batchIndex: number;
   catalogImportRunId: string;
+  catalogImportSequenceId: string;
   draftLimit: number;
   ebayItemIds: string[];
   fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
@@ -488,6 +492,7 @@ export function buildCatalogImportBatchPayload(input: {
     batchIndex: input.batchIndex + 1,
     catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
     catalogImportRunId: input.catalogImportRunId,
+    catalogImportSequenceId: input.catalogImportSequenceId,
     draftLimit: input.draftLimit,
     ebayItemIds: input.ebayItemIds,
     ...(input.reuseOnly && existingCatalogFieldPoliciesByItemId
@@ -507,6 +512,10 @@ export function buildCatalogImportBatchPayload(input: {
 
 export function buildCatalogImportRunId(input: { now: Date; shopId: string }) {
   return `catalog-import:${input.shopId}:${input.now.toISOString()}:${randomUUID()}`;
+}
+
+export function buildCatalogImportSequenceId(shopId: string) {
+  return `catalog-import-sequence:${shopId}`;
 }
 
 function buildCatalogImportBatchIdempotencyKey(input: {

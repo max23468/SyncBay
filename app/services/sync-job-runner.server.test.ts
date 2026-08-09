@@ -107,11 +107,11 @@ test("blocca la stessa sequenza fallita ma prosegue con lo stock", async () => {
   const jobs = [
     makeJob(SyncJobType.IMPORT_CATALOG, {
       batchIndex: 1,
-      catalogImportRunId: "import-run",
+      catalogImportSequenceId: "import-sequence",
     }),
     makeJob(SyncJobType.IMPORT_CATALOG, {
       batchIndex: 2,
-      catalogImportRunId: "import-run",
+      catalogImportSequenceId: "import-sequence",
     }),
     makeJob(SyncJobType.UPDATE_EBAY_STOCK),
   ];

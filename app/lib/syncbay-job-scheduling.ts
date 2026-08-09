@@ -35,7 +35,7 @@ export function getOrderedBatchRunAfter(now: Date, batchIndex: number, batchCoun
 export function getOrderedBatchRunIdentity(input: { payload: unknown; type: string }) {
   const runIdKey =
     input.type === "IMPORT_CATALOG"
-      ? "catalogImportRunId"
+      ? "catalogImportSequenceId"
       : input.type === "SYNC_INCREMENTAL"
         ? "runId"
         : null;
