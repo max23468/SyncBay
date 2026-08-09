@@ -128,42 +128,58 @@ export async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[];
   const jobs: DueSyncJob[] = [];
 
   for (const lane of input.lanePlan) {
-    const type = lane as SyncJobType;
-    if (type === SyncJobType.SYNC_INCREMENTAL) {
-      const selectedIncrementalJobs = jobs.filter(
-        (job) => job.type === SyncJobType.SYNC_INCREMENTAL,
-      ).length;
-      const regularJobs = await findDueRegularIncrementalSyncJobs({
-        excludeIds: jobs.map((job) => job.id),
-        limit: 1,
-        now: input.now,
-        prioritizeNonReconcile: shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs),
-      });
-      jobs.push(...regularJobs);
+    jobs.push(...(await findNextDueSyncJobForLane({ jobs, lane, now: input.now })));
+  }
 
-      if (regularJobs.length === 0) {
-        const facetOnlyJobs = await findDueSyncJobsForType({
-          excludeIds: jobs.map((job) => job.id),
-          limit: 1,
-          now: input.now,
-          type,
-          where: getFacetOnlyIncrementalSyncJobWhere(),
-        });
-        jobs.push(...facetOnlyJobs);
-      }
-      continue;
+  const runnableTypes = new Set<SyncJobType>(getRunnableSyncJobTypes());
+  for (const lane of RUNNER_LANES) {
+    if (jobs.length >= input.lanePlan.length) break;
+    if (!runnableTypes.has(lane as SyncJobType)) continue;
+
+    while (jobs.length < input.lanePlan.length) {
+      const refill = await findNextDueSyncJobForLane({ jobs, lane, now: input.now });
+      if (refill.length === 0) break;
+      jobs.push(...refill);
     }
+  }
 
-    const typedJobs = await findDueSyncJobsForType({
-      excludeIds: jobs.map((job) => job.id),
+  return jobs;
+}
+
+async function findNextDueSyncJobForLane(input: {
+  jobs: DueSyncJob[];
+  lane: RunnerLane;
+  now: Date;
+}) {
+  const type = input.lane as SyncJobType;
+  if (type !== SyncJobType.SYNC_INCREMENTAL) {
+    return findDueSyncJobsForType({
+      excludeIds: input.jobs.map((job) => job.id),
       limit: 1,
       now: input.now,
       type,
     });
-    jobs.push(...typedJobs);
   }
 
-  return jobs;
+  const selectedIncrementalJobs = input.jobs.filter(
+    (job) => job.type === SyncJobType.SYNC_INCREMENTAL,
+  ).length;
+  const regularJobs = await findDueRegularIncrementalSyncJobs({
+    excludeIds: input.jobs.map((job) => job.id),
+    limit: 1,
+    now: input.now,
+    prioritizeNonReconcile: shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs),
+  });
+
+  if (regularJobs.length > 0) return regularJobs;
+
+  return findDueSyncJobsForType({
+    excludeIds: input.jobs.map((job) => job.id),
+    limit: 1,
+    now: input.now,
+    type,
+    where: getFacetOnlyIncrementalSyncJobWhere(),
+  });
 }
 
 // Un reconcile catalogo si spezza in decine di batch con lo stesso `runAfter`:
