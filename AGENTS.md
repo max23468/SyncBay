@@ -107,19 +107,33 @@ gate a mano. Vincoli che la tabella non dice:
   Prisma Client prima di classificare un errore come regressione.
 - Riporta risultati reali: se un gate non è stato eseguito, dillo.
 
+## Significato di `Pubblica`
+
+Quando il proprietario dice `Pubblica`, `pubblica`, parla di `pubblicare` o usa
+espressioni equivalenti, autorizza l'intero ciclo tecnico applicabile alla
+repository. L'agente non si ferma a stati intermedi: prepara e verifica la
+modifica; crea branch e commit; esegue push; apre o aggiorna la PR; attende e
+soddisfa i soli gate bloccanti; esegue il merge; completa deploy o promozione
+tecnica e verifica live quando applicabili; crea versione, tag e GitHub Release
+quando previsti dalla policy; infine aggiorna e verifica la branch di base,
+elimina branch e worktree temporanei locali e remoti già assorbiti e controlla
+stash e altri residui.
+
+Se un passaggio non è applicabile, lo dichiara e prosegue con gli altri. La
+richiesta di pubblicazione vale come autorizzazione a PR, merge, deploy tecnico
+e release previsti dal ciclo, senza una seconda conferma. Non autorizza
+pubblicazione di temi Shopify live, submission Shopify App Store, billing o
+nuove attivazioni produttive, TestFlight o App Store, invii Aruba, email o
+scansioni reali, né aggiornamenti Notion: queste azioni richiedono una richiesta
+esplicita separata. Non dichiarare `pubblicato` finché il ciclo applicabile e la
+rilettura finale di PR, check, deploy, release e stato Git non sono completi.
+
 ## Git e pubblicazione
 
 Il flusso completo è in `docs/guides/git-e-pubblicazione.md` e
-`docs/guides/versioning-e-release.md`. Cosa intende il maintainer:
-
-- `pubblica`, `manda su GitHub` o `carica`: porta il diff fino a `main` con gate
-  e cleanup e, quando tocca runtime o UI, include il deploy Vercel production
-  verificato.
-- `deploya`: aggiorna e verifica il deployment Vercel production privato anche
-  per diff senza runtime; non implica App Store né billing.
-- `rilascia`: flusso SemVer locale più pubblicazione su GitHub. Una release
-  prodotto reale vuole tag `vX.Y.Z` e GitHub Release (ADR 0008); docs e
-  governance non versionati no.
+`docs/guides/versioning-e-release.md`. Le modifiche a runtime o UI includono il
+deploy Vercel production verificato; una release prodotto reale include tag
+`vX.Y.Z` e GitHub Release (ADR 0008), mentre docs e governance non versionati no.
 
 Ogni modifica passa da branch `codex/<tema>` e PR verso `main`, docs incluse: la
 ruleset GitHub respinge i push diretti. Il titolo PR è Conventional Commit e
