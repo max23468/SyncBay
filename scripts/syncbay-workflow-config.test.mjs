@@ -44,7 +44,6 @@ test("browser UI gates run only on explicit request or label", () => {
 
 test("React Doctor blocks PR warnings with pinned code and minimal permissions", () => {
   const source = readWorkflow("react-doctor.yml");
-  const packageJson = readJson("package.json");
 
   assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
   assert.match(source, /^\s*push:\s*$/m);
