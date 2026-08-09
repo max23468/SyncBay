@@ -118,13 +118,19 @@ cancellati.
 
 React Doctor segue due corsie entrambe bloccanti dai warning in su: il gate
 generale esegue `npm run doctor` dalla dipendenza pinnata e il workflow dedicato
-usa l'Action ufficiale fissata a una revisione verificata, pubblica score e
-review inline su ogni PR e ripete la scansione completa dopo il push a `main`.
+usa l'Action ufficiale fissata a una revisione verificata con
+`version: latest`, pubblica score e
+review inline solo quando esistono finding e ripete la scansione completa dopo
+il push a `main`; una PR pulita non riceve commenti riepilogativi.
 L'unica esclusione di regola riguarda `app/routes/app.tsx`: React Router impone
 nello stesso route-module gli export `loader`, `headers` ed `ErrorBoundary`,
 quindi `only-export-components` è un falso positivo dimostrato. Il controllo
 supply-chain esterno è disabilitato perché audit npm e GitHub coprono già le
 dipendenze.
+
+Un nuovo falso positivo va notificato nella PR, soppresso con il meccanismo
+nativo più stretto e una motivazione committata, quindi rieseguito fino al gate
+verde; non si usano bypass amministrativi o `continue-on-error`.
 
 ## Comandi locali
 

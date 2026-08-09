@@ -1169,7 +1169,7 @@ Do not run `npm run release` unless `CHANGELOG.md` has versioned unreleased entr
 
 - [ ] **Step 3: Before PR/merge/publish**
 
-If the work is published via PR or merge, check the `Codex feedback inbox` according to `AGENTS.md`, then run the chosen verification lane.
+If the work is published via PR or merge, verify `codex-review` on the current HEAD according to `AGENTS.md`, then run the chosen verification lane.
 
 ## Rollback
 

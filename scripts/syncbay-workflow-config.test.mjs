@@ -54,8 +54,8 @@ test("React Doctor blocks PR warnings with pinned code and minimal permissions",
   assert.match(source, /millionco\/react-doctor@[0-9a-f]{40}/);
   assert.match(source, /persist-credentials:\s*false/);
   assert.match(source, /fetch-depth:\s*0/);
-  assert.match(source, new RegExp(`version:\\s*${packageJson.devDependencies["react-doctor"]}`));
-  assert.match(source, /scope:.*github\.event_name == 'push'.*'full'.*'changed'/);
+  assert.match(source, /version:\s*latest/);
+  assert.match(source, /scope:.*github\.event_name == 'pull_request'.*'changed'.*'full'/);
   assert.match(source, /blocking:\s*warning/);
   assert.match(source, /comment:\s*"false"/);
   assert.match(source, /review-comments:\s*"true"/);
@@ -64,7 +64,7 @@ test("React Doctor blocks PR warnings with pinned code and minimal permissions",
   assert.match(source, /cancel-in-progress:\s*true/);
   assert.match(source, /contents:\s*read/);
   assert.match(source, /pull-requests:\s*write/);
-  assert.match(source, /statuses:\s*write/);
+  assert.doesNotMatch(source, /statuses:\s*write/);
   assert.doesNotMatch(source, /workflow_dispatch:/);
 });
 
@@ -143,7 +143,7 @@ test("Codex review gate reruns on every PR HEAD and executes trusted code", () =
   assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
   assert.match(source, /statuses:\s*write/);
   assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
-  assert.match(source, /ref:\s*\$\{\{ github\.event\.repository\.default_branch \}\}/);
+  assert.match(source, /ref:.*github\.event_name == 'workflow_dispatch'.*github\.ref_name.*github\.event\.repository\.default_branch/);
   assert.match(source, /node scripts\/codex-review-gate\.mjs/);
 });
 

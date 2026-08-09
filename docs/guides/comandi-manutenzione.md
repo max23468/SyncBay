@@ -87,10 +87,8 @@ e include eventuali file staged/unstaged; suggerisce domande e verifiche in base
 alle aree toccate, per anticipare i commenti Codex prevedibili prima del
 preflight remoto.
 `npm run publish:preflight` controlla branch, worktree, changelog e script
-minimi prima della pubblicazione; con `--remote` verifica anche PR GitHub e i
-review thread Codex della PR corrente. Il required check `codex-review` resta
-la fonte dell'esito exact-HEAD; il preflight blocca inoltre i thread Codex
-ancora actionable sulla stessa PR.
+minimi prima della pubblicazione; con `--remote` verifica anche la PR GitHub.
+Il required check `codex-review` è la fonte dell'esito Codex exact-HEAD.
 `npm run perf:loaders` legge i log Vercel `syncbay-loader-performance` e stampa
 l'ultimo tempo osservato per Panoramica, Catalogo, Importazione, Attività,
 Conflitti e Impostazioni. Procedura consigliata: aprire le 6 route dentro

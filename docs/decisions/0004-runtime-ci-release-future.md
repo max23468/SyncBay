@@ -56,6 +56,10 @@ nuovo HEAD. Il workflow usa `pull_request_target` soltanto per leggere i segnali
 e scrivere lo status; esegue il codice del branch predefinito fidato e non fa
 checkout, installazione o esecuzione del contenuto della PR.
 
+Il primo giro parte automaticamente all'apertura o al passaggio da draft a ready.
+Dopo un nuovo commit o per un retry l'agente pubblica una sola riga
+`@codex review`; il workflow non crea commenti di richiesta.
+
 Il job sceglie una sola corsia:
 
 - diff docs/governance: React Doctor e `git diff --check`;

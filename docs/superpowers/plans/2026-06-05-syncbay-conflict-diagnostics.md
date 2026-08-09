@@ -112,4 +112,4 @@ If `[Non rilasciato]` contains versioned sections, run `npm run release`.
 
 - [ ] **Step 4: Publish**
 
-Self-review the diff, check Codex feedback inbox, commit with a Conventional Commit title, push the branch, open a PR with explicit title, merge to `main`, then clean up local and remote branches if safe.
+Self-review the diff, verify `codex-review` on the current HEAD, commit with a Conventional Commit title, push the branch, open a PR with explicit title, merge to `main`, then clean up local and remote branches if safe.

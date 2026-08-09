@@ -124,8 +124,8 @@ Il flusso completo è in `docs/guides/git-e-pubblicazione.md` e
 Ogni modifica passa da branch `codex/<tema>` e PR verso `main`, docs incluse: la
 ruleset GitHub respinge i push diretti. Il titolo PR è Conventional Commit e
 riflette l'impatto osservabile, non il nome del branch. Prima di PR ready, merge,
-publish o release esegui il preflight remoto e leggi i review thread Codex della
-PR corrente. Se `[Non rilasciato]` in `CHANGELOG.md` contiene sezioni versionate
+publish o release esegui il preflight remoto e verifica `codex-review` sull'HEAD
+corrente. Se `[Non rilasciato]` in `CHANGELOG.md` contiene sezioni versionate
 serve `npm run release`.
 
 ## Autonomia e comunicazione
