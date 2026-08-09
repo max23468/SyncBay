@@ -49,8 +49,8 @@ il gate runtime. Il run duplicato dopo il merge è stato rimosso perché il
 ruleset impedisce il normale push diretto a `main`.
 
 `codex-review` osserva la review Codex già avviata e non pubblica commenti. Ogni
-nuovo HEAD riattiva il workflow: finding P0-P3 inline o top-level del tentativo
-corrente falliscono il gate, mentre l'approvazione deve essere riferita allo SHA
+nuovo HEAD riattiva il workflow: finding P0/P1 inline o top-level del tentativo
+corrente falliscono il gate, P2/P3 restano advisory, mentre l'approvazione deve essere riferita allo SHA
 esatto. Evidenze, reaction e finding marcati su commit precedenti non migrano al
 nuovo HEAD. Il workflow usa `pull_request_target` soltanto per leggere i segnali
 e scrivere lo status; esegue il codice del branch predefinito fidato e non fa
@@ -120,7 +120,9 @@ stato rimosso perché interamente sussunto da `ci.yml`.
 React Doctor resta inoltre nel workflow dedicato `react-doctor.yml`: l'Action
 ufficiale è fissata a SHA, usa la stessa versione della devDependency, analizza
 il diff sulle PR e tutto il progetto sul push a `main`, pubblica review inline
-e fallisce dai warning in su. Lo status `react-doctor` è richiesto dal ruleset
+solo in presenza di finding e fallisce dai warning in su. I falsi positivi si
+notificano nella PR e si sopprimono nel modo nativo più stretto con motivazione
+committata e riesecuzione verde, senza bypass. Lo status `react-doctor` è richiesto dal ruleset
 con strict checking; `github-governance.yml` ne verifica periodicamente
 contesto, integration id e protezione dalla deriva.
 

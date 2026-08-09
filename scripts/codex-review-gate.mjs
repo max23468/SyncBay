@@ -39,7 +39,7 @@ export function classifyCodexReview({
       comment.user?.login === CODEX_BOT &&
       (comment.original_commit_id ?? comment.commit_id) === headSha &&
       timestamp(comment.created_at) >= timestamp(requestedAt) &&
-      /\bP[0-3]\b/.test(comment.body)
+      /\bP[01]\b/.test(comment.body)
     ) {
       completions.push({
         state: "failure",
@@ -60,7 +60,7 @@ export function classifyCodexReview({
     if (
       (commit ? headSha.startsWith(commit) : timestamp(requestedAt) > 0) &&
       timestamp(comment.created_at) >= timestamp(requestedAt) &&
-      /\bP[0-3]\b/.test(comment.body)
+      /\bP[01]\b/.test(comment.body)
     ) {
       completions.push({
         state: "failure",

@@ -59,6 +59,7 @@ test("React Doctor blocks PR warnings with pinned code and minimal permissions",
   assert.match(source, /blocking:\s*warning/);
   assert.match(source, /comment:\s*"false"/);
   assert.match(source, /review-comments:\s*"true"/);
+  assert.match(source, /commit-status:\s*"false"/);
   assert.match(source, /timeout-minutes:\s*10/);
   assert.match(source, /cancel-in-progress:\s*true/);
   assert.match(source, /contents:\s*read/);
@@ -75,14 +76,14 @@ test("React Doctor has one exact canonical script and a warning-blocking config"
   assert.equal(config.blocking, "warning");
   assert.equal(config.supplyChain.enabled, false);
   assert.ok(config.ignore.files.includes(".worktrees/**"));
-  assert.equal(packageJson.scripts.doctor, "react-doctor --scope full .");
+  assert.equal(packageJson.scripts.doctor, "react-doctor --scope full --blocking warning .");
   assert.deepEqual(
     Object.entries(packageJson.scripts).filter(([, command]) => command.includes("react-doctor")),
-    [["doctor", "react-doctor --scope full ."]],
+    [["doctor", "react-doctor --scope full --blocking warning ."]],
   );
-  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.5");
-  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.5");
-  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.5");
+  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.11");
+  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.11");
+  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.11");
   assert.match(packageJson.scripts.shopify, /require\('@shopify\/cli\/package\.json'\)/);
   assert.match(packageJson.scripts.shopify, /p\.devDependencies\['@shopify\/cli'\]/);
 });

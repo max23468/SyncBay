@@ -145,8 +145,8 @@ essere chiusa prima della PR o dichiarata esplicitamente nel riepilogo.
 Il workflow `.github/workflows/codex-review-gate.yml` non chiede review e non
 pubblica commenti. Osserva soltanto i segnali del reviewer
 `chatgpt-codex-connector[bot]` e aggiorna lo status `codex-review`: i finding
-P0-P3 inline o top-level del tentativo corrente falliscono il gate, mentre
-l'esito positivo deve riferirsi all'HEAD esatto. Ogni `synchronize` invalida
+P0/P1 inline o top-level del tentativo corrente falliscono il gate; P2/P3
+restano advisory, mentre l'esito positivo deve riferirsi all'HEAD esatto. Ogni `synchronize` invalida
 l'evidenza precedente; `reopened` e il dispatch manuale possono riusare solo
 uno status riuscito dello stesso SHA. Dopo ogni push l'autore richiede
 `@codex review`: la reazione positiva del bot su quell'invocazione identifica

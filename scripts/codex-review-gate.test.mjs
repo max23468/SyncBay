@@ -214,7 +214,7 @@ test("un finding del tentativo corrente prevale sul pollice", () => {
   );
 });
 
-test("un finding top-level sull'HEAD prevale sul riepilogo pulito", () => {
+test("un finding P2 top-level sull'HEAD resta advisory", () => {
   assert.equal(
     classify({
       requiresReviewedCommit: true,
@@ -231,11 +231,11 @@ test("un finding top-level sull'HEAD prevale sul riepilogo pulito", () => {
         },
       ],
     }).state,
-    "failure",
+    "success",
   );
 });
 
-test("un finding top-level senza marker prevale sul riepilogo pulito", () => {
+test("un finding P2 top-level senza marker resta advisory", () => {
   assert.equal(
     classify({
       requiresReviewedCommit: true,
@@ -252,7 +252,7 @@ test("un finding top-level senza marker prevale sul riepilogo pulito", () => {
         },
       ],
     }).state,
-    "failure",
+    "success",
   );
 });
 

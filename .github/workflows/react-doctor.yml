@@ -24,10 +24,11 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: millionco/react-doctor@01820bb4fd4d0a4aebcd8df2b2a143a098649cb2 # v2.2.8
+      - uses: millionco/react-doctor@736abc183ac491b4e954fc6bedec3a9a1b73d38b # v2.2.8
         with:
-          version: 0.9.5
+          version: 0.9.11
           scope: ${{ github.event_name == 'push' && 'full' || 'changed' }}
           blocking: warning
           comment: "false"
           review-comments: "true"
+          commit-status: "false"
