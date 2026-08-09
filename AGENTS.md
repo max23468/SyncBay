@@ -135,9 +135,10 @@ rilettura finale di PR, check, deploy, release e stato Git non sono completi.
 ## Git e pubblicazione
 
 Il flusso completo è in `docs/guides/git-e-pubblicazione.md` e
-`docs/guides/versioning-e-release.md`. Le modifiche a runtime o UI includono il
-deploy Vercel production verificato; una release prodotto reale include tag
-`vX.Y.Z` e GitHub Release (ADR 0008), mentre docs e governance non versionati no.
+`docs/guides/versioning-e-release.md`. Nel ciclo di pubblicazione, le modifiche
+a runtime o UI includono il deploy Vercel production verificato; una release
+prodotto reale include tag `vX.Y.Z` e GitHub Release (ADR 0008), mentre docs e
+governance non versionati no.
 
 Ogni modifica passa da branch `codex/<tema>` e PR verso `main`, docs incluse: la
 ruleset GitHub respinge i push diretti. Il titolo PR è Conventional Commit e
