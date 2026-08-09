@@ -11,7 +11,7 @@ const fakes = vi.hoisted(() => ({
     status: "created",
     warnings: [],
   })),
-  draftProduct: { source: { ebayItemId: "synthetic-item-1" } },
+  draftProducts: [{ source: { ebayItemId: "synthetic-item-1" } }],
 }));
 
 vi.mock("../db.server", () => ({
@@ -30,7 +30,7 @@ vi.mock("./pricing-rules.server", () => ({
   getPricingRuleForShopId: async () => ({ discountPercent: 0, roundingMode: "CENTS" }),
 }));
 vi.mock("./shopify-import-products.server", () => ({
-  buildShopifyDraftProductInputs: () => [fakes.draftProduct],
+  buildShopifyDraftProductInputs: () => fakes.draftProducts,
   createShopifyDraftProductSafely: fakes.create,
   resolveDraftImportPublicationOptions: async () => ({ status: "ready", options: {} }),
 }));
@@ -53,6 +53,66 @@ import { buildImportPreview } from "./import-preview.server";
 
 afterEach(() => {
   delete process.env.SYNCBAY_DRAFT_IMPORT_ENABLED;
+  fakes.draftProducts = [{ source: { ebayItemId: "synthetic-item-1" } }];
+  vi.clearAllMocks();
+});
+
+test("crea i prodotti Shopify in serie nell’ordine ricevuto da eBay", async () => {
+  process.env.SYNCBAY_DRAFT_IMPORT_ENABLED = "true";
+  fakes.draftProducts = [{ source: { ebayItemId: "older" } }, { source: { ebayItemId: "newer" } }];
+  const started: string[] = [];
+  let active = 0;
+  let peak = 0;
+  fakes.create.mockImplementation(async (_admin, product) => {
+    active += 1;
+    peak = Math.max(peak, active);
+    started.push((product as { source: { ebayItemId: string } }).source.ebayItemId);
+    await new Promise((resolve) => setTimeout(resolve, 1));
+    active -= 1;
+
+    return {
+      inventorySync: { status: "synced" },
+      mediaSync: { status: "synced" },
+      product: { id: "gid://shopify/Product/1", status: "ACTIVE", title: "Prodotto sintetico" },
+      publicationSync: { publicationCount: 1, status: "synced" },
+      resultType: "created",
+      status: "created",
+      warnings: [],
+    };
+  });
+
+  const result = await executeShopifyCatalogImport({
+    admin: { graphql: async () => Response.json({}) },
+    defaultLocationGid: "gid://shopify/Location/1",
+    hasDefaultLocation: true,
+    jobId: "job-ordered",
+    previewResult: buildImportPreview([
+      {
+        currency: "EUR",
+        itemId: "older",
+        priceAmount: 10,
+        quantity: 1,
+        sku: "OLDER",
+        title: "Più vecchio",
+        variantCount: 1,
+      },
+      {
+        currency: "EUR",
+        itemId: "newer",
+        priceAmount: 20,
+        quantity: 1,
+        sku: "NEWER",
+        title: "Più recente",
+        variantCount: 1,
+      },
+    ]),
+    shopDomain: "synthetic.myshopify.com",
+    shopId: "shop-1",
+  });
+
+  assert.equal(result.status, "succeeded");
+  assert.equal(peak, 1);
+  assert.deepEqual(started, ["older", "newer"]);
 });
 
 test("il coordinatore import inoltra una preview importabile e chiude il risultato", async () => {

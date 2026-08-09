@@ -249,7 +249,9 @@ La base di import Shopify in `draft` è preparata dietro feature flag:
   avvio/esito;
 - la conferma import pianifica job `IMPORT_CATALOG` in batch basati su
   `SYNCBAY_DRAFT_IMPORT_LIMIT`, leggendo gli ItemID attivi da Trading API fino
-  al minore tra listing disponibili nello store e limite operativo 1.0 di 2.000 prodotti;
+  al minore tra listing disponibili nello store e limite operativo 1.0 di 2.000
+  prodotti; i listing sono letti per data di pubblicazione eBay crescente e
+  creati o riusati su Shopify in serie, dal più vecchio al più recente;
 - le Impostazioni embedded permettono di attivare o disattivare il sync
   catalogo automatico eBay -> Shopify dopo l'import; l'attivazione resta
   bloccata finché mancano account eBay collegato, location Shopify predefinita

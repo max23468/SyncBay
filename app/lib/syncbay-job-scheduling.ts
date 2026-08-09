@@ -28,6 +28,10 @@ export function normalizeRunDueLimit(limit?: number) {
   return Math.min(Math.max(Number(limit), 1), MAX_RUN_DUE_LIMIT);
 }
 
+export function getOrderedBatchRunAfter(now: Date, batchIndex: number, batchCount: number) {
+  return new Date(now.getTime() - (batchCount - batchIndex));
+}
+
 export function isFacetOnlyIncrementalJobPayload(payload: unknown) {
   return (
     getBooleanField(payload, "facetOnly") === true ||

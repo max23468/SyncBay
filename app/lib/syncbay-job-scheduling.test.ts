@@ -7,6 +7,7 @@ import {
   buildSellerEventsNoopMarker,
   getCatalogReconcileJobIdsToCancelBeforeNewRun,
   getDuplicateShopifyChangeJobIdsToCancel,
+  getOrderedBatchRunAfter,
   getShopifyChangeJobResourceKeys,
   getSupersededCatalogReconcileJobIds,
   isFacetOnlyIncrementalJobPayload,
@@ -17,6 +18,16 @@ import {
   shouldCancelSyncJobAfterShopUninstall,
   shouldSkipRecentShopifyProductChangeJob,
 } from "./syncbay-job-scheduling.ts";
+
+test("makes every batch due while preserving its order", () => {
+  const now = new Date("2026-08-09T10:00:00.000Z");
+  const runAfter = [0, 1, 2].map((index) => getOrderedBatchRunAfter(now, index, 3));
+
+  assert.deepEqual(
+    runAfter.map((date) => date.toISOString()),
+    ["2026-08-09T09:59:59.997Z", "2026-08-09T09:59:59.998Z", "2026-08-09T09:59:59.999Z"],
+  );
+});
 
 test("cancels every prior reconcile job before creating a fresh run", () => {
   assert.deepEqual(

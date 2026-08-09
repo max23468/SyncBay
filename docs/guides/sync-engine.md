@@ -62,8 +62,9 @@ all'ordine né se Shopify non ha restituito inventario. Vedi ADR 0022.
 Per shop con sync attivo, il runner pianifica job `SYNC_INCREMENTAL` in batch da
 10 ItemID. Nei cicli ordinari usa Trading API `GetSellerEvents` con una finestra
 delta recente, overlap di 2 minuti e buffer finale di 2 minuti: le candidate
-lette dagli eventi vengono salvate nel payload del job e riusano il flusso
-import controllato senza rileggere ogni listing via `GetItem`. Gli eventi che
+lette dagli eventi vengono ordinate per data di pubblicazione eBay crescente,
+salvate nel payload del job e riusano in serie il flusso import controllato
+senza rileggere ogni listing via `GetItem`. Gli eventi che
 indicano listing conclusi o inattivi generano job `ARCHIVE_INACTIVE_LISTING`
 (nome storico): il job non archivia più il prodotto Shopify ma lo mantiene in
 vetrina come esaurito (scorta 0, politica `DENY`, tag `esaurito`, mapping

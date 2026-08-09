@@ -35,7 +35,8 @@ import {
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed" | "queued";
 
-const DRAFT_PRODUCT_CREATE_CONCURRENCY = 2;
+// La creazione resta seriale per conservare su Shopify l'ordine eBay più vecchio-prima.
+const DRAFT_PRODUCT_CREATE_CONCURRENCY = 1;
 
 export function getDraftImportReadiness(input: {
   defaultProductStatus: ImportProductStatus;

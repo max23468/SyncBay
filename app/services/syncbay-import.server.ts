@@ -15,6 +15,7 @@ import {
   type ImportProductStatus,
 } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
+import { getOrderedBatchRunAfter } from "../lib/syncbay-job-scheduling";
 import { type DescriptionRuleMode } from "../lib/syncbay-description-rules";
 import { serializeExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
 import {
@@ -125,7 +126,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
       draftLimit,
       ebayItemIds,
       importProductStatus,
-      now,
+      now: getOrderedBatchRunAfter(now, batchIndex, batches.length),
       reuseOnly: false,
       shopId: shop.id,
       source: "trading_api",
