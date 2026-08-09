@@ -39,7 +39,12 @@ export function getOrderedBatchRunIdentity(input: { payload: unknown; type: stri
       : input.type === "SYNC_INCREMENTAL"
         ? "runId"
         : null;
-  const runId = runIdKey ? getStringField(input.payload, runIdKey) : null;
+  const runId = runIdKey
+    ? (getStringField(input.payload, runIdKey) ??
+      (input.type === "IMPORT_CATALOG"
+        ? getStringField(input.payload, "catalogImportRunId")
+        : null))
+    : null;
   const batchIndex = getNumberField(input.payload, "batchIndex");
 
   return runId && Number.isInteger(batchIndex) ? `${input.type}:${runId}` : null;

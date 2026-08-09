@@ -46,6 +46,13 @@ test("identifica soltanto le sequenze batch ordinate", () => {
     "SYNC_INCREMENTAL:incremental-run",
   );
   assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, catalogImportRunId: "legacy-import-run" },
+      type: "IMPORT_CATALOG",
+    }),
+    "IMPORT_CATALOG:legacy-import-run",
+  );
+  assert.equal(
     getOrderedBatchRunIdentity({ payload: { runId: "incremental-run" }, type: "SYNC_INCREMENTAL" }),
     null,
   );

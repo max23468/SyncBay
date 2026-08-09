@@ -285,6 +285,7 @@ async function findDueCatalogImportSyncJobs(input: {
     : Prisma.empty;
   const orderedBatchBlocker = getOrderedBatchBlockerSql({
     excludeIds: input.excludeIds,
+    fallbackRunIdKey: "catalogImportRunId",
     runIdKey: "catalogImportSequenceId",
   });
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
@@ -305,7 +306,11 @@ async function findDueCatalogImportSyncJobs(input: {
   return findDueSyncJobsByIds(rows.map((row) => row.id));
 }
 
-function getOrderedBatchBlockerSql(input: { excludeIds?: string[]; runIdKey: string }) {
+function getOrderedBatchBlockerSql(input: {
+  excludeIds?: string[];
+  fallbackRunIdKey?: string;
+  runIdKey: string;
+}) {
   const selectedBlockers = input.excludeIds?.length
     ? Prisma.sql`
         AND (
@@ -318,6 +323,12 @@ function getOrderedBatchBlockerSql(input: { excludeIds?: string[]; runIdKey: str
         )
       `
     : Prisma.empty;
+  const blockerRunId = input.fallbackRunIdKey
+    ? Prisma.sql`COALESCE(blocker."payload"->>${input.runIdKey}, blocker."payload"->>${input.fallbackRunIdKey})`
+    : Prisma.sql`blocker."payload"->>${input.runIdKey}`;
+  const candidateRunId = input.fallbackRunIdKey
+    ? Prisma.sql`COALESCE(candidate."payload"->>${input.runIdKey}, candidate."payload"->>${input.fallbackRunIdKey})`
+    : Prisma.sql`candidate."payload"->>${input.runIdKey}`;
 
   return Prisma.sql`
     AND NOT EXISTS (
@@ -331,8 +342,8 @@ function getOrderedBatchBlockerSql(input: { excludeIds?: string[]; runIdKey: str
           SyncJobStatus.RUNNING,
         ])})
         ${selectedBlockers}
-        AND COALESCE(blocker."payload"->>${input.runIdKey}, '') <> ''
-        AND blocker."payload"->>${input.runIdKey} = candidate."payload"->>${input.runIdKey}
+        AND COALESCE(${blockerRunId}, '') <> ''
+        AND ${blockerRunId} = ${candidateRunId}
         AND (
           COALESCE((blocker."payload"->>'batchIndex')::integer, 0) <
             COALESCE((candidate."payload"->>'batchIndex')::integer, 0)

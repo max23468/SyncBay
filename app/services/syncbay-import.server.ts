@@ -436,6 +436,11 @@ export async function upsertCatalogImportBatchJob(input: {
     return wasReset ? ("resumed" as const) : ("existing" as const);
   }
 
+  await prisma.syncJob.updateMany({
+    data: { payload },
+    where: { id: existingJob.id, status: existingJob.status },
+  });
+
   return "existing" as const;
 }
 
