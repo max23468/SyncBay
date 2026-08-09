@@ -107,19 +107,38 @@ gate a mano. Vincoli che la tabella non dice:
   Prisma Client prima di classificare un errore come regressione.
 - Riporta risultati reali: se un gate non è stato eseguito, dillo.
 
+## Significato di `Pubblica`
+
+Quando il proprietario, riferendosi alla repository o alla modifica corrente,
+dice `Pubblica` o chiede in modo affermativo e inequivocabile di pubblicare,
+autorizza l'intero ciclo tecnico applicabile. Domande, ipotesi, pianificazioni e
+negazioni non costituiscono autorizzazione. L'agente non si ferma a stati
+intermedi e completa tutti i passaggi applicabili: preparazione e verifiche,
+branch e commit, versione e changelog quando richiesti, push, PR, soli gate
+bloccanti, merge, tag e GitHub Release quando previsti, deploy o promozione
+tecnica e verifica live. La sequenza concreta, in particolare tra versionamento,
+merge, deploy e release, è quella definita dalla policy della repository.
+
+La pulizia finale rimuove soltanto branch e worktree temporanei creati nel ciclo
+corrente e già assorbiti; controlla stash e altri residui senza alterare elementi
+preesistenti o estranei alla pubblicazione. Se un passaggio non è applicabile, lo
+dichiara e prosegue con gli altri. La richiesta affermativa di pubblicazione
+vale come autorizzazione a PR, merge, deploy tecnico e release previsti dal
+ciclo, senza una seconda conferma. Non autorizza pubblicazione di temi Shopify
+live, submission Shopify App Store, billing o nuove attivazioni produttive,
+TestFlight o App Store, invii Aruba, email o scansioni reali, né aggiornamenti
+Notion: queste azioni richiedono una richiesta esplicita separata. Una richiesta
+riferita soltanto a una di queste azioni non avvia la pubblicazione della
+repository. Non dichiarare `pubblicato` finché il ciclo applicabile e la
+rilettura finale di PR, check, deploy, release e stato Git non sono completi.
+
 ## Git e pubblicazione
 
 Il flusso completo è in `docs/guides/git-e-pubblicazione.md` e
-`docs/guides/versioning-e-release.md`. Cosa intende il maintainer:
-
-- `pubblica`, `manda su GitHub` o `carica`: porta il diff fino a `main` con gate
-  e cleanup e, quando tocca runtime o UI, include il deploy Vercel production
-  verificato.
-- `deploya`: aggiorna e verifica il deployment Vercel production privato anche
-  per diff senza runtime; non implica App Store né billing.
-- `rilascia`: flusso SemVer locale più pubblicazione su GitHub. Una release
-  prodotto reale vuole tag `vX.Y.Z` e GitHub Release (ADR 0008); docs e
-  governance non versionati no.
+`docs/guides/versioning-e-release.md`. Nel ciclo di pubblicazione, le modifiche
+a runtime o UI includono il deploy Vercel production verificato; una release
+prodotto reale include tag `vX.Y.Z` e GitHub Release (ADR 0008), mentre docs e
+governance non versionati no.
 
 Ogni modifica passa da branch `codex/<tema>` e PR verso `main`, docs incluse: la
 ruleset GitHub respinge i push diretti. Il titolo PR è Conventional Commit e
