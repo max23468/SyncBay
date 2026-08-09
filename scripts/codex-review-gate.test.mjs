@@ -214,6 +214,22 @@ test("un finding del tentativo corrente prevale sul pollice", () => {
   );
 });
 
+test("un P2 che cita P1 nella spiegazione non diventa bloccante", () => {
+  assert.equal(
+    classify({
+      reviewComments: [
+        {
+          user: bot,
+          commit_id: headSha,
+          created_at: "2026-08-04T12:00:01Z",
+          body: "**P2** Advisory che cita P1 nella spiegazione",
+        },
+      ],
+    }).state,
+    "pending",
+  );
+});
+
 test("un finding P2 top-level sull'HEAD resta advisory", () => {
   assert.equal(
     classify({
