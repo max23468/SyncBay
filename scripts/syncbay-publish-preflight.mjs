@@ -74,17 +74,9 @@ function buildReport(args) {
   }
 
   const pr = args.remote && !publishedMainPreflight ? readCurrentPullRequest() : null;
-  const codexFeedback = loadCodexFeedback({
-    pr,
-    remote: Boolean(args.remote),
-  });
 
   if (args.remote && !pr && !publishedMainPreflight) {
     failures.push("Nessuna PR GitHub trovata per il branch corrente.");
-  }
-
-  if (pr && !codexFeedback?.readable) {
-    failures.push("Review thread Codex non leggibili: verificare l'autenticazione GitHub.");
   }
 
   if (pr && !isConventionalTitle(pr.title)) {
@@ -93,10 +85,6 @@ function buildReport(args) {
 
   if (pr?.mergeStateStatus && pr.mergeStateStatus !== "CLEAN") {
     warnings.push(`Merge state PR: ${pr.mergeStateStatus}.`);
-  }
-
-  if (codexFeedback?.actionable) {
-    failures.push(`Codex segnala thread actionable su PR #${pr.number}.`);
   }
 
   return {
@@ -110,7 +98,6 @@ function buildReport(args) {
       requiredScripts: REQUIRED_SCRIPTS,
     },
     failures,
-    codexReview: codexFeedback,
     ok: failures.length === 0,
     pr,
     statusLines: status ? status.split(/\r?\n/).filter(Boolean) : [],
@@ -167,8 +154,8 @@ function parseArgs(rawArgs) {
   if (values.help) {
     console.log(`Uso: npm run publish:preflight -- [--remote] [--allow-dirty] [--allow-main] [--json]
 
-Controlla branch, worktree, changelog, script minimi e, con --remote, PR
-GitHub più review thread Codex prima di merge/pubblicazione.`);
+Controlla branch, worktree, changelog, script minimi e, con --remote, la PR
+GitHub prima di merge/pubblicazione.`);
     process.exit(0);
   }
 
@@ -222,70 +209,6 @@ function readCurrentPullRequest() {
   if (!output) return null;
 
   return JSON.parse(output);
-}
-
-export function loadCodexFeedback(input, readers = {}) {
-  if (!input.remote || !input.pr) return null;
-  return (readers.readThreads ?? readCodexReviewThreads)(input.pr.number);
-}
-
-export function readCodexReviewThreads(prNumber, options = {}) {
-  const runGhFn = options.runGhFn ?? runGh;
-  const threads = [];
-  let after = null;
-
-  do {
-    const args = [
-      "api",
-      "graphql",
-      "-f",
-      "owner=max23468",
-      "-f",
-      "repo=SyncBay",
-      "-F",
-      `number=${prNumber}`,
-      "-f",
-      "query=query($owner:String!, $repo:String!, $number:Int!, $after:String) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100, after:$after) { pageInfo { hasNextPage endCursor } nodes { isResolved isOutdated comments(first:100) { nodes { author { login } } } } } } } }",
-    ];
-
-    if (after) {
-      args.push("-f", `after=${after}`);
-    }
-
-    const output = runGhFn(args);
-
-    if (!output) {
-      return {
-        actionable: null,
-        readable: false,
-        source: "reviewThreads:paginated",
-      };
-    }
-
-    const parsed = JSON.parse(output);
-    const connection = parsed.data?.repository?.pullRequest?.reviewThreads ?? null;
-
-    threads.push(...(connection?.nodes ?? []));
-    after =
-      connection?.pageInfo?.hasNextPage && connection.pageInfo.endCursor
-        ? connection.pageInfo.endCursor
-        : null;
-  } while (after);
-
-  const actionable = threads.some(
-    (thread) =>
-      !thread.isResolved &&
-      !thread.isOutdated &&
-      thread.comments.nodes.some(
-        (comment) => comment.author?.login === "chatgpt-codex-connector[bot]",
-      ),
-  );
-
-  return {
-    actionable,
-    readable: true,
-    source: "reviewThreads:paginated",
-  };
 }
 
 export function isPublishedMainPreflight(input) {

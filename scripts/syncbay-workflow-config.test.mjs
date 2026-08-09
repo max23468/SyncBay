@@ -44,7 +44,6 @@ test("browser UI gates run only on explicit request or label", () => {
 
 test("React Doctor blocks PR warnings with pinned code and minimal permissions", () => {
   const source = readWorkflow("react-doctor.yml");
-  const packageJson = readJson("package.json");
 
   assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
   assert.match(source, /^\s*push:\s*$/m);
@@ -54,16 +53,17 @@ test("React Doctor blocks PR warnings with pinned code and minimal permissions",
   assert.match(source, /millionco\/react-doctor@[0-9a-f]{40}/);
   assert.match(source, /persist-credentials:\s*false/);
   assert.match(source, /fetch-depth:\s*0/);
-  assert.match(source, new RegExp(`version:\\s*${packageJson.devDependencies["react-doctor"]}`));
-  assert.match(source, /scope:.*github\.event_name == 'push'.*'full'.*'changed'/);
+  assert.match(source, /version:\s*latest/);
+  assert.match(source, /scope:.*github\.event_name == 'pull_request'.*'changed'.*'full'/);
   assert.match(source, /blocking:\s*warning/);
   assert.match(source, /comment:\s*"false"/);
   assert.match(source, /review-comments:\s*"true"/);
+  assert.match(source, /commit-status:\s*"false"/);
   assert.match(source, /timeout-minutes:\s*10/);
   assert.match(source, /cancel-in-progress:\s*true/);
   assert.match(source, /contents:\s*read/);
   assert.match(source, /pull-requests:\s*write/);
-  assert.match(source, /statuses:\s*write/);
+  assert.doesNotMatch(source, /statuses:\s*write/);
   assert.doesNotMatch(source, /workflow_dispatch:/);
 });
 
@@ -75,14 +75,14 @@ test("React Doctor has one exact canonical script and a warning-blocking config"
   assert.equal(config.blocking, "warning");
   assert.equal(config.supplyChain.enabled, false);
   assert.ok(config.ignore.files.includes(".worktrees/**"));
-  assert.equal(packageJson.scripts.doctor, "react-doctor --scope full .");
+  assert.equal(packageJson.scripts.doctor, "react-doctor --scope full --blocking warning .");
   assert.deepEqual(
     Object.entries(packageJson.scripts).filter(([, command]) => command.includes("react-doctor")),
-    [["doctor", "react-doctor --scope full ."]],
+    [["doctor", "react-doctor --scope full --blocking warning ."]],
   );
-  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.5");
-  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.5");
-  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.5");
+  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.11");
+  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.11");
+  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.11");
   assert.match(packageJson.scripts.shopify, /require\('@shopify\/cli\/package\.json'\)/);
   assert.match(packageJson.scripts.shopify, /p\.devDependencies\['@shopify\/cli'\]/);
 });
@@ -143,6 +143,7 @@ test("Codex review gate reruns on every PR HEAD and executes trusted code", () =
   assert.match(source, /statuses:\s*write/);
   assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
   assert.match(source, /ref:\s*\$\{\{ github\.event\.repository\.default_branch \}\}/);
+  assert.doesNotMatch(source, /github\.ref_name/);
   assert.match(source, /node scripts\/codex-review-gate\.mjs/);
 });
 

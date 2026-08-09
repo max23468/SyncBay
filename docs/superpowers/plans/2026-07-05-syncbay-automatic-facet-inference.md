@@ -1692,7 +1692,7 @@ Create PR with explicit title:
 gh pr create --title "fix: automate SyncBay facet inference" --body-file /tmp/syncbay-facet-inference-pr.md
 ```
 
-Before merge, run the repo preflight and check Codex feedback inbox according to `AGENTS.md`.
+Before merge, run the repo preflight and verify `codex-review` on the current HEAD according to `AGENTS.md`.
 
 ---
 

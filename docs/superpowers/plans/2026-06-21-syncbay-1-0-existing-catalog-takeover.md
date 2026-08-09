@@ -1656,7 +1656,7 @@ release SemVer da preparare.`;
   - branch dedicata;
   - PR verso `main`;
   - self-review diff;
-  - controllo Codex feedback inbox/preflight;
+  - controllo preflight e `codex-review` sull'HEAD corrente;
   - merge su `main`;
   - verifica CI `main`;
   - verifica Vercel production `READY` sul commit mergeato;

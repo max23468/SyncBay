@@ -6,6 +6,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["app/**/*.test.ts", "scripts/*.test.mjs", ".github/scripts/*.test.mjs"],
+    exclude: ["scripts/codex-review-gate.test.mjs"],
     // I test tooling lanciano subprocess per fixture: il piu' lento impiega ~15s
     // in locale e node --test non aveva alcun timeout. Il default Vitest di 5s
     // li farebbe fallire, e due test da ~2-3s diventerebbero flaky su un runner

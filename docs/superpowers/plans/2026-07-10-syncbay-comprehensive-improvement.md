@@ -2007,13 +2007,13 @@ Rileggere la tabella “Mappa unica” e associare a ogni riga almeno un test, u
 
 - [x] **Step 3: Eseguire preflight GitHub**
 
-Usare il percorso GitHub che espone in modo più completo check-run, review thread e stato PR; `gh` e connector sono entrambi ammessi.
+Usare il percorso GitHub che espone check-run e stato PR; `gh` e connector sono entrambi ammessi.
 
 ```bash
 npm run publish:preflight -- --remote
 ```
 
-Expected: PR corrente pronta, titolo Conventional Commit, nessun thread Codex actionable sulla PR e check obbligatori verdi.
+Expected: PR corrente pronta, titolo Conventional Commit e check obbligatori verdi, incluso `codex-review` sull'HEAD corrente.
 
 Eseguito sulla PR `#469`: titolo Conventional Commit, preflight remoto pulito
 e `9` check conclusi con successo, inclusi CI proporzionata, CodeQL, React
