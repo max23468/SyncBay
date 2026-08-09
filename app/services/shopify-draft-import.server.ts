@@ -4,7 +4,6 @@ import {
   normalizeImportProductStatus,
   type ImportProductStatus,
 } from "../lib/import-product-status";
-import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import {
   buildCatalogImportExecutionResult,
   type CatalogImportExecutionResult,
@@ -34,9 +33,6 @@ import {
 } from "./shopify-import-shared.server";
 
 export type ShopifyDraftImportStatus = "blocked" | "created" | "failed" | "queued";
-
-// La creazione resta seriale per conservare su Shopify l'ordine eBay più vecchio-prima.
-const DRAFT_PRODUCT_CREATE_CONCURRENCY = 1;
 
 export function getDraftImportReadiness(input: {
   defaultProductStatus: ImportProductStatus;
@@ -139,18 +135,26 @@ export async function executeShopifyCatalogImport(
         })
       : { draftProducts: allDraftProducts, unchangedSkippedCount: 0 };
   const draftProducts = unchangedPartition.draftProducts;
-  const results = await mapWithConcurrency(
-    draftProducts,
-    DRAFT_PRODUCT_CREATE_CONCURRENCY,
-    (product) =>
-      createShopifyDraftProductSafely(admin, product, {
-        defaultLocationGid: input.defaultLocationGid ?? null,
-        jobId: input.jobId,
-        publicationOptions: publicationOptions.options,
-        reuseOnly,
-        shopId: input.shopId,
-      }),
-  );
+  const results: ShopifyDraftProductResult[] = [];
+
+  for (const product of draftProducts) {
+    const result = await createShopifyDraftProductSafely(admin, product, {
+      defaultLocationGid: input.defaultLocationGid ?? null,
+      jobId: input.jobId,
+      publicationOptions: publicationOptions.options,
+      reuseOnly,
+      shopId: input.shopId,
+    });
+    results.push(result);
+
+    if (
+      result.status === "failed" ||
+      result.inventorySync.status === "failed" ||
+      result.mediaSync.status === "failed"
+    ) {
+      break;
+    }
+  }
   const warnings = results.flatMap((result) =>
     result.status === "created" ? (result.warnings ?? []) : [],
   );

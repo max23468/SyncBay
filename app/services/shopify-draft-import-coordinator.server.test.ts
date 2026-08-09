@@ -1,16 +1,39 @@
 import assert from "node:assert/strict";
 import { afterEach, test, vi } from "vitest";
+import type { ShopifyDraftProductResult } from "./shopify-import-shared.server";
 
 const fakes = vi.hoisted(() => ({
-  create: vi.fn(async (_admin: unknown, _product: unknown, _context: { jobId: string }) => ({
-    inventorySync: { status: "synced" },
-    mediaSync: { status: "synced" },
-    product: { id: "gid://shopify/Product/1", status: "ACTIVE", title: "Prodotto sintetico" },
-    publicationSync: { publicationCount: 1, status: "synced" },
-    resultType: "created",
-    status: "created",
-    warnings: [],
-  })),
+  create: vi.fn(
+    async (
+      _admin: unknown,
+      _product: unknown,
+      _context: { jobId: string },
+    ): Promise<ShopifyDraftProductResult> => ({
+      inventorySync: {
+        inventoryItemGid: "gid://shopify/InventoryItem/1",
+        locationGid: "gid://shopify/Location/1",
+        quantity: 1,
+        status: "synced",
+        variantGid: "gid://shopify/ProductVariant/1",
+      },
+      mediaSync: {
+        createdCount: 0,
+        deletedCount: 0,
+        directCreatedCount: 0,
+        failedResults: [],
+        requestedCount: 0,
+        sourceImageUrls: [],
+        stagedCreatedCount: 0,
+        stagedObjectPaths: [],
+        status: "synced",
+      },
+      product: { id: "gid://shopify/Product/1", status: "ACTIVE", title: "Prodotto sintetico" },
+      publicationSync: { publicationCount: 1, publicationIds: ["publication-1"], status: "synced" },
+      resultType: "created",
+      status: "created",
+      warnings: [],
+    }),
+  ),
   draftProducts: [{ source: { ebayItemId: "synthetic-item-1" } }],
 }));
 
@@ -71,10 +94,26 @@ test("crea i prodotti Shopify in serie nell’ordine ricevuto da eBay", async ()
     active -= 1;
 
     return {
-      inventorySync: { status: "synced" },
-      mediaSync: { status: "synced" },
+      inventorySync: {
+        inventoryItemGid: "gid://shopify/InventoryItem/1",
+        locationGid: "gid://shopify/Location/1",
+        quantity: 1,
+        status: "synced",
+        variantGid: "gid://shopify/ProductVariant/1",
+      },
+      mediaSync: {
+        createdCount: 0,
+        deletedCount: 0,
+        directCreatedCount: 0,
+        failedResults: [],
+        requestedCount: 0,
+        sourceImageUrls: [],
+        stagedCreatedCount: 0,
+        stagedObjectPaths: [],
+        status: "synced",
+      },
       product: { id: "gid://shopify/Product/1", status: "ACTIVE", title: "Prodotto sintetico" },
-      publicationSync: { publicationCount: 1, status: "synced" },
+      publicationSync: { publicationCount: 1, publicationIds: ["publication-1"], status: "synced" },
       resultType: "created",
       status: "created",
       warnings: [],
@@ -113,6 +152,47 @@ test("crea i prodotti Shopify in serie nell’ordine ricevuto da eBay", async ()
   assert.equal(result.status, "succeeded");
   assert.equal(peak, 1);
   assert.deepEqual(started, ["older", "newer"]);
+});
+
+test("interrompe la sequenza al primo prodotto fallito", async () => {
+  process.env.SYNCBAY_DRAFT_IMPORT_ENABLED = "true";
+  fakes.draftProducts = [{ source: { ebayItemId: "older" } }, { source: { ebayItemId: "newer" } }];
+  fakes.create.mockResolvedValueOnce({
+    errorMessage: "Errore sintetico",
+    status: "failed",
+  });
+
+  const result = await executeShopifyCatalogImport({
+    admin: { graphql: async () => Response.json({}) },
+    defaultLocationGid: "gid://shopify/Location/1",
+    hasDefaultLocation: true,
+    jobId: "job-failed",
+    previewResult: buildImportPreview([
+      {
+        currency: "EUR",
+        itemId: "older",
+        priceAmount: 10,
+        quantity: 1,
+        sku: "OLDER",
+        title: "Più vecchio",
+        variantCount: 1,
+      },
+      {
+        currency: "EUR",
+        itemId: "newer",
+        priceAmount: 20,
+        quantity: 1,
+        sku: "NEWER",
+        title: "Più recente",
+        variantCount: 1,
+      },
+    ]),
+    shopDomain: "synthetic.myshopify.com",
+    shopId: "shop-1",
+  });
+
+  assert.equal(result.status, "failed");
+  assert.equal(fakes.create.mock.calls.length, 1);
 });
 
 test("il coordinatore import inoltra una preview importabile e chiude il risultato", async () => {

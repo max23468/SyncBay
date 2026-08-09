@@ -13,6 +13,7 @@ import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write"
 import {
   buildEbayItemJobSplitIdempotencyKey,
   buildEbayItemJobSplitPayloads,
+  getOrderedBatchRunAfter,
 } from "../lib/syncbay-job-scheduling";
 import { type SyncBayProductFacet } from "../lib/syncbay-product-facets";
 import { getProductFacetBaselineFromSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
@@ -303,7 +304,7 @@ export async function splitOversizedEbayItemJobIfNeeded(job: DueSyncJob, ebayIte
         }),
         maxAttempts: job.maxAttempts,
         payload: splitPayload as Prisma.JsonObject,
-        runAfter: now,
+        runAfter: getOrderedBatchRunAfter(now, index, splitPayloads.length),
         shopId: job.shopId,
         status: SyncJobStatus.PENDING,
         type: job.type,
