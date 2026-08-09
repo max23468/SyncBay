@@ -3,7 +3,7 @@ import {
   getNextEbayTradingRateLimitRetryAt,
   isEbayTradingUsageLimitError,
 } from "../lib/syncbay-ebay-rate-limit";
-import { normalizeRunDueLimit } from "../lib/syncbay-job-scheduling";
+import { getOrderedBatchRunIdentity, normalizeRunDueLimit } from "../lib/syncbay-job-scheduling";
 import {
   RUNNER_LANES,
   buildRunnerLanePlan,
@@ -150,7 +150,12 @@ export async function runDueSyncJobGroup(
   results[nextJob.index] = result;
 
   if (result.status === "failed") {
-    deadlineState.continuationNeeded = remainingJobs.length > 0;
+    const failedRunIdentity = getOrderedBatchRunIdentity(claimedJob);
+    const runnableRemainingJobs = failedRunIdentity
+      ? remainingJobs.filter(({ job }) => getOrderedBatchRunIdentity(job) !== failedRunIdentity)
+      : remainingJobs;
+    deadlineState.continuationNeeded ||= runnableRemainingJobs.length < remainingJobs.length;
+    await runDueSyncJobGroup(runnableRemainingJobs, results, now, deadlineAt, deadlineState);
     return;
   }
 

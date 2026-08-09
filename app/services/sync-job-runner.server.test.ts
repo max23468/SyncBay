@@ -103,13 +103,25 @@ test("interrompe il lavoro provider quando il job non è più RUNNING", async ()
   assert.equal((await getInterruptedRunningSyncJobResult(job))?.status, "skipped");
 });
 
-test("non esegue i job successivi dello shop dopo un fallimento", async () => {
-  const jobs = [makeJob(SyncJobType.IMPORT_CATALOG), makeJob(SyncJobType.IMPORT_CATALOG)];
+test("blocca la stessa sequenza fallita ma prosegue con lo stock", async () => {
+  const jobs = [
+    makeJob(SyncJobType.IMPORT_CATALOG, {
+      batchIndex: 1,
+      catalogImportRunId: "import-run",
+    }),
+    makeJob(SyncJobType.IMPORT_CATALOG, {
+      batchIndex: 2,
+      catalogImportRunId: "import-run",
+    }),
+    makeJob(SyncJobType.UPDATE_EBAY_STOCK),
+  ];
   jobs[0].id = "job-import-older";
   jobs[1].id = "job-import-newer";
+  jobs[2].id = "job-stock";
   fakes.count.mockResolvedValueOnce({
     ...dueCounts(),
     [SyncJobType.IMPORT_CATALOG]: 2,
+    [SyncJobType.UPDATE_EBAY_STOCK]: 1,
   });
   fakes.find.mockResolvedValueOnce(jobs);
   fakes.import.mockResolvedValueOnce({
@@ -122,15 +134,20 @@ test("non esegue i job successivi dello shop dopo un fallimento", async () => {
   const summary = await runDueSyncJobs({ limit: 5 });
 
   assert.equal(summary.failedCount, 1);
+  assert.equal(summary.succeededCount, 1);
   assert.equal(summary.continuationNeeded, true);
   assert.deepEqual(
     fakes.import.mock.calls.map(([job]) => job.id),
     ["job-import-older"],
   );
+  assert.deepEqual(
+    fakes.stock.mock.calls.map(([job]) => job.id),
+    ["job-stock"],
+  );
 });
 
-function makeJob(type: SyncJobType) {
-  return { id: `job-${type}`, type } as DueSyncJob;
+function makeJob(type: SyncJobType, payload: Record<string, unknown> = {}) {
+  return { id: `job-${type}`, payload, shopId: "shop-1", type } as DueSyncJob;
 }
 
 function result(job: DueSyncJob) {

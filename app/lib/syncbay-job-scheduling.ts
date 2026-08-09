@@ -32,6 +32,19 @@ export function getOrderedBatchRunAfter(now: Date, batchIndex: number, batchCoun
   return new Date(now.getTime() - (batchCount - batchIndex));
 }
 
+export function getOrderedBatchRunIdentity(input: { payload: unknown; type: string }) {
+  const runIdKey =
+    input.type === "IMPORT_CATALOG"
+      ? "catalogImportRunId"
+      : input.type === "SYNC_INCREMENTAL"
+        ? "runId"
+        : null;
+  const runId = runIdKey ? getStringField(input.payload, runIdKey) : null;
+  const batchIndex = getNumberField(input.payload, "batchIndex");
+
+  return runId && Number.isInteger(batchIndex) ? `${input.type}:${runId}` : null;
+}
+
 export function isFacetOnlyIncrementalJobPayload(payload: unknown) {
   return (
     getBooleanField(payload, "facetOnly") === true ||
@@ -226,6 +239,14 @@ function getBooleanField(value: unknown, key: string) {
   const field = (value as Record<string, unknown>)[key];
 
   return typeof field === "boolean" ? field : null;
+}
+
+function getNumberField(value: unknown, key: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const field = (value as Record<string, unknown>)[key];
+
+  return typeof field === "number" ? field : null;
 }
 
 function getShopifyChangeJobDedupeKey(input: { payload: unknown; shopId: string }) {

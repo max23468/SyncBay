@@ -8,6 +8,7 @@ import {
   getCatalogReconcileJobIdsToCancelBeforeNewRun,
   getDuplicateShopifyChangeJobIdsToCancel,
   getOrderedBatchRunAfter,
+  getOrderedBatchRunIdentity,
   getShopifyChangeJobResourceKeys,
   getSupersededCatalogReconcileJobIds,
   isFacetOnlyIncrementalJobPayload,
@@ -26,6 +27,34 @@ test("makes every batch due while preserving its order", () => {
   assert.deepEqual(
     runAfter.map((date) => date.toISOString()),
     ["2026-08-09T09:59:59.997Z", "2026-08-09T09:59:59.998Z", "2026-08-09T09:59:59.999Z"],
+  );
+});
+
+test("identifica soltanto le sequenze batch ordinate", () => {
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, catalogImportRunId: "import-run" },
+      type: "IMPORT_CATALOG",
+    }),
+    "IMPORT_CATALOG:import-run",
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 2, runId: "incremental-run" },
+      type: "SYNC_INCREMENTAL",
+    }),
+    "SYNC_INCREMENTAL:incremental-run",
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({ payload: { runId: "incremental-run" }, type: "SYNC_INCREMENTAL" }),
+    null,
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, runId: "stock-run" },
+      type: "UPDATE_EBAY_STOCK",
+    }),
+    null,
   );
 });
 
