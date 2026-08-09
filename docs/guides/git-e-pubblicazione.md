@@ -145,14 +145,17 @@ essere chiusa prima della PR o dichiarata esplicitamente nel riepilogo.
 Il workflow `.github/workflows/codex-review-gate.yml` non chiede review e non
 pubblica commenti. Osserva soltanto i segnali del reviewer
 `chatgpt-codex-connector[bot]` e aggiorna lo status `codex-review`: i finding
-P0/P1 inline o top-level del tentativo corrente falliscono il gate; P2/P3
-restano advisory, mentre l'esito positivo deve riferirsi all'HEAD esatto. Ogni `synchronize` invalida
-l'evidenza precedente; `reopened` e il dispatch manuale possono riusare solo
-uno status riuscito dello stesso SHA. All'apertura o al passaggio da draft a
-ready il primo giro parte automaticamente, senza commenti di richiesta. Dopo
-un nuovo commit o per un retry l'autore pubblica una sola riga `@codex review`:
-la reazione positiva del bot su quell'invocazione identifica
-il tentativo corrente anche quando una review pulita non pubblica testo.
+P0/P1 inline o top-level del tentativo corrente falliscono il gate. I finding
+P2/P3 restano advisory e non autorizzano modifiche: l'agente li implementa
+soltanto su richiesta esplicita del proprietario. Quando la review è conclusa e
+l'evidenza si riferisce all'HEAD esatto, li riepiloga e prosegue con la
+pubblicazione. Ogni `synchronize` invalida l'evidenza precedente; `reopened` e
+il dispatch manuale possono riusare solo uno status riuscito dello stesso SHA.
+All'apertura o al passaggio da draft a ready il primo giro parte
+automaticamente, senza commenti di richiesta. Dopo un nuovo commit o per un
+retry l'autore pubblica una sola riga `@codex review`: la reazione positiva del
+bot su quell'invocazione identifica il tentativo corrente anche quando una
+review pulita non pubblica testo.
 
 Il workflow usa `pull_request_target` con permessi minimi e fa checkout
 esclusivamente del branch predefinito fidato, senza installare dipendenze né

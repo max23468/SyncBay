@@ -28,9 +28,10 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Sostituita la `Codex feedback inbox` con il required check exact-HEAD
   `codex-review`, allineato a Hub-Fatture e CF-Ready. Il gate si riattiva a ogni
   nuovo commit, accetta soltanto evidenze Codex riferite allo SHA corrente,
-  blocca finding P0-P3 inline o top-level e usa esclusivamente codice trusted
-  dal branch predefinito. Il preflight remoto continua a bloccare i review
-  thread Codex actionable della PR corrente senza mantenere una inbox globale.
+  blocca i finding P0/P1 inline o top-level e lascia P2/P3 advisory, senza
+  autorizzarne l'implementazione salvo richiesta esplicita del proprietario.
+  Il preflight remoto continua a bloccare i review thread Codex actionable
+  della PR corrente senza mantenere una inbox globale.
 - Allineate le dipendenze compatibili e la toolchain: Node `24.19.0`, npm
   `12.0.2`, Shopify CLI `4.6.0`, preset Vercel `1.3.2`, React Doctor `0.9.5`,
   Supabase CLI `2.111.0`, tsx `4.23.8`, oxlint `1.77.0` e oxfmt `0.62.0`.
