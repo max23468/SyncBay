@@ -340,6 +340,7 @@ function getOrderedBatchBlockerSql(input: {
           SyncJobStatus.PENDING,
           SyncJobStatus.RETRYING,
           SyncJobStatus.RUNNING,
+          SyncJobStatus.FAILED,
         ])})
         ${selectedBlockers}
         AND COALESCE(${blockerRunId}, '') <> ''
