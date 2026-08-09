@@ -143,7 +143,10 @@ test("Codex review gate reruns on every PR HEAD and executes trusted code", () =
   assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
   assert.match(source, /statuses:\s*write/);
   assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
-  assert.match(source, /ref:.*github\.event_name == 'workflow_dispatch'.*github\.ref_name.*github\.event\.repository\.default_branch/);
+  assert.match(
+    source,
+    /ref:.*github\.event_name == 'workflow_dispatch'.*github\.ref_name.*github\.event\.repository\.default_branch/,
+  );
   assert.match(source, /node scripts\/codex-review-gate\.mjs/);
 });
 
