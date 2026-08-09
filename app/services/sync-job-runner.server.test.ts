@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { SyncJobStatus, SyncJobType } from "@prisma/client";
-import { test, vi } from "vitest";
+import { afterEach, test, vi } from "vitest";
+import type { DueSyncJob, DueSyncJobRunResult } from "./sync-job-shared.server";
 
 const fakes = vi.hoisted(() => ({
   archive: vi.fn(async () => 0),
@@ -9,8 +10,8 @@ const fakes = vi.hoisted(() => ({
   count: vi.fn(async () => dueCounts()),
   currentStatus: "RUNNING" as string,
   enqueue: vi.fn(async () => {}),
-  find: vi.fn(async () => []),
-  import: vi.fn(async (job) => result(job)),
+  find: vi.fn(async (): Promise<DueSyncJob[]> => []),
+  import: vi.fn(async (job: DueSyncJob): Promise<DueSyncJobRunResult> => result(job)),
   incremental: vi.fn(async (job) => result(job)),
   inactive: vi.fn(async (job) => result(job)),
   maintenance: vi.fn(async () => ({ cleaned: 0 })),
@@ -56,8 +57,13 @@ vi.mock("./sync-job-conflicts.server", () => ({
   runDetectShopifyChangesJob: fakes.conflicts,
 }));
 
-import { getInterruptedRunningSyncJobResult, type DueSyncJob } from "./sync-job-shared.server";
+import { getInterruptedRunningSyncJobResult } from "./sync-job-shared.server";
 import { runDueSyncJob, runDueSyncJobs } from "./sync-job-runner.server";
+
+afterEach(() => {
+  fakes.currentStatus = SyncJobStatus.RUNNING;
+  vi.clearAllMocks();
+});
 
 test("runDueSyncJobs coordina una coda vuota senza possedere famiglie di job", async () => {
   const now = new Date("2026-08-07T08:00:00.000Z");
@@ -97,8 +103,51 @@ test("interrompe il lavoro provider quando il job non è più RUNNING", async ()
   assert.equal((await getInterruptedRunningSyncJobResult(job))?.status, "skipped");
 });
 
-function makeJob(type: SyncJobType) {
-  return { id: `job-${type}`, type } as DueSyncJob;
+test("blocca la stessa sequenza fallita ma prosegue con lo stock", async () => {
+  const jobs = [
+    makeJob(SyncJobType.IMPORT_CATALOG, {
+      batchIndex: 1,
+      catalogImportSequenceId: "import-sequence",
+    }),
+    makeJob(SyncJobType.IMPORT_CATALOG, {
+      batchIndex: 2,
+      catalogImportSequenceId: "import-sequence",
+    }),
+    makeJob(SyncJobType.UPDATE_EBAY_STOCK),
+  ];
+  jobs[0].id = "job-import-older";
+  jobs[1].id = "job-import-newer";
+  jobs[2].id = "job-stock";
+  fakes.count.mockResolvedValueOnce({
+    ...dueCounts(),
+    [SyncJobType.IMPORT_CATALOG]: 2,
+    [SyncJobType.UPDATE_EBAY_STOCK]: 1,
+  });
+  fakes.find.mockResolvedValueOnce(jobs);
+  fakes.import.mockResolvedValueOnce({
+    errorMessage: "Errore sintetico",
+    jobId: jobs[0].id,
+    status: "failed",
+    type: SyncJobType.IMPORT_CATALOG,
+  });
+
+  const summary = await runDueSyncJobs({ limit: 5 });
+
+  assert.equal(summary.failedCount, 1);
+  assert.equal(summary.succeededCount, 1);
+  assert.equal(summary.continuationNeeded, true);
+  assert.deepEqual(
+    fakes.import.mock.calls.map(([job]) => job.id),
+    ["job-import-older"],
+  );
+  assert.deepEqual(
+    fakes.stock.mock.calls.map(([job]) => job.id),
+    ["job-stock"],
+  );
+});
+
+function makeJob(type: SyncJobType, payload: Record<string, unknown> = {}) {
+  return { id: `job-${type}`, payload, shopId: "shop-1", type } as DueSyncJob;
 }
 
 function result(job: DueSyncJob) {

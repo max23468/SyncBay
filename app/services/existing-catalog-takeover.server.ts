@@ -24,6 +24,7 @@ import { getDraftImportLimit } from "./shopify-import-shared.server";
 import {
   CATALOG_IMPORT_MAX_PRODUCTS,
   buildCatalogImportRunId,
+  buildCatalogImportSequenceId,
   getCatalogImportBlockers,
   getImportWizardState,
   upsertCatalogImportBatchJob,
@@ -255,6 +256,7 @@ export async function runExistingCatalogTakeoverStart(
       batchCount: batches.length,
       batchIndex,
       catalogImportRunId,
+      catalogImportSequenceId: buildCatalogImportSequenceId(input.shop.id),
       draftLimit,
       ebayItemIds,
       fieldPoliciesByItemId: buildExistingCatalogFieldPoliciesByItemId({

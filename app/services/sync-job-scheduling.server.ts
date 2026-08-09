@@ -41,6 +41,7 @@ import {
   FACET_BACKFILL_INCREMENTAL_JOB_SOURCE,
   buildSellerEventsNoopMarker,
   getCatalogReconcileJobIdsToCancelBeforeNewRun,
+  getOrderedBatchRunAfter,
   getSupersededCatalogReconcileJobIds,
   isSchedulableSyncJob,
 } from "../lib/syncbay-job-scheduling";
@@ -127,42 +128,58 @@ export async function findDueSyncJobsByPriority(input: { lanePlan: RunnerLane[];
   const jobs: DueSyncJob[] = [];
 
   for (const lane of input.lanePlan) {
-    const type = lane as SyncJobType;
-    if (type === SyncJobType.SYNC_INCREMENTAL) {
-      const selectedIncrementalJobs = jobs.filter(
-        (job) => job.type === SyncJobType.SYNC_INCREMENTAL,
-      ).length;
-      const regularJobs = await findDueRegularIncrementalSyncJobs({
-        excludeIds: jobs.map((job) => job.id),
-        limit: 1,
-        now: input.now,
-        prioritizeNonReconcile: shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs),
-      });
-      jobs.push(...regularJobs);
+    jobs.push(...(await findNextDueSyncJobForLane({ jobs, lane, now: input.now })));
+  }
 
-      if (regularJobs.length === 0) {
-        const facetOnlyJobs = await findDueSyncJobsForType({
-          excludeIds: jobs.map((job) => job.id),
-          limit: 1,
-          now: input.now,
-          type,
-          where: getFacetOnlyIncrementalSyncJobWhere(),
-        });
-        jobs.push(...facetOnlyJobs);
-      }
-      continue;
+  const runnableTypes = new Set<SyncJobType>(getRunnableSyncJobTypes());
+  for (const lane of RUNNER_LANES) {
+    if (jobs.length >= input.lanePlan.length) break;
+    if (!runnableTypes.has(lane as SyncJobType)) continue;
+
+    while (jobs.length < input.lanePlan.length) {
+      const refill = await findNextDueSyncJobForLane({ jobs, lane, now: input.now });
+      if (refill.length === 0) break;
+      jobs.push(...refill);
     }
+  }
 
-    const typedJobs = await findDueSyncJobsForType({
-      excludeIds: jobs.map((job) => job.id),
+  return jobs;
+}
+
+async function findNextDueSyncJobForLane(input: {
+  jobs: DueSyncJob[];
+  lane: RunnerLane;
+  now: Date;
+}) {
+  const type = input.lane as SyncJobType;
+  if (type !== SyncJobType.SYNC_INCREMENTAL) {
+    return findDueSyncJobsForType({
+      excludeIds: input.jobs.map((job) => job.id),
       limit: 1,
       now: input.now,
       type,
     });
-    jobs.push(...typedJobs);
   }
 
-  return jobs;
+  const selectedIncrementalJobs = input.jobs.filter(
+    (job) => job.type === SyncJobType.SYNC_INCREMENTAL,
+  ).length;
+  const regularJobs = await findDueRegularIncrementalSyncJobs({
+    excludeIds: input.jobs.map((job) => job.id),
+    limit: 1,
+    now: input.now,
+    prioritizeNonReconcile: shouldPrioritizeNonReconcileIncrementalJob(selectedIncrementalJobs),
+  });
+
+  if (regularJobs.length > 0) return regularJobs;
+
+  return findDueSyncJobsForType({
+    excludeIds: input.jobs.map((job) => job.id),
+    limit: 1,
+    now: input.now,
+    type,
+    where: getFacetOnlyIncrementalSyncJobWhere(),
+  });
 }
 
 // Un reconcile catalogo si spezza in decine di batch con lo stesso `runAfter`:
@@ -181,27 +198,35 @@ async function findDueRegularIncrementalSyncJobs(input: {
 }) {
   if (input.limit <= 0) return [];
 
+  const orderedBatchBlocker = getOrderedBatchBlockerSql({
+    excludeIds: input.excludeIds,
+    runIdKey: "runId",
+  });
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT "id"
-    FROM "SyncJob"
-    WHERE "type"::text = ${SyncJobType.SYNC_INCREMENTAL}
-      AND "status"::text IN (${Prisma.join([SyncJobStatus.PENDING, SyncJobStatus.RETRYING])})
-      AND "runAfter" <= ${input.now}
-      AND NOT COALESCE("payload" @> '{"facetOnly": true}'::jsonb, false)
-      AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
+    SELECT candidate."id"
+    FROM "SyncJob" candidate
+    WHERE candidate."type"::text = ${SyncJobType.SYNC_INCREMENTAL}
+      AND candidate."status"::text IN (${Prisma.join([
+        SyncJobStatus.PENDING,
+        SyncJobStatus.RETRYING,
+      ])})
+      AND candidate."runAfter" <= ${input.now}
+      AND NOT COALESCE(candidate."payload" @> '{"facetOnly": true}'::jsonb, false)
+      AND COALESCE(candidate."payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
       ${
         input.excludeIds?.length
-          ? Prisma.sql`AND "id" NOT IN (${Prisma.join(input.excludeIds)})`
+          ? Prisma.sql`AND candidate."id" NOT IN (${Prisma.join(input.excludeIds)})`
           : Prisma.empty
       }
+      ${orderedBatchBlocker}
     ORDER BY
       ${
         input.prioritizeNonReconcile
-          ? Prisma.sql`(COALESCE("payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,`
+          ? Prisma.sql`(COALESCE(candidate."payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,`
           : Prisma.empty
       }
-      "runAfter" ASC,
-      "createdAt" ASC
+      candidate."runAfter" ASC,
+      candidate."createdAt" ASC
     LIMIT ${input.limit}
   `);
 
@@ -231,6 +256,10 @@ async function findDueSyncJobsForType(input: {
   type: SyncJobType;
   where?: Prisma.SyncJobWhereInput;
 }) {
+  if (input.type === SyncJobType.IMPORT_CATALOG && !input.where) {
+    return findDueCatalogImportSyncJobs(input);
+  }
+
   return prisma.syncJob.findMany({
     orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
     select: dueSyncJobSelect,
@@ -244,6 +273,89 @@ async function findDueSyncJobsForType(input: {
       type: input.type,
     },
   });
+}
+
+async function findDueCatalogImportSyncJobs(input: {
+  excludeIds?: string[];
+  limit: number;
+  now: Date;
+}) {
+  const excludedCandidates = input.excludeIds?.length
+    ? Prisma.sql`AND candidate."id" NOT IN (${Prisma.join(input.excludeIds)})`
+    : Prisma.empty;
+  const orderedBatchBlocker = getOrderedBatchBlockerSql({
+    excludeIds: input.excludeIds,
+    fallbackRunIdKey: "catalogImportRunId",
+    runIdKey: "catalogImportSequenceId",
+  });
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT candidate."id"
+    FROM "SyncJob" candidate
+    WHERE candidate."type"::text = ${SyncJobType.IMPORT_CATALOG}
+      AND candidate."status"::text IN (${Prisma.join([
+        SyncJobStatus.PENDING,
+        SyncJobStatus.RETRYING,
+      ])})
+      AND candidate."runAfter" <= ${input.now}
+      ${excludedCandidates}
+      ${orderedBatchBlocker}
+    ORDER BY candidate."runAfter" ASC, candidate."createdAt" ASC
+    LIMIT ${input.limit}
+  `);
+
+  return findDueSyncJobsByIds(rows.map((row) => row.id));
+}
+
+function getOrderedBatchBlockerSql(input: {
+  excludeIds?: string[];
+  fallbackRunIdKey?: string;
+  runIdKey: string;
+}) {
+  const selectedBlockers = input.excludeIds?.length
+    ? Prisma.sql`
+        AND (
+          blocker."id" NOT IN (${Prisma.join(input.excludeIds)})
+          OR CASE
+            WHEN jsonb_typeof(blocker."payload"->'ebayItemIds') = 'array'
+              THEN jsonb_array_length(blocker."payload"->'ebayItemIds')
+            ELSE 0
+          END > ${RUNNER_EBAY_ITEM_BATCH_SIZE}
+        )
+      `
+    : Prisma.empty;
+  const blockerRunId = input.fallbackRunIdKey
+    ? Prisma.sql`COALESCE(blocker."payload"->>${input.runIdKey}, blocker."payload"->>${input.fallbackRunIdKey})`
+    : Prisma.sql`blocker."payload"->>${input.runIdKey}`;
+  const candidateRunId = input.fallbackRunIdKey
+    ? Prisma.sql`COALESCE(candidate."payload"->>${input.runIdKey}, candidate."payload"->>${input.fallbackRunIdKey})`
+    : Prisma.sql`candidate."payload"->>${input.runIdKey}`;
+
+  return Prisma.sql`
+    AND NOT EXISTS (
+      SELECT 1
+      FROM "SyncJob" blocker
+      WHERE blocker."shopId" = candidate."shopId"
+        AND blocker."type" = candidate."type"
+        AND blocker."status"::text IN (${Prisma.join([
+          SyncJobStatus.PENDING,
+          SyncJobStatus.RETRYING,
+          SyncJobStatus.RUNNING,
+        ])})
+        ${selectedBlockers}
+        AND COALESCE(${blockerRunId}, '') <> ''
+        AND ${blockerRunId} = ${candidateRunId}
+        AND (
+          COALESCE((blocker."payload"->>'batchIndex')::integer, 0) <
+            COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+          OR (
+            COALESCE((blocker."payload"->>'batchIndex')::integer, 0) =
+              COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+            AND COALESCE((blocker."payload"->>'splitIndex')::integer, 0) <
+              COALESCE((candidate."payload"->>'splitIndex')::integer, 0)
+          )
+        )
+    )
+  `;
 }
 
 export async function claimDueSyncJob(job: DueSyncJob, now: Date) {
@@ -665,7 +777,7 @@ async function enqueueFullCatalogReconcileSyncJobs(input: {
       runId,
       source: "catalog_reconcile",
     } satisfies Prisma.JsonObject,
-    runAfter: input.now,
+    runAfter: getOrderedBatchRunAfter(input.now, index, reconcilePlan.syncBatches.length),
     shopId: input.shopId,
     status: SyncJobStatus.PENDING,
     type: SyncJobType.SYNC_INCREMENTAL,
@@ -975,7 +1087,7 @@ async function enqueueSellerEventsDeltaSyncJobs(input: {
       runId,
       source: "seller_events_delta",
     } satisfies Prisma.JsonObject,
-    runAfter: input.now,
+    runAfter: getOrderedBatchRunAfter(input.now, index, candidateBatches.length),
     shopId: input.shopId,
     status: SyncJobStatus.PENDING,
     type: SyncJobType.SYNC_INCREMENTAL,

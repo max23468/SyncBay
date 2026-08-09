@@ -307,7 +307,7 @@ export async function getEbayTradingSellerEventsDelta(input: {
       modTimeTo: input.modTimeTo,
     }),
   });
-  const allItems = getTradingItems(body);
+  const allItems = getTradingItems(body).sort(compareTradingItemsByStartTime);
   const items = allItems.slice(0, input.maxEvents);
   const candidates: ImportPreviewListingCandidate[] = [];
   const inactiveItemIds: string[] = [];
@@ -399,6 +399,17 @@ function getTradingItems(container: XmlRecord | null) {
     const record = asRecord(item);
     return record ? [record] : [];
   });
+}
+
+function compareTradingItemsByStartTime(left: XmlRecord, right: XmlRecord) {
+  const leftStart = Date.parse(getString(asRecord(left.ListingDetails), "StartTime") ?? "");
+  const rightStart = Date.parse(getString(asRecord(right.ListingDetails), "StartTime") ?? "");
+
+  if (Number.isFinite(leftStart) && Number.isFinite(rightStart)) return leftStart - rightStart;
+  if (Number.isFinite(leftStart)) return -1;
+  if (Number.isFinite(rightStart)) return 1;
+
+  return (getString(left, "ItemID") ?? "").localeCompare(getString(right, "ItemID") ?? "");
 }
 
 function isInactiveTradingItem(item: XmlRecord) {

@@ -15,6 +15,7 @@ import {
   type ImportProductStatus,
 } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
+import { getOrderedBatchRunAfter } from "../lib/syncbay-job-scheduling";
 import { type DescriptionRuleMode } from "../lib/syncbay-description-rules";
 import { serializeExistingCatalogFieldPoliciesByItemId } from "../lib/syncbay-existing-catalog-field-policy";
 import {
@@ -111,6 +112,7 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
     now,
     shopId: shop.id,
   });
+  const catalogImportSequenceId = buildCatalogImportSequenceId(shop.id);
   let createdJobCount = 0;
   let existingJobCount = 0;
   let requeuedJobCount = 0;
@@ -122,10 +124,11 @@ export async function startCatalogImportJobs(session: ShopifySessionLike) {
       batchCount: batches.length,
       batchIndex,
       catalogImportRunId,
+      catalogImportSequenceId,
       draftLimit,
       ebayItemIds,
       importProductStatus,
-      now,
+      now: getOrderedBatchRunAfter(now, batchIndex, batches.length),
       reuseOnly: false,
       shopId: shop.id,
       source: "trading_api",
@@ -373,6 +376,7 @@ export async function upsertCatalogImportBatchJob(input: {
   batchCount: number;
   batchIndex: number;
   catalogImportRunId: string;
+  catalogImportSequenceId: string;
   draftLimit: number;
   ebayItemIds: string[];
   fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
@@ -432,6 +436,11 @@ export async function upsertCatalogImportBatchJob(input: {
     return wasReset ? ("resumed" as const) : ("existing" as const);
   }
 
+  await prisma.syncJob.updateMany({
+    data: { payload },
+    where: { id: existingJob.id, status: existingJob.status },
+  });
+
   return "existing" as const;
 }
 
@@ -468,6 +477,7 @@ export function buildCatalogImportBatchPayload(input: {
   batchCount: number;
   batchIndex: number;
   catalogImportRunId: string;
+  catalogImportSequenceId: string;
   draftLimit: number;
   ebayItemIds: string[];
   fieldPoliciesByItemId?: Record<string, ExistingCatalogTakeoverApplyRow["fieldPolicy"]>;
@@ -487,6 +497,7 @@ export function buildCatalogImportBatchPayload(input: {
     batchIndex: input.batchIndex + 1,
     catalogImportMaxProducts: CATALOG_IMPORT_MAX_PRODUCTS,
     catalogImportRunId: input.catalogImportRunId,
+    catalogImportSequenceId: input.catalogImportSequenceId,
     draftLimit: input.draftLimit,
     ebayItemIds: input.ebayItemIds,
     ...(input.reuseOnly && existingCatalogFieldPoliciesByItemId
@@ -506,6 +517,10 @@ export function buildCatalogImportBatchPayload(input: {
 
 export function buildCatalogImportRunId(input: { now: Date; shopId: string }) {
   return `catalog-import:${input.shopId}:${input.now.toISOString()}:${randomUUID()}`;
+}
+
+export function buildCatalogImportSequenceId(shopId: string) {
+  return `catalog-import-sequence:${shopId}`;
 }
 
 function buildCatalogImportBatchIdempotencyKey(input: {

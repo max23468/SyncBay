@@ -94,6 +94,7 @@ export function buildGetMyeBaySellingRequest(input: {
       <EntriesPerPage>${input.entriesPerPage}</EntriesPerPage>
       <PageNumber>${input.pageNumber}</PageNumber>
     </Pagination>
+    <Sort>StartTime</Sort>
   </ActiveList>
   <HideVariations>false</HideVariations>
 </GetMyeBaySellingRequest>`;

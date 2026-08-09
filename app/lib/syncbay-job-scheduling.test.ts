@@ -7,6 +7,8 @@ import {
   buildSellerEventsNoopMarker,
   getCatalogReconcileJobIdsToCancelBeforeNewRun,
   getDuplicateShopifyChangeJobIdsToCancel,
+  getOrderedBatchRunAfter,
+  getOrderedBatchRunIdentity,
   getShopifyChangeJobResourceKeys,
   getSupersededCatalogReconcileJobIds,
   isFacetOnlyIncrementalJobPayload,
@@ -17,6 +19,51 @@ import {
   shouldCancelSyncJobAfterShopUninstall,
   shouldSkipRecentShopifyProductChangeJob,
 } from "./syncbay-job-scheduling.ts";
+
+test("makes every batch due while preserving its order", () => {
+  const now = new Date("2026-08-09T10:00:00.000Z");
+  const runAfter = [0, 1, 2].map((index) => getOrderedBatchRunAfter(now, index, 3));
+
+  assert.deepEqual(
+    runAfter.map((date) => date.toISOString()),
+    ["2026-08-09T09:59:59.997Z", "2026-08-09T09:59:59.998Z", "2026-08-09T09:59:59.999Z"],
+  );
+});
+
+test("identifica soltanto le sequenze batch ordinate", () => {
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, catalogImportSequenceId: "import-sequence" },
+      type: "IMPORT_CATALOG",
+    }),
+    "IMPORT_CATALOG:import-sequence",
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 2, runId: "incremental-run" },
+      type: "SYNC_INCREMENTAL",
+    }),
+    "SYNC_INCREMENTAL:incremental-run",
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, catalogImportRunId: "legacy-import-run" },
+      type: "IMPORT_CATALOG",
+    }),
+    "IMPORT_CATALOG:legacy-import-run",
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({ payload: { runId: "incremental-run" }, type: "SYNC_INCREMENTAL" }),
+    null,
+  );
+  assert.equal(
+    getOrderedBatchRunIdentity({
+      payload: { batchIndex: 1, runId: "stock-run" },
+      type: "UPDATE_EBAY_STOCK",
+    }),
+    null,
+  );
+});
 
 test("cancels every prior reconcile job before creating a fresh run", () => {
   assert.deepEqual(

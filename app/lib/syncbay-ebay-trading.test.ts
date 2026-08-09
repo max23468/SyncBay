@@ -19,6 +19,12 @@ test("keeps every Trading request on the latest compatibility level", () => {
   }
 });
 
+test("requests active eBay listings from oldest to newest", () => {
+  const request = trading.buildGetMyeBaySellingRequest({ entriesPerPage: 10, pageNumber: 1 });
+
+  assert.match(request, /<ActiveList>[\s\S]*<Sort>StartTime<\/Sort>/);
+});
+
 test("reports every eBay error returned by the shared parser", () => {
   assert.throws(
     () =>

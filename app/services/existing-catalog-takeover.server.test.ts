@@ -117,6 +117,7 @@ test("serializes the field policy in the reuse-only import payload", async () =>
   assert.ok(batchInput);
   const payload = buildCatalogImportBatchPayload(batchInput);
   assert.equal(payload.reuseOnly, true);
+  assert.equal(payload.catalogImportSequenceId, "catalog-import-sequence:shop-1");
   assert.deepEqual(payload.existingCatalogFieldPoliciesByItemId, {
     "item-1": {
       handle: {
