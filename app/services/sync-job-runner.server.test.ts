@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { SyncJobStatus, SyncJobType } from "@prisma/client";
-import { test, vi } from "vitest";
+import { afterEach, test, vi } from "vitest";
+import type { DueSyncJob, DueSyncJobRunResult } from "./sync-job-shared.server";
 
 const fakes = vi.hoisted(() => ({
   archive: vi.fn(async () => 0),
@@ -9,8 +10,8 @@ const fakes = vi.hoisted(() => ({
   count: vi.fn(async () => dueCounts()),
   currentStatus: "RUNNING" as string,
   enqueue: vi.fn(async () => {}),
-  find: vi.fn(async () => []),
-  import: vi.fn(async (job) => result(job)),
+  find: vi.fn(async (): Promise<DueSyncJob[]> => []),
+  import: vi.fn(async (job: DueSyncJob): Promise<DueSyncJobRunResult> => result(job)),
   incremental: vi.fn(async (job) => result(job)),
   inactive: vi.fn(async (job) => result(job)),
   maintenance: vi.fn(async () => ({ cleaned: 0 })),
@@ -56,8 +57,13 @@ vi.mock("./sync-job-conflicts.server", () => ({
   runDetectShopifyChangesJob: fakes.conflicts,
 }));
 
-import { getInterruptedRunningSyncJobResult, type DueSyncJob } from "./sync-job-shared.server";
+import { getInterruptedRunningSyncJobResult } from "./sync-job-shared.server";
 import { runDueSyncJob, runDueSyncJobs } from "./sync-job-runner.server";
+
+afterEach(() => {
+  fakes.currentStatus = SyncJobStatus.RUNNING;
+  vi.clearAllMocks();
+});
 
 test("runDueSyncJobs coordina una coda vuota senza possedere famiglie di job", async () => {
   const now = new Date("2026-08-07T08:00:00.000Z");
@@ -95,6 +101,32 @@ test("interrompe il lavoro provider quando il job non è più RUNNING", async ()
 
   fakes.currentStatus = SyncJobStatus.CANCELLED;
   assert.equal((await getInterruptedRunningSyncJobResult(job))?.status, "skipped");
+});
+
+test("non esegue i job successivi dello shop dopo un fallimento", async () => {
+  const jobs = [makeJob(SyncJobType.IMPORT_CATALOG), makeJob(SyncJobType.IMPORT_CATALOG)];
+  jobs[0].id = "job-import-older";
+  jobs[1].id = "job-import-newer";
+  fakes.count.mockResolvedValueOnce({
+    ...dueCounts(),
+    [SyncJobType.IMPORT_CATALOG]: 2,
+  });
+  fakes.find.mockResolvedValueOnce(jobs);
+  fakes.import.mockResolvedValueOnce({
+    errorMessage: "Errore sintetico",
+    jobId: jobs[0].id,
+    status: "failed",
+    type: SyncJobType.IMPORT_CATALOG,
+  });
+
+  const summary = await runDueSyncJobs({ limit: 5 });
+
+  assert.equal(summary.failedCount, 1);
+  assert.equal(summary.continuationNeeded, true);
+  assert.deepEqual(
+    fakes.import.mock.calls.map(([job]) => job.id),
+    ["job-import-older"],
+  );
 });
 
 function makeJob(type: SyncJobType) {

@@ -146,7 +146,13 @@ export async function runDueSyncJobGroup(
     return;
   }
 
-  results[nextJob.index] = await runDueSyncJob(claimedJob);
+  const result = await runDueSyncJob(claimedJob);
+  results[nextJob.index] = result;
+
+  if (result.status === "failed") {
+    deadlineState.continuationNeeded = remainingJobs.length > 0;
+    return;
+  }
 
   await runDueSyncJobGroup(remainingJobs, results, now, deadlineAt, deadlineState);
 }

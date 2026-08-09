@@ -232,6 +232,10 @@ async function findDueSyncJobsForType(input: {
   type: SyncJobType;
   where?: Prisma.SyncJobWhereInput;
 }) {
+  if (input.type === SyncJobType.IMPORT_CATALOG && !input.where) {
+    return findDueCatalogImportSyncJobs(input);
+  }
+
   return prisma.syncJob.findMany({
     orderBy: [{ runAfter: "asc" }, { createdAt: "asc" }],
     select: dueSyncJobSelect,
@@ -245,6 +249,58 @@ async function findDueSyncJobsForType(input: {
       type: input.type,
     },
   });
+}
+
+async function findDueCatalogImportSyncJobs(input: {
+  excludeIds?: string[];
+  limit: number;
+  now: Date;
+}) {
+  const excludedCandidates = input.excludeIds?.length
+    ? Prisma.sql`AND candidate."id" NOT IN (${Prisma.join(input.excludeIds)})`
+    : Prisma.empty;
+  const excludedBlockers = input.excludeIds?.length
+    ? Prisma.sql`AND blocker."id" NOT IN (${Prisma.join(input.excludeIds)})`
+    : Prisma.empty;
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT candidate."id"
+    FROM "SyncJob" candidate
+    WHERE candidate."type"::text = ${SyncJobType.IMPORT_CATALOG}
+      AND candidate."status"::text IN (${Prisma.join([
+        SyncJobStatus.PENDING,
+        SyncJobStatus.RETRYING,
+      ])})
+      AND candidate."runAfter" <= ${input.now}
+      ${excludedCandidates}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM "SyncJob" blocker
+        WHERE blocker."shopId" = candidate."shopId"
+          AND blocker."type" = candidate."type"
+          AND blocker."status"::text IN (${Prisma.join([
+            SyncJobStatus.PENDING,
+            SyncJobStatus.RETRYING,
+            SyncJobStatus.RUNNING,
+          ])})
+          ${excludedBlockers}
+          AND COALESCE(blocker."payload"->>'catalogImportRunId', '') <> ''
+          AND blocker."payload"->>'catalogImportRunId' = candidate."payload"->>'catalogImportRunId'
+          AND (
+            COALESCE((blocker."payload"->>'batchIndex')::integer, 0) <
+              COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+            OR (
+              COALESCE((blocker."payload"->>'batchIndex')::integer, 0) =
+                COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+              AND COALESCE((blocker."payload"->>'splitIndex')::integer, 0) <
+                COALESCE((candidate."payload"->>'splitIndex')::integer, 0)
+            )
+          )
+      )
+    ORDER BY candidate."runAfter" ASC, candidate."createdAt" ASC
+    LIMIT ${input.limit}
+  `);
+
+  return findDueSyncJobsByIds(rows.map((row) => row.id));
 }
 
 export async function claimDueSyncJob(job: DueSyncJob, now: Date) {
