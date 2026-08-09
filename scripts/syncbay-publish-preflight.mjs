@@ -245,7 +245,7 @@ export function readCodexReviewThreads(prNumber, options = {}) {
       "-F",
       `number=${prNumber}`,
       "-f",
-      "query=query($owner:String!, $repo:String!, $number:Int!, $after:String) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100, after:$after) { pageInfo { hasNextPage endCursor } nodes { isResolved isOutdated comments(first:100) { nodes { author { login } } } } } } } }",
+      "query=query($owner:String!, $repo:String!, $number:Int!, $after:String) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:100, after:$after) { pageInfo { hasNextPage endCursor } nodes { isResolved isOutdated comments(first:100) { nodes { author { login } body } } } } } } }",
     ];
 
     if (after) {
@@ -277,7 +277,11 @@ export function readCodexReviewThreads(prNumber, options = {}) {
       !thread.isResolved &&
       !thread.isOutdated &&
       thread.comments.nodes.some(
-        (comment) => comment.author?.login === "chatgpt-codex-connector[bot]",
+        (comment) =>
+          comment.author?.login === "chatgpt-codex-connector[bot]" &&
+          /^(?:\*\*|<sub>)*(?:!?\[)?P[01](?: Badge)?(?:\]\([^)]*\)|\]\s*|\*\*)/m.test(
+            comment.body ?? "",
+          ),
       ),
   );
 

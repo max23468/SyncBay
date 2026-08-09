@@ -138,7 +138,12 @@ test("reads paginated Codex review threads before deciding publication safety", 
                 nodes: [
                   {
                     comments: {
-                      nodes: [{ author: { login: "chatgpt-codex-connector[bot]" } }],
+                      nodes: [
+                        {
+                          author: { login: "chatgpt-codex-connector[bot]" },
+                          body: "**P1** Finding bloccante",
+                        },
+                      ],
                     },
                     isOutdated: false,
                     isResolved: false,
@@ -156,4 +161,38 @@ test("reads paginated Codex review threads before deciding publication safety", 
   assert.equal(result.actionable, true);
   assert.equal(result.readable, true);
   assert.equal(result.source, "reviewThreads:paginated");
+});
+
+test("treats unresolved P2/P3 Codex threads as advisory", () => {
+  const result = readCodexReviewThreads(286, {
+    runGhFn() {
+      return JSON.stringify({
+        data: {
+          repository: {
+            pullRequest: {
+              reviewThreads: {
+                pageInfo: { endCursor: null, hasNextPage: false },
+                nodes: [
+                  {
+                    comments: {
+                      nodes: [
+                        {
+                          author: { login: "chatgpt-codex-connector[bot]" },
+                          body: "**P2** Advisory che cita P1 nella spiegazione",
+                        },
+                      ],
+                    },
+                    isOutdated: false,
+                    isResolved: false,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      });
+    },
+  });
+
+  assert.equal(result.actionable, false);
 });
