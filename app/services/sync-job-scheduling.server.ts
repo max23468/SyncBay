@@ -182,27 +182,35 @@ async function findDueRegularIncrementalSyncJobs(input: {
 }) {
   if (input.limit <= 0) return [];
 
+  const orderedBatchBlocker = getOrderedBatchBlockerSql({
+    excludeIds: input.excludeIds,
+    runIdKey: "runId",
+  });
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT "id"
-    FROM "SyncJob"
-    WHERE "type"::text = ${SyncJobType.SYNC_INCREMENTAL}
-      AND "status"::text IN (${Prisma.join([SyncJobStatus.PENDING, SyncJobStatus.RETRYING])})
-      AND "runAfter" <= ${input.now}
-      AND NOT COALESCE("payload" @> '{"facetOnly": true}'::jsonb, false)
-      AND COALESCE("payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
+    SELECT candidate."id"
+    FROM "SyncJob" candidate
+    WHERE candidate."type"::text = ${SyncJobType.SYNC_INCREMENTAL}
+      AND candidate."status"::text IN (${Prisma.join([
+        SyncJobStatus.PENDING,
+        SyncJobStatus.RETRYING,
+      ])})
+      AND candidate."runAfter" <= ${input.now}
+      AND NOT COALESCE(candidate."payload" @> '{"facetOnly": true}'::jsonb, false)
+      AND COALESCE(candidate."payload"->>'source', '') <> ${FACET_BACKFILL_INCREMENTAL_JOB_SOURCE}
       ${
         input.excludeIds?.length
-          ? Prisma.sql`AND "id" NOT IN (${Prisma.join(input.excludeIds)})`
+          ? Prisma.sql`AND candidate."id" NOT IN (${Prisma.join(input.excludeIds)})`
           : Prisma.empty
       }
+      ${orderedBatchBlocker}
     ORDER BY
       ${
         input.prioritizeNonReconcile
-          ? Prisma.sql`(COALESCE("payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,`
+          ? Prisma.sql`(COALESCE(candidate."payload"->>'source', '') = ${CATALOG_RECONCILE_JOB_SOURCE}) ASC,`
           : Prisma.empty
       }
-      "runAfter" ASC,
-      "createdAt" ASC
+      candidate."runAfter" ASC,
+      candidate."createdAt" ASC
     LIMIT ${input.limit}
   `);
 
@@ -259,9 +267,10 @@ async function findDueCatalogImportSyncJobs(input: {
   const excludedCandidates = input.excludeIds?.length
     ? Prisma.sql`AND candidate."id" NOT IN (${Prisma.join(input.excludeIds)})`
     : Prisma.empty;
-  const excludedBlockers = input.excludeIds?.length
-    ? Prisma.sql`AND blocker."id" NOT IN (${Prisma.join(input.excludeIds)})`
-    : Prisma.empty;
+  const orderedBatchBlocker = getOrderedBatchBlockerSql({
+    excludeIds: input.excludeIds,
+    runIdKey: "catalogImportRunId",
+  });
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
     SELECT candidate."id"
     FROM "SyncJob" candidate
@@ -272,35 +281,54 @@ async function findDueCatalogImportSyncJobs(input: {
       ])})
       AND candidate."runAfter" <= ${input.now}
       ${excludedCandidates}
-      AND NOT EXISTS (
-        SELECT 1
-        FROM "SyncJob" blocker
-        WHERE blocker."shopId" = candidate."shopId"
-          AND blocker."type" = candidate."type"
-          AND blocker."status"::text IN (${Prisma.join([
-            SyncJobStatus.PENDING,
-            SyncJobStatus.RETRYING,
-            SyncJobStatus.RUNNING,
-          ])})
-          ${excludedBlockers}
-          AND COALESCE(blocker."payload"->>'catalogImportRunId', '') <> ''
-          AND blocker."payload"->>'catalogImportRunId' = candidate."payload"->>'catalogImportRunId'
-          AND (
-            COALESCE((blocker."payload"->>'batchIndex')::integer, 0) <
-              COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
-            OR (
-              COALESCE((blocker."payload"->>'batchIndex')::integer, 0) =
-                COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
-              AND COALESCE((blocker."payload"->>'splitIndex')::integer, 0) <
-                COALESCE((candidate."payload"->>'splitIndex')::integer, 0)
-            )
-          )
-      )
+      ${orderedBatchBlocker}
     ORDER BY candidate."runAfter" ASC, candidate."createdAt" ASC
     LIMIT ${input.limit}
   `);
 
   return findDueSyncJobsByIds(rows.map((row) => row.id));
+}
+
+function getOrderedBatchBlockerSql(input: { excludeIds?: string[]; runIdKey: string }) {
+  const selectedBlockers = input.excludeIds?.length
+    ? Prisma.sql`
+        AND (
+          blocker."id" NOT IN (${Prisma.join(input.excludeIds)})
+          OR CASE
+            WHEN jsonb_typeof(blocker."payload"->'ebayItemIds') = 'array'
+              THEN jsonb_array_length(blocker."payload"->'ebayItemIds')
+            ELSE 0
+          END > ${RUNNER_EBAY_ITEM_BATCH_SIZE}
+        )
+      `
+    : Prisma.empty;
+
+  return Prisma.sql`
+    AND NOT EXISTS (
+      SELECT 1
+      FROM "SyncJob" blocker
+      WHERE blocker."shopId" = candidate."shopId"
+        AND blocker."type" = candidate."type"
+        AND blocker."status"::text IN (${Prisma.join([
+          SyncJobStatus.PENDING,
+          SyncJobStatus.RETRYING,
+          SyncJobStatus.RUNNING,
+        ])})
+        ${selectedBlockers}
+        AND COALESCE(blocker."payload"->>${input.runIdKey}, '') <> ''
+        AND blocker."payload"->>${input.runIdKey} = candidate."payload"->>${input.runIdKey}
+        AND (
+          COALESCE((blocker."payload"->>'batchIndex')::integer, 0) <
+            COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+          OR (
+            COALESCE((blocker."payload"->>'batchIndex')::integer, 0) =
+              COALESCE((candidate."payload"->>'batchIndex')::integer, 0)
+            AND COALESCE((blocker."payload"->>'splitIndex')::integer, 0) <
+              COALESCE((candidate."payload"->>'splitIndex')::integer, 0)
+          )
+        )
+    )
+  `;
 }
 
 export async function claimDueSyncJob(job: DueSyncJob, now: Date) {
