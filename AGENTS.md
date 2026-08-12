@@ -2,8 +2,7 @@
 
 Regole operative per agenti e collaboratori su SyncBay. In conflitto vince, in
 ordine: istruzioni di sessione, un `AGENTS.md` più profondo, questo file, gli ADR
-in `docs/decisions/`, il codice vicino. La memoria `.mex/` è un indice locale: se
-contraddice queste fonti è stale e va aggiornata, non seguita.
+in `docs/decisions/`, il codice vicino.
 
 ## Cos'è SyncBay
 
@@ -42,7 +41,7 @@ real-time. Il limite operativo è 2.000 prodotti per shop.
   screenshot, log, test o documentazione: le fixture sono sintetiche.
 - Nel repository restano codice, schema, migration, fixture e docs. Non
   committare build, cache, sessioni browser, stato locale dei provider, export di
-  lavoro, output della distribuzione privata o `.mex/telemetry-id`.
+  lavoro o output della distribuzione privata.
 
 ## Provider e UI
 
@@ -73,9 +72,8 @@ real-time. Il limite operativo è 2.000 prodotti per shop.
   (opzione `--branch codex/<tema>`), sempre dal checkout principale e mai da
   un'altra worktree. Se il setup si interrompe riprendi dentro la worktree con
   `npm run worktree:prepare`, senza ricrearla.
-- Per lavori non banali parti da `docs/CONTEXT.md`, usa `docs/INDEX.md` (e
-  `.mex/ROUTER.md`, se lo scaffold locale è presente) per trovare la fonte, e
-  apri solo ciò che serve al task.
+- Per lavori non banali parti da `docs/CONTEXT.md`, usa `docs/INDEX.md` per
+  trovare la fonte e apri solo ciò che serve al task.
 - Tieni il diff proporzionato alla richiesta: refactor, rinominazioni,
   riformattazioni o dipendenze collaterali non richiesti restano fuori.
 - Aggiorna la documentazione solo quando cambia una decisione, un comportamento o

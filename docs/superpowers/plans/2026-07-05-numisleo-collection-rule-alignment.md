@@ -108,7 +108,6 @@ Do not touch:
 **Files:**
 
 - Read: `AGENTS.md`
-- Read: `.mex/ROUTER.md`
 - Read: `docs/CONTEXT.md`
 - Read: `docs/TOOLCHAIN.md`
 - Read: `docs/decisions/0015-mapping-categorie-ebay-shopify.md`

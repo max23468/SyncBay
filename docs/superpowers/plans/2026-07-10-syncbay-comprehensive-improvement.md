@@ -1683,8 +1683,6 @@ git commit -m "test: add isolated UI render gate"
 - Modify: `SECURITY.md`
 - Modify: `CHANGELOG.md`
 - Verify: `CLAUDE.md`
-- Verify: `.mex/ROUTER.md`
-- Modify: `.mex/context/setup.md`
 
 **Interfaces:**
 
@@ -1906,16 +1904,10 @@ Expected:
 - nessun advisor sicurezza Supabase;
 - nessun redesign generale: le sei superfici e la microcopy italiana restano la base.
 
-- [x] **Step 13: Riallineare lo scaffold mex senza duplicare le regole canoniche**
+- [x] **Step 13: Verificare la coerenza delle istruzioni agenti**
 
-Run:
-
-```bash
-npx mex-agent check
-npx mex-agent sync --dry-run
-```
-
-Aggiornare `.mex/context/setup.md` con i comandi runtime, test e manutenzione realmente introdotti dal programma. Verificare che `CLAUDE.md` continui a delegare ad `AGENTS.md` invece di copiarne il contenuto e che `.mex/ROUTER.md` descriva lo stato 1.0 effettivo. Correggere drift sostanziale; se mex segnala ancora come stale il thin wrapper `CLAUDE.md` pur essendo coerente, registrare l'eccezione nel riepilogo invece di duplicare centinaia di righe.
+Verificare che `CLAUDE.md` continui a delegare ad `AGENTS.md` invece di copiarne
+il contenuto, senza duplicare centinaia di righe.
 
 - [x] **Step 14: Verificare e committare**
 
@@ -1932,15 +1924,14 @@ npm run build
 npm run bundle:budget
 npm run provider:budget
 npm run docs:check
-npx mex-agent check --quiet
 git diff --check
 ```
 
-Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider osservate oppure classificate con uno stato causale e azionabile, documentazione/link/comandi coerenti, `robots.txt` incluso nello smoke e mex con zero errori.
+Expected: gate applicativi verdi, stati semantici/accessibili coerenti, hydration senza errori, griglie bilanciate, nessun overflow pagina, bundle e payload nei budget, log strutturati e campionati, quote provider osservate oppure classificate con uno stato causale e azionabile, documentazione/link/comandi coerenti e `robots.txt` incluso nello smoke.
 
 ```bash
-git add app/routes/app._index.tsx app/routes/app.catalog.tsx app/routes/app.conflicts.tsx app/routes/app.import-preview.tsx app/routes/app.activity.tsx app/routes/app.settings.tsx app/routes/api.jobs.run-due.tsx app/routes/webhooks.products.update.tsx app/routes/webhooks.inventory_levels.update.tsx app/lib/syncbay-ui-state.ts app/lib/syncbay-ui-state.test.ts app/lib/syncbay-runtime-log.ts app/lib/syncbay-runtime-log.test.ts app/lib/syncbay-loader-performance.ts app/lib/syncbay-loader-performance.test.ts app/styles/syncbay-embedded.css public/robots.txt scripts/syncbay-bundle-budget.mjs scripts/syncbay-bundle-budget.test.mjs scripts/syncbay-docs-check.mjs scripts/syncbay-docs-check.test.mjs scripts/smoke-ui.mjs scripts/syncbay-ui-check.test.mjs package.json docs/ROADMAP.md docs/CONTEXT.md docs/INDEX.md docs/TOOLCHAIN.md docs/DECISIONS_PENDING.md docs/guides/provisioning-runtime.md docs/guides/sicurezza-privacy.md docs/glossario.md SECURITY.md CHANGELOG.md .mex/context/setup.md
-git add -u CLAUDE.md .mex/ROUTER.md
+git add app/routes/app._index.tsx app/routes/app.catalog.tsx app/routes/app.conflicts.tsx app/routes/app.import-preview.tsx app/routes/app.activity.tsx app/routes/app.settings.tsx app/routes/api.jobs.run-due.tsx app/routes/webhooks.products.update.tsx app/routes/webhooks.inventory_levels.update.tsx app/lib/syncbay-ui-state.ts app/lib/syncbay-ui-state.test.ts app/lib/syncbay-runtime-log.ts app/lib/syncbay-runtime-log.test.ts app/lib/syncbay-loader-performance.ts app/lib/syncbay-loader-performance.test.ts app/styles/syncbay-embedded.css public/robots.txt scripts/syncbay-bundle-budget.mjs scripts/syncbay-bundle-budget.test.mjs scripts/syncbay-docs-check.mjs scripts/syncbay-docs-check.test.mjs scripts/smoke-ui.mjs scripts/syncbay-ui-check.test.mjs package.json docs/ROADMAP.md docs/CONTEXT.md docs/INDEX.md docs/TOOLCHAIN.md docs/DECISIONS_PENDING.md docs/guides/provisioning-runtime.md docs/guides/sicurezza-privacy.md docs/glossario.md SECURITY.md CHANGELOG.md
+git add -u CLAUDE.md
 git commit -m "fix: align UI states and operational budgets"
 ```
 
@@ -1984,16 +1975,13 @@ npm run db:verify
 npm run db:storage-budget
 npm run provider:budget
 npm run docs:check
-npx mex-agent check --quiet
 ```
 
-Expected: tutti exit `0`; `db:storage-budget` resta sotto 400 MB (`warning` ammesso ma dichiarato), `provider:budget` non ha metriche in fascia urgente/blocco e non presenta dati mancanti come verdi. Mex deve avere zero errori e nessun warning non già classificato nel Task 12.
+Expected: tutti exit `0`; `db:storage-budget` resta sotto 400 MB (`warning` ammesso ma dichiarato), `provider:budget` non ha metriche in fascia urgente/blocco e non presenta dati mancanti come verdi.
 
 Eseguito il 16 luglio 2026 dopo riallineamento a `origin/main`: full gate verde,
 coverage `95,42%` linee / `83,28%` branch, bundle nei budget, database
-`306,1 MiB`, React Doctor `100/100` sul diff. Mex resta `94/100` con i due
-warning già classificati nel Task 12: wrapper `CLAUDE.md` intenzionalmente
-stale e confronto testuale con `AGENTS.md`, senza drift sostanziale delle regole.
+`306,1 MiB` e React Doctor `100/100` sul diff.
 
 - [x] **Step 2: Eseguire self-review e controllo di copertura**
 
@@ -2220,7 +2208,6 @@ perimetro 2.0 non sono stati avviati.
 | `egress:budget` già esistente                                        | Task 8, riuso obbligatorio dentro `provider:budget`, nessun duplicato                                                                        |
 | Pulizia generale non automatizzata                                   | Task 12, `docs:check`, file temporanei, TODO/FIXME, script e `console.*` censiti                                                             |
 | Tre indici Supabase INFO unused                                      | Task 12, osservare 30 giorni; nessuna rimozione cieca                                                                                        |
-| Mex a `76/100` con 8 warning preesistenti                            | Task 12, documentare i comandi nuovi, correggere drift sostanziale e spiegare eventuali warning intenzionali                                 |
 | React Router 8, TypeScript 7, Node types 26                          | Esclusioni esplicite; migrazioni separate, non difetti di questo programma                                                                   |
 | Deploy/provider attualmente sani                                     | Task 13 li usa come baseline; nessun “fix outage” inventato                                                                                  |
 
@@ -2258,7 +2245,7 @@ Esito del controllo: tutti i rilievi validati hanno un task, un criterio di prov
 | Stabilità            | Fairness/deadline, pool DB, retry/CAS e job lifecycle                                             | Task 2-9, 12-13 e monitor post-deploy                                              |
 | Performance          | Batch conflitti, storia compatta, payload/bundle, loader timing, sampling log e CWV               | Task 2, 4, 7-8, 11-13                                                              |
 | Vercel/Supabase Free | Storage/egress/invocation/CPU/memoria/transfer/build/analytics e soglie                           | Task 8, 12-13; stati osservati o causali non verdi e nessun bypass                 |
-| Documentazione       | ADR, roadmap, contesto, glossario, toolchain, sicurezza, mex e link/comandi                       | Task 2, 5, 7-8, 12-13 e `docs:check`                                               |
+| Documentazione       | ADR, roadmap, contesto, glossario, toolchain, sicurezza e link/comandi                            | Task 2, 5, 7-8, 12-13 e `docs:check`                                               |
 
 Questa tabella è la checklist di accettazione del piano: un'area non è chiusa se manca una prova indicata nella terza colonna, anche con CI verde.
 

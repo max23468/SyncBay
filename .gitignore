@@ -20,9 +20,6 @@ build/
 .shopify/
 .vercel/
 
-# Local agent memory scaffold
-.mex/
-
 # Worktree locali isolati
 .worktrees/
 
