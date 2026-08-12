@@ -2,7 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 
-const NON_DEPLOY_PREFIXES = [".github/", ".mex/", "docs/", "preview/", "supabase/"];
+const NON_DEPLOY_PREFIXES = [".github/", "docs/", "preview/", "supabase/"];
 
 const NON_DEPLOY_ROOT_FILES = new Set([
   ".env.example",

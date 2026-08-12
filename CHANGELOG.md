@@ -712,8 +712,8 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
 ### Non versionato
 
 - Ridotto il contesto operativo per agenti: semplificati `AGENTS.md`, README,
-  handoff, roadmap, decisioni aperte, indice e toolchain; piani storici, memoria
-  mex e dettagli di manutenzione sono ora instradati solo quando pertinenti,
+  handoff, roadmap, decisioni aperte, indice e toolchain; piani storici e
+  dettagli di manutenzione sono ora instradati solo quando pertinenti,
   riducendo duplicazioni, inventari manuali e rischio di informazioni obsolete.
 
 ### Sotto il cofano
@@ -1616,14 +1616,6 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
 - Runner sync: la repair automatica delle immagini Catalogo non legge più
   snapshot JSON in massa; usa il `thumbnailUrl` denormalizzato sul mapping e
   scansiona solo prodotti ancora senza miniatura.
-
-### Non versionato
-
-- Tooling agenti: configurato `mex-agent` come memoria locale routata per Codex
-  e Claude Code, mantenendo `AGENTS.md` e la documentazione canonica come fonti
-  primarie.
-- Tooling agenti: ignorata la directory locale `.mex/` per evitare commit
-  accidentali dello scaffold di memoria e del suo stato locale.
 
 ## [0.46.1] — 2026-06-23
 
