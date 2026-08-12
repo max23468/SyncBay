@@ -120,8 +120,8 @@ test("explains facet-only incremental jobs as storefront facet alignment", () =>
   assert.match(diagnostic.nextAction, /runner automatico/i);
 });
 
-test("keeps manual retry available for non-provider enqueue failures", () => {
-  const retry = getManualRetryState(
+test("leaves enqueue failures to automatic replanning instead of manual retry", () => {
+  const diagnostic = getSyncJobDiagnostic(
     {
       attempts: 1,
       errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
@@ -134,8 +134,10 @@ test("keeps manual retry available for non-provider enqueue failures", () => {
     now,
   );
 
-  assert.equal(retry.canRetry, true);
-  assert.equal(retry.label, "Riprova");
+  assert.equal(diagnostic.retry.canRetry, false);
+  assert.equal(diagnostic.retry.label, "Riprova automatica");
+  assert.match(diagnostic.retry.reason, /marker diagnostico/i);
+  assert.match(diagnostic.nextAction, /prossimo ciclo/i);
 });
 
 test("allows manual retry after an eBay cooldown has expired", () => {

@@ -34,6 +34,18 @@ test("quarantines failed jobs that exhausted their attempts", () => {
   assert.equal(isSyncJobQuarantined({ attempts: 6, maxAttempts: 5, status: "failed" }), true);
 });
 
+test("keeps automatically replanned enqueue markers out of quarantine", () => {
+  const marker = {
+    attempts: 1,
+    errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+    maxAttempts: 1,
+    status: "FAILED",
+  };
+
+  assert.equal(classifySyncJobQuarantine(marker), "retrying");
+  assert.equal(isSyncJobQuarantined(marker), false);
+});
+
 test("never quarantines settled or in-flight jobs", () => {
   for (const status of ["SUCCEEDED", "CANCELLED"]) {
     assert.equal(classifySyncJobQuarantine({ attempts: 9, maxAttempts: 5, status }), "settled");
@@ -55,10 +67,16 @@ test("summarizes a mixed queue", () => {
   assert.deepEqual(
     summarizeSyncJobQuarantine([
       { attempts: 5, maxAttempts: 5, status: "FAILED" },
+      {
+        attempts: 1,
+        errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+        maxAttempts: 1,
+        status: "FAILED",
+      },
       { attempts: 1, maxAttempts: 5, status: "FAILED" },
       { attempts: 0, maxAttempts: 5, status: "PENDING" },
       { attempts: 3, maxAttempts: 5, status: "SUCCEEDED" },
     ]),
-    { actionableCount: 1, retryingCount: 2, settledCount: 1, total: 4 },
+    { actionableCount: 1, retryingCount: 3, settledCount: 1, total: 5 },
   );
 });
