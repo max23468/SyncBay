@@ -8,6 +8,7 @@ import {
   SyncJobType,
 } from "@prisma/client";
 import prisma from "../db.server";
+import { formatSyncJobErrorMessage } from "../lib/syncbay-error-message";
 import { normalizeImportProductStatus } from "../lib/import-product-status";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import {
@@ -520,7 +521,9 @@ export function getRetryAfter(attempts: number, from = new Date()) {
 }
 
 export function getErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
+  const message = formatSyncJobErrorMessage(error);
+
+  if (message) return message;
 
   return "Errore inatteso durante l'esecuzione del job SyncBay.";
 }

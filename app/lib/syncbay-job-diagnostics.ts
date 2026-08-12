@@ -1,3 +1,5 @@
+import { isAutomaticallyReplannedSyncJobFailure } from "./syncbay-job-quarantine";
+
 export interface SyncJobDiagnosticInput {
   attempts: number;
   errorCode?: string | null;
@@ -80,6 +82,15 @@ export function getManualRetryState(
     };
   }
 
+  if (isAutomaticallyReplannedSyncJobFailure(job)) {
+    return {
+      canRetry: false,
+      label: "Riprova automatica",
+      reason:
+        "La pianificazione viene ripetuta automaticamente dal runner; questo marker diagnostico non è un job eseguibile da rimettere in coda.",
+    };
+  }
+
   return {
     canRetry: true,
     label: "Riprova",
@@ -130,6 +141,9 @@ function getJobImpact(job: SyncJobDiagnosticInput) {
 function getJobNextAction(job: SyncJobDiagnosticInput, now: Date) {
   if (isEbayCooldownActive(job, now)) {
     return `Attendi: eBay ha imposto una pausa fino al ${formatDateTime(job.runAfter)}. Non forzare il retry manuale; lascia lavorare il runner quando la finestra si riapre.`;
+  }
+  if (isAutomaticallyReplannedSyncJobFailure(job)) {
+    return "SyncBay riproverà automaticamente la pianificazione al prossimo ciclo. Se l'errore continua, controlla la connessione eBay e lo stato dei provider.";
   }
   if (job.type === "DETECT_SHOPIFY_CHANGES") {
     return "Riprova il controllo e poi rivedi la pagina Conflitti.";

@@ -1,3 +1,5 @@
+import { AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE } from "./syncbay-stale-failed-job-archive";
+
 /**
  * Classificazione "dead-letter" dei job SyncBay senza nuovi stati a schema.
  *
@@ -9,21 +11,31 @@
  * dashboard invece di ripetersi in modo silenzioso nella timeline Attività.
  *
  * La quarantena è derivata dai campi esistenti (`status`, `attempts`,
- * `maxAttempts`) per non introdurre un valore enum o una migration: lo stato
- * terminale resta `FAILED`, ma viene letto come quarantena quando i tentativi
- * sono esauriti.
+ * `maxAttempts`, `errorCode`) per non introdurre un valore enum o una
+ * migration. I marker di pianificazione restano `FAILED` per conservare la
+ * diagnostica, ma non sono job eseguibili: il runner ripete automaticamente la
+ * pianificazione al tick successivo e non devono diventare quarantena.
  */
 
 export type SyncJobQuarantineState = "actionable" | "retrying" | "settled";
 
 export interface SyncJobQuarantineInput {
   attempts: number;
+  errorCode?: string | null;
   maxAttempts: number;
   status: string;
 }
 
 const RETRYABLE_PENDING_STATUSES = new Set(["PENDING", "RETRYING", "RUNNING"]);
 const SETTLED_STATUSES = new Set(["SUCCEEDED", "CANCELLED"]);
+
+export function isAutomaticallyReplannedSyncJobFailure(
+  input: Pick<SyncJobQuarantineInput, "errorCode">,
+) {
+  return (
+    input.errorCode?.trim().toUpperCase() === AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE
+  );
+}
 
 /**
  * Vero quando il job ha consumato tutti i tentativi previsti dalla coda.
@@ -55,6 +67,8 @@ export function classifySyncJobQuarantine(input: SyncJobQuarantineInput): SyncJo
   if (RETRYABLE_PENDING_STATUSES.has(status)) return "retrying";
 
   if (status === "FAILED") {
+    if (isAutomaticallyReplannedSyncJobFailure(input)) return "retrying";
+
     return hasExhaustedSyncJobAttempts(input) ? "actionable" : "retrying";
   }
 

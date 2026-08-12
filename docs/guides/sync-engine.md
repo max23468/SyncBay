@@ -140,6 +140,15 @@ Ogni job fallito deve conservare:
 - prossima azione consigliata;
 - retry sicuro si/no.
 
+Un errore avvenuto prima dell'accodamento (`SYNCBAY_INCREMENTAL_ENQUEUE_FAILED`)
+è un marker diagnostico, non un job eseguibile: il runner ripete la
+pianificazione al ciclo successivo, la UI non offre retry manuale e un sync
+incrementale successivo chiude subito il marker senza perdere codice e messaggio
+dell'errore. Per i fallimenti `fetch`, SyncBay conserva anche i codici sicuri
+della catena tecnica (`ENOTFOUND`, `ECONNRESET`, `UND_ERR_CONNECT_TIMEOUT`), ma
+non URL, host, header, token o stack trace. Solo i job realmente eseguibili con
+tentativi esauriti entrano in quarantena e richiedono intervento.
+
 ## Vincoli runtime
 
 Il runtime 1.0 è definito in ADR `docs/decisions/0005-runtime-infrastructure.md`.

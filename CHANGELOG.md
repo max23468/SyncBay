@@ -252,6 +252,16 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.88] — 2026-08-12
+
+### Correzioni
+
+- Corretto l'avviso persistente che classificava come attività in quarantena
+  un errore temporaneo avvenuto prima dell'accodamento del sync incrementale:
+  SyncBay ora ripianifica automaticamente il lavoro, chiude il marker dopo il
+  successivo sync riuscito e conserva codici diagnostici di rete sicuri senza
+  esporre URL, host, token o stack trace.
+
 ## [1.0.87] — 2026-08-09
 
 ### Correzioni
@@ -4164,6 +4174,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.88]: #1088--2026-08-12
 [1.0.87]: #1087--2026-08-09
 [1.0.86]: #1086--2026-08-07
 [1.0.85]: #1085--2026-08-06

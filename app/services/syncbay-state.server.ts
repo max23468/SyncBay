@@ -206,6 +206,7 @@ export async function getOverviewState(
           select: {
             attempts: true,
             createdAt: true,
+            errorCode: true,
             maxAttempts: true,
             status: true,
           },

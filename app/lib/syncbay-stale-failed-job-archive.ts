@@ -1,8 +1,10 @@
 export const STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS = 24 * 60 * 60 * 1000;
+export const AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE =
+  "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED";
 
 export const STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES = [
   "SYNCBAY_INCREMENTAL_BLOCKED",
-  "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+  AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE,
 ] as const;
 
 export function isSupersededFailedIncrementalSyncJob(input: {
@@ -24,9 +26,13 @@ export function isSupersededFailedIncrementalSyncJob(input: {
   if (latestSuccessAt === null || updatedAt === null) return false;
   if (latestSuccessAt <= updatedAt) return false;
 
-  const archiveAfterMs = input.archiveAfterMs ?? STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS;
+  const archiveAfterMs =
+    input.archiveAfterMs ??
+    (input.errorCode === AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE
+      ? 0
+      : STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS);
 
-  if (!Number.isFinite(archiveAfterMs) || archiveAfterMs <= 0) {
+  if (!Number.isFinite(archiveAfterMs) || archiveAfterMs < 0) {
     return false;
   }
 

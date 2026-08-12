@@ -20,6 +20,20 @@ test("archives old failed incremental jobs superseded by a later successful sync
   );
 });
 
+test("archives a recent enqueue marker as soon as a later incremental sync succeeds", () => {
+  assert.equal(
+    isSupersededFailedIncrementalSyncJob({
+      errorCode: "SYNCBAY_INCREMENTAL_ENQUEUE_FAILED",
+      latestSuccessfulIncrementalSyncAt,
+      now,
+      status: "FAILED",
+      type: "SYNC_INCREMENTAL",
+      updatedAt: "2026-06-12T09:00:00.000Z",
+    }),
+    true,
+  );
+});
+
 test("ages stale failures against now instead of the later success timestamp", () => {
   assert.equal(
     isSupersededFailedIncrementalSyncJob({

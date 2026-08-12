@@ -51,6 +51,7 @@ import {
   type RunnerLane,
 } from "../lib/syncbay-runner-fairness";
 import {
+  AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE,
   STALE_FAILED_INCREMENTAL_SYNC_ARCHIVE_AFTER_MS,
   STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES,
 } from "../lib/syncbay-stale-failed-job-archive";
@@ -459,6 +460,7 @@ export async function archiveSupersededFailedIncrementalSyncJobs(input: { now: D
       orderBy: [{ finishedAt: "desc" }, { updatedAt: "desc" }],
       select: { finishedAt: true, updatedAt: true },
       where: {
+        ...getRegularIncrementalSyncJobWhere(),
         shopId,
         status: SyncJobStatus.SUCCEEDED,
         type: SyncJobType.SYNC_INCREMENTAL,
@@ -475,11 +477,19 @@ export async function archiveSupersededFailedIncrementalSyncJobs(input: { now: D
     const archived = await prisma.syncJob.updateMany({
       data: { status: SyncJobStatus.CANCELLED },
       where: {
-        errorCode: { in: [...STALE_FAILED_INCREMENTAL_SYNC_ERROR_CODES] },
+        OR: [
+          {
+            errorCode: AUTOMATICALLY_REPLANNED_INCREMENTAL_SYNC_ERROR_CODE,
+            updatedAt: { lt: latestSuccessAt },
+          },
+          {
+            errorCode: "SYNCBAY_INCREMENTAL_BLOCKED",
+            updatedAt: { lt: latestSuccessAt, lte: archiveCutoff },
+          },
+        ],
         shopId,
         status: SyncJobStatus.FAILED,
         type: SyncJobType.SYNC_INCREMENTAL,
-        updatedAt: { lt: latestSuccessAt, lte: archiveCutoff },
       },
     });
 

@@ -142,6 +142,13 @@ query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
   eventi JSON allowlistati: errori e richieste lente sempre, richieste sane al
   massimo al 5% in production. I payload loader hanno budget 128 KiB per
   Panoramica/Attività/Impostazioni e 256 KiB per Catalogo/Conflitti/Importazione.
+- Il team Vercel osservato il 12 agosto 2026 usa il piano Hobby senza
+  Observability Plus. Le ricerche dei Runtime Logs oltre la finestra inclusa nel
+  piano possono rispondere `ExceedsBillingLimitError`: indica un limite di
+  osservabilità, non l'esaurimento del compute dell'app. Restringere la query
+  alla finestra recente consentita (un'ora nell'account osservato) e usare la
+  diagnostica job persistita in Supabase; un eventuale upgrade resta una scelta
+  di billing separata.
 - Vercel Cron non è il meccanismo primario SyncBay: polling, queue drain e retry restano su Supabase Cron/Queues come da ADR 0005.
 
 ## Supabase
