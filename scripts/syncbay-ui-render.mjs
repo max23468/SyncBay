@@ -38,7 +38,6 @@ import {
   getUiFixtureStates,
 } from "./syncbay-ui-fixtures.ts";
 import { scrubRuntimeEnv } from "./syncbay-ui-isolation.mjs";
-import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "react-router";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = process.argv.slice(2);
@@ -180,6 +179,11 @@ const vite = await createServer({
   },
   logLevel: "error",
 });
+// Carica anche il router tramite Vite: React Router 8 seleziona entrypoint
+// condizionali e l'harness deve condividere la stessa istanza/context delle
+// route SSR, non quella risolta direttamente dal processo Node.
+const { createStaticHandler, createStaticRouter, StaticRouterProvider } =
+  await vite.ssrLoadModule("react-router");
 
 const cachedServices = new Map();
 async function loadServices(modulePath) {

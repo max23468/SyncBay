@@ -55,39 +55,16 @@ Vincoli da rispettare prima di promuoverla:
 | Rimozione override `ajv`      | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata.                              |
 | Policy production e App Store | Aperta | Esiste un deployment Vercel production per la distribuzione privata, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy    | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi.                                                                     |
-| Migrazione React Router 8     | Aperta | Unica via per chiudere GHSA-qwww-vcr4-c8h2; SyncBay non è esposta perché non usa le API RSC. Vedi sotto.                                                            |
+| Migrazione React Router 8     | Chiusa | Migrata a `8.3.0`; rimossa la waiver GHSA-qwww-vcr4-c8h2 e verificati build locale e Vercel.                                                                        |
 
 ### Migrazione React Router 8
 
-`npm run audit:prod` segnala `react-router` e `@react-router/node` per
-GHSA-qwww-vcr4-c8h2 (CSRF bypass che consente l'esecuzione di una action prima
-della risposta 400). Le versioni affette sono `>=7.12.0 <8.3.0` e la correzione
-esiste solo in `8.3.0`: la linea 7 si ferma a `7.18.2` e non ha backport, quindi
-non c'è aggiornamento possibile dentro la major corrente.
-
-SyncBay non è esposta: l'advisory riguarda esclusivamente le API RSC instabili,
-mentre `react-router.config.ts` usa framework mode con `ssr: true` e nessun
-riferimento RSC. Le due voci restano quindi visibili nell'audit finché la
-migrazione non avviene, senza rischio applicativo reale.
-
-Il blocco non è di volontà ma di peer range: `@vercel/react-router@1.3.2`
-dichiara peer `@react-router/dev: "7"` e `@react-router/node: "7"`, e
-`@shopify/shopify-app-react-router@1.2.1` dichiara peer `react-router: "^7.6.2"`.
-Finché Vercel e Shopify non aggiornano, la major 8 non è installabile senza
-rompere il contratto peer di entrambe le integrazioni. Stesso schema di
-`docs/BACKLOG.md` per TypeScript 7: si aspetta il monte, non si forza con
-`--legacy-peer-deps`.
-
-La migrazione è già parzialmente preparata: i future flag `v8_middleware`,
-`v8_passThroughRequests`, `v8_splitRouteModules`,
-`v8_trailingSlashAwareDataRequests` e `v8_viteEnvironmentApi` sono attivi. Quando
-i peer si apriranno resterà da valutare l'impatto sul preset Vercel e sulle route
-embedded: è un major applicativo, non un fix di sicurezza, e merita il suo ADR.
-
-Nel frattempo l'advisory è registrata in `ACCEPTED_ADVISORIES`
-(`scripts/syncbay-audit-prod.mjs`) con motivo e condizione di revisione, così
-`audit:prod` resta verde e continua a fallire su qualunque vulnerabilità nuova.
-La voce va rimossa insieme alla migrazione.
+La migrazione è stata completata su React Router `8.3.0`, che contiene la
+correzione per GHSA-qwww-vcr4-c8h2. I future flag della linea 7 e la relativa
+patch Vite sono stati rimossi; TypeScript è passato contestualmente a `7.0.2`.
+I peer ancora conservativi dei pacchetti Shopify e Vercel sono descritti con
+`packageExtensions` limitate alle versioni verificate. `npm run audit:prod` non
+ha più waiver e torna a bloccare qualsiasi vulnerabilità di produzione.
 
 ## Decisioni collegate
 
