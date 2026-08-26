@@ -1,7 +1,6 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, Form, useLoaderData } from "react-router";
-import { AppProvider } from "@shopify/shopify-app-react-router/react";
-
+import { PublicAppProvider } from "../../components/PublicAppProvider";
 import { SyncBayBrandPanel } from "../../components/SyncBayBrandPanel";
 import { getSyncBayMeta } from "../../lib/syncbay-brand";
 import { login } from "../../shopify.server";
@@ -20,7 +19,7 @@ export default function App() {
   const { showForm } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider embedded={false}>
+    <PublicAppProvider>
       <s-page heading="SyncBay">
         <s-badge slot="accessory" tone="info">
           1.0 privata
@@ -61,7 +60,7 @@ export default function App() {
           </s-grid>
         </s-section>
       </s-page>
-    </AppProvider>
+    </PublicAppProvider>
   );
 }
 

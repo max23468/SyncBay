@@ -40,7 +40,7 @@ export default function App() {
   }, [isRoutePending]);
 
   return (
-    <AppProvider embedded apiKey={apiKey}>
+    <AppProvider apiKey={apiKey}>
       <ui-title-bar title={SYNCBAY_APP_NAME} />
       <ui-nav-menu>
         <Link to="/app" rel="home">

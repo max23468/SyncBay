@@ -80,9 +80,9 @@ test("React Doctor has one exact canonical script and a warning-blocking config"
     Object.entries(packageJson.scripts).filter(([, command]) => command.includes("react-doctor")),
     [["doctor", "react-doctor --scope full --blocking warning ."]],
   );
-  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.11");
-  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.11");
-  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.11");
+  assert.equal(packageJson.devDependencies["react-doctor"], "0.9.12");
+  assert.equal(packageLock.packages[""].devDependencies["react-doctor"], "0.9.12");
+  assert.equal(packageLock.packages["node_modules/react-doctor"].version, "0.9.12");
   assert.match(packageJson.scripts.shopify, /require\('@shopify\/cli\/package\.json'\)/);
   assert.match(packageJson.scripts.shopify, /p\.devDependencies\['@shopify\/cli'\]/);
 });
