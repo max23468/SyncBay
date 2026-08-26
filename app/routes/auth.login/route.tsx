@@ -1,8 +1,8 @@
-import { AppProvider } from "@shopify/shopify-app-react-router/react";
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData } from "react-router";
 
+import { PublicAppProvider } from "../../components/PublicAppProvider";
 import { login } from "../../shopify.server";
 import { loginErrorMessage } from "./error.server";
 
@@ -27,7 +27,7 @@ export default function Auth() {
   const { errors } = actionData || loaderData;
 
   return (
-    <AppProvider embedded={false}>
+    <PublicAppProvider>
       <s-page>
         <Form method="post">
           <s-section heading="Accedi a SyncBay">
@@ -44,6 +44,6 @@ export default function Auth() {
           </s-section>
         </Form>
       </s-page>
-    </AppProvider>
+    </PublicAppProvider>
   );
 }

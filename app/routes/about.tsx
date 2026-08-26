@@ -1,6 +1,5 @@
 import type { MetaFunction } from "react-router";
-import { AppProvider } from "@shopify/shopify-app-react-router/react";
-
+import { PublicAppProvider } from "../components/PublicAppProvider";
 import { SyncBayBrandPanel } from "../components/SyncBayBrandPanel";
 import { getSyncBayMeta } from "../lib/syncbay-brand";
 
@@ -8,7 +7,7 @@ export const meta: MetaFunction = () => getSyncBayMeta("Informazioni");
 
 export default function About() {
   return (
-    <AppProvider embedded={false}>
+    <PublicAppProvider>
       <s-page heading="Informazioni su SyncBay">
         <s-badge slot="accessory" tone="info">
           1.0 privata
@@ -48,6 +47,6 @@ export default function About() {
           </s-stack>
         </s-section>
       </s-page>
-    </AppProvider>
+    </PublicAppProvider>
   );
 }
