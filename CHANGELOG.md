@@ -252,6 +252,17 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.89] — 2026-08-26
+
+### Sotto il cofano
+
+- Migrato lo stack applicativo a React Router `8.3.0` e TypeScript `7.0.2`.
+  Rimossi i future flag e la patch Vite della linea 7; i peer ancora conservativi
+  di Shopify e Vercel sono descritti con `packageExtensions` mirate. La migrazione
+  chiude GHSA-qwww-vcr4-c8h2 e rimuove la relativa waiver dall'audit produzione.
+  L'harness SSR carica il router dalla stessa istanza Vite delle route, come
+  richiesto dagli entrypoint condizionali della major 8.
+
 ## [1.0.88] — 2026-08-12
 
 ### Correzioni
@@ -4174,6 +4185,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.89]: #1089--2026-08-26
 [1.0.88]: #1088--2026-08-12
 [1.0.87]: #1087--2026-08-09
 [1.0.86]: #1086--2026-08-07

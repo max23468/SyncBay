@@ -8,7 +8,6 @@ test("builds when deployable runtime surfaces change", () => {
     "app/routes/app._index.tsx",
     "prisma/schema.prisma",
     "public/favicon.ico",
-    "patches/@react-router+dev.patch",
     "package.json",
     "package-lock.json",
     "react-router.config.ts",

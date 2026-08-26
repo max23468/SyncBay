@@ -35,25 +35,25 @@ forzare installazioni o downgrade dentro la repo.
 
 ## Stack applicativo
 
-| Area                        | Tool                                    |
-| --------------------------- | --------------------------------------- |
-| Shopify app                 | Shopify CLI `4.6.0`                     |
-| Shopify Admin/Webhook API   | `2026-07`                               |
-| eBay Trading API            | compatibility level `1455`              |
-| eBay Inventory API          | endpoint `v1`, specifica `1.18.5`       |
-| eBay Notification API       | endpoint `v1`, specifica `1.6.7`        |
-| eBay OAuth / Identity API   | endpoint `v1`                           |
-| eBay Developer Analytics    | endpoint `v1_beta`                      |
-| Frontend/backend app        | React Router, React, TypeScript, Vite   |
-| Hosting previsto            | Vercel                                  |
-| CLI hosting                 | Vercel CLI `58.7.1`                     |
-| Database                    | Supabase Postgres                       |
-| ORM                         | Prisma `7.9.1` con `@prisma/adapter-pg` |
-| Queue e scheduler previsti  | Supabase Queues e Supabase Cron         |
-| Storage immagini temporaneo | Supabase Storage privato                |
-| Osservabilità baseline      | Vercel Web Analytics e Speed Insights   |
-| Quality React               | React Doctor                            |
-| Codice morto                | Knip                                    |
+| Area                        | Tool                                     |
+| --------------------------- | ---------------------------------------- |
+| Shopify app                 | Shopify CLI `4.7.0`                      |
+| Shopify Admin/Webhook API   | `2026-07`                                |
+| eBay Trading API            | compatibility level `1455`               |
+| eBay Inventory API          | endpoint `v1`, specifica `1.18.5`        |
+| eBay Notification API       | endpoint `v1`, specifica `1.6.7`         |
+| eBay OAuth / Identity API   | endpoint `v1`                            |
+| eBay Developer Analytics    | endpoint `v1_beta`                       |
+| Frontend/backend app        | React Router, React, TypeScript, Vite    |
+| Hosting previsto            | Vercel                                   |
+| CLI hosting                 | Vercel CLI `58.7.1`                      |
+| Database                    | Supabase Postgres                        |
+| ORM                         | Prisma `7.10.0` con `@prisma/adapter-pg` |
+| Queue e scheduler previsti  | Supabase Queues e Supabase Cron          |
+| Storage immagini temporaneo | Supabase Storage privato                 |
+| Osservabilità baseline      | Vercel Web Analytics e Speed Insights    |
+| Quality React               | React Doctor                             |
+| Codice morto                | Knip                                     |
 
 Versioni eBay verificate il 2026-08-06 sulle fonti ufficiali: [Trading API
 release notes](https://developer.ebay.com/devzone/XML/docs/ReleaseNotes.html),
@@ -74,24 +74,16 @@ manuali quando la catena peer o il runtime non sono già compatibili. Le PR
 Dependabot patch e minor vengono messe in auto-merge squash: GitHub le unisce
 solo dopo il superamento dei check obbligatori della ruleset di `main`. Una CI
 fallita, un conflitto, un major o una PR modificata manualmente richiedono
-intervento umano; non viene applicata alcuna auto-approvazione. In
-particolare React Router 8 non deve essere aperto come bump parziale: SyncBay
-usa il preset `@vercel/react-router` e la versione `1.3.2` dichiara peer su
-React Router 7. La migrazione a React Router 8 va quindi fatta in una branch
-dedicata aggiornando insieme `react-router`, i pacchetti `@react-router/*` e il
-preset Vercel solo quando esiste una versione compatibile.
+intervento umano; non viene applicata alcuna auto-approvazione. React Router
+`8.3.0` e TypeScript `7.0.2` sono stati migrati insieme e verificati con build
+locale e Vercel. Finché i manifest pubblicati da
+`@vercel/react-router@1.3.4` e `@shopify/shopify-app-react-router@2.0.0` non
+aprono i peer alla major 8, `packageExtensions` dichiara i range effettivamente
+verificati. SyncBay usa un proprio `entry.server.tsx`, quindi non importa il
+default entry del preset Vercel che fa ancora riferimento al vecchio tipo
+`AppLoadContext`. La patch Vite della linea React Router 7 è stata rimossa.
 
-Finché SyncBay resta su React Router 7 con Vite 8, `@react-router/dev@7.18.2`
-è patchato con `patch-package` perché la sua configurazione vite-node interna
-usa ancora l'opzione deprecata `envFile: false`. La patch versionata in
-`patches/@react-router+dev+7.18.2.patch` sostituisce quell'opzione con
-`envDir: false` e viene riapplicata da `postinstall`. `patch-package` vive in
-`devDependencies`: senza il percorso Docker non esiste più un install
-`--omit=dev` che debba eseguire `postinstall`. Rimuovere la patch solo insieme
-a una migrazione verificata a una release React Router/preset Vercel che non
-emetta più quel warning.
-
-Prisma è aggiornato a 7.9.1 con `prisma.config.ts`, generator di compatibilità
+Prisma è aggiornato a 7.10.0 con `prisma.config.ts`, generator di compatibilità
 `prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
 post-generate verso il path atteso da `@prisma/client`. Questa scelta mantiene
 compatibili il test runner Node nativo e il template React Router finché il
@@ -287,14 +279,10 @@ ogni giorno e sulle PR che toccano dipendenze o lo script stesso, mentre resta
 obbligatorio in locale dentro `verify:changed` e `verify:full`. Il segnale
 resta, il merge non è più accoppiato.
 
-Le advisory che non possono essere chiuse si registrano in
-`ACCEPTED_ADVISORIES` (`scripts/syncbay-audit-prod.mjs`), con identificativo
-GHSA, motivo e condizione di revisione. La waiver vale per quello specifico
-advisory e non per il pacchetto: una vulnerabilità nuova sullo stesso pacchetto
-fa fallire di nuovo il gate. Le voci accettate vengono stampate a ogni
-esecuzione riuscita, così restano una decisione visibile invece di un buco
-silenzioso. Un gate perennemente rosso smette di essere letto: l'accettazione
-esplicita serve a mantenerlo credibile, non a nascondere il problema.
+L'audit produzione non contiene waiver: dopo la migrazione React Router 8,
+qualsiasi vulnerabilità riportata da npm rende il gate rosso. Se in futuro una
+correzione non fosse installabile, la decisione dovrà essere documentata prima
+di introdurre un'eccezione mirata e temporanea.
 
 `npm run format:check` gira su ogni corsia, docs inclusa: oxfmt formatta anche
 Markdown, CSS e TOML oltre a JS/TS, quindi il drift può entrare da qualunque
