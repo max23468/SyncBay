@@ -40,7 +40,7 @@
     "coverage:lib": "vitest run app/lib --coverage",
     "audit:prod": "node scripts/syncbay-audit-prod.mjs",
     "test:stock-guard": "vitest run app/lib/syncbay-stock-guard.test.ts",
-    "test:tooling": "vitest run scripts/ && node --test scripts/codex-review-gate.test.mjs",
+    "test:tooling": "vitest run scripts/",
     "shopify": "node -e \"const p=require('./package.json'),v=require('@shopify/cli/package.json').version;if(v!==p.devDependencies['@shopify/cli'])throw new Error('Shopify CLI non allineata: esegui npm install')\" && shopify",
     "prisma": "prisma",
     "vite": "vite",

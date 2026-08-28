@@ -41,24 +41,12 @@ dedicato; resta da definire una policy production stabile oltre il pilota.
 La CI runtime completa è stata attivata il 2026-06-27 con il workflow
 `.github/workflows/ci.yml`, un job unico `verify` su `pull_request` verso
 `main` e `workflow_dispatch`. Il ruleset di `main` richiede PR, risoluzione
-delle conversazioni, `Verifica proporzionata`, `Conventional PR title`,
-`codex-review` e `react-doctor`, senza approval e con policy strict/up-to-date.
+delle conversazioni, `Verifica proporzionata`, `Conventional PR title` e
+`react-doctor`, senza approval e con policy strict/up-to-date.
 Il check del titolo è
 minimale e separato per rivalidare title edit e nuovi SHA senza poter sostituire
 il gate runtime. Il run duplicato dopo il merge è stato rimosso perché il
 ruleset impedisce il normale push diretto a `main`.
-
-`codex-review` osserva la review Codex già avviata e non pubblica commenti. Ogni
-nuovo HEAD riattiva il workflow: finding P0/P1 inline o top-level del tentativo
-corrente falliscono il gate, P2/P3 restano advisory, mentre l'approvazione deve essere riferita allo SHA
-esatto. Evidenze, reaction e finding marcati su commit precedenti non migrano al
-nuovo HEAD. Il workflow usa `pull_request_target` soltanto per leggere i segnali
-e scrivere lo status; esegue il codice del branch predefinito fidato e non fa
-checkout, installazione o esecuzione del contenuto della PR.
-
-Il primo giro parte automaticamente all'apertura o al passaggio da draft a ready.
-Dopo un nuovo commit o per un retry l'agente pubblica una sola riga
-`@codex review`; il workflow non crea commenti di richiesta.
 
 Il job sceglie una sola corsia:
 
