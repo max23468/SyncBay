@@ -96,7 +96,7 @@ test("scheduled GitHub governance check protects the exact React Doctor status",
   assert.match(source, /curl --fail --silent --show-error/);
   assert.doesNotMatch(source, /GH_TOKEN|github\.token|gh api/);
   assert.match(source, /strict_required_status_checks_policy/);
-  assert.match(source, /Conventional PR title.*Verifica proporzionata.*codex-review.*react-doctor/);
+  assert.match(source, /Conventional PR title.*Verifica proporzionata.*react-doctor/);
   assert.match(source, /integration_id.*15368/);
 });
 
@@ -133,18 +133,6 @@ test("CI workflows use the current Node and cache action majors", () => {
   }
 
   assert.match(readWorkflow("ui-browser-check.yml"), /actions\/cache@v6/);
-});
-
-test("Codex review gate reruns on every PR HEAD and executes trusted code", () => {
-  const source = readWorkflow("codex-review-gate.yml");
-
-  assert.match(source, /pull_request_target:/);
-  assert.match(source, /types:\s*\[opened, synchronize, reopened, ready_for_review\]/);
-  assert.match(source, /statuses:\s*write/);
-  assert.match(source, /actions\/checkout@[0-9a-f]{40}/);
-  assert.match(source, /ref:\s*\$\{\{ github\.event\.repository\.default_branch \}\}/);
-  assert.doesNotMatch(source, /github\.ref_name/);
-  assert.match(source, /node scripts\/codex-review-gate\.mjs/);
 });
 
 test("Vercel delegates ignored builds to the tested classifier", () => {

@@ -10,19 +10,16 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Remote GitHub: https://github.com/max23468/SyncBay
 - Branch predefinito: `main`.
 - Issue e PR template configurati in `.github/`.
-- Workflow `Codex review gate` configurato per pubblicare lo status
-  `codex-review` riferito all'HEAD corrente.
 - Dependabot configurato per GitHub Actions e npm, con auto-merge squash delle
   sole PR patch/minor dopo i check obbligatori di `main`.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, strict checking, `Verifica
-proporzionata`, `Conventional PR title`, `codex-review` e `react-doctor`.
+proporzionata`, `Conventional PR title` e `react-doctor`.
 - React Doctor è bloccante dai warning in su sia dentro `Verifica
 proporzionata` sia nello status dedicato `react-doctor`: sulle PR pubblica
   score e review per i file cambiati, mentre sul push a `main` analizza tutto il
-  progetto. CodeQL e Vercel restano check mirati o advisory; `codex-review`
-  blocca soltanto in base alla review dell'HEAD.
+  progetto. CodeQL e Vercel restano check mirati o advisory.
 
 ## Regola base
 
@@ -113,8 +110,8 @@ Con il deployment Vercel production privato attivo, "pubblicato" significa almen
   branch assorbiti;
 - PR obbligatoria verso `main`, senza approval obbligatorie per il maintainer
   unico e con conversazioni da risolvere;
-- check richiesti `Verifica proporzionata`, `Conventional PR title`,
-  `codex-review` e `react-doctor`, con policy strict/up-to-date;
+- check richiesti `Verifica proporzionata`, `Conventional PR title` e
+  `react-doctor`, con policy strict/up-to-date;
 - nessun deployment, CodeQL aggregato o Supabase Preview richiesto come status
   separato;
 - push forzati e cancellazione di `main` vietati;
@@ -139,28 +136,6 @@ Il comando non sostituisce test, build o review umana. Per docs-only piccoli
 può bastare `git diff --check` e rilettura del documento, come indicato sotto.
 Per runtime, UI, provider, database o tooling condiviso, la checklist deve
 essere chiusa prima della PR o dichiarata esplicitamente nel riepilogo.
-
-## Gate Codex sulle PR
-
-Il workflow `.github/workflows/codex-review-gate.yml` non chiede review e non
-pubblica commenti. Osserva soltanto i segnali del reviewer
-`chatgpt-codex-connector[bot]` e aggiorna lo status `codex-review`: i finding
-P0/P1 inline o top-level del tentativo corrente falliscono il gate. I finding
-P2/P3 restano advisory e non autorizzano modifiche: l'agente li implementa
-soltanto su richiesta esplicita del proprietario. Quando la review è conclusa e
-l'evidenza si riferisce all'HEAD esatto, li riepiloga e prosegue con la
-pubblicazione. Ogni `synchronize` invalida l'evidenza precedente; `reopened` e
-il dispatch manuale possono riusare solo uno status riuscito dello stesso SHA.
-All'apertura o al passaggio da draft a ready il primo giro parte
-automaticamente, senza commenti di richiesta. Dopo un nuovo commit o per un
-retry l'autore pubblica una sola riga `@codex review`: la reazione positiva del
-bot su quell'invocazione identifica il tentativo corrente anche quando una
-review pulita non pubblica testo.
-
-Il workflow usa `pull_request_target` con permessi minimi e fa checkout
-esclusivamente del branch predefinito fidato, senza installare dipendenze né
-eseguire codice della PR. Il required status `codex-review` è l'unica fonte
-dell'esito Codex exact-HEAD; non esiste una inbox globale separata.
 
 ## Docs-only
 

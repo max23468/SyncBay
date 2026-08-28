@@ -25,5 +25,5 @@ jobs:
           ruleset="$(curl --fail --silent --show-error "$api/$ruleset_id")"
           test "$(jq -r '.enforcement == "active" and .target == "branch" and .conditions.ref_name.include == ["~DEFAULT_BRANCH"]' <<< "$ruleset")" = true
           test "$(jq -r '.rules[] | select(.type == "required_status_checks") | .parameters.strict_required_status_checks_policy' <<< "$ruleset")" = true
-          test "$(jq -c '[.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | sort' <<< "$ruleset")" = '["Conventional PR title","Verifica proporzionata","codex-review","react-doctor"]'
+          test "$(jq -c '[.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[].context] | sort' <<< "$ruleset")" = '["Conventional PR title","Verifica proporzionata","react-doctor"]'
           test "$(jq -r '.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks[] | select(.context == "react-doctor") | .integration_id' <<< "$ruleset")" = 15368
