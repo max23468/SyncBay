@@ -84,8 +84,8 @@ su env mancanti.
 `npm run review:pre-pr` genera una self-review mirata del diff prima
 dell'apertura o sincronizzazione della PR. Legge `origin/main...HEAD` di default
 e include eventuali file staged/unstaged; suggerisce domande e verifiche in base
-alle aree toccate, per anticipare i commenti Codex prevedibili prima del
-preflight remoto.
+alle aree toccate, per anticipare problemi prevedibili prima del preflight
+remoto.
 `npm run publish:preflight` controlla branch, worktree, changelog e script
 minimi prima della pubblicazione; con `--remote` verifica anche la PR GitHub.
 `npm run perf:loaders` legge i log Vercel `syncbay-loader-performance` e stampa

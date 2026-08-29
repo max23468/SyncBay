@@ -127,7 +127,7 @@ npm run review:pre-pr -- --base origin/main
 
 Il comando legge il diff rispetto alla base scelta più eventuali file
 staged/unstaged e produce una checklist mirata alle aree toccate. Serve a
-spostare prima della PR i commenti Codex prevedibili: diagnosi non provata,
+individuare prima della PR problemi prevedibili: diagnosi non provata,
 root cause non isolata, fix troppo largo, guardrail server-side mancanti,
 test insufficienti, mismatch UI/backend, rischio dati/provider e
 classificazione release.
@@ -154,8 +154,7 @@ limitati a docs, governance, CI, test e tooling non runtime.
 
 La CI non installa Chromium per ogni sincronizzazione. Le PR con UI sostanziale
 ricevono la label `full-ui-check`, che avvia render e hydration browser in un
-workflow dedicato; lo stesso workflow può essere lanciato manualmente. Il
-gate Codex si riavvia a ogni push e richiede evidenza riferita al nuovo HEAD.
+workflow dedicato; lo stesso workflow può essere lanciato manualmente.
 
 ## Check prima della chiusura
 

@@ -316,7 +316,7 @@ function parseArgs(rawArgs) {
     console.log(`Uso: npm run review:pre-pr -- [--base origin/main] [--json]
 
 Genera una self-review mirata del diff prima di aprire o sincronizzare una PR.
-Non sostituisce i test: serve a trovare prima i commenti Codex prevedibili.`);
+Non sostituisce i test: serve a trovare prima i problemi prevedibili.`);
     process.exit(0);
   }
 
