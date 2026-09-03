@@ -252,6 +252,20 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.90] — 2026-09-03
+
+### Sotto il cofano
+
+- Aggiornate le dipendenze compatibili e chiuse le nuove advisory di produzione:
+  React Router `8.3.1`, Shopify React Router `2.1.0`, `fast-xml-parser` `5.11.1`
+  e `isbot` `5.2.2`; gli override mirati portano `fast-uri` a `3.1.6` e
+  `mysql2` a `3.24.3` finché Prisma non aggiornerà i propri pin transitivi.
+  Aggiornati inoltre Shopify CLI `4.7.1`, preset Vercel `1.3.6`, oxfmt `0.66.0`,
+  oxlint `1.81.0` e Supabase CLI `2.116.0`.
+  I pacchetti Shopify e Vercel con peer React Router 7 restano fissati alle
+  versioni coperte dalle `packageExtensions`, evitando aggiornamenti parziali
+  che renderebbero il manifest non installabile.
+
 ## [1.0.89] — 2026-08-26
 
 ### Sotto il cofano
@@ -4185,6 +4199,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.90]: #1090--2026-09-03
 [1.0.89]: #1089--2026-08-26
 [1.0.88]: #1088--2026-08-12
 [1.0.87]: #1087--2026-08-09
