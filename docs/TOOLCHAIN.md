@@ -75,11 +75,13 @@ Dependabot patch e minor vengono messe in auto-merge squash: GitHub le unisce
 solo dopo il superamento dei check obbligatori della ruleset di `main`. Una CI
 fallita, un conflitto, un major o una PR modificata manualmente richiedono
 intervento umano; non viene applicata alcuna auto-approvazione. React Router
-`8.3.0` e TypeScript `7.0.2` sono stati migrati insieme e verificati con build
+`8.3.1` e TypeScript `7.0.2` sono stati migrati insieme e verificati con build
 locale e Vercel. Finché i manifest pubblicati da
-`@vercel/react-router@1.3.4` e `@shopify/shopify-app-react-router@2.0.0` non
+`@vercel/react-router@1.3.6` e `@shopify/shopify-app-react-router@2.1.0` non
 aprono i peer alla major 8, `packageExtensions` dichiara i range effettivamente
-verificati. SyncBay usa un proprio `entry.server.tsx`, quindi non importa il
+verificati e le due dipendenze restano fissate alla versione corrispondente:
+un loro aggiornamento richiede di riallineare e riverificare anche l'estensione.
+SyncBay usa un proprio `entry.server.tsx`, quindi non importa il
 default entry del preset Vercel che fa ancora riferimento al vecchio tipo
 `AppLoadContext`. La patch Vite della linea React Router 7 è stata rimossa.
 

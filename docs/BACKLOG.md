@@ -53,13 +53,15 @@ Vincoli da rispettare prima di promuoverla:
 | Voce                          | Stato  | Nota                                                                                                                                                                |
 | ----------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Rimozione override `ajv`      | Aperta | Issue GitHub #12: rimuovere l'override quando `@vercel/static-config` o `@vercel/react-router` useranno a monte una versione patchata.                              |
+| Rimozione override `fast-uri` | Aperta | Rimuovere l'override `3.1.6` quando Prisma porterà una versione non vulnerabile tramite `@prisma/dev` / `@prisma/streams-local`.                                    |
+| Rimozione override `mysql2`   | Aperta | Rimuovere l'override `3.24.3` quando Prisma sostituirà il pin vulnerabile `3.15.3`; fino ad allora verificarlo a ogni aggiornamento Prisma.                         |
 | Policy production e App Store | Aperta | Esiste un deployment Vercel production per la distribuzione privata, ma mancano ancora criteri stabili per app pubblica, promozione production e Shopify App Store. |
 | Verifica smoke post-deploy    | Aperta | Da rendere gate stabile solo quando criteri production, ambienti e app pubblica saranno decisi.                                                                     |
-| Migrazione React Router 8     | Chiusa | Migrata a `8.3.0`; rimossa la waiver GHSA-qwww-vcr4-c8h2 e verificati build locale e Vercel.                                                                        |
+| Migrazione React Router 8     | Chiusa | Migrata a `8.3.1`; rimossa la waiver GHSA-qwww-vcr4-c8h2 e verificati build locale e Vercel.                                                                        |
 
 ### Migrazione React Router 8
 
-La migrazione è stata completata su React Router `8.3.0`, che contiene la
+La migrazione è stata completata su React Router `8.3.1`, che contiene la
 correzione per GHSA-qwww-vcr4-c8h2. I future flag della linea 7 e la relativa
 patch Vite sono stati rimossi; TypeScript è passato contestualmente a `7.0.2`.
 I peer ancora conservativi dei pacchetti Shopify e Vercel sono descritti con
