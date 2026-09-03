@@ -8,6 +8,9 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Aggiornati `tsx` da `4.23.12` a `4.23.13` e `@types/react-dom` a `19.2.7`,
+  verificando i render SSR dopo la rigenerazione del Prisma Client richiesta da
+  un'installazione pulita.
 - Portato React Doctor a enforcement completo: l'unico script `doctor` entra
   sempre nel gate generale, mentre il workflow dedicato blocca dai warning in
   su, analizza i file cambiati sulle PR e l'intero progetto sul push a `main`.
