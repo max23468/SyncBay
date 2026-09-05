@@ -3,6 +3,10 @@
 Integra il file root per `app/services/**`. Per i gate vale la riga
 `app/services` di `docs/TOOLCHAIN.md`, più i test mirati del modulo toccato.
 
+Per prompting, autonomia, skill e delega applica anche la sezione
+[Prompting e conduzione del lavoro con Astra](../../AGENTS.md#prompting-e-conduzione-del-lavoro-con-astra)
+del file root; i gate dei servizi restano quelli indicati sopra.
+
 ## Significato di `Pubblica`
 
 Quando il proprietario, riferendosi alla repository o alla modifica corrente,
