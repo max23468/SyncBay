@@ -3,34 +3,8 @@
 Integra il file root per `app/services/**`. Per i gate vale la riga
 `app/services` di `docs/TOOLCHAIN.md`, più i test mirati del modulo toccato.
 
-Per prompting, autonomia, skill e delega applica anche la sezione
-[Prompting e conduzione del lavoro con Astra](../../AGENTS.md#prompting-e-conduzione-del-lavoro-con-astra)
-del file root; i gate dei servizi restano quelli indicati sopra.
-
-## Significato di `Pubblica`
-
-Quando il proprietario, riferendosi alla repository o alla modifica corrente,
-dice `Pubblica` o chiede in modo affermativo e inequivocabile di pubblicare,
-autorizza l'intero ciclo tecnico applicabile. Domande, ipotesi, pianificazioni e
-negazioni non costituiscono autorizzazione. L'agente non si ferma a stati
-intermedi e completa tutti i passaggi applicabili: preparazione e verifiche,
-branch e commit, versione e changelog quando richiesti, push, PR, soli gate
-bloccanti, merge, tag e GitHub Release quando previsti, deploy o promozione
-tecnica e verifica live. La sequenza concreta, in particolare tra versionamento,
-merge, deploy e release, è quella definita dalla policy della repository.
-
-La pulizia finale rimuove soltanto branch e worktree temporanei creati nel ciclo
-corrente e già assorbiti; controlla stash e altri residui senza alterare elementi
-preesistenti o estranei alla pubblicazione. Se un passaggio non è applicabile, lo
-dichiara e prosegue con gli altri. La richiesta affermativa di pubblicazione
-vale come autorizzazione a PR, merge, deploy tecnico e release previsti dal
-ciclo, senza una seconda conferma. Non autorizza pubblicazione di temi Shopify
-live, submission Shopify App Store, billing o nuove attivazioni produttive,
-TestFlight o App Store, invii Aruba, email o scansioni reali, né aggiornamenti
-Notion: queste azioni richiedono una richiesta esplicita separata. Una richiesta
-riferita soltanto a una di queste azioni non avvia la pubblicazione della
-repository. Non dichiarare `pubblicato` finché il ciclo applicabile e la
-rilettura finale di PR, check, deploy, release e stato Git non sono completi.
+Per autonomia, Skill, delega e pubblicazione applica il [file root](../../AGENTS.md).
+I gate dei servizi restano quelli indicati sopra.
 
 ## Ownership
 
