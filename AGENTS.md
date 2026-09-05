@@ -65,6 +65,14 @@ real-time. Il limite operativo è 2.000 prodotti per shop.
 
 ## Lavorare nel repo
 
+Evita di creare un numero eccessivo di file di test. Crea un nuovo file di test
+solo se richiesto dalle convenzioni della repository o se nessun file esistente
+è una collocazione adatta. Evita pulizie non pertinenti e complessità non
+necessaria. Riusa le utility esistenti adatte allo scopo. Leggi le istruzioni
+pertinenti della repository ed esamina codice, test, documentazione e CI vicini
+all'area interessata. Segui le convenzioni consolidate. L'obiettivo è ottenere
+codice pulito e pronto per essere integrato.
+
 - Il checkout può contenere lavoro di altri, agenti inclusi: apri con
   `git status --short --branch -uall` e non spostare, normalizzare o cancellare
   modifiche che non sono tue.
@@ -91,6 +99,12 @@ real-time. Il limite operativo è 2.000 prodotti per shop.
 | Nuova env o scope                                  | `.env.example` e documentazione pertinente |
 
 ## Verifica
+
+Calibra la verifica sul rischio del diff e completa i gate applicabili. Riusa
+i test esistenti; aggiungine solo per un comportamento o rischio concreto, non
+per replicare modifiche banali. Dopo un esito verde ripeti o amplia i controlli
+solo per nuove modifiche, errori o dubbi irrisolti. Verifica il diff effettivo,
+senza trattare il messaggio di successo di uno strumento come prova sufficiente.
 
 La corsia giusta e i comandi correnti stanno in `docs/TOOLCHAIN.md`, sezione
 "Verifiche per tipo di modifica": segui quella tabella invece di ricostruire i
@@ -144,54 +158,62 @@ riflette l'impatto osservabile, non il nome del branch. Prima di PR ready, merge
 publish o release esegui il preflight remoto. Se `[Non rilasciato]` in `CHANGELOG.md` contiene sezioni versionate
 serve `npm run release`.
 
-## Autonomia e comunicazione
+## Autonomia
 
-Decidi da solo i dettagli ordinari; chiedi quando letture diverse della richiesta
-producono lavoro materialmente diverso, o prima di azioni esterne difficilmente
-reversibili non ancora autorizzate: attivare negozi, account o integrazioni
-produttive, avviare billing o pubblicazione sullo Shopify App Store.
+Interpreta le richieste operative come incarichi da completare, usando intento
+e contesto della sessione. Risolvi autonomamente naming, formattazione, default
+e dettagli ordinari con assunzioni ragionevoli. Prima di chiedere un chiarimento,
+verifica le fonti disponibili; chiedi solo se resta una decisione che cambia
+materialmente il risultato.
 
-Rispondi al maintainer e scrivi la UI negoziante in italiano, salvo termini
-tecnici che richiedono la label originale. Tono UI: professionale, concreto e
-calmo, frasi brevi, stato del sistema e prossima azione chiara, senza emoji.
+Prima di una conferma necessaria, completa il lavoro indipendente già autorizzato
+e prepara un risultato concreto da valutare. Sospendi soltanto il passaggio che
+dipende dalla decisione mancante. Non richiedere consensi già concessi per la
+stessa azione e lo stesso perimetro, salvo un checkpoint esplicito del progetto.
+Conserva i confini di pubblicazione, dati e operazioni esterne definiti qui;
+un ordine esplicito di attesa o arresto interrompe il lavoro interessato.
+Il tempo trascorso non costituisce una risposta o un'autorizzazione.
 
-Al maintainer parla conciso, con l'esito per primo: una frase su cosa stai per
-fare prima del primo tool, poi aggiornamenti solo su scoperte importanti o cambi
-di direzione. Chiudi con cosa è cambiato, file principali, verifiche eseguite e
-loro risultato, stato Git/publish/deploy e prossimo passo se esiste. Documenti e
-ADR scritti su disco seguono la stessa misura: sostanza, niente riempimento.
-Delega a un subagent solo tracce grandi e davvero indipendenti, mai per
-ricontrollare il tuo lavoro.
+Integra correzioni e nuovi vincoli durante il lavoro; rispondi alle domande
+laterali senza perdere l'obiettivo, salvo annullamento o cambio di scope esplicito.
 
-## Prompting e conduzione del lavoro con Astra
+Le azioni esterne difficilmente reversibili non ancora autorizzate richiedono
+consenso: attivare negozi, account o integrazioni produttive, avviare billing
+o pubblicazione sullo Shopify App Store.
 
-- Interpreta le richieste operative come incarichi da completare, usando intento
-  e contesto della sessione. Risolvi i dettagli ordinari con assunzioni ragionevoli;
-  chiedi solo quando la risposta cambia materialmente il risultato.
-- Prima di una conferma necessaria, completa il lavoro indipendente già autorizzato
-  e prepara un risultato concreto da valutare. Non richiedere consensi già concessi;
-  conserva i confini di pubblicazione, dati e operazioni esterne definiti qui.
-  Un ordine esplicito di attesa o arresto interrompe il lavoro interessato.
-- Le istruzioni esplicite dell'utente prevalgono sulle linee guida delle skill,
-  nel rispetto delle istruzioni di sistema e sviluppatore. Verifica pertinenza,
-  gerarchia e conflitti di AGENTS, override e skill prima di dedurne un blocco;
-  non trasformare raccomandazioni generiche in nuovi gate.
-- Se una skill causa una pausa, una richiesta di permesso o lavoro incompleto,
-  cita e collega il preciso `SKILL.md`, riporta l'istruzione rilevante e distingui
-  il requisito esplicito dalla tua interpretazione.
-- Integra correzioni e nuovi vincoli durante il lavoro; rispondi alle domande
-  laterali senza perdere l'obiettivo, salvo annullamento o cambio di scope esplicito.
-- Scrivi in italiano semplice, con esito per primo e paragrafi brevi. Usa elenchi
-  solo quando aiutano; evita formule ricorrenti, gergo superfluo e aggiornamenti
-  che ripetono lo stesso stato. Riporta prove, limiti e prossima azione reale.
-- Calibra la verifica sul rischio del diff e completa i gate applicabili. Riusa
-  test esistenti; aggiungine solo per un comportamento o rischio concreto, non
-  per replicare modifiche banali. Dopo un esito verde ripeti o amplia i controlli
-  solo per nuove modifiche, errori o dubbi irrisolti. Verifica il diff effettivo,
-  senza trattare il messaggio di successo di uno strumento come prova sufficiente.
-- Quando la sessione e le regole del progetto consentono subagent, delega solo
-  filoni consistenti e indipendenti, con ownership disgiunta, risultato atteso e
-  verifiche espliciti. Il coordinatore integra; niente delega per microtask o
-  semplice ricontrollo. Scrivi messaggi leggibili anche tra agenti.
+## Comunicazione e completamento
 
-Esempio e fonti: [prompting con Astra](docs/TOOLCHAIN.md#prompting-con-gpt-6-astra).
+Scrivi anche la UI negoziante in italiano, salvo termini tecnici che richiedono
+la label originale. Tono UI: professionale, concreto e calmo, frasi brevi,
+stato del sistema e prossima azione chiara, senza emoji.
+Annuncia l'azione prima del primo tool, poi aggiorna su scoperte importanti o
+cambi di direzione. Riporta file principali e stato Git/publish/deploy quando
+pertinenti. Anche documenti e ADR su disco restano proporzionati e senza riempimento.
+
+Scrivi in italiano semplice, con esito per primo e paragrafi brevi. Usa elenchi
+solo quando aiutano; evita formule ricorrenti, gergo superfluo e aggiornamenti
+che ripetono lo stesso stato. Riporta prove, limiti e prossima azione reale.
+
+Completa l'esito richiesto: analisi, modifica locale o pubblicazione. Distingui
+passaggi completati, non richiesti, non applicabili e bloccati; non dichiarare
+completo ciò che resta bloccato o non verificato. Applica i requisiti di commit
+previsti per l'implementazione e pulisci soltanto risorse proprie e assorbite,
+preservando modifiche e worktree altrui.
+
+## Skill e delega
+
+Le istruzioni esplicite dell'utente prevalgono sulle linee guida delle Skill,
+nel rispetto delle istruzioni di sistema e sviluppatore. Verifica pertinenza,
+gerarchia e conflitti di AGENTS, override e Skill prima di dedurne un blocco;
+non trasformare raccomandazioni generiche in nuovi gate.
+
+Se una Skill causa una pausa, una richiesta di permesso o lavoro incompleto,
+cita e collega il preciso `SKILL.md`, riporta l'istruzione rilevante e distingui
+il requisito esplicito dalla tua interpretazione.
+
+Quando la sessione e le regole del progetto consentono subagent, delega solo
+filoni consistenti e indipendenti, con ownership disgiunta, risultato atteso e
+verifiche espliciti. Il coordinatore integra; niente delega per microtask o
+semplice ricontrollo. Scrivi messaggi leggibili anche tra agenti.
+
+Esempio e fonti: [preparare un incarico](docs/TOOLCHAIN.md#preparare-un-incarico).
