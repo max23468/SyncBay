@@ -46,7 +46,7 @@ Note:
 - Esiste un deployment production Vercel, ma non è ancora una release pubblica Shopify App Store.
 - Gli env Vercel production e development sono stati impostati per Shopify, database, job, sicurezza e storage. Gli env preview restano da completare: la CLI Vercel ha richiesto uno scope di branch per il contesto Preview.
 - Gli env eBay devono usare il keyset dedicato SyncBay, non keyset di altri progetti.
-- Gli env eBay account deletion sono predisposti in Development e Production; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo deploy/migration e test notification riuscita.
+- Gli env eBay account deletion sono predisposti in Development e Production. `HUB_FATTURE_EBAY_ACCOUNT_DELETION_URL` indica il relay HTTPS del keyset condiviso; `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta controllato da flag e va abilitato solo dopo migration, deploy e test notification riuscita su SyncBay e Hub Fatture.
 - `SYNCBAY_DRAFT_IMPORT_ENABLED=false` resta il default di sicurezza nel codice. Sul runtime 1.0 è riattivabile solo per import controllati da preview.
 - `SYNCBAY_DRAFT_IMPORT_LIMIT` limita la dimensione dei batch `IMPORT_CATALOG`.
   Il runtime 1.0 è stato verificato a 50 prodotti con 26 nuove bozze e 24

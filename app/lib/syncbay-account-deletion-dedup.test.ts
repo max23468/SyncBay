@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import {
-  getAccountDeletionDedupAnchor,
-  getAccountDeletionPersistenceMode,
-} from "./syncbay-account-deletion-dedup.ts";
+import { getAccountDeletionDedupAnchor } from "./syncbay-account-deletion-dedup.ts";
 
 test("uses eventDate as the strongest account deletion dedupe anchor", () => {
   const eventDate = new Date("2026-06-21T08:00:00.000Z");
@@ -33,9 +30,4 @@ test("does not dedupe account deletion requests without stable dates", () => {
     }),
     null,
   );
-});
-
-test("keeps no-match account deletion notifications out of persistent logs", () => {
-  assert.equal(getAccountDeletionPersistenceMode({ matchedShopCount: 0 }), "noop");
-  assert.equal(getAccountDeletionPersistenceMode({ matchedShopCount: 1 }), "persist");
 });

@@ -255,6 +255,17 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.91] — 2026-09-08
+
+### Sotto il cofano
+
+- Il keyset eBay condiviso con Hub Fatture conserva ora ogni notifica marketplace
+  account deletion in un envelope cifrato e la inoltra tramite il runner con
+  retry idempotente. La risposta a eBay resta rapida, i relay incompleti sono
+  esclusi dalla retention e corpo e firma vengono cancellati dopo la consegna.
+- Il solo consenso OAuth sul RuName SyncBay include ora lo scope Fulfillment in
+  sola lettura necessario alle letture ordini condivise con Hub Fatture.
+
 ## [1.0.90] — 2026-09-03
 
 ### Sotto il cofano
@@ -4202,6 +4213,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.91]: #1091--2026-09-08
 [1.0.90]: #1090--2026-09-03
 [1.0.89]: #1089--2026-08-26
 [1.0.88]: #1088--2026-08-12

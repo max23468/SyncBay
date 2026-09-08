@@ -118,7 +118,10 @@ Schema iniziale:
 - conteggio shop corrispondenti;
 - key id usato per la firma eBay;
 - date evento/pubblicazione se presenti;
-- nessun salvataggio di `username`, `eiasToken` o payload raw.
+- envelope originale cifrato per il relay Hub Fatture, con stato, tentativi e
+  prossima esecuzione;
+- nessun salvataggio in chiaro di `username`, `eiasToken` o payload raw;
+- cancellazione dell'envelope appena Hub Fatture conferma la consegna.
 
 ### Mapping prodotto
 

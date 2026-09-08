@@ -1,5 +1,6 @@
 import {
   AuditEventType,
+  EbayAccountDeletionRelayStatus,
   EbayAccountDeletionRequestStatus,
   EbayConnectionStatus,
   Prisma,
@@ -7,13 +8,13 @@ import {
 } from "@prisma/client";
 
 import prisma from "../db.server";
-import {
-  getAccountDeletionDedupAnchor,
-  getAccountDeletionPersistenceMode,
-} from "../lib/syncbay-account-deletion-dedup";
+import { getAccountDeletionDedupAnchor } from "../lib/syncbay-account-deletion-dedup";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
-import { hashSecretIdentifier } from "./crypto.server";
-import { verifyEbayNotificationSignature } from "./ebay-notifications.server";
+import { encryptSecret, hashSecretIdentifier } from "./crypto.server";
+import {
+  EbayNotificationSignatureError,
+  verifyEbayNotificationSignature,
+} from "./ebay-notifications.server";
 
 interface AccountDeletionNotification {
   eventDate: Date | null;
@@ -39,20 +40,38 @@ export async function processEbayAccountDeletionNotification(input: {
   lookupBudgetKey: string;
   signatureHeader: string | null;
 }) {
+  const signatureHeader = input.signatureHeader;
+  if (!signatureHeader) {
+    throw new EbayNotificationSignatureError(
+      "Header X-EBAY-SIGNATURE mancante.",
+      "signature_missing",
+    );
+  }
   const verification = await verifyEbayNotificationSignature({
     body: input.body,
     lookupBudgetKey: input.lookupBudgetKey,
-    signatureHeader: input.signatureHeader,
+    signatureHeader,
   });
   const notification = parseAccountDeletionNotification(input.body.toString("utf8"));
   const hashedUserId = hashSecretIdentifier(notification.userId, "ebay-account-deletion-user-id");
+  const relayEnvelope = {
+    encryptedRelayBody: encryptSecret(input.body.toString("base64")),
+    encryptedRelaySignature: encryptSecret(signatureHeader),
+    relayAttemptCount: 0,
+    relayLastErrorCode: null,
+    relayNextAttemptAt: null,
+    relayStartedAt: null,
+    relayStatus: EbayAccountDeletionRelayStatus.PENDING,
+    relayedAt: null,
+  };
   const existing = await prisma.ebayAccountDeletionRequest.findUnique({
     where: { notificationId: notification.notificationId },
   });
 
   if (
-    existing?.status === EbayAccountDeletionRequestStatus.PROCESSED ||
-    existing?.status === EbayAccountDeletionRequestStatus.NO_MATCH
+    (existing?.status === EbayAccountDeletionRequestStatus.PROCESSED ||
+      existing?.status === EbayAccountDeletionRequestStatus.NO_MATCH) &&
+    existing.relayStatus !== null
   ) {
     return {
       idempotent: true,
@@ -62,17 +81,54 @@ export async function processEbayAccountDeletionNotification(input: {
     };
   }
 
+  if (
+    existing?.status === EbayAccountDeletionRequestStatus.PROCESSED ||
+    existing?.status === EbayAccountDeletionRequestStatus.NO_MATCH
+  ) {
+    const staged = await prisma.ebayAccountDeletionRequest.update({
+      where: { id: existing.id },
+      data: relayEnvelope,
+    });
+    return {
+      idempotent: true,
+      matchedShopCount: staged.matchedShopCount,
+      requestId: staged.id,
+      status: staged.status,
+    };
+  }
+
   const duplicate = await findProcessedDuplicateAccountDeletionRequest({
     hashedUserId,
     notification,
   });
 
   if (duplicate) {
+    const request = await prisma.ebayAccountDeletionRequest.upsert({
+      where: { notificationId: notification.notificationId },
+      create: {
+        eventDate: notification.eventDate,
+        hashedUserId,
+        matchedShopCount: duplicate.matchedShopCount,
+        notificationId: notification.notificationId,
+        processedAt: new Date(),
+        publishAttemptCount: notification.publishAttemptCount,
+        publishDate: notification.publishDate,
+        signatureKeyId: verification.keyId,
+        status: duplicate.status,
+        ...relayEnvelope,
+      },
+      update: {
+        processedAt: new Date(),
+        signatureKeyId: verification.keyId,
+        status: duplicate.status,
+        ...relayEnvelope,
+      },
+    });
     return {
       duplicateOfRequestId: duplicate.id,
       idempotent: true,
       matchedShopCount: duplicate.matchedShopCount,
-      requestId: duplicate.id,
+      requestId: request.id,
       status: duplicate.status,
     };
   }
@@ -94,16 +150,6 @@ export async function processEbayAccountDeletionNotification(input: {
       ? EbayAccountDeletionRequestStatus.PROCESSED
       : EbayAccountDeletionRequestStatus.NO_MATCH;
 
-  if (getAccountDeletionPersistenceMode({ matchedShopCount }) === "noop") {
-    return {
-      idempotent: false,
-      matchedShopCount,
-      persisted: false,
-      requestId: null,
-      status,
-    };
-  }
-
   const request = await prisma.$transaction(async (tx) => {
     const deletionRequest = await tx.ebayAccountDeletionRequest.upsert({
       where: { notificationId: notification.notificationId },
@@ -117,6 +163,7 @@ export async function processEbayAccountDeletionNotification(input: {
         publishDate: notification.publishDate,
         signatureKeyId: verification.keyId,
         status,
+        ...relayEnvelope,
       },
       update: {
         eventDate: notification.eventDate,
@@ -129,6 +176,7 @@ export async function processEbayAccountDeletionNotification(input: {
         publishDate: notification.publishDate,
         signatureKeyId: verification.keyId,
         status,
+        ...relayEnvelope,
       },
     });
 

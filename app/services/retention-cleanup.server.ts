@@ -14,7 +14,12 @@
  * così la cancellazione resta osservabile.
  */
 
-import { AuditEventType, EbayAccountDeletionRequestStatus, SyncJobStatus } from "@prisma/client";
+import {
+  AuditEventType,
+  EbayAccountDeletionRelayStatus,
+  EbayAccountDeletionRequestStatus,
+  SyncJobStatus,
+} from "@prisma/client";
 
 import prisma from "../db.server";
 import {
@@ -150,6 +155,7 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
         where: {
           createdAt: { lte: target.cutoff },
           matchedShopCount: 0,
+          OR: [{ relayStatus: null }, { relayStatus: EbayAccountDeletionRelayStatus.DELIVERED }],
           status: EbayAccountDeletionRequestStatus.NO_MATCH,
         },
       });
@@ -159,6 +165,7 @@ async function deleteExpiredRecords(target: RetentionCleanupTarget) {
       const { count } = await prisma.ebayAccountDeletionRequest.deleteMany({
         where: {
           createdAt: { lte: target.cutoff },
+          OR: [{ relayStatus: null }, { relayStatus: EbayAccountDeletionRelayStatus.DELIVERED }],
           status: { not: EbayAccountDeletionRequestStatus.NO_MATCH },
         },
       });

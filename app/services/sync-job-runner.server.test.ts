@@ -5,6 +5,13 @@ import type { DueSyncJob, DueSyncJobRunResult } from "./sync-job-shared.server";
 
 const fakes = vi.hoisted(() => ({
   archive: vi.fn(async () => 0),
+  accountDeletionRelay: vi.fn(async () => ({
+    attemptedCount: 0,
+    configured: true,
+    continuationNeeded: false,
+    deliveredCount: 0,
+    failedCount: 0,
+  })),
   claim: vi.fn(async (job) => job),
   conflicts: vi.fn(async (job) => result(job)),
   count: vi.fn(async () => dueCounts()),
@@ -47,6 +54,9 @@ vi.mock("./sync-job-scheduling.server", () => ({
 vi.mock("./product-history.server", () => ({
   runDailyOperationalMaintenance: fakes.maintenance,
 }));
+vi.mock("./ebay-account-deletion-relay.server", () => ({
+  runDueEbayAccountDeletionRelays: fakes.accountDeletionRelay,
+}));
 vi.mock("./sync-job-import.server", () => ({ runImportCatalogJob: fakes.import }));
 vi.mock("./sync-job-incremental.server", () => ({
   runIncrementalSyncJob: fakes.incremental,
@@ -72,8 +82,26 @@ test("runDueSyncJobs coordina una coda vuota senza possedere famiglie di job", a
   assert.equal(summary.processedCount, 0);
   assert.equal(summary.continuationNeeded, false);
   assert.deepEqual(summary.retentionCleanup, { cleaned: 0 });
+  assert.deepEqual(fakes.accountDeletionRelay.mock.calls.at(-1), [{ deadlineAt: undefined, now }]);
   assert.deepEqual(fakes.enqueue.mock.calls.at(-1), [now]);
   assert.deepEqual(fakes.recover.mock.calls.at(-1), [{ limit: 5, now }]);
+});
+
+test("include le consegne account deletion nel riepilogo del runner", async () => {
+  fakes.accountDeletionRelay.mockResolvedValueOnce({
+    attemptedCount: 2,
+    configured: true,
+    continuationNeeded: true,
+    deliveredCount: 1,
+    failedCount: 1,
+  });
+
+  const summary = await runDueSyncJobs({ limit: 5 });
+
+  assert.equal(summary.processedCount, 2);
+  assert.equal(summary.succeededCount, 1);
+  assert.equal(summary.failedCount, 1);
+  assert.equal(summary.continuationNeeded, true);
 });
 
 test("il dispatcher inoltra ogni tipo alla sua famiglia", async () => {
