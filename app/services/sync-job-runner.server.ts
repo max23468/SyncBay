@@ -13,6 +13,7 @@ import {
 import { runDailyOperationalMaintenance } from "./product-history.server";
 
 import { runDetectShopifyChangesJob } from "./sync-job-conflicts.server";
+import { runDueEbayAccountDeletionRelays } from "./ebay-account-deletion-relay.server";
 import { runImportCatalogJob } from "./sync-job-import.server";
 import {
   runIncrementalSyncJob,
@@ -52,6 +53,10 @@ export async function runDueSyncJobs(
   const now = input.now ?? new Date();
   const limit = normalizeRunDueLimit(input.limit);
 
+  const accountDeletionRelay = await runDueEbayAccountDeletionRelays({
+    deadlineAt: input.deadlineAt,
+    now,
+  });
   await enqueueIncrementalSyncJobs(now);
   await recoverStaleRunningSyncJobsForDueShops({ limit, now });
   const cleanedInternalImportJobCount = 0;
@@ -98,17 +103,25 @@ export async function runDueSyncJobs(
   const dueCount = Object.values(dueByType).reduce((total, count) => total + count, 0);
 
   return {
+    accountDeletionRelay,
     archivedStaleFailedJobCount,
-    failedCount: completedResults.filter((result) => result.status === "failed").length,
-    processedCount: completedResults.length,
+    failedCount:
+      completedResults.filter((result) => result.status === "failed").length +
+      accountDeletionRelay.failedCount,
+    processedCount: completedResults.length + accountDeletionRelay.attemptedCount,
     skippedCount: completedResults.filter((result) => result.status === "skipped").length,
     cleanedInternalImportJobCount,
-    continuationNeeded: deadlineState.continuationNeeded || dueCount > completedResults.length,
+    continuationNeeded:
+      accountDeletionRelay.continuationNeeded ||
+      deadlineState.continuationNeeded ||
+      dueCount > completedResults.length,
     dueByType,
     elapsedMs: Date.now() - startedAt,
     retentionCleanup,
     selectedByType,
-    succeededCount: completedResults.filter((result) => result.status === "succeeded").length,
+    succeededCount:
+      completedResults.filter((result) => result.status === "succeeded").length +
+      accountDeletionRelay.deliveredCount,
     results: completedResults,
   };
 }

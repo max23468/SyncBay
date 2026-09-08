@@ -69,6 +69,8 @@ Per eBay marketplace account deletion:
 - usare `notification.data.userId` solo per trovare la connessione eBay e poi azzerarlo;
 - conservare solo un hash HMAC del `userId` per audit e idempotenza operativa;
 - rimuovere mapping, snapshot, conflitti e payload job collegati allo shop/account eBay.
+- conservare corpo e firma originali soltanto come envelope cifrato finché Hub Fatture non conferma il trattamento;
+- cancellare l'envelope dopo la consegna e impedire alla retention di eliminare relay ancora aperti.
 
 ## Incident response minima
 

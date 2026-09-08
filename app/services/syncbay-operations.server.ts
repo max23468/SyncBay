@@ -7,6 +7,7 @@ import {
   SyncJobType,
 } from "@prisma/client";
 import prisma from "../db.server";
+import { isSafeHttpsUrl } from "../lib/safe-http-url";
 import { SYNCBAY_AUDIT_LOG_CREATE_SELECT } from "../lib/syncbay-audit-log-write";
 import {
   getShopifyChangeJobResourceKeys,
@@ -397,6 +398,7 @@ export function getAccountDeletionChallengeConfig() {
 
 export function getAccountDeletionPostConfig() {
   const challengeConfig = getAccountDeletionChallengeConfig();
+  const hubFattureRelayUrl = process.env.HUB_FATTURE_EBAY_ACCOUNT_DELETION_URL;
   const postRequirements = [
     { envKey: "EBAY_CLIENT_ID", label: "Client ID eBay" },
     { envKey: "EBAY_CLIENT_SECRET", label: "Client secret eBay" },
@@ -407,7 +409,14 @@ export function getAccountDeletionPostConfig() {
 
   return {
     ...challengeConfig,
-    missingRequirements: [...challengeConfig.missingRequirements, ...postRequirements],
+    hubFattureRelayUrl,
+    missingRequirements: [
+      ...challengeConfig.missingRequirements,
+      ...postRequirements,
+      !hasRuntimeValue(hubFattureRelayUrl) || !isSafeHttpsUrl(hubFattureRelayUrl ?? "")
+        ? "relay HTTPS account deletion Hub Fatture"
+        : null,
+    ].filter((requirement): requirement is string => Boolean(requirement)),
   };
 }
 

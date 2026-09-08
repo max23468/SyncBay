@@ -37,6 +37,9 @@ Usa un ADR quando una scelta:
 - `0022-stock-ebay-su-ciclo-ordine-shopify.md`: decremento eBay alla creazione
   ordine, fallback idempotente al pagamento e ripristino prudente
   all'annullamento.
+- `0024-relay-account-deletion-hub-fatture.md`: SyncBay resta l'endpoint eBay
+  del keyset condiviso, custodisce ogni notifica e ne completa la consegna
+  idempotente a Hub Fatture.
 
 ## Convenzioni
 

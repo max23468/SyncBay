@@ -95,6 +95,13 @@ enum EbayAccountDeletionRequestStatus {
   FAILED
 }
 
+enum EbayAccountDeletionRelayStatus {
+  PENDING
+  DELIVERING
+  RETRYING
+  DELIVERED
+}
+
 enum AuditEventType {
   SHOP_INSTALLED
   SHOP_UNINSTALLED
@@ -410,22 +417,31 @@ model AuditLog {
 }
 
 model EbayAccountDeletionRequest {
-  id                  String                           @id @default(cuid())
-  notificationId      String                           @unique
-  hashedUserId        String
-  status              EbayAccountDeletionRequestStatus @default(PROCESSING)
-  matchedShopCount    Int                              @default(0)
-  signatureKeyId      String?
-  publishAttemptCount Int?
-  eventDate           DateTime?
-  publishDate         DateTime?
-  receivedAt          DateTime                         @default(now())
-  processedAt         DateTime?
-  failureCode         String?
-  failureMessage      String?
-  createdAt           DateTime                         @default(now())
-  updatedAt           DateTime                         @updatedAt
+  id                      String                            @id @default(cuid())
+  notificationId          String                            @unique
+  hashedUserId            String
+  status                  EbayAccountDeletionRequestStatus @default(PROCESSING)
+  matchedShopCount        Int                               @default(0)
+  signatureKeyId          String?
+  publishAttemptCount     Int?
+  eventDate               DateTime?
+  publishDate             DateTime?
+  receivedAt              DateTime                          @default(now())
+  processedAt             DateTime?
+  failureCode             String?
+  failureMessage          String?
+  relayStatus             EbayAccountDeletionRelayStatus?
+  encryptedRelayBody      String?
+  encryptedRelaySignature String?
+  relayAttemptCount       Int                               @default(0)
+  relayNextAttemptAt      DateTime?
+  relayStartedAt          DateTime?
+  relayedAt               DateTime?
+  relayLastErrorCode      String?
+  createdAt               DateTime                          @default(now())
+  updatedAt               DateTime                          @updatedAt
 
   @@index([hashedUserId, receivedAt])
+  @@index([relayStatus, relayNextAttemptAt])
   @@index([status, receivedAt])
 }

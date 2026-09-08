@@ -156,13 +156,19 @@ Endpoint token:
 
 ### Scopes eBay 1.0
 
-Bozza iniziale:
+Il solo consenso OAuth associato al RuName SyncBay richiede:
 
 ```text
 https://api.ebay.com/oauth/api_scope/commerce.identity.readonly
 https://api.ebay.com/oauth/api_scope/sell.inventory.readonly
 https://api.ebay.com/oauth/api_scope/sell.inventory
+https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly
 ```
+
+Lo scope Fulfillment in sola lettura permette a Hub Fatture di leggere gli ordini
+con il token condiviso. Non va creato un secondo consenso o RuName per Hub Fatture:
+prima della prossima autorizzazione si aggiorna `EBAY_SCOPES` nel runtime SyncBay e
+si mantiene il RuName SyncBay esistente.
 
 - metodo Trading API usato per leggere listing storici: `GetMyeBaySelling`
   via OAuth user access token e header `X-EBAY-API-IAF-TOKEN`; le API
@@ -196,8 +202,9 @@ Stato implementazione:
 - `GET ?challenge_code=...` calcola la `challengeResponse` richiesta da eBay usando `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` e `EBAY_ACCOUNT_DELETION_ENDPOINT_URL`.
 - `POST` verifica `X-EBAY-SIGNATURE`, recupera e cache-a la public key eBay e risponde `204` quando la notifica è valida e processata.
 - La notifica viene associata a `EbayConnection.ebayUserId`; per gli shop corrispondenti SyncBay revoca la connessione eBay, azzera token/user id, cancella mapping, snapshot, conflitti e payload job collegati al catalogo eBay.
+- Nella stessa transazione della pulizia locale, SyncBay conserva cifrati corpo e firma originali. Il runner li inoltra all'endpoint HTTPS configurato in `HUB_FATTURE_EBAY_ACCOUNT_DELETION_URL`, ritenta con backoff fino alla consegna e poi cancella l'envelope.
 - SyncBay registra solo audit minimizzato e `hashedUserId`, senza salvare username, eiasToken o payload raw.
-- `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta il flag di sicurezza: abilitarlo solo dopo migration/deploy e test notification riuscita.
+- `EBAY_ACCOUNT_DELETION_NOTIFICATIONS_ENABLED` resta il flag di sicurezza: abilitarlo solo dopo migration, deploy, configurazione del relay e test notification riuscita su entrambi i ricevitori.
 
 ## Dati che il maintainer deve fornire
 
