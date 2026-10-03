@@ -8,6 +8,13 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 
 ### Non versionato
 
+- Corretto l'audit produzione aggiornando soltanto l'override `fast-uri` da
+  `3.1.6` a `3.1.8`. Il workflow programmato mantiene report e issue unica:
+  advisory invariati già segnalati non generano nuovi fallimenti quotidiani;
+  nuovi advisory, aggravamenti e audit inattendibili restano segnalati. PR,
+  esecuzioni manuali e gate locali restano bloccanti; la risoluzione chiude
+  l'issue.
+
 - Aggiornati `tsx` da `4.23.12` a `4.23.13` e `@types/react-dom` a `19.2.7`,
   verificando i render SSR dopo la rigenerazione del Prisma Client richiesta da
   un'installazione pulita.

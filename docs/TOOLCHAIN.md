@@ -281,8 +281,24 @@ ogni giorno e sulle PR che toccano dipendenze o lo script stesso, mentre resta
 obbligatorio in locale dentro `verify:changed` e `verify:full`. Il segnale
 resta, il merge non è più accoppiato.
 
+Solo le esecuzioni programmate deduplicano le segnalazioni in un'unica issue
+creata da `github-actions[bot]`, riutilizzata anche dopo la risoluzione. Il body
+conserva gli advisory, severità, CVSS e range coinvolti, con il link all'ultima
+run; il report JSON viene conservato come artifact per 30 giorni. Primo
+rilevamento e variazioni degli advisory fanno fallire la run e aggiornano la
+segnalazione. Una ripetizione invariata aggiorna il body senza aggiungere
+commenti e termina con successo, dichiarando le vulnerabilità ancora aperte.
+La risoluzione aggiunge un commento e chiude l'issue; una ricomparsa la riapre.
+Errori npm, report incompleti o incoerenti e problemi di accesso all'issue
+restano sempre fallimenti. Lo stato vive soltanto nell'issue, senza waiver o
+cache degli esiti. PR, lanci manuali e gate locali mantengono l'audit bloccante;
+il permesso di scrittura delle issue e il token sono limitati al percorso
+programmato. Dopo l'integrazione verificare il report e l'issue della prima run
+remota; la cessazione delle notifiche ripetute richiede una successiva run con
+lo stesso insieme di advisory.
+
 L'audit produzione non contiene waiver: dopo la migrazione React Router 8,
-qualsiasi vulnerabilità riportata da npm rende il gate rosso. Se in futuro una
+qualsiasi vulnerabilità riportata da npm rende il gate locale e PR rosso. Se in futuro una
 correzione non fosse installabile, la decisione dovrà essere documentata prima
 di introdurre un'eccezione mirata e temporanea.
 
