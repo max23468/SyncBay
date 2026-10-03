@@ -140,3 +140,19 @@ test("Vercel delegates ignored builds to the tested classifier", () => {
 
   assert.match(source, /syncbay-vercel-ignore-build\.mjs/);
 });
+
+test("production audit limits deduplication and issue writes to schedules and always retains reports", () => {
+  const source = readWorkflow("audit-prod.yml");
+  const [strict, scheduled] = source.split("  scheduled-audit:");
+  assert.match(strict, /if: github\.event_name != 'schedule'/);
+  assert.match(strict, /run: npm run audit:prod -- --report/);
+  assert.doesNotMatch(strict, /issues: write|GH_TOKEN|--scheduled/);
+  assert.match(scheduled, /if: github\.event_name == 'schedule'/);
+  assert.match(scheduled, /issues: write/);
+  assert.match(scheduled, /GH_TOKEN:.*\s+run: npm run audit:prod -- --scheduled --report/);
+  assert.match(source, /if: always\(\)\s+uses: actions\/upload-artifact@v7/);
+  assert.match(source, /include-hidden-files: true/);
+  assert.match(source, /if-no-files-found: error/);
+  assert.match(source, /cancel-in-progress: false/);
+  assert.doesNotMatch(source, /continue-on-error/);
+});
