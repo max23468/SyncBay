@@ -3,6 +3,7 @@ import { lookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
 import { BlockList, isIP } from "node:net";
 import { Readable } from "node:stream";
+import { setTimeout as delay } from "node:timers/promises";
 import { mapWithConcurrency } from "../lib/map-with-concurrency";
 import {
   getShopifyImageMediaIds,
@@ -16,6 +17,7 @@ import {
   ShopifyDraftProductNode,
   ShopifyMediaSyncResult,
   ShopifyProductUpdateResponse,
+  ShopifyProductMediaNode,
   ShopifyUserError,
   formatShopifyGraphqlErrors,
   formatShopifyUserErrors,
@@ -35,7 +37,7 @@ interface ShopifyProductDeleteMediaResponse {
   }>;
 }
 
-const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 2;
+const SHOPIFY_MEDIA_SYNC_CONCURRENCY = 1;
 
 const SUPABASE_SIGNED_URL_TTL_SECONDS = 604_800;
 
@@ -74,6 +76,7 @@ export async function syncShopifyMediaFromEbayImages(
   let directCreatedCount = 0;
   let stagedCreatedCount = 0;
   let deletedCount = 0;
+  const knownMediaIds = new Set(existingImageMediaIds);
 
   if (
     !shouldSyncExistingCatalogImages({
@@ -95,38 +98,6 @@ export async function syncShopifyMediaFromEbayImages(
     };
   }
 
-  if (existingImageMediaIds.length > 0 && sourceMedia.length > 0) {
-    const deleteResult = await deleteShopifyProductMediaFiles(
-      admin,
-      product.id,
-      existingImageMediaIds,
-    );
-
-    if (deleteResult.status === "failed") {
-      return {
-        createdCount: 0,
-        deletedCount: 0,
-        directCreatedCount: 0,
-        failedResults: [
-          {
-            errorMessage: deleteResult.errorMessage,
-            index: -1,
-            sourceUrl: "",
-          },
-        ],
-        // La cancellazione è fallita: le immagini esistenti restano sul prodotto.
-        preservedCount: existingImageMediaIds.length,
-        requestedCount: sourceMedia.length,
-        sourceImageUrls: sourceMedia.map((media) => media.originalSource),
-        stagedCreatedCount: 0,
-        stagedObjectPaths,
-        status: "failed",
-      };
-    }
-
-    deletedCount = deleteResult.deletedCount;
-  }
-
   const mediaResults = await mapWithConcurrency(
     sourceMedia.map((media, index) => ({ index, media })),
     SHOPIFY_MEDIA_SYNC_CONCURRENCY,
@@ -134,10 +105,19 @@ export async function syncShopifyMediaFromEbayImages(
       const directResult = await addShopifyProductMedia(admin, {
         media,
         productGid: product.id,
+        knownMediaIds,
       });
 
       if (directResult.status === "synced") {
         return { mode: "direct" as const, status: "synced" as const };
+      }
+      if (directResult.allowFallback === false) {
+        return {
+          errorMessage: directResult.errorMessage,
+          index,
+          sourceUrl: media.originalSource,
+          status: "failed" as const,
+        };
       }
 
       const stagedResult = await createStagedImageMediaInput({
@@ -159,6 +139,7 @@ export async function syncShopifyMediaFromEbayImages(
       const stagedMediaResult = await addShopifyProductMedia(admin, {
         media: stagedResult.media,
         productGid: product.id,
+        knownMediaIds,
       });
 
       if (stagedMediaResult.status === "failed") {
@@ -199,6 +180,13 @@ export async function syncShopifyMediaFromEbayImages(
 
   const createdCount = directCreatedCount + stagedCreatedCount;
 
+  // Conserva la galleria precedente finché tutte le nuove immagini sono READY.
+  if (failedResults.length === 0 && createdCount > 0 && existingImageMediaIds.length > 0) {
+    const deletion = await deleteShopifyProductMediaFiles(admin, product.id, existingImageMediaIds);
+    if (deletion.status === "synced") deletedCount = deletion.deletedCount;
+    else failedResults.push({ errorMessage: deletion.errorMessage, index: -1, sourceUrl: "" });
+  }
+
   return {
     createdCount,
     deletedCount,
@@ -224,8 +212,11 @@ async function addShopifyProductMedia(
   input: {
     media: ShopifyDraftProductInput["media"][number];
     productGid: string;
+    knownMediaIds: Set<string>;
   },
-): Promise<{ status: "synced" } | { errorMessage: string; status: "failed" }> {
+): Promise<
+  { status: "synced" } | { allowFallback?: boolean; errorMessage: string; status: "failed" }
+> {
   const response = await admin.graphql(
     `#graphql
     mutation SyncBayAddProductMedia($media: [CreateMediaInput!], $product: ProductUpdateInput!) {
@@ -283,7 +274,64 @@ async function addShopifyProductMedia(
     };
   }
 
-  return { status: "synced" };
+  const newImages =
+    json.data?.productUpdate?.product?.media?.nodes?.filter(
+      (media) => media.mediaContentType === "IMAGE" && !input.knownMediaIds.has(media.id),
+    ) ?? [];
+  if (newImages.length !== 1) {
+    return {
+      allowFallback: false,
+      errorMessage:
+        "Shopify non ha confermato la nuova immagine. Le immagini precedenti sono conservate; riprova la sincronizzazione.",
+      status: "failed",
+    };
+  }
+  let media = newImages[0];
+  let failureMessage =
+    "Shopify sta ancora elaborando la nuova immagine: upload annullato. Le immagini precedenti sono conservate; riprova la sincronizzazione.";
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    if (media.preview?.status === "READY") {
+      input.knownMediaIds.add(media.id);
+      return { status: "synced" };
+    }
+    if (media.preview?.status === "FAILED") {
+      const deletion = await deleteShopifyProductMediaFiles(admin, input.productGid, [media.id]);
+      return {
+        allowFallback: deletion.status === "synced",
+        errorMessage: "Shopify non ha elaborato la nuova immagine.",
+        status: "failed",
+      };
+    }
+    if (attempt === 9) break;
+    await delay(500);
+    const check = await admin.graphql(
+      `#graphql
+      query SyncBayImageReadiness($id: ID!) {
+        node(id: $id) {
+          ... on MediaImage { id mediaContentType preview { status } }
+        }
+      }`,
+      { variables: { id: media.id } },
+    );
+    const payload = (await check.json().catch(() => null)) as {
+      data?: { node?: ShopifyProductMediaNode | null };
+      errors?: Array<{ message: string }>;
+    } | null;
+    if (!check.ok || payload?.errors?.length || !payload?.data?.node) {
+      failureMessage =
+        "Verifica immagine Shopify non completata. Le immagini precedenti sono conservate; riprova la sincronizzazione.";
+      break;
+    }
+    media = payload.data.node;
+  }
+  // Non lasciare un upload pendente fuori dalla baseline: potrebbe diventare
+  // READY dopo il fallimento e sembrare una modifica manuale di Shopify.
+  const deletion = await deleteShopifyProductMediaFiles(admin, input.productGid, [media.id]);
+  return {
+    allowFallback: false,
+    errorMessage: deletion.status === "failed" ? deletion.errorMessage : failureMessage,
+    status: "failed",
+  };
 }
 
 async function deleteShopifyProductMediaFiles(

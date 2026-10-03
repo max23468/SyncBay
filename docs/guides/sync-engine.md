@@ -112,6 +112,13 @@ I webhook `products/update` e `inventory_levels/update` creano job
 l'ultimo snapshot `SYNCBAY` e apre conflitti per titolo, descrizione, stato,
 prezzo, quantità e immagini quando rileva drift.
 
+La scelta «Usa valore eBay» forza il riallineamento anche se lo snapshot eBay
+è invariato. Durante l'import, i media vengono caricati in serie per prodotto
+e verificati fino allo stato `READY`: la galleria precedente viene rimossa
+soltanto quando tutte le nuove immagini sono pronte. Un upload ancora in
+elaborazione oltre la verifica limitata viene annullato e il job resta da
+riprovare, senza registrarlo come riuscito.
+
 ## Riconciliazione
 
 Il polling delta deve essere affiancato da riconciliazione completa periodica

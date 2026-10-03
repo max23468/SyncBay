@@ -10,7 +10,11 @@ import {
 import { hashNullableText } from "../lib/syncbay-description-hash";
 import { buildEbayProductSnapshotPayload } from "../lib/syncbay-product-snapshot-payload";
 import { markShopifyProductSoldOut } from "./shopify-import-inventory.server";
-import { downloadImageForStaging } from "./shopify-import-media.server";
+import {
+  downloadImageForStaging,
+  syncShopifyMediaFromEbayImages,
+} from "./shopify-import-media.server";
+import type { ShopifyDraftProductInput } from "./shopify-import-shared.server";
 import { isDraftProductUnchangedSinceLastEbaySnapshot } from "./shopify-import-persistence.server";
 
 function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
@@ -38,6 +42,104 @@ function createLifecycleHarness(results: CatalogImportExecutionResult[]) {
     succeededTransitions,
   };
 }
+
+function mediaSyncHarness(statuses: string[]) {
+  const calls: string[] = [];
+  const deletedIds: unknown[] = [];
+  const original = {
+    id: "gid://shopify/MediaImage/1",
+    mediaContentType: "IMAGE",
+    preview: { status: "READY" },
+  };
+  const added = {
+    id: "gid://shopify/MediaImage/2",
+    mediaContentType: "IMAGE",
+    preview: { status: statuses.shift() },
+  };
+  return {
+    calls,
+    deletedIds,
+    run: () =>
+      syncShopifyMediaFromEbayImages(
+        {
+          graphql: async (query, options) => {
+            if (query.includes("SyncBayAddProductMedia")) {
+              calls.push("add");
+              return Response.json({
+                data: {
+                  productUpdate: {
+                    product: { id: "gid://shopify/Product/1", media: { nodes: [original, added] } },
+                    userErrors: [],
+                  },
+                },
+              });
+            }
+            if (query.includes("SyncBayImageReadiness")) {
+              calls.push("read");
+              added.preview.status = statuses.shift() ?? added.preview.status;
+              return Response.json({ data: { node: added } });
+            }
+            calls.push("delete");
+            deletedIds.push(options?.variables?.mediaIds);
+            return Response.json({
+              data: {
+                productDeleteMedia: {
+                  deletedMediaIds: options?.variables?.mediaIds,
+                  mediaUserErrors: [],
+                },
+              },
+            });
+          },
+        },
+        {
+          id: "gid://shopify/Product/1",
+          title: "Prodotto sintetico",
+          media: { nodes: [original] },
+        },
+        {
+          media: [
+            {
+              alt: "Immagine sintetica",
+              mediaContentType: "IMAGE",
+              originalSource: "https://images.example/image.jpg",
+            },
+          ],
+          source: { ebayItemId: "synthetic-item" },
+        } as ShopifyDraftProductInput,
+        { jobId: "synthetic-job" },
+      ),
+  };
+}
+
+test("media: attende READY prima di rimuovere la galleria precedente", async () => {
+  const harness = mediaSyncHarness(["PROCESSING", "READY"]);
+  const result = await harness.run();
+  assert.equal(result.status, "synced");
+  assert.equal(result.createdCount, 1);
+  assert.equal(result.preservedCount, 0);
+  assert.deepEqual(harness.calls, ["add", "read", "delete"]);
+});
+
+test("media: non registra come riuscita un'immagine ancora in elaborazione", async () => {
+  const harness = mediaSyncHarness(["PROCESSING"]);
+  const result = await harness.run();
+  assert.equal(result.status, "failed");
+  assert.equal(result.createdCount, 0);
+  assert.equal(result.preservedCount, 1);
+  assert.equal(result.deletedCount, 0);
+  assert.deepEqual(harness.deletedIds, [["gid://shopify/MediaImage/2"]]);
+  assert.match(result.failedResults[0].errorMessage, /ancora elaborando/);
+});
+
+test("media: un'elaborazione fallita rimuove solo il nuovo upload e conserva la galleria", async () => {
+  const harness = mediaSyncHarness(["FAILED"]);
+  const result = await harness.run();
+  assert.equal(result.status, "failed");
+  assert.equal(result.createdCount, 0);
+  assert.equal(result.preservedCount, 1);
+  assert.equal(result.deletedCount, 0);
+  assert.deepEqual(harness.deletedIds, [["gid://shopify/MediaImage/2"]]);
+});
 
 test("one outer import job produces one terminal transition", async () => {
   const harness = createLifecycleHarness([

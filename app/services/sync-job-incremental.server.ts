@@ -274,7 +274,10 @@ export async function runIncrementalSyncJob(job: DueSyncJob) {
     // Reconcile e delta seller events ripassano l'intero catalogo: senza
     // questo skip ogni giro riscrive su Shopify anche i prodotti identici,
     // generando eco products/update e job DETECT a valanga (egress).
-    skipUnchangedSinceLastEbaySnapshot: true,
+    // Una decisione sui conflitti deve ripristinare Shopify anche quando eBay
+    // è invariato: confrontare solo gli snapshot eBay salterebbe il repair.
+    skipUnchangedSinceLastEbaySnapshot:
+      getStringFromPayload(job.payload, "source") !== "conflict_resolution",
   });
 
   if (result.status === "blocked" || result.status === "failed") {
