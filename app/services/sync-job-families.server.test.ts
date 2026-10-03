@@ -7,6 +7,10 @@ const fakes = vi.hoisted(() => ({
   productMapping: vi.fn(async () => null),
   productMappings: vi.fn(async () => []),
   snapshots: vi.fn(async () => []),
+  catalogImport: vi.fn(async (_input: { skipUnchangedSinceLastEbaySnapshot?: boolean }) => ({
+    status: "succeeded",
+    summary: {},
+  })),
 }));
 
 vi.mock("../db.server", () => ({
@@ -16,6 +20,7 @@ vi.mock("../db.server", () => ({
       findMany: fakes.productMappings,
     },
     productSnapshot: { findMany: fakes.snapshots },
+    syncConflict: { findMany: async () => [] },
   },
 }));
 vi.mock("./shopify-admin-session.server", () => ({
@@ -24,6 +29,9 @@ vi.mock("./shopify-admin-session.server", () => ({
 vi.mock("./pricing-rules.server", () => ({
   getPricingRuleForShopId: async () => ({ discountPercent: 0, roundingMode: "CENTS" }),
 }));
+vi.mock("./shopify-draft-import.server", () => ({
+  executeShopifyCatalogImport: fakes.catalogImport,
+}));
 vi.mock("./sync-job-shared.server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./sync-job-shared.server")>()),
   getConnectedEbayConnection: async () => ({ id: "connection-1" }),
@@ -31,14 +39,30 @@ vi.mock("./sync-job-shared.server", async (importOriginal) => ({
   getInterruptedRunningSyncJobResult: async () => null,
   getLatestFacetBaselinesByItemId: async () => ({}),
   markJobSucceeded: fakes.markSucceeded,
+  splitOversizedEbayItemJobIfNeeded: async () => "not_needed",
 }));
 
 import {
   runFacetOnlyIncrementalSyncJob,
   runPricingOnlyIncrementalSyncJob,
+  runIncrementalSyncJob,
 } from "./sync-job-incremental.server";
 import type { DueSyncJob } from "./sync-job-shared.server";
 import { runUpdateEbayStockJob } from "./sync-job-stock.server";
+
+test("il riallineamento dei conflitti forza l'import, il delta ordinario conserva lo skip", async () => {
+  for (const source of ["conflict_resolution", "seller_events_delta"]) {
+    const result = await runIncrementalSyncJob(
+      makeJob(SyncJobType.SYNC_INCREMENTAL, { source, ebayItemIds: ["synthetic-item"] }),
+    );
+    assert.equal(result.status, "succeeded");
+    assert.equal(
+      fakes.catalogImport.mock.calls.at(-1)?.[0].skipUnchangedSinceLastEbaySnapshot,
+      source !== "conflict_resolution",
+    );
+  }
+  fakes.markSucceeded.mockClear();
+});
 
 test("pricing e facet chiudono correttamente batch incrementali vuoti", async () => {
   const job = makeJob(SyncJobType.SYNC_INCREMENTAL, {});

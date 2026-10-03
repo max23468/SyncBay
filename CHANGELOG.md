@@ -262,6 +262,15 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.92] — 2026-10-03
+
+### Correzioni
+
+- Il riallineamento dei conflitti ripristina Shopify anche quando il listing
+  eBay non è cambiato. La sincronizzazione immagini verifica che ogni nuovo
+  media sia pronto e conserva la galleria precedente fino al completamento;
+  gli upload ancora in elaborazione non vengono registrati come riusciti.
+
 ## [1.0.91] — 2026-09-08
 
 ### Sotto il cofano
@@ -4220,6 +4229,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.92]: #1092--2026-10-03
 [1.0.91]: #1091--2026-09-08
 [1.0.90]: #1090--2026-09-03
 [1.0.89]: #1089--2026-08-26
