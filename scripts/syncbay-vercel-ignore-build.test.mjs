@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { shouldBuildVercel } from "./syncbay-vercel-ignore-build.mjs";
+import { shouldBuildVercel, shouldSkipDependabotPreview } from "./syncbay-vercel-ignore-build.mjs";
 
 test("builds when deployable runtime surfaces change", () => {
   for (const path of [
@@ -46,4 +46,31 @@ test("skips application tests but builds unknown files conservatively", () => {
 
 test("builds when no reliable diff is available", () => {
   assert.equal(shouldBuildVercel([]), true);
+});
+
+test("skips only Dependabot preview branches", () => {
+  for (const ref of [
+    "dependabot/npm_and_yarn/vitest-5.0.3",
+    "dependabot/npm_and_yarn/shopify/shopify-app-react-router-3.0.1",
+  ]) {
+    assert.equal(
+      shouldSkipDependabotPreview({ VERCEL_ENV: "preview", VERCEL_GIT_COMMIT_REF: ref }),
+      true,
+    );
+  }
+});
+
+test("keeps production and other previews under the existing build policy", () => {
+  for (const env of [
+    { VERCEL_ENV: "production", VERCEL_GIT_COMMIT_REF: "dependabot/example" },
+    { VERCEL_ENV: "production", VERCEL_GIT_COMMIT_REF: "main" },
+    { VERCEL_ENV: "preview", VERCEL_GIT_COMMIT_REF: "fix/dependabot-example" },
+    { VERCEL_ENV: "preview", VERCEL_GIT_COMMIT_REF: "feature/catalog" },
+    { VERCEL_ENV: "development", VERCEL_GIT_COMMIT_REF: "dependabot/example" },
+    { VERCEL_GIT_COMMIT_REF: "dependabot/example" },
+    { VERCEL_ENV: "preview" },
+    {},
+  ]) {
+    assert.equal(shouldSkipDependabotPreview(env), false);
+  }
 });
