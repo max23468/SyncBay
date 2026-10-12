@@ -135,7 +135,7 @@
     "oxlint": "1.87.0",
     "playwright": "^1.64.0",
     "prisma": "^7.10.0",
-    "react-doctor": "0.9.17",
+    "react-doctor": "0.9.12",
     "supabase": "2.120.0",
     "tsx": "4.23.15",
     "typescript": "^7.0.2",
