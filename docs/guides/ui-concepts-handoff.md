@@ -139,7 +139,7 @@ Deviazioni intenzionali dai PNG:
   reali dell'ambiente collegato durante quella verifica;
 - il logo dei concept non è fonte di verità quando Image Gen lo reinterpreta;
 - Panoramica può mostrare conflitti reali invece di uno stato `Tutto sotto
-controllo`;
+  controllo`;
 - Catalogo non implementa ricerca/salvataggio viste del concept, fuori dal
   perimetro MVP corrente;
 - Conflitti non usa un pannello helper laterale permanente: le decisioni

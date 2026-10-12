@@ -128,8 +128,8 @@ Note:
 - Per diagnostica operativa dei job non usare `vercel env pull` come fonte di
   `DATABASE_URL` production: le variabili Vercel sensibili possono risultare
   non leggibili fuori runtime. Usa invece `npm run jobs:status -- --shop
-<shop.myshopify.com>`, che interroga Supabase remoto via `supabase db
-query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
+  <shop.myshopify.com>`, che interroga Supabase remoto via `supabase db
+  query --linked`, usa `SUPABASE_DB_PASSWORD` o il Portachiavi macOS locale
   quando disponibile e stampa solo stato job sanitizzato.
 - Per ripristinare lo stock eBay dopo un test reale mirato usa
   `npm run stock:restore-ebay -- --item-id <ItemID> --quantity <n> --confirm-real-ebay-write`.

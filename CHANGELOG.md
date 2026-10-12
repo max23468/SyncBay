@@ -150,7 +150,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   ancora `7.8.0`) e rimossa `unrs-resolver@1.12.2`, non più presente
   nell'albero. `npm audit` resta a 0 vulnerabilità.
 - Migrata la toolchain di qualità da ESLint/Prettier a oxlint/oxfmt. `npm run
-lint` usa oxlint (config `.oxlintrc.json`, plugin
+  lint` usa oxlint (config `.oxlintrc.json`, plugin
   import/react/jsx-a11y/typescript); `npm run format` e `format:check` usano
   oxfmt. Rimosse 11 devDependency ESLint/Prettier e `eslint.config.mjs`. Le
   regole `react-hooks` (`react/rules-of-hooks` a error, `react/exhaustive-deps`
@@ -1745,7 +1745,7 @@ lint` usa oxlint (config `.oxlintrc.json`, plugin
   CI completa, deploy stabile e App Store ancora da decidere.
 - Documentazione: definito il perimetro SyncBay 1.0 come custom app privata per
   pochi clienti selezionati e introdotto il piano generico `Collega catalogo
-esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
+  esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
   implementativo versionato per il takeover di cataloghi Shopify esistenti.
 
 ## [0.45.0] — 2026-06-21
@@ -2210,7 +2210,7 @@ esistente`, senza funzioni Numisleo-specifiche permanenti, con piano
 - Il mapping categorie usa `Collectible Coins` come categoria Shopify neutra per
   le monete e sposta distinzioni come italiane, commemorative o bullion nel
   `productType`, evitando categorie troppo strette o fuorvianti come `Rare
-Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
+  Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
   contesti numismatici.
 - `npm run categories:backfill` supporta il repair esplicito dei conflitti
   generati dal vecchio mapper con
@@ -2461,7 +2461,7 @@ Coins`, `Commemorative Coins`, `Bullion Coins` e `First Day Covers` nei
 ### Correzioni
 
 - L'import Shopify applica ai prodotti creati solo il tag generico `Negozio
-eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
+  eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
   per evitare duplicati.
 
 ## [0.36.0] — 2026-06-14
@@ -3135,7 +3135,7 @@ eBay`, mantenendo la ricerca compatibile con i vecchi tag SyncBay già presenti
 ### Correzioni
 
 - La pagina Conflitti classifica le decisioni aperte tra `Batch sicuri`, `Da
-rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
+  rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
 - La pagina Attività mostra impatto, prossima azione e riferimento tecnico dei
   job, bloccando il retry manuale quando eBay ha imposto un cooldown.
 - La diagnostica retry riconosce anche i cooldown eBay registrati come
@@ -3427,7 +3427,7 @@ rivedere` e `Manuali`, marcando anche la sicurezza delle singole azioni.
   `RETRYING` oltre la finestra stale, evitando residui non schedulabili nella
   coda import.
 - Il client Admin GraphQL offline riconosce anche `extensions.code:
-"THROTTLED"` come segnale di throttling Shopify e applica il backoff.
+  "THROTTLED"` come segnale di throttling Shopify e applica il backoff.
 
 ## [0.22.7] — 2026-06-03
 

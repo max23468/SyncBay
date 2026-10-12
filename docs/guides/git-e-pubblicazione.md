@@ -15,9 +15,9 @@ Decisione di riferimento: `docs/decisions/0003-git-pubblicazione-versioning.md`.
 - Versioning locale attivo con `app/lib/version.ts` e `npm run release`.
 - Deployment Vercel production attivo per la distribuzione privata e verifiche controllate.
 - Repository pubblico protetto da PR, strict checking, `Verifica
-proporzionata`, `Conventional PR title` e `react-doctor`.
+  proporzionata`, `Conventional PR title` e `react-doctor`.
 - React Doctor è bloccante dai warning in su sia dentro `Verifica
-proporzionata` sia nello status dedicato `react-doctor`: sulle PR pubblica
+  proporzionata` sia nello status dedicato `react-doctor`: sulle PR pubblica
   score e review per i file cambiati, mentre sul push a `main` analizza tutto il
   progetto. CodeQL e Vercel restano check mirati o advisory.
 
