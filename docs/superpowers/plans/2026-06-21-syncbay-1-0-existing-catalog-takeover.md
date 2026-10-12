@@ -732,7 +732,10 @@ Doctor e Vercel production verdi.
   import type { ImportPreviewItem } from "../services/import-preview.server";
 
   export type ExistingCatalogTakeoverStatus =
-    "applicabile" | "bloccante" | "da_rivedere" | "gia_collegato";
+    | "applicabile"
+    | "bloccante"
+    | "da_rivedere"
+    | "gia_collegato";
 
   export type ExistingCatalogTakeoverReason =
     | "categoria_incerta"
@@ -1501,7 +1504,7 @@ Doctor e Vercel production verdi.
 - [x] **Step 3: aggiungere mini kit alla guida onboarding esistente**
 
   In `docs/guides/onboarding-e-import.md`, aggiungere una sezione `Mini kit
-clienti selezionati 1.0` con:
+  clienti selezionati 1.0` con:
 
   - promessa prodotto;
   - requisiti prima dell'installazione;
@@ -1545,7 +1548,7 @@ clienti selezionati 1.0` con:
 - [ ] **Step 1: aggiornare runbook con boundary release 1.0 e azioni UI reali**
 
   Inserire nella guida e nell'ADR 0020 una sezione `Release privata 1.0 prima
-dell'onboarding` che renda esplicita questa sequenza, senza introdurre
+  dell'onboarding` che renda esplicita questa sequenza, senza introdurre
   logiche hardcoded nell'app:
 
   1. SyncBay deve arrivare a `1.0.0` prima di essere installata su Numisleo;
@@ -1616,7 +1619,7 @@ dell'onboarding` che renda esplicita questa sequenza, senza introdurre
   - `https://syncbay.vercel.app/terms`.
 
   Verificare inoltre che il form pubblico di accesso esponga il campo `Dominio
-shop` e che il deployment production sia quello candidato a `1.0.0`.
+  shop` e che il deployment production sia quello candidato a `1.0.0`.
 
   Expected:
 
@@ -1645,7 +1648,7 @@ shop` e che il deployment production sia quello candidato a `1.0.0`.
   - il tag previsto nello step successivo è `v1.0.0`, allineato alla versione
     generata dal comando release;
   - il secondo `release:dry-run` riporta `Categoria: non versionato. Nessuna
-release SemVer da preparare.`;
+    release SemVer da preparare.`;
   - nessuna installazione Numisleo eseguita.
 
 - [ ] **Step 6: publish, deploy, tag e GitHub Release 1.0.0**

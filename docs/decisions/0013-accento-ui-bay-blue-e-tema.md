@@ -53,7 +53,7 @@ eBay/Shopify come sistema semantico. AGENTS va aggiornato di conseguenza.
 - **Tema: solo chiaro, ma theme-ready.** Niente dark mode spedito, niente
   interruttore: SyncBay segue l'admin (chiaro). I colori del design layer sono
   espressi come **variabili semantiche** (`--syncbay-success/-warning/-critical/
--info` con `-text`/`-tint`, `--syncbay-accent` ecc.) così un eventuale dark
+  -info` con `-text`/`-tint`, `--syncbay-accent` ecc.) così un eventuale dark
   mode futuro è un cambio di un blocco di variabili, non una riscrittura.
 
 Questa decisione **sostituisce** la palette direzionale semantica di `BRAND.md`
