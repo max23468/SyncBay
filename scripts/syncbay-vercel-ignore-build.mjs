@@ -20,11 +20,15 @@ const NON_DEPLOY_ROOT_FILES = new Set([
 
 const DEPLOY_SCRIPTS = new Set(["scripts/link-prisma-client.mjs"]);
 
+const SKIP_PREVIEW_BRANCH_PREFIXES = ["dependabot/", "instinct/"];
+
 export function shouldSkipDependabotPreview(env = process.env) {
   return (
     env.VERCEL_ENV === "preview" &&
     typeof env.VERCEL_GIT_COMMIT_REF === "string" &&
-    env.VERCEL_GIT_COMMIT_REF.startsWith("dependabot/")
+    SKIP_PREVIEW_BRANCH_PREFIXES.some((prefix) =>
+      env.VERCEL_GIT_COMMIT_REF.startsWith(prefix),
+    )
   );
 }
 
@@ -48,7 +52,7 @@ export function isDeployRelevantPath(path) {
 
 if (import.meta.main) {
   if (shouldSkipDependabotPreview()) {
-    console.log("Vercel preview saltato: branch Dependabot verificato dai gate GitHub.");
+    console.log(`Vercel preview saltato: branch bot (${SKIP_PREVIEW_BRANCH_PREFIXES.join(" | ")}) verificato dai gate GitHub.`);
     process.exit(0);
   }
 
