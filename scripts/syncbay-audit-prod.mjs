@@ -3,8 +3,6 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const ISSUE_MARKER = "<!-- syncbay-audit-prod -->";
-const STATE_PATTERN = /<!-- syncbay-audit-state (.+) -->/;
 const SEVERITIES = ["info", "low", "moderate", "high", "critical"];
 
 if (import.meta.main) {
@@ -28,20 +26,7 @@ if (import.meta.main) {
           : "Audit produzione pulito."),
     );
     for (const finding of result.findings) console.log(`- ${finding.id}: ${finding.severity}`);
-    if (process.argv.includes("--scheduled")) {
-      if (process.env.GITHUB_EVENT_NAME !== "schedule")
-        throw new Error("La deduplicazione è riservata alle esecuzioni programmate.");
-      const outcome = await reconcileScheduledAudit({
-        result,
-        api: githubApi,
-        repository: process.env.GITHUB_REPOSITORY,
-        runUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
-      });
-      console.log(`Audit programmato: ${outcome.transition}.`);
-      process.exitCode = outcome.fail ? 1 : 0;
-    } else {
-      process.exitCode = result.error || result.findings.length ? 1 : 0;
-    }
+    process.exitCode = result.error || result.findings.length ? 1 : 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;
@@ -129,108 +114,6 @@ export function evaluateAudit(audit) {
   } catch (error) {
     return { findings: [], error: error instanceof Error ? error.message : String(error) };
   }
-}
-
-export async function reconcileScheduledAudit({ result, api, repository, runUrl }) {
-  if (!/^[\w.-]+\/[\w.-]+$/.test(repository ?? ""))
-    throw new Error("Repository GitHub non valido.");
-  const endpoint = `repos/${repository}/issues`;
-  // Una sola issue, anche dopo la chiusura: nessun cache o database aggiuntivo.
-  const issues = await api(`${endpoint}?state=all&per_page=100`, undefined, true);
-  const matches = issues.filter(
-    (issue) =>
-      !issue.pull_request &&
-      issue.user?.login === "github-actions[bot]" &&
-      issue.body?.startsWith(ISSUE_MARKER),
-  );
-  if (matches.length > 1) throw new Error("Più issue audit trovate: stato ambiguo.");
-  const issue = matches[0];
-  let previous;
-  if (issue) {
-    const serialized = issue.body.match(STATE_PATTERN)?.[1];
-    previous = serialized && JSON.parse(serialized);
-    if (
-      previous?.version !== 1 ||
-      !Array.isArray(previous.findings) ||
-      typeof previous.error !== "boolean"
-    )
-      throw new Error("Stato issue audit non valido.");
-  }
-  const state = {
-    version: 1,
-    findings: result.error ? (previous?.findings ?? []) : result.findings,
-    error: Boolean(result.error),
-  };
-  const changed = JSON.stringify(state) !== JSON.stringify(previous);
-  const clean = !state.error && !state.findings.length;
-  const transition = result.error
-    ? "errore"
-    : clean
-      ? previous && (previous.error || previous.findings.length)
-        ? "risoluzione"
-        : "pulito"
-      : changed || issue?.state === "closed"
-        ? "rilevamento"
-        : "già segnalato";
-  if (!issue && clean) return { fail: false, transition };
-  const description = result.error
-    ? `Audit inattendibile: ${result.error}`
-    : clean
-      ? "Audit produzione pulito. Problema risolto."
-      : "Vulnerabilità aperte: intervenire sulle dipendenze. La ripetizione già registrata non fa fallire la run programmata; PR e gate locali restano bloccanti.";
-  const body = [
-    ISSUE_MARKER,
-    "## Audit dipendenze di produzione",
-    description,
-    ...state.findings.map(
-      (finding) =>
-        `- ${finding.id} | ${finding.name} | ${finding.severity} | CVSS ${finding.score ?? "n/d"} | ${finding.range}`,
-    ),
-    `Ultima verifica e report allegato: ${runUrl}`,
-    `<!-- syncbay-audit-state ${JSON.stringify(state)} -->`,
-  ].join("\n\n");
-  if (!issue) {
-    await api(endpoint, {
-      title: "Audit produzione: dipendenze vulnerabili o audit inattendibile",
-      body,
-    });
-  } else {
-    await api(`${endpoint}/${issue.number}`, {
-      body,
-      state: clean ? "closed" : "open",
-      ...(clean ? { state_reason: "completed" } : {}),
-    });
-    if (changed || transition === "rilevamento")
-      await api(`${endpoint}/${issue.number}/comments`, {
-        body: `Audit produzione: ${transition}.\n\n${description}\n\nReport: ${runUrl}`,
-      });
-  }
-  return {
-    fail: Boolean(result.error) || (!clean && (changed || issue?.state === "closed")),
-    transition,
-  };
-}
-
-function githubApi(endpoint, data, paginate = false) {
-  const args = ["api", endpoint];
-  if (paginate) args.push("--paginate", "--slurp");
-  if (data)
-    args.push(
-      "--method",
-      endpoint.endsWith("/comments") || /\/issues$/.test(endpoint) ? "POST" : "PATCH",
-      "--input",
-      "-",
-    );
-  const response = spawnSync("gh", args, {
-    input: data ? JSON.stringify(data) : undefined,
-    encoding: "utf8",
-    timeout: 60_000,
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  if (response.error || response.status !== 0)
-    throw new Error("Impossibile leggere o aggiornare l'issue audit GitHub.");
-  const parsed = JSON.parse(response.stdout);
-  return paginate ? parsed.flat() : parsed;
 }
 
 function isRecord(value) {

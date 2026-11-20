@@ -89,17 +89,12 @@ Esclusioni consapevoli:
   `supabase/migrations`, quindi il check non validava il flusso reale;
 - Vercel e CodeQL restano advisory o mirati e non sono status richiesti dal
   ruleset;
-- audit advisory delle dipendenze di produzione: `npm run audit:prod` esce dal
-  check richiesto ed entra nel workflow `audit-prod.yml`, schedulato ogni giorno
-  e path-scoped sulle PR che toccano dipendenze. Un gate che blocca il merge
-  deve essere funzione del diff, mentre l'esito di `npm audit` è funzione della
-  data: come check richiesto una vulnerabilità pubblicata a monte bloccava ogni
-  PR aperta, docs incluse, spingendo a scavalcare la ruleset per motivi
-  estranei al diff. Il gate resta obbligatorio nei comandi locali. Le advisory
-  che non hanno una correzione installabile si accettano esplicitamente in
-  `ACCEPTED_ADVISORIES` con GHSA, motivo e condizione di revisione: la waiver
-  copre il singolo advisory, non il pacchetto, e le voci accettate restano
-  stampate a ogni esecuzione.
+- audit advisory delle dipendenze di produzione: `npm run audit:prod` gira nel
+  workflow `audit-prod.yml` sulle PR pertinenti e su richiesta manuale.
+  Un gate che blocca il merge deve dipendere dal diff. Poiché il database degli
+  avvisi di sicurezza cambia nel tempo, una nuova vulnerabilità bloccava anche
+  le PR di sola documentazione quando il check era richiesto. Il gate resta
+  obbligatorio nei comandi locali applicabili.
 
 Render SSR e hydration Chromium sono nel workflow `UI browser check`, avviato
 manualmente o con label `full-ui-check` per modifiche UI sostanziali. Non sono

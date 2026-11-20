@@ -2,12 +2,10 @@ name: Audit produzione
 
 # `audit:prod` dipende dal database advisory, non dal diff: come check richiesto
 # renderebbe rossa ogni PR aperta quando una vulnerabilità viene pubblicata a
-# monte, anche per una modifica di sola documentazione. Sta qui, su cadenza
-# propria, e resta nei gate locali di `verify:changed` e `verify:full`.
+# monte, anche per una modifica di sola documentazione. Il workflow gira
+# sulle PR pertinenti e su richiesta. In locale lo eseguono i gate applicabili.
 
 on:
-  schedule:
-    - cron: "0 6 * * *"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -28,7 +26,6 @@ concurrency:
 
 jobs:
   audit:
-    if: github.event_name != 'schedule'
     name: Advisory dipendenze produzione
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -50,45 +47,6 @@ jobs:
 
       - name: Audit dipendenze di produzione
         run: npm run audit:prod -- --report .cache/audit-prod/report.json
-
-      - name: Conserva report audit
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: audit-produzione-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .cache/audit-prod/report.json
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 30
-
-  scheduled-audit:
-    if: github.event_name == 'schedule'
-    name: Audit programmato con issue unica
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      issues: write
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Setup npm
-        run: npm install --global npm@12.0.2
-
-      - name: Install dipendenze deterministico
-        run: npm ci
-
-      - name: Audit programmato con issue unica
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: npm run audit:prod -- --scheduled --report .cache/audit-prod/report.json
 
       - name: Conserva report audit
         if: always()
