@@ -475,6 +475,7 @@ export async function updatePricingRuleSettings(
         status: ProductMappingStatus.ACTIVE,
       },
     });
+    // react-doctor-disable-next-line react-doctor/server-sequential-independent-await -- Prisma esegue in sequenza le query sulla singola connessione della transazione.
     const ebayConnection = await tx.ebayConnection.findUnique({
       select: { status: true },
       where: {

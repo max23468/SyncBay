@@ -48,7 +48,7 @@ forzare installazioni o downgrade dentro la repo.
 | Hosting previsto            | Vercel                                   |
 | CLI hosting                 | Vercel CLI `58.7.1`                      |
 | Database                    | Supabase Postgres                        |
-| ORM                         | Prisma `7.10.0` con `@prisma/adapter-pg` |
+| ORM                         | Prisma `7.10.1` con `@prisma/adapter-pg` |
 | Queue e scheduler previsti  | Supabase Queues e Supabase Cron          |
 | Storage immagini temporaneo | Supabase Storage privato                 |
 | Osservabilità baseline      | Vercel Web Analytics e Speed Insights    |
@@ -85,7 +85,7 @@ SyncBay usa un proprio `entry.server.tsx`, quindi non importa il
 default entry del preset Vercel che fa ancora riferimento al vecchio tipo
 `AppLoadContext`. La patch Vite della linea React Router 7 è stata rimossa.
 
-Prisma è aggiornato a 7.10.0 con `prisma.config.ts`, generator di compatibilità
+Prisma è aggiornato a 7.10.1 con `prisma.config.ts`, generator di compatibilità
 `prisma-client-js`, output `prisma/generated/client` ignorato da Git e link
 post-generate verso il path atteso da `@prisma/client`. Questa scelta mantiene
 compatibili il test runner Node nativo e il template React Router finché il

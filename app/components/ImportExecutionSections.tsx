@@ -59,6 +59,15 @@ export function DraftImportSection({
   const report = wizard.previewResult.existingCatalogTakeover;
   const existing = wizard.catalogMode === "existing_catalog";
   const takeoverBlocked = !report || report.summary.applicable === 0 || report.summary.blocked > 0;
+  const isSubmitDisabled = isSaving || wizard.draftImport.blockers.length > 0;
+  const feedback = getDraftImportFeedback({
+    draftCount,
+    draftMessage,
+    draftStatus,
+    existing,
+    importProductStatus: wizard.draftImport.importProductStatus,
+    takeoverStatus,
+  });
 
   return (
     <>
@@ -67,29 +76,7 @@ export function DraftImportSection({
           ? "Il catalogo esistente resta in simulazione: l'import normale è disattivato per evitare duplicati."
           : "Avvia la creazione o il riuso dei prodotti Shopify dopo aver controllato anteprima, location e impostazioni."}
       </s-text>
-      {draftStatus === "created" ? (
-        <s-paragraph>
-          Operazione completata:{" "}
-          {formatDraftImportCount(draftCount, wizard.draftImport.importProductStatus)}
-          {draftMessage ? ` ${draftMessage}` : null}
-        </s-paragraph>
-      ) : draftStatus === "queued" ? (
-        <s-paragraph>
-          {existing ? "Takeover pianificato" : "Import pianificato"}:{" "}
-          {existing
-            ? formatTakeoverApplyCount(draftCount)
-            : formatDraftImportCount(draftCount, wizard.draftImport.importProductStatus)}
-          {draftMessage ? ` ${draftMessage}` : null}
-        </s-paragraph>
-      ) : draftStatus === "blocked" || draftStatus === "failed" ? (
-        <s-paragraph>
-          Import Shopify non completato: {draftMessage ?? "requisiti incompleti"}.
-        </s-paragraph>
-      ) : takeoverStatus === "blocked" ? (
-        <s-paragraph>
-          Takeover catalogo esistente bloccato: {draftMessage ?? "requisiti incompleti"}.
-        </s-paragraph>
-      ) : null}
+      {feedback ? <s-paragraph>{feedback}</s-paragraph> : null}
       <s-unordered-list>
         <s-list-item>
           Stato: {wizard.draftImport.enabled ? "abilitato" : "disabilitato"}
@@ -116,55 +103,100 @@ export function DraftImportSection({
           <s-list-item>Modalità catalogo: {catalogModeBlocker}</s-list-item>
         ) : null}
       </s-unordered-list>
-      {existing ? (
-        <Form method="post">
-          <input type="hidden" name="intent" value="applyExistingCatalogTakeover" />
-          <s-stack gap="small">
-            <s-text-field
-              id="existingCatalogTakeoverConfirmation"
-              label="Conferma takeover"
-              name="confirmation"
-              placeholder="COLLEGA"
-              required
-            ></s-text-field>
-            <s-text-field
-              label="Tag legacy da rimuovere"
-              name="legacyTagsToRemove"
-              placeholder="Tag esatto 1, Tag esatto 2"
-            ></s-text-field>
-          </s-stack>
-          <s-button
-            type="submit"
-            variant="primary"
-            disabled={isSaving || takeoverBlocked || wizard.draftImport.blockers.length > 0}
-          >
-            {isApplyingTakeover ? "Pianificazione in corso..." : "Applica takeover righe sicure"}
-          </s-button>
-        </Form>
-      ) : (
-        <Form method="post">
-          <input type="hidden" name="intent" value="createDraftProducts" />
-          <input
-            type="hidden"
-            name="catalogMode"
-            value={getImportCatalogModeParam(wizard.catalogMode)}
-          />
-          <s-button
-            type="submit"
-            disabled={
-              isSaving || Boolean(catalogModeBlocker) || wizard.draftImport.blockers.length > 0
-            }
-          >
-            {catalogModeBlocker
-              ? "Riallineamento in simulazione"
-              : isCreatingDrafts
-                ? "Avvio in corso..."
-                : "Avvia import catalogo"}
-          </s-button>
-        </Form>
-      )}
+      <DraftImportActions
+        catalogMode={wizard.catalogMode}
+        catalogModeBlocker={catalogModeBlocker}
+        isApplyingTakeover={isApplyingTakeover}
+        isCreatingDrafts={isCreatingDrafts}
+        isSubmitDisabled={isSubmitDisabled}
+        takeoverBlocked={takeoverBlocked}
+      />
     </>
   );
+}
+
+function DraftImportActions({
+  catalogMode,
+  catalogModeBlocker,
+  isApplyingTakeover,
+  isCreatingDrafts,
+  isSubmitDisabled,
+  takeoverBlocked,
+}: {
+  catalogMode: ImportExecutionWizard["catalogMode"];
+  catalogModeBlocker: ReturnType<typeof getCatalogModeDraftImportBlocker>;
+  isApplyingTakeover: boolean;
+  isCreatingDrafts: boolean;
+  isSubmitDisabled: boolean;
+  takeoverBlocked: boolean;
+}) {
+  return catalogMode === "existing_catalog" ? (
+    <Form method="post">
+      <input type="hidden" name="intent" value="applyExistingCatalogTakeover" />
+      <s-stack gap="small">
+        <s-text-field
+          id="existingCatalogTakeoverConfirmation"
+          label="Conferma takeover"
+          name="confirmation"
+          placeholder="COLLEGA"
+          required
+        ></s-text-field>
+        <s-text-field
+          label="Tag legacy da rimuovere"
+          name="legacyTagsToRemove"
+          placeholder="Tag esatto 1, Tag esatto 2"
+        ></s-text-field>
+      </s-stack>
+      <s-button type="submit" variant="primary" disabled={isSubmitDisabled || takeoverBlocked}>
+        {isApplyingTakeover ? "Pianificazione in corso..." : "Applica takeover righe sicure"}
+      </s-button>
+    </Form>
+  ) : (
+    <Form method="post">
+      <input type="hidden" name="intent" value="createDraftProducts" />
+      <input type="hidden" name="catalogMode" value={getImportCatalogModeParam(catalogMode)} />
+      <s-button type="submit" disabled={isSubmitDisabled || Boolean(catalogModeBlocker)}>
+        {catalogModeBlocker
+          ? "Riallineamento in simulazione"
+          : isCreatingDrafts
+            ? "Avvio in corso..."
+            : "Avvia import catalogo"}
+      </s-button>
+    </Form>
+  );
+}
+
+function getDraftImportFeedback({
+  draftCount,
+  draftMessage,
+  draftStatus,
+  existing,
+  importProductStatus,
+  takeoverStatus,
+}: {
+  draftCount?: number | string | null;
+  draftMessage?: string | null;
+  draftStatus: ShopifyDraftImportStatus | null;
+  existing: boolean;
+  importProductStatus: ImportExecutionWizard["draftImport"]["importProductStatus"];
+  takeoverStatus: "blocked" | "queued" | null;
+}) {
+  const messageSuffix = draftMessage ? ` ${draftMessage}` : "";
+  if (draftStatus === "created") {
+    return `Operazione completata: ${formatDraftImportCount(draftCount, importProductStatus)}${messageSuffix}`;
+  }
+  if (draftStatus === "queued") {
+    return existing
+      ? `Takeover pianificato: ${formatTakeoverApplyCount(draftCount)}${messageSuffix}`
+      : `Import pianificato: ${formatDraftImportCount(draftCount, importProductStatus)}${messageSuffix}`;
+  }
+  if (draftStatus === "blocked" || draftStatus === "failed") {
+    return `Import Shopify non completato: ${draftMessage ?? "requisiti incompleti"}.`;
+  }
+  if (takeoverStatus === "blocked") {
+    return `Takeover catalogo esistente bloccato: ${draftMessage ?? "requisiti incompleti"}.`;
+  }
+  return null;
 }
 
 export function AfterImportSection({ wizard }: { wizard: ImportExecutionWizard }) {

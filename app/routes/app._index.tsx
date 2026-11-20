@@ -155,11 +155,6 @@ export default function Index() {
   });
   const recentActivity = getRecentActivity(dashboard);
   const contextualActions = getContextualActions(dashboard, importIncomplete);
-  const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
-  const reliability = dashboard.metrics.reliability;
-  const syncPulse = getSyncPulse(dashboard.sync.healthDigest);
-  const newMappings = dashboard.metrics.trends.newMappings24h;
-  const newConflicts = dashboard.metrics.trends.newConflicts24h;
 
   return (
     <s-page heading="Panoramica" inlineSize="large">
@@ -230,88 +225,7 @@ export default function Index() {
               </s-stack>
             </s-box>
 
-            <div className="syncbay-balanced-box-grid">
-              <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
-                <MetricTile
-                  detail="Seguiti e allineati a eBay."
-                  icon="link"
-                  label="Prodotti collegati"
-                  tone="info"
-                  trend={
-                    newMappings > 0
-                      ? {
-                          label: `${formatNumber(newMappings)} ${
-                            newMappings === 1 ? "nuovo" : "nuovi"
-                          } da ieri`,
-                          tone: "up",
-                        }
-                      : undefined
-                  }
-                  value={formatNumber(dashboard.imports.mappingCount)}
-                />
-                <MetricTile
-                  detail={
-                    dashboard.conflicts.openCount > 0
-                      ? "Scegli quale valore mantenere."
-                      : "Niente da rivedere."
-                  }
-                  icon="alert-triangle"
-                  label="Conflitti aperti"
-                  tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
-                  trend={
-                    newConflicts > 0
-                      ? {
-                          label: `${formatNumber(newConflicts)} ${
-                            newConflicts === 1 ? "nuovo" : "nuovi"
-                          } da ieri`,
-                          tone: "watch",
-                        }
-                      : undefined
-                  }
-                  value={formatNumber(dashboard.conflicts.openCount)}
-                />
-                <MetricTile
-                  detail={
-                    dashboard.sync.catalogHealth.nextDueAt
-                      ? `Prossimo ${formatDateTime(dashboard.sync.catalogHealth.nextDueAt)}.`
-                      : "In attesa del primo controllo."
-                  }
-                  icon="clock"
-                  label="Controllo automatico"
-                  tone="neutral"
-                  value={`ogni ${minutes} min`}
-                />
-              </s-grid>
-              <div className="syncbay-health-pulse">
-                <s-badge tone={syncPulse.tone}>{syncPulse.label}</s-badge>
-                <s-text color="subdued">{syncPulse.detail}</s-text>
-              </div>
-              <div className="syncbay-reliability">
-                <s-text color="subdued">
-                  {reliability.totalJobs > 0
-                    ? `${
-                        reliability.totalJobs === DASHBOARD_RELIABILITY_JOB_LIMIT
-                          ? `Ultimi ${formatNumber(
-                              DASHBOARD_RELIABILITY_JOB_LIMIT,
-                            )} job in ${reliability.windowDays} giorni`
-                          : `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
-                              reliability.totalJobs,
-                              "job",
-                              "",
-                            )}`
-                      } · ${reliability.successRate}% ${
-                        reliability.totalJobs === 1 ? "riuscito" : "riusciti"
-                      }.`
-                    : "Nessun job eseguito negli ultimi 7 giorni."}
-                </s-text>
-                {reliability.totalJobs > 0 ? (
-                  <Sparkline
-                    ariaLabel="Andamento job eseguiti negli ultimi 7 giorni"
-                    values={reliability.daily}
-                  />
-                ) : null}
-              </div>
-            </div>
+            <OverviewMetrics dashboard={dashboard} />
 
             <div className="syncbay-balanced-box-grid">
               <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))">
@@ -361,6 +275,104 @@ export default function Index() {
         )}
       </s-stack>
     </s-page>
+  );
+}
+
+function OverviewMetrics({ dashboard }: { dashboard: Dashboard }) {
+  const minutes = Math.max(1, Math.round(dashboard.shop.syncTargetSeconds / 60));
+  const syncPulse = getSyncPulse(dashboard.sync.healthDigest);
+  const newMappings = dashboard.metrics.trends.newMappings24h;
+  const newConflicts = dashboard.metrics.trends.newConflicts24h;
+
+  return (
+    <div className="syncbay-balanced-box-grid">
+      <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
+        <MetricTile
+          detail="Seguiti e allineati a eBay."
+          icon="link"
+          label="Prodotti collegati"
+          tone="info"
+          trend={
+            newMappings > 0
+              ? {
+                  label: `${formatNumber(newMappings)} ${
+                    newMappings === 1 ? "nuovo" : "nuovi"
+                  } da ieri`,
+                  tone: "up",
+                }
+              : undefined
+          }
+          value={formatNumber(dashboard.imports.mappingCount)}
+        />
+        <MetricTile
+          detail={
+            dashboard.conflicts.openCount > 0
+              ? "Scegli quale valore mantenere."
+              : "Niente da rivedere."
+          }
+          icon="alert-triangle"
+          label="Conflitti aperti"
+          tone={dashboard.conflicts.openCount > 0 ? "warning" : "neutral"}
+          trend={
+            newConflicts > 0
+              ? {
+                  label: `${formatNumber(newConflicts)} ${
+                    newConflicts === 1 ? "nuovo" : "nuovi"
+                  } da ieri`,
+                  tone: "watch",
+                }
+              : undefined
+          }
+          value={formatNumber(dashboard.conflicts.openCount)}
+        />
+        <MetricTile
+          detail={
+            dashboard.sync.catalogHealth.nextDueAt
+              ? `Prossimo ${formatDateTime(dashboard.sync.catalogHealth.nextDueAt)}.`
+              : "In attesa del primo controllo."
+          }
+          icon="clock"
+          label="Controllo automatico"
+          tone="neutral"
+          value={`ogni ${minutes} min`}
+        />
+      </s-grid>
+      <div className="syncbay-health-pulse">
+        <s-badge tone={syncPulse.tone}>{syncPulse.label}</s-badge>
+        <s-text color="subdued">{syncPulse.detail}</s-text>
+      </div>
+      <SyncReliability reliability={dashboard.metrics.reliability} />
+    </div>
+  );
+}
+
+function SyncReliability({ reliability }: { reliability: Dashboard["metrics"]["reliability"] }) {
+  return (
+    <div className="syncbay-reliability">
+      <s-text color="subdued">
+        {reliability.totalJobs > 0
+          ? `${
+              reliability.totalJobs === DASHBOARD_RELIABILITY_JOB_LIMIT
+                ? `Ultimi ${formatNumber(
+                    DASHBOARD_RELIABILITY_JOB_LIMIT,
+                  )} job in ${reliability.windowDays} giorni`
+                : `Ultimi ${reliability.windowDays} giorni · ${formatSyncMetric(
+                    reliability.totalJobs,
+                    "job",
+                    "",
+                  )}`
+            } · ${reliability.successRate}% ${
+              reliability.totalJobs === 1 ? "riuscito" : "riusciti"
+            }.`
+          : "Nessun job eseguito negli ultimi 7 giorni."}
+      </s-text>
+      {reliability.totalJobs > 0 ? (
+        <Sparkline
+          ariaLabel="Andamento job eseguiti negli ultimi 7 giorni"
+          values={reliability.daily}
+        />
+      ) : null}
+    </div>
   );
 }
 

@@ -110,6 +110,20 @@ export function PreparationSection({
       )}
       {ebayAction.blockerText ? <s-text color="subdued">{ebayAction.blockerText}</s-text> : null}
       <s-text color="subdued">{getPreviewIntro(previewSource.source)}</s-text>
+      <LocationFeedback locationRenameStatus={locationRenameStatus} searchParams={searchParams} />
+    </>
+  );
+}
+
+function LocationFeedback({
+  locationRenameStatus,
+  searchParams,
+}: {
+  locationRenameStatus: ShopifyLocationRenameStatus | null;
+  searchParams: URLSearchParams;
+}) {
+  return (
+    <>
       {searchParams.get("updated") === "location" ? (
         <s-paragraph>Location Shopify predefinita salvata.</s-paragraph>
       ) : null}

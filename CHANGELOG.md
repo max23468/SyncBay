@@ -261,6 +261,14 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
   come route module React Router: gli export obbligatori `loader`, `headers` ed
   `ErrorBoundary` non vengono più classificati come problema Fast Refresh.
 
+## [1.0.93] — 2026-11-20
+
+### Sotto il cofano
+
+- Aggiornate le dipendenze della PR Dependabot #595, tra cui Prisma 7.10.1,
+  React Router 8.5.1 e React 19.3.1. Aggiornato `effect` a 3.22.1 per
+  correggere GHSA-7589-6fvf-x4pw.
+
 ## [1.0.92] — 2026-10-03
 
 ### Correzioni
@@ -4228,6 +4236,7 @@ Il formato segue Keep a Changelog e il versionamento segue Semantic Versioning a
 - Ridotto il manifest Shopify pilota agli scope e webhook che non richiedono protected customer data, mantenendo `orders/paid` preparato lato route ma non sottoscritto.
 
 [Non rilasciato]: #non-rilasciato
+[1.0.93]: #1093--2026-11-20
 [1.0.92]: #1092--2026-10-03
 [1.0.91]: #1091--2026-09-08
 [1.0.90]: #1090--2026-09-03

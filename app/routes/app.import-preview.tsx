@@ -318,16 +318,11 @@ export default function ImportPreview() {
   const isApplyingTakeover = isSaving && activeIntent === "applyExistingCatalogTakeover";
   const previewModeLabel = getPreviewModeLabel(wizard.previewResult.mode);
   const previewReadLabel = getPreviewReadLabel(wizard.previewSource.source);
-  const draftActionData = actionData?.intent === "createDraftProducts" ? actionData : null;
-  const takeoverActionData =
-    actionData?.intent === "applyExistingCatalogTakeover" ? actionData : null;
-  const draftStatus =
-    draftActionData?.draftStatus ?? (searchParams.get("draft") as ShopifyDraftImportStatus | null);
-  const takeoverQueued = takeoverActionData?.status === "queued";
+  const { draftStatus, importFeedback, toastData } = getImportFeedback(actionData, searchParams);
 
   useActionToast(
     {
-      data: draftActionData ?? takeoverActionData ?? undefined,
+      data: toastData,
       state: navigation.state,
     },
     (data) => ({
@@ -356,7 +351,7 @@ export default function ImportPreview() {
       previewErrorMessage: wizard.previewSource.errorMessage,
       previewSource: wizard.previewSource.source,
     }),
-    takeoverQueued || draftStatus === "created" || draftStatus === "queued",
+    draftStatus === "created" || draftStatus === "queued",
     // "Dopo l'import" non si completa mai: diventa attivo quando l'import è
     // avviato e resta l'ultimo passo del percorso.
     false,
@@ -425,17 +420,13 @@ export default function ImportPreview() {
           title="Importazione"
         >
           <ExtractedDraftImportSection
-            draftCount={
-              takeoverActionData?.count ?? draftActionData?.count ?? searchParams.get("count")
-            }
-            draftMessage={
-              takeoverActionData?.message ?? draftActionData?.message ?? searchParams.get("message")
-            }
-            draftStatus={takeoverQueued ? "queued" : draftStatus}
+            draftCount={importFeedback.count}
+            draftMessage={importFeedback.message}
+            draftStatus={draftStatus}
             isCreatingDrafts={isCreatingDrafts}
             isApplyingTakeover={isApplyingTakeover}
             isSaving={isSaving}
-            takeoverStatus={takeoverActionData?.status ?? null}
+            takeoverStatus={importFeedback.takeoverStatus}
             wizard={wizard}
           />
         </Step>
@@ -459,6 +450,28 @@ export default function ImportPreview() {
       </s-box>
     </s-page>
   );
+}
+
+function getImportFeedback(
+  actionData: ImportPreviewActionData | undefined,
+  searchParams: URLSearchParams,
+) {
+  const draft = actionData?.intent === "createDraftProducts" ? actionData : null;
+  const takeover = actionData?.intent === "applyExistingCatalogTakeover" ? actionData : null;
+  const draftStatus =
+    takeover?.status === "queued"
+      ? "queued"
+      : (draft?.draftStatus ?? (searchParams.get("draft") as ShopifyDraftImportStatus | null));
+
+  return {
+    draftStatus,
+    importFeedback: {
+      count: takeover?.count ?? draft?.count ?? searchParams.get("count"),
+      message: takeover?.message ?? draft?.message ?? searchParams.get("message"),
+      takeoverStatus: takeover?.status ?? null,
+    },
+    toastData: draft ?? takeover ?? undefined,
+  };
 }
 
 function getStepStatusLabel(status: StepStatus, activeLabel: string) {
