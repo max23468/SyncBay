@@ -687,22 +687,24 @@ function AdvancedSettingsCard({
   isSaving: boolean;
   settings: SettingsState;
 }) {
+  const ebayConnected = settings.ebay.status === "CONNECTED";
+  const ebayTone = ebayConnected ? "success" : "warning";
+  const shopifyScopesComplete =
+    settings.shopify.missingScopes.length === 0 &&
+    settings.shopify.missingConfiguredScopes.length === 0;
+
   return (
     <SettingCard
       description="Stato dei collegamenti e dei permessi, con le azioni per sistemarli."
       icon="settings"
-      statusLabel={
-        settings.ebay.status === "CONNECTED"
-          ? "Collegato"
-          : getEbayConnectionStatusLabel(settings.ebay.status)
-      }
-      statusTone={settings.ebay.status === "CONNECTED" ? "success" : "warning"}
+      statusLabel={ebayConnected ? "Collegato" : getEbayConnectionStatusLabel(settings.ebay.status)}
+      statusTone={ebayTone}
       title="Collegamenti e diagnostica"
     >
       <s-stack gap="base">
         <StatusRow
           detail={
-            settings.ebay.status === "CONNECTED"
+            ebayConnected
               ? `Marketplace ${settings.ebay.marketplaceId}${
                   settings.ebay.connectedAt
                     ? `, collegato il ${formatDateTime(settings.ebay.connectedAt)}`
@@ -712,30 +714,18 @@ function AdvancedSettingsCard({
           }
           icon="link"
           label={getEbayConnectionStatusLabel(settings.ebay.status)}
-          tone={settings.ebay.status === "CONNECTED" ? "success" : "warning"}
+          tone={ebayTone}
           title="Collegamento eBay"
         />
         <StatusRow
           detail={getShopifyScopesDetail(settings)}
           icon="settings"
-          label={
-            settings.shopify.missingScopes.length === 0 &&
-            settings.shopify.missingConfiguredScopes.length === 0
-              ? "Completi"
-              : "Da sistemare"
-          }
-          tone={
-            settings.shopify.missingScopes.length === 0 &&
-            settings.shopify.missingConfiguredScopes.length === 0
-              ? "success"
-              : "warning"
-          }
+          label={shopifyScopesComplete ? "Completi" : "Da sistemare"}
+          tone={shopifyScopesComplete ? "success" : "warning"}
           title="Permessi Shopify"
         />
       </s-stack>
-      {settings.ebay.oauthEnabled &&
-      settings.ebay.oauthReady &&
-      settings.ebay.status !== "CONNECTED" ? (
+      {settings.ebay.oauthEnabled && settings.ebay.oauthReady && !ebayConnected ? (
         <div className="syncbay-action-list">
           <ActionRow
             description="Riattiva import, aggiornamenti e disponibilità."
@@ -747,7 +737,7 @@ function AdvancedSettingsCard({
           />
         </div>
       ) : null}
-      {settings.ebay.status === "CONNECTED" ? (
+      {ebayConnected ? (
         <details className="syncbay-details">
           <summary>Scollega account eBay</summary>
           <s-stack gap="small-200">
@@ -764,33 +754,35 @@ function AdvancedSettingsCard({
           </s-stack>
         </details>
       ) : null}
-      <details className="syncbay-details">
-        <summary>Apri dettagli tecnici</summary>
-        <s-stack gap="base">
-          <s-unordered-list>
-            <s-list-item>
-              Webhook attivi ({settings.shopify.webhookTopics.length}):{" "}
-              {settings.shopify.webhookTopics.length > 0
-                ? settings.shopify.webhookTopics.join(", ")
-                : "nessuno"}
-            </s-list-item>
-            <s-list-item>
-              Scope Shopify attivi:{" "}
-              {settings.shopify.scopes.length > 0 ? settings.shopify.scopes.join(", ") : "nessuno"}
-            </s-list-item>
-            <s-list-item>
-              Scope richiesti dalla configurazione:{" "}
-              {settings.shopify.configuredScopes.length > 0
-                ? settings.shopify.configuredScopes.join(", ")
-                : "nessuno"}
-            </s-list-item>
-            <s-list-item>
-              Versione SyncBay: {APP_VERSION} ({BUILD_DATE})
-            </s-list-item>
-          </s-unordered-list>
-        </s-stack>
-      </details>
+      <ConnectionTechnicalDetails shopify={settings.shopify} />
     </SettingCard>
+  );
+}
+
+function ConnectionTechnicalDetails({ shopify }: { shopify: SettingsState["shopify"] }) {
+  return (
+    <details className="syncbay-details">
+      <summary>Apri dettagli tecnici</summary>
+      <s-stack gap="base">
+        <s-unordered-list>
+          <s-list-item>
+            Webhook attivi ({shopify.webhookTopics.length}):{" "}
+            {shopify.webhookTopics.length > 0 ? shopify.webhookTopics.join(", ") : "nessuno"}
+          </s-list-item>
+          <s-list-item>
+            Scope Shopify attivi:{" "}
+            {shopify.scopes.length > 0 ? shopify.scopes.join(", ") : "nessuno"}
+          </s-list-item>
+          <s-list-item>
+            Scope richiesti dalla configurazione:{" "}
+            {shopify.configuredScopes.length > 0 ? shopify.configuredScopes.join(", ") : "nessuno"}
+          </s-list-item>
+          <s-list-item>
+            Versione SyncBay: {APP_VERSION} ({BUILD_DATE})
+          </s-list-item>
+        </s-unordered-list>
+      </s-stack>
+    </details>
   );
 }
 

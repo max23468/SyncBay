@@ -179,68 +179,10 @@ export default function ConflictsRoute() {
           tone={hasOpen ? "warning" : "success"}
         />
 
-        <div className="syncbay-balanced-box-grid">
-          <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
-            <MetricTile
-              detail="Aspettano una tua scelta."
-              icon="alert-triangle"
-              label="Aperti"
-              tone={hasOpen ? "warning" : "neutral"}
-              value={formatNumber(conflicts.summary.openCount)}
-            />
-            <MetricTile
-              detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
-              icon="check-circle"
-              label="Sicuri"
-              tone={conflicts.summary.batchSafeCount > 0 ? "success" : "neutral"}
-              value={formatNumber(conflicts.summary.batchSafeCount)}
-            />
-            <MetricTile
-              detail="Titoli e immagini: guardali prima di applicarli a tutti."
-              icon="alert-circle"
-              label="Da rivedere"
-              tone={conflicts.summary.guardedCount > 0 ? "warning" : "neutral"}
-              value={formatNumber(conflicts.summary.guardedCount)}
-            />
-            <MetricTile
-              detail="Prezzo, quantità, stato o SKU: da decidere caso per caso."
-              icon="settings"
-              label="Da decidere"
-              tone={conflicts.summary.manualOnlyCount > 0 ? "info" : "neutral"}
-              value={formatNumber(conflicts.summary.manualOnlyCount)}
-            />
-            <MetricTile
-              detail="Tutti i conflitti rilevati, aperti e già risolti."
-              icon="inventory"
-              label="Totale"
-              tone="info"
-              value={formatNumber(conflicts.summary.totalCount)}
-            />
-          </s-grid>
-        </div>
+        <ConflictMetrics summary={conflicts.summary} />
 
         {hasOpen && safeCount > 0 ? (
-          <RiskLens
-            actions={
-              <Form method="post">
-                <input name="intent" type="hidden" value="resolveBatchSafe" />
-                <s-button disabled={isSaving} type="submit" variant="primary">
-                  {isSaving
-                    ? "Applico..."
-                    : safeCount === 1
-                      ? "Applica al sicuro"
-                      : `Applica ai ${formatNumber(safeCount)} sicuri`}
-                </s-button>
-              </Form>
-            }
-            body="Sono tutte descrizioni: SyncBay tiene la versione di Shopify come riferimento, senza toccare eBay. Le scelte delicate (titoli, immagini, prezzi) restano qui sotto, una per una."
-            title={
-              safeCount === 1
-                ? "1 conflitto sicuro da sistemare in blocco"
-                : `${formatNumber(safeCount)} conflitti sicuri da sistemare in blocco`
-            }
-            tone="success"
-          />
+          <BatchSafeConflicts isSaving={isSaving} safeCount={safeCount} />
         ) : null}
 
         <s-section heading="Conflitti da gestire">
@@ -262,6 +204,76 @@ export default function ConflictsRoute() {
 }
 
 export const headers = embeddedNoStoreHeaders;
+
+function ConflictMetrics({ summary }: { summary: Conflicts["summary"] }) {
+  return (
+    <div className="syncbay-balanced-box-grid">
+      <s-grid gap="base" gridTemplateColumns="repeat(auto-fit, minmax(170px, 1fr))">
+        <MetricTile
+          detail="Aspettano una tua scelta."
+          icon="alert-triangle"
+          label="Aperti"
+          tone={summary.openCount > 0 ? "warning" : "neutral"}
+          value={formatNumber(summary.openCount)}
+        />
+        <MetricTile
+          detail="Descrizioni che puoi sistemare tutte insieme, senza rischi."
+          icon="check-circle"
+          label="Sicuri"
+          tone={summary.batchSafeCount > 0 ? "success" : "neutral"}
+          value={formatNumber(summary.batchSafeCount)}
+        />
+        <MetricTile
+          detail="Titoli e immagini: guardali prima di applicarli a tutti."
+          icon="alert-circle"
+          label="Da rivedere"
+          tone={summary.guardedCount > 0 ? "warning" : "neutral"}
+          value={formatNumber(summary.guardedCount)}
+        />
+        <MetricTile
+          detail="Prezzo, quantità, stato o SKU: da decidere caso per caso."
+          icon="settings"
+          label="Da decidere"
+          tone={summary.manualOnlyCount > 0 ? "info" : "neutral"}
+          value={formatNumber(summary.manualOnlyCount)}
+        />
+        <MetricTile
+          detail="Tutti i conflitti rilevati, aperti e già risolti."
+          icon="inventory"
+          label="Totale"
+          tone="info"
+          value={formatNumber(summary.totalCount)}
+        />
+      </s-grid>
+    </div>
+  );
+}
+
+function BatchSafeConflicts({ isSaving, safeCount }: { isSaving: boolean; safeCount: number }) {
+  return (
+    <RiskLens
+      actions={
+        <Form method="post">
+          <input name="intent" type="hidden" value="resolveBatchSafe" />
+          <s-button disabled={isSaving} type="submit" variant="primary">
+            {isSaving
+              ? "Applico..."
+              : safeCount === 1
+                ? "Applica al sicuro"
+                : `Applica ai ${formatNumber(safeCount)} sicuri`}
+          </s-button>
+        </Form>
+      }
+      body="Sono tutte descrizioni: SyncBay tiene la versione di Shopify come riferimento, senza toccare eBay. Le scelte delicate (titoli, immagini, prezzi) restano qui sotto, una per una."
+      title={
+        safeCount === 1
+          ? "1 conflitto sicuro da sistemare in blocco"
+          : `${formatNumber(safeCount)} conflitti sicuri da sistemare in blocco`
+      }
+      tone="success"
+    />
+  );
+}
 
 function ConflictItem({ isSaving, row }: { isSaving: boolean; row: ConflictRow }) {
   const isOpen = row.status === "OPEN";
