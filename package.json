@@ -110,7 +110,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
-    "@react-router/node": "^8.5.1",
+    "@react-router/node": "^8.5.2",
     "@shopify/shopify-app-react-router": "2.1.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.1.0",
@@ -121,8 +121,8 @@
     "react-router": "^8.3.1"
   },
   "devDependencies": {
-    "@react-router/dev": "^8.5.1",
-    "@react-router/fs-routes": "^8.5.1",
+    "@react-router/dev": "^8.5.2",
+    "@react-router/fs-routes": "^8.5.2",
     "@shopify/cli": "4.9.2",
     "@shopify/polaris-types": "^1.1.0",
     "@shopify/shopify-app-session-storage": "^6.0.0",
