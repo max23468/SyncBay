@@ -111,7 +111,7 @@
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@react-router/node": "^8.5.2",
-    "@shopify/shopify-app-react-router": "2.1.0",
+    "@shopify/shopify-app-react-router": "4.0.4",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.1.0",
     "fast-xml-parser": "^5.12.1",
